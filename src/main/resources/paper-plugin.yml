@@ -1,0 +1,31 @@
+name: CashClash
+version: '1.0'
+main: me.psikuvit.cashClash.CashClashPlugin
+api-version: '1.21'
+description: A 4v4 PvP strategy minigame with economy mechanics
+author: psikuvit
+website: https://github.com/psikuvit/CashClash
+
+commands:
+  cashclash:
+    description: Main Cash Clash command
+    usage: /<command> [args]
+    aliases: [cc]
+    permission: cashclash.use
+
+permissions:
+  cashclash.use:
+    description: Allows use of basic commands
+    default: true
+  cashclash.admin:
+    description: Allows use of admin commands
+    default: op
+  cashclash.vip:
+    description: VIP rank permissions
+    default: false
+  cashclash.mvp:
+    description: MVP rank permissions
+    default: false
+  cashclash.clasher:
+    description: Clasher rank permissions
+    default: false

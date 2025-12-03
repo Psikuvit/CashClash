@@ -1,0 +1,67 @@
+# Cash Clash Configuration
+
+# Game Settings
+game:
+  # Minimum players required to start a game (4v4 = 8 players)
+  min-players: 8
+  # Maximum players per game
+  max-players: 8
+  # Time limit for combat phases (in seconds)
+  combat-phase-duration: 360
+  # Time limit for shopping phases (in seconds)
+  shopping-phase-duration: 90
+  # Enable forfeit system
+  forfeit-enabled: true
+  # Time before forfeit can be initiated after 2nd teammate death (in seconds)
+  forfeit-delay: 10
+
+# Round Settings
+rounds:
+  # Lives for rounds 1-3
+  early-round-lives: 3
+  # Lives for rounds 4-5
+  late-round-lives: 1
+  # Forfeit bonus for winning team
+  forfeit-bonus: 10000
+
+# Economy Settings
+economy:
+  # Starting money for each round
+  round-1-start: 10000
+  round-2-bonus: 30000
+  round-3-bonus: 50000
+  round-4-bonus: 100000
+  round-5-minimum: 20000
+  round-5-bonus: 10000
+
+  # Kill rewards
+  round-1-kill-reward: 3000
+
+  # Transfer fees (percentage)
+  round-1-transfer-fee: 0.50
+  round-2-3-transfer-fee: 0.10
+  round-4-5-transfer-fee: 0.05
+
+  # Percentage steal for rounds 4-5
+  late-round-steal-percentage: 0.25
+
+# Cash Quake Events
+cash-quake:
+  # Minimum events per game
+  min-events: 2
+  # Maximum events per game
+  max-events: 10
+  # Maximum events per round
+  max-per-round: 2
+  # Chance for supply drop vs objective (0.5 = 50%)
+  supply-drop-chance: 0.5
+
+# Messages (MiniMessage format)
+messages:
+  prefix: "<gold><bold>[Cash Clash]</bold></gold>"
+  game-starting: "<green>Game starting in {time} seconds!</green>"
+  round-starting: "<yellow>Round {round} - Shopping Phase!</yellow>"
+  combat-starting: "<red>Combat Phase Starting!</red>"
+  team-eliminated: "<red>Team {team} has been eliminated!</red>"
+  team-forfeited: "<yellow>Team {team} has forfeited! Team {winner} earns {amount} each!</yellow>"
+  winner: "<gold><bold>Team {team} wins with ${amount}!</bold></gold>"

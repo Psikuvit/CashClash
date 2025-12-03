@@ -1,0 +1,54 @@
+CashClash - Setup & Game Flow
+
+This file explains how to set up the plugin on a Paper server and summarizes the waiting / game session lifecycle used by CashClash.
+
+1) Installation (server side)
+- Build the plugin (maven) or use the provided jar in target/.
+- Copy CashClash-1.0.jar to your Paper server's plugins/ folder.
+- Start the server once so the plugin can create its data folders and default config files.
+
+2) Important folders / files
+- plugins/CashClash/ : plugin data folder
+- plugins/CashClash/config.yml : main plugin configuration
+- plugins/CashClash/arenas/ : arena configuration files (one file per arena template)
+- Template worlds should be placed in the server directory.
+
+3) Recommended initial configuration
+- Set lobby world name and spawn location via the provided admin commands (see commands below) or edit config.yml.
+- Place a template arena world in the server directory (or use the plugin's template saving command) so the plugin can copy it for sessions.
+- Configure max arenas (default 5) and max players per arena in config.yml.
+
+4) Admin commands (summary)
+- /cashclash arenas : opens the arena GUI for players.
+- /cashclash admin tp <arena|template> : teleport to an arena/template for configuration.
+- /cashclash admin setspawn lobby : set the lobby spawn location.
+- /cashclash admin setspawn <arena> <role> : set arena spawn points (example roles: team1_spawn1, team2_spawn2, spectator)
+(Exact command names may vary — check the plugin's command registry if changed.)
+
+5) Player flow (lobby -> join -> waiting -> game)
+- Players join the server and are teleported to the lobby world/spawn.
+- A player can open the arenas GUI (/cashclash arenas) and click an available arena.
+- When the arena has reached its configured "min players" threshold (or a player joins via GUI and the arena is in WAITING state), the plugin starts a 2-minute waiting timer to allow additional players to join.
+- During the waiting timer players may continue to join the arena lobby. If the arena reaches the max players, the timer can be shortened or proceed immediately depending on config.
+
+6) GameSession / Arena / World lifecycle
+- Each game uses a GameSession object bound to one Arena. A GameSession requires its own world instance so games run isolated.
+- When the waiting timer completes and enough players are present, the plugin will:
+  - Create a copy of a template world for the session (name: arena-<id>-session-<timestamp>), or load a fresh template if caching is used.
+  - Create a new GameSession and assign the copied world to it.
+  - Divide players into teams equally (balanced round-robin so teams are numerically equal, e.g. 4 players => 2 & 2).
+  - Teleport players to their team spawn points inside the new session world when the world is ready.
+  - Apply any spawn protection (disable pearls/bounce pads for X seconds, respawn delay, etc.) as configured.
+
+7) During and end of game
+- The GameSession runs through configured rounds (5 by default). All round and reward logic are configurable in config.yml.
+- At the end of the session, players are teleported back to the lobby spawn.
+- The session world is unloaded and deleted (or saved and removed) per configuration to free resources.
+- The Arena becomes available again (unless the server is full or the arena is disabled).
+
+8) Notes and configuration tips
+- Max arenas: the plugin supports up to 5 arenas by default; change in config if required.
+- Template worlds: keep a clean copy (no players, minimal metadata) so new sessions always start fresh.
+- Arena files: each arena should have its own configuration file in plugins/CashClash/arenas/ indicating spawn points, template name, min/max players, and custom rules.
+- Tuning timers: waiting timer (2 minutes), respawn delay, spawn protection, and team balancing behavior are configurable — adjust to fit your player base.
+
