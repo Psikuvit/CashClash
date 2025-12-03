@@ -12,6 +12,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
@@ -26,35 +27,35 @@ public class ShopGUI {
     }
 
     public static void openCategories(Player player) {
-        Inventory inv = Bukkit.createInventory(new ShopHolder(null, "categories"), 9, Messages.parse("<gold><bold>Shop</bold></gold>"));
+        Inventory inv = Bukkit.createInventory(new ShopHolder(null, "categories"), 27, Messages.parse("<gold><bold>Shop</bold></gold>"));
 
-        // Fill background with panes
         ItemStack bg = backgroundPane();
         for (int i = 0; i < inv.getSize(); i++) inv.setItem(i, bg);
 
         ShopCategory[] cats = ShopCategory.values();
-        for (int i = 0; i < cats.length && i < 7; i++) {
-            int slot = i + 1;
-
+        int slot = 10; // center 3x3
+        for (int i = 0; i < cats.length && i < 9; i++) {
             ShopCategory c = cats[i];
-            ItemStack item = new ItemStack(Material.PAPER);
-            ItemMeta meta = item.getItemMeta();
+            Material icon = getCategoryMaterial(c);
+            String desc = getCategoryDescription(c);
 
-            meta.displayName(Messages.parse("<yellow>" + c.getDisplayName() + "</yellow>"));
-            meta.lore(List.of(Messages.parse("<gray>Click to browse items</gray>")));
+            ItemStack it = new ItemStack(icon);
+            ItemMeta m = it.getItemMeta();
+            m.displayName(Messages.parse("<yellow>" + c.getDisplayName() + "</yellow>"));
+            m.lore(List.of(Messages.parse("<gray>" + desc + "</gray>"), Messages.parse("<gray>Click to browse items</gray>")));
+            it.setItemMeta(m);
+            inv.setItem(slot, it);
 
-            item.setItemMeta(meta);
-            inv.setItem(slot, item);
+            slot++;
+            if ((slot % 9) == 17) slot += 2; // keep within area
         }
 
-        // Cancel button at bottom-right of the small GUI (slot 8)
         ItemStack cancel = new ItemStack(Material.BARRIER);
         ItemMeta cm = cancel.getItemMeta();
-
         cm.displayName(Messages.parse("<red>Cancel</red>"));
         cancel.setItemMeta(cm);
+        inv.setItem(26, cancel);
 
-        inv.setItem(8, cancel);
         player.openInventory(inv);
     }
 
@@ -97,7 +98,7 @@ public class ShopGUI {
                 ItemStack it = new ItemStack(si.getMaterial(), Math.max(1, Math.min(si.getMaxStack(), 64)));
                 ItemMeta meta = it.getItemMeta();
 
-                meta.displayName(Messages.parse("<yellow>" + si.name().replace('_',' ') + "</yellow>"));
+                meta.displayName(Messages.parse("<yellow>" + si.name().replace('_', ' ') + "</yellow>"));
                 meta.lore(Arrays.asList(
                         Messages.parse("<gray>Price: <gold>$" + si.getPrice() + "</gold></gray>"),
                         Messages.parse("<gray>Max stack: <white>" + si.getMaxStack() + "</white></gray>")
@@ -110,32 +111,26 @@ public class ShopGUI {
 
         ItemStack cancel = new ItemStack(Material.BARRIER);
         ItemMeta cm = cancel.getItemMeta();
-
         cm.displayName(Messages.parse("<red>Cancel</red>"));
         cancel.setItemMeta(cm);
         inv.setItem(45, cancel);
 
-        // Decorative yellow highlight slots like the screenshot (46..50)
+        // decorative
         ItemStack yellow = new ItemStack(Material.YELLOW_STAINED_GLASS_PANE);
         ItemMeta ym = yellow.getItemMeta();
-
         ym.displayName(Messages.parse("<yellow>"));
         yellow.setItemMeta(ym);
-
         for (int i = 46; i <= 50; i++) inv.setItem(i, yellow);
 
         ItemStack undo = new ItemStack(Material.ARROW);
         ItemMeta um = undo.getItemMeta();
-
         um.displayName(Messages.parse("<yellow>Undo Purchase</yellow>"));
         um.lore(List.of(Messages.parse("<gray>Undo last purchase and receive a refund</gray>")));
         undo.setItemMeta(um);
-
         inv.setItem(49, undo);
 
         long coins = 0;
         var session = GameManager.getInstance().getPlayerSession(player);
-
         if (session != null) {
             var ccp = session.getCashClashPlayer(player.getUniqueId());
             if (ccp != null) coins = ccp.getCoins();
@@ -143,11 +138,42 @@ public class ShopGUI {
 
         ItemStack coinDisplay = new ItemStack(Material.GOLD_NUGGET);
         ItemMeta pd = coinDisplay.getItemMeta();
-
         pd.displayName(Messages.parse("<green>Coins: <gold>$" + coins + "</gold></green>"));
         coinDisplay.setItemMeta(pd);
-
         inv.setItem(53, coinDisplay);
+
         player.openInventory(inv);
+    }
+
+    private static Material getCategoryMaterial(ShopCategory category) {
+        String[] possible = {"getIcon", "getIconMaterial", "getMaterial", "icon", "material"};
+        for (String n : possible) {
+            try {
+                Method m = category.getClass().getMethod(n);
+                Object v = m.invoke(category);
+                if (v instanceof Material) return (Material) v;
+                if (v instanceof String) try { return Material.valueOf(((String) v).toUpperCase()); } catch (IllegalArgumentException ignored) {}
+            } catch (ReflectiveOperationException ignored) {}
+        }
+
+        String nm = category.name().toLowerCase();
+        if (nm.contains("enchant")) return Material.ENCHANTED_BOOK;
+        if (nm.contains("weapon")) return Material.IRON_SWORD;
+        if (nm.contains("armor")) return Material.IRON_CHESTPLATE;
+        if (nm.contains("food")) return Material.COOKED_BEEF;
+        if (nm.contains("utility")) return Material.SHIELD;
+        return Material.PAPER;
+    }
+
+    private static String getCategoryDescription(ShopCategory category) {
+        String[] possible = {"getDescription", "getDisplayDescription", "description", "desc", "getLore"};
+        for (String n : possible) {
+            try {
+                Method m = category.getClass().getMethod(n);
+                Object v = m.invoke(category);
+                if (v instanceof String) return (String) v;
+            } catch (ReflectiveOperationException ignored) {}
+        }
+        return "Browse items for " + category.getDisplayName();
     }
 }
