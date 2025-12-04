@@ -4,8 +4,11 @@ import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.command.CommandHandler;
 import me.psikuvit.cashClash.listener.*;
 import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.player.PlayerDataManager;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.sql.SQLException;
 
 public final class CashClashPlugin extends JavaPlugin {
 
@@ -17,6 +20,14 @@ public final class CashClashPlugin extends JavaPlugin {
 
         // Save default config
         saveDefaultConfig();
+
+        // Initialize player persistence
+        try {
+            PlayerDataManager.init(this);
+            getLogger().info("PlayerDataManager initialized");
+        } catch (SQLException e) {
+            getLogger().severe("Failed to initialize player storage: " + e.getMessage());
+        }
 
         ArenaManager.getInstance().initializeArenas();
 
@@ -30,9 +41,8 @@ public final class CashClashPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // Cleanup all active sessions
+        PlayerDataManager.getInstance().shutdown();
         GameManager.getInstance().shutdown();
-
 
         getLogger().info("Cash Clash has been disabled!");
     }
