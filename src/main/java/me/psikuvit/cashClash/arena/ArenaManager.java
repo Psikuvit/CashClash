@@ -82,52 +82,92 @@ public class ArenaManager {
     }
 
     /**
-     * Load templates from config (templates.<id>)
+     * Load templates from individual YAML files in templates folder
      */
     private void loadTemplates() {
-        FileConfiguration cfg = config();
-        if (!cfg.contains("templates")) return;
+        File templatesDir = new File(CashClashPlugin.getInstance().getDataFolder(), "templates");
+        if (!templatesDir.exists()) {
+            if (!templatesDir.mkdirs()) {
+                CashClashPlugin.getInstance().getLogger().warning("Could not create templates directory: " + templatesDir.getAbsolutePath());
+            }
+            return;
+        }
 
-        var section = cfg.getConfigurationSection("templates");
-        if (section == null) return;
+        File[] templateFiles = templatesDir.listFiles((dir, name) -> name.endsWith(".yml"));
+        if (templateFiles == null || templateFiles.length == 0) {
+            CashClashPlugin.getInstance().getLogger().info("No template files found in templates folder");
+            return;
+        }
 
-        for (String id : section.getKeys(false)) {
-            String worldName = section.getString(id + ".world");
-            if (worldName == null) continue;
+        for (File file : templateFiles) {
+            String id = file.getName().replace(".yml", "");
+            FileConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+
+            String worldName = cfg.getString("world");
+            if (worldName == null) {
+                CashClashPlugin.getInstance().getLogger().warning("Template " + id + " has no world configured, skipping");
+                continue;
+            }
 
             World w = Bukkit.getWorld(worldName);
             if (w == null) {
-
                 File worldFolder = new File(Bukkit.getWorldContainer(), worldName);
                 if (worldFolder.exists() && worldFolder.isDirectory()) {
-                    try { w = Bukkit.createWorld(new WorldCreator(worldName)); }
-                    catch (Exception ex) { CashClashPlugin.getInstance().getLogger().warning("Failed to load world for template " + id + ": " + ex.getMessage()); }
+                    try {
+                        w = Bukkit.createWorld(new WorldCreator(worldName));
+                    } catch (Exception ex) {
+                        CashClashPlugin.getInstance().getLogger().warning("Failed to load world for template " + id + ": " + ex.getMessage());
+                    }
                 }
             }
 
-            if (w == null) continue;
+            if (w == null) {
+                CashClashPlugin.getInstance().getLogger().warning("Could not load world '" + worldName + "' for template " + id);
+                continue;
+            }
+
             TemplateWorld tpl = new TemplateWorld(id, w);
 
-            if (cfg.contains("templates." + id + ".lobby")) {
-                tpl.setSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("templates." + id + ".lobby")));
+            // Load lobby spawn
+            if (cfg.contains("lobby")) {
+                tpl.setSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("lobby")));
             }
 
-            // load spectator
-            if (cfg.contains("templates." + id + ".spectator")) {
-                tpl.setSpectatorSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("templates." + id + ".spectator")));
+            // Load spectator spawn
+            if (cfg.contains("spectator")) {
+                tpl.setSpectatorSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("spectator")));
             }
 
-            // team spawns
-            for (int i = 0; i < 3; i++) {
-                String t1 = "templates." + id + ".team1." + i;
-                if (cfg.contains(t1)) tpl.setTeam1Spawn(i, LocationUtils.deserializeLocation(cfg.getConfigurationSection(t1)));
-                String t2 = "templates." + id + ".team2." + i;
-                if (cfg.contains(t2)) tpl.setTeam2Spawn(i, LocationUtils.deserializeLocation(cfg.getConfigurationSection(t2)));
+            // Load team spawns (up to 4 per team)
+            for (int i = 0; i < 4; i++) {
+                if (cfg.contains("team1." + i)) {
+                    tpl.setTeam1Spawn(i, LocationUtils.deserializeLocation(cfg.getConfigurationSection("team1." + i)));
+                }
+                if (cfg.contains("team2." + i)) {
+                    tpl.setTeam2Spawn(i, LocationUtils.deserializeLocation(cfg.getConfigurationSection("team2." + i)));
+                }
             }
 
-            // shop spawns
-            if (cfg.contains("templates." + id + ".shop.team1")) tpl.setTeam1ShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("templates." + id + ".shop.team1")));
-            if (cfg.contains("templates." + id + ".shop.team2")) tpl.setTeam2ShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("templates." + id + ".shop.team2")));
+            // Load shop spawns
+            if (cfg.contains("shop.team1")) {
+                tpl.setTeam1ShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("shop.team1")));
+            }
+            if (cfg.contains("shop.team2")) {
+                tpl.setTeam2ShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("shop.team2")));
+            }
+
+            // Load villager spawn points
+            if (cfg.contains("villagers")) {
+                var villagersSection = cfg.getConfigurationSection("villagers");
+                if (villagersSection != null) {
+                    for (String key : villagersSection.getKeys(false)) {
+                        Location loc = LocationUtils.deserializeLocation(villagersSection.getConfigurationSection(key));
+                        if (loc != null) {
+                            tpl.addVillagerSpawnPoint(loc);
+                        }
+                    }
+                }
+            }
 
             templates.put(id, tpl);
             CashClashPlugin.getInstance().getLogger().info("Loaded template: " + id + " -> " + w.getName());
@@ -135,40 +175,68 @@ public class ArenaManager {
     }
 
     /**
-     * Persist a template entry (world + lobby spawn) to config
+     * Persist a template to its own YAML file in templates folder
      */
     public void saveTemplate(String id) {
         TemplateWorld tpl = templates.get(id);
         if (tpl == null) return;
-        FileConfiguration cfg = config();
 
-        String base = "templates." + id;
-        cfg.set(base + ".world", tpl.getWorld() != null ? tpl.getWorld().getName() : null);
-
-        if (tpl.getLobbySpawn() != null) LocationUtils.serializeLocation(cfg, base + ".lobby", tpl.getLobbySpawn());
-        else cfg.set(base + ".lobby", null);
-
-        if (tpl.getSpectatorSpawn() != null) LocationUtils.serializeLocation(cfg, base + ".spectator", tpl.getSpectatorSpawn());
-        else cfg.set(base + ".spectator", null);
-
-        for (int i = 0; i < 3; i++) {
-            Location t1 = tpl.getTeam1Spawn(i);
-            if (t1 != null) LocationUtils.serializeLocation(cfg, base + ".team1." + i, t1);
-            else cfg.set(base + ".team1." + i, null);
-
-            Location t2 = tpl.getTeam2Spawn(i);
-            if (t2 != null) LocationUtils.serializeLocation(cfg, base + ".team2." + i, t2);
-            else cfg.set(base + ".team2." + i, null);
+        File templatesDir = new File(CashClashPlugin.getInstance().getDataFolder(), "templates");
+        if (!templatesDir.exists()) {
+            if (!templatesDir.mkdirs()) {
+                CashClashPlugin.getInstance().getLogger().warning("Could not create templates directory");
+                return;
+            }
         }
 
-        if (tpl.getTeam1ShopSpawn() != null) LocationUtils.serializeLocation(cfg, base + ".shop.team1", tpl.getTeam1ShopSpawn());
-        else cfg.set(base + ".shop.team1", null);
+        File file = new File(templatesDir, id + ".yml");
+        FileConfiguration cfg = new YamlConfiguration();
 
-        if (tpl.getTeam2ShopSpawn() != null) LocationUtils.serializeLocation(cfg, base + ".shop.team2", tpl.getTeam2ShopSpawn());
-        else cfg.set(base + ".shop.team2", null);
+        cfg.set("world", tpl.getWorld() != null ? tpl.getWorld().getName() : null);
 
-        CashClashPlugin.getInstance().saveConfig();
-        CashClashPlugin.getInstance().getLogger().info("Saved template: " + id);
+        if (tpl.getLobbySpawn() != null) {
+            LocationUtils.serializeLocation(cfg, "lobby", tpl.getLobbySpawn());
+        }
+
+        if (tpl.getSpectatorSpawn() != null) {
+            LocationUtils.serializeLocation(cfg, "spectator", tpl.getSpectatorSpawn());
+        }
+
+        for (int i = 0; i < 4; i++) {
+            Location t1 = tpl.getTeam1Spawn(i);
+            if (t1 != null) {
+                LocationUtils.serializeLocation(cfg, "team1." + i, t1);
+            }
+
+            Location t2 = tpl.getTeam2Spawn(i);
+            if (t2 != null) {
+                LocationUtils.serializeLocation(cfg, "team2." + i, t2);
+            }
+        }
+
+        if (tpl.getTeam1ShopSpawn() != null) {
+            LocationUtils.serializeLocation(cfg, "shop.team1", tpl.getTeam1ShopSpawn());
+        }
+
+        if (tpl.getTeam2ShopSpawn() != null) {
+            LocationUtils.serializeLocation(cfg, "shop.team2", tpl.getTeam2ShopSpawn());
+        }
+
+        // Save villager spawn points
+        int index = 0;
+        for (Location villagerLoc : tpl.getVillagersSpawnPoint()) {
+            if (villagerLoc != null) {
+                LocationUtils.serializeLocation(cfg, "villagers." + index, villagerLoc);
+                index++;
+            }
+        }
+
+        try {
+            cfg.save(file);
+            CashClashPlugin.getInstance().getLogger().info("Saved template: " + id + " to " + file.getName());
+        } catch (IOException e) {
+            CashClashPlugin.getInstance().getLogger().warning("Failed to save template " + id + ": " + e.getMessage());
+        }
     }
 
     // Template management
@@ -270,16 +338,6 @@ public class ArenaManager {
             && playerCount < maxPlayers;
     }
 
-    /**
-     * Find a configured arena (used as a template)
-     */
-    private Arena findConfiguredArena() {
-        return arenas.values().stream()
-            .filter(Arena::isReady)
-            .findFirst()
-            .orElse(null);
-    }
-
     public Arena getArena(String name) {
         return arenas.values().stream()
             .filter(a -> a.getName().equalsIgnoreCase(name))
@@ -353,10 +411,6 @@ public class ArenaManager {
         } catch (IOException e) {
             CashClashPlugin.getInstance().getLogger().warning("Failed to save arena file: " + f.getAbsolutePath() + " - " + e.getMessage());
         }
-    }
-
-    private Location deserializeLocation(org.bukkit.configuration.ConfigurationSection section) {
-        return LocationUtils.deserializeLocation(section);
     }
 
     /**

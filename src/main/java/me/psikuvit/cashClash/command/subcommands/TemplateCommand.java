@@ -226,7 +226,10 @@ public class TemplateCommand extends AbstractArgCommand {
                 Messages.send(player, "<green>Spectator spawn set for template '" + templateId + "'</green>");
             }
             case "shop" -> {
-                if (args.length < 4) { Messages.send(player, "<red>Usage: /cc template set <templateId> shop <team1|team2></red>"); return; }
+                if (args.length < 4) {
+                    Messages.send(player, "<red>Usage: /cc template set <templateId> shop <team1|team2></red>");
+                    return;
+                }
                 String team = args[3].toLowerCase(Locale.ROOT);
 
                 if ("team1".equals(team)) {
@@ -235,7 +238,10 @@ public class TemplateCommand extends AbstractArgCommand {
                 } else if ("team2".equals(team)) {
                     tpl.setTeam2ShopSpawn(stored);
                     Messages.send(player, "<green>Set shop spawn for team2 on template '" + templateId + "'</green>");
-                } else { Messages.send(player, "<red>Invalid shop team. Use team1 or team2.</red>"); return; }
+                } else {
+                    Messages.send(player, "<red>Invalid shop team. Use team1 or team2.</red>");
+                    return;
+                }
             }
             case "team1", "team2" -> {
                 if (args.length < 4) { Messages.send(player, "<red>Usage: /cc template set <templateId> " + type + " <1|2|3></red>"); return; }
@@ -243,12 +249,12 @@ public class TemplateCommand extends AbstractArgCommand {
                 try {
                     idx = Integer.parseInt(args[3]);
                 } catch (NumberFormatException ex) {
-                    Messages.send(player, "<red>Index must be 1,2 or 3</red>");
+                    Messages.send(player, "<red>Index must be 1,2,3 or 4</red>");
                     return;
                 }
 
                 if (idx < 1 || idx > 4) {
-                    Messages.send(player, "<red>Index must be 1,2 or 3</red>");
+                    Messages.send(player, "<red>Index must be 1,2,3 or 4</red>");
                     return;
                 }
                 if ("team1".equals(type)) tpl.setTeam1Spawn(idx - 1, stored); else tpl.setTeam2Spawn(idx - 1, stored);

@@ -18,18 +18,21 @@ public class TemplateWorld {
     private Location lobbySpawn;
     private Location spectatorSpawn;
 
-    // Team spawn lists (template-space locations) - allow up to 3 per team
-    private final List<Location> team1Spawns = new ArrayList<>();
-    private final List<Location> team2Spawns = new ArrayList<>();
+    private final List<Location> team1Spawns;
+    private final List<Location> team2Spawns;
 
     // Shop spawn points for each team (template-space)
     private Location team1ShopSpawn;
     private Location team2ShopSpawn;
-    private final List<Location> villagersSpawnPoint = new ArrayList<>();
+    private final List<Location> villagersSpawnPoint;
 
     public TemplateWorld(String id, World world) {
         this.id = id;
         this.world = world;
+        this.team1Spawns = new ArrayList<>();
+        this.team2Spawns = new ArrayList<>();
+        this.villagersSpawnPoint = new ArrayList<>();
+
     }
 
     public String getId() {
