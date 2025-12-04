@@ -184,7 +184,7 @@ public class TemplateCommand extends AbstractArgCommand {
         Messages.send(player, "<yellow>World: </yellow><gray>" + tpl.getWorld().getName() + "</gray>");
         Messages.send(player, "<yellow>Lobby spawn: </yellow>" + (tpl.getLobbySpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getLobbySpawn()) + "</gray>"));
         Messages.send(player, "<yellow>Spectator: </yellow>" + (tpl.getSpectatorSpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getSpectatorSpawn()) + "</gray>"));
-        Messages.send(player, "<yellow>Shops: </yellow>" + (tpl.getVillagersSpawnPoint().size() + "</gray>") );
+        Messages.send(player, "<yellow>Shops: </yellow><gray>" + (tpl.getVillagersSpawnPoint().size() + "</gray>") );
 
         for (int i = 0; i < 3; i++) {
             Messages.send(player, "<yellow>Team1 spawn #" + (i+1) + ": </yellow>" + (tpl.getTeam1Spawn(i) == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeam1Spawn(i)) + "</gray>"));
@@ -247,7 +247,7 @@ public class TemplateCommand extends AbstractArgCommand {
                     return;
                 }
 
-                if (idx < 1 || idx > 3) {
+                if (idx < 1 || idx > 4) {
                     Messages.send(player, "<red>Index must be 1,2 or 3</red>");
                     return;
                 }
