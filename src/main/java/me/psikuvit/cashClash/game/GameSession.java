@@ -27,10 +27,9 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.Collections;
 import java.util.Collection;
 import java.util.Random;
 
@@ -185,8 +184,16 @@ public class GameSession {
 
             if (countdownSecondsRemaining <= 0) {
                 Messages.broadcast(players.keySet(), "<green>Starting game now!</green>");
+
+                players.keySet()
+                        .stream()
+                        .map(Bukkit::getPlayer)
+                        .filter(Objects::nonNull)
+                        .forEach(player -> {
+                            int teamNum = team1.hasPlayer(player.getUniqueId()) ? 1 : 2;
+                            Messages.send(player, "<yellow>You have been assigned to Team <gray>" + teamNum + "</gray></yellow>");
+                        });
                 cancelStartCountdown();
-                finalizeTeamsRandomly();
                 start();
                 return;
             }
@@ -203,56 +210,8 @@ public class GameSession {
         }
     }
 
-    public boolean isStartingCountdown() { return startingCountdown; }
-
-    /**
-     * Reassign teams randomly and evenly from current players collection.
-     */
-    public synchronized void finalizeTeamsRandomly() {
-        List<UUID> list = new ArrayList<>(players.keySet());
-        Collections.shuffle(list);
-
-        team1.getPlayers().clear();
-        team2.getPlayers().clear();
-
-        // Determine team capacity from config (max players split evenly)
-        int maxPlayers = ConfigManager.getInstance().getMaxPlayers();
-        int capacityPerTeam = Math.max(1, maxPlayers / 2);
-
-        boolean nextPreferTeam1 = true; // used to alternate when teams are balanced
-
-        for (UUID u : list) {
-            int size1 = team1.getSize();
-            int size2 = team2.getSize();
-
-            boolean team1HasRoom = size1 < capacityPerTeam;
-            boolean team2HasRoom = size2 < capacityPerTeam;
-
-            if (team1HasRoom && team2HasRoom) {
-                if (size1 < size2) team1.addPlayer(u);
-                else if (size2 < size1) team2.addPlayer(u);
-                else {
-                    if (nextPreferTeam1) {
-                        team1.addPlayer(u);
-                        nextPreferTeam1 = false;
-                    } else {
-                        team2.addPlayer(u);
-                        nextPreferTeam1 = true;
-                    }
-                }
-            } else if (team1HasRoom) team1.addPlayer(u);
-            else if (team2HasRoom) team2.addPlayer(u);
-            else team1.addPlayer(u);
-        }
-
-        // Notify players of their team assignment
-        for (UUID u : list) {
-            Player p = Bukkit.getPlayer(u);
-            if (p != null && p.isOnline()) {
-                int teamNum = team1.hasPlayer(u) ? 1 : 2;
-                Messages.send(p, "<yellow>You have been assigned to Team <gray>" + teamNum + "</gray></yellow>");
-            }
-        }
+    public boolean isStartingCountdown() {
+        return startingCountdown;
     }
 
     public void startCombatPhase() {
