@@ -24,7 +24,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -167,18 +166,25 @@ public class GameSession {
 
         int minPlayers = ConfigManager.getInstance().getMinPlayers();
 
-        broadcastToSession("<yellow>Minimum players reached! Starting game in <gold>" + seconds + "s</gold>. Join now!</yellow>");
+        Messages.broadcast(players.keySet(), "<yellow>Minimum players reached! Starting game in <gold>" + seconds + "s</gold>. Join now!</yellow>");
 
         startCountdownTask = Bukkit.getScheduler().runTaskTimer(CashClashPlugin.getInstance(), () -> {
-            if (state != GameState.WAITING) { cancelStartCountdown(); return; }
+            if (state != GameState.WAITING) {
+                cancelStartCountdown();
+                return;
+            }
 
             int count = players.size();
-            if (count < minPlayers) { broadcastToSession("<red>Not enough players, starting countdown cancelled.</red>"); cancelStartCountdown(); return; }
+            if (count < minPlayers) {
+                Messages.broadcast(players.keySet(), "<red>Not enough players, starting countdown cancelled.</red>");
+                cancelStartCountdown();
+                return;
+            }
 
-            if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10) broadcastToSession("<yellow>Game starting in <gold>" + countdownSecondsRemaining + "s</gold>...</yellow>");
+            if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10) Messages.broadcast(players.keySet(), "<yellow>Game starting in <gold>" + countdownSecondsRemaining + "s</gold>...</yellow>");
 
             if (countdownSecondsRemaining <= 0) {
-                broadcastToSession("<green>Starting game now!</green>");
+                Messages.broadcast(players.keySet(), "<green>Starting game now!</green>");
                 cancelStartCountdown();
                 finalizeTeamsRandomly();
                 start();
@@ -307,7 +313,10 @@ public class GameSession {
 
     public void nextRound() {
         currentRound++;
-        if (currentRound > 5) { end(); return; }
+        if (currentRound > 5) {
+            end();
+            return;
+        }
 
         currentRoundData = new RoundData(currentRound, players.keySet());
         players.values().forEach(p -> p.initializeRound(currentRound));
@@ -462,7 +471,7 @@ public class GameSession {
         if (team.getForfeitStartTime() == 0L) team.setForfeitStartTime(now);
         team.addForfeitVote(requester.getUniqueId());
 
-        broadcastToTeam(team, "<yellow>Forfeit vote started by " + requester.getName() + " - agreement required by all teammates. Type /cc forfeit to vote.</yellow>");
+        Messages.broadcastToTeam(team, "<yellow>Forfeit vote started by " + requester.getName() + " - agreement required by all teammates. Type /cc forfeit to vote.</yellow>");
         if (team.hasAllForfeitVotes()) executeForfeit(team);
     }
 
@@ -474,7 +483,7 @@ public class GameSession {
         }
 
         team.addForfeitVote(voter.getUniqueId());
-        broadcastToTeam(team, "<yellow>" + voter.getName() + " has voted to forfeit. (" + team.getForfeitVotes().size() + "/" + team.getSize() + ")</yellow>");
+        Messages.broadcastToTeam(team, "<yellow>" + voter.getName() + " has voted to forfeit. (" + team.getForfeitVotes().size() + "/" + team.getSize() + ")</yellow>");
         if (team.hasAllForfeitVotes()) executeForfeit(team);
     }
 
@@ -493,23 +502,10 @@ public class GameSession {
             if (p != null) p.addCoins(bonus);
         });
 
-        broadcastToSession("<gold>Team " + forfeitingTeam.getTeamNumber() + " has chosen to forfeit the round. Team " + other.getTeamNumber() + " earns " + bonus + " each.</gold>");
+        Messages.broadcast(players.keySet(), "<gold>Team " + forfeitingTeam.getTeamNumber() + " has chosen to forfeit the round. Team " + other.getTeamNumber() + " earns " + bonus + " each.</gold>");
         if (roundManager != null) roundManager.endCombatPhase();
     }
 
-    private void broadcastToTeam(Team team, String message) {
-        team.getPlayers().forEach(uuid -> {
-            var p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline()) Messages.send(p, message);
-        });
-    }
-
-    private void broadcastToSession(String message) {
-        players.keySet().forEach(uuid -> {
-            var p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline()) Messages.send(p, message);
-        });
-    }
 
     private Kit getRandomKit() {
         Kit[] kits = Kit.values();

@@ -12,8 +12,6 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-import net.kyori.adventure.text.Component;
-
 import java.util.UUID;
 
 /**
@@ -30,11 +28,10 @@ public class RoundManager {
     }
 
     public void startShoppingPhase(int roundNumber) {
-        ConfigManager config = ConfigManager.getInstance();
-        timeRemaining = config.getShoppingPhaseDuration();
+        timeRemaining = ConfigManager.getInstance().getShoppingPhaseDuration();
 
-        broadcastToSession("<yellow><bold>Round " + roundNumber + " - Shopping Phase!</bold></yellow>");
-        broadcastToSession("<gray>You have <yellow>" + timeRemaining + " seconds </yellow><gray>to shop!</gray>");
+        Messages.broadcastWithPrefix(session.getPlayers(), "<yellow><bold>Round " + roundNumber + " - Shopping Phase!</bold></yellow>");
+        Messages.broadcastWithPrefix(session.getPlayers(), "<gray>You have <yellow>" + timeRemaining + " seconds </yellow><gray>to shop!</gray>");
 
         Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
         if (arena != null && session.getGameWorld() != null) {
@@ -71,7 +68,7 @@ public class RoundManager {
             if (timeRemaining <= 0) {
                 endShoppingPhase();
             } else if (timeRemaining <= 10 || timeRemaining % 30 == 0) {
-                broadcastToSession("<yellow>" + timeRemaining + " seconds remaining!</yellow>");
+                Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>" + timeRemaining + " seconds remaining!</yellow>");
             }
         }, 0, 20L); // Run every second
     }
@@ -82,7 +79,7 @@ public class RoundManager {
             phaseTask = null;
         }
 
-        broadcastToSession("<red><bold>Combat Phase Starting!</bold></red>");
+        Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Combat Phase Starting!</bold></red>");
         session.startCombatPhase();
         startCombatPhase();
     }
@@ -98,7 +95,7 @@ public class RoundManager {
             if (timeRemaining <= 0) {
                 endCombatPhase();
             } else if (timeRemaining <= 10 || timeRemaining % 60 == 0) {
-                broadcastToSession("<yellow>" + timeRemaining + " seconds remaining!</yellow>");
+                Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>" + timeRemaining + " seconds remaining!</yellow>");
             }
 
             // Check win conditions
@@ -112,7 +109,7 @@ public class RoundManager {
             phaseTask = null;
         }
 
-        broadcastToSession("<yellow>Round " + session.getCurrentRound() + " ended!</yellow>");
+        Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>Round " + session.getCurrentRound() + " ended!</yellow>");
 
         // Award bonuses
         // TODO: Implement bonus calculation and awarding
@@ -139,25 +136,14 @@ public class RoundManager {
             .count();
 
         if (team1Alive == 0) {
-            broadcastToSession("<red><bold>Team 2 wins the round!</bold></red>");
+            Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team 2 wins the round!</bold></red>");
             endCombatPhase();
         } else if (team2Alive == 0) {
-            broadcastToSession("<red><bold>Team 1 wins the round!</bold></red>");
+            Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team 1 wins the round!</bold></red>");
             endCombatPhase();
         }
     }
 
-    private void broadcastToSession(String message) {
-        String full = ConfigManager.getInstance().getPrefix() + " " + message;
-        Component comp = Messages.parse(full);
-
-        session.getPlayers().forEach(uuid -> {
-            var player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline()) {
-                Messages.send(player, comp);
-            }
-        });
-    }
 
     public void cleanup() {
         if (phaseTask != null) {
