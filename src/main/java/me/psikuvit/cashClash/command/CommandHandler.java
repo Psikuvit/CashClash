@@ -46,6 +46,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new ArenasCommand());
         registerSubcommand(new TemplateCommand());
         registerSubcommand(new ArenaCommand());
+        registerSubcommand(new StatsCommand());
     }
 
     public void registerSubcommand(AbstractArgCommand cmd) {
@@ -109,5 +110,9 @@ public class CommandHandler extends Command {
         Messages.send(sender, "<yellow>/cc transfer <gray>- Transfer money to a teammate</gray>");
         Messages.send(sender, "<yellow>/cc arena <gray>- Arena admin actions (tp,set,assign)</gray>");
         Messages.send(sender, "<yellow>/cc template <gray>- Template world management (admin)</gray>");
+        Messages.send(sender, "<yellow>/cc stop <gray>- Stop an ongoing game (admin)</gray>");
+        Messages.send(sender, "<yellow>/cc setlobby <gray>- Set the lobby spawn point (admin)</gray>");
+        Messages.send(sender, "<yellow>/cc shop <gray>- Open the in-game shop</gray>");
+        Messages.send(sender, "<yellow>/cc stats- <gray>- View or reset player stats</gray>");
     }
 }
