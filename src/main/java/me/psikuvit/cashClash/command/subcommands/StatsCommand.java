@@ -9,12 +9,13 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class StatsCommand extends AbstractArgCommand {
-    public StatsCommand()
-    {
+    public StatsCommand() {
         super("stats", List.of(), null);
     }
 
@@ -65,5 +66,36 @@ public class StatsCommand extends AbstractArgCommand {
 
         Messages.send(sender, "<red>Invalid stats command usage.</red>");
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull String[] args) {
+        List<String> out = new ArrayList<>();
+
+        if (args.length == 1) {
+            String token = args[0].toLowerCase();
+            if ("reset".startsWith(token)) {
+                out.add("reset");
+            }
+
+            return out;
+        }
+
+        if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("reset")) {
+                String token = args[1].toLowerCase();
+                out.addAll(
+                    Bukkit.getOnlinePlayers()
+                        .stream()
+                        .map(Player::getName)
+                        .filter(n -> n.toLowerCase().startsWith(token))
+                        .toList()
+                );
+            }
+
+            return out;
+        }
+
+        return out;
     }
 }
