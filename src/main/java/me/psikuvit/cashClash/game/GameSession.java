@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.manager.EconomyManager;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.manager.RoundManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.player.PlayerDataManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.config.ConfigManager;
@@ -355,8 +356,16 @@ public class GameSession {
 
         GameManager.getInstance().removeSession(sessionId);
 
-        for (UUID u : new ArrayList<>(team1.getPlayers())) team1.removePlayer(u);
-        for (UUID u : new ArrayList<>(team2.getPlayers())) team2.removePlayer(u);
+        // Persist win statistics for the winning team
+
+        if (winner != null) {
+            for (UUID u : winner.getPlayers()) {
+                PlayerDataManager.getInstance().incWins(u);
+            }
+        }
+
+        for (UUID u : team1.getPlayers()) team1.removePlayer(u);
+        for (UUID u : team2.getPlayers()) team2.removePlayer(u);
         team1.resetForfeitVotes(); team2.resetForfeitVotes();
         players.clear();
 

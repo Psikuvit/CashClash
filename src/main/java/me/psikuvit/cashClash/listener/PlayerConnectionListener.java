@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.arena.ArenaManager;
+import me.psikuvit.cashClash.player.PlayerDataManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
@@ -27,6 +28,8 @@ public class PlayerConnectionListener implements Listener {
         player.getActivePotionEffects().forEach(effect ->
             player.removePotionEffect(effect.getType())
         );
+
+        PlayerDataManager.getInstance().getOrLoadData(player.getUniqueId());
 
         // Teleport to configured server lobby spawn if present
         var lobbyLoc = ArenaManager.getInstance().getServerLobbySpawn();

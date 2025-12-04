@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.manager.EconomyManager;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.player.BonusType;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.player.PlayerDataManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -43,6 +44,10 @@ public class DeathListener implements Listener {
         event.setKeepLevel(true);
         event.setDroppedExp(0);
 
+        // Increment persistent death count
+        PlayerDataManager.getInstance().incDeaths(player.getUniqueId());
+
+
         victim.handleDeath();
         session.getCurrentRoundData().removeLife(player.getUniqueId());
 
@@ -51,6 +56,10 @@ public class DeathListener implements Listener {
         if (killer != null) {
             CashClashPlayer killerCCP = session.getCashClashPlayer(killer.getUniqueId());
             if (killerCCP != null) {
+                // Increment persistent kill count for killer
+                PlayerDataManager.getInstance().incKills(killer.getUniqueId());
+
+
                 handleKillRewards(session, killerCCP, victim);
 
                 armorManager.onPlayerKill(killer);
@@ -64,6 +73,7 @@ public class DeathListener implements Listener {
             TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
             spectatorLoc = tpl.getSpectatorSpawn();
         }
+
         if (spectatorLoc == null ) spectatorLoc = session.getGameWorld().getSpawnLocation();
 
         // If out of lives -> permanently spectator for this round
