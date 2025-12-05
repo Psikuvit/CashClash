@@ -9,10 +9,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
@@ -27,35 +28,80 @@ public class ShopGUI {
     }
 
     public static void openCategories(Player player) {
-        Inventory inv = Bukkit.createInventory(new ShopHolder(null, "categories"), 27, Messages.parse("<gold><bold>Shop</bold></gold>"));
+        Inventory inv = Bukkit.createInventory(new ShopHolder(null, "categories"), 54, Messages.parse("<gold><bold>Shop</bold></gold>"));
 
         ItemStack bg = backgroundPane();
         for (int i = 0; i < inv.getSize(); i++) inv.setItem(i, bg);
 
-        ShopCategory[] cats = ShopCategory.values();
-        int slot = 10; // center 3x3
-        for (int i = 0; i < cats.length && i < 9; i++) {
-            ShopCategory c = cats[i];
-            Material icon = getCategoryMaterial(c);
-            String desc = getCategoryDescription(c);
+        ItemStack weapons = new ItemStack(Material.IRON_SWORD);
+        ItemMeta weaponsItemMeta = weapons.getItemMeta();
+        weaponsItemMeta.displayName(Messages.parse("<yellow>" + ShopCategory.WEAPONS.getDisplayName() + "</yellow>"));
+        weaponsItemMeta.lore(List.of(Messages.parse("<gray>Click to browse items</gray>")));
+        weapons.setItemMeta(weaponsItemMeta);
+        inv.setItem(10, weapons);
 
-            ItemStack it = new ItemStack(icon);
-            ItemMeta m = it.getItemMeta();
-            m.displayName(Messages.parse("<yellow>" + c.getDisplayName() + "</yellow>"));
-            m.lore(List.of(Messages.parse("<gray>" + desc + "</gray>"), Messages.parse("<gray>Click to browse items</gray>")));
-            it.setItemMeta(m);
-            inv.setItem(slot, it);
+        ItemStack armor = new ItemStack(Material.IRON_CHESTPLATE);
+        ItemMeta armorItemMeta = armor.getItemMeta();
+        armorItemMeta.displayName(Messages.parse("<yellow>" + ShopCategory.ARMOR.getDisplayName() + "</yellow>"));
+        armorItemMeta.lore(List.of(Messages.parse("<gray>Click to browse items</gray>")));
+        armor.setItemMeta(armorItemMeta);
+        inv.setItem(11, armor);
 
-            slot++;
-            if ((slot % 9) == 17) slot += 2; // keep within area
-        }
+        ItemStack food = new ItemStack(Material.COOKED_BEEF);
+        ItemMeta foodItemMeta = food.getItemMeta();
+        foodItemMeta.displayName(Messages.parse("<yellow>" + ShopCategory.FOOD.getDisplayName() + "</yellow>"));
+        foodItemMeta.lore(List.of(Messages.parse("<gray>Click to browse items</gray>")));
+        food.setItemMeta(foodItemMeta);
+        inv.setItem(12, food);
+
+        ItemStack utility = new ItemStack(Material.COBWEB);
+        ItemMeta utilityItemMeta = utility.getItemMeta();
+        utilityItemMeta.displayName(Messages.parse("<yellow>" + ShopCategory.UTILITY.getDisplayName() + "</yellow>"));
+        utilityItemMeta.lore(List.of(Messages.parse("<gray>Click to browse items</gray>")));
+        utility.setItemMeta(utilityItemMeta);
+        inv.setItem(13, utility);
+
+        ItemStack customItems = new ItemStack(Material.NAME_TAG);
+        ItemMeta customItemsItemMeta = customItems.getItemMeta();
+        customItemsItemMeta.displayName(Messages.parse("<yellow>" + ShopCategory.CUSTOM_ITEMS.getDisplayName() + "</yellow>"));
+        customItemsItemMeta.lore(List.of(Messages.parse("<gray>Click to browse items</gray>")));
+        customItems.setItemMeta(customItemsItemMeta);
+        inv.setItem(14, customItems);
+
+        ItemStack enchants = new ItemStack(Material.ENCHANTED_BOOK);
+        ItemMeta enchantsItemMeta = enchants.getItemMeta();
+        enchantsItemMeta.displayName(Messages.parse("<yellow>" + ShopCategory.ENCHANTS.getDisplayName() + "</yellow>"));
+        enchantsItemMeta.lore(List.of(Messages.parse("<gray>Click to browse items</gray>")));
+        enchants.setItemMeta(enchantsItemMeta);
+        inv.setItem(15, enchants);
+
+        ItemStack mapModifiers = new ItemStack(Material.GRASS_BLOCK);
+        ItemMeta mapModifiersItemMeta = mapModifiers.getItemMeta();
+        mapModifiersItemMeta.displayName(Messages.parse("<yellow>Soon!</yellow>"));
+        mapModifiers.setItemMeta(mapModifiersItemMeta);
+        inv.setItem(16, mapModifiers);
+
+        ItemStack bundle = new ItemStack(Material.BUNDLE);
+        BundleMeta bundleItemMeta = (BundleMeta) bundle.getItemMeta();
+        bundleItemMeta.displayName(Messages.parse("<yellow>" + ShopCategory.INVESTMENTS + "</yellow>"));
+        bundleItemMeta.lore(List.of(Messages.parse("<gray>Click to browse investments</gray>")));
+        bundleItemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        bundle.setItemMeta(bundleItemMeta);
+        inv.setItem(22, bundle);
+
+        ItemStack coins = new ItemStack(Material.GOLD_NUGGET);
+        ItemMeta coinsMeta = coins.getItemMeta();
+        coinsMeta.displayName(Messages.parse("<yellow>Your Balance: <gray>"
+                + GameManager.getInstance().getPlayerSession(player).getCashClashPlayer(player.getUniqueId()).getCoins()
+                + "</gray></yellow>"));
+        coins.setItemMeta(coinsMeta);
+        inv.setItem(53, coins);
 
         ItemStack cancel = new ItemStack(Material.BARRIER);
         ItemMeta cm = cancel.getItemMeta();
         cm.displayName(Messages.parse("<red>Cancel</red>"));
         cancel.setItemMeta(cm);
-        inv.setItem(26, cancel);
-
+        inv.setItem(45, cancel);
         player.openInventory(inv);
     }
 
@@ -98,7 +144,7 @@ public class ShopGUI {
                 ItemStack it = new ItemStack(si.getMaterial(), Math.max(1, Math.min(si.getMaxStack(), 64)));
                 ItemMeta meta = it.getItemMeta();
 
-                meta.displayName(Messages.parse("<yellow>" + si.name().replace('_', ' ') + "</yellow>"));
+                meta.displayName(Messages.parse("<yellow>" + si.name().replace('_',' ') + "</yellow>"));
                 meta.lore(Arrays.asList(
                         Messages.parse("<gray>Price: <gold>$" + si.getPrice() + "</gold></gray>"),
                         Messages.parse("<gray>Max stack: <white>" + si.getMaxStack() + "</white></gray>")
@@ -111,26 +157,32 @@ public class ShopGUI {
 
         ItemStack cancel = new ItemStack(Material.BARRIER);
         ItemMeta cm = cancel.getItemMeta();
+
         cm.displayName(Messages.parse("<red>Cancel</red>"));
         cancel.setItemMeta(cm);
         inv.setItem(45, cancel);
 
-        // decorative
+        // Decorative yellow highlight slots like the screenshot (46..50)
         ItemStack yellow = new ItemStack(Material.YELLOW_STAINED_GLASS_PANE);
         ItemMeta ym = yellow.getItemMeta();
+
         ym.displayName(Messages.parse("<yellow>"));
         yellow.setItemMeta(ym);
+
         for (int i = 46; i <= 50; i++) inv.setItem(i, yellow);
 
         ItemStack undo = new ItemStack(Material.ARROW);
         ItemMeta um = undo.getItemMeta();
+
         um.displayName(Messages.parse("<yellow>Undo Purchase</yellow>"));
         um.lore(List.of(Messages.parse("<gray>Undo last purchase and receive a refund</gray>")));
         undo.setItemMeta(um);
+
         inv.setItem(49, undo);
 
         long coins = 0;
         var session = GameManager.getInstance().getPlayerSession(player);
+
         if (session != null) {
             var ccp = session.getCashClashPlayer(player.getUniqueId());
             if (ccp != null) coins = ccp.getCoins();
@@ -138,42 +190,12 @@ public class ShopGUI {
 
         ItemStack coinDisplay = new ItemStack(Material.GOLD_NUGGET);
         ItemMeta pd = coinDisplay.getItemMeta();
+
         pd.displayName(Messages.parse("<green>Coins: <gold>$" + coins + "</gold></green>"));
         coinDisplay.setItemMeta(pd);
-        inv.setItem(53, coinDisplay);
 
+        inv.setItem(53, coinDisplay);
         player.openInventory(inv);
     }
-
-    private static Material getCategoryMaterial(ShopCategory category) {
-        String[] possible = {"getIcon", "getIconMaterial", "getMaterial", "icon", "material"};
-        for (String n : possible) {
-            try {
-                Method m = category.getClass().getMethod(n);
-                Object v = m.invoke(category);
-                if (v instanceof Material) return (Material) v;
-                if (v instanceof String) try { return Material.valueOf(((String) v).toUpperCase()); } catch (IllegalArgumentException ignored) {}
-            } catch (ReflectiveOperationException ignored) {}
-        }
-
-        String nm = category.name().toLowerCase();
-        if (nm.contains("enchant")) return Material.ENCHANTED_BOOK;
-        if (nm.contains("weapon")) return Material.IRON_SWORD;
-        if (nm.contains("armor")) return Material.IRON_CHESTPLATE;
-        if (nm.contains("food")) return Material.COOKED_BEEF;
-        if (nm.contains("utility")) return Material.SHIELD;
-        return Material.PAPER;
-    }
-
-    private static String getCategoryDescription(ShopCategory category) {
-        String[] possible = {"getDescription", "getDisplayDescription", "description", "desc", "getLore"};
-        for (String n : possible) {
-            try {
-                Method m = category.getClass().getMethod(n);
-                Object v = m.invoke(category);
-                if (v instanceof String) return (String) v;
-            } catch (ReflectiveOperationException ignored) {}
-        }
-        return "Browse items for " + category.getDisplayName();
-    }
 }
+
