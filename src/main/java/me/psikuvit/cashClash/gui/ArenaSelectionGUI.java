@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -19,7 +20,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * GUI for browsing and joining arenas
@@ -169,10 +169,11 @@ public class ArenaSelectionGUI {
         session.addPlayer(player, teamNumber);
         gameManager.addPlayerToSession(player, session);
 
-        // Teleport player to the template lobby if available
+        // Teleport player to the copied world's lobby spawn
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
-        if (tpl != null && tpl.isConfigured() && tpl.getLobbySpawn() != null) {
-            player.teleport(tpl.getLobbySpawn());
+        if (tpl != null && tpl.isConfigured() && tpl.getLobbySpawn() != null && session.getGameWorld() != null) {
+            Location lobbyInCopiedWorld = LocationUtils.adjustLocationToWorld(tpl.getLobbySpawn(), session.getGameWorld());
+            player.teleport(lobbyInCopiedWorld);
         }
 
         int newPlayerCount = arenaManager.getArenaPlayerCount(arenaNumber);

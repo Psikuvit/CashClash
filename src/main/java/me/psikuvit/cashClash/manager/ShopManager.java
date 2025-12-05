@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.shop;
+package me.psikuvit.cashClash.manager;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.TemplateWorld;
@@ -6,7 +6,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.gui.ShopGUI;
-import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -51,35 +51,58 @@ public class ShopManager {
      */
     public void createShopsForSession(GameSession session) {
         Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
-        if (arena == null) return;
+        if (arena == null) {
+            CashClashPlugin.getInstance().getLogger().warning("Cannot create shops: Arena not found for session " + session.getSessionId());
+            return;
+        }
 
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
-        if (tpl == null) return; // template not configured
+        if (tpl == null) {
+            CashClashPlugin.getInstance().getLogger().warning("Cannot create shops: Template not configured for arena " + arena.getName());
+            return;
+        }
 
         World world = session.getGameWorld();
-        if (world == null) return;
+        if (world == null) {
+            CashClashPlugin.getInstance().getLogger().warning("Cannot create shops: Game world not found for session " + session.getSessionId());
+            return;
+        }
+
+        List<Location> villagerSpawns = tpl.getVillagersSpawnPoint();
+        if (villagerSpawns.isEmpty()) {
+            CashClashPlugin.getInstance().getLogger().warning("No villager spawn points configured for template " + tpl.getId());
+            return;
+        }
 
         List<UUID> spawned = new ArrayList<>();
 
-        for (Location location : tpl.getVillagersSpawnPoint()) {
-            world.spawn(location, Villager.class, villager -> {
-                villager.setInvulnerable(true);
-                villager.setAI(false);
-                villager.setSilent(true);
-                villager.setPersistent(true);
-                // set a Component name and disable italics using Messages.parse
-                Component comp = Messages.parse("<green>Shop - Team 1</green>");
-                villager.customName(comp);
+        for (Location templateLoc : villagerSpawns) {
+            // Adjust location to the copied world
+            Location spawnLoc = LocationUtils.adjustLocationToWorld(templateLoc, world);
 
-                villager.getPersistentDataContainer().set(shopKey, PersistentDataType.BYTE, (byte) 1);
-                spawned.add(villager.getUniqueId());
-                entityToSession.put(villager.getUniqueId(), session.getSessionId());
-                entityTeam.put(villager.getUniqueId(), 1);
-            });
+            Villager villager = world.spawn(spawnLoc, Villager.class);
 
+            villager.setInvulnerable(true);
+            villager.setAI(false);
+            villager.setSilent(true);
+            villager.setPersistent(true);
+            // set a Component name and disable italics using Messages.parse
+            Component comp = Messages.parse("<green>Shop</green>");
+            villager.customName(comp);
+            villager.setCustomNameVisible(true);
+
+            villager.getPersistentDataContainer().set(shopKey, PersistentDataType.BYTE, (byte) 1);
+            spawned.add(villager.getUniqueId());
+            entityToSession.put(villager.getUniqueId(), session.getSessionId());
+            entityTeam.put(villager.getUniqueId(), 1);
+            CashClashPlugin.getInstance().getLogger().info(villager.toString());
+
+
+            if (!spawned.isEmpty()) {
+                sessionShops.put(session.getSessionId(), spawned);
+                CashClashPlugin.getInstance().getLogger().info("Spawned " + spawned.size() + " shop villagers for session " + session.getSessionId());
+            }
         }
-
-        if (!spawned.isEmpty()) sessionShops.put(session.getSessionId(), spawned);
     }
 
     /**
