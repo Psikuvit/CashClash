@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.arena;
 import me.psikuvit.cashClash.CashClashPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 
@@ -411,11 +410,20 @@ public class Arena {
         return tpl != null && tpl.isConfigured();
     }
 
-    public void setConfiguredFromFile(boolean value) { this.configuredFromFile = value; }
-    public boolean isConfiguredFromFile() { return this.configuredFromFile; }
+    public void setConfiguredFromFile(boolean value) {
+        this.configuredFromFile = value;
+    }
 
     // Getters and setters
-    public String getName() { return name; }
-    public String getTemplateId() { return templateId; }
-    public void setTemplateId(String templateId) { this.templateId = templateId; }
+    public String getName() {
+        return name;
+    }
+
+    public String getTemplateId() {
+        return templateId;
+    }
+
+    public void setTemplateId(String templateId) {
+        this.templateId = templateId;
+    }
 }

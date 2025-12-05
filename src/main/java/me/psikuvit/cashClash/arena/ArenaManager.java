@@ -21,6 +21,7 @@ import java.util.Map;
  * Manages exactly 5 fixed arenas that players can browse and join, and template worlds used by arenas
  */
 public class ArenaManager {
+
     private static ArenaManager instance;
     private final Map<Integer, Arena> arenas; // Arena number (1-5) -> Arena
     private final Map<Integer, GameState> arenaStates; // Track the state of each arena

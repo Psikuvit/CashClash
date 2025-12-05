@@ -1,10 +1,10 @@
 package me.psikuvit.cashClash.listener;
 
-import me.psikuvit.cashClash.arena.TemplateWorld;
-import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
+import me.psikuvit.cashClash.arena.TemplateWorld;
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.CustomArmorManager;
 import me.psikuvit.cashClash.manager.EconomyManager;
@@ -12,18 +12,20 @@ import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.player.BonusType;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PlayerDataManager;
+import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.Location;
 
 /**
- * Handles player deaths and respawns
+ * Handles player deaths and respawns with improved code quality
  */
 public class DeathListener implements Listener {
 
@@ -36,9 +38,11 @@ public class DeathListener implements Listener {
 
         if (session == null) return;
 
+
         CashClashPlayer victim = session.getCashClashPlayer(player.getUniqueId());
         if (victim == null) return;
 
+        // Prevent item drops and experience loss
         event.setKeepInventory(true);
         event.getDrops().clear();
         event.setKeepLevel(true);
@@ -46,121 +50,184 @@ public class DeathListener implements Listener {
 
         // Increment persistent death count
         PlayerDataManager.getInstance().incDeaths(player.getUniqueId());
-
-
         victim.handleDeath();
         session.getCurrentRoundData().removeLife(player.getUniqueId());
 
-        // Handle killer rewards
         Player killer = player.getKiller();
-        if (killer != null) {
-            CashClashPlayer killerCCP = session.getCashClashPlayer(killer.getUniqueId());
-            if (killerCCP != null) {
-                // Increment persistent kill count for killer
-                PlayerDataManager.getInstance().incKills(killer.getUniqueId());
+        if (killer != null) handleKillerRewards(session, killer, victim);
 
+        Location spectatorLocation = getSpectatorLocation(session);
 
-                handleKillRewards(session, killerCCP, victim);
+        if (victim.getLives() <= 0) handlePermanentSpectator(player, spectatorLocation);
+        else handleTemporarySpectatorAndRespawn(player, spectatorLocation);
 
-                armorManager.onPlayerKill(killer);
+    }
+
+    /**
+     * Get the spectator spawn location adjusted to the game session's copied world
+     */
+    private Location getSpectatorLocation(GameSession session) {
+        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
+        if (arena != null) {
+            TemplateWorld template = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+            if (template != null && template.getSpectatorSpawn() != null) {
+                // Adjust template location to copied world
+                return LocationUtils.adjustLocationToWorld(template.getSpectatorSpawn(), session.getGameWorld());
             }
         }
 
-        // Determine the template spectator location (converted to session world)
-        Location spectatorLoc = null;
-        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
-        if (arena != null ) {
-            TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
-            spectatorLoc = tpl.getSpectatorSpawn();
-        }
+        // Fallback to game world spawn
+        return session.getGameWorld() != null
+                ? session.getGameWorld().getSpawnLocation()
+                : Bukkit.getWorlds().getFirst().getSpawnLocation();
+    }
 
-        if (spectatorLoc == null ) spectatorLoc = session.getGameWorld().getSpawnLocation();
-
-        // If out of lives -> permanently spectator for this round
-        if (victim.getLives() <= 0) {
-            Messages.send(player, "<red>You are out of lives for this round!</red>");
-
-            Location finalSpectatorLoc = spectatorLoc;
-            Bukkit.getScheduler().runTask(CashClashPlugin.getInstance(), () -> {
-                player.spigot().respawn();
-                player.teleport(finalSpectatorLoc);
-                player.setGameMode(GameMode.SPECTATOR);
-            });
-
+    /**
+     * Handle killer rewards and statistics
+     */
+    private void handleKillerRewards(GameSession session, Player killer, CashClashPlayer victim) {
+        CashClashPlayer killerCCP = session.getCashClashPlayer(killer.getUniqueId());
+        if (killerCCP == null) {
             return;
         }
 
-        // Otherwise, make the player a spectator immediately (skip death screen) and schedule respawn
-        int respawnDelaySec = ConfigManager.getInstance().getRespawnDelay();
-        int respawnProtectionSec = ConfigManager.getInstance().getRespawnProtection();
-        Messages.send(player, "<yellow>You will respawn in " + respawnDelaySec + " seconds...</yellow>");
+        // Increment persistent kill count for killer
+        PlayerDataManager.getInstance().incKills(killer.getUniqueId());
 
-        Location finalSpectatorLoc1 = spectatorLoc;
+        // Process kill rewards
+        handleKillRewards(session, killerCCP, victim);
+
+        // Trigger armor-specific kill effects
+        armorManager.onPlayerKill(killer);
+    }
+
+    /**
+     * Handle player who is permanently out of lives (spectator for remainder of round)
+     */
+    private void handlePermanentSpectator(Player player, Location spectatorLocation) {
+        Messages.send(player, "<red>You are out of lives for this round!</red>");
+
         Bukkit.getScheduler().runTask(CashClashPlugin.getInstance(), () -> {
             player.spigot().respawn();
-            player.teleport(finalSpectatorLoc1);
+            player.teleport(spectatorLocation);
+            player.setGameMode(GameMode.SPECTATOR);
+        });
+    }
+
+    /**
+     * Handle temporary spectator state and schedule respawn
+     */
+    private void handleTemporarySpectatorAndRespawn(Player player, Location spectatorLocation) {
+        int respawnDelaySec = ConfigManager.getInstance().getRespawnDelay();
+        int respawnProtectionSec = ConfigManager.getInstance().getRespawnProtection();
+
+        Messages.send(player, "<yellow>You will respawn in " + respawnDelaySec + " seconds...</yellow>");
+
+        // Make player spectator immediately (skip death screen)
+        Bukkit.getScheduler().runTask(CashClashPlugin.getInstance(), () -> {
+            player.spigot().respawn();
+            player.teleport(spectatorLocation);
             player.setGameMode(GameMode.SPECTATOR);
         });
 
-        // Schedule the actual respawn into the round after the delay
-        Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-            GameSession session2 = GameManager.getInstance().getPlayerSession(player);
-            if (session2 == null) return;
-
-            var spawn = session2.getSpawnForPlayer(player.getUniqueId());
-            if (spawn != null) player.teleport(spawn);
-
-            double maxHealth = player.getAttribute(Attribute.MAX_HEALTH).getValue();
-            player.setHealth(Math.max(1.0, maxHealth));
-            player.setFoodLevel(20);
-
-            player.setGameMode(GameMode.SURVIVAL);
-
-            // Mark respawn protection on the player's CashClashPlayer record
-            var ccp = session2.getCashClashPlayer(player.getUniqueId());
-            if (ccp != null) {
-                ccp.setRespawnProtection(respawnProtectionSec * 1000L); // ms
-            }
-
-            Messages.send(player, "<green>You have respawned.</green>");
-        }, respawnDelaySec * 20L); // seconds -> ticks
+        // Schedule respawn after delay
+        Bukkit.getScheduler().runTaskLater(
+                CashClashPlugin.getInstance(),
+                () -> respawnPlayer(player, respawnProtectionSec),
+                respawnDelaySec * 20L // Convert seconds to ticks
+        );
     }
 
+    /**
+     * Respawn player back into the game
+     */
+    private void respawnPlayer(Player player, int respawnProtectionSec) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) {
+            return;
+        }
+
+        // Get spawn location in copied world
+        Location spawnLocation = session.getSpawnForPlayer(player.getUniqueId());
+        if (spawnLocation != null) {
+            player.teleport(spawnLocation);
+        }
+
+        // Reset player health and hunger
+        AttributeInstance maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            double maxHealth = maxHealthAttr.getValue();
+            player.setHealth(Math.max(1.0, maxHealth));
+        } else {
+            player.setHealth(20.0); // Default health
+        }
+
+        player.setFoodLevel(20);
+        player.setGameMode(GameMode.SURVIVAL);
+
+        // Apply respawn protection
+        CashClashPlayer cashClashPlayer = session.getCashClashPlayer(player.getUniqueId());
+        if (cashClashPlayer != null) {
+            cashClashPlayer.setRespawnProtection(respawnProtectionSec * 1000L); // Convert to milliseconds
+        }
+
+        Messages.send(player, "<green>You have respawned.</green>");
+    }
+
+    /**
+     * Calculate and apply kill rewards including bonuses
+     */
     private void handleKillRewards(GameSession session, CashClashPlayer killer, CashClashPlayer victim) {
         killer.handleKill();
         session.getCurrentRoundData().addKill(killer.getUuid());
 
-        // First blood bonus
+        // Check and award first blood bonus
         if (session.getCurrentRoundData().getFirstBloodPlayer() == null) {
             session.getCurrentRoundData().setFirstBloodPlayer(killer.getUuid());
             killer.earnBonus(BonusType.FIRST_BLOOD);
-            Messages.send(killer.getPlayer(), "<gold><bold>FIRST BLOOD!</bold> <yellow>+" + BonusType.FIRST_BLOOD.getReward() + "</yellow></gold>");
+
+            long firstBloodReward = BonusType.FIRST_BLOOD.getReward();
+            Messages.send(killer.getPlayer(),
+                    "<gold><bold>FIRST BLOOD!</bold> <yellow>+$" + firstBloodReward + "</yellow></gold>");
         }
 
-        // Kill reward and stolen amount
+        // Calculate base rewards
         long killReward = EconomyManager.getKillReward(session, killer);
         long stolenAmount = EconomyManager.calculateStealAmount(session, victim);
 
-        // Apply investor multiplier to rewards if any
-        double mult = armorManager.getInvestorMultiplier(killer.getPlayer());
+        // Apply investor armor multiplier to rewards
+        double investorMultiplier = armorManager.getInvestorMultiplier(killer.getPlayer());
 
+        // Apply kill reward
         if (killReward > 0) {
-            long adjusted = Math.round(killReward * mult);
-            killer.addCoins(adjusted);
-            if (adjusted != killReward) Messages.send(killer.getPlayer(), "<green>Investor bonus applied: x" + String.format("%.2f", mult) + "</green>");
+            long adjustedReward = Math.round(killReward * investorMultiplier);
+            killer.addCoins(adjustedReward);
+
+            if (adjustedReward != killReward) {
+                Messages.send(killer.getPlayer(),
+                        "<green>Investor bonus applied: x" + String.format("%.2f", investorMultiplier) + "</green>");
+            }
         }
 
+        // Apply stolen amount from victim
         if (stolenAmount > 0) {
-            long adj = Math.round(stolenAmount * mult);
-            victim.deductCoins(adj);
-            killer.addCoins(adj);
-            Messages.send(killer.getPlayer(), "<yellow>+$" + adj + "</yellow> stolen from <gray>" + victim.getPlayer().getName() + "</gray>");
+            long adjustedStolen = Math.round(stolenAmount * investorMultiplier);
+            victim.deductCoins(adjustedStolen);
+            killer.addCoins(adjustedStolen);
+
+            Messages.send(killer.getPlayer(),
+                    "<yellow>+$" + adjustedStolen + "</yellow> stolen from <gray>" + victim.getPlayer().getName() + "</gray>");
         }
 
-        // Rampage bonus (3 kill streak)
-        if (killer.getKillStreak() >= 3 && killer.getKillStreak() % 3 == 0) {
+        // Check and award rampage bonus (every 3 kills)
+        int killStreak = killer.getKillStreak();
+        if (killStreak >= 3 && killStreak % 3 == 0) {
             killer.earnBonus(BonusType.RAMPAGE);
-            Messages.send(killer.getPlayer(), "<gold><bold>RAMPAGE!</bold> <yellow>+" + BonusType.RAMPAGE.getReward() + "</yellow></gold>");
+
+            long rampageReward = BonusType.RAMPAGE.getReward();
+            Messages.send(killer.getPlayer(),
+                    "<gold><bold>RAMPAGE!</bold> <yellow>+$" + rampageReward + "</yellow></gold>");
         }
     }
 }
+

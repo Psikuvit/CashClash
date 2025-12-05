@@ -20,36 +20,51 @@ import java.util.concurrent.ConcurrentHashMap;
  * Handles runtime behavior for custom armor pieces (effects, cooldowns, detection helpers).
  */
 public class CustomArmorManager {
-    private static final CustomArmorManager instance = new CustomArmorManager();
-
+    
+    private static CustomArmorManager instance;
     // cooldowns and state maps
-    private final Map<UUID, Long> gillieLastMove = new ConcurrentHashMap<>();
-    private final Map<UUID, Long> gillieInvisUntil = new ConcurrentHashMap<>();
-    private final Map<UUID, Long> gillieCooldownUntil = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> gillieLastMove;
+    private final Map<UUID, Long> gillieInvisUntil;
+    private final Map<UUID, Long> gillieCooldownUntil;
+    private final Map<UUID, Long> lightfootCooldownUntil;
+    private final Map<UUID, Integer> guardianUsesThisRound;
+    private final Map<UUID, Long> guardianLastActivated;
+    private final Map<UUID, Long> deathmaulerLastDamage;
 
-    private final Map<UUID, Long> lightfootCooldownUntil = new ConcurrentHashMap<>();
+    private final Random random;
+    private final NamespacedKey customKey;
 
-    private final Map<UUID, Integer> guardianUsesThisRound = new ConcurrentHashMap<>();
-    private final Map<UUID, Long> guardianLastActivated = new ConcurrentHashMap<>();
+    private CustomArmorManager() {
+        this.gillieLastMove = new ConcurrentHashMap<>();
+        this.gillieInvisUntil = new ConcurrentHashMap<>();
+        this.gillieCooldownUntil = new ConcurrentHashMap<>();
+        this.lightfootCooldownUntil = new ConcurrentHashMap<>();
+        this.guardianUsesThisRound = new ConcurrentHashMap<>();
+        this.guardianLastActivated = new ConcurrentHashMap<>();
+        this.deathmaulerLastDamage = new ConcurrentHashMap<>();
 
-    private final Map<UUID, Long> deathmaulerLastDamage = new ConcurrentHashMap<>();
+        this.random = new Random();
+        this.customKey = new NamespacedKey(CashClashPlugin.getInstance(), "shop_bought");
+    }
 
-    private final Random random = new Random();
-
-    private final NamespacedKey customKey = new NamespacedKey(CashClashPlugin.getInstance(), "shop_bought");
-
-    private CustomArmorManager() {}
-
-    public static CustomArmorManager getInstance() { return instance; }
+    public static CustomArmorManager getInstance() { 
+        if (instance == null) {
+            instance = new CustomArmorManager();
+        }
+        return instance;
+    }
 
     private List<CustomArmor> getEquippedCustomArmor(Player p) {
         List<CustomArmor> found = new ArrayList<>();
         for (ItemStack is : p.getInventory().getArmorContents()) {
             if (is == null) continue;
+
             ItemMeta m = is.getItemMeta();
             if (m == null) continue;
+
             PersistentDataContainer c = m.getPersistentDataContainer();
             String val = c.get(customKey, PersistentDataType.STRING);
+
             if (val == null) continue;
             try {
                 CustomArmor ca = CustomArmor.valueOf(val);

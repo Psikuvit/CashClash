@@ -10,7 +10,7 @@ public class PlayerData {
     private int deaths;
     private int kills;
     private long totalCoinsInvested;
-    private Map<String, Integer> ownedEnchants = new HashMap<>();
+    private Map<String, Integer> ownedEnchants;
 
     // No-arg constructor for Gson
     public PlayerData() {}
@@ -21,6 +21,7 @@ public class PlayerData {
         this.deaths = 0;
         this.kills = 0;
         this.totalCoinsInvested = 0L;
+        this.ownedEnchants = new HashMap<>();
     }
 
     public UUID getUuid() {

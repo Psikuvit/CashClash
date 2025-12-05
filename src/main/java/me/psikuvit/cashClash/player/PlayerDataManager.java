@@ -21,11 +21,12 @@ public class PlayerDataManager {
 
     private static PlayerDataManager instance;
 
-    private final Map<UUID, PlayerData> cache = new ConcurrentHashMap<>();
+    private final Map<UUID, PlayerData> cache;
     private final DatabaseProvider provider;
 
     private PlayerDataManager(DatabaseProvider provider) {
         this.provider = provider;
+        this.cache = new ConcurrentHashMap<>();
     }
 
     public static void init(CashClashPlugin plugin) throws SQLException {

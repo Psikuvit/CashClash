@@ -14,7 +14,7 @@ import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.kit.Kit;
-import me.psikuvit.cashClash.shop.ShopManager;
+import me.psikuvit.cashClash.manager.ShopManager;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -281,7 +281,8 @@ public class GameSession {
         players.values().forEach(p -> p.initializeRound(currentRound));
 
         if (cashQuakeManager != null) cashQuakeManager.resetRoundEvents();
-        team1.resetForfeitVotes(); team2.resetForfeitVotes();
+        team1.resetForfeitVotes();
+        team2.resetForfeitVotes();
 
         switch (currentRound) {
             case 2 -> state = GameState.ROUND_2_SHOPPING;
@@ -398,7 +399,9 @@ public class GameSession {
         return null;
     }
 
-    public Team getOpposingTeam(Team team) { return team == team1 ? team2 : team1; }
+    public Team getOpposingTeam(Team team) {
+        return team == team1 ? team2 : team1;
+    }
 
     public RoundData getRoundData() { return currentRoundData; }
 

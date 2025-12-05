@@ -46,7 +46,7 @@ public class CashClashPlayer {
     private final List<PurchaseRecord> purchaseHistory;
     private long respawnProtectionUntil;
 
-    private final Map<EnchantEntry, Integer> ownedEnchants = new HashMap<>();
+    private final Map<EnchantEntry, Integer> ownedEnchants;
 
     public CashClashPlayer(Player player) {
         this.uuid = player.getUniqueId();
@@ -58,6 +58,7 @@ public class CashClashPlayer {
         this.purchaseHistory = new ArrayList<>();
         this.lowestHealthThisLife = 20.0;
         this.respawnProtectionUntil = 0L;
+        this.ownedEnchants = new HashMap<>();
     }
 
     public void initializeRound1() {

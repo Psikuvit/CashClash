@@ -14,7 +14,7 @@ public enum CashQuakeEvent {
     BROKEN_GEAR,
     WEIGHT_OF_WEALTH,
     // Supply Drops
-    SUPPLY_DROP;
+    SUPPLY_DROP
 
 }
 

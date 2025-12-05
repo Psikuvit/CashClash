@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.manager;
 import me.psikuvit.cashClash.game.GameSession;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,12 +12,17 @@ import java.util.UUID;
  * Manages all active game sessions
  */
 public class GameManager {
-    private static GameManager instance;
-    private final Map<UUID, GameSession> activeSessions = new HashMap<>();
-    private final Map<UUID, GameSession> playerToSession = new HashMap<>();
-    private final Map<Integer, GameSession> arenaToSession = new HashMap<>(); // Arena number -> Session
 
-    private GameManager() {}
+    private static GameManager instance;
+    private final Map<UUID, GameSession> activeSessions;
+    private final Map<UUID, GameSession> playerToSession;
+    private final Map<Integer, GameSession> arenaToSession;
+
+    private GameManager() {
+        this.activeSessions = new HashMap<>();
+        this.playerToSession = new HashMap<>();
+        this.arenaToSession = new HashMap<>();
+    }
 
     public static GameManager getInstance() {
         if (instance == null) {
@@ -65,7 +69,7 @@ public class GameManager {
     }
 
     public void shutdown() {
-        new ArrayList<>(activeSessions.values()).forEach(GameSession::end);
+        activeSessions.values().forEach(GameSession::end);
 
         try {
             Thread.sleep(100);

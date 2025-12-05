@@ -4,11 +4,13 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -28,7 +30,8 @@ public class RoundManager {
     }
 
     public void startShoppingPhase(int roundNumber) {
-        timeRemaining = ConfigManager.getInstance().getShoppingPhaseDuration();
+        ConfigManager config = ConfigManager.getInstance();
+        timeRemaining = config.getShoppingPhaseDuration();
 
         Messages.broadcastWithPrefix(session.getPlayers(), "<yellow><bold>Round " + roundNumber + " - Shopping Phase!</bold></yellow>");
         Messages.broadcastWithPrefix(session.getPlayers(), "<gray>You have <yellow>" + timeRemaining + " seconds </yellow><gray>to shop!</gray>");
@@ -36,6 +39,7 @@ public class RoundManager {
         Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
         if (arena != null && session.getGameWorld() != null) {
             TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+            World copiedWorld = session.getGameWorld();
 
             Location team1ShopTpl = tpl.getTeam1ShopSpawn();
             Location team2ShopTpl = tpl.getTeam2ShopSpawn();
@@ -45,19 +49,26 @@ public class RoundManager {
                 if (p == null || !p.isOnline()) continue;
 
                 int teamNum = session.getTeam1().hasPlayer(uuid) ? 1 : (session.getTeam2().hasPlayer(uuid) ? 2 : 0);
-                Location dest = null;
+                Location destTemplate = null;
 
-                if (teamNum == 1 && team1ShopTpl != null) dest = team1ShopTpl;
-                else if (teamNum == 2 && team2ShopTpl != null) dest = team2ShopTpl;
-
-                // fallback to spectator spawn in copied world
-                if (dest == null) {
-                    Messages.parse("<red>Your team's shopping area is not set. Teleporting to spectator area.</red>");
-                    dest = tpl.getSpectatorSpawn();
+                if (teamNum == 1 && team1ShopTpl != null) {
+                    destTemplate = team1ShopTpl;
+                } else if (teamNum == 2 && team2ShopTpl != null) {
+                    destTemplate = team2ShopTpl;
                 }
 
-                p.teleport(dest);
-                Messages.send(p, "<yellow>Teleported to your team's shopping area.</yellow>");
+                // fallback to spectator spawn
+                if (destTemplate == null) {
+                    Messages.send(p, "<red>Your team's shopping area is not set. Teleporting to spectator area.</red>");
+                    destTemplate = tpl.getSpectatorSpawn();
+                }
+
+                // Adjust the location to the copied world
+                if (destTemplate != null) {
+                    Location dest = LocationUtils.adjustLocationToWorld(destTemplate, copiedWorld);
+                    p.teleport(dest);
+                    Messages.send(p, "<yellow>Teleported to your team's shopping area.</yellow>");
+                }
             }
         }
 

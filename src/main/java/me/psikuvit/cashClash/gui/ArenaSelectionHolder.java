@@ -7,12 +7,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * InventoryHolder for the arena selection GUI so we can detect it safely without relying on title
  */
-public class ArenaSelectionHolder implements InventoryHolder {
-    private final Inventory inventory;
-
-    public ArenaSelectionHolder(Inventory inventory) {
-        this.inventory = inventory;
-    }
+public record ArenaSelectionHolder(Inventory inventory) implements InventoryHolder {
 
     @Override
     public @NotNull Inventory getInventory() {

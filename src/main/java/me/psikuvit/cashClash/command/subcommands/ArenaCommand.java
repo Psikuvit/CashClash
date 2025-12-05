@@ -4,7 +4,6 @@ import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -17,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class ArenaCommand extends AbstractArgCommand {
+
     public ArenaCommand() {
         super("arena", List.of(), "cashclash.admin");
     }
