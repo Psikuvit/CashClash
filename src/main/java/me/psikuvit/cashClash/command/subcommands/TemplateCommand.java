@@ -95,9 +95,18 @@ public class TemplateCommand extends AbstractArgCommand {
 
     // Implementation methods pulled from legacy command
     private void templateRegister(CommandSender sender, String[] args) {
-        if (args.length < 3) { Messages.send(sender, "<red>Usage: /cc template register <templateId> <worldName></red>"); return; }
+        if (args.length < 3) {
+            Messages.send(sender, "<red>Usage: /cc template register <templateId> <worldName></red>");
+            return;
+        }
+
         String id = args[1];
         String worldName = args[2];
+
+        if (ArenaManager.getInstance().getTemplate(id) != null) {
+            Messages.send(sender, "<red>Template with ID '" + id + "' already exists.</red>");
+            return;
+        }
 
         boolean ok = ArenaManager.getInstance().registerTemplate(id, worldName);
         if (ok) Messages.send(sender, "<green>Registered template '" + id + "' -> world '" + worldName + "'</green>");
@@ -168,8 +177,12 @@ public class TemplateCommand extends AbstractArgCommand {
         }
 
         Messages.send(sender, "<gold>=== Templates ===</gold>");
-        templates.forEach((id, tpl) -> Messages.send(sender,
-                "<yellow>" + id + "</yellow> -> <gray>" + tpl.getWorld().getName() + "</gray> " + (tpl.isConfigured() ? "<green>(configured)" : "<red>(incomplete)")));
+        templates.forEach((id, tpl) -> {
+            String worldName = "(unloaded)";
+            if (tpl != null && tpl.getWorld() != null) worldName = tpl.getWorld().getName();
+            String status = tpl != null && tpl.isConfigured() ? "<green>(configured)" : "<red>(incomplete)";
+            Messages.send(sender, "<yellow>" + id + "</yellow> -> <gray>" + worldName + "</gray> " + status + "</red>");
+        });
     }
 
     private void templateShow(CommandSender sender, String[] args) {
@@ -181,7 +194,8 @@ public class TemplateCommand extends AbstractArgCommand {
         if (tpl == null) { Messages.send(player, "<red>Template not found: " + id + "</red>"); return; }
 
         Messages.send(player, "<gold>=== Template: " + tpl.getId() + " Positions ===</gold>");
-        Messages.send(player, "<yellow>World: </yellow><gray>" + tpl.getWorld().getName() + "</gray>");
+        String worldName = tpl.getWorld() != null ? tpl.getWorld().getName() : "(unloaded)";
+        Messages.send(player, "<yellow>World: </yellow><gray>" + worldName + "</gray>");
         Messages.send(player, "<yellow>Lobby spawn: </yellow>" + (tpl.getLobbySpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getLobbySpawn()) + "</gray>"));
         Messages.send(player, "<yellow>Spectator: </yellow>" + (tpl.getSpectatorSpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getSpectatorSpawn()) + "</gray>"));
         Messages.send(player, "<yellow>Shops: </yellow><gray>" + (tpl.getVillagersSpawnPoint().size() + "</gray>") );
@@ -276,4 +290,3 @@ public class TemplateCommand extends AbstractArgCommand {
         return w + " [x=" + Math.round(l.getX()) + ", y=" + Math.round(l.getY()) + ", z=" + Math.round(l.getZ()) + "]";
     }
 }
-
