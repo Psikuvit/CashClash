@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager;
 
 import me.psikuvit.cashClash.items.CustomArmor;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -138,21 +139,21 @@ public class CustomArmorManager {
         long now = System.currentTimeMillis();
         gillieLastMove.put(id, now);
 
-        Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-            Long l = gillieLastMove.get(id);
-            if (l == null) return;
-            if (l.equals(now)) {
-                Long cd = gillieCooldownUntil.getOrDefault(id, 0L);
-                if (now < cd) return;
+        SchedulerUtils.runTaskLater(() -> {
+             Long l = gillieLastMove.get(id);
+             if (l == null) return;
+             if (l.equals(now)) {
+                 Long cd = gillieCooldownUntil.getOrDefault(id, 0L);
+                 if (now < cd) return;
 
-                Long invisUntil = gillieInvisUntil.getOrDefault(id, 0L);
-                if (now < invisUntil) return; // already invisible
+                 Long invisUntil = gillieInvisUntil.getOrDefault(id, 0L);
+                 if (now < invisUntil) return; // already invisible
 
-                p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10 * 20, 0, false, false, false));
+                 p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10 * 20, 0, false, false, false));
 
-                gillieInvisUntil.put(id, System.currentTimeMillis() + (10 * 1000L));
-                gillieCooldownUntil.put(id, System.currentTimeMillis() + (30 * 1000L));
-            }
+                 gillieInvisUntil.put(id, System.currentTimeMillis() + (10 * 1000L));
+                 gillieCooldownUntil.put(id, System.currentTimeMillis() + (30 * 1000L));
+             }
         }, 60L);
     }
 
@@ -224,12 +225,12 @@ public class CustomArmorManager {
         UUID id = p.getUniqueId();
         deathmaulerLastDamage.put(id, System.currentTimeMillis());
 
-        Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-            Long last = deathmaulerLastDamage.get(id);
-            if (last == null) return;
-            if (System.currentTimeMillis() - last >= 5000L) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
-            }
+        me.psikuvit.cashClash.util.SchedulerUtils.runTaskLater(() -> {
+             Long last = deathmaulerLastDamage.get(id);
+             if (last == null) return;
+             if (System.currentTimeMillis() - last >= 5000L) {
+                 p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
+             }
         }, 100L); // 5s = 100 ticks
     }
 

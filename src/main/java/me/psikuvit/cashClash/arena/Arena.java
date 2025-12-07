@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.arena;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.World;
@@ -279,7 +280,7 @@ public class Arena {
                 }
 
                 // Teleport players out and unload world on main thread
-                Bukkit.getScheduler().runTask(CashClashPlugin.getInstance(), () -> {
+                SchedulerUtils.runTask(() -> {
                     try {
                         Bukkit.getWorlds().stream().findFirst().ifPresent(fallback -> {
                             try {
@@ -294,7 +295,7 @@ public class Arena {
                         }
 
                         // Async delete files to avoid blocking server thread
-                        Bukkit.getScheduler().runTaskAsynchronously(CashClashPlugin.getInstance(), () -> {
+                        SchedulerUtils.runTaskAsync(() -> {
                             try {
                                 deleteWorld(worldFolder);
                                 CashClashPlugin.getInstance().getLogger().info("Deleted world copy folder: " + worldFolder.getAbsolutePath());
@@ -302,7 +303,7 @@ public class Arena {
                                 CashClashPlugin.getInstance().getLogger().warning("Error deleting world folder " + worldFolder.getAbsolutePath() + ": " + t.getMessage());
                             } finally {
                                 // ensure we clear the deletion flag on the main thread and clear skip entry
-                                Bukkit.getScheduler().runTask(CashClashPlugin.getInstance(), () -> {
+                                SchedulerUtils.runTask(() -> {
                                     deletionInProgress = false;
                                     skipUnloadUntil.remove(worldName);
                                 });

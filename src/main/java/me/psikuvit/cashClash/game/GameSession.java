@@ -15,6 +15,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.ShopManager;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -167,37 +168,37 @@ public class GameSession {
 
         Messages.broadcast(players.keySet(), "<yellow>Minimum players reached! Starting game in <gold>" + seconds + "s</gold>. Join now!</yellow>");
 
-        startCountdownTask = Bukkit.getScheduler().runTaskTimer(CashClashPlugin.getInstance(), () -> {
-            if (state != GameState.WAITING) {
-                cancelStartCountdown();
-                return;
-            }
+        startCountdownTask = SchedulerUtils.runTaskTimer(() -> {
+             if (state != GameState.WAITING) {
+                 cancelStartCountdown();
+                 return;
+             }
 
-            int count = players.size();
-            if (count < minPlayers) {
-                Messages.broadcast(players.keySet(), "<red>Not enough players, starting countdown cancelled.</red>");
-                cancelStartCountdown();
-                return;
-            }
+             int count = players.size();
+             if (count < minPlayers) {
+                 Messages.broadcast(players.keySet(), "<red>Not enough players, starting countdown cancelled.</red>");
+                 cancelStartCountdown();
+                 return;
+             }
 
-            if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10) Messages.broadcast(players.keySet(), "<yellow>Game starting in <gold>" + countdownSecondsRemaining + "s</gold>...</yellow>");
+             if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10) Messages.broadcast(players.keySet(), "<yellow>Game starting in <gold>" + countdownSecondsRemaining + "s</gold>...</yellow>");
 
-            if (countdownSecondsRemaining <= 0) {
-                Messages.broadcast(players.keySet(), "<green>Starting game now!</green>");
+             if (countdownSecondsRemaining <= 0) {
+                 Messages.broadcast(players.keySet(), "<green>Starting game now!</green>");
 
-                players.keySet()
-                        .stream()
-                        .map(Bukkit::getPlayer)
-                        .filter(Objects::nonNull)
-                        .forEach(player -> {
-                            int teamNum = team1.hasPlayer(player.getUniqueId()) ? 1 : 2;
-                            Messages.send(player, "<yellow>You have been assigned to Team <gray>" + teamNum + "</gray></yellow>");
-                        });
-                cancelStartCountdown();
-                start();
-                return;
-            }
-            countdownSecondsRemaining--;
+                 players.keySet()
+                         .stream()
+                         .map(Bukkit::getPlayer)
+                         .filter(Objects::nonNull)
+                         .forEach(player -> {
+                             int teamNum = team1.hasPlayer(player.getUniqueId()) ? 1 : 2;
+                             Messages.send(player, "<yellow>You have been assigned to Team <gray>" + teamNum + "</gray></yellow>");
+                         });
+                 cancelStartCountdown();
+                 start();
+                 return;
+             }
+             countdownSecondsRemaining--;
         }, 0L, 20L);
     }
 

@@ -14,6 +14,7 @@ import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PlayerDataManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -107,7 +108,7 @@ public class DeathListener implements Listener {
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {
         Messages.send(player, "<red>You are out of lives for this round!</red>");
 
-        Bukkit.getScheduler().runTask(CashClashPlugin.getInstance(), () -> {
+        SchedulerUtils.runTask(() -> {
             player.spigot().respawn();
             player.teleport(spectatorLocation);
             player.setGameMode(GameMode.SPECTATOR);
@@ -124,18 +125,14 @@ public class DeathListener implements Listener {
         Messages.send(player, "<yellow>You will respawn in " + respawnDelaySec + " seconds...</yellow>");
 
         // Make player spectator immediately (skip death screen)
-        Bukkit.getScheduler().runTask(CashClashPlugin.getInstance(), () -> {
+        SchedulerUtils.runTask(() -> {
             player.spigot().respawn();
             player.teleport(spectatorLocation);
             player.setGameMode(GameMode.SPECTATOR);
         });
 
         // Schedule respawn after delay
-        Bukkit.getScheduler().runTaskLater(
-                CashClashPlugin.getInstance(),
-                () -> respawnPlayer(player, respawnProtectionSec),
-                respawnDelaySec * 20L // Convert seconds to ticks
-        );
+        SchedulerUtils.runTaskLater(() -> respawnPlayer(player, respawnProtectionSec), respawnDelaySec * 20L);
     }
 
     /**
@@ -230,4 +227,3 @@ public class DeathListener implements Listener {
         }
     }
 }
-

@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.manager;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
@@ -8,6 +7,7 @@ import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -30,6 +30,12 @@ public class RoundManager {
     }
 
     public void startShoppingPhase(int roundNumber) {
+        // ensure previous task is cancelled to avoid double timers
+        if (phaseTask != null) {
+            phaseTask.cancel();
+            phaseTask = null;
+        }
+
         ConfigManager config = ConfigManager.getInstance();
         timeRemaining = config.getShoppingPhaseDuration();
 
@@ -73,7 +79,7 @@ public class RoundManager {
         }
 
         // Start countdown
-        phaseTask = Bukkit.getScheduler().runTaskTimer(CashClashPlugin.getInstance(), () -> {
+        phaseTask = SchedulerUtils.runTaskTimer(() -> {
             timeRemaining--;
 
             if (timeRemaining <= 0) {
@@ -96,11 +102,17 @@ public class RoundManager {
     }
 
     public void startCombatPhase() {
+        // ensure previous task is cancelled to avoid double timers
+        if (phaseTask != null) {
+            phaseTask.cancel();
+            phaseTask = null;
+        }
+
         ConfigManager config = ConfigManager.getInstance();
         timeRemaining = config.getCombatPhaseDuration();
 
         // Start countdown
-        phaseTask = Bukkit.getScheduler().runTaskTimer(CashClashPlugin.getInstance(), () -> {
+        phaseTask = SchedulerUtils.runTaskTimer(() -> {
             timeRemaining--;
 
             if (timeRemaining <= 0) {
@@ -129,10 +141,7 @@ public class RoundManager {
         if (session.getCurrentRound() >= 5) {
             session.end();
         } else {
-            Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-                session.nextRound();
-                startShoppingPhase(session.getCurrentRound());
-            }, 100L); // 5 second delay
+            SchedulerUtils.runTaskLater(session::nextRound, 100L);
         }
     }
 
