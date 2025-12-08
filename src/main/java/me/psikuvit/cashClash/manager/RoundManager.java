@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -72,6 +73,7 @@ public class RoundManager {
                 // Adjust the location to the copied world
                 if (destTemplate != null) {
                     Location dest = LocationUtils.adjustLocationToWorld(destTemplate, copiedWorld);
+                    p.setGameMode(GameMode.SURVIVAL);
                     p.teleport(dest);
                     Messages.send(p, "<yellow>Teleported to your team's shopping area.</yellow>");
                 }
