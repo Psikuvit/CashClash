@@ -58,7 +58,8 @@ public final class CashClashPlugin extends JavaPlugin {
                 new BlockListener(),
                 new PlayerConnectionListener(),
                 new LobbyProtectionListener(),
-                new GUIListener(),
+                new ArenaGuiListener(),
+                new ShopGuiListener(),
                 new CustomArmorListener(),
                 new ShopListener()
         };
