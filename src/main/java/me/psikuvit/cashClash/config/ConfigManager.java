@@ -5,6 +5,8 @@ import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.configuration.file.FileConfiguration;
 import net.kyori.adventure.text.Component;
 
+import java.util.List;
+
 /**
  * Configuration manager for Cash Clash
  */
@@ -156,5 +158,13 @@ public class ConfigManager {
 
     public void reload() {
         CashClashPlugin.getInstance().reloadConfig();
+    }
+
+    public String getScoreboardTitle() {
+        return config.getString("scoreboard.title", "<gold>Cash Clash</gold>");
+    }
+
+    public List<String> getScoreboardLines() {
+        return config.getStringList("scoreboard.lines");
     }
 }

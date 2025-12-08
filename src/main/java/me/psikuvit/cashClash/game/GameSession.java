@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.manager.CashQuakeManager;
 import me.psikuvit.cashClash.manager.EconomyManager;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.manager.RoundManager;
+import me.psikuvit.cashClash.manager.ScoreboardManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PlayerDataManager;
 import me.psikuvit.cashClash.util.LocationUtils;
@@ -142,6 +143,7 @@ public class GameSession {
         phaseStartTime = System.currentTimeMillis();
 
         ArenaManager.getInstance().setArenaState(arenaNumber, GameState.ROUND_1_SHOPPING);
+        ScoreboardManager.getInstance().createBoardForSession(this);
 
         currentRoundData = new RoundData(currentRound, players.keySet());
 
@@ -151,6 +153,7 @@ public class GameSession {
         cashQuakeManager = new CashQuakeManager(this);
 
         roundManager.startShoppingPhase(currentRound);
+        players.keySet().forEach(this::applyKit);
 
         CashClashPlugin.getInstance().getLogger().info("GameSession " + sessionId + " started in Arena " + arenaNumber);
     }
@@ -229,22 +232,27 @@ public class GameSession {
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
         if (cashQuakeManager != null) cashQuakeManager.startEventScheduler();
 
-        players.keySet().forEach(this::applySpawnAndKit);
+        players.keySet().forEach(uuid -> {
+            CashClashPlayer ccp = players.get(uuid);
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null || !p.isOnline() || ccp == null) return;
+
+            Location spawn = getSpawnForPlayer(uuid);
+            if (spawn != null) p.teleport(spawn);
+
+            int protSec = ConfigManager.getInstance().getRespawnProtection();
+            ccp.setRespawnProtection(protSec * 1000L);
+        });
     }
 
-    private void applySpawnAndKit(UUID uuid) {
+    private void applyKit(UUID uuid) {
         CashClashPlayer ccp = players.get(uuid);
         Player p = Bukkit.getPlayer(uuid);
         if (p == null || !p.isOnline() || ccp == null) return;
 
-        Location spawn = getSpawnForPlayer(uuid);
         Kit randomKit = getRandomKit();
-        if (spawn != null) p.teleport(spawn);
 
-        int protSec = ConfigManager.getInstance().getRespawnProtection();
-        ccp.setRespawnProtection(protSec * 1000L);
         ccp.setCurrentKit(randomKit);
-
         randomKit.apply(p);
         Messages.send(p, "<green>You have been assigned kit: <yellow>" + randomKit + "</yellow></green>");
     }
@@ -315,6 +323,9 @@ public class GameSession {
             }
         }
 
+        // remove scoreboard for session
+        ScoreboardManager.getInstance().removeBoard(sessionId);
+
         // Clear kits/effects for all players in this session before removing them
         for (UUID u : new ArrayList<>(players.keySet())) {
             Player p = Bukkit.getPlayer(u);
@@ -367,9 +378,15 @@ public class GameSession {
     }
 
     private Team calculateWinner() {
-        long team1Money = team1.getPlayers().stream().mapToLong(p -> players.get(p).getCoins()).sum();
-        long team2Money = team2.getPlayers().stream().mapToLong(p -> players.get(p).getCoins()).sum();
-        return team1Money > team2Money ? team1 : team2;
+        return getTeam1Coins() > getTeam2Coins() ? team1 : team2;
+    }
+
+    public long getTeam1Coins() {
+        return team1.getPlayers().stream().mapToLong(p -> players.get(p).getCoins()).sum();
+    }
+
+    public long getTeam2Coins() {
+        return team2.getPlayers().stream().mapToLong(p -> players.get(p).getCoins()).sum();
     }
 
     public void addPlayer(Player player, int teamNumber) {
@@ -502,4 +519,3 @@ public class GameSession {
         });
     }
 }
-
