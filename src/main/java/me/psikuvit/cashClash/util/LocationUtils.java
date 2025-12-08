@@ -49,10 +49,26 @@ public final class LocationUtils {
     /**
      * Return a new Location with the same coordinates/yaw/pitch but in the specified world.
      * Returns null if the source or world is null.
+     * The returned Location will be positioned at the center of the corresponding block
+     * (i.e. blockX + 0.5, blockY + 0.5, blockZ + 0.5) to avoid placing players on block edges.
      */
     public static Location copyToWorld(Location source, World world) {
         if (source == null || world == null) return null;
-        return new Location(world, source.getX(), source.getY(), source.getZ(), source.getYaw(), source.getPitch());
+        // Use block coordinates and offset by 0.5 to place in the center of the block.
+        int bx = source.getBlockX();
+        int by = source.getBlockY();
+        int bz = source.getBlockZ();
+        double cx = bx + 0.5d;
+        double cy = by + 0.5d;
+        double cz = bz + 0.5d;
+        return new Location(
+                world,
+                cx,
+                cy,
+                cz,
+                source.getYaw(),
+                source.getPitch()
+        );
     }
 
     /**
