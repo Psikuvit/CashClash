@@ -65,3 +65,15 @@ messages:
   team-eliminated: "<red>Team {team} has been eliminated!</red>"
   team-forfeited: "<yellow>Team {team} has forfeited! Team {winner} earns {amount} each!</yellow>"
   winner: "<gold><bold>Team {team} wins with ${amount}!</bold></gold>"
+
+# Scoreboard configuration (MiniMessage format allowed)
+scoreboard:
+  title: "<gold><bold>Cash Clash - {state}</bold></gold>"
+  lines:
+    - "<gray>Round:</gray> <white>{round}"
+    - "<gray>Status:</gray> <white>{state}"
+    - ""
+    - "<gray>Team 1:</gray> <white>${team1_coins}"
+    - "<gray>Team 2:</gray> <white>${team2_coins}"
+    - ""
+    - "<gray>Your:</gray> <white>${player_coins} coins"
