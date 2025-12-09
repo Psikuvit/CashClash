@@ -23,10 +23,11 @@ public enum ShopItem {
     IRON_HELMET(Material.IRON_HELMET, ShopCategory.ARMOR, 2500),
     IRON_LEGGINGS(Material.IRON_LEGGINGS, ShopCategory.ARMOR, 2750),
     IRON_CHESTPLATE(Material.IRON_CHESTPLATE, ShopCategory.ARMOR, 3000),
-    DIAMOND_BOOTS(Material.DIAMOND_BOOTS, ShopCategory.ARMOR, 9250),
-    DIAMOND_HELMET(Material.DIAMOND_HELMET, ShopCategory.ARMOR, 9500),
-    DIAMOND_LEGGINGS(Material.DIAMOND_LEGGINGS, ShopCategory.ARMOR, 9750),
-    DIAMOND_CHESTPLATE(Material.DIAMOND_CHESTPLATE, ShopCategory.ARMOR, 10000),
+
+    DIAMOND_BOOTS(Material.DIAMOND_BOOTS, ShopCategory.ARMOR, 2250),
+    DIAMOND_HELMET(Material.DIAMOND_HELMET, ShopCategory.ARMOR, 2500),
+    DIAMOND_LEGGINGS(Material.DIAMOND_LEGGINGS, ShopCategory.ARMOR, 2750),
+    DIAMOND_CHESTPLATE(Material.DIAMOND_CHESTPLATE, ShopCategory.ARMOR, 3000),
 
     // Custom armor (Cash Clash exclusives)
     INVESTORS_BOOTS(Material.IRON_BOOTS, ShopCategory.ARMOR, 4250),
@@ -101,5 +102,19 @@ public enum ShopItem {
 
     public long getStackPrice() {
         return price * maxStack;
+    }
+
+    public String getDescription() {
+        return switch (this) {
+            case INVESTORS_BOOTS, INVESTORS_HELMET, INVESTORS_LEGGINGS, INVESTORS_CHESTPLATE -> "<gray>Part of the Investor's set. Each piece increases money bonuses.</gray>";
+            case TAX_EVASION_PANTS -> "<gray>Reduces death penalty and grants a small timeout bonus for staying alive.</gray>";
+            case GILLIE_SUIT_HAT -> "<gray>Stand still to become invisible for a short time. Cooldown applies.</gray>";
+            case LIGHTFOOT_SHOES -> "<gray>Activate to gain Speed II + Jump Boost I for 15s. 25s cooldown.</gray>";
+            case GUARDIANS_VEST -> "<gray>Provides Resistance II when low on health (limited uses per round).</gray>";
+            case FLAMEBRINGER_BOOTS, FLAMEBRINGER_LEGGINGS -> "<gray>Part of the Flamebringer set: grants blue-fire effects on hit and permanent fire-resistance for boots.</gray>";
+            case DEATHMAULER_OUTFIT -> "<gray>Chest + Leggings: Kills heal you and can grant absorption.</gray>";
+            case DRAGON_SET -> "<gray>Full Dragon set: regen on hit, speed boosts and double-jump ability. Immune to knife damage/explosives.</gray>";
+            default -> "";
+        };
     }
 }

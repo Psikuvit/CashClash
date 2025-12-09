@@ -11,17 +11,22 @@ import me.psikuvit.cashClash.shop.ShopItem;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.CashClashPlugin;
 import org.bukkit.NamespacedKey;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.entity.Player;
 import net.kyori.adventure.text.Component;
 import me.psikuvit.cashClash.util.Messages;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
+import me.psikuvit.cashClash.util.SoundUtils;
+import me.psikuvit.cashClash.items.CustomArmor;
+import org.bukkit.Sound;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Material;
 import org.bukkit.inventory.PlayerInventory;
+
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -68,7 +73,6 @@ public class ShopGuiListener implements Listener {
             }
         }
 
-        // cancel button at slot 8
         if (event.getSlot() == 8) {
             player.closeInventory();
         }
@@ -81,13 +85,11 @@ public class ShopGuiListener implements Listener {
         var itemMeta = clicked.getItemMeta();
         Component itemComp = itemMeta.displayName();
 
-        // Cancel button in items view
         if (event.getSlot() == 45) {
             player.closeInventory();
             return;
         }
 
-        // Undo purchase
         if (event.getSlot() == 49) {
             handleUndoPurchase(player);
             return;
@@ -101,7 +103,6 @@ public class ShopGuiListener implements Listener {
             }
         }
 
-        // Regular shop items
         handleShopItemClick(player, itemComp);
     }
 
@@ -135,8 +136,10 @@ public class ShopGuiListener implements Listener {
             var val = m.getPersistentDataContainer().get(key, PersistentDataType.STRING);
             if (val != null && val.equals(rec.item().name())) {
                 int qty = is.getAmount();
+
                 if (qty > 1) is.setAmount(qty - 1);
                 else player.getInventory().remove(is);
+
                 removed = true;
                 break;
             }
@@ -181,65 +184,184 @@ public class ShopGuiListener implements Listener {
     private void handleShopItemClick(Player player, Component itemComp) {
         for (ShopItem si : ShopItem.values()) {
             Component expectedComp = Messages.parse("<yellow>" + si.name().replace('_', ' ') + "</yellow>");
-            if (expectedComp.equals(itemComp)) {
+            if (!expectedComp.equals(itemComp)) continue;
 
-                GameSession sess = GameManager.getInstance().getPlayerSession(player);
-                if (sess == null) {
-                    Messages.send(player, "<red>You must be in a game to shop.</red>");
-                    player.closeInventory();
-                    return;
-                }
-
-                CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
-                if (ccp == null) return;
-
-                long price = si.getPrice();
-                if (!ccp.canAfford(price)) {
-                    Messages.send(player, "<red>Not enough coins to buy " + si.name() + " ($" + price + ")</red>");
-                    return;
-                }
-                ccp.deductCoins(price);
-
-                // Special handling: upgrade to netherite
-                if (si == ShopItem.UPGRADE_TO_NETHERITE) {
-                    boolean upgraded = upgradeBestDiamondToNetherite(player);
-                    if (upgraded) {
-                        ccp.addPurchase(new PurchaseRecord(si, 1, price));
-                        Messages.send(player, "<green>Upgraded your best diamond item to netherite.</green>");
-                    } else {
-                        Messages.send(player, "<yellow>No eligible diamond item found to upgrade.</yellow>");
-                        // refund if nothing to upgrade
-                        ccp.addCoins(price);
-                    }
-                    return;
-                }
-
-                ItemStack given = new ItemStack(si.getMaterial(), 1);
-                var meta = given.getItemMeta();
-
-                NamespacedKey key = new NamespacedKey(CashClashPlugin.getInstance(), "shop_bought");
-                if (meta != null) meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, si.name());
-
-                if (meta != null) given.setItemMeta(meta);
-
-                // For armor: auto-equip
-                if (si.getCategory() == ShopCategory.ARMOR) {
-                    equipArmorOrReplace(player, given);
-                } else if (isToolOrWeapon(si.getMaterial())) {
-                    replaceBestMatchingTool(player, given);
-                } else {
-                    // default: add to inventory (stacks etc.)
-                    player.getInventory().addItem(given);
-                }
-
-                ccp.addPurchase(new PurchaseRecord(si, 1, price));
-
-                applyOwnedEnchantsAfterPurchase(player, si);
-
-                Messages.send(player, "<green>Purchased " + si.name() + " for $" + price + "</green>");
+            // validate session and player data
+            GameSession sess = GameManager.getInstance().getPlayerSession(player);
+            if (sess == null) {
+                Messages.send(player, "<red>You must be in a game to shop.</red>");
+                player.closeInventory();
                 return;
             }
+            CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
+            if (ccp == null) return;
+
+            long price = si.getPrice();
+            if (!canAffordAndDeduct(ccp, price, player)) return;
+
+            // handle immediate special cases
+            if (si == ShopItem.UPGRADE_TO_NETHERITE) {
+                handleUpgradeToNetherite(player, ccp, si, price);
+                return;
+            }
+
+            // build the item that will be given
+            ItemStack given = createTaggedItem(si);
+
+            // special set purchases
+            if (si == ShopItem.DEATHMAULER_OUTFIT || si == ShopItem.DRAGON_SET) {
+                giveSpecialSet(player, si, ccp, price);
+                return;
+            }
+
+            // diamond prereq
+            if (!ensureDiamondPrerequisite(si, player, ccp)) return;
+
+            // give item (equip or add)
+            giveItemToPlayer(player, si, given, ccp);
+            return;
         }
+    }
+
+    private boolean canAffordAndDeduct(CashClashPlayer ccp, long price, Player player) {
+        if (!ccp.canAfford(price)) {
+            Messages.send(player, "<red>Not enough coins to buy (cost: $" + price + ")</red>");
+            return false;
+        }
+        ccp.deductCoins(price);
+        return true;
+    }
+
+    private void handleUpgradeToNetherite(Player player, CashClashPlayer ccp, ShopItem si, long price) {
+        boolean upgraded = upgradeBestDiamondToNetherite(player);
+        if (upgraded) {
+            ccp.addPurchase(new PurchaseRecord(si, 1, price));
+            Messages.send(player, "<green>Upgraded your best diamond item to netherite.</green>");
+            SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+        } else {
+            Messages.send(player, "<yellow>No eligible diamond item found to upgrade.</yellow>");
+            ccp.addCoins(price);
+        }
+    }
+
+    private ItemStack createTaggedItem(ShopItem si) {
+        ItemStack it = new ItemStack(si.getMaterial(), 1);
+        var meta = it.getItemMeta();
+        if (meta != null) {
+            NamespacedKey key = new NamespacedKey(CashClashPlugin.getInstance(), "shop_bought");
+
+            meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, si.name());
+            meta.displayName(Messages.parse("<yellow>" + si.name().replace('_', ' ') + "</yellow>"));
+
+            String desc = si.getDescription();
+            if (!desc.isEmpty()) meta.lore(List.of(Messages.parse(desc)));
+            it.setItemMeta(meta);
+        }
+        return it;
+    }
+
+    private void giveSpecialSet(Player player, ShopItem si, CashClashPlayer ccp, long price) {
+        if (si == ShopItem.DEATHMAULER_OUTFIT) giveCustomArmorSet(player, CustomArmor.DEATHMAULER_OUTFIT);
+        else if (si == ShopItem.DRAGON_SET) giveCustomArmorSet(player, CustomArmor.DRAGON_SET);
+
+        ccp.addPurchase(new PurchaseRecord(si, 1, price));
+        Messages.send(player, "<green>Purchased " + si.name().replace('_', ' ') + " for $" + price + "</green>");
+        SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+    }
+
+    private boolean ensureDiamondPrerequisite(ShopItem si, Player player, CashClashPlayer ccp) {
+        if (!si.getMaterial().name().contains("DIAMOND")) return true;
+        String ironName = si.getMaterial().name().replace("DIAMOND", "IRON");
+
+        boolean hasIron = false;
+        for (ItemStack is : player.getInventory().getContents()) {
+            if (is == null) continue;
+            if (is.getType().name().equals(ironName)) { hasIron = true; break; }
+        }
+
+        if (!hasIron) {
+            Messages.send(player, "<red>You must own the iron equivalent before buying diamond " + si.name().replace('_', ' ') + "</red>");
+            ccp.addCoins(si.getPrice());
+        }
+
+        return hasIron;
+    }
+
+    private void giveItemToPlayer(Player player, ShopItem si, ItemStack item, CashClashPlayer ccp) {
+        if (si.getCategory() == ShopCategory.ARMOR) {
+            equipArmorOrReplace(player, item);
+        } else if (isToolOrWeapon(si.getMaterial())) {
+            replaceBestMatchingTool(player, item);
+        } else {
+            player.getInventory().addItem(item);
+        }
+
+        ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice()));
+        // apply owned enchants centrally
+        applyOwnedEnchantsAfterPurchase(player, si);
+        Messages.send(player, "<green>Purchased " + si.name().replace('_', ' ') + " for $" + si.getPrice() + "</green>");
+        SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+    }
+
+    private void giveCustomArmorSet(Player player, CustomArmor setType) {
+        NamespacedKey key = new NamespacedKey(CashClashPlugin.getInstance(), "shop_bought");
+        if (setType == CustomArmor.DEATHMAULER_OUTFIT) {
+            ItemStack chest = new ItemStack(Material.NETHERITE_CHESTPLATE);
+            ItemStack legs = new ItemStack(Material.NETHERITE_LEGGINGS);
+
+            var cm = chest.getItemMeta();
+            var lm = legs.getItemMeta();
+
+            if (cm != null) {
+                cm.getPersistentDataContainer().set(key, PersistentDataType.STRING, setType.name());
+                cm.displayName(Messages.parse("<gold>Deathmauler Chestplate</gold>"));
+                chest.setItemMeta(cm);
+            }
+            if (lm != null) {
+                lm.getPersistentDataContainer().set(key, PersistentDataType.STRING, setType.name());
+                lm.displayName(Messages.parse("<gold>Deathmauler Leggings</gold>"));
+                legs.setItemMeta(lm);
+            }
+
+            equipArmorOrReplace(player, chest);
+            equipArmorOrReplace(player, legs);
+        } else if (setType == CustomArmor.DRAGON_SET) {
+            ItemStack chest = new ItemStack(Material.DIAMOND_CHESTPLATE);
+            ItemStack boots = new ItemStack(Material.DIAMOND_BOOTS);
+            ItemStack helm = new ItemStack(Material.DIAMOND_HELMET);
+            var cm = chest.getItemMeta(); var bm = boots.getItemMeta(); var hm = helm.getItemMeta();
+            if (cm != null) {
+                cm.getPersistentDataContainer().set(key, PersistentDataType.STRING, setType.name());
+                cm.displayName(Messages.parse("<dark_purple>Dragon Chestplate</dark_purple>"));
+                chest.setItemMeta(cm);
+            }
+
+            if (bm != null) {
+                bm.getPersistentDataContainer().set(key, PersistentDataType.STRING, setType.name());
+                bm.displayName(Messages.parse("<dark_purple>Dragon Boots</dark_purple>"));
+                boots.setItemMeta(bm);
+            }
+
+            if (hm != null) {
+                hm.getPersistentDataContainer().set(key, PersistentDataType.STRING, setType.name());
+                hm.displayName(Messages.parse("<dark_purple>Dragon Helmet</dark_purple>"));
+                helm.setItemMeta(hm);
+            }
+
+            equipArmorOrReplace(player, chest);
+            equipArmorOrReplace(player, helm);
+            equipArmorOrReplace(player, boots);
+        }
+    }
+
+    private String getDescriptionForShopItem(ShopItem si) {
+        return switch (si) {
+            case INVESTORS_BOOTS, INVESTORS_HELMET, INVESTORS_LEGGINGS, INVESTORS_CHESTPLATE ->
+                    "<gray>Part of the Investor's set. Each piece increases money bonuses.</gray>";
+            case DEATHMAULER_OUTFIT -> "<gray>Set: Kills heal you and grant absorption. (Chest+Leggings)</gray>";
+            case DRAGON_SET -> "<gray>Set: Grants regens and double-jump. (Chest+Boots+Helmet)</gray>";
+            default -> "";
+        };
     }
 
     // --- new helper methods ---
@@ -286,9 +408,12 @@ public class ShopGuiListener implements Listener {
 
     private void transferEnchants(ItemStack from, ItemStack to) {
         if (from == null || to == null) return;
+
         var fromMeta = from.getItemMeta();
         var toMeta = to.getItemMeta();
+
         if (fromMeta == null || toMeta == null) return;
+
         for (var e : fromMeta.getEnchants().entrySet()) {
             toMeta.addEnchant(e.getKey(), e.getValue(), true);
         }
@@ -353,10 +478,20 @@ public class ShopGuiListener implements Listener {
         int bestSlot = -1;
         for (int i = 0; i < inv.getSize(); i++) {
             ItemStack is = inv.getItem(i);
+
             if (is == null) continue;
             if (!is.getType().name().contains("DIAMOND")) continue;
-            if (best == null) { best = is; bestSlot = i; continue; }
-            if (rankMaterial(is.getType()) > rankMaterial(best.getType())) { best = is; bestSlot = i; }
+
+            if (best == null) {
+                best = is;
+                bestSlot = i;
+                continue;
+            }
+
+            if (rankMaterial(is.getType()) > rankMaterial(best.getType())) {
+                best = is;
+                bestSlot = i;
+            }
         }
         if (best == null) return false;
 
@@ -390,6 +525,31 @@ public class ShopGuiListener implements Listener {
     }
 
     private void applyEnchantToBestItem(Player player, EnchantEntry ee, int lvl) {
+        // Special-case: Protection should apply to all armor pieces
+        if (ee == EnchantEntry.PROTECTION) {
+            boolean appliedAny = false;
+            PlayerInventory inv = player.getInventory();
+            ItemStack[] armor = inv.getArmorContents();
+
+            for (ItemStack is : armor) {
+                if (is == null) continue;
+                if (!ee.getApplicableMaterials().contains(is.getType())) continue;
+                var meta = is.getItemMeta();
+                if (meta == null) continue;
+                meta.addEnchant(ee.getEnchantment(), lvl, true);
+                is.setItemMeta(meta);
+                appliedAny = true;
+            }
+            if (appliedAny) {
+                player.getInventory().setArmorContents(armor);
+                Messages.send(player, "<green>Protection " + lvl + " applied to all armor pieces.</green>");
+            } else {
+                Messages.send(player, "<red>No eligible armor pieces found to apply Protection. It will be saved for future purchases.</red>");
+            }
+            return;
+        }
+
+        // Default behavior: apply to best matching single item
         ItemStack best = null;
         int bestSlot = -1;
         int eligibleCount = 0;
@@ -438,18 +598,25 @@ public class ShopGuiListener implements Listener {
         for (var e : ccp.getOwnedEnchants().entrySet()) {
             EnchantEntry ee = e.getKey();
             int lvl = e.getValue();
-            if (ee.getApplicableMaterials().contains(si.getMaterial())) {
-                applyEnchantToBestItem(player, ee, lvl);
-            }
+            // Apply each owned enchant to applicable inventory items
+            player.getInventory().forEach(is -> {
+                if (is == null) return;
+                if (!ee.getApplicableMaterials().contains(is.getType())) return;
+                var meta = is.getItemMeta();
+                if (meta == null) return;
+                meta.addEnchant(ee.getEnchantment(), lvl, true);
+                is.setItemMeta(meta);
+            });
         }
     }
 
     private int rankMaterial(Material m) {
-        // basic ranking: Netherite(5), Diamond(4), Iron(3), Stone(2), Wood/others(1)
-        if (m.name().contains("NETHERITE")) return 5;
-        if (m.name().contains("DIAMOND")) return 4;
-        if (m.name().contains("IRON")) return 3;
-        if (m.name().contains("STONE")) return 2;
+        if (m == null) return 0;
+        String name = m.name();
+        if (name.contains("NETHERITE")) return 5;
+        if (name.contains("DIAMOND")) return 4;
+        if (name.contains("IRON")) return 3;
+        if (name.contains("STONE")) return 2;
         return 1;
     }
 }
