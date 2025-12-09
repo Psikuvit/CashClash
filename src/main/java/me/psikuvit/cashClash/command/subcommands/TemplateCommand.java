@@ -181,17 +181,26 @@ public class TemplateCommand extends AbstractArgCommand {
             String worldName = "(unloaded)";
             if (tpl != null && tpl.getWorld() != null) worldName = tpl.getWorld().getName();
             String status = tpl != null && tpl.isConfigured() ? "<green>(configured)" : "<red>(incomplete)";
-            Messages.send(sender, "<yellow>" + id + "</yellow> -> <gray>" + worldName + "</gray> " + status + "</red>");
+            Messages.send(sender, "<yellow>" + id + "</yellow> -> <gray>" + worldName + "</gray> " + status);
         });
     }
 
     private void templateShow(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) { Messages.send(sender, "<red>Only players can use this.</red>"); return; }
-        if (args.length < 2) { Messages.send(player, "<red>Usage: /cc template show <templateId></red>"); return; }
+        if (!(sender instanceof Player player)) {
+            Messages.send(sender, "<red>Only players can use this.</red>");
+            return;
+        }
+        if (args.length < 2) {
+            Messages.send(player, "<red>Usage: /cc template show <templateId></red>");
+            return;
+        }
 
         String id = args[1];
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(id);
-        if (tpl == null) { Messages.send(player, "<red>Template not found: " + id + "</red>"); return; }
+        if (tpl == null) {
+            Messages.send(player, "<red>Template not found: " + id + "</red>");
+            return;
+        }
 
         Messages.send(player, "<gold>=== Template: " + tpl.getId() + " Positions ===</gold>");
         String worldName = tpl.getWorld() != null ? tpl.getWorld().getName() : "(unloaded)";
@@ -210,7 +219,10 @@ public class TemplateCommand extends AbstractArgCommand {
     }
 
     private void templateSet(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) { Messages.send(sender, "<red>Only players can use this.</red>"); return; }
+        if (!(sender instanceof Player player)) {
+            Messages.send(sender, "<red>Only players can use this.</red>");
+            return;
+        }
 
         if (args.length < 3) {
             Messages.send(player, "<red>Usage: /cc template set <templateId> <spectator|team1|team2|shop|villager> [index/team]</red>");

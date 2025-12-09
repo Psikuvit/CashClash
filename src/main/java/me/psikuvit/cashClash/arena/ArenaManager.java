@@ -263,9 +263,13 @@ public class ArenaManager {
         return true;
     }
 
-    public TemplateWorld getTemplate(String id) { return templates.get(id); }
+    public TemplateWorld getTemplate(String id) {
+        return templates.get(id);
+    }
 
-    public Map<String, TemplateWorld> getAllTemplates() { return new HashMap<>(templates); }
+    public Map<String, TemplateWorld> getAllTemplates() {
+        return templates;
+    }
 
     /**
      * Get arena by number (1-5)

@@ -24,8 +24,6 @@ public class CommandHandler extends Command {
         super("cashclash");
         setAliases(List.of("cc"));
 
-        // Register built-in subcommands centrally in the handler so the main plugin class
-        // doesn't need to know about every subcommand implementation.
         registerDefaults();
     }
 

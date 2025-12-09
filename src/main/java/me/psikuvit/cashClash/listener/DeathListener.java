@@ -92,13 +92,8 @@ public class DeathListener implements Listener {
             return;
         }
 
-        // Increment persistent kill count for killer
         PlayerDataManager.getInstance().incKills(killer.getUniqueId());
-
-        // Process kill rewards
         handleKillRewards(session, killerCCP, victim);
-
-        // Trigger armor-specific kill effects
         armorManager.onPlayerKill(killer);
     }
 
