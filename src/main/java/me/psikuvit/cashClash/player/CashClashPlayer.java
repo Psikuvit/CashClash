@@ -2,8 +2,6 @@ package me.psikuvit.cashClash.player;
 
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.shop.EnchantEntry;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -154,24 +152,6 @@ public class CashClashPlayer {
 
     public Map<EnchantEntry, Integer> getOwnedEnchants() { return Map.copyOf(ownedEnchants); }
 
-    /**
-     * Apply owned enchants applicable to the given ItemStack. This will add or upgrade enchants on the provided item.
-     */
-    public void applyOwnedEnchantsToItem(ItemStack item) {
-        if (item == null) return;
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return;
-
-        for (var e : ownedEnchants.entrySet()) {
-            EnchantEntry entry = e.getKey();
-            int lvl = e.getValue();
-
-            var enchant = entry.getEnchantment();
-            meta.addEnchant(enchant, lvl, true);
-        }
-        item.setItemMeta(meta);
-    }
-
     public void addPurchase(PurchaseRecord record) {
         purchaseHistory.add(record);
     }
@@ -293,4 +273,3 @@ public class CashClashPlayer {
         this.firstDeathRound = round;
     }
 }
-
