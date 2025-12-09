@@ -129,6 +129,8 @@ public class SessionBoard {
 
         t = t.replace("{team1_coins}", String.valueOf(session.getTeam1Coins()));
         t = t.replace("{team2_coins}", String.valueOf(session.getTeam2Coins()));
+        // time placeholder (seconds remaining in current phase)
+        t = t.replace("{time}", String.valueOf(session.getTimeRemaining()));
 
         if (t.contains("{player_coins}") || t.contains("{player_kills}") || t.contains("{player_lives}")) {
             CashClashPlayer p = null;
