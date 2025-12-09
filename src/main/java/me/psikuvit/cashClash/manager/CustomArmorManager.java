@@ -122,14 +122,15 @@ public class CustomArmorManager {
     }
 
     public boolean hasDeathmauler(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.DEATHMAULER_OUTFIT) return true;
-        return false;
+        int count = 0;
+        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.DEATHMAULER_OUTFIT) count++;
+        return count >= 2;
     }
 
     public boolean hasDragonSet(Player p) {
-        // Check if player has all three dragon pieces equipped
-        Set<CustomArmor> set = new HashSet<>(getEquippedCustomArmor(p));
-        return set.contains(CustomArmor.DRAGON_SET);
+        int count = 0;
+        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.DRAGON_SET) count++;
+        return count >= 3;
     }
 
     public void onPlayerMove(Player p) {
