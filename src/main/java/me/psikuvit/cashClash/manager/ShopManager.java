@@ -95,8 +95,6 @@ public class ShopManager {
             spawned.add(villager.getUniqueId());
             entityToSession.put(villager.getUniqueId(), session.getSessionId());
             entityTeam.put(villager.getUniqueId(), 1);
-            CashClashPlugin.getInstance().getLogger().info(villager.toString());
-
 
             if (!spawned.isEmpty()) {
                 sessionShops.put(session.getSessionId(), spawned);
