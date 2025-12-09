@@ -17,9 +17,11 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.ShopManager;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -185,9 +187,11 @@ public class GameSession {
              }
 
              if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10) Messages.broadcast(players.keySet(), "<yellow>Game starting in <gold>" + countdownSecondsRemaining + "s</gold>...</yellow>");
+             SoundUtils.playTo(players.keySet(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
 
              if (countdownSecondsRemaining <= 0) {
                  Messages.broadcast(players.keySet(), "<green>Starting game now!</green>");
+                 SoundUtils.playTo(players.keySet(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 
                  players.keySet()
                          .stream()
@@ -202,7 +206,14 @@ public class GameSession {
                  return;
              }
              countdownSecondsRemaining--;
-        }, 0L, 20L);
+         }, 0L, 20L);
+     }
+
+    /**
+     * Expose remaining time from the active RoundManager for scoreboard {time} placeholder.
+     */
+    public int getTimeRemaining() {
+        return roundManager.getTimeRemaining();
     }
 
     public synchronized void cancelStartCountdown() {
