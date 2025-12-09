@@ -188,6 +188,12 @@ public class ShopGUI {
                         Messages.parse("<gray>Price: <gold>$" + si.getPrice() + "</gold></gray>"),
                         Messages.parse("<gray>Max stack: <white>" + si.getMaxStack() + "</white></gray>")
                 ));
+                // add description from ShopItem if present
+                String desc = si.getDescription();
+                if (!desc.isEmpty()) {
+
+                    meta.lore(List.of(Messages.parse(desc)));
+                }
 
                 it.setItemMeta(meta);
                 inv.setItem(slot++, it);
