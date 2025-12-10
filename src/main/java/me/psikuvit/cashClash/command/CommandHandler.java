@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +38,7 @@ public class CommandHandler extends Command {
 
         // Admin / control commands
         registerSubcommand(new StopCommand());
+        registerSubcommand(new ForceStartCommand());
         registerSubcommand(new TransferCommand());
         registerSubcommand(new SetLobbyCommand());
 
@@ -53,7 +55,7 @@ public class CommandHandler extends Command {
     }
 
     @Override
-    public boolean execute(@NotNull CommandSender sender, @NotNull String s, @NotNull String[] args) {
+    public boolean execute(@NotNull CommandSender sender, @NotNull String s, @NotNull String @NonNull [] args) {
         if (args.length == 0) {
             sendHelp(sender);
             return true;
@@ -109,6 +111,7 @@ public class CommandHandler extends Command {
         Messages.send(sender, "<yellow>/cc arena <gray>- Arena admin actions (tp,set,assign)</gray>");
         Messages.send(sender, "<yellow>/cc template <gray>- Template world management (admin)</gray>");
         Messages.send(sender, "<yellow>/cc stop <gray>- Stop an ongoing game (admin)</gray>");
+        Messages.send(sender, "<yellow>/cc forcestart <gray>- Force start a game immediately (admin)</gray>");
         Messages.send(sender, "<yellow>/cc setlobby <gray>- Set the lobby spawn point (admin)</gray>");
         Messages.send(sender, "<yellow>/cc shop <gray>- Open the in-game shop</gray>");
         Messages.send(sender, "<yellow>/cc stats- <gray>- View or reset player stats</gray>");
