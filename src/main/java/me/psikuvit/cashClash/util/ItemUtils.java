@@ -7,7 +7,6 @@ import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.ShopItem;
 import me.psikuvit.cashClash.items.CustomArmor;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -161,9 +160,7 @@ public final class ItemUtils {
         ItemStack it = new ItemStack(si.getMaterial(), 1);
         var meta = it.getItemMeta();
         if (meta != null) {
-            NamespacedKey key = new NamespacedKey(CashClashPlugin.getInstance(), "shop_bought");
-
-            meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, si.name());
+            meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, si.name());
             meta.displayName(Messages.parse("<yellow>" + si.name().replace('_', ' ') + "</yellow>"));
             String desc = si.getDescription();
 
@@ -175,7 +172,6 @@ public final class ItemUtils {
 
     public static void giveCustomArmorSet(Player player, CustomArmor setType) {
         if (player == null || setType == null) return;
-        NamespacedKey key = new NamespacedKey(CashClashPlugin.getInstance(), "shop_bought");
         if (setType == CustomArmor.DEATHMAULER_OUTFIT) {
             ItemStack chest = new ItemStack(Material.NETHERITE_CHESTPLATE);
             ItemStack legs = new ItemStack(Material.NETHERITE_LEGGINGS);
@@ -184,12 +180,12 @@ public final class ItemUtils {
             ItemMeta lm = legs.getItemMeta();
 
             if (cm != null) {
-                cm.getPersistentDataContainer().set(key, PersistentDataType.STRING, setType.name());
+                cm.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, setType.name());
                 cm.displayName(Messages.parse("<gold>Deathmauler Chestplate</gold>"));
                 chest.setItemMeta(cm);
             }
             if (lm != null) {
-                lm.getPersistentDataContainer().set(key, PersistentDataType.STRING, setType.name());
+                lm.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, setType.name());
                 lm.displayName(Messages.parse("<gold>Deathmauler Leggings</gold>"));
                 legs.setItemMeta(lm);
             }
@@ -205,19 +201,19 @@ public final class ItemUtils {
             ItemMeta bm = boots.getItemMeta();
             ItemMeta hm = helm.getItemMeta();
             if (cm != null) {
-                cm.getPersistentDataContainer().set(key, PersistentDataType.STRING, setType.name());
+                cm.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, setType.name());
                 cm.displayName(Messages.parse("<dark_purple>Dragon Chestplate</dark_purple>"));
                 chest.setItemMeta(cm);
             }
 
             if (bm != null) {
-                bm.getPersistentDataContainer().set(key, PersistentDataType.STRING, setType.name());
+                bm.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, setType.name());
                 bm.displayName(Messages.parse("<dark_purple>Dragon Boots</dark_purple>"));
                 boots.setItemMeta(bm);
             }
 
             if (hm != null) {
-                hm.getPersistentDataContainer().set(key, PersistentDataType.STRING, setType.name());
+                hm.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, setType.name());
                 hm.displayName(Messages.parse("<dark_purple>Dragon Helmet</dark_purple>"));
                 helm.setItemMeta(hm);
             }

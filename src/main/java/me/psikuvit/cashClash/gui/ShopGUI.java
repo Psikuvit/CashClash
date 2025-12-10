@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.ShopItem;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -13,6 +14,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Arrays;
 import java.util.List;
@@ -166,6 +168,8 @@ public class ShopGUI {
                             Messages.parse("<gray>Max Level: <white>" + ee.getMaxLevel() + "</white></gray>"),
                             Messages.parse("<gray>Applies to: <white>" + ee.getApplicableMaterials().toString() + "</white></gray>")
                     ));
+                    meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, ee.name());
+
 
                     it.setItemMeta(meta);
                     inv.setItem(slot++, it);
@@ -190,7 +194,8 @@ public class ShopGUI {
                         Messages.parse("<gray>Price: <gold>$" + si.getPrice() + "</gold></gray>"),
                         Messages.parse("<gray>Max stack: <white>" + si.getMaxStack() + "</white></gray>")
                 ));
-                // add description from ShopItem if present
+                meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, si.name());
+
                 String desc = si.getDescription();
                 if (!desc.isEmpty()) meta.lore(List.of(Messages.parse(desc)));
 

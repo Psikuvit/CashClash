@@ -10,13 +10,13 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.ShopItem;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.util.ItemSelectionUtils;
 import me.psikuvit.cashClash.util.ItemUtils;
-import org.bukkit.NamespacedKey;
+import me.psikuvit.cashClash.util.Keys;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.entity.Player;
 import net.kyori.adventure.text.Component;
@@ -116,16 +116,15 @@ public class ShopGuiListener implements Listener {
         // refund
         ccp.addCoins(rec.price());
 
-        NamespacedKey key = new NamespacedKey(CashClashPlugin.getInstance(), "shop_bought");
         boolean removed = false;
 
         for (ItemStack is : player.getInventory().getContents()) {
             if (is == null) continue;
 
-            var m = is.getItemMeta();
-            if (m == null) continue;
+            ItemMeta meta = is.getItemMeta();
+            if (meta == null) continue;
 
-            var val = m.getPersistentDataContainer().get(key, PersistentDataType.STRING);
+            String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
             if (val != null && val.equals(rec.item().name())) {
                 int qty = is.getAmount();
 

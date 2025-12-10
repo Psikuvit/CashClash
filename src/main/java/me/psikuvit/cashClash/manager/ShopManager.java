@@ -6,11 +6,11 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.gui.ShopGUI;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -36,7 +36,6 @@ public class ShopManager {
     private final Map<UUID, UUID> entityToSession = new HashMap<>();
     private final Map<UUID, Integer> entityTeam = new HashMap<>();
 
-    private final NamespacedKey shopKey = new NamespacedKey(CashClashPlugin.getInstance(), "shop_npc");
 
     private ShopManager() {}
 
@@ -91,7 +90,7 @@ public class ShopManager {
             villager.customName(comp);
             villager.setCustomNameVisible(true);
 
-            villager.getPersistentDataContainer().set(shopKey, PersistentDataType.BYTE, (byte) 1);
+            villager.getPersistentDataContainer().set(Keys.SHOP_NPC_KEY, PersistentDataType.BYTE, (byte) 1);
             spawned.add(villager.getUniqueId());
             entityToSession.put(villager.getUniqueId(), session.getSessionId());
             entityTeam.put(villager.getUniqueId(), 1);

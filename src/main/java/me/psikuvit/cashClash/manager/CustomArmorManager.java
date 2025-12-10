@@ -1,16 +1,15 @@
 package me.psikuvit.cashClash.manager;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.items.CustomArmor;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.SchedulerUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import me.psikuvit.cashClash.CashClashPlugin;
-import org.bukkit.NamespacedKey;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -33,7 +32,6 @@ public class CustomArmorManager {
     private final Map<UUID, Long> deathmaulerLastDamage;
 
     private final Random random;
-    private final NamespacedKey customKey;
 
     private CustomArmorManager() {
         this.gillieLastMove = new ConcurrentHashMap<>();
@@ -45,7 +43,6 @@ public class CustomArmorManager {
         this.deathmaulerLastDamage = new ConcurrentHashMap<>();
 
         this.random = new Random();
-        this.customKey = new NamespacedKey(CashClashPlugin.getInstance(), "shop_bought");
     }
 
     public static CustomArmorManager getInstance() { 
@@ -64,7 +61,7 @@ public class CustomArmorManager {
             if (m == null) continue;
 
             PersistentDataContainer c = m.getPersistentDataContainer();
-            String val = c.get(customKey, PersistentDataType.STRING);
+            String val = c.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
 
             if (val == null) continue;
             try {
