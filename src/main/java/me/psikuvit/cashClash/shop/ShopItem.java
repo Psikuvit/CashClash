@@ -9,12 +9,8 @@ import org.bukkit.enchantments.Enchantment;
 public enum ShopItem {
     // Weapons
     IRON_SWORD(Material.IRON_SWORD, ShopCategory.WEAPONS, 1000),
-    IRON_PICKAXE(Material.IRON_PICKAXE, ShopCategory.WEAPONS, 500),
-    IRON_SHOVEL(Material.IRON_SHOVEL, ShopCategory.WEAPONS, 500),
     IRON_AXE(Material.IRON_AXE, ShopCategory.WEAPONS, 2000),
     DIAMOND_SWORD(Material.DIAMOND_SWORD, ShopCategory.WEAPONS, 3000),
-    DIAMOND_SHOVEL(Material.DIAMOND_SHOVEL, ShopCategory.WEAPONS, 1000),
-    DIAMOND_PICKAXE(Material.DIAMOND_PICKAXE, ShopCategory.WEAPONS, 1000),
     DIAMOND_AXE(Material.DIAMOND_AXE, ShopCategory.WEAPONS, 4000),
     MACE(Material.MACE, ShopCategory.WEAPONS, 70000),
 
@@ -102,6 +98,10 @@ public enum ShopItem {
 
     public long getStackPrice() {
         return price * maxStack;
+    }
+
+    public String getDisplayName() {
+        return name().substring(0, 1).toUpperCase() + name().substring(1).replace("_", " ");
     }
 
     public String getDescription() {

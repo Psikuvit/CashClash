@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.util;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
@@ -25,31 +24,36 @@ public final class ItemUtils {
     }
 
 
-    public static void equipArmorOrReplace(Player player, ItemStack newArmor) {
-        if (player == null || newArmor == null) return;
+    /**
+     * Equip armor or replace existing armor piece.
+     * @return The old armor piece that was replaced (null if slot was empty)
+     */
+    public static ItemStack equipArmorOrReplace(Player player, ItemStack newArmor) {
+        if (player == null || newArmor == null) return null;
         PlayerInventory inv = player.getInventory();
         Material m = newArmor.getType();
 
-        ItemStack old;
+        ItemStack old = null;
         if (m.name().endsWith("HELMET")) {
-            old = inv.getHelmet();
+            old = inv.getHelmet() != null ? inv.getHelmet().clone() : null;
             transferEnchants(old, newArmor);
             inv.setHelmet(newArmor);
         } else if (m.name().endsWith("CHESTPLATE")) {
-            old = inv.getChestplate();
+            old = inv.getChestplate() != null ? inv.getChestplate().clone() : null;
             transferEnchants(old, newArmor);
             inv.setChestplate(newArmor);
         } else if (m.name().endsWith("LEGGINGS")) {
-            old = inv.getLeggings();
+            old = inv.getLeggings() != null ? inv.getLeggings().clone() : null;
             transferEnchants(old, newArmor);
             inv.setLeggings(newArmor);
         } else if (m.name().endsWith("BOOTS")) {
-            old = inv.getBoots();
+            old = inv.getBoots() != null ? inv.getBoots().clone() : null;
             transferEnchants(old, newArmor);
             inv.setBoots(newArmor);
         } else {
             inv.addItem(newArmor);
         }
+        return old;
     }
 
     public static void transferEnchants(ItemStack from, ItemStack to) {
@@ -64,14 +68,22 @@ public final class ItemUtils {
         to.setItemMeta(toMeta);
     }
 
-    public static void replaceBestMatchingTool(Player player, ItemStack newItem) {
-        if (player == null || newItem == null) return;
+    /**
+     * Replace the best matching tool/weapon in inventory with the new item.
+     * @return The old item that was replaced (null if nothing was replaced)
+     */
+    public static ItemStack replaceBestMatchingTool(Player player, ItemStack newItem) {
+        if (player == null || newItem == null) return null;
         PlayerInventory inv = player.getInventory();
 
         int bestSlot = ItemSelectionUtils.findBestMatchingToolSlot(inv, newItem.getType());
 
         if (bestSlot != -1) {
             ItemStack best = inv.getItem(bestSlot);
+            if (best == null) return null;
+
+            ItemStack oldItem = best.clone(); // Save the old item before replacing
+
             ItemMeta oldMeta = best.getItemMeta();
             ItemMeta newMeta = newItem.getItemMeta();
 
@@ -83,8 +95,10 @@ public final class ItemUtils {
             }
 
             inv.setItem(bestSlot, newItem);
+            return oldItem;
         } else {
             inv.addItem(newItem);
+            return null;
         }
     }
 
