@@ -179,7 +179,11 @@ public class ArenaSelectionGUI {
         int newPlayerCount = arenaManager.getArenaPlayerCount(arenaNumber);
         Messages.send(player, "<green>Joined " + arena.getName() + "!</green>");
         Messages.send(player, "<yellow>Team: <gray>" + teamNumber + "</gray></yellow>");
-        Messages.send(player, "<gray>Waiting for players... (" + newPlayerCount + "/" + maxPlayers + ")</gray>");
+        session.getPlayers().forEach(uuid -> {
+            Player p = Bukkit.getPlayer(uuid);
+            Messages.send(p, "<gray>Waiting for players... (" + newPlayerCount + "/" + maxPlayers + ")</gray>");
+
+        });
 
         // If we have min players, start a 2-minute countdown (do not start the game immediately)
         int minPlayers = ConfigManager.getInstance().getMinPlayers();
