@@ -1,4 +1,6 @@
-package me.psikuvit.cashClash.game;
+package me.psikuvit.cashClash.game.round;
+
+import me.psikuvit.cashClash.game.CashQuakeEvent;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -142,3 +144,4 @@ public class RoundData {
             .orElse(null);
     }
 }
+
