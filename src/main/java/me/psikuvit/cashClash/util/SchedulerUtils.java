@@ -53,4 +53,14 @@ public class SchedulerUtils {
             return null;
         }
     }
+
+    public static BukkitTask runTaskTimerAsync(Runnable runnable, long delay, long period) {
+        if (!CashClashPlugin.getInstance().isEnabled()) return null;
+        try {
+            return Bukkit.getScheduler().runTaskTimerAsynchronously(CashClashPlugin.getInstance(), runnable, delay, period);
+        } catch (IllegalPluginAccessException ex) {
+            CashClashPlugin.getInstance().getLogger().warning("Scheduler prevented runTaskTimerAsync: " + ex.getMessage());
+            return null;
+        }
+    }
 }
