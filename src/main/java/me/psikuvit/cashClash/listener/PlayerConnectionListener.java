@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.listener;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.player.PlayerDataManager;
+import me.psikuvit.cashClash.manager.ScoreboardManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
@@ -37,6 +38,9 @@ public class PlayerConnectionListener implements Listener {
             player.teleport(lobbyLoc);
         }
 
+        // Set lobby scoreboard
+        ScoreboardManager.getInstance().setLobbyScoreboard(player);
+
         Messages.send(player, "<gold><bold>=== Welcome to Cash Clash ===</bold></gold>");
         Messages.send(player, "<yellow>Type <green>/cc arenas</green> <yellow>to browse and join games!</yellow>");
         Messages.send(player, "<gray>Use <yellow>/cc help <gray>for more commands.");
@@ -45,6 +49,9 @@ public class PlayerConnectionListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+
+        // Remove lobby scoreboard
+        ScoreboardManager.getInstance().removeLobbyScoreboard(player);
 
         // Remove from game if in one
         var session = GameManager.getInstance().getPlayerSession(player);

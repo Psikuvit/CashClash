@@ -4,7 +4,8 @@ import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.command.CommandHandler;
 import me.psikuvit.cashClash.listener.*;
 import me.psikuvit.cashClash.manager.GameManager;
-import me.psikuvit.cashClash.player.PlayerDataManager;
+import me.psikuvit.cashClash.manager.PlayerDataManager;
+import me.psikuvit.cashClash.manager.ScoreboardManager;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -41,6 +42,9 @@ public final class CashClashPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // Shutdown scoreboard system first
+        ScoreboardManager.getInstance().shutdown();
+
         PlayerDataManager.getInstance().shutdown();
         GameManager.getInstance().shutdown();
 

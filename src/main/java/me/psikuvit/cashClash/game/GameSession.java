@@ -157,6 +157,8 @@ public class GameSession {
 
         roundManager.startShoppingPhase(currentRound);
         players.keySet().forEach(this::applyKit);
+        ScoreboardManager.getInstance().createBoardForSession(this);
+
 
         CashClashPlugin.getInstance().getLogger().info("GameSession " + sessionId + " started in Arena " + arenaNumber);
     }

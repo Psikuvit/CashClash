@@ -68,12 +68,46 @@ messages:
 
 # Scoreboard configuration (MiniMessage format allowed)
 scoreboard:
-  title: "<gold><bold>Cash Clash - {state}</bold></gold>"
-  lines:
-    - "<gray>Round:</gray> <white>{round}"
-    - "<gray>Status:</gray> <white>{state}"
-    - ""
-    - "<gray>Team 1:</gray> <white>${team1_coins}"
-    - "<gray>Team 2:</gray> <white>${team2_coins}"
-    - ""
-    - "<gray>Your:</gray> <white>${player_coins} coins"
+  # Lobby/Hub scoreboard - shown when player is not in a game
+  lobby:
+    enabled: true
+    title: "<gold><bold>Cash Clash</bold></gold>"
+    lines:
+      - ""
+      - "<gray>Player:</gray> <white>{player}"
+      - ""
+      - "<yellow>Your Stats:</yellow>"
+      - "<gray>Wins:</gray> <green>{wins}"
+      - "<gray>Losses:</gray> <red>{losses}"
+      - "<gray>K/D:</gray> <white>{kdr}"
+      - ""
+      - "<gray>Kills:</gray> <white>{kills}"
+      - "<gray>Deaths:</gray> <white>{deaths}"
+      - ""
+      - "<gray>Online:</gray> <white>{online}/{max_online}"
+      - ""
+      - "<yellow>play.cashclash.net</yellow>"
+
+  # Game scoreboard - shown when player is in an active game
+  game:
+    enabled: true
+    title: "<gold><bold>Round {round} - {phase}</bold></gold>"
+    lines:
+      - ""
+      - "<yellow>Time:</yellow> <white>{time}"
+      - "<yellow>Phase:</yellow> <white>{phase}"
+      - ""
+      - "<green>Your Team ({your_team}):</green>"
+      - "<gray>Coins:</gray> <white>${your_team_coins}"
+      - "<gray>Alive:</gray> <white>{your_team_alive}/4"
+      - ""
+      - "<red>Enemy Team ({enemy_team}):</red>"
+      - "<gray>Coins:</gray> <white>${enemy_team_coins}"
+      - "<gray>Alive:</gray> <white>{enemy_team_alive}/4"
+      - ""
+      - "<aqua>You:</aqua>"
+      - "<gray>Coins:</gray> <gold>${player_coins}"
+      - "<gray>Lives:</gray> <white>{player_lives}"
+      - "<gray>Kills:</gray> <white>{player_kills}"
+      - ""
+      - "<yellow>play.cashclash.net</yellow>"

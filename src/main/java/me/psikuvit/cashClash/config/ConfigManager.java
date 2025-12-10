@@ -160,11 +160,29 @@ public class ConfigManager {
         CashClashPlugin.getInstance().reloadConfig();
     }
 
-    public String getScoreboardTitle() {
-        return config.getString("scoreboard.title", "<gold>Cash Clash</gold>");
+
+    public String getLobbyScoreboardTitle() {
+        return config.getString("scoreboard.lobby.title", "<gold><bold>Cash Clash</bold></gold>");
     }
 
-    public List<String> getScoreboardLines() {
-        return config.getStringList("scoreboard.lines");
+    public List<String> getLobbyScoreboardLines() {
+        return config.getStringList("scoreboard.lobby.lines");
     }
+
+    public boolean isLobbyScoreboardEnabled() {
+        return config.getBoolean("scoreboard.lobby.enabled", true);
+    }
+
+    public String getGameScoreboardTitle() {
+        return config.getString("scoreboard.game.title", "<gold><bold>Cash Clash</bold></gold>");
+    }
+
+    public List<String> getGameScoreboardLines() {
+        return config.getStringList("scoreboard.game.lines");
+    }
+
+    public boolean isGameScoreboardEnabled() {
+        return config.getBoolean("scoreboard.game.enabled", true);
+    }
+
 }
