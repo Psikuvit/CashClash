@@ -7,9 +7,11 @@ import java.util.UUID;
 public class PlayerData {
     private UUID uuid;
     private int wins;
+    private int losses;
     private int deaths;
     private int kills;
     private long totalCoinsInvested;
+    private long totalCoinsEarned;
     private Map<String, Integer> ownedEnchants;
 
     // No-arg constructor for Gson
@@ -18,9 +20,11 @@ public class PlayerData {
     public PlayerData(UUID uuid) {
         this.uuid = uuid;
         this.wins = 0;
+        this.losses = 0;
         this.deaths = 0;
         this.kills = 0;
         this.totalCoinsInvested = 0L;
+        this.totalCoinsEarned = 0L;
         this.ownedEnchants = new HashMap<>();
     }
 
@@ -42,6 +46,18 @@ public class PlayerData {
 
     public void incWins() {
         this.wins++;
+    }
+
+    public int getLosses() {
+        return losses;
+    }
+
+    public void setLosses(int losses) {
+        this.losses = losses;
+    }
+
+    public void incLosses() {
+        this.losses++;
     }
 
     public int getDeaths() {
@@ -78,6 +94,18 @@ public class PlayerData {
 
     public void addInvestedCoins(long amount) {
         this.totalCoinsInvested += amount;
+    }
+
+    public long getTotalCoinsEarned() {
+        return totalCoinsEarned;
+    }
+
+    public void setTotalCoinsEarned(long totalCoinsEarned) {
+        this.totalCoinsEarned = totalCoinsEarned;
+    }
+
+    public void addEarnedCoins(long amount) {
+        this.totalCoinsEarned += amount;
     }
 
     public Map<String, Integer> getOwnedEnchants() {
