@@ -29,7 +29,7 @@ public class ShopCommand extends AbstractArgCommand {
             return true;
         }
 
-        ShopGUI.openCategories(player);
+        ShopGUI.openMain(player);
         return true;
     }
 }

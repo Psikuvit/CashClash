@@ -9,7 +9,23 @@ import org.jetbrains.annotations.NotNull;
  *
  * @param type "categories" or "category:<name>"
  */
-public record ShopHolder(Inventory inventory, String type) implements InventoryHolder {
+public class ShopHolder implements InventoryHolder {
+
+    private final Inventory inventory;
+    private final GuiType type;
+    private final ShopCategory category;
+
+    public ShopHolder(Inventory inventory, GuiType type) {
+        this.inventory = inventory;
+        this.type = type;
+        this.category = null;
+    }
+
+    public ShopHolder(Inventory inventory, ShopCategory shopCategory) {
+        this.inventory = inventory;
+        this.type = GuiType.CATEGORY;
+        this.category = shopCategory;
+    }
 
     @Override
     public @NotNull Inventory getInventory() {

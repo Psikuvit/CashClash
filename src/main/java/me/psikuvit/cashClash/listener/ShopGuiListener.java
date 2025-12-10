@@ -44,8 +44,8 @@ public class ShopGuiListener implements Listener {
 
         event.setCancelled(true);
 
-        if (type.startsWith("categories")) {
-            handleShopCategories(event, player); // removed unused 'sh' param
+        if (type == GuiType.MAIN) {
+            handleShopCategories(event, player);
             return;
         }
 

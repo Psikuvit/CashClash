@@ -145,6 +145,6 @@ public class ShopManager {
             return;
         }
 
-        ShopGUI.openCategories(player);
+        ShopGUI.openMain(player);
     }
 }
