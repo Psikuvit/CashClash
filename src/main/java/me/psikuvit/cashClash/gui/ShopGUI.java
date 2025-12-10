@@ -39,8 +39,8 @@ public class ShopGUI {
         return ccp.getCoins();
     }
 
-    public static void openCategories(Player player) {
-        Inventory inv = Bukkit.createInventory(new ShopHolder(null, "categories"), 54, Messages.parse("<gold><bold>Shop</bold></gold>"));
+    public static void openMain(Player player) {
+        Inventory inv = Bukkit.createInventory(new ShopHolder(null, GuiType.MAIN), 54, Messages.parse("<gold><bold>Shop</bold></gold>"));
 
         ItemStack bg = backgroundPane();
         for (int i = 0; i < inv.getSize(); i++) {
@@ -140,7 +140,7 @@ public class ShopGUI {
     }
 
     public static void openCategoryItems(Player player, ShopCategory category) {
-        Inventory inv = Bukkit.createInventory(new ShopHolder(null, "category:" + category.getDisplayName()), 54, Messages.parse("<gold><bold>Shop</bold></gold>"));
+        Inventory inv = Bukkit.createInventory(new ShopHolder(null, category), 54, Messages.parse("<gold><bold>Shop</bold></gold>"));
 
         ItemStack bg = backgroundPane();
         for (int i = 0; i < inv.getSize(); i++) {
@@ -179,21 +179,20 @@ public class ShopGUI {
             for (ShopItem si : items) {
                 if (slot >= 45) break;
                 int amount = Math.max(1, Math.min(si.getMaxStack(), 64));
+
                 ItemStack it = new ItemStack(si.getMaterial(), amount);
                 ItemMeta meta = it.getItemMeta();
                 if (meta == null) continue;
 
-                meta.displayName(Messages.parse("<yellow>" + si.name().replace('_', ' ') + "</yellow>"));
+                String name = si.name().replace('_', ' ');
+                meta.displayName(Messages.parse("<yellow>" + name.substring(0, 1).toUpperCase() + name.substring(1) + "</yellow>"));
                 meta.lore(Arrays.asList(
                         Messages.parse("<gray>Price: <gold>$" + si.getPrice() + "</gold></gray>"),
                         Messages.parse("<gray>Max stack: <white>" + si.getMaxStack() + "</white></gray>")
                 ));
                 // add description from ShopItem if present
                 String desc = si.getDescription();
-                if (!desc.isEmpty()) {
-
-                    meta.lore(List.of(Messages.parse(desc)));
-                }
+                if (!desc.isEmpty()) meta.lore(List.of(Messages.parse(desc)));
 
                 it.setItemMeta(meta);
                 inv.setItem(slot++, it);

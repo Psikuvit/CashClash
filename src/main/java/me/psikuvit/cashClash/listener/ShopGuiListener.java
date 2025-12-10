@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.gui.GuiType;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.ShopHolder;
 import me.psikuvit.cashClash.manager.GameManager;
@@ -38,19 +39,17 @@ public class ShopGuiListener implements Listener {
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
         if (!(holder instanceof ShopHolder sh)) return;
 
-        String type = sh.type();
+        GuiType type = sh.getType();
         if (type == null) return;
 
-        if (type.startsWith("categories") || type.startsWith("category:")) {
-            event.setCancelled(true);
-        }
+        event.setCancelled(true);
 
         if (type.startsWith("categories")) {
             handleShopCategories(event, player); // removed unused 'sh' param
             return;
         }
 
-        if (type.startsWith("category:")) {
+        if (type == GuiType.CATEGORY) {
             handleCategoryItems(event, player, sh);
         }
     }
@@ -79,11 +78,11 @@ public class ShopGuiListener implements Listener {
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || !clicked.hasItemMeta()) return;
 
-        var itemMeta = clicked.getItemMeta();
-        Component itemComp = itemMeta.displayName();
+        ItemMeta itemMeta = clicked.getItemMeta();
+        String pdcValue = itemMeta.getPersistentDataContainer().get(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING);
 
         if (event.getSlot() == 45) {
-            player.closeInventory();
+            ShopGUI.openMain(player);
             return;
         }
 
@@ -92,15 +91,11 @@ public class ShopGuiListener implements Listener {
             return;
         }
 
-        String type = sh.type();
-        if (type != null && type.startsWith("category:")) {
-            String cat = type.substring("category:".length());
-            if (cat.equalsIgnoreCase(ShopCategory.ENCHANTS.getDisplayName())) {
-                if (handleEnchantPurchase(player, itemComp)) return;
-            }
+        if (sh.getCategory() == ShopCategory.ENCHANTS) {
+            handleEnchantPurchase(player, pdcValue);
+        } else {
+            handleShopItemClick(player, pdcValue);
         }
-
-        handleShopItemClick(player, itemComp);
     }
 
     private void handleUndoPurchase(Player player) {
@@ -112,7 +107,7 @@ public class ShopGuiListener implements Listener {
         }
 
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
-        var rec = ccp.popLastPurchase();
+        PurchaseRecord rec = ccp.popLastPurchase();
         if (rec == null) {
             Messages.send(player, "<red>No purchase to undo.</red>");
             return;
@@ -144,87 +139,66 @@ public class ShopGuiListener implements Listener {
         Messages.send(player, "<green>Purchase undone. Refunded $" + rec.price() + (removed ? "" : " (could not find item to remove)") + "</green>");
     }
 
-    private boolean handleEnchantPurchase(Player player, Component itemComp) {
-        for (EnchantEntry ee : EnchantEntry.values()) {
-            for (int lvl = 1; lvl <= ee.getMaxLevel(); lvl++) {
-                Component expected = Messages.parse("<yellow>" + ee.getDisplayName() + " " + lvl + "</yellow>");
-                if (expected.equals(itemComp)) {
-
-                    GameSession sess = GameManager.getInstance().getPlayerSession(player);
-                    if (sess == null) {
-                        Messages.send(player, "<red>You must be in a game to shop.</red>");
-                        player.closeInventory();
-                        return true;
-                    }
-
-                    CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
-                    if (ccp == null) return true;
-
-                    long price = ee.getPriceForLevel(lvl);
-                    if (!ccp.canAfford(price)) {
-                        Messages.send(player, "<red>Not enough coins to buy enchant.</red>");
-                        return true;
-                    }
-
-                    ccp.deductCoins(price);
-                    ccp.addOwnedEnchant(ee, lvl);
-
-                    ItemUtils.applyEnchantToBestItem(player, ee, lvl);
-                    Messages.send(player, "<green>Purchased enchant " + ee.getDisplayName() + " " + lvl + " for $" + price + "</green>");
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private void handleShopItemClick(Player player, Component itemComp) {
-        for (ShopItem si : ShopItem.values()) {
-            Component expectedComp = Messages.parse("<yellow>" + si.name().replace('_', ' ') + "</yellow>");
-            if (!expectedComp.equals(itemComp)) continue;
-
-            // validate session and player data
+    private void handleEnchantPurchase(Player player, String pdcValue) {
+        EnchantEntry ee = EnchantEntry.valueOf(pdcValue);
+        for (int lvl = 1; lvl <= ee.getMaxLevel(); lvl++) {
             GameSession sess = GameManager.getInstance().getPlayerSession(player);
             if (sess == null) {
                 Messages.send(player, "<red>You must be in a game to shop.</red>");
                 player.closeInventory();
                 return;
             }
+
             CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
             if (ccp == null) return;
+
+            long price = ee.getPriceForLevel(lvl);
+            if (!ccp.canAfford(price)) {
+                Messages.send(player, "<red>Not enough coins to buy enchant.</red>");
+                return;
+            }
+
+            ccp.deductCoins(price);
+            ccp.addOwnedEnchant(ee, lvl);
+
+            ItemUtils.applyEnchantToBestItem(player, ee, lvl);
+            Messages.send(player, "<green>Purchased enchant " + ee.getDisplayName() + " " + lvl + " for $" + price + "</green>");
+        }
+    }
+
+
+    private void handleShopItemClick(Player player, String pdcValue) {
+        ShopItem si = ShopItem.valueOf(pdcValue);
+
+        // validate session and player data
+        GameSession sess = GameManager.getInstance().getPlayerSession(player);
+        if (sess == null) {
+            Messages.send(player, "<red>You must be in a game to shop.</red>");
+            player.closeInventory();
+            return;
+        }
+
+        CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
+        if (ccp == null) return;
 
             long price = si.getPrice();
             if (!canAffordAndDeduct(ccp, price, player)) return;
 
-            // handle immediate special cases
-            if (si == ShopItem.UPGRADE_TO_NETHERITE) {
-                handleUpgradeToNetherite(player, ccp, si, price);
-                return;
-            }
+        if (si == ShopItem.UPGRADE_TO_NETHERITE) {
+            handleUpgradeToNetherite(player, ccp, si, price);
+            return;
+        }
 
             // build the item that will be given
             ItemStack given = createTaggedItem(si);
 
-            // special set purchases
-            if (si == ShopItem.DEATHMAULER_OUTFIT || si == ShopItem.DRAGON_SET) {
-                giveSpecialSet(player, si, ccp, price);
-                return;
-            }
-
-            // diamond prereq
-            if (!ensureDiamondPrerequisite(si, player, ccp)) return;
-
-            // give item (equip or add)
-            giveItemToPlayer(player, si, given, ccp);
+        if (si == ShopItem.DEATHMAULER_OUTFIT || si == ShopItem.DRAGON_SET) {
+            giveSpecialSet(player, si, ccp, price);
             return;
         }
-    }
 
-    private boolean canAffordAndDeduct(CashClashPlayer ccp, long price, Player player) {
-        if (!ccp.canAfford(price)) {
-            Messages.send(player, "<red>Not enough coins to buy (cost: $" + price + ")</red>");
-            return false;
-        }
+        if (!ensureDiamondPrerequisite(si, player, ccp)) return;
+        giveItemToPlayer(ccp, si, given);
         ccp.deductCoins(price);
         return true;
     }
