@@ -1,7 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.player.PlayerDataManager;
+import me.psikuvit.cashClash.manager.PlayerDataManager;
 import me.psikuvit.cashClash.player.PlayerData;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
@@ -12,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class StatsCommand extends AbstractArgCommand {
     public StatsCommand() {
