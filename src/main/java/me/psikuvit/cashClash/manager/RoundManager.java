@@ -5,12 +5,14 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SoundUtils;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
@@ -84,6 +86,10 @@ public class RoundManager {
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
             timeRemaining--;
 
+            if (timeRemaining <= 3 && timeRemaining > 0) {
+                SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
+            }
+
             if (timeRemaining <= 0) {
                 endShoppingPhase();
             } else if (timeRemaining <= 10 || timeRemaining % 30 == 0) {
@@ -134,6 +140,8 @@ public class RoundManager {
             phaseTask = null;
         }
 
+        SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
+
         Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>Round " + session.getCurrentRound() + " ended!</yellow>");
 
         // Award bonuses
@@ -158,9 +166,11 @@ public class RoundManager {
             .count();
 
         if (team1Alive == 0) {
+            SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team 2 wins the round!</bold></red>");
             endCombatPhase();
         } else if (team2Alive == 0) {
+            SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team 1 wins the round!</bold></red>");
             endCombatPhase();
         }

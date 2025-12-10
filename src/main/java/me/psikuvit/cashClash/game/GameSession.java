@@ -141,15 +141,16 @@ public class GameSession {
         if (state != GameState.WAITING) return;
         if (gameWorld == null) throw new IllegalStateException("Game world is null for session " + sessionId);
 
+        // Play game start sound (warden sonic boom)
+        SoundUtils.playTo(players.keySet(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.0f);
+
         state = GameState.ROUND_1_SHOPPING;
         currentRound = 1;
         phaseStartTime = System.currentTimeMillis();
 
         ArenaManager.getInstance().setArenaState(arenaNumber, GameState.ROUND_1_SHOPPING);
-        ScoreboardManager.getInstance().createBoardForSession(this);
 
         currentRoundData = new RoundData(currentRound, players.keySet());
-
         players.values().forEach(CashClashPlayer::initializeRound1);
 
         roundManager = new RoundManager(this);
@@ -190,11 +191,13 @@ public class GameSession {
              }
 
              if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10) Messages.broadcast(players.keySet(), "<yellow>Game starting in <gold>" + countdownSecondsRemaining + "s</gold>...</yellow>");
-             SoundUtils.playTo(players.keySet(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+
+             if (countdownSecondsRemaining <= 5 && countdownSecondsRemaining > 0) {
+                 SoundUtils.playTo(players.keySet(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
+             }
 
              if (countdownSecondsRemaining <= 0) {
                  Messages.broadcast(players.keySet(), "<green>Starting game now!</green>");
-                 SoundUtils.playTo(players.keySet(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 
                  players.keySet()
                          .stream()
