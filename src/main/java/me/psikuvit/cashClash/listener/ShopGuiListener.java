@@ -135,6 +135,38 @@ public class ShopGuiListener implements Listener {
                 break;
             }
         }
+        // If not found in main inventory, also check armor slots and off-hand
+        if (!removed) {
+            ItemStack[] armor = player.getInventory().getArmorContents();
+            for (int i = 0; i < armor.length; i++) {
+                ItemStack is = armor[i];
+                if (is == null) continue;
+
+                ItemMeta meta = is.getItemMeta();
+                if (meta == null) continue;
+
+                String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+                if (val != null && val.equals(rec.item().name())) {
+                    armor[i] = null;
+                    player.getInventory().setArmorContents(armor);
+                    removed = true;
+                    break;
+                }
+            }
+        }
+
+        if (!removed) {
+            ItemStack off = player.getInventory().getItemInOffHand();
+            ItemMeta meta = off.getItemMeta();
+            if (meta != null) {
+                String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+                if (val != null && val.equals(rec.item().name())) {
+                    player.getInventory().setItemInOffHand(null);
+                    removed = true;
+                }
+            }
+        }
+
         Messages.send(player, "<green>Purchase undone. Refunded $" + rec.price() + (removed ? "" : " (could not find item to remove)") + "</green>");
     }
 
@@ -180,16 +212,18 @@ public class ShopGuiListener implements Listener {
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return;
 
-            long price = si.getPrice();
-            if (!canAffordAndDeduct(ccp, price, player)) return;
+        long price = si.getPrice();
+        if (!ccp.canAfford(price)) {
+            Messages.send(player, "<red>Not enough coins to buy (cost: $" + price + ")</red>");
+            return;
+        }
 
         if (si == ShopItem.UPGRADE_TO_NETHERITE) {
             handleUpgradeToNetherite(player, ccp, si, price);
             return;
         }
 
-            // build the item that will be given
-            ItemStack given = createTaggedItem(si);
+        ItemStack given = ItemUtils.createTaggedItem(si);
 
         if (si == ShopItem.DEATHMAULER_OUTFIT || si == ShopItem.DRAGON_SET) {
             giveSpecialSet(player, si, ccp, price);
@@ -199,7 +233,6 @@ public class ShopGuiListener implements Listener {
         if (!ensureDiamondPrerequisite(si, player, ccp)) return;
         giveItemToPlayer(ccp, si, given);
         ccp.deductCoins(price);
-        return true;
     }
 
     private void handleUpgradeToNetherite(Player player, CashClashPlayer ccp, ShopItem si, long price) {
@@ -207,15 +240,11 @@ public class ShopGuiListener implements Listener {
         if (upgraded) {
             ccp.addPurchase(new PurchaseRecord(si, 1, price));
             Messages.send(player, "<green>Upgraded your best diamond item to netherite.</green>");
-            SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+            SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
         } else {
             Messages.send(player, "<yellow>No eligible diamond item found to upgrade.</yellow>");
             ccp.addCoins(price);
         }
-    }
-
-    private ItemStack createTaggedItem(ShopItem si) {
-        return ItemUtils.createTaggedItem(si);
     }
 
     private void giveSpecialSet(Player player, ShopItem si, CashClashPlayer ccp, long price) {
@@ -224,7 +253,7 @@ public class ShopGuiListener implements Listener {
 
         ccp.addPurchase(new PurchaseRecord(si, 1, price));
         Messages.send(player, "<green>Purchased " + si.name().replace('_', ' ') + " for $" + price + "</green>");
-        SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+        SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
     }
 
     private boolean ensureDiamondPrerequisite(ShopItem si, Player player, CashClashPlayer ccp) {
@@ -234,7 +263,10 @@ public class ShopGuiListener implements Listener {
         boolean hasIron = false;
         for (ItemStack is : player.getInventory().getContents()) {
             if (is == null) continue;
-            if (is.getType().name().equals(ironName)) { hasIron = true; break; }
+            if (is.getType().name().equals(ironName)) {
+                hasIron = true;
+                break;
+            }
         }
 
         if (!hasIron) {
@@ -245,7 +277,8 @@ public class ShopGuiListener implements Listener {
         return hasIron;
     }
 
-    private void giveItemToPlayer(Player player, ShopItem si, ItemStack item, CashClashPlayer ccp) {
+    private void giveItemToPlayer(CashClashPlayer ccp, ShopItem si, ItemStack item) {
+        Player player = ccp.getPlayer();
         if (si.getCategory() == ShopCategory.ARMOR) {
             ItemUtils.equipArmorOrReplace(player, item);
         } else if (ItemSelectionUtils.isToolOrWeapon(si.getMaterial())) {
@@ -255,9 +288,9 @@ public class ShopGuiListener implements Listener {
         }
 
         ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice()));
-        // apply owned enchants centrally
+
         ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
         Messages.send(player, "<green>Purchased " + si.name().replace('_', ' ') + " for $" + si.getPrice() + "</green>");
-        SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+        SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
     }
 }

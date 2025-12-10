@@ -49,12 +49,6 @@ public final class ItemUtils {
             inv.setBoots(newArmor);
         } else {
             inv.addItem(newArmor);
-            return;
-        }
-
-        if (old != null && old.getType() != Material.AIR) {
-            var leftover = inv.addItem(old);
-            if (!leftover.isEmpty()) player.getWorld().dropItemNaturally(player.getLocation(), old);
         }
     }
 
