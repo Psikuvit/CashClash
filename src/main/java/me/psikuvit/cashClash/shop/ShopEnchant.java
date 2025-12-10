@@ -81,6 +81,10 @@ public enum ShopEnchant {
         return target;
     }
 
+    public String getDisplayName() {
+        return name().charAt(0) + name().substring(1).toLowerCase().replace('_', ' ');
+    }
+
     public enum EnchantTarget {
         SWORD, AXE, ARMOR, BOOTS, BOW, CROSSBOW
     }

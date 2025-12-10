@@ -17,7 +17,7 @@ public enum ShopCategory {
     INVESTMENTS;
 
     public String getDisplayName() {
-        return name().charAt(0) + name().substring(1).toLowerCase().replace('_', ' ');
+        return name().substring(0, 1).toUpperCase() + name().substring(1).replace("_", " ");
     }
 }
 

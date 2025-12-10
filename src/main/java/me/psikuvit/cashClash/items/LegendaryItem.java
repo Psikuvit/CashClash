@@ -25,12 +25,7 @@ public enum LegendaryItem {
     }
 
     public String getDisplayName() {
-        String[] words = name().split("_");
-        StringBuilder result = new StringBuilder();
-        for (String word : words) {
-            result.append(word.charAt(0)).append(word.substring(1).toLowerCase()).append(" ");
-        }
-        return result.toString().trim();
+        return name().substring(0, 1).toUpperCase() + name().substring(1).replace("_", " ");
     }
 }
 
