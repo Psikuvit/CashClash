@@ -1,17 +1,17 @@
 package me.psikuvit.cashClash.listener;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.BonusManager;
 import me.psikuvit.cashClash.manager.CustomArmorManager;
 import me.psikuvit.cashClash.manager.EconomyManager;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.player.BonusType;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.player.PlayerDataManager;
+import me.psikuvit.cashClash.manager.PlayerDataManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -161,6 +161,11 @@ public class DeathListener implements Listener {
         CashClashPlayer cashClashPlayer = session.getCashClashPlayer(player.getUniqueId());
         if (cashClashPlayer != null) {
             cashClashPlayer.setRespawnProtection(respawnProtectionSec * 1000L); // Convert to milliseconds
+        }
+
+        BonusManager bonusManager = session.getBonusManager();
+        if (bonusManager != null) {
+            bonusManager.onRespawn(player.getUniqueId());
         }
 
         Messages.send(player, "<green>You have respawned.</green>");

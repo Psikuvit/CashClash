@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.round.RoundData;
+import me.psikuvit.cashClash.manager.BonusManager;
 import me.psikuvit.cashClash.manager.CashQuakeManager;
 import me.psikuvit.cashClash.manager.EconomyManager;
 import me.psikuvit.cashClash.manager.GameManager;
@@ -59,6 +60,7 @@ public class GameSession {
 
     private RoundManager roundManager;
     private CashQuakeManager cashQuakeManager;
+    private BonusManager bonusManager;
 
     // Countdown/start preparation
     private BukkitTask startCountdownTask;
@@ -137,6 +139,10 @@ public class GameSession {
         return currentRoundData;
     }
 
+    public BonusManager getBonusManager() {
+        return bonusManager;
+    }
+
     public void start() {
         if (state != GameState.WAITING) return;
         if (gameWorld == null) throw new IllegalStateException("Game world is null for session " + sessionId);
@@ -155,6 +161,7 @@ public class GameSession {
 
         roundManager = new RoundManager(this);
         cashQuakeManager = new CashQuakeManager(this);
+        bonusManager = new BonusManager(this);
 
         roundManager.startShoppingPhase(currentRound);
         players.keySet().forEach(this::applyKit);
