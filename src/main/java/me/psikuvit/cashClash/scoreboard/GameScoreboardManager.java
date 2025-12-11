@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.TeamColorUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -73,6 +74,9 @@ public class GameScoreboardManager {
             LobbyScoreboardManager.getInstance().removeScoreboard(playerUuid);
 
             Scoreboard board = Objects.requireNonNull(Bukkit.getScoreboardManager()).getNewScoreboard();
+
+            TeamColorUtils.assignPlayersToTeams(board, session);
+
             playerBoards.put(playerUuid, board);
             player.setScoreboard(board);
         }
@@ -103,6 +107,10 @@ public class GameScoreboardManager {
         LobbyScoreboardManager.getInstance().removeScoreboard(player);
 
         Scoreboard board = Objects.requireNonNull(Bukkit.getScoreboardManager()).getNewScoreboard();
+
+        // Setup team colors for tab list and nametag coloring
+        TeamColorUtils.assignPlayersToTeams(board, session);
+
         playerBoards.put(player.getUniqueId(), board);
         player.setScoreboard(board);
 
@@ -392,4 +400,6 @@ public class GameScoreboardManager {
         sessionBoards.clear();
     }
 }
+
+
 
