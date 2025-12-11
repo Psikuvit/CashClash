@@ -17,10 +17,6 @@ public enum GameState {
     ROUND_5_COMBAT,
     ENDING;
 
-    public boolean isShopping() {
-        return this.name().contains("SHOPPING");
-    }
-
     public boolean isCombat() {
         return this.name().contains("COMBAT");
     }

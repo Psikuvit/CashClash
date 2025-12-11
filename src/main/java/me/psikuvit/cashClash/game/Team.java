@@ -46,10 +46,6 @@ public class Team {
         forfeitVotes.add(uuid);
     }
 
-    public void removeForfeitVote(UUID uuid) {
-        forfeitVotes.remove(uuid);
-    }
-
     public boolean hasAllForfeitVotes() {
         return forfeitVotes.size() == players.size() && !players.isEmpty();
     }

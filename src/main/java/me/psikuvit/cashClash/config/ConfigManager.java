@@ -42,14 +42,6 @@ public class ConfigManager {
         return config.getInt("game.shopping-phase-duration", 90);
     }
 
-    public boolean isForfeitEnabled() {
-        return config.getBoolean("game.forfeit-enabled", true);
-    }
-
-    public int getForfeitDelay() {
-        return config.getInt("game.forfeit-delay", 10);
-    }
-
     public int getForfeitCombatGrace() {
         return config.getInt("game.forfeit-combat-grace", 5); // seconds
     }
@@ -60,14 +52,6 @@ public class ConfigManager {
 
     public int getRespawnProtection() {
         return config.getInt("game.respawn-protection", 15); // seconds where pearls/bounce pads disabled
-    }
-
-    public int getEarlyRoundLives() {
-        return config.getInt("rounds.early-round-lives", 3);
-    }
-
-    public int getLateRoundLives() {
-        return config.getInt("rounds.late-round-lives", 1);
     }
 
     public long getForfeitBonus() {

@@ -63,13 +63,6 @@ public class TemplateWorld {
         this.spectatorSpawn = loc;
     }
 
-    public void addTeam1Spawn(Location loc) {
-        if (team1Spawns.size() < 4) team1Spawns.add(loc);
-    }
-    public void addTeam2Spawn(Location loc) {
-        if (team2Spawns.size() < 4) team2Spawns.add(loc);
-    }
-
     public void setTeam1Spawn(int idx, Location loc) {
         ensureListSize(team1Spawns, idx + 1);
         team1Spawns.set(idx, loc);
@@ -92,14 +85,6 @@ public class TemplateWorld {
     public Location getTeam2Spawn(int idx) {
         if (idx < 0 || idx >= team2Spawns.size()) return null;
         return team2Spawns.get(idx);
-    }
-
-    public List<Location> getTeam1Spawns() {
-        return new ArrayList<>(team1Spawns);
-    }
-
-    public List<Location> getTeam2Spawns() {
-        return new ArrayList<>(team2Spawns);
     }
 
     public Location getTeam1ShopSpawn() {

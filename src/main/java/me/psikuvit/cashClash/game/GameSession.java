@@ -55,8 +55,6 @@ public class GameSession {
     private final Map<UUID, CashClashPlayer> players;
 
     private RoundData currentRoundData;
-    private long roundStartTime;
-    private long phaseStartTime;
 
     private RoundManager roundManager;
     private CashQuakeManager cashQuakeManager;
@@ -152,7 +150,6 @@ public class GameSession {
 
         state = GameState.ROUND_1_SHOPPING;
         currentRound = 1;
-        phaseStartTime = System.currentTimeMillis();
 
         ArenaManager.getInstance().setArenaState(arenaNumber, GameState.ROUND_1_SHOPPING);
 
@@ -173,7 +170,7 @@ public class GameSession {
 
     /**
      * Start a countdown (in seconds) that will begin the game when it reaches zero.
-     * If players drop below minPlayers the countdown is cancelled.
+     * If players drop below minPlayers the countdown is canceled.
      */
     public synchronized void startCountdown(int seconds) {
         if (startingCountdown) return;
@@ -250,8 +247,6 @@ public class GameSession {
             case 4 -> state = GameState.ROUND_4_COMBAT;
             case 5 -> state = GameState.ROUND_5_COMBAT;
         }
-        long now = System.currentTimeMillis();
-        roundStartTime = phaseStartTime = now;
 
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
         if (cashQuakeManager != null) cashQuakeManager.startEventScheduler();
@@ -323,7 +318,7 @@ public class GameSession {
             case 4 -> state = GameState.ROUND_4_SHOPPING;
             case 5 -> state = GameState.ROUND_5_SHOPPING;
         }
-        phaseStartTime = System.currentTimeMillis();
+
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
         if (roundManager != null) roundManager.startShoppingPhase(currentRound);
     }
@@ -444,8 +439,6 @@ public class GameSession {
     public Team getOpposingTeam(Team team) {
         return team == team1 ? team2 : team1;
     }
-
-    public RoundData getRoundData() { return currentRoundData; }
 
     public void requestForfeit(Player requester) {
         Team team = getPlayerTeam(requester);
