@@ -166,6 +166,7 @@ public enum Kit {
 
         // Shield
         player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
+        player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
     }
 
     private int getSwordSlot(Player player) {
