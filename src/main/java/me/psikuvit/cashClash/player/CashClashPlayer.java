@@ -33,7 +33,6 @@ public class CashClashPlayer {
 
     // Round tracking
     private int lives;
-    private long lastDamageTime;
     private double lowestHealthThisLife;
     private boolean reachedOneHeart;
     private long oneHeartTime;
