@@ -41,6 +41,9 @@ public class PlayerConnectionListener implements Listener {
         // Set lobby scoreboard
         ScoreboardManager.getInstance().setLobbyScoreboard(player);
 
+        // Set lobby tab appearance
+        TabListManager.getInstance().setPlayerToLobby(player);
+
         Messages.send(player, "<gold><bold>=== Welcome to Cash Clash ===</bold></gold>");
         Messages.send(player, "<yellow>Type <green>/cc arenas</green> <yellow>to browse and join games!</yellow>");
         Messages.send(player, "<gray>Use <yellow>/cc help <gray>for more commands.");
@@ -52,6 +55,9 @@ public class PlayerConnectionListener implements Listener {
 
         // Remove lobby scoreboard
         ScoreboardManager.getInstance().removeLobbyScoreboard(player);
+
+        // Reset tab list
+        TabListManager.getInstance().resetPlayer(player);
 
         // Remove from game if in one
         var session = GameManager.getInstance().getPlayerSession(player);

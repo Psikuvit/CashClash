@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.manager.TabListManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -79,6 +80,9 @@ public class GameScoreboardManager {
 
             playerBoards.put(playerUuid, board);
             player.setScoreboard(board);
+
+            // Update tab for player
+            TabListManager.getInstance().setPlayerToSession(player, session);
         }
 
         BukkitTask task = SchedulerUtils.runTaskTimerAsync(() -> updateSession(sessionId), 0L, 20L);
@@ -114,6 +118,9 @@ public class GameScoreboardManager {
         playerBoards.put(player.getUniqueId(), board);
         player.setScoreboard(board);
 
+        // Update tab list
+        TabListManager.getInstance().setPlayerToSession(player, session);
+
         // Update immediately
         updatePlayerBoard(session, player.getUniqueId(), board);
     }
@@ -135,11 +142,14 @@ public class GameScoreboardManager {
             }
         }
 
-        // Reset to main scoreboard temporarily
+        // Reset to main scoreboard
         player.setScoreboard(Objects.requireNonNull(Bukkit.getScoreboardManager()).getMainScoreboard());
 
         // Give lobby scoreboard
         LobbyScoreboardManager.getInstance().setScoreboard(player);
+
+        // Reset tab list to lobby display
+        TabListManager.getInstance().setPlayerToLobby(player);
     }
 
     /**
@@ -167,6 +177,7 @@ public class GameScoreboardManager {
             Player player = Bukkit.getPlayer(playerUuid);
             if (player != null && player.isOnline()) {
                 LobbyScoreboardManager.getInstance().setScoreboard(player);
+                TabListManager.getInstance().setPlayerToLobby(player);
             }
         }
 
@@ -400,6 +411,4 @@ public class GameScoreboardManager {
         sessionBoards.clear();
     }
 }
-
-
 
