@@ -8,8 +8,8 @@ import java.util.Map;
 
 public enum EnchantEntry {
     SHARPNESS(Enchantment.SHARPNESS, "Sharpness", Map.of(1, 5000L, 2, 10000L, 3, 20000L, 4, 30000L), List.of(Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_AXE)),
-    PROTECTION(Enchantment.PROTECTION, "Protection", Map.of(1, 1875L, 2, 3750L, 3, 7500L, 4, 12500L), List.of(Material.IRON_CHESTPLATE, Material.IRON_HELMET, Material.IRON_LEGGINGS, Material.IRON_BOOTS, Material.DIAMOND_CHESTPLATE, Material.DIAMOND_HELMET, Material.DIAMOND_LEGGINGS, Material.DIAMOND_BOOTS)),
-    PROJECTILE_PROTECTION(Enchantment.PROJECTILE_PROTECTION, "Projectile Protection", Map.of(1, 800L, 2, 1200L, 3, 1600L, 4, 2000L), List.of(Material.IRON_CHESTPLATE, Material.DIAMOND_CHESTPLATE)),
+    PROTECTION(Enchantment.PROTECTION, "Protection", Map.of(1, 7500L, 2, 15000L, 3, 30000L, 4, 50000L), List.of(Material.IRON_CHESTPLATE, Material.IRON_HELMET, Material.IRON_LEGGINGS, Material.IRON_BOOTS, Material.DIAMOND_CHESTPLATE, Material.DIAMOND_HELMET, Material.DIAMOND_LEGGINGS, Material.DIAMOND_BOOTS, Material.NETHERITE_CHESTPLATE, Material.NETHERITE_HELMET, Material.NETHERITE_LEGGINGS, Material.NETHERITE_BOOTS)),
+    PROJECTILE_PROTECTION(Enchantment.PROJECTILE_PROTECTION, "Projectile Protection", Map.of(1, 800L, 2, 1200L, 3, 1600L, 4, 2000L), List.of(Material.IRON_CHESTPLATE, Material.DIAMOND_CHESTPLATE, Material.NETHERITE_CHESTPLATE)),
     SHARPNESS_AXE(Enchantment.SHARPNESS, "Axe Sharpness", Map.of(1, 10000L, 2, 15000L, 3, 20000L, 4, 30000L), List.of(Material.WOODEN_AXE, Material.STONE_AXE, Material.IRON_AXE, Material.DIAMOND_AXE, Material.NETHERITE_AXE)),
     KNOCKBACK(Enchantment.KNOCKBACK, "Knockback", Map.of(1, 10000L, 2, 40000L), List.of(Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD)),
     FIRE_ASPECT(Enchantment.FIRE_ASPECT, "Fire Aspect", Map.of(1, 40000L), List.of(Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD)),
@@ -52,4 +52,3 @@ public enum EnchantEntry {
         return levelPrices.keySet().stream().mapToInt(Integer::intValue).max().orElse(1);
     }
 }
-
