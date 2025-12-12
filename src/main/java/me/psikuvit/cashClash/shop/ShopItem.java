@@ -1,7 +1,6 @@
 package me.psikuvit.cashClash.shop;
 
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 
 /**
  * All purchasable items in the shop with prices
@@ -12,7 +11,6 @@ public enum ShopItem {
     IRON_AXE(Material.IRON_AXE, ShopCategory.WEAPONS, 2000),
     DIAMOND_SWORD(Material.DIAMOND_SWORD, ShopCategory.WEAPONS, 3000),
     DIAMOND_AXE(Material.DIAMOND_AXE, ShopCategory.WEAPONS, 4000),
-    MACE(Material.MACE, ShopCategory.WEAPONS, 70000),
 
     // Armor
     IRON_BOOTS(Material.IRON_BOOTS, ShopCategory.ARMOR, 2250),
@@ -40,44 +38,41 @@ public enum ShopItem {
     DEATHMAULER_OUTFIT(Material.NETHERITE_CHESTPLATE, ShopCategory.ARMOR, 50000),
     DRAGON_SET(Material.DIAMOND_CHESTPLATE, ShopCategory.ARMOR, 75000),
 
-    UPGRADE_TO_NETHERITE(Material.NETHERITE_INGOT, ShopCategory.UTILITY, 15000),
-
     // Food
-    BREAD(Material.BREAD, ShopCategory.FOOD, 10, 64),
-    COOKED_MUTTON(Material.COOKED_MUTTON, ShopCategory.FOOD, 50, 64),
-    STEAK(Material.COOKED_BEEF, ShopCategory.FOOD, 75, 64),
-    PORKCHOP(Material.COOKED_PORKCHOP, ShopCategory.FOOD, 75, 64),
-    GOLDEN_CARROT(Material.GOLDEN_CARROT, ShopCategory.FOOD, 100, 64),
-    GOLDEN_APPLE(Material.GOLDEN_APPLE, ShopCategory.FOOD, 3000, 10),
-    ENCHANTED_GOLDEN_APPLE(Material.ENCHANTED_GOLDEN_APPLE, ShopCategory.FOOD, 30000, 1),
+    BREAD(Material.BREAD, ShopCategory.FOOD, 10, 4),
+    COOKED_MUTTON(Material.COOKED_MUTTON, ShopCategory.FOOD, 50, 4),
+    STEAK(Material.COOKED_BEEF, ShopCategory.FOOD, 75, 4),
+    PORKCHOP(Material.COOKED_PORKCHOP, ShopCategory.FOOD, 75, 4),
+    GOLDEN_CARROT(Material.GOLDEN_CARROT, ShopCategory.FOOD, 100, 4),
+    GOLDEN_APPLE(Material.GOLDEN_APPLE, ShopCategory.FOOD, 3000),
+    ENCHANTED_GOLDEN_APPLE(Material.ENCHANTED_GOLDEN_APPLE, ShopCategory.FOOD, 30000),
 
     // Utility
-    LAVA_BUCKET(Material.LAVA_BUCKET, ShopCategory.UTILITY, 1500, 3),
-    COBWEB(Material.COBWEB, ShopCategory.UTILITY, 625, 16),
-    BLOCKS(Material.COBBLESTONE, ShopCategory.UTILITY, 10, 64),
-    CROSSBOW(Material.CROSSBOW, ShopCategory.UTILITY, 4500, 3),
+    LAVA_BUCKET(Material.LAVA_BUCKET, ShopCategory.UTILITY, 1500),
+    COBWEB(Material.COBWEB, ShopCategory.UTILITY, 625, 4),
+    CROSSBOW(Material.CROSSBOW, ShopCategory.UTILITY, 4500, 4),
     BOW(Material.BOW, ShopCategory.UTILITY, 4000),
     FISHING_ROD(Material.FISHING_ROD, ShopCategory.UTILITY, 1500),
-    ARROWS(Material.ARROW, ShopCategory.UTILITY, 50, 64),
-    ENDER_PEARL(Material.ENDER_PEARL, ShopCategory.UTILITY, 2500, 4),
-    WIND_CHARGE(Material.WIND_CHARGE, ShopCategory.UTILITY, 600, 32),
-    LEAVES(Material.OAK_LEAVES, ShopCategory.UTILITY, 10, 64),
-    SOUL_SPEED_BLOCK(Material.SOUL_SAND, ShopCategory.UTILITY, 80, 64);
+    ARROWS(Material.ARROW, ShopCategory.UTILITY, 50, 5),
+    ENDER_PEARL(Material.ENDER_PEARL, ShopCategory.UTILITY, 2500, 1),
+    WIND_CHARGE(Material.WIND_CHARGE, ShopCategory.UTILITY, 600, 4),
+    LEAVES(Material.OAK_LEAVES, ShopCategory.UTILITY, 10, 16),
+    SOUL_SPEED_BLOCK(Material.SOUL_SAND, ShopCategory.UTILITY, 80, 16);
 
     private final Material material;
     private final ShopCategory category;
     private final long price;
-    private final int maxStack;
+    private final int initialAmount;
 
     ShopItem(Material material, ShopCategory category, long price) {
         this(material, category, price, 1);
     }
 
-    ShopItem(Material material, ShopCategory category, long price, int maxStack) {
+    ShopItem(Material material, ShopCategory category, long price, int initialAmount) {
         this.material = material;
         this.category = category;
         this.price = price;
-        this.maxStack = maxStack;
+        this.initialAmount = initialAmount;
     }
 
     public Material getMaterial() {
@@ -92,12 +87,8 @@ public enum ShopItem {
         return price;
     }
 
-    public int getMaxStack() {
-        return maxStack;
-    }
-
-    public long getStackPrice() {
-        return price * maxStack;
+    public int getInitialAmount() {
+        return initialAmount;
     }
 
     public String getDisplayName() {

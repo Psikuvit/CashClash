@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.gui.GuiType;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.ShopHolder;
@@ -27,6 +28,8 @@ import org.bukkit.Sound;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+
+import java.util.logging.Level;
 
 /**
  * Listener dedicated to shop GUI interactions.
@@ -84,10 +87,10 @@ public class ShopGuiListener implements Listener {
     }
 
     private void handleCategoryItems(InventoryClickEvent event, Player player, ShopHolder sh) {
-        ItemStack clicked = event.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) return;
+         ItemStack clicked = event.getCurrentItem();
+         if (clicked == null || !clicked.hasItemMeta()) return;
 
-        ItemMeta itemMeta = clicked.getItemMeta();
+         ItemMeta itemMeta = clicked.getItemMeta();
 
         // Check for cancel button (slot 45) - go back to main menu
         if (event.getSlot() == 45) {
@@ -115,13 +118,24 @@ public class ShopGuiListener implements Listener {
         if (pdcValue == null) return;
 
         ShopCategory category = sh.getCategory();
+        ShopItem si;
+        try {
+            si = ShopItem.valueOf(pdcValue);
+        } catch (IllegalArgumentException ex) {
+            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown shop category: " + pdcValue, ex);
+            return;
+        }
+        int qty = si.getInitialAmount();
+        if (event.isShiftClick() && category != ShopCategory.ENCHANTS && category != ShopCategory.INVESTMENTS) {
+            qty = Math.min(10, si.getInitialAmount());
+        }
 
         if (category == ShopCategory.ENCHANTS) {
             handleEnchantPurchase(player, pdcValue, category);
         } else if (category == ShopCategory.INVESTMENTS) {
             handleInvestmentPurchase(player, pdcValue);
         } else {
-            handleShopItemClick(player, pdcValue, category);
+            handleShopItemClick(player, pdcValue, category, qty);
         }
     }
 
@@ -143,8 +157,9 @@ public class ShopGuiListener implements Listener {
         // Refund
         ccp.addCoins(rec.price());
 
-        // Remove the purchased item
-        boolean removed = removeItemFromPlayer(player, rec.item().name());
+        // Remove the purchased item(s) according to the recorded quantity
+        int qty = rec.quantity();
+        boolean removed = removeItemFromPlayer(player, rec.item().name(), qty);
 
         // Restore the replaced item if there was one
         if (rec.replacedItem() != null) {
@@ -152,13 +167,13 @@ public class ShopGuiListener implements Listener {
             Messages.send(player, "<green>Purchase undone. Refunded $" + String.format("%,d", rec.price()) + " and restored your previous item.</green>");
         } else {
             Messages.send(player, "<green>Purchase undone. Refunded $" + String.format("%,d", rec.price()) +
-                    (removed ? "" : " (could not find item to remove)") + "</green>");
+                    (removed ? "" : " (could not find item(s) to remove)") + "</green>");
         }
 
         SoundUtils.play(player, Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.5f);
 
-        // Refresh the GUI to show updated state
-        ShopGUI.openCategoryItems(player, category);
+         // Refresh the GUI to show updated state
+         ShopGUI.openCategoryItems(player, category);
     }
 
     private void restoreReplacedItem(Player player, ItemStack replacedItem) {
@@ -190,51 +205,64 @@ public class ShopGuiListener implements Listener {
         }
     }
 
-    private boolean removeItemFromPlayer(Player player, String itemTag) {
+    private boolean removeItemFromPlayer(Player player, String itemTag, int quantity) {
+        int remaining = Math.max(1, quantity);
         // Check main inventory
-        for (ItemStack is : player.getInventory().getContents()) {
+        for (int i = 0; i < player.getInventory().getSize() && remaining > 0; i++) {
+            ItemStack is = player.getInventory().getItem(i);
             if (is == null || !is.hasItemMeta()) continue;
 
             ItemMeta meta = is.getItemMeta();
             String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
             if (val != null && val.equals(itemTag)) {
-                int qty = is.getAmount();
-                if (qty > 1) {
-                    is.setAmount(qty - 1);
+                int amt = is.getAmount();
+                if (amt > remaining) {
+                    is.setAmount(amt - remaining);
+                    remaining = 0;
                 } else {
-                    player.getInventory().remove(is);
+                    player.getInventory().setItem(i, null);
+                    remaining -= amt;
                 }
-                return true;
-            }
-        }
-
-        // Check armor slots
-        ItemStack[] armor = player.getInventory().getArmorContents();
-        for (int i = 0; i < armor.length; i++) {
-            ItemStack is = armor[i];
-            if (is == null || !is.hasItemMeta()) continue;
-
-            ItemMeta meta = is.getItemMeta();
-            String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
-            if (val != null && val.equals(itemTag)) {
-                armor[i] = null;
-                player.getInventory().setArmorContents(armor);
-                return true;
             }
         }
 
         // Check off-hand
-        ItemStack off = player.getInventory().getItemInOffHand();
-        if (off.hasItemMeta()) {
-            ItemMeta meta = off.getItemMeta();
-            String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
-            if (val != null && val.equals(itemTag)) {
-                player.getInventory().setItemInOffHand(null);
-                return true;
+        if (remaining > 0) {
+            ItemStack off = player.getInventory().getItemInOffHand();
+            if (off.getType() != Material.AIR && off.hasItemMeta()) {
+                ItemMeta meta = off.getItemMeta();
+                String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+                if (val != null && val.equals(itemTag)) {
+                    int amt = off.getAmount();
+                    if (amt > remaining) {
+                        off.setAmount(amt - remaining);
+                        remaining = 0;
+                    } else {
+                        player.getInventory().setItemInOffHand(null);
+                        remaining -= amt;
+                    }
+                }
             }
         }
 
-        return false;
+        // Check armor slots (each armor piece counts as 1)
+        if (remaining > 0) {
+            ItemStack[] armor = player.getInventory().getArmorContents();
+            for (int i = 0; i < armor.length && remaining > 0; i++) {
+                ItemStack is = armor[i];
+                if (is == null || !is.hasItemMeta()) continue;
+
+                ItemMeta meta = is.getItemMeta();
+                String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+                if (val != null && val.equals(itemTag)) {
+                    armor[i] = null;
+                    player.getInventory().setArmorContents(armor);
+                    remaining -= 1;
+                }
+            }
+        }
+
+        return remaining < Math.max(1, quantity);
     }
 
     private void handleEnchantPurchase(Player player, String pdcValue, ShopCategory category) {
@@ -286,13 +314,13 @@ public class ShopGuiListener implements Listener {
         Messages.send(player, "<yellow>Investments coming soon!</yellow>");
     }
 
-    private void handleShopItemClick(Player player, String pdcValue, ShopCategory category) {
-        ShopItem si;
-        try {
-            si = ShopItem.valueOf(pdcValue);
-        } catch (IllegalArgumentException e) {
-            return;
-        }
+    private void handleShopItemClick(Player player, String pdcValue, ShopCategory category, int quantity) {
+         ShopItem si;
+         try {
+             si = ShopItem.valueOf(pdcValue);
+         } catch (IllegalArgumentException e) {
+             return;
+         }
 
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         if (sess == null) {
@@ -305,18 +333,15 @@ public class ShopGuiListener implements Listener {
         if (ccp == null) return;
 
         long price = si.getPrice();
-        if (!ccp.canAfford(price)) {
+        long totalPrice = price * Math.max(1, quantity);
+        if (!ccp.canAfford(totalPrice)) {
             Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        if (si == ShopItem.UPGRADE_TO_NETHERITE) {
-            handleUpgradeToNetherite(player, ccp, si, price, category);
-            return;
-        }
-
         if (si == ShopItem.DEATHMAULER_OUTFIT || si == ShopItem.DRAGON_SET) {
+            // special sets are single-quantity items
             handleSpecialSet(player, si, ccp, price, category);
             return;
         }
@@ -330,64 +355,59 @@ public class ShopGuiListener implements Listener {
             }
         }
 
-        // Deduct coins and give item
-        ccp.deductCoins(price);
-        giveItemToPlayer(player, ccp, si);
-
-        ShopGUI.openCategoryItems(player, category);
-    }
-
-    private void handleUpgradeToNetherite(Player player, CashClashPlayer ccp, ShopItem si, long price, ShopCategory category) {
-        ccp.deductCoins(price);
-        boolean upgraded = ItemUtils.upgradeBestDiamondToNetherite(player);
-
-        if (upgraded) {
-            ccp.addPurchase(new PurchaseRecord(si, 1, price));
-            Messages.send(player, "<green>Upgraded your best diamond item to netherite!</green>");
-            SoundUtils.play(player, Sound.BLOCK_ANVIL_USE, 1.0f, 1.0f);
-        } else {
-            // Refund if no diamond item found
-            ccp.addCoins(price);
-            Messages.send(player, "<yellow>No eligible diamond item found to upgrade.</yellow>");
-            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-        }
+        // Deduct coins and give item(s)
+        ccp.deductCoins(totalPrice);
+        giveItemToPlayer(player, ccp, si, quantity, totalPrice);
 
         ShopGUI.openCategoryItems(player, category);
     }
 
     private void handleSpecialSet(Player player, ShopItem si, CashClashPlayer ccp, long price, ShopCategory category) {
-        ccp.deductCoins(price);
-
+        // special sets are always single-quantity purchases
         if (si == ShopItem.DEATHMAULER_OUTFIT) {
-            ItemUtils.giveCustomArmorSet(player, CustomArmor.DEATHMAULER_OUTFIT);
+            ItemUtils.giveCustomArmorSet(player, CustomArmor.DEATHMAULER_CHESTPLATE, CustomArmor.DEATHMAULER_LEGGINGS);
         } else if (si == ShopItem.DRAGON_SET) {
-            ItemUtils.giveCustomArmorSet(player, CustomArmor.DRAGON_SET);
+            ItemUtils.giveCustomArmorSet(player, CustomArmor.DRAGON_CHESTPLATE, CustomArmor.DRAGON_BOOTS, CustomArmor.DRAGON_HELMET);
         }
 
         ccp.addPurchase(new PurchaseRecord(si, 1, price));
         Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", price) + "</green>");
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
-
-        ShopGUI.openCategoryItems(player, category);
     }
 
-    private void giveItemToPlayer(Player player, CashClashPlayer ccp, ShopItem si) {
+    private void giveItemToPlayer(Player player, CashClashPlayer ccp, ShopItem si, int quantity, long totalPrice) {
+        // For stackable items, give an ItemStack with quantity (capped by si.getInitialAmount())
+        int giveQty = Math.max(1, Math.min(quantity, si.getInitialAmount()));
+
         ItemStack item = ItemUtils.createTaggedItem(si);
-        ItemStack replacedItem = null;
+        ItemStack replacedItem;
 
         if (si.getCategory() == ShopCategory.ARMOR) {
+            // armor cannot be bulk-bought; equip single and record replaced item
             replacedItem = ItemUtils.equipArmorOrReplace(player, item);
-        } else if (si.getCategory() == ShopCategory.WEAPONS) {
-            replacedItem = ItemUtils.replaceBestMatchingTool(player, item);
-        } else {
-            player.getInventory().addItem(item);
+            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem));
+            ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
+            Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
+            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+            return;
         }
 
-        // Save purchase with the replaced item for undo functionality
-        ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem));
-        ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
+        if (si.getCategory() == ShopCategory.WEAPONS) {
+            // weapons treated single-quantity (can't bulk replace tools reasonably)
+            replacedItem = ItemUtils.replaceBestMatchingTool(player, item);
+            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem));
+            ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
+            Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
+            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+            return;
+        }
 
-        Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
+        // Utility/food/custom stackable items
+        ItemStack stack = item.clone();
+        stack.setAmount(giveQty);
+        player.getInventory().addItem(stack);
+        ccp.addPurchase(new PurchaseRecord(si, giveQty, totalPrice));
+        Messages.send(player, "<green>Purchased " + si.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
     }
 
