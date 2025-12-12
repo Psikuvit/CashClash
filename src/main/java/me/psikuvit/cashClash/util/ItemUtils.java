@@ -5,11 +5,13 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.ShopItem;
 import me.psikuvit.cashClash.items.CustomArmor;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
@@ -173,71 +175,47 @@ public final class ItemUtils {
             String desc = si.getDescription();
 
             if (!desc.isEmpty()) meta.lore(List.of(Messages.parse(desc)));
+
+            String matName = it.getType().name();
+            if (matName.endsWith("HELMET") || matName.endsWith("CHESTPLATE") || matName.endsWith("LEGGINGS") || matName.endsWith("BOOTS")) {
+                meta.setUnbreakable(true);
+                meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            }
             it.setItemMeta(meta);
         }
         return it;
     }
 
-    public static void giveCustomArmorSet(Player player, CustomArmor setType) {
-        if (player == null || setType == null) return;
-        if (setType == CustomArmor.DEATHMAULER_OUTFIT) {
-            ItemStack chest = new ItemStack(Material.NETHERITE_CHESTPLATE);
-            ItemStack legs = new ItemStack(Material.NETHERITE_LEGGINGS);
+    public static void giveCustomArmorSet(Player player, CustomArmor... armorPieces) {
+        if (player == null || armorPieces == null) return;
 
-            ItemMeta cm = chest.getItemMeta();
-            ItemMeta lm = legs.getItemMeta();
+        for (CustomArmor armor : armorPieces) {
+            ItemStack item = new ItemStack(armor.getMaterial());
+            ItemMeta meta = item.getItemMeta();
 
-            if (cm != null) {
-                cm.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, setType.name());
-                cm.displayName(Messages.parse("<gold>Deathmauler Chestplate</gold>"));
-                chest.setItemMeta(cm);
-            }
-            if (lm != null) {
-                lm.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, setType.name());
-                lm.displayName(Messages.parse("<gold>Deathmauler Leggings</gold>"));
-                legs.setItemMeta(lm);
-            }
-
-            equipArmorOrReplace(player, chest);
-            equipArmorOrReplace(player, legs);
-        } else if (setType == CustomArmor.DRAGON_SET) {
-            ItemStack chest = new ItemStack(Material.DIAMOND_CHESTPLATE);
-            ItemStack boots = new ItemStack(Material.DIAMOND_BOOTS);
-            ItemStack helm = new ItemStack(Material.DIAMOND_HELMET);
-
-            ItemMeta cm = chest.getItemMeta();
-            ItemMeta bm = boots.getItemMeta();
-            ItemMeta hm = helm.getItemMeta();
-            if (cm != null) {
-                cm.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, setType.name());
-                cm.displayName(Messages.parse("<dark_purple>Dragon Chestplate</dark_purple>"));
-                chest.setItemMeta(cm);
+            if (meta != null) {
+                meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, armor.name());
+                meta.displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
+                meta.lore(List.of(
+                        Messages.parse("<gray>" + armor.getLore() + "</gray>"),
+                        Component.empty(),
+                        Messages.parse("<yellow>Special Armor</yellow>")
+                ));
+                meta.setUnbreakable(true);
+                meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
+                item.setItemMeta(meta);
             }
 
-            if (bm != null) {
-                bm.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, setType.name());
-                bm.displayName(Messages.parse("<dark_purple>Dragon Boots</dark_purple>"));
-                boots.setItemMeta(bm);
-            }
-
-            if (hm != null) {
-                hm.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, setType.name());
-                hm.displayName(Messages.parse("<dark_purple>Dragon Helmet</dark_purple>"));
-                helm.setItemMeta(hm);
-            }
-
-            equipArmorOrReplace(player, chest);
-            equipArmorOrReplace(player, helm);
-            equipArmorOrReplace(player, boots);
+            equipArmorOrReplace(player, item);
         }
     }
 
 
     public static void applyEnchantToBestItem(Player player, EnchantEntry ee, int lvl) {
         if (player == null || ee == null) return;
-        // Special-case: Protection should apply to all armor pieces
         if (ee == EnchantEntry.PROTECTION) {
             boolean appliedAny = false;
+
             PlayerInventory inv = player.getInventory();
             ItemStack[] armor = inv.getArmorContents();
 
@@ -300,7 +278,8 @@ public final class ItemUtils {
 
     public static void applyOwnedEnchantsAfterPurchase(Player player, ShopItem si) {
         if (player == null || si == null) return;
-        if (si.getCategory() == ShopCategory.UTILITY && (si.getMaterial() == Material.BOW || si.getMaterial() == Material.CROSSBOW)) return;
+        if (si.getCategory() == ShopCategory.UTILITY &&
+                (si.getMaterial() == Material.BOW || si.getMaterial() == Material.CROSSBOW)) return;
 
         var session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
