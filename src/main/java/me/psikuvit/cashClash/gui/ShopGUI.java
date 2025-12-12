@@ -147,8 +147,6 @@ public class ShopGUI {
 
         ShopItem axeItem = hasItem(player, Material.IRON_AXE) ? ShopItem.DIAMOND_AXE : ShopItem.IRON_AXE;
         inv.setItem(11, createUpgradableItem(axeItem, hasItem(player, Material.DIAMOND_AXE)));
-        inv.setItem(12, createShopItem(ShopItem.MACE, hasItem(player, Material.MACE)));
-
     }
 
     private static void populateArmorCategory(Inventory inv, Player player) {
@@ -197,23 +195,22 @@ public class ShopGUI {
             inv.setItem(13, createUpgradableItem(ShopItem.IRON_BOOTS, false));
         }
 
-        inv.setItem(16, createShopItem(ShopItem.UPGRADE_TO_NETHERITE, false));
 
-        inv.setItem(19, createShopItem(ShopItem.INVESTORS_HELMET, hasShopItem(player, ShopItem.INVESTORS_HELMET)));
-        inv.setItem(20, createShopItem(ShopItem.INVESTORS_CHESTPLATE, hasShopItem(player, ShopItem.INVESTORS_CHESTPLATE)));
-        inv.setItem(21, createShopItem(ShopItem.INVESTORS_LEGGINGS, hasShopItem(player, ShopItem.INVESTORS_LEGGINGS)));
-        inv.setItem(22, createShopItem(ShopItem.INVESTORS_BOOTS, hasShopItem(player, ShopItem.INVESTORS_BOOTS)));
+        inv.setItem(19, createShopItem(player, ShopItem.INVESTORS_HELMET));
+        inv.setItem(20, createShopItem(player, ShopItem.INVESTORS_CHESTPLATE));
+        inv.setItem(21, createShopItem(player, ShopItem.INVESTORS_LEGGINGS));
+        inv.setItem(22, createShopItem(player, ShopItem.INVESTORS_BOOTS));
 
-        inv.setItem(28, createShopItem(ShopItem.GILLIE_SUIT_HAT, hasShopItem(player, ShopItem.GILLIE_SUIT_HAT)));
-        inv.setItem(29, createShopItem(ShopItem.TAX_EVASION_PANTS, hasShopItem(player, ShopItem.TAX_EVASION_PANTS)));
-        inv.setItem(30, createShopItem(ShopItem.GUARDIANS_VEST, hasShopItem(player, ShopItem.GUARDIANS_VEST)));
-        inv.setItem(31, createShopItem(ShopItem.LIGHTFOOT_SHOES, hasShopItem(player, ShopItem.LIGHTFOOT_SHOES)));
+        inv.setItem(28, createShopItem(player, ShopItem.GILLIE_SUIT_HAT));
+        inv.setItem(29, createShopItem(player, ShopItem.TAX_EVASION_PANTS));
+        inv.setItem(30, createShopItem(player, ShopItem.GUARDIANS_VEST));
+        inv.setItem(31, createShopItem(player, ShopItem.LIGHTFOOT_SHOES));
 
-        inv.setItem(37, createShopItem(ShopItem.FLAMEBRINGER_LEGGINGS, hasShopItem(player, ShopItem.FLAMEBRINGER_LEGGINGS)));
-        inv.setItem(38, createShopItem(ShopItem.FLAMEBRINGER_BOOTS, hasShopItem(player, ShopItem.FLAMEBRINGER_BOOTS)));
+        inv.setItem(37, createShopItem(player, ShopItem.FLAMEBRINGER_LEGGINGS));
+        inv.setItem(38, createShopItem(player, ShopItem.FLAMEBRINGER_BOOTS));
 
-        inv.setItem(40, createShopItem(ShopItem.DEATHMAULER_OUTFIT, hasShopItem(player, ShopItem.DEATHMAULER_OUTFIT)));
-        inv.setItem(41, createShopItem(ShopItem.DRAGON_SET, hasShopItem(player, ShopItem.DRAGON_SET)));
+        inv.setItem(40, createShopItem(player, ShopItem.DEATHMAULER_OUTFIT));
+        inv.setItem(41, createShopItem(player, ShopItem.DRAGON_SET));
     }
 
     private static void populateFoodCategory(Inventory inv, Player player) {
@@ -225,27 +222,24 @@ public class ShopGUI {
 
         for (ShopItem item : foodItems) {
             if (slot >= 44) break;
-            inv.setItem(slot++, createShopItem(item, false));
+            inv.setItem(slot++, createShopItem(player, item));
             if (slot == 17) slot = 19;
             if (slot == 26) slot = 28;
         }
     }
 
     private static void populateUtilityCategory(Inventory inv, Player player) {
-        int slot = 10;
-        ShopItem[] utilityItems = {
-                ShopItem.BOW, ShopItem.CROSSBOW, ShopItem.ARROWS, ShopItem.FISHING_ROD,
-                ShopItem.ENDER_PEARL, ShopItem.WIND_CHARGE, ShopItem.LAVA_BUCKET,
-                ShopItem.COBWEB, ShopItem.BLOCKS, ShopItem.LEAVES, ShopItem.SOUL_SPEED_BLOCK
-        };
-
-        for (ShopItem item : utilityItems) {
-            if (slot >= 44) break;
-            inv.setItem(slot++, createShopItem(item, false));
-            if (slot == 17) slot = 19;
-            if (slot == 26) slot = 28;
-            if (slot == 35) slot = 37;
-        }
+        inv.setItem(20, createShopItem(player, ShopItem.LAVA_BUCKET));
+        inv.setItem(21, createShopItem(player, ShopItem.FISHING_ROD));
+        inv.setItem(22, createShopItem(player, ShopItem.COBWEB, 4));
+        inv.setItem(24, createShopItem(player, ShopItem.CROSSBOW));
+        inv.setItem(29, createShopItem(player, ShopItem.LAVA_BUCKET));
+        inv.setItem(30, createShopItem(player, ShopItem.ENDER_PEARL));
+        inv.setItem(31, createShopItem(player, ShopItem.WIND_CHARGE, 4));
+        inv.setItem(33, createShopItem(player, ShopItem.BOW));
+        inv.setItem(38, createShopItem(player, ShopItem.LEAVES, 16));
+        inv.setItem(39, createShopItem(player, ShopItem.SOUL_SPEED_BLOCK));
+        inv.setItem(42, createShopItem(player, ShopItem.ARROWS, 5));
     }
 
     private static void populateCustomItemsCategory(Inventory inv, Player player) {
@@ -333,7 +327,7 @@ public class ShopGUI {
 
         for (ShopItem si : items) {
             if (slot >= 44) break;
-            inv.setItem(slot++, createShopItem(si, false));
+            inv.setItem(slot++, createShopItem(player, si));
             if (slot == 17) slot = 19;
             if (slot == 26) slot = 28;
         }
@@ -356,10 +350,15 @@ public class ShopGUI {
         inv.setItem(53, createCoinDisplay(coins));
     }
 
+    private static ItemStack createShopItem(Player player, ShopItem item) {
+        return createShopItem(player, item, 1);
+    }
 
-    private static ItemStack createShopItem(ShopItem item, boolean owned) {
-        ItemStack is = new ItemStack(item.getMaterial());
+    private static ItemStack createShopItem(Player player, ShopItem item, int quantity) {
+        ItemStack is = new ItemStack(item.getMaterial(), quantity);
         ItemMeta meta = is.getItemMeta();
+
+        boolean owned = hasShopItem(player, item);
 
         if (owned) {
             meta.displayName(Messages.parse("<green>" + item.getDisplayName() + " <gray>(Owned)</gray></green>"));
@@ -368,8 +367,8 @@ public class ShopGUI {
             meta.displayName(Messages.parse("<yellow>" + item.getDisplayName() + "</yellow>"));
             List<Component> lore = new ArrayList<>();
             lore.add(Messages.parse("<gray>Price: <gold>$" + String.format("%,d", item.getPrice()) + "</gold></gray>"));
-            if (item.getMaxStack() > 1) {
-                lore.add(Messages.parse("<gray>Max: <white>" + item.getMaxStack() + "</white></gray>"));
+            if (item.getInitialAmount() > 1) {
+                lore.add(Messages.parse("<gray>Max: <white>" + item.getInitialAmount() + "</white></gray>"));
             }
             String desc = item.getDescription();
             if (!desc.isEmpty()) {
