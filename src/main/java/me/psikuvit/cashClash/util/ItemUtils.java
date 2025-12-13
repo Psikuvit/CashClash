@@ -38,37 +38,31 @@ public final class ItemUtils {
         ItemStack old = null;
         if (m.name().endsWith("HELMET")) {
             old = inv.getHelmet() != null ? inv.getHelmet().clone() : null;
-            transferEnchants(old, newArmor);
             inv.setHelmet(newArmor);
         } else if (m.name().endsWith("CHESTPLATE")) {
             old = inv.getChestplate() != null ? inv.getChestplate().clone() : null;
-            transferEnchants(old, newArmor);
             inv.setChestplate(newArmor);
         } else if (m.name().endsWith("LEGGINGS")) {
             old = inv.getLeggings() != null ? inv.getLeggings().clone() : null;
-            transferEnchants(old, newArmor);
             inv.setLeggings(newArmor);
         } else if (m.name().endsWith("BOOTS")) {
             old = inv.getBoots() != null ? inv.getBoots().clone() : null;
-            transferEnchants(old, newArmor);
             inv.setBoots(newArmor);
         } else {
             inv.addItem(newArmor);
         }
-        return old;
-    }
 
-    public static void transferEnchants(ItemStack from, ItemStack to) {
-        if (from == null || to == null) return;
-        ItemMeta fromMeta = from.getItemMeta();
-        ItemMeta toMeta = to.getItemMeta();
+        if (old == null) return null;
+        ItemMeta fromMeta = old.getItemMeta();
+        ItemMeta toMeta = newArmor.getItemMeta();
 
-        if (fromMeta == null || toMeta == null) return;
         for (var e : fromMeta.getEnchants().entrySet()) {
             toMeta.addEnchant(e.getKey(), e.getValue(), true);
         }
-        to.setItemMeta(toMeta);
+        newArmor.setItemMeta(toMeta);
+        return old;
     }
+
 
     /**
      * Replace the best matching tool/weapon in inventory with the new item.
@@ -105,66 +99,6 @@ public final class ItemUtils {
     }
 
 
-    public static boolean upgradeBestDiamondToNetherite(Player player) {
-        if (player == null) return false;
-        PlayerInventory inv = player.getInventory();
-        ItemStack best = null;
-        int bestSlot = -1;
-
-        for (int i = 0; i < inv.getSize(); i++) {
-            ItemStack is = inv.getItem(i);
-
-            if (is == null) continue;
-            if (!is.getType().name().contains("DIAMOND")) continue;
-
-            if (best == null) {
-                best = is;
-                bestSlot = i;
-                continue;
-            }
-
-            if (ItemSelectionUtils.rankMaterial(is.getType()) > ItemSelectionUtils.rankMaterial(best.getType())) {
-                best = is;
-                bestSlot = i;
-            }
-        }
-
-        if (best == null) return false;
-
-        Material target = mapDiamondToNetherite(best.getType());
-        if (target == null) return false;
-
-        ItemStack newItem = new ItemStack(target, best.getAmount());
-
-        ItemMeta newMeta = newItem.getItemMeta();
-        ItemMeta oldMeta = best.getItemMeta();
-
-        if (oldMeta != null && newMeta != null) {
-            for (var e : oldMeta.getEnchants().entrySet()) {
-                newMeta.addEnchant(e.getKey(), e.getValue(), true);
-            }
-            newItem.setItemMeta(newMeta);
-        }
-
-        inv.setItem(bestSlot, newItem);
-        return true;
-    }
-
-    public static Material mapDiamondToNetherite(Material m) {
-        if (m == null) return null;
-        return switch (m) {
-            case DIAMOND_SWORD -> Material.NETHERITE_SWORD;
-            case DIAMOND_AXE -> Material.NETHERITE_AXE;
-            case DIAMOND_PICKAXE -> Material.NETHERITE_PICKAXE;
-            case DIAMOND_SHOVEL -> Material.NETHERITE_SHOVEL;
-            case DIAMOND_HELMET -> Material.NETHERITE_HELMET;
-            case DIAMOND_CHESTPLATE -> Material.NETHERITE_CHESTPLATE;
-            case DIAMOND_LEGGINGS -> Material.NETHERITE_LEGGINGS;
-            case DIAMOND_BOOTS -> Material.NETHERITE_BOOTS;
-            default -> null;
-        };
-    }
-
     public static ItemStack createTaggedItem(ShopItem si) {
         if (si == null) return null;
         ItemStack it = new ItemStack(si.getMaterial(), 1);
@@ -174,7 +108,7 @@ public final class ItemUtils {
             meta.displayName(Messages.parse("<yellow>" + si.name().replace('_', ' ') + "</yellow>"));
             String desc = si.getDescription();
 
-            if (!desc.isEmpty()) meta.lore(List.of(Messages.parse(desc)));
+            if (!desc.isEmpty()) meta.lore(Messages.wrapLines(desc));
 
             String matName = it.getType().name();
             if (matName.endsWith("HELMET") || matName.endsWith("CHESTPLATE") || matName.endsWith("LEGGINGS") || matName.endsWith("BOOTS")) {
@@ -196,11 +130,11 @@ public final class ItemUtils {
             if (meta != null) {
                 meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, armor.name());
                 meta.displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
-                meta.lore(List.of(
-                        Messages.parse("<gray>" + armor.getLore() + "</gray>"),
-                        Component.empty(),
-                        Messages.parse("<yellow>Special Armor</yellow>")
-                ));
+
+                List<Component> wrappedLore = Messages.wrapLines("<gray>" + armor.getLore() + "</gray>");
+                wrappedLore.add(Component.empty());
+                wrappedLore.add(Messages.parse("<yellow>Special Armor</yellow>"));
+                meta.lore(wrappedLore);
                 meta.setUnbreakable(true);
                 meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
                 item.setItemMeta(meta);
