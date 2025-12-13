@@ -66,7 +66,8 @@ public final class CashClashPlugin extends JavaPlugin {
                 new ShopGuiListener(),
                 new CustomArmorListener(),
                 new ShopListener(),
-                new SupplyDropListener()
+                new SupplyDropListener(),
+                new ConsumableListener()
         };
 
         for (Listener listener : listeners) {
