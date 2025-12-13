@@ -28,19 +28,11 @@ public final class TeamColorUtils {
      * @param board   the scoreboard to setup teams on
      */
     private static void setupTeams(Scoreboard board) {
-        if (board == null) {
-            return;
-        }
-
         Team existing1 = board.getTeam(TEAM1_NAME);
-        if (existing1 != null) {
-            existing1.unregister();
-        }
+        if (existing1 != null) existing1.unregister();
 
         Team existing2 = board.getTeam(TEAM2_NAME);
-        if (existing2 != null) {
-            existing2.unregister();
-        }
+        if (existing2 != null) existing2.unregister();
 
         Team team1 = board.registerNewTeam(TEAM1_NAME);
         team1.color(NamedTextColor.RED);
@@ -58,6 +50,7 @@ public final class TeamColorUtils {
      * @param session the game session with player team assignments
      */
     public static void assignPlayersToTeams(Scoreboard board, GameSession session) {
+        if (board == null || session == null) return;
         setupTeams(board);
 
         Team t1 = board.getTeam(TEAM1_NAME);
@@ -69,9 +62,7 @@ public final class TeamColorUtils {
 
         for (UUID uuid : session.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
-            if (p == null) {
-                continue;
-            }
+            if (p == null) continue;
 
             String entry = p.getName();
 
