@@ -146,26 +146,26 @@ public class ShopGUI {
         boolean hasDiamondSword = hasItem(player, Material.DIAMOND_SWORD);
         boolean hasNetheriteSword = hasItem(player, Material.NETHERITE_SWORD);
         if (hasNetheriteSword) {
-            inv.setItem(10, createUpgradableItem(ShopItem.NETHERITE_SWORD, true));
+            inv.setItem(23, createUpgradableItem(ShopItem.NETHERITE_SWORD, true));
         } else if (hasDiamondSword) {
-            inv.setItem(10, createUpgradableItem(ShopItem.NETHERITE_SWORD, false));
+            inv.setItem(23, createUpgradableItem(ShopItem.NETHERITE_SWORD, false));
         } else if (hasIronSword) {
-            inv.setItem(10, createUpgradableItem(ShopItem.DIAMOND_SWORD, false));
+            inv.setItem(23, createUpgradableItem(ShopItem.DIAMOND_SWORD, false));
         } else {
-            inv.setItem(10, createUpgradableItem(ShopItem.IRON_SWORD, false));
+            inv.setItem(23, createUpgradableItem(ShopItem.IRON_SWORD, false));
         }
 
         boolean hasIronAxe = hasItem(player, Material.IRON_AXE);
         boolean hasDiamondAxe = hasItem(player, Material.DIAMOND_AXE);
         boolean hasNetheriteAxe = hasItem(player, Material.NETHERITE_AXE);
         if (hasNetheriteAxe) {
-            inv.setItem(11, createUpgradableItem(ShopItem.NETHERITE_AXE, true));
+            inv.setItem(21, createUpgradableItem(ShopItem.NETHERITE_AXE, true));
         } else if (hasDiamondAxe) {
-            inv.setItem(11, createUpgradableItem(ShopItem.NETHERITE_AXE, false));
+            inv.setItem(21, createUpgradableItem(ShopItem.NETHERITE_AXE, false));
         } else if (hasIronAxe) {
-            inv.setItem(11, createUpgradableItem(ShopItem.DIAMOND_AXE, false));
+            inv.setItem(21, createUpgradableItem(ShopItem.DIAMOND_AXE, false));
         } else {
-            inv.setItem(11, createUpgradableItem(ShopItem.IRON_AXE, false));
+            inv.setItem(21, createUpgradableItem(ShopItem.IRON_AXE, false));
         }
     }
 
@@ -230,31 +230,34 @@ public class ShopGUI {
         inv.setItem(21, createShopItem(player, ShopItem.INVESTORS_LEGGINGS));
         inv.setItem(22, createShopItem(player, ShopItem.INVESTORS_BOOTS));
 
-        inv.setItem(28, createShopItem(player, ShopItem.GILLIE_SUIT_HAT));
-        inv.setItem(29, createShopItem(player, ShopItem.TAX_EVASION_PANTS));
+        inv.setItem(29, createShopItem(player, ShopItem.MAGIC_HELMET));
         inv.setItem(30, createShopItem(player, ShopItem.GUARDIANS_VEST));
-        inv.setItem(31, createShopItem(player, ShopItem.LIGHTFOOT_SHOES));
+        inv.setItem(38, createShopItem(player, ShopItem.TAX_EVASION_PANTS));
+        inv.setItem(39, createShopItem(player, ShopItem.BUNNY_SHOES));
 
-        inv.setItem(37, createShopItem(player, ShopItem.FLAMEBRINGER_LEGGINGS));
-        inv.setItem(38, createShopItem(player, ShopItem.FLAMEBRINGER_BOOTS));
+        inv.setItem(15, ItemStack.of(Material.BARRIER));
+        inv.setItem(24, createShopItem(player, ShopItem.DEATHMAULER_CHESTPLATE));
+        inv.setItem(33, createShopItem(player, ShopItem.DEATHMAULER_LEGGINGS));
 
-        inv.setItem(40, createShopItem(player, ShopItem.DEATHMAULER_OUTFIT));
-        inv.setItem(41, createShopItem(player, ShopItem.DRAGON_SET));
+        inv.setItem(16, createShopItem(player, ShopItem.DRAGON_HELMET));
+        inv.setItem(25, createShopItem(player, ShopItem.DRAGON_CHESTPLATE));
+        inv.setItem(34, ItemStack.of(Material.BARRIER));
+        inv.setItem(43, createShopItem(player, ShopItem.DRAGON_BOOTS));
     }
 
     private static void populateFoodCategory(Inventory inv, Player player) {
-        int slot = 10;
-        ShopItem[] foodItems = {
-                ShopItem.BREAD, ShopItem.COOKED_MUTTON, ShopItem.STEAK, ShopItem.PORKCHOP,
-                ShopItem.GOLDEN_CARROT, ShopItem.GOLDEN_APPLE, ShopItem.ENCHANTED_GOLDEN_APPLE
-        };
-
-        for (ShopItem item : foodItems) {
-            if (slot >= 44) break;
-            inv.setItem(slot++, createShopItem(player, item));
-            if (slot == 17) slot = 19;
-            if (slot == 26) slot = 28;
-        }
+        inv.setItem(19, createShopItem(player, ShopItem.BREAD, 4));
+        inv.setItem(20, createShopItem(player, ShopItem.COOKED_MUTTON, 4));
+        inv.setItem(21, createShopItem(player, ShopItem.STEAK, 4));
+        inv.setItem(22, createShopItem(player, ShopItem.PORKCHOP, 4));
+        inv.setItem(23, createShopItem(player, ShopItem.GOLDEN_CARROT, 4));
+        inv.setItem(25, createShopItem(player, ShopItem.GOLDEN_APPLE));
+        inv.setItem(28, createShopItem(player, ShopItem.SPEED_CARROT, 2));
+        inv.setItem(29, createShopItem(player, ShopItem.GOLDEN_CHICKEN, 2));
+        inv.setItem(30, createShopItem(player, ShopItem.COOKIE_OF_LIFE, 2));
+        inv.setItem(31, createShopItem(player, ShopItem.SUNSCREEN, 2));
+        inv.setItem(32, createShopItem(player, ShopItem.CAN_OF_SPINACH, 2));
+        inv.setItem(34, createShopItem(player, ShopItem.ENCHANTED_GOLDEN_APPLE));
     }
 
     private static void populateUtilityCategory(Inventory inv, Player player) {
@@ -267,7 +270,7 @@ public class ShopGUI {
         inv.setItem(31, createShopItem(player, ShopItem.WIND_CHARGE, 4));
         inv.setItem(33, createShopItem(player, ShopItem.BOW));
         inv.setItem(38, createShopItem(player, ShopItem.LEAVES, 16));
-        inv.setItem(39, createShopItem(player, ShopItem.SOUL_SPEED_BLOCK));
+        inv.setItem(39, createShopItem(player, ShopItem.SOUL_SPEED_BLOCK, 16));
         inv.setItem(42, createShopItem(player, ShopItem.ARROWS, 5));
     }
 
@@ -397,7 +400,10 @@ public class ShopGUI {
         ItemStack is = new ItemStack(item.getMaterial(), quantity);
         ItemMeta meta = is.getItemMeta();
 
-        boolean owned = hasShopItem(player, item);
+        boolean owned = hasShopItem(player, item) && (item.getCategory() == ShopCategory.ARMOR
+                || item.getCategory() == ShopCategory.WEAPONS
+                || item.getCategory() == ShopCategory.CUSTOM_ARMOR
+        );
 
         if (owned) {
             meta.displayName(Messages.parse("<green>" + item.getDisplayName() + " <gray>(Owned)</gray></green>"));
