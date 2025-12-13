@@ -2,12 +2,14 @@ package me.psikuvit.cashClash.player;
 
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.shop.EnchantEntry;
+import me.psikuvit.cashClash.shop.ShopCategory;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
 
 /**
@@ -40,7 +42,7 @@ public class CashClashPlayer {
 
     // Special items
     private int revivalStarsUsed;
-    private final List<PurchaseRecord> purchaseHistory;
+    private final Deque<PurchaseRecord> purchaseHistory;
     private long respawnProtectionUntil;
 
     private final Map<EnchantEntry, Integer> ownedEnchants;
@@ -52,7 +54,7 @@ public class CashClashPlayer {
         this.investedCoins = 0;
         this.lives = 3;
         this.bonusesEarned = new HashMap<>();
-        this.purchaseHistory = new ArrayList<>();
+        this.purchaseHistory = new ArrayDeque<>();
         this.lowestHealthThisLife = 20.0;
         this.respawnProtectionUntil = 0L;
         this.ownedEnchants = new HashMap<>();
@@ -66,9 +68,7 @@ public class CashClashPlayer {
 
     public void initializeRound(int roundNumber) {
         switch (roundNumber) {
-            case 2 -> this.coins += 30000;
-            case 3 -> this.coins += 50000;
-            case 4 -> this.coins += 100000;
+            case 2, 3, 4 -> this.coins += 30000;
             case 5 -> {
                 if (this.coins < 20000) {
                     this.coins += 10000;
@@ -152,15 +152,19 @@ public class CashClashPlayer {
     public Map<EnchantEntry, Integer> getOwnedEnchants() { return Map.copyOf(ownedEnchants); }
 
     public void addPurchase(PurchaseRecord record) {
-        purchaseHistory.add(record);
+        if (record == null) return;
+        purchaseHistory.addLast(record);
     }
 
     public PurchaseRecord popLastPurchase() {
-        if (purchaseHistory.isEmpty()) return null;
-        return purchaseHistory.removeLast();
+        PurchaseRecord record = purchaseHistory.pollLast();
+        if (record != null && record.item().getCategory() == ShopCategory.ENCHANTS) return null;
+        return record;
     }
 
-    public List<PurchaseRecord> getPurchaseHistory() { return List.copyOf(purchaseHistory); }
+    public Queue<PurchaseRecord> getPurchaseHistory() {
+        return purchaseHistory;
+    }
 
     public void earnBonus(BonusType type) {
         bonusesEarned.put(type, bonusesEarned.getOrDefault(type, 0) + 1);
@@ -246,14 +250,6 @@ public class CashClashPlayer {
 
     public void setLives(int lives) {
         this.lives = lives;
-    }
-
-    public long getLastDamageTime() {
-        return lastDamageTime;
-    }
-
-    public void setLastDamageTime(long time) {
-        this.lastDamageTime = time;
     }
 
     public int getRevivalStarsUsed() {
