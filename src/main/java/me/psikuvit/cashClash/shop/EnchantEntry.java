@@ -10,7 +10,7 @@ public enum EnchantEntry {
     SHARPNESS(Enchantment.SHARPNESS,
             "Sharpness", 
             Map.of(1, 5000L, 2, 10000L, 3, 20000L, 4, 30000L),
-            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_AXE
+            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
     PROTECTION(Enchantment.PROTECTION,
             "Protection",
@@ -33,12 +33,12 @@ public enum EnchantEntry {
     KNOCKBACK(Enchantment.KNOCKBACK,
             "Knockback", 
             Map.of(1, 10000L, 2, 40000L),
-            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD
+            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
     FIRE_ASPECT(Enchantment.FIRE_ASPECT, 
             "Fire Aspect", 
             Map.of(1, 40000L), 
-            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD
+            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
     PIERCING(Enchantment.PIERCING,
             "Piercing",
