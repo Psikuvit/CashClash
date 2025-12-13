@@ -1,15 +1,18 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.CustomArmorManager;
 import me.psikuvit.cashClash.manager.GameManager;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.block.Action;
 
 /**
@@ -22,9 +25,23 @@ public class CustomArmorListener implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player p = event.getPlayer();
-        // only run in game
-        if (GameManager.getInstance().getPlayerSession(p) == null) return;
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        if (session == null) return;
+
+        // Only trigger if player actually moved position (not just head rotation)
+        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
+            event.getFrom().getBlockY() == event.getTo().getBlockY() &&
+            event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
+            return;
+        }
+
         manager.onPlayerMove(p);
+
+        // Check if player landed (was in air, now on ground)
+        if (!event.getFrom().getBlock().getRelative(0, -1, 0).getType().isAir() &&
+            event.getTo().getBlock().getRelative(0, -1, 0).getType().isSolid()) {
+            manager.onPlayerLand(p);
+        }
     }
 
     @EventHandler
@@ -33,30 +50,90 @@ public class CustomArmorListener implements Listener {
         Player p = event.getPlayer();
         if (GameManager.getInstance().getPlayerSession(p) == null) return;
 
-        if (manager.tryActivateLightfoot(p)) {
-            event.setCancelled(true);
-        }
+        // Magic Helmet: right click to disable invisibility
+        manager.onMagicHelmetRightClick(p);
     }
 
     @EventHandler
+    public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
+        Player p = event.getPlayer();
+        if (GameManager.getInstance().getPlayerSession(p) == null) return;
+
+        // Bunny Shoes: crouch + uncrouch to activate
+        manager.onPlayerToggleSneak(p, event.isSneaking());
+    }
+
+    @EventHandler
+    public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
+        Player p = event.getPlayer();
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        if (session == null) return;
+
+        // Dragon Set: double jump
+        if (event.isFlying() && manager.tryDragonDoubleJump(p)) {
+            event.setCancelled(true);
+            p.setAllowFlight(false);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player p)) return;
-        if (GameManager.getInstance().getPlayerSession(p) == null) return;
-        // guardian check and deathmauler damage tracker
-        manager.onPlayerDamaged(p);
-        manager.onPlayerTookDamageForDeathmauler(p);
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        if (session == null) return;
+
+        double healthAfter = Math.max(0, p.getHealth() - event.getFinalDamage());
+
+        // Dragon Set: immune to explosions
+        if (event.getCause() == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION ||
+            event.getCause() == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) {
+            if (manager.isDragonSetImmuneToExplosion(p)) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+
+        // Guardian's Vest: resistance when low health
+        manager.onPlayerDamaged(p, healthAfter);
+
+        // Deathmauler: track damage for absorption
+        manager.onDeathmaulerDamageTaken(p);
     }
 
     @EventHandler
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        Entity dam = event.getDamager();
-        Entity vic = event.getEntity();
-        if (!(dam instanceof Player attacker)) return;
-        if (!(vic instanceof Player target)) return;
-        if (GameManager.getInstance().getPlayerSession(attacker) == null) return;
+        if (!(event.getDamager() instanceof Player attacker)) return;
+        if (!(event.getEntity() instanceof Player target)) return;
 
+        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
+        if (session == null) return;
+
+        // Handle all attack-based armor effects
         manager.onPlayerAttack(attacker, target);
-        manager.onDragonHit(attacker);
+
+        // Investor's Set: bonus damage in rounds 4/5
+        double damageMultiplier = manager.getInvestorMeleeDamageMultiplier(attacker, session.getCurrentRound());
+        if (damageMultiplier > 1.0) {
+            event.setDamage(event.getDamage() * damageMultiplier);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerJump(PlayerMoveEvent event) {
+        Player p = event.getPlayer();
+        if (GameManager.getInstance().getPlayerSession(p) == null) return;
+
+        // Detect jump (Y increased and player was on ground)
+        if (event.getFrom().getY() < event.getTo().getY() &&
+            p.getLocation().subtract(0, 0.1, 0).getBlock().getType().isSolid()) {
+
+            // Dragon Set: enable double jump after first jump
+            manager.onDragonJump(p);
+
+            // Allow flight briefly for double jump detection
+            if (manager.hasDragonSet(p)) {
+                p.setAllowFlight(true);
+            }
+        }
     }
 }
-
