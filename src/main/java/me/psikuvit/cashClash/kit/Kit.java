@@ -161,8 +161,8 @@ public enum Kit {
         player.getInventory().addItem(new ItemStack(Material.STONE_SHOVEL));
 
         // Food
-        player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 10));
-        player.getInventory().addItem(new ItemStack(Material.BREAD, 30));
+        player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 8));
+        player.getInventory().addItem(new ItemStack(Material.BREAD, 16));
 
         // Shield
         player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
