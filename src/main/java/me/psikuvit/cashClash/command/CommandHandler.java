@@ -47,6 +47,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new TemplateCommand());
         registerSubcommand(new ArenaCommand());
         registerSubcommand(new StatsCommand());
+        registerSubcommand(new CoinsCommand());
     }
 
     public void registerSubcommand(AbstractArgCommand cmd) {
@@ -80,7 +81,7 @@ public class CommandHandler extends Command {
     }
 
     @Override
-    public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull String[] args) {
+    public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull String @NonNull [] args) {
         if (args.length == 0) return Collections.emptyList();
         String token = args[0].toLowerCase(Locale.ROOT);
 
