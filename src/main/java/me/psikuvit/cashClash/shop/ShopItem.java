@@ -11,6 +11,8 @@ public enum ShopItem {
     IRON_AXE(Material.IRON_AXE, ShopCategory.WEAPONS, 2000),
     DIAMOND_SWORD(Material.DIAMOND_SWORD, ShopCategory.WEAPONS, 3000),
     DIAMOND_AXE(Material.DIAMOND_AXE, ShopCategory.WEAPONS, 4000),
+    NETHERITE_SWORD(Material.NETHERITE_SWORD, ShopCategory.WEAPONS, 10000),
+    NETHERITE_AXE(Material.NETHERITE_AXE, ShopCategory.WEAPONS, 12000),
 
     // Armor
     IRON_BOOTS(Material.IRON_BOOTS, ShopCategory.ARMOR, 2250),
@@ -22,6 +24,11 @@ public enum ShopItem {
     DIAMOND_HELMET(Material.DIAMOND_HELMET, ShopCategory.ARMOR, 2500),
     DIAMOND_LEGGINGS(Material.DIAMOND_LEGGINGS, ShopCategory.ARMOR, 2750),
     DIAMOND_CHESTPLATE(Material.DIAMOND_CHESTPLATE, ShopCategory.ARMOR, 3000),
+
+    NETHERITE_BOOTS(Material.NETHERITE_BOOTS, ShopCategory.ARMOR, 15000),
+    NETHERITE_HELMET(Material.NETHERITE_HELMET, ShopCategory.ARMOR, 17500),
+    NETHERITE_LEGGINGS(Material.NETHERITE_LEGGINGS, ShopCategory.ARMOR, 20000),
+    NETHERITE_CHESTPLATE(Material.NETHERITE_CHESTPLATE, ShopCategory.ARMOR, 25000),
 
     // Custom armor (Cash Clash exclusives)
     INVESTORS_BOOTS(Material.IRON_BOOTS, ShopCategory.ARMOR, 4250),
@@ -46,6 +53,12 @@ public enum ShopItem {
     GOLDEN_CARROT(Material.GOLDEN_CARROT, ShopCategory.FOOD, 100, 4),
     GOLDEN_APPLE(Material.GOLDEN_APPLE, ShopCategory.FOOD, 3000),
     ENCHANTED_GOLDEN_APPLE(Material.ENCHANTED_GOLDEN_APPLE, ShopCategory.FOOD, 30000),
+
+    SPEED_CARROT(Material.CARROT, ShopCategory.FOOD, 1200, 1), // 20s speed
+    GOLDEN_CHICKEN(Material.COOKED_CHICKEN, ShopCategory.FOOD, 1400, 1), // 15s strength (nerfed)
+    COOKIE_OF_LIFE(Material.COOKIE, ShopCategory.FOOD, 1000, 1), // 14s regen
+    SUNSCREEN(Material.HONEY_BOTTLE, ShopCategory.FOOD, 2500, 1), // 30s fire res
+    CAN_OF_SPINACH(Material.SPIDER_EYE, ShopCategory.FOOD, 4000, 1), // 15s strength (spinach)
 
     // Utility
     LAVA_BUCKET(Material.LAVA_BUCKET, ShopCategory.UTILITY, 1500),

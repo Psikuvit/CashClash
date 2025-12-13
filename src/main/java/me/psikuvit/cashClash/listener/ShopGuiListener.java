@@ -92,13 +92,11 @@ public class ShopGuiListener implements Listener {
 
          ItemMeta itemMeta = clicked.getItemMeta();
 
-        // Check for cancel button (slot 45) - go back to main menu
         if (event.getSlot() == 45) {
             ShopGUI.openMain(player);
             return;
         }
 
-        // Check for undo button (slot 49)
         if (event.getSlot() == 49) {
             handleUndoPurchase(player, sh.getCategory());
             return;
@@ -118,24 +116,24 @@ public class ShopGuiListener implements Listener {
         if (pdcValue == null) return;
 
         ShopCategory category = sh.getCategory();
-        ShopItem si;
-        try {
-            si = ShopItem.valueOf(pdcValue);
-        } catch (IllegalArgumentException ex) {
-            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown shop category: " + pdcValue, ex);
-            return;
-        }
-        int qty = si.getInitialAmount();
-        if (event.isShiftClick() && category != ShopCategory.ENCHANTS && category != ShopCategory.INVESTMENTS) {
-            qty = Math.min(10, si.getInitialAmount());
-        }
-
         if (category == ShopCategory.ENCHANTS) {
             handleEnchantPurchase(player, pdcValue, category);
+            return;
         } else if (category == ShopCategory.INVESTMENTS) {
             handleInvestmentPurchase(player, pdcValue);
-        } else {
-            handleShopItemClick(player, pdcValue, category, qty);
+            return;
+        }
+
+        try {
+            ShopItem si = ShopItem.valueOf(pdcValue);
+            int qty = si.getInitialAmount();
+            if (event.isShiftClick()) {
+                qty = Math.min(10, si.getInitialAmount());
+            }
+
+            handleShopItemClick(player, si, category, qty);
+        } catch (IllegalArgumentException ex) {
+            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown shop category: " + pdcValue, ex);
         }
     }
 
@@ -154,7 +152,6 @@ public class ShopGuiListener implements Listener {
             return;
         }
 
-        // Refund
         ccp.addCoins(rec.price());
 
         // Remove the purchased item(s) according to the recorded quantity
@@ -276,36 +273,34 @@ public class ShopGuiListener implements Listener {
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return;
 
-        EnchantEntry ee;
         try {
-            ee = EnchantEntry.valueOf(pdcValue);
+            EnchantEntry ee = EnchantEntry.valueOf(pdcValue);
+            int currentLevel = ccp.getOwnedEnchantLevel(ee);
+            int nextLevel = currentLevel + 1;
+
+            if (nextLevel > ee.getMaxLevel()) {
+                Messages.send(player, "<yellow>You already have the maximum level of this enchant!</yellow>");
+                return;
+            }
+
+            long price = ee.getPriceForLevel(nextLevel);
+            if (!ccp.canAfford(price)) {
+                Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
+                SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                return;
+            }
+
+            ccp.deductCoins(price);
+            ccp.addOwnedEnchant(ee, nextLevel);
+
+            ItemUtils.applyEnchantToBestItem(player, ee, nextLevel);
+            Messages.send(player, "<green>Purchased " + ee.getDisplayName() + " " + nextLevel + " for $" + String.format("%,d", price) + "</green>");
+
         } catch (IllegalArgumentException e) {
-            return;
+            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown enchant entry: " + pdcValue, e);
         }
 
-        int currentLevel = ccp.getOwnedEnchantLevel(ee);
-        int nextLevel = currentLevel + 1;
-
-        if (nextLevel > ee.getMaxLevel()) {
-            Messages.send(player, "<yellow>You already have the maximum level of this enchant!</yellow>");
-            return;
-        }
-
-        long price = ee.getPriceForLevel(nextLevel);
-        if (!ccp.canAfford(price)) {
-            Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
-            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            return;
-        }
-
-        ccp.deductCoins(price);
-        ccp.addOwnedEnchant(ee, nextLevel);
-
-        ItemUtils.applyEnchantToBestItem(player, ee, nextLevel);
-        Messages.send(player, "<green>Purchased " + ee.getDisplayName() + " " + nextLevel + " for $" + String.format("%,d", price) + "</green>");
         SoundUtils.play(player, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
-
-        // Refresh the GUI to show updated enchant levels
         ShopGUI.openCategoryItems(player, category);
     }
 
@@ -314,14 +309,7 @@ public class ShopGuiListener implements Listener {
         Messages.send(player, "<yellow>Investments coming soon!</yellow>");
     }
 
-    private void handleShopItemClick(Player player, String pdcValue, ShopCategory category, int quantity) {
-         ShopItem si;
-         try {
-             si = ShopItem.valueOf(pdcValue);
-         } catch (IllegalArgumentException e) {
-             return;
-         }
-
+    private void handleShopItemClick(Player player, ShopItem si, ShopCategory category, int quantity) {
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         if (sess == null) {
             Messages.send(player, "<red>You must be in a game to shop.</red>");
@@ -341,21 +329,10 @@ public class ShopGuiListener implements Listener {
         }
 
         if (si == ShopItem.DEATHMAULER_OUTFIT || si == ShopItem.DRAGON_SET) {
-            // special sets are single-quantity items
             handleSpecialSet(player, si, ccp, price, category);
             return;
         }
 
-        // Check diamond prerequisite for upgradable items
-        if (isUpgradableItem(si) && si.getMaterial().name().contains("DIAMOND")) {
-            if (!hasIronEquivalent(player, si)) {
-                Messages.send(player, "<red>You must buy the iron version first!</red>");
-                SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                return;
-            }
-        }
-
-        // Deduct coins and give item(s)
         ccp.deductCoins(totalPrice);
         giveItemToPlayer(player, ccp, si, quantity, totalPrice);
 
@@ -376,72 +353,33 @@ public class ShopGuiListener implements Listener {
     }
 
     private void giveItemToPlayer(Player player, CashClashPlayer ccp, ShopItem si, int quantity, long totalPrice) {
-        // For stackable items, give an ItemStack with quantity (capped by si.getInitialAmount())
         int giveQty = Math.max(1, Math.min(quantity, si.getInitialAmount()));
 
         ItemStack item = ItemUtils.createTaggedItem(si);
         ItemStack replacedItem;
 
         if (si.getCategory() == ShopCategory.ARMOR) {
-            // armor cannot be bulk-bought; equip single and record replaced item
             replacedItem = ItemUtils.equipArmorOrReplace(player, item);
             ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem));
+
             ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
             Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-            return;
-        }
-
-        if (si.getCategory() == ShopCategory.WEAPONS) {
-            // weapons treated single-quantity (can't bulk replace tools reasonably)
+        } else if (si.getCategory() == ShopCategory.WEAPONS) {
             replacedItem = ItemUtils.replaceBestMatchingTool(player, item);
             ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem));
+
             ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
             Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-            return;
+        } else {
+            ItemStack stack = item.clone();
+            stack.setAmount(giveQty);
+
+            player.getInventory().addItem(stack);
+            ccp.addPurchase(new PurchaseRecord(si, giveQty, totalPrice));
+            Messages.send(player, "<green>Purchased " + si.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
+            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
         }
-
-        // Utility/food/custom stackable items
-        ItemStack stack = item.clone();
-        stack.setAmount(giveQty);
-        player.getInventory().addItem(stack);
-        ccp.addPurchase(new PurchaseRecord(si, giveQty, totalPrice));
-        Messages.send(player, "<green>Purchased " + si.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
-        SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-    }
-
-    private boolean isUpgradableItem(ShopItem si) {
-        String name = si.name();
-        return name.contains("IRON_SWORD") || name.contains("DIAMOND_SWORD") ||
-               name.contains("IRON_AXE") || name.contains("DIAMOND_AXE") ||
-               name.contains("IRON_HELMET") || name.contains("DIAMOND_HELMET") ||
-               name.contains("IRON_CHESTPLATE") || name.contains("DIAMOND_CHESTPLATE") ||
-               name.contains("IRON_LEGGINGS") || name.contains("DIAMOND_LEGGINGS") ||
-               name.contains("IRON_BOOTS") || name.contains("DIAMOND_BOOTS");
-    }
-
-    private boolean hasIronEquivalent(Player player, ShopItem diamondItem) {
-        String ironName = diamondItem.getMaterial().name().replace("DIAMOND", "IRON");
-        Material ironMaterial;
-        try {
-            ironMaterial = Material.valueOf(ironName);
-        } catch (IllegalArgumentException e) {
-            return true; // Not an upgradable item
-        }
-
-        for (ItemStack is : player.getInventory().getContents()) {
-            if (is != null && is.getType() == ironMaterial) {
-                return true;
-            }
-        }
-
-        for (ItemStack is : player.getInventory().getArmorContents()) {
-            if (is != null && is.getType() == ironMaterial) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

@@ -64,7 +64,7 @@ public class ShopGUI {
         ItemStack bundle = new ItemStack(Material.RED_BUNDLE);
         BundleMeta bundleMeta = (BundleMeta) bundle.getItemMeta();
         bundleMeta.displayName(Messages.parse("<yellow>" + ShopCategory.INVESTMENTS.getDisplayName() + "</yellow>"));
-        bundleMeta.lore(List.of(Messages.parse("<gray>Click to browse investments</gray>")));
+        bundleMeta.lore(Messages.wrapLines("<gray>Click to browse investments</gray>"));
         bundleMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         bundle.setItemMeta(bundleMeta);
         inv.setItem(32, bundle);
@@ -83,7 +83,7 @@ public class ShopGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         meta.displayName(Messages.parse("<yellow>" + category.getDisplayName() + "</yellow>"));
-        meta.lore(List.of(Messages.parse("<gray>Click to browse items</gray>")));
+        meta.lore(Messages.wrapLines("<gray>Click to browse items</gray>"));
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
@@ -142,60 +142,89 @@ public class ShopGUI {
     }
 
     private static void populateWeaponsCategory(Inventory inv, Player player) {
-        ShopItem swordItem = hasItem(player, Material.IRON_SWORD) ? ShopItem.DIAMOND_SWORD : ShopItem.IRON_SWORD;
-        inv.setItem(10, createUpgradableItem(swordItem, hasItem(player, Material.DIAMOND_SWORD)));
+        boolean hasIronSword = hasItem(player, Material.IRON_SWORD);
+        boolean hasDiamondSword = hasItem(player, Material.DIAMOND_SWORD);
+        boolean hasNetheriteSword = hasItem(player, Material.NETHERITE_SWORD);
+        if (hasNetheriteSword) {
+            inv.setItem(10, createUpgradableItem(ShopItem.NETHERITE_SWORD, true));
+        } else if (hasDiamondSword) {
+            inv.setItem(10, createUpgradableItem(ShopItem.NETHERITE_SWORD, false));
+        } else if (hasIronSword) {
+            inv.setItem(10, createUpgradableItem(ShopItem.DIAMOND_SWORD, false));
+        } else {
+            inv.setItem(10, createUpgradableItem(ShopItem.IRON_SWORD, false));
+        }
 
-        ShopItem axeItem = hasItem(player, Material.IRON_AXE) ? ShopItem.DIAMOND_AXE : ShopItem.IRON_AXE;
-        inv.setItem(11, createUpgradableItem(axeItem, hasItem(player, Material.DIAMOND_AXE)));
+        boolean hasIronAxe = hasItem(player, Material.IRON_AXE);
+        boolean hasDiamondAxe = hasItem(player, Material.DIAMOND_AXE);
+        boolean hasNetheriteAxe = hasItem(player, Material.NETHERITE_AXE);
+        if (hasNetheriteAxe) {
+            inv.setItem(11, createUpgradableItem(ShopItem.NETHERITE_AXE, true));
+        } else if (hasDiamondAxe) {
+            inv.setItem(11, createUpgradableItem(ShopItem.NETHERITE_AXE, false));
+        } else if (hasIronAxe) {
+            inv.setItem(11, createUpgradableItem(ShopItem.DIAMOND_AXE, false));
+        } else {
+            inv.setItem(11, createUpgradableItem(ShopItem.IRON_AXE, false));
+        }
     }
 
     private static void populateArmorCategory(Inventory inv, Player player) {
-        // Helmet
         boolean hasIronHelmet = hasItem(player, Material.IRON_HELMET);
         boolean hasDiamondHelmet = hasItem(player, Material.DIAMOND_HELMET);
-        if (hasDiamondHelmet) {
-            inv.setItem(10, createMaxedItem(ShopItem.DIAMOND_HELMET));
+        boolean hasNetheriteHelmet = hasItem(player, Material.NETHERITE_HELMET);
+        if (hasNetheriteHelmet) {
+            inv.setItem(10, createUpgradableItem(ShopItem.NETHERITE_HELMET, true));
+        } else if (hasDiamondHelmet) {
+            inv.setItem(10, createUpgradableItem(ShopItem.NETHERITE_HELMET, false));
         } else if (hasIronHelmet) {
             inv.setItem(10, createUpgradableItem(ShopItem.DIAMOND_HELMET, false));
         } else {
             inv.setItem(10, createUpgradableItem(ShopItem.IRON_HELMET, false));
         }
 
-        // Chestplate
         boolean hasIronChest = hasItem(player, Material.IRON_CHESTPLATE);
         boolean hasDiamondChest = hasItem(player, Material.DIAMOND_CHESTPLATE);
-
-        if (hasDiamondChest) {
-            inv.setItem(11, createMaxedItem(ShopItem.DIAMOND_CHESTPLATE));
+        boolean hasNetheriteChest = hasItem(player, Material.NETHERITE_CHESTPLATE);
+        if (hasNetheriteChest) {
+            inv.setItem(11, createUpgradableItem(ShopItem.NETHERITE_CHESTPLATE, true));
+        } else if (hasDiamondChest) {
+            inv.setItem(11, createUpgradableItem(ShopItem.NETHERITE_CHESTPLATE, false));
         } else if (hasIronChest) {
             inv.setItem(11, createUpgradableItem(ShopItem.DIAMOND_CHESTPLATE, false));
         } else {
             inv.setItem(11, createUpgradableItem(ShopItem.IRON_CHESTPLATE, false));
         }
 
-        // Leggings
+        // Leggings (slot 12)
         boolean hasIronLegs = hasItem(player, Material.IRON_LEGGINGS);
         boolean hasDiamondLegs = hasItem(player, Material.DIAMOND_LEGGINGS);
-        if (hasDiamondLegs) {
-            inv.setItem(12, createMaxedItem(ShopItem.DIAMOND_LEGGINGS));
+        boolean hasNetheriteLegs = hasItem(player, Material.NETHERITE_LEGGINGS);
+        if (hasNetheriteLegs) {
+            inv.setItem(12, createUpgradableItem(ShopItem.NETHERITE_LEGGINGS, true));
+        } else if (hasDiamondLegs) {
+            inv.setItem(12, createUpgradableItem(ShopItem.NETHERITE_LEGGINGS, false));
         } else if (hasIronLegs) {
             inv.setItem(12, createUpgradableItem(ShopItem.DIAMOND_LEGGINGS, false));
         } else {
             inv.setItem(12, createUpgradableItem(ShopItem.IRON_LEGGINGS, false));
         }
 
-        // Boots
+        // Boots (slot 13)
         boolean hasIronBoots = hasItem(player, Material.IRON_BOOTS);
         boolean hasDiamondBoots = hasItem(player, Material.DIAMOND_BOOTS);
-        if (hasDiamondBoots) {
-            inv.setItem(13, createMaxedItem(ShopItem.DIAMOND_BOOTS));
+        boolean hasNetheriteBoots = hasItem(player, Material.NETHERITE_BOOTS);
+        if (hasNetheriteBoots) {
+            inv.setItem(13, createUpgradableItem(ShopItem.NETHERITE_BOOTS, true));
+        } else if (hasDiamondBoots) {
+            inv.setItem(13, createUpgradableItem(ShopItem.NETHERITE_BOOTS, false));
         } else if (hasIronBoots) {
             inv.setItem(13, createUpgradableItem(ShopItem.DIAMOND_BOOTS, false));
         } else {
             inv.setItem(13, createUpgradableItem(ShopItem.IRON_BOOTS, false));
         }
 
-
+        // Special/custom armor pieces
         inv.setItem(19, createShopItem(player, ShopItem.INVESTORS_HELMET));
         inv.setItem(20, createShopItem(player, ShopItem.INVESTORS_CHESTPLATE));
         inv.setItem(21, createShopItem(player, ShopItem.INVESTORS_LEGGINGS));
@@ -284,36 +313,45 @@ public class ShopGUI {
 
         ItemStack wallet = new ItemStack(Material.PAPER);
         ItemMeta wm = wallet.getItemMeta();
+
         wm.displayName(Messages.parse("<yellow>Wallet</yellow>"));
-        wm.lore(List.of(
-                Messages.parse("<gray>Invest: <gold>$10,000</gold></gray>"),
-                Messages.parse("<green>Bonus: $30,000</green>"),
-                Messages.parse("<red>Negative: $5,000</red>")
-        ));
+        List<Component> walletLore = new ArrayList<>();
+
+        walletLore.addAll(Messages.wrapLines("<gray>Invest: <gold>$10,000</gold></gray>"));
+        walletLore.addAll(Messages.wrapLines("<green>Bonus: $30,000</green>"));
+        walletLore.addAll(Messages.wrapLines("<red>Negative: $5,000</red>"));
+        wm.lore(walletLore);
+
         wm.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, "WALLET");
         wallet.setItemMeta(wm);
         inv.setItem(slot++, wallet);
 
         ItemStack purse = new ItemStack(Material.LEATHER);
         ItemMeta pm = purse.getItemMeta();
+
         pm.displayName(Messages.parse("<yellow>Purse</yellow>"));
-        pm.lore(List.of(
-                Messages.parse("<gray>Invest: <gold>$30,000</gold></gray>"),
-                Messages.parse("<green>Bonus: $60,000</green>"),
-                Messages.parse("<red>Negative: $10,000</red>")
-        ));
+        List<Component> purseLore = new ArrayList<>();
+
+        purseLore.addAll(Messages.wrapLines("<gray>Invest: <gold>$30,000</gold></gray>"));
+        purseLore.addAll(Messages.wrapLines("<green>Bonus: $60,000</green>"));
+        purseLore.addAll(Messages.wrapLines("<red>Negative: $10,000</red>"));
+        pm.lore(purseLore);
+
         pm.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, "PURSE");
         purse.setItemMeta(pm);
         inv.setItem(slot++, purse);
 
         ItemStack enderBag = new ItemStack(Material.ENDER_CHEST);
         ItemMeta em = enderBag.getItemMeta();
+
         em.displayName(Messages.parse("<yellow>Ender Bag</yellow>"));
-        em.lore(List.of(
-                Messages.parse("<gray>Invest: <gold>$50,000</gold></gray>"),
-                Messages.parse("<green>Bonus: $100,000</green>"),
-                Messages.parse("<red>Negative: $20,000</red>")
-        ));
+        List<Component> enderLore = new ArrayList<>();
+
+        enderLore.addAll(Messages.wrapLines("<gray>Invest: <gold>$50,000</gold></gray>"));
+        enderLore.addAll(Messages.wrapLines("<green>Bonus: $100,000</green>"));
+        enderLore.addAll(Messages.wrapLines("<red>Negative: $20,000</red>"));
+        em.lore(enderLore);
+
         em.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, "ENDER_BAG");
         enderBag.setItemMeta(em);
         inv.setItem(slot, enderBag);
@@ -341,7 +379,8 @@ public class ShopGUI {
         ItemStack undo = new ItemStack(Material.ARROW);
         ItemMeta um = undo.getItemMeta();
         um.displayName(Messages.parse("<yellow>Undo Purchase</yellow>"));
-        um.lore(List.of(Messages.parse("<gray>Undo last purchase and receive a refund</gray>")));
+        um.lore(Messages.wrapLines("<gray>Undo last purchase and receive a refund</gray>"));
+
         undo.setItemMeta(um);
         inv.setItem(49, undo);
 
@@ -362,17 +401,20 @@ public class ShopGUI {
 
         if (owned) {
             meta.displayName(Messages.parse("<green>" + item.getDisplayName() + " <gray>(Owned)</gray></green>"));
-            meta.lore(List.of(Messages.parse("<gray>You already own this item</gray>")));
+            meta.lore(Messages.wrapLines("<gray>You already own this item</gray>"));
         } else {
             meta.displayName(Messages.parse("<yellow>" + item.getDisplayName() + "</yellow>"));
             List<Component> lore = new ArrayList<>();
             lore.add(Messages.parse("<gray>Price: <gold>$" + String.format("%,d", item.getPrice()) + "</gold></gray>"));
+
             if (item.getInitialAmount() > 1) {
                 lore.add(Messages.parse("<gray>Max: <white>" + item.getInitialAmount() + "</white></gray>"));
             }
+
             String desc = item.getDescription();
             if (!desc.isEmpty()) {
-                lore.add(Messages.parse(desc));
+                lore.addAll(Messages.wrapLines(desc));
+
             }
             lore.add(Component.empty());
             lore.add(Messages.parse("<yellow>Click to purchase!</yellow>"));
@@ -391,7 +433,7 @@ public class ShopGUI {
 
         if (maxed) {
             meta.displayName(Messages.parse("<green>" + item.getDisplayName() + " <gray>(Max)</gray></green>"));
-            meta.lore(List.of(Messages.parse("<gray>Maximum tier reached!</gray>")));
+            meta.lore(Messages.wrapLines("<gray>Maximum tier reached!</gray>"));
         } else {
             meta.displayName(Messages.parse("<yellow>" + item.getDisplayName() + "</yellow>"));
             List<Component> lore = new ArrayList<>();
@@ -401,6 +443,8 @@ public class ShopGUI {
             if (item.getMaterial().name().contains("IRON")) {
                 lore.add(Messages.parse("<aqua>Next: Diamond tier</aqua>"));
             } else if (item.getMaterial().name().contains("DIAMOND")) {
+                lore.add(Messages.parse("<light_purple>Next: Netherite tier</light_purple>"));
+            } else if (item.getMaterial().name().contains("NETHERITE")) {
                 lore.add(Messages.parse("<light_purple>Final tier!</light_purple>"));
             }
 
@@ -409,17 +453,6 @@ public class ShopGUI {
             meta.lore(lore);
         }
 
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, item.name());
-        is.setItemMeta(meta);
-        return is;
-    }
-
-    private static ItemStack createMaxedItem(ShopItem item) {
-        ItemStack is = new ItemStack(item.getMaterial());
-        ItemMeta meta = is.getItemMeta();
-        meta.displayName(Messages.parse("<green>" + item.getDisplayName() + " <gray>(Max)</gray></green>"));
-        meta.lore(List.of(Messages.parse("<gray>Maximum tier reached!</gray>")));
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, item.name());
         is.setItemMeta(meta);
@@ -445,7 +478,7 @@ public class ShopGUI {
         ItemStack is = new ItemStack(Material.ENCHANTED_BOOK);
         ItemMeta meta = is.getItemMeta();
         meta.displayName(Messages.parse("<green>" + ee.getDisplayName() + " <gray>(Max)</gray></green>"));
-        meta.lore(List.of(Messages.parse("<gray>Maximum level reached!</gray>")));
+        meta.lore(Messages.wrapLines("<gray>Maximum level reached!</gray>"));
         meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, ee.name());
         is.setItemMeta(meta);
         return is;
