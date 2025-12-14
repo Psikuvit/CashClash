@@ -10,6 +10,8 @@ game:
   combat-phase-duration: 360
   # Time limit for shopping phases (in seconds)
   shopping-phase-duration: 90
+  # Respawn delay after death (in seconds)
+  respawn-delay: 5
   # Enable forfeit system
   forfeit-enabled: true
   # Time before forfeit can be initiated after 2nd teammate death (in seconds)
