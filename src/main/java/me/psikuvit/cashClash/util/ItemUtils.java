@@ -103,6 +103,7 @@ public final class ItemUtils {
         if (si == null) return null;
         ItemStack it = new ItemStack(si.getMaterial(), 1);
         var meta = it.getItemMeta();
+        if (si.getCategory() == ShopCategory.FOOD) return it;
         if (meta != null) {
             meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, si.name());
             meta.displayName(Messages.parse("<yellow>" + si.name().replace('_', ' ') + "</yellow>"));
