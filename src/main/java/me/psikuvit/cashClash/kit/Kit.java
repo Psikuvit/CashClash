@@ -148,11 +148,10 @@ public enum Kit {
     }
 
     private void giveBaseItems(Player player) {
-        // Gold armor equivalent (using leather armor with gold stats via attributes)
-        player.getInventory().setHelmet(new ItemStack(Material.GOLDEN_HELMET));
-        player.getInventory().setChestplate(new ItemStack(Material.GOLDEN_CHESTPLATE));
-        player.getInventory().setLeggings(new ItemStack(Material.GOLDEN_LEGGINGS));
-        player.getInventory().setBoots(new ItemStack(Material.GOLDEN_BOOTS));
+        player.getInventory().setHelmet(new ItemStack(Material.LEATHER_HELMET));
+        player.getInventory().setChestplate(new ItemStack(Material.LEATHER_CHESTPLATE));
+        player.getInventory().setLeggings(new ItemStack(Material.LEATHER_LEGGINGS));
+        player.getInventory().setBoots(new ItemStack(Material.LEATHER_BOOTS));
 
         // Stone tools
         player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
