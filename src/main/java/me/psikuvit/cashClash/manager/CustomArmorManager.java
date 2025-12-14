@@ -1,9 +1,13 @@
 package me.psikuvit.cashClash.manager;
 
-import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.items.CustomArmor;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Keys;
+import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.SoundUtils;
+import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -12,40 +16,74 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Handles runtime behavior for custom armor pieces (effects, cooldowns, detection helpers).
  */
 public class CustomArmorManager {
-    
+
     private static CustomArmorManager instance;
-    // cooldowns and state maps
-    private final Map<UUID, Long> gillieLastMove;
-    private final Map<UUID, Long> gillieInvisUntil;
-    private final Map<UUID, Long> gillieCooldownUntil;
-    private final Map<UUID, Long> lightfootCooldownUntil;
+
+    // Magic Helmet tracking
+    private final Map<UUID, Long> magicHelmetLastMove;
+    private final Map<UUID, Long> magicHelmetInvisUntil;
+    private final Map<UUID, Long> magicHelmetCooldownUntil;
+    private final Set<UUID> magicHelmetActive;
+
+    // Bunny Shoes tracking
+    private final Map<UUID, Long> bunnyCooldownUntil;
+    private final Map<UUID, Boolean> bunnyToggleReady;
+
+    // Guardian's Vest tracking
     private final Map<UUID, Integer> guardianUsesThisRound;
     private final Map<UUID, Long> guardianLastActivated;
+
+    // Deathmauler tracking
     private final Map<UUID, Long> deathmaulerLastDamage;
+    private final Map<UUID, Integer> deathmaulerExtraHearts;
+
+    // Dragon Set tracking
+    private final Map<UUID, Long> dragonDoubleJumpCooldown;
+    private final Set<UUID> dragonCanDoubleJump;
+
+    // Tax Evasion tracking
+    private final Map<UUID, Long> taxEvasionLastMinuteCheck;
 
     private final Random random;
 
     private CustomArmorManager() {
-        this.gillieLastMove = new ConcurrentHashMap<>();
-        this.gillieInvisUntil = new ConcurrentHashMap<>();
-        this.gillieCooldownUntil = new ConcurrentHashMap<>();
-        this.lightfootCooldownUntil = new ConcurrentHashMap<>();
+        this.magicHelmetLastMove = new ConcurrentHashMap<>();
+        this.magicHelmetInvisUntil = new ConcurrentHashMap<>();
+        this.magicHelmetCooldownUntil = new ConcurrentHashMap<>();
+        this.magicHelmetActive = ConcurrentHashMap.newKeySet();
+
+        this.bunnyCooldownUntil = new ConcurrentHashMap<>();
+        this.bunnyToggleReady = new ConcurrentHashMap<>();
+
         this.guardianUsesThisRound = new ConcurrentHashMap<>();
         this.guardianLastActivated = new ConcurrentHashMap<>();
+
         this.deathmaulerLastDamage = new ConcurrentHashMap<>();
+        this.deathmaulerExtraHearts = new ConcurrentHashMap<>();
+
+        this.dragonDoubleJumpCooldown = new ConcurrentHashMap<>();
+        this.dragonCanDoubleJump = ConcurrentHashMap.newKeySet();
+
+        this.taxEvasionLastMinuteCheck = new ConcurrentHashMap<>();
 
         this.random = new Random();
     }
 
-    public static CustomArmorManager getInstance() { 
+    public static CustomArmorManager getInstance() {
         if (instance == null) {
             instance = new CustomArmorManager();
         }
@@ -56,14 +94,13 @@ public class CustomArmorManager {
         List<CustomArmor> found = new ArrayList<>();
         for (ItemStack is : p.getInventory().getArmorContents()) {
             if (is == null) continue;
-
             ItemMeta m = is.getItemMeta();
             if (m == null) continue;
 
             PersistentDataContainer c = m.getPersistentDataContainer();
             String val = c.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
-
             if (val == null) continue;
+
             try {
                 CustomArmor ca = CustomArmor.valueOf(val);
                 found.add(ca);
@@ -72,184 +109,403 @@ public class CustomArmorManager {
         return found;
     }
 
-    public int countEquipped(Player p, CustomArmor typePrefix) {
-        // counts exact match or set pieces with same prefix
+    public int countInvestorsPieces(Player p) {
         int cnt = 0;
         for (CustomArmor ca : getEquippedCustomArmor(p)) {
-            if (ca == typePrefix) cnt++;
-            else if (typePrefix == CustomArmor.INVESTORS_BOOTS && ca.name().startsWith("INVESTORS_")) cnt++;
+            if (ca.isInvestorsSet()) cnt++;
         }
         return cnt;
     }
 
-    public int countInvestorsPieces(Player p) {
-        int cnt = 0;
-        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca.isInvestorsSet()) cnt++;
-        return cnt;
-    }
-
     public boolean hasTaxEvasion(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.TAX_EVASION_PANTS) return true;
+        for (CustomArmor ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmor.TAX_EVASION_PANTS) return true;
+        }
         return false;
     }
 
-    public boolean hasGillie(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.GILLIE_SUIT_HAT) return true;
+    public boolean hasMagicHelmet(Player p) {
+        for (CustomArmor ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmor.MAGIC_HELMET) return true;
+        }
         return false;
     }
 
-    public boolean hasLightfoot(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.LIGHTFOOT_SHOES) return true;
+    public boolean hasBunnyShoes(Player p) {
+        for (CustomArmor ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmor.BUNNY_SHOES) return true;
+        }
         return false;
     }
 
     public boolean hasGuardianVest(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.GUARDIANS_VEST) return true;
+        for (CustomArmor ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmor.GUARDIANS_VEST) return true;
+        }
         return false;
     }
 
     public boolean hasFlamebringerBoots(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.FLAMEBRINGER_BOOTS) return true;
+        for (CustomArmor ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmor.FLAMEBRINGER_BOOTS) return true;
+        }
         return false;
     }
 
     public boolean hasFlamebringerLeggings(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.FLAMEBRINGER_LEGGINGS) return true;
+        for (CustomArmor ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmor.FLAMEBRINGER_LEGGINGS) return true;
+        }
         return false;
     }
 
-    public boolean hasDeathmauler(Player p) {
-        int count = 0;
-        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.DEATHMAULER_OUTFIT) count++;
-        return count >= 2;
+    public boolean hasDeathmaulerSet(Player p) {
+        boolean hasChest = false, hasLegs = false;
+        for (CustomArmor ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmor.DEATHMAULER_CHESTPLATE) hasChest = true;
+            if (ca == CustomArmor.DEATHMAULER_LEGGINGS) hasLegs = true;
+        }
+        return hasChest && hasLegs;
     }
 
     public boolean hasDragonSet(Player p) {
-        int count = 0;
-        for (CustomArmor ca : getEquippedCustomArmor(p)) if (ca == CustomArmor.DRAGON_SET) count++;
-        return count >= 3;
+        boolean hasChest = false, hasBoots = false, hasHelmet = false;
+        for (CustomArmor ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmor.DRAGON_CHESTPLATE) hasChest = true;
+            if (ca == CustomArmor.DRAGON_BOOTS) hasBoots = true;
+            if (ca == CustomArmor.DRAGON_HELMET) hasHelmet = true;
+        }
+        return hasChest && hasBoots && hasHelmet;
     }
+
+    // ==================== MAGIC HELMET ====================
 
     public void onPlayerMove(Player p) {
-        if (!hasGillie(p)) return;
+        if (!hasMagicHelmet(p)) return;
 
         UUID id = p.getUniqueId();
         long now = System.currentTimeMillis();
-        gillieLastMove.put(id, now);
 
-        SchedulerUtils.runTaskLater(() -> {
-             Long l = gillieLastMove.get(id);
-             if (l == null) return;
-             if (l.equals(now)) {
-                 Long cd = gillieCooldownUntil.getOrDefault(id, 0L);
-                 if (now < cd) return;
+        if (magicHelmetActive.contains(id)) {
+            magicHelmetLastMove.put(id, now);
+            cancelMagicHelmetInvisibility(p);
+            return;
+        }
 
-                 Long invisUntil = gillieInvisUntil.getOrDefault(id, 0L);
-                 if (now < invisUntil) return; // already invisible
+        Long prev = magicHelmetLastMove.get(id);
 
-                 p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10 * 20, 0, false, false, false));
+        magicHelmetLastMove.put(id, now);
 
-                 gillieInvisUntil.put(id, System.currentTimeMillis() + (10 * 1000L));
-                 gillieCooldownUntil.put(id, System.currentTimeMillis() + (30 * 1000L));
-             }
-        }, 60L);
+        if (prev != null) {
+            long elapsed = now - prev;
+            if (elapsed >= 3000L) {
+                long cd = magicHelmetCooldownUntil.getOrDefault(id, 0L);
+                if (now < cd) return;
+
+                long invisUntil = magicHelmetInvisUntil.getOrDefault(id, 0L);
+                if (now < invisUntil) return;
+
+                activateMagicHelmetInvisibility(p);
+            }
+        }
     }
 
-    public boolean tryActivateLightfoot(Player p) {
-        if (!hasLightfoot(p)) return false;
+    /**
+     * Simple cleanup for watchers/state when callers want to clear magic-helmet related data.
+     * This does not clear the cooldown value so players can't bypass it by forcing stop.
+     */
+    public void stopMagicHelmetWatcher(Player p) {
+        if (p == null) return;
+        UUID id = p.getUniqueId();
+        magicHelmetLastMove.remove(id);
+        // If invisible, remove effect and keep cooldown
+        if (magicHelmetActive.remove(id)) {
+            p.removePotionEffect(PotionEffectType.INVISIBILITY);
+            magicHelmetInvisUntil.remove(id);
+        }
+    }
+
+    private void activateMagicHelmetInvisibility(Player p) {
+        UUID id = p.getUniqueId();
+        p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10 * 20, 0, false, false, false));
+        magicHelmetInvisUntil.put(id, System.currentTimeMillis() + 10_000L);
+        magicHelmetActive.add(id);
+
+        Messages.send(p, "<dark_purple>You turned invisible!</dark_purple>");
+
+        // Auto-end after 10 seconds
+        SchedulerUtils.runTaskLater(() -> {
+            if (magicHelmetActive.contains(id)) {
+                cancelMagicHelmetInvisibility(p);
+            }
+        }, 10 * 20L);
+    }
+
+    public void cancelMagicHelmetInvisibility(Player p) {
+        UUID id = p.getUniqueId();
+        if (!magicHelmetActive.remove(id)) return;
+
+        p.removePotionEffect(PotionEffectType.INVISIBILITY);
+        magicHelmetCooldownUntil.put(id, System.currentTimeMillis() + 30_000L);
+        magicHelmetInvisUntil.remove(id);
+
+        Messages.send(p, "<gray>Invisibility ended. Cooldown: 30 seconds.</gray>");
+    }
+
+    public void onMagicHelmetRightClick(Player p) {
+        if (!hasMagicHelmet(p)) return;
+        if (magicHelmetActive.contains(p.getUniqueId())) {
+            cancelMagicHelmetInvisibility(p);
+        }
+    }
+
+    public void onPlayerAttack(Player attacker, Player target) {
+        // Magic Helmet: attacking cancels invisibility
+        if (magicHelmetActive.contains(attacker.getUniqueId())) {
+            cancelMagicHelmetInvisibility(attacker);
+        }
+
+        // Flamebringer Leggings: 30% chance to ignite
+        if (hasFlamebringerLeggings(attacker)) {
+            if (random.nextDouble() < 0.30) {
+                target.setFireTicks(8 * 20);
+                Messages.send(attacker, "<red>🔥 Blue flames ignited your enemy!</red>");
+            }
+        }
+
+        // Dragon Set: regen and speed on hit
+        if (hasDragonSet(attacker)) {
+            attacker.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 3 * 20, 0));
+            attacker.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 3 * 20, 1));
+        }
+    }
+
+    // ==================== BUNNY SHOES ====================
+
+    public void onPlayerToggleSneak(Player p, boolean sneaking) {
+        if (!hasBunnyShoes(p)) return;
         UUID id = p.getUniqueId();
 
-        long now = System.currentTimeMillis();
-        Long cd = lightfootCooldownUntil.getOrDefault(id, 0L);
+        if (sneaking) {
+            bunnyToggleReady.put(id, true);
+        } else {
+            Boolean ready = bunnyToggleReady.get(id);
+            if (ready != null && ready) {
+                bunnyToggleReady.put(id, false);
+                tryActivateBunnyShoes(p);
+            }
+        }
+    }
 
-        if (now < cd) return false;
+    private void tryActivateBunnyShoes(Player p) {
+        UUID id = p.getUniqueId();
+        long now = System.currentTimeMillis();
+        Long cd = bunnyCooldownUntil.getOrDefault(id, 0L);
+
+        if (now < cd) {
+            long remaining = (cd - now) / 1000;
+            Messages.send(p, "<red>Bunny Shoes on cooldown: " + remaining + "s</red>");
+            return;
+        }
 
         p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 15 * 20, 1));
         p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 15 * 20, 0));
+        bunnyCooldownUntil.put(id, now + 25_000L);
 
-        lightfootCooldownUntil.put(id, now + (25 * 1000L));
-        return true;
+        Messages.send(p, "<green>Bunny Shoes activated! Speed II & Jump Boost for 15 seconds.</green>");
+        SoundUtils.play(p, Sound.ENTITY_RABBIT_JUMP, 1.0f, 1.5f);
     }
 
-    // Guardian: called on damage to check threshold
-    public void onPlayerDamaged(Player p) {
+    // ==================== GUARDIAN'S VEST ====================
+
+    public void onPlayerDamaged(Player p, double healthAfter) {
         if (!hasGuardianVest(p)) return;
         UUID id = p.getUniqueId();
-        double health = p.getHealth();
 
-        if (health > 8.0) return;
+        if (healthAfter > 8.0) return; // 4 hearts = 8 HP
 
         int used = guardianUsesThisRound.getOrDefault(id, 0);
         if (used >= 3) return;
 
         long now = System.currentTimeMillis();
         long last = guardianLastActivated.getOrDefault(id, 0L);
+        if (now < last + 20_000L) return;
 
-        if (now < last + 20 * 1000L) return;
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 15 * 20, 1));
         guardianUsesThisRound.put(id, used + 1);
         guardianLastActivated.put(id, now);
+
+        Messages.send(p, "<gold>Guardian's Vest activated! Resistance II for 15 seconds. (" + (used + 1) + "/3 uses)</gold>");
+        SoundUtils.play(p, Sound.ITEM_TOTEM_USE, 0.5f, 1.5f);
     }
 
-    // Flamebringer: on attack
-    public void onPlayerAttack(Player attacker, Player target) {
-        if (hasFlamebringerLeggings(attacker)) {
-            if (random.nextDouble() < 0.40) {
-                // attempt to ignite target - give fire ticks and a small immediate damage to bypass res
-                target.setFireTicks(8 * 20);
-                target.damage(1.0, attacker);
+    // ==================== DEATHMAULER'S OUTFIT ====================
+
+    public void onPlayerKill(Player killer) {
+        if (!hasDeathmaulerSet(killer)) return;
+        UUID id = killer.getUniqueId();
+
+        // Heal 4 hearts (8 HP)
+        var attr = killer.getAttribute(Attribute.MAX_HEALTH);
+        if (attr != null) {
+            double maxHealth = attr.getValue();
+            double newHealth = Math.min(maxHealth, killer.getHealth() + 8.0);
+            killer.setHealth(newHealth);
+        }
+
+        Messages.send(killer, "<dark_red>Deathmauler healed you +4 hearts!</dark_red>");
+
+        // 30% chance for extra heart this round
+        if (random.nextDouble() < 0.30) {
+            if (attr != null) {
+                int extraHearts = deathmaulerExtraHearts.getOrDefault(id, 0);
+                attr.setBaseValue(attr.getBaseValue() + 2.0);
+                deathmaulerExtraHearts.put(id, extraHearts + 1);
+                Messages.send(killer, "<dark_red>+1 extra heart for this round!</dark_red>");
             }
         }
     }
 
-    // Deathmauler: on kill
-    public void onPlayerKill(Player killer) {
-        if (!hasDeathmauler(killer)) return;
-        double max = killer.getAttribute(Attribute.MAX_HEALTH).getValue();
-        double cur = killer.getHealth();
-
-        double newHealth = Math.min(max, cur + 8.0); // +4 hearts = 8.0
-        killer.setHealth(newHealth);
-
-        if (random.nextDouble() < 0.30) {
-            int ticks = CashClashPlugin.getInstance().getConfig().getInt("rounds.round-duration-seconds", 60) * 20;
-            killer.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, ticks, 0));
-        }
-    }
-
-    // Deathmauler: schedule absorption when player hasn't taken damage for 5s
-    public void onPlayerTookDamageForDeathmauler(Player p) {
-        if (!hasDeathmauler(p)) return;
+    public void onDeathmaulerDamageTaken(Player p) {
+        if (!hasDeathmaulerSet(p)) return;
         UUID id = p.getUniqueId();
         deathmaulerLastDamage.put(id, System.currentTimeMillis());
 
-        me.psikuvit.cashClash.util.SchedulerUtils.runTaskLater(() -> {
-             Long last = deathmaulerLastDamage.get(id);
-             if (last == null) return;
-             if (System.currentTimeMillis() - last >= 5000L) {
-                 p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
-             }
-        }, 100L); // 5s = 100 ticks
+        // Schedule absorption check after 5 seconds
+        SchedulerUtils.runTaskLater(() -> {
+            Long last = deathmaulerLastDamage.get(id);
+            if (last == null) return;
+            if (System.currentTimeMillis() - last >= 5000L) {
+                p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
+                Messages.send(p, "<dark_red>Deathmauler granted 2 absorption hearts!</dark_red>");
+            }
+        }, 100L);
     }
 
-    // Investor: get multiplier to apply for money bonuses (kills/objectives)
+    // ==================== DRAGON SET ====================
+
+    public void onDragonJump(Player p) {
+        if (!hasDragonSet(p)) return;
+        UUID id = p.getUniqueId();
+
+        // Enable double jump on first jump
+        if (!dragonCanDoubleJump.contains(id)) {
+            Long cd = dragonDoubleJumpCooldown.getOrDefault(id, 0L);
+            if (System.currentTimeMillis() >= cd) {
+                dragonCanDoubleJump.add(id);
+            }
+        }
+    }
+
+    public boolean tryDragonDoubleJump(Player p) {
+        if (!hasDragonSet(p)) return false;
+        UUID id = p.getUniqueId();
+
+        if (!dragonCanDoubleJump.remove(id)) return false;
+
+        // Launch player ~5 blocks forward, 3 blocks up
+        Vector direction = p.getLocation().getDirection().normalize();
+        Vector velocity = direction.multiply(1.2).setY(0.8);
+        p.setVelocity(velocity);
+
+        dragonDoubleJumpCooldown.put(id, System.currentTimeMillis() + 10_000L);
+
+        Messages.send(p, "<light_purple>Dragon Double Jump!</light_purple>");
+        SoundUtils.play(p, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.5f);
+        return true;
+    }
+
+    public void onPlayerLand(Player p) {
+        dragonCanDoubleJump.remove(p.getUniqueId());
+    }
+
+    public boolean isDragonSetImmuneToExplosion(Player p) {
+        return hasDragonSet(p);
+    }
+
+    // ==================== TAX EVASION PANTS ====================
+
+    public void onTaxEvasionTick(Player p, GameSession session) {
+        if (!hasTaxEvasion(p)) return;
+        UUID id = p.getUniqueId();
+        long now = System.currentTimeMillis();
+
+        Long lastCheck = taxEvasionLastMinuteCheck.get(id);
+        if (lastCheck == null) {
+            taxEvasionLastMinuteCheck.put(id, now);
+            return;
+        }
+
+        // Living for 1 minute grants 3k
+        if (now - lastCheck >= 60_000L) {
+            CashClashPlayer ccp = session.getCashClashPlayer(id);
+            if (ccp != null) {
+                ccp.addCoins(3000);
+                Messages.send(p, "<green>Tax Evasion Pants: +3,000 coins for surviving 1 minute!</green>");
+                SoundUtils.play(p, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            }
+            taxEvasionLastMinuteCheck.put(id, now);
+        }
+    }
+
+    public double getTaxEvasionDeathPenalty() {
+        return 0.075; // Only lose 7.5% on death
+    }
+
+    // ==================== INVESTOR'S SET ====================
+
     public double getInvestorMultiplier(Player p) {
         int pieces = countInvestorsPieces(p);
         if (pieces <= 0) return 1.0;
-        return 1.0 + (0.125 * pieces); // each piece +12.5%
+        return 1.0 + (0.125 * pieces); // +12.5% per piece
     }
 
-    // Dragon set: when player hits someone, give regen1 and speed2 for 3s
-    public void onDragonHit(Player p) {
-        if (!hasDragonSet(p)) return;
-        p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 3 * 20, 0));
-        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 3 * 20, 1));
+    public double getInvestorMeleeDamageMultiplier(Player p, int currentRound) {
+        if (currentRound < 4) return 1.0;
+        int pieces = countInvestorsPieces(p);
+        if (pieces <= 0) return 1.0;
+        return 1.0 + (0.05 * pieces); // +5% per piece in rounds 4/5
     }
 
-    // Utility: reset per-round counters
+    /**
+     * Calculate the price for an investor piece based on how many are already owned.
+     */
+    public long getInvestorPrice(CustomArmor armor, int piecesOwned) {
+        if (!armor.isInvestorsSet()) return armor.getBasePrice();
+        // Each piece increases price by 25%
+        double multiplier = Math.pow(1.25, piecesOwned);
+        return Math.round(armor.getBasePrice() * multiplier);
+    }
+
+    // ==================== RESET ====================
+
     public void resetRound(Player p) {
         UUID id = p.getUniqueId();
         guardianUsesThisRound.remove(id);
         guardianLastActivated.remove(id);
+
+        // Reset deathmauler extra hearts
+        Integer extraHearts = deathmaulerExtraHearts.remove(id);
+        if (extraHearts != null && extraHearts > 0) {
+            var attr = p.getAttribute(Attribute.MAX_HEALTH);
+            if (attr != null) {
+                attr.setBaseValue(20.0);
+            }
+        }
+
+        deathmaulerLastDamage.remove(id);
+        taxEvasionLastMinuteCheck.remove(id);
+        dragonCanDoubleJump.remove(id);
+        dragonDoubleJumpCooldown.remove(id);
+        magicHelmetActive.remove(id);
+        magicHelmetInvisUntil.remove(id);
+        magicHelmetCooldownUntil.remove(id);
+        bunnyToggleReady.remove(id);
+        bunnyCooldownUntil.remove(id);
+    }
+
+    public void resetPlayer(Player p) {
+        resetRound(p);
+        magicHelmetLastMove.remove(p.getUniqueId());
     }
 }
