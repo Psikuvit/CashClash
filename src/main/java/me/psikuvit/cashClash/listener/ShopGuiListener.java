@@ -6,6 +6,8 @@ import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.ShopHolder;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.player.Investment;
+import me.psikuvit.cashClash.player.InvestmentType;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
@@ -306,8 +308,63 @@ public class ShopGuiListener implements Listener {
     }
 
     private void handleInvestmentPurchase(Player player, String pdcValue) {
-        // TODO: Implement investment purchase logic
-        Messages.send(player, "<yellow>Investments coming soon!</yellow>");
+        GameSession sess = GameManager.getInstance().getPlayerSession(player);
+        if (sess == null) {
+            Messages.send(player, "<red>You must be in a game to shop.</red>");
+            player.closeInventory();
+            return;
+        }
+
+        // Cannot buy investments in Round 5
+        if (sess.getCurrentRound() >= 5) {
+            Messages.send(player, "<red>Investments cannot be purchased in Round 5!</red>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
+        if (ccp == null) return;
+
+        // Check if player already has an investment
+        if (ccp.getCurrentInvestment() != null) {
+            Messages.send(player, "<red>You already have an active investment! (" +
+                ccp.getCurrentInvestment().getType().name().replace("_", " ") + ")</red>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        InvestmentType type;
+        try {
+            type = InvestmentType.valueOf(pdcValue);
+        } catch (IllegalArgumentException e) {
+            Messages.send(player, "<red>Invalid investment type!</red>");
+            return;
+        }
+
+        long cost = type.getCost();
+        if (!ccp.canAfford(cost)) {
+            Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", cost) + ")</red>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        // Deduct coins and create investment
+        ccp.deductCoins(cost);
+        Investment investment = new Investment(type, cost);
+        ccp.setCurrentInvestment(investment);
+        ccp.setInvestedCoins(cost);
+
+        String displayName = type.name().replace("_", " ");
+        Messages.send(player, "<green>You invested <gold>$" + String.format("%,d", cost) +
+            "</gold> in a <yellow>" + displayName + "</yellow>!</green>");
+        Messages.send(player, "<gray>Bonus: <green>$" + String.format("%,d", type.getBonusReturn()) +
+            "</green> | Negative: <red>$" + String.format("%,d", type.getNegativeReturn()) + "</red></gray>");
+        Messages.send(player, "<gray>1 death = Bonus | 2 deaths = Break even | 3+ deaths = Loss</gray>");
+
+        SoundUtils.play(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
+
+        // Refresh GUI
+        ShopGUI.openCategoryItems(player, ShopCategory.INVESTMENTS);
     }
 
     private void handleShopItemClick(Player player, ShopItem si, ShopCategory category, int quantity) {
