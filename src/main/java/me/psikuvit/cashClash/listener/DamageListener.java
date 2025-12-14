@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.manager.BonusManager;
 import me.psikuvit.cashClash.manager.GameManager;
@@ -26,14 +27,14 @@ public class DamageListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
 
-
         RoundData currentRound = session.getCurrentRoundData();
         if (currentRound == null) return;
+
+        if (session.getState() == GameState.WAITING) return;
 
         CashClashPlayer ccPlayer = session.getCashClashPlayer(player.getUniqueId());
         if (ccPlayer == null) return;
 
-        ccPlayer.setLastDamageTime(System.currentTimeMillis());
         currentRound.setLastDamageTime(player.getUniqueId(), System.currentTimeMillis());
 
         // Track damage received
