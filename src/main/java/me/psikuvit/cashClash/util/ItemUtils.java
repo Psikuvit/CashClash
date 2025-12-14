@@ -120,30 +120,27 @@ public final class ItemUtils {
         return it;
     }
 
-    public static void giveCustomArmorSet(Player player, CustomArmor... armorPieces) {
-        if (player == null || armorPieces == null) return;
+    public static void giveCustomArmorSet(Player player, CustomArmor armor) {
+        if (player == null || armor == null) return;
 
-        for (CustomArmor armor : armorPieces) {
-            ItemStack item = new ItemStack(armor.getMaterial());
-            ItemMeta meta = item.getItemMeta();
+        ItemStack item = new ItemStack(armor.getMaterial());
+        ItemMeta meta = item.getItemMeta();
 
-            if (meta != null) {
-                meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, armor.name());
-                meta.displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
+        if (meta != null) {
+            meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, armor.name());
+            meta.displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
 
-                List<Component> wrappedLore = Messages.wrapLines("<gray>" + armor.getLore() + "</gray>");
-                wrappedLore.add(Component.empty());
-                wrappedLore.add(Messages.parse("<yellow>Special Armor</yellow>"));
-                meta.lore(wrappedLore);
-                meta.setUnbreakable(true);
-                meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
-                item.setItemMeta(meta);
-            }
-
-            equipArmorOrReplace(player, item);
+            List<Component> wrappedLore = Messages.wrapLines("<gray>" + armor.getLore() + "</gray>");
+            wrappedLore.add(Component.empty());
+            wrappedLore.add(Messages.parse("<yellow>Special Armor</yellow>"));
+            meta.lore(wrappedLore);
+            meta.setUnbreakable(true);
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
+            item.setItemMeta(meta);
         }
-    }
 
+        equipArmorOrReplace(player, item);
+    }
 
     public static void applyEnchantToBestItem(Player player, EnchantEntry ee, int lvl) {
         if (player == null || ee == null) return;
