@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.manager.RoundManager;
 import me.psikuvit.cashClash.manager.ScoreboardManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.player.Investment;
 import me.psikuvit.cashClash.manager.PlayerDataManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
@@ -139,6 +140,10 @@ public class GameSession {
 
     public BonusManager getBonusManager() {
         return bonusManager;
+    }
+
+    public CashQuakeManager getCashQuakeManager() {
+        return cashQuakeManager;
     }
 
     public void start() {
@@ -294,7 +299,6 @@ public class GameSession {
         Location templateLoc = team == team1 ? tpl.getTeam1Spawn(idx) : tpl.getTeam2Spawn(idx);
         if (templateLoc == null) return gameWorld != null ? gameWorld.getSpawnLocation() : null;
 
-        // Adjust template location coordinates into the session's copied world
         return LocationUtils.adjustLocationToWorld(templateLoc, gameWorld);
     }
 
@@ -325,6 +329,8 @@ public class GameSession {
 
     public void end() {
         state = GameState.ENDING;
+        resolveInvestments();
+
         Team winner = calculateWinner();
         Location finalSpawn = determineFinalSpawn();
 
@@ -346,7 +352,7 @@ public class GameSession {
         ScoreboardManager.getInstance().removeBoard(sessionId);
 
         // Clear kits/effects for all players in this session before removing them
-        for (UUID u : new ArrayList<>(players.keySet())) {
+        for (UUID u : players.keySet()) {
             Player p = Bukkit.getPlayer(u);
             if (p != null && p.isOnline()) clearPlayerKit(p);
         }
@@ -373,6 +379,58 @@ public class GameSession {
     }
 
     /**
+     * Resolves all player investments at game end.
+     * Awards bonus, breaks even, or applies penalty based on deaths.
+     */
+    private void resolveInvestments() {
+        for (CashClashPlayer ccp : players.values()) {
+            Investment investment = ccp.getCurrentInvestment();
+            if (investment == null) continue;
+
+            Player p = Bukkit.getPlayer(ccp.getUuid());
+            long returnAmount = investment.calculateReturn();
+            String typeName = investment.getType().name().replace("_", " ");
+
+            if (investment.isProfitable()) {
+                // 0-1 deaths: Bonus
+                ccp.addCoins(returnAmount);
+                if (p != null && p.isOnline()) {
+                    Messages.send(p, "<green><bold>INVESTMENT SUCCESS!</bold></green>");
+                    Messages.send(p, "<green>Your " + typeName + " earned you <gold>$" +
+                        String.format("%,d", returnAmount) + "</gold>!</green>");
+                    Messages.send(p, "<gray>(Deaths: " + investment.getDeaths() + ")</gray>");
+                    SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                }
+            } else if (investment.isBreakEven()) {
+                // 2 deaths: Break even
+                ccp.addCoins(returnAmount);
+                if (p != null && p.isOnline()) {
+                    Messages.send(p, "<yellow><bold>INVESTMENT BREAK EVEN</bold></yellow>");
+                    Messages.send(p, "<yellow>Your " + typeName + " returned your investment of <gold>$" +
+                        String.format("%,d", returnAmount) + "</gold>.</yellow>");
+                    Messages.send(p, "<gray>(Deaths: " + investment.getDeaths() + ")</gray>");
+                    SoundUtils.play(p, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+                }
+            } else {
+                // 3+ deaths: Loss
+                long penalty = investment.getType().getNegativeReturn();
+                ccp.deductCoins(penalty);
+                if (p != null && p.isOnline()) {
+                    Messages.send(p, "<red><bold>INVESTMENT FAILED!</bold></red>");
+                    Messages.send(p, "<red>Your " + typeName + " cost you <gold>$" +
+                        String.format("%,d", penalty) + "</gold>!</red>");
+                    Messages.send(p, "<gray>(Deaths: " + investment.getDeaths() + " - Lost invested amount + penalty)</gray>");
+                    SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
+                }
+            }
+
+            // Clear the investment after resolution
+            ccp.setCurrentInvestment(null);
+            ccp.setInvestedCoins(0);
+        }
+    }
+
+    /**
      * Remove items and potion effects granted by kits from the player.
      */
     private void clearPlayerKit(Player player) {
@@ -386,7 +444,6 @@ public class GameSession {
 
             for (PotionEffect t : player.getActivePotionEffects()) player.removePotionEffect(t.getType());
 
-            // Reset health and food to safe defaults (do not change max health)
             var attr = player.getAttribute(Attribute.MAX_HEALTH);
             double maxHealth = attr != null ? attr.getValue() : 20.0;
             player.setHealth(Math.max(1.0, Math.min(maxHealth, player.getHealth())));
