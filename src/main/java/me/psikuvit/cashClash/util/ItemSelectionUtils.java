@@ -36,7 +36,7 @@ public final class ItemSelectionUtils {
         String sa = a.name();
         String sb = b.name();
         if (sa.endsWith("SWORD") && sb.endsWith("SWORD")) return true;
-        if (sa.endsWith("AXE") && sb.endsWith("AXE")) return true;
+        if (sa.endsWith("_AXE") && sb.endsWith("_AXE")) return true;
         if (sa.endsWith("PICKAXE") && sb.endsWith("PICKAXE")) return true;
         if (sa.endsWith("SHOVEL") && sb.endsWith("SHOVEL")) return true;
         if (sa.equals("BOW") && sb.equals("BOW")) return true;
@@ -91,9 +91,14 @@ public final class ItemSelectionUtils {
             case DEATHMAULER_LEGGINGS -> CustomArmor.DEATHMAULER_LEGGINGS;
             case INVESTORS_BOOTS -> CustomArmor.INVESTORS_BOOTS;
             case INVESTORS_CHESTPLATE -> CustomArmor.INVESTORS_CHESTPLATE;
+            case INVESTORS_LEGGINGS -> CustomArmor.INVESTORS_LEGGINGS;
             case INVESTORS_HELMET -> CustomArmor.INVESTORS_HELMET;
             case FLAMEBRINGER_BOOTS -> CustomArmor.FLAMEBRINGER_BOOTS;
             case FLAMEBRINGER_LEGGINGS -> CustomArmor.FLAMEBRINGER_LEGGINGS;
+            case MAGIC_HELMET -> CustomArmor.MAGIC_HELMET;
+            case GUARDIANS_VEST -> CustomArmor.GUARDIANS_VEST;
+            case BUNNY_SHOES -> CustomArmor.BUNNY_SHOES;
+            case TAX_EVASION_PANTS -> CustomArmor.TAX_EVASION_PANTS;
             case null, default -> null;
         };
     }
