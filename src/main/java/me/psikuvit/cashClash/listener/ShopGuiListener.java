@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.ShopItem;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.util.ItemSelectionUtils;
 import me.psikuvit.cashClash.util.ItemUtils;
 import me.psikuvit.cashClash.util.Keys;
 import org.bukkit.Material;
@@ -328,8 +329,8 @@ public class ShopGuiListener implements Listener {
             return;
         }
 
-        if (si == ShopItem.DEATHMAULER_OUTFIT || si == ShopItem.DRAGON_SET) {
-            handleSpecialSet(player, si, ccp, price, category);
+        if (si.getCategory() == ShopCategory.CUSTOM_ARMOR) {
+            handleSpecialSet(player, si, ccp, price);
             return;
         }
 
@@ -339,13 +340,9 @@ public class ShopGuiListener implements Listener {
         ShopGUI.openCategoryItems(player, category);
     }
 
-    private void handleSpecialSet(Player player, ShopItem si, CashClashPlayer ccp, long price, ShopCategory category) {
-        // special sets are always single-quantity purchases
-        if (si == ShopItem.DEATHMAULER_OUTFIT) {
-            ItemUtils.giveCustomArmorSet(player, CustomArmor.DEATHMAULER_CHESTPLATE, CustomArmor.DEATHMAULER_LEGGINGS);
-        } else if (si == ShopItem.DRAGON_SET) {
-            ItemUtils.giveCustomArmorSet(player, CustomArmor.DRAGON_CHESTPLATE, CustomArmor.DRAGON_BOOTS, CustomArmor.DRAGON_HELMET);
-        }
+    private void handleSpecialSet(Player player, ShopItem si, CashClashPlayer ccp, long price) {
+        CustomArmor customArmor = ItemSelectionUtils.mapFromShopItem(si);
+        ItemUtils.giveCustomArmorSet(player, customArmor);
 
         ccp.addPurchase(new PurchaseRecord(si, 1, price));
         Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", price) + "</green>");

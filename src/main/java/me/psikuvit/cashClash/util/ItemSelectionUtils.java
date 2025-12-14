@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.util;
 
+import me.psikuvit.cashClash.items.CustomArmor;
+import me.psikuvit.cashClash.shop.ShopItem;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -11,7 +13,9 @@ import org.bukkit.inventory.PlayerInventory;
  */
 public final class ItemSelectionUtils {
 
-    private ItemSelectionUtils() {}
+    private ItemSelectionUtils() {
+        throw new AssertionError("Nope.");
+    }
 
     /**
      * Ranks materials by "power" for selection purposes.
@@ -76,6 +80,22 @@ public final class ItemSelectionUtils {
         }
 
         return bestSlot;
+    }
+
+    public static CustomArmor mapFromShopItem(ShopItem item) {
+        return switch (item) {
+            case DRAGON_BOOTS -> CustomArmor.DRAGON_BOOTS;
+            case DRAGON_CHESTPLATE -> CustomArmor.DRAGON_CHESTPLATE;
+            case DRAGON_HELMET -> CustomArmor.DRAGON_HELMET;
+            case DEATHMAULER_CHESTPLATE -> CustomArmor.DEATHMAULER_CHESTPLATE;
+            case DEATHMAULER_LEGGINGS -> CustomArmor.DEATHMAULER_LEGGINGS;
+            case INVESTORS_BOOTS -> CustomArmor.INVESTORS_BOOTS;
+            case INVESTORS_CHESTPLATE -> CustomArmor.INVESTORS_CHESTPLATE;
+            case INVESTORS_HELMET -> CustomArmor.INVESTORS_HELMET;
+            case FLAMEBRINGER_BOOTS -> CustomArmor.FLAMEBRINGER_BOOTS;
+            case FLAMEBRINGER_LEGGINGS -> CustomArmor.FLAMEBRINGER_LEGGINGS;
+            case null, default -> null;
+        };
     }
 }
 
