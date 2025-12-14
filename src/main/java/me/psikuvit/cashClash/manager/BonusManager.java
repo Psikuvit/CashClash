@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.player.BonusType;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.SoundUtils;
@@ -333,7 +334,7 @@ public class BonusManager {
 
             // Calculate loadout value (total spent)
             long loadoutValue = ccp.getPurchaseHistory().stream()
-                    .mapToLong(record -> record.price())
+                    .mapToLong(PurchaseRecord::price)
                     .sum();
 
             if (loadoutValue < lowestLoadoutValue) {
