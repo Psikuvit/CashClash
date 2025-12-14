@@ -1,9 +1,17 @@
 package me.psikuvit.cashClash.player;
 
 /**
- * Represents an investment (Wallet, Purse, or Ender Bag)
+ * Represents an investment (Wallet, Purse, or Ender Bag).
+ * Investment rules:
+ * - 1 death: Player gets the bonus return
+ * - 2 deaths: Player breaks even (gets back invested amount)
+ * - 3+ deaths: Player loses money (negative return)
+ *
+ * Note: Revival stars have no effect on investment calculations.
+ * Note: Cannot be purchased in Round 5.
  */
 public class Investment {
+
     private final InvestmentType type;
     private final long invested;
     private int deaths;
@@ -18,16 +26,55 @@ public class Investment {
         deaths++;
     }
 
+    /**
+     * Calculate the return based on deaths.
+     * @return positive value for profit, zero for break even, negative for loss
+     */
     public long calculateReturn() {
-        if (deaths == 0) {
+        if (deaths <= 1) {
+            // 0 or 1 death = bonus
             return type.getBonusReturn();
-        } else if (deaths == 1) {
-            return invested; // Break even
         } else if (deaths == 2) {
-            return invested; // Still break even
+            // 2 deaths = break even (return invested amount)
+            return invested;
         } else {
-            return -type.getNegativeReturn(); // Loss
+            // 3+ deaths = negative (lose money)
+            return -type.getNegativeReturn();
         }
+    }
+
+    /**
+     * Get the net result (return minus invested).
+     * @return profit/loss amount
+     */
+    public long getNetResult() {
+        long returnAmount = calculateReturn();
+        if (returnAmount < 0) {
+            // Negative return means we lose both invested AND the penalty
+            return -invested + returnAmount;
+        }
+        return returnAmount - invested;
+    }
+
+    /**
+     * Check if this investment is currently profitable.
+     */
+    public boolean isProfitable() {
+        return deaths <= 1;
+    }
+
+    /**
+     * Check if this investment breaks even.
+     */
+    public boolean isBreakEven() {
+        return deaths == 2;
+    }
+
+    /**
+     * Check if this investment results in a loss.
+     */
+    public boolean isLoss() {
+        return deaths >= 3;
     }
 
     public InvestmentType getType() {
@@ -40,6 +87,13 @@ public class Investment {
 
     public int getDeaths() {
         return deaths;
+    }
+
+    /**
+     * Force set deaths (used for forfeit penalty).
+     */
+    public void setDeathsToMax() {
+        this.deaths = 3;
     }
 }
 
