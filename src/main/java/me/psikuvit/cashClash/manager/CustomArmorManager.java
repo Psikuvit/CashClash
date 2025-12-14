@@ -16,6 +16,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public class CustomArmorManager {
     private final Map<UUID, Long> magicHelmetInvisUntil;
     private final Map<UUID, Long> magicHelmetCooldownUntil;
     private final Set<UUID> magicHelmetActive;
+    private final Map<UUID, BukkitTask> magicHelmetDelayTask;
 
     // Bunny Shoes tracking
     private final Map<UUID, Long> bunnyCooldownUntil;
@@ -65,6 +67,7 @@ public class CustomArmorManager {
         this.magicHelmetInvisUntil = new ConcurrentHashMap<>();
         this.magicHelmetCooldownUntil = new ConcurrentHashMap<>();
         this.magicHelmetActive = ConcurrentHashMap.newKeySet();
+        this.magicHelmetDelayTask = new ConcurrentHashMap<>();
 
         this.bunnyCooldownUntil = new ConcurrentHashMap<>();
         this.bunnyToggleReady = new ConcurrentHashMap<>();
@@ -187,27 +190,38 @@ public class CustomArmorManager {
         long now = System.currentTimeMillis();
 
         if (magicHelmetActive.contains(id)) {
-            magicHelmetLastMove.put(id, now);
             cancelMagicHelmetInvisibility(p);
             return;
         }
 
-        Long prev = magicHelmetLastMove.get(id);
+        long cd = magicHelmetCooldownUntil.getOrDefault(id, 0L);
+        if (now < cd) {
+            return;
+        }
+
+        BukkitTask existingTask = magicHelmetDelayTask.remove(id);
+        if (existingTask != null) {
+            existingTask.cancel();
+        }
 
         magicHelmetLastMove.put(id, now);
 
-        if (prev != null) {
-            long elapsed = now - prev;
-            if (elapsed >= 3000L) {
-                long cd = magicHelmetCooldownUntil.getOrDefault(id, 0L);
-                if (now < cd) return;
+        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
+            magicHelmetDelayTask.remove(id);
 
-                long invisUntil = magicHelmetInvisUntil.getOrDefault(id, 0L);
-                if (now < invisUntil) return;
+            if (!hasMagicHelmet(p)) return;
+            if (magicHelmetActive.contains(id)) return;
 
+            long currentCd = magicHelmetCooldownUntil.getOrDefault(id, 0L);
+            if (System.currentTimeMillis() < currentCd) return;
+
+            Long lastMove = magicHelmetLastMove.get(id);
+            if (lastMove != null && System.currentTimeMillis() - lastMove >= 2900L) {
                 activateMagicHelmetInvisibility(p);
             }
-        }
+        }, 3 * 20L); // 3 seconds = 60 ticks
+
+        magicHelmetDelayTask.put(id, task);
     }
 
     /**
@@ -218,6 +232,13 @@ public class CustomArmorManager {
         if (p == null) return;
         UUID id = p.getUniqueId();
         magicHelmetLastMove.remove(id);
+
+        // Cancel any pending delay task
+        BukkitTask task = magicHelmetDelayTask.remove(id);
+        if (task != null) {
+            task.cancel();
+        }
+
         // If invisible, remove effect and keep cooldown
         if (magicHelmetActive.remove(id)) {
             p.removePotionEffect(PotionEffectType.INVISIBILITY);
@@ -497,9 +518,16 @@ public class CustomArmorManager {
         taxEvasionLastMinuteCheck.remove(id);
         dragonCanDoubleJump.remove(id);
         dragonDoubleJumpCooldown.remove(id);
+
+        // Cancel any pending magic helmet task
+        BukkitTask task = magicHelmetDelayTask.remove(id);
+        if (task != null) {
+            task.cancel();
+        }
         magicHelmetActive.remove(id);
         magicHelmetInvisUntil.remove(id);
         magicHelmetCooldownUntil.remove(id);
+
         bunnyToggleReady.remove(id);
         bunnyCooldownUntil.remove(id);
     }
