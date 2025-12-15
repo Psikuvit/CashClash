@@ -150,7 +150,7 @@ public class ShopGuiListener implements Listener {
 
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
         PurchaseRecord rec = ccp.popLastPurchase();
-        if (rec == null) {
+        if (rec == null || rec.round() != sess.getCurrentRound()) {
             Messages.send(player, "<red>No purchase to undo.</red>");
             return;
         }
@@ -401,7 +401,8 @@ public class ShopGuiListener implements Listener {
         CustomArmor customArmor = ItemSelectionUtils.mapFromShopItem(si);
         ItemUtils.giveCustomArmorSet(player, customArmor);
 
-        ccp.addPurchase(new PurchaseRecord(si, 1, price));
+        int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
+        ccp.addPurchase(new PurchaseRecord(si, 1, price, round));
         Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", price) + "</green>");
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
     }
@@ -414,14 +415,18 @@ public class ShopGuiListener implements Listener {
 
         if (si.getCategory() == ShopCategory.ARMOR) {
             replacedItem = ItemUtils.equipArmorOrReplace(player, item);
-            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem));
+
+            int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
+            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem, round));
 
             ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
             Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
         } else if (si.getCategory() == ShopCategory.WEAPONS) {
             replacedItem = ItemUtils.replaceBestMatchingTool(player, item);
-            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem));
+
+            int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
+            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem, round));
 
             ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
             Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
@@ -431,7 +436,9 @@ public class ShopGuiListener implements Listener {
             stack.setAmount(giveQty);
 
             player.getInventory().addItem(stack);
-            ccp.addPurchase(new PurchaseRecord(si, giveQty, totalPrice));
+
+            int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
+            ccp.addPurchase(new PurchaseRecord(si, giveQty, totalPrice, round));
             Messages.send(player, "<green>Purchased " + si.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
         }

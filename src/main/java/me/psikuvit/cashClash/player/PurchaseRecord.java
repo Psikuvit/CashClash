@@ -10,13 +10,13 @@ import org.bukkit.inventory.ItemStack;
  * @param price The total price paid
  * @param replacedItem The item that was replaced (null if nothing was replaced)
  */
-public record PurchaseRecord(ShopItem item, int quantity, long price, ItemStack replacedItem) {
+public record PurchaseRecord(ShopItem item, int quantity, long price, ItemStack replacedItem, int round) {
 
     /**
      * Constructor for purchases that don't replace anything.
      */
-    public PurchaseRecord(ShopItem item, int quantity, long price) {
-        this(item, quantity, price, null);
+    public PurchaseRecord(ShopItem item, int quantity, long price, int round) {
+        this(item, quantity, price, null, round);
     }
 }
 
