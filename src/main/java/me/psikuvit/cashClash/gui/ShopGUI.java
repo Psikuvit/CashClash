@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.gui;
 
+import me.psikuvit.cashClash.items.CustomItemType;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.EnchantEntry;
@@ -257,16 +258,54 @@ public class ShopGUI {
     }
 
     private static void populateCustomItemsCategory(Inventory inv, Player player) {
-        // Custom crafts would go here
-        // For now, show a placeholder or redirect to a more specific category
-        int slot = 10;
+        // Row 1: Combat items
+        inv.setItem(10, createCustomItemIcon(CustomItemType.GRENADE));
+        inv.setItem(11, createCustomItemIcon(CustomItemType.SMOKE_CLOUD_GRENADE));
+        inv.setItem(12, createCustomItemIcon(CustomItemType.BAG_OF_POTATOES));
+        inv.setItem(13, createCustomItemIcon(CustomItemType.CASH_BLASTER));
 
-        // Add custom items here when implemented
-        ItemStack placeholder = new ItemStack(Material.PAPER);
-        ItemMeta meta = placeholder.getItemMeta();
-        meta.displayName(Messages.parse("<gray>Custom items coming soon!</gray>"));
-        placeholder.setItemMeta(meta);
-        inv.setItem(slot, placeholder);
+        // Row 2: Utility items
+        inv.setItem(19, createCustomItemIcon(CustomItemType.BOUNCE_PAD));
+        inv.setItem(20, createCustomItemIcon(CustomItemType.BOOMBOX));
+        inv.setItem(21, createCustomItemIcon(CustomItemType.MEDIC_POUCH));
+        inv.setItem(22, createCustomItemIcon(CustomItemType.INVIS_CLOAK));
+
+        // Row 3: Special items
+        inv.setItem(28, createCustomItemIcon(CustomItemType.TABLET_OF_HACKING));
+        inv.setItem(29, createCustomItemIcon(CustomItemType.RESPAWN_ANCHOR));
+    }
+
+    private static ItemStack createCustomItemIcon(CustomItemType type) {
+        ItemStack item = new ItemStack(type.getMaterial());
+        ItemMeta meta = item.getItemMeta();
+
+        meta.displayName(Messages.parse("<yellow>" + type.getDisplayName() + "</yellow>"));
+
+        List<Component> lore = new ArrayList<>(
+                Messages.wrapLines("<gold>Price: $" + String.format("%,d", type.getPrice()) + "</gold>")
+        );
+        lore.add(Component.empty());
+
+        // Add description lines
+        for (String line : type.getLoreLines()) {
+            lore.addAll(Messages.wrapLines("<gray>" + line + "</gray>"));
+        }
+
+        // Add limit info if applicable
+        if (type.hasLimit()) {
+            lore.add(Component.empty());
+            lore.addAll(Messages.wrapLines("<red>Max: " + type.getMaxPurchase() + " per round</red>"));
+        }
+
+        lore.add(Component.empty());
+        lore.addAll(Messages.wrapLines("<yellow>Click to purchase!</yellow>"));
+
+        meta.lore(lore);
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        meta.getPersistentDataContainer().set(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING, type.name());
+        item.setItemMeta(meta);
+
+        return item;
     }
 
     private static void populateEnchantsCategory(Inventory inv, Player player) {

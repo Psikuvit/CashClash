@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.gui.GuiType;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.ShopHolder;
+import me.psikuvit.cashClash.items.CustomItemType;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.Investment;
@@ -17,10 +18,14 @@ import me.psikuvit.cashClash.util.ItemSelectionUtils;
 import me.psikuvit.cashClash.util.ItemUtils;
 import me.psikuvit.cashClash.util.Keys;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.entity.Player;
 import net.kyori.adventure.text.Component;
@@ -32,6 +37,8 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 
 /**
@@ -116,7 +123,6 @@ public class ShopGuiListener implements Listener {
         }
 
         String pdcValue = itemMeta.getPersistentDataContainer().get(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING);
-        if (pdcValue == null) return;
 
         ShopCategory category = sh.getCategory();
         if (category == ShopCategory.ENCHANTS) {
@@ -125,6 +131,12 @@ public class ShopGuiListener implements Listener {
         } else if (category == ShopCategory.INVESTMENTS) {
             handleInvestmentPurchase(player, pdcValue);
             return;
+        } else if (sh.getCategory() == ShopCategory.CUSTOM_ITEMS) {
+            pdcValue = itemMeta.getPersistentDataContainer().get(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING);
+            if (pdcValue != null) {
+                handleCustomItemPurchase(player, pdcValue, sh.getCategory());
+                return;
+            }
         }
 
         try {
@@ -172,8 +184,8 @@ public class ShopGuiListener implements Listener {
 
         SoundUtils.play(player, Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.5f);
 
-         // Refresh the GUI to show updated state
-         ShopGUI.openCategoryItems(player, category);
+        // Refresh the GUI to show updated state
+        ShopGUI.openCategoryItems(player, category);
     }
 
     private void restoreReplacedItem(Player player, ItemStack replacedItem) {
@@ -398,11 +410,13 @@ public class ShopGuiListener implements Listener {
     }
 
     private void handleSpecialSet(Player player, ShopItem si, CashClashPlayer ccp, long price) {
+        ccp.deductCoins(price);
+
         CustomArmor customArmor = ItemSelectionUtils.mapFromShopItem(si);
-        ItemUtils.giveCustomArmorSet(player, customArmor);
+        ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, customArmor);
 
         int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
-        ccp.addPurchase(new PurchaseRecord(si, 1, price, round));
+        ccp.addPurchase(new PurchaseRecord(si, 1, price, replacedItem, round));
         Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", price) + "</green>");
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
     }
@@ -442,5 +456,80 @@ public class ShopGuiListener implements Listener {
             Messages.send(player, "<green>Purchased " + si.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
         }
+    }
+
+    private void handleCustomItemPurchase(Player player, String pdcValue, ShopCategory category) {
+        GameSession sess = GameManager.getInstance().getPlayerSession(player);
+        if (sess == null) {
+            Messages.send(player, "<red>You must be in a game to shop.</red>");
+            player.closeInventory();
+            return;
+        }
+
+        CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
+        if (ccp == null) return;
+
+        CustomItemType type;
+        try {
+            type = CustomItemType.valueOf(pdcValue);
+        } catch (IllegalArgumentException e) {
+            CashClashPlugin.getInstance().getLogger().warning("Unknown custom item type: " + pdcValue);
+            return;
+        }
+
+        long price = type.getPrice();
+        if (!ccp.canAfford(price)) {
+            Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        // Create the custom item
+        ItemStack customItem = createCustomItem(type, player);
+
+        // Give item to player
+        ccp.deductCoins(price);
+        player.getInventory().addItem(customItem);
+
+        Messages.send(player, "<green>Purchased " + type.getDisplayName() + " for $" + String.format("%,d", price) + "</green>");
+        SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+
+        // Refresh GUI
+        ShopGUI.openCategoryItems(player, category);
+    }
+
+    private ItemStack createCustomItem(CustomItemType type, Player owner) {
+        ItemStack item = new ItemStack(type.getMaterial());
+        ItemMeta meta = item.getItemMeta();
+
+        meta.displayName(Messages.parse("<yellow>" + type.getDisplayName() + "</yellow>"));
+
+        List<Component> lore = new ArrayList<>();
+        for (String line : type.getLoreLines()) {
+            lore.addAll(Messages.wrapLines("<gray>" + line + "</gray>"));
+        }
+        meta.lore(lore);
+
+        // Add PDC tags
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        pdc.set(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING, type.name());
+        pdc.set(Keys.CUSTOM_ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+
+        // Special handling for specific items
+        switch (type) {
+            case BAG_OF_POTATOES -> {
+                if (meta instanceof Damageable damageable) {
+                    damageable.setDamage(item.getType().getMaxDurability() - 3);
+                }
+                meta.addEnchant(Enchantment.KNOCKBACK, 3, true);
+            }
+            case CASH_BLASTER -> meta.addEnchant(Enchantment.MULTISHOT, 1, true);
+            case INVIS_CLOAK -> pdc.set(Keys.CUSTOM_ITEM_USES, PersistentDataType.INTEGER, 5);
+        }
+
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
+        item.setItemMeta(meta);
+
+        return item;
     }
 }
