@@ -339,6 +339,7 @@ public class GameSession {
         cancelStartCountdown();
         if (roundManager != null) roundManager.cleanup();
         if (cashQuakeManager != null) cashQuakeManager.cleanup();
+        if (bonusManager != null) bonusManager.cleanup();
 
         if (gameWorld != null) {
             Arena arena = ArenaManager.getInstance().getArena(arenaNumber);

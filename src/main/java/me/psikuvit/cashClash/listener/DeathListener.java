@@ -54,6 +54,12 @@ public class DeathListener implements Listener {
         victim.handleDeath();
         session.getCurrentRoundData().removeLife(player.getUniqueId());
 
+        // Notify BonusManager of death for bonus tracking
+        BonusManager bonusManager = session.getBonusManager();
+        if (bonusManager != null) {
+            bonusManager.onDeath(player.getUniqueId());
+        }
+
         Player killer = player.getKiller();
         if (killer != null) handleKillerRewards(session, killer, victim);
 
@@ -178,14 +184,10 @@ public class DeathListener implements Listener {
         killer.handleKill();
         session.getCurrentRoundData().addKill(killer.getUuid());
 
-        // Check and award first blood bonus
-        if (session.getCurrentRoundData().getFirstBloodPlayer() == null) {
-            session.getCurrentRoundData().setFirstBloodPlayer(killer.getUuid());
-            killer.earnBonus(BonusType.FIRST_BLOOD);
-
-            long firstBloodReward = BonusType.FIRST_BLOOD.getReward();
-            Messages.send(killer.getPlayer(),
-                    "<gold><bold>FIRST BLOOD!</bold> <yellow>+$" + firstBloodReward + "</yellow></gold>");
+        // Delegate bonus logic (FIRST_BLOOD, RAMPAGE, COMEBACK_KID) to BonusManager
+        BonusManager bonusManager = session.getBonusManager();
+        if (bonusManager != null) {
+            bonusManager.onKill(killer.getUuid(), victim.getUuid());
         }
 
         // Calculate base rewards
@@ -202,7 +204,12 @@ public class DeathListener implements Listener {
 
             if (adjustedReward != killReward) {
                 Messages.send(killer.getPlayer(),
-                        "<green>Investor bonus applied: x" + String.format("%.2f", investorMultiplier) + "</green>");
+                        "<green>Investor bonus applied: x" + String.format("%.2f", investorMultiplier) + "</green>"
+                );
+            } else {
+                Messages.send(killer.getPlayer(),
+                        "<yellow>+$" + adjustedReward + "</yellow> for the kill!"
+                );
             }
         }
 
@@ -214,16 +221,6 @@ public class DeathListener implements Listener {
 
             Messages.send(killer.getPlayer(),
                     "<yellow>+$" + adjustedStolen + "</yellow> stolen from <gray>" + victim.getPlayer().getName() + "</gray>");
-        }
-
-        // Check and award rampage bonus (every 3 kills)
-        int killStreak = killer.getKillStreak();
-        if (killStreak >= 3 && killStreak % 3 == 0) {
-            killer.earnBonus(BonusType.RAMPAGE);
-
-            long rampageReward = BonusType.RAMPAGE.getReward();
-            Messages.send(killer.getPlayer(),
-                    "<gold><bold>RAMPAGE!</bold> <yellow>+$" + rampageReward + "</yellow></gold>");
         }
     }
 }

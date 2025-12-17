@@ -119,6 +119,12 @@ public class RoundManager {
         ConfigManager config = ConfigManager.getInstance();
         timeRemaining = config.getCombatPhaseDuration();
 
+        // Start bonus tracking for the round
+        BonusManager bonusManager = session.getBonusManager();
+        if (bonusManager != null) {
+            bonusManager.startRound();
+        }
+
         // Start countdown
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
             timeRemaining--;
@@ -144,8 +150,10 @@ public class RoundManager {
 
         Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>Round " + session.getCurrentRound() + " ended!</yellow>");
 
-        // Award bonuses
-        // TODO: Implement bonus calculation and awarding
+        BonusManager bonusManager = session.getBonusManager();
+        if (bonusManager != null) {
+            bonusManager.awardEndRoundBonuses();
+        }
 
         // Move to next round or end game
         if (session.getCurrentRound() >= 5) {
