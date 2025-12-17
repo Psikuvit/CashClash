@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -17,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.entity.Entity;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,13 +33,20 @@ public class ShopManager {
 
     private static ShopManager instance;
 
+    private static final double LOOK_RANGE = 4;
+    private static final long LOOK_UPDATE_TICKS = 2L;
+
     // sessionId -> spawned entity UUIDs
     private final Map<UUID, List<UUID>> sessionShops = new HashMap<>();
     private final Map<UUID, UUID> entityToSession = new HashMap<>();
     private final Map<UUID, Integer> entityTeam = new HashMap<>();
 
+    private BukkitTask lookAtPlayerTask;
 
-    private ShopManager() {}
+
+    private ShopManager() {
+        startLookAtPlayerTask();
+    }
 
     public static ShopManager getInstance() {
         if (instance == null) instance = new ShopManager();
@@ -146,5 +155,64 @@ public class ShopManager {
         }
 
         ShopGUI.openMain(player);
+    }
+
+    /**
+     * Start a repeating task that makes all shop villagers look at the nearest player.
+     */
+    private void startLookAtPlayerTask() {
+        lookAtPlayerTask = SchedulerUtils.runTaskTimer(() -> {
+            // Iterate through all tracked shop entities
+            for (UUID entityId : entityToSession.keySet()) {
+                Entity entity = Bukkit.getEntity(entityId);
+                if (!(entity instanceof Villager villager)) continue;
+                if (villager.isDead()) continue;
+
+                // Find the nearest player within range
+                Player nearestPlayer = null;
+                double nearestDistance = LOOK_RANGE;
+
+                for (Entity nearby : villager.getNearbyEntities(LOOK_RANGE, LOOK_RANGE, LOOK_RANGE)) {
+                    if (!(nearby instanceof Player player)) continue;
+
+                    double distance = villager.getLocation().distance(player.getLocation());
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestPlayer = player;
+                    }
+                }
+
+                // Make the villager look at the nearest player
+                if (nearestPlayer != null) {
+                    Location villagerLoc = villager.getLocation();
+                    Location playerLoc = nearestPlayer.getEyeLocation();
+
+                    // Calculate direction to player
+                    double dx = playerLoc.getX() - villagerLoc.getX();
+                    double dy = playerLoc.getY() - (villagerLoc.getY() + 1.62); // Villager eye height
+                    double dz = playerLoc.getZ() - villagerLoc.getZ();
+
+                    // Calculate yaw and pitch
+                    double distanceXZ = Math.sqrt(dx * dx + dz * dz);
+                    float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+                    float pitch = (float) Math.toDegrees(-Math.atan2(dy, distanceXZ));
+
+                    // Set the villager's rotation
+                    villagerLoc.setYaw(yaw);
+                    villagerLoc.setPitch(pitch);
+                    villager.setRotation(yaw, pitch);
+                }
+            }
+        }, 0L, LOOK_UPDATE_TICKS);
+    }
+
+    /**
+     * Stop the look-at-player task.
+     */
+    public void cleanup() {
+        if (lookAtPlayerTask != null) {
+            lookAtPlayerTask.cancel();
+            lookAtPlayerTask = null;
+        }
     }
 }
