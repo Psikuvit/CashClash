@@ -1,6 +1,6 @@
 package me.psikuvit.cashClash.player;
 
-import me.psikuvit.cashClash.shop.ShopItem;
+import me.psikuvit.cashClash.shop.items.Purchasable;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -10,12 +10,12 @@ import org.bukkit.inventory.ItemStack;
  * @param price The total price paid
  * @param replacedItem The item that was replaced (null if nothing was replaced)
  */
-public record PurchaseRecord(ShopItem item, int quantity, long price, ItemStack replacedItem, int round) {
+public record PurchaseRecord(Purchasable item, int quantity, long price, ItemStack replacedItem, int round) {
 
     /**
      * Constructor for purchases that don't replace anything.
      */
-    public PurchaseRecord(ShopItem item, int quantity, long price, int round) {
+    public PurchaseRecord(Purchasable item, int quantity, long price, int round) {
         this(item, quantity, price, null, round);
     }
 }

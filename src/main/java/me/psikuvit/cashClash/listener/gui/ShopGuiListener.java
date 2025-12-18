@@ -4,7 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.gui.GuiType;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.ShopHolder;
-import me.psikuvit.cashClash.items.CustomItemType;
+import me.psikuvit.cashClash.shop.items.CustomItemType;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.Investment;
@@ -12,7 +12,8 @@ import me.psikuvit.cashClash.player.InvestmentType;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
-import me.psikuvit.cashClash.shop.ShopItem;
+import me.psikuvit.cashClash.shop.items.Purchasable;
+import me.psikuvit.cashClash.shop.items.ShopItems;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.util.ItemSelectionUtils;
 import me.psikuvit.cashClash.util.ItemUtils;
@@ -31,7 +32,7 @@ import org.bukkit.entity.Player;
 import net.kyori.adventure.text.Component;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SoundUtils;
-import me.psikuvit.cashClash.items.CustomArmor;
+import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import org.bukkit.Sound;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -133,23 +134,22 @@ public class ShopGuiListener implements Listener {
             return;
         } else if (sh.getCategory() == ShopCategory.CUSTOM_ITEMS) {
             pdcValue = itemMeta.getPersistentDataContainer().get(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING);
-            if (pdcValue != null) {
-                handleCustomItemPurchase(player, pdcValue, sh.getCategory());
-                return;
-            }
+            handleCustomItemPurchase(player, pdcValue, sh.getCategory());
+            return;
         }
 
-        try {
-            ShopItem si = ShopItem.valueOf(pdcValue);
-            int qty = si.getInitialAmount();
-            if (event.isShiftClick()) {
-                qty = Math.min(10, si.getInitialAmount());
-            }
-
-            handleShopItemClick(player, si, category, qty);
-        } catch (IllegalArgumentException ex) {
-            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown shop category: " + pdcValue, ex);
+        Purchasable si = ShopItems.valueOf(pdcValue);
+        if (si == null) {
+            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown shop item: " + pdcValue);
+            return;
         }
+
+        int qty = si.getInitialAmount();
+        if (event.isShiftClick()) {
+            qty = Math.min(10, si.getInitialAmount());
+        }
+
+        handleShopItemClick(player, si, category, qty);
     }
 
     private void handleUndoPurchase(Player player, ShopCategory category) {
@@ -379,7 +379,7 @@ public class ShopGuiListener implements Listener {
         ShopGUI.openCategoryItems(player, ShopCategory.INVESTMENTS);
     }
 
-    private void handleShopItemClick(Player player, ShopItem si, ShopCategory category, int quantity) {
+    private void handleShopItemClick(Player player, Purchasable si, ShopCategory category, int quantity) {
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         if (sess == null) {
             Messages.send(player, "<red>You must be in a game to shop.</red>");
@@ -409,10 +409,10 @@ public class ShopGuiListener implements Listener {
         ShopGUI.openCategoryItems(player, category);
     }
 
-    private void handleSpecialSet(Player player, ShopItem si, CashClashPlayer ccp, long price) {
+    private void handleSpecialSet(Player player, Purchasable si, CashClashPlayer ccp, long price) {
         ccp.deductCoins(price);
 
-        CustomArmor customArmor = ItemSelectionUtils.mapFromShopItem(si);
+        CustomArmorItem customArmor = ItemSelectionUtils.getCustomArmorItem(si);
         ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, customArmor);
 
         int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
@@ -421,7 +421,7 @@ public class ShopGuiListener implements Listener {
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
     }
 
-    private void giveItemToPlayer(Player player, CashClashPlayer ccp, ShopItem si, int quantity, long totalPrice) {
+    private void giveItemToPlayer(Player player, CashClashPlayer ccp, Purchasable si, int quantity, long totalPrice) {
         int giveQty = Math.max(1, Math.min(quantity, si.getInitialAmount()));
 
         ItemStack item = ItemUtils.createTaggedItem(si);
@@ -504,10 +504,7 @@ public class ShopGuiListener implements Listener {
 
         meta.displayName(Messages.parse("<yellow>" + type.getDisplayName() + "</yellow>"));
 
-        List<Component> lore = new ArrayList<>();
-        for (String line : type.getLoreLines()) {
-            lore.addAll(Messages.wrapLines("<gray>" + line + "</gray>"));
-        }
+        List<Component> lore = new ArrayList<>(Messages.wrapLines(type.getDescription()));
         meta.lore(lore);
 
         // Add PDC tags

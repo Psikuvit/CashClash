@@ -3,8 +3,8 @@ package me.psikuvit.cashClash.util;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
-import me.psikuvit.cashClash.shop.ShopItem;
-import me.psikuvit.cashClash.items.CustomArmor;
+import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.shop.items.Purchasable;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -28,6 +28,7 @@ public final class ItemUtils {
 
     /**
      * Equip armor or replace existing armor piece.
+     * If there was an old armor piece, it will be added to the player's inventory.
      * @return The old armor piece that was replaced (null if slot was empty)
      */
     public static ItemStack equipArmorOrReplace(Player player, ItemStack newArmor) {
@@ -60,6 +61,10 @@ public final class ItemUtils {
             toMeta.addEnchant(e.getKey(), e.getValue(), true);
         }
         newArmor.setItemMeta(toMeta);
+
+        // Give the old armor piece back to the player's inventory
+        inv.addItem(old);
+
         return old;
     }
 
@@ -99,7 +104,7 @@ public final class ItemUtils {
     }
 
 
-    public static ItemStack createTaggedItem(ShopItem si) {
+    public static ItemStack createTaggedItem(Purchasable si) {
         if (si == null) return null;
         ItemStack it = new ItemStack(si.getMaterial(), 1);
         var meta = it.getItemMeta();
@@ -121,8 +126,8 @@ public final class ItemUtils {
         return it;
     }
 
-    public static void giveCustomArmorSet(Player player, CustomArmor armor) {
-        if (player == null || armor == null) return;
+    public static ItemStack giveCustomArmorSet(Player player, CustomArmorItem armor) {
+        if (player == null || armor == null) return null;
 
         ItemStack item = new ItemStack(armor.getMaterial());
         ItemMeta meta = item.getItemMeta();
@@ -208,7 +213,7 @@ public final class ItemUtils {
         }
     }
 
-    public static void applyOwnedEnchantsAfterPurchase(Player player, ShopItem si) {
+    public static void applyOwnedEnchantsAfterPurchase(Player player, Purchasable si) {
         if (player == null || si == null) return;
         if (si.getCategory() == ShopCategory.UTILITY &&
                 (si.getMaterial() == Material.BOW || si.getMaterial() == Material.CROSSBOW)) return;

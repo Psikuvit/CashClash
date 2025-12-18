@@ -1,7 +1,7 @@
 package me.psikuvit.cashClash.util;
 
-import me.psikuvit.cashClash.items.CustomArmor;
-import me.psikuvit.cashClash.shop.ShopItem;
+import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.shop.items.Purchasable;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -82,25 +82,14 @@ public final class ItemSelectionUtils {
         return bestSlot;
     }
 
-    public static CustomArmor mapFromShopItem(ShopItem item) {
-        return switch (item) {
-            case DRAGON_BOOTS -> CustomArmor.DRAGON_BOOTS;
-            case DRAGON_CHESTPLATE -> CustomArmor.DRAGON_CHESTPLATE;
-            case DRAGON_HELMET -> CustomArmor.DRAGON_HELMET;
-            case DEATHMAULER_CHESTPLATE -> CustomArmor.DEATHMAULER_CHESTPLATE;
-            case DEATHMAULER_LEGGINGS -> CustomArmor.DEATHMAULER_LEGGINGS;
-            case INVESTORS_BOOTS -> CustomArmor.INVESTORS_BOOTS;
-            case INVESTORS_CHESTPLATE -> CustomArmor.INVESTORS_CHESTPLATE;
-            case INVESTORS_LEGGINGS -> CustomArmor.INVESTORS_LEGGINGS;
-            case INVESTORS_HELMET -> CustomArmor.INVESTORS_HELMET;
-            case FLAMEBRINGER_BOOTS -> CustomArmor.FLAMEBRINGER_BOOTS;
-            case FLAMEBRINGER_LEGGINGS -> CustomArmor.FLAMEBRINGER_LEGGINGS;
-            case MAGIC_HELMET -> CustomArmor.MAGIC_HELMET;
-            case GUARDIANS_VEST -> CustomArmor.GUARDIANS_VEST;
-            case BUNNY_SHOES -> CustomArmor.BUNNY_SHOES;
-            case TAX_EVASION_PANTS -> CustomArmor.TAX_EVASION_PANTS;
-            case null, default -> null;
-        };
+    /**
+     * Converts a Purchasable item to CustomArmorItem if applicable.
+     * Returns the CustomArmorItem if the item is custom armor, null otherwise.
+     */
+    public static CustomArmorItem getCustomArmorItem(Purchasable item) {
+        if (item == null) return null;
+
+        return item instanceof CustomArmorItem ca ? ca : null;
     }
 }
 

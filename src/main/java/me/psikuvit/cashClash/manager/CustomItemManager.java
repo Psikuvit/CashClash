@@ -2,8 +2,9 @@ package me.psikuvit.cashClash.manager;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.items.CustomItemType;
+import me.psikuvit.cashClash.shop.items.CustomItemType;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.shop.items.ShopItems;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -79,11 +80,7 @@ public class CustomItemManager {
 
         if (typeStr == null) return null;
 
-        try {
-            return CustomItemType.valueOf(typeStr);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        return ShopItems.getCustomItem(typeStr);
     }
 
     // ==================== GRENADE IMPLEMENTATION ====================

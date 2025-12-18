@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
-import me.psikuvit.cashClash.shop.ShopItem;
+import me.psikuvit.cashClash.shop.items.FoodItem;
+import me.psikuvit.cashClash.shop.items.ShopItems;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SoundUtils;
@@ -34,8 +35,10 @@ public class ConsumableListener implements Listener {
         if (tag == null) return;
 
         try {
-            ShopItem si = ShopItem.valueOf(tag);
-            switch (si) {
+            FoodItem fi = ShopItems.getFood(tag);
+            if (fi == null) return;
+
+            switch (fi) {
                 case SPEED_CARROT -> applyConsumable(p, held, new PotionEffect(PotionEffectType.SPEED, 20 * 20, 1), "<green>Speed!</green>");
                 case GOLDEN_CHICKEN -> applyConsumable(p, held, new PotionEffect(PotionEffectType.STRENGTH, 15 * 20, 0), "<gold>Strength!</gold>");
                 case COOKIE_OF_LIFE -> applyConsumable(p, held, new PotionEffect(PotionEffectType.REGENERATION, 14 * 20, 0), "<dark_green>Regeneration!</dark_green>");

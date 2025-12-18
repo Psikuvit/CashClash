@@ -1,11 +1,16 @@
 package me.psikuvit.cashClash.gui;
 
-import me.psikuvit.cashClash.items.CustomItemType;
+import me.psikuvit.cashClash.shop.items.CustomItemType;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
-import me.psikuvit.cashClash.shop.ShopItem;
+import me.psikuvit.cashClash.shop.items.ArmorItem;
+import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.shop.items.FoodItem;
+import me.psikuvit.cashClash.shop.items.Purchasable;
+import me.psikuvit.cashClash.shop.items.UtilityItem;
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
@@ -130,10 +135,9 @@ public class ShopGUI {
             case ARMOR -> populateArmorCategory(inv, player);
             case FOOD -> populateFoodCategory(inv, player);
             case UTILITY -> populateUtilityCategory(inv, player);
-            case CUSTOM_ITEMS -> populateCustomItemsCategory(inv, player);
+            case CUSTOM_ITEMS -> populateCustomItemsCategory(inv);
             case ENCHANTS -> populateEnchantsCategory(inv, player);
-            case INVESTMENTS -> populateInvestmentsCategory(inv, player);
-            default -> populateGenericCategory(inv, player, category);
+            case INVESTMENTS -> populateInvestmentsCategory(inv);
         }
 
         // Bottom row - Cancel, Undo, Coins
@@ -146,21 +150,21 @@ public class ShopGUI {
         boolean hasIronSword = hasItem(player, Material.IRON_SWORD);
         boolean hasDiamondSword = hasItem(player, Material.DIAMOND_SWORD);
         if (hasDiamondSword) {
-            inv.setItem(23, createUpgradableItem(ShopItem.DIAMOND_SWORD, true));
+            inv.setItem(23, createUpgradableItem(WeaponItem.DIAMOND_SWORD, true));
         } else if (hasIronSword) {
-            inv.setItem(23, createUpgradableItem(ShopItem.DIAMOND_SWORD, false));
+            inv.setItem(23, createUpgradableItem(WeaponItem.DIAMOND_SWORD, false));
         } else {
-            inv.setItem(23, createUpgradableItem(ShopItem.IRON_SWORD, false));
+            inv.setItem(23, createUpgradableItem(WeaponItem.IRON_SWORD, false));
         }
 
         boolean hasIronAxe = hasItem(player, Material.IRON_AXE);
         boolean hasDiamondAxe = hasItem(player, Material.DIAMOND_AXE);
         if (hasDiamondAxe) {
-            inv.setItem(21, createUpgradableItem(ShopItem.DIAMOND_AXE, true));
+            inv.setItem(21, createUpgradableItem(WeaponItem.DIAMOND_AXE, true));
         } else if (hasIronAxe) {
-            inv.setItem(21, createUpgradableItem(ShopItem.DIAMOND_AXE, false));
+            inv.setItem(21, createUpgradableItem(WeaponItem.DIAMOND_AXE, false));
         } else {
-            inv.setItem(21, createUpgradableItem(ShopItem.IRON_AXE, false));
+            inv.setItem(21, createUpgradableItem(WeaponItem.IRON_AXE, false));
         }
     }
 
@@ -168,96 +172,96 @@ public class ShopGUI {
         boolean hasIronHelmet = hasItem(player, Material.IRON_HELMET);
         boolean hasDiamondHelmet = hasItem(player, Material.DIAMOND_HELMET);
        if (hasDiamondHelmet) {
-            inv.setItem(10, createUpgradableItem(ShopItem.DIAMOND_HELMET, true));
+            inv.setItem(10, createUpgradableItem(ArmorItem.DIAMOND_HELMET, true));
         } else if (hasIronHelmet) {
-            inv.setItem(10, createUpgradableItem(ShopItem.DIAMOND_HELMET, false));
+            inv.setItem(10, createUpgradableItem(ArmorItem.DIAMOND_HELMET, false));
         } else {
-            inv.setItem(10, createUpgradableItem(ShopItem.IRON_HELMET, false));
+            inv.setItem(10, createUpgradableItem(ArmorItem.IRON_HELMET, false));
         }
 
         boolean hasIronChest = hasItem(player, Material.IRON_CHESTPLATE);
         boolean hasDiamondChest = hasItem(player, Material.DIAMOND_CHESTPLATE);
         if (hasDiamondChest) {
-            inv.setItem(11, createUpgradableItem(ShopItem.DIAMOND_CHESTPLATE, true));
+            inv.setItem(11, createUpgradableItem(ArmorItem.DIAMOND_CHESTPLATE, true));
         } else if (hasIronChest) {
-            inv.setItem(11, createUpgradableItem(ShopItem.DIAMOND_CHESTPLATE, false));
+            inv.setItem(11, createUpgradableItem(ArmorItem.DIAMOND_CHESTPLATE, false));
         } else {
-            inv.setItem(11, createUpgradableItem(ShopItem.IRON_CHESTPLATE, false));
+            inv.setItem(11, createUpgradableItem(ArmorItem.IRON_CHESTPLATE, false));
         }
 
         // Leggings (slot 12)
         boolean hasIronLegs = hasItem(player, Material.IRON_LEGGINGS);
         boolean hasDiamondLegs = hasItem(player, Material.DIAMOND_LEGGINGS);
         if (hasDiamondLegs) {
-            inv.setItem(12, createUpgradableItem(ShopItem.DIAMOND_LEGGINGS, true));
+            inv.setItem(12, createUpgradableItem(ArmorItem.DIAMOND_LEGGINGS, true));
         } else if (hasIronLegs) {
-            inv.setItem(12, createUpgradableItem(ShopItem.DIAMOND_LEGGINGS, false));
+            inv.setItem(12, createUpgradableItem(ArmorItem.DIAMOND_LEGGINGS, false));
         } else {
-            inv.setItem(12, createUpgradableItem(ShopItem.IRON_LEGGINGS, false));
+            inv.setItem(12, createUpgradableItem(ArmorItem.IRON_LEGGINGS, false));
         }
 
         // Boots (slot 13)
         boolean hasIronBoots = hasItem(player, Material.IRON_BOOTS);
         boolean hasDiamondBoots = hasItem(player, Material.DIAMOND_BOOTS);
         if (hasDiamondBoots) {
-            inv.setItem(13, createUpgradableItem(ShopItem.DIAMOND_BOOTS, true));
+            inv.setItem(13, createUpgradableItem(ArmorItem.DIAMOND_BOOTS, true));
         } else if (hasIronBoots) {
-            inv.setItem(13, createUpgradableItem(ShopItem.DIAMOND_BOOTS, false));
+            inv.setItem(13, createUpgradableItem(ArmorItem.DIAMOND_BOOTS, false));
         } else {
-            inv.setItem(13, createUpgradableItem(ShopItem.IRON_BOOTS, false));
+            inv.setItem(13, createUpgradableItem(ArmorItem.IRON_BOOTS, false));
         }
 
         // Special/custom armor pieces
-        inv.setItem(19, createShopItem(player, ShopItem.INVESTORS_HELMET));
-        inv.setItem(20, createShopItem(player, ShopItem.INVESTORS_CHESTPLATE));
-        inv.setItem(21, createShopItem(player, ShopItem.INVESTORS_LEGGINGS));
-        inv.setItem(22, createShopItem(player, ShopItem.INVESTORS_BOOTS));
+        inv.setItem(19, createShopItem(player, CustomArmorItem.INVESTORS_HELMET));
+        inv.setItem(20, createShopItem(player, CustomArmorItem.INVESTORS_CHESTPLATE));
+        inv.setItem(21, createShopItem(player, CustomArmorItem.INVESTORS_LEGGINGS));
+        inv.setItem(22, createShopItem(player, CustomArmorItem.INVESTORS_BOOTS));
 
-        inv.setItem(29, createShopItem(player, ShopItem.MAGIC_HELMET));
-        inv.setItem(30, createShopItem(player, ShopItem.GUARDIANS_VEST));
-        inv.setItem(38, createShopItem(player, ShopItem.TAX_EVASION_PANTS));
-        inv.setItem(39, createShopItem(player, ShopItem.BUNNY_SHOES));
+        inv.setItem(29, createShopItem(player, CustomArmorItem.MAGIC_HELMET));
+        inv.setItem(30, createShopItem(player, CustomArmorItem.GUARDIANS_VEST));
+        inv.setItem(38, createShopItem(player, CustomArmorItem.TAX_EVASION_PANTS));
+        inv.setItem(39, createShopItem(player, CustomArmorItem.BUNNY_SHOES));
 
         inv.setItem(15, ItemStack.of(Material.BARRIER));
-        inv.setItem(24, createShopItem(player, ShopItem.DEATHMAULER_CHESTPLATE));
-        inv.setItem(33, createShopItem(player, ShopItem.DEATHMAULER_LEGGINGS));
+        inv.setItem(24, createShopItem(player, CustomArmorItem.DEATHMAULER_CHESTPLATE));
+        inv.setItem(33, createShopItem(player, CustomArmorItem.DEATHMAULER_LEGGINGS));
 
-        inv.setItem(16, createShopItem(player, ShopItem.DRAGON_HELMET));
-        inv.setItem(25, createShopItem(player, ShopItem.DRAGON_CHESTPLATE));
+        inv.setItem(16, createShopItem(player, CustomArmorItem.DRAGON_HELMET));
+        inv.setItem(25, createShopItem(player, CustomArmorItem.DRAGON_CHESTPLATE));
         inv.setItem(34, ItemStack.of(Material.BARRIER));
-        inv.setItem(43, createShopItem(player, ShopItem.DRAGON_BOOTS));
+        inv.setItem(43, createShopItem(player, CustomArmorItem.DRAGON_BOOTS));
     }
 
     private static void populateFoodCategory(Inventory inv, Player player) {
-        inv.setItem(19, createShopItem(player, ShopItem.BREAD, 4));
-        inv.setItem(20, createShopItem(player, ShopItem.COOKED_MUTTON, 4));
-        inv.setItem(21, createShopItem(player, ShopItem.STEAK, 4));
-        inv.setItem(22, createShopItem(player, ShopItem.PORKCHOP, 4));
-        inv.setItem(23, createShopItem(player, ShopItem.GOLDEN_CARROT, 4));
-        inv.setItem(25, createShopItem(player, ShopItem.GOLDEN_APPLE));
-        inv.setItem(28, createShopItem(player, ShopItem.SPEED_CARROT, 2));
-        inv.setItem(29, createShopItem(player, ShopItem.GOLDEN_CHICKEN, 2));
-        inv.setItem(30, createShopItem(player, ShopItem.COOKIE_OF_LIFE, 2));
-        inv.setItem(31, createShopItem(player, ShopItem.SUNSCREEN, 2));
-        inv.setItem(32, createShopItem(player, ShopItem.CAN_OF_SPINACH, 2));
-        inv.setItem(34, createShopItem(player, ShopItem.ENCHANTED_GOLDEN_APPLE));
+        inv.setItem(19, createShopItem(player, FoodItem.BREAD, 4));
+        inv.setItem(20, createShopItem(player, FoodItem.COOKED_MUTTON, 4));
+        inv.setItem(21, createShopItem(player, FoodItem.STEAK, 4));
+        inv.setItem(22, createShopItem(player, FoodItem.PORKCHOP, 4));
+        inv.setItem(23, createShopItem(player, FoodItem.GOLDEN_CARROT, 4));
+        inv.setItem(25, createShopItem(player, FoodItem.GOLDEN_APPLE));
+        inv.setItem(28, createShopItem(player, FoodItem.SPEED_CARROT, 2));
+        inv.setItem(29, createShopItem(player, FoodItem.GOLDEN_CHICKEN, 2));
+        inv.setItem(30, createShopItem(player, FoodItem.COOKIE_OF_LIFE, 2));
+        inv.setItem(31, createShopItem(player, FoodItem.SUNSCREEN, 2));
+        inv.setItem(32, createShopItem(player, FoodItem.CAN_OF_SPINACH, 2));
+        inv.setItem(34, createShopItem(player, FoodItem.ENCHANTED_GOLDEN_APPLE));
     }
 
     private static void populateUtilityCategory(Inventory inv, Player player) {
-        inv.setItem(20, createShopItem(player, ShopItem.LAVA_BUCKET));
-        inv.setItem(21, createShopItem(player, ShopItem.FISHING_ROD));
-        inv.setItem(22, createShopItem(player, ShopItem.COBWEB, 4));
-        inv.setItem(24, createShopItem(player, ShopItem.CROSSBOW));
-        inv.setItem(29, createShopItem(player, ShopItem.LAVA_BUCKET));
-        inv.setItem(30, createShopItem(player, ShopItem.ENDER_PEARL));
-        inv.setItem(31, createShopItem(player, ShopItem.WIND_CHARGE, 4));
-        inv.setItem(33, createShopItem(player, ShopItem.BOW));
-        inv.setItem(38, createShopItem(player, ShopItem.LEAVES, 16));
-        inv.setItem(39, createShopItem(player, ShopItem.SOUL_SPEED_BLOCK, 16));
-        inv.setItem(42, createShopItem(player, ShopItem.ARROWS, 5));
+        inv.setItem(20, createShopItem(player, UtilityItem.LAVA_BUCKET));
+        inv.setItem(21, createShopItem(player, UtilityItem.FISHING_ROD));
+        inv.setItem(22, createShopItem(player, UtilityItem.COBWEB, 4));
+        inv.setItem(24, createShopItem(player, UtilityItem.CROSSBOW));
+        inv.setItem(29, createShopItem(player, UtilityItem.LAVA_BUCKET));
+        inv.setItem(30, createShopItem(player, UtilityItem.ENDER_PEARL));
+        inv.setItem(31, createShopItem(player, UtilityItem.WIND_CHARGE, 4));
+        inv.setItem(33, createShopItem(player, UtilityItem.BOW));
+        inv.setItem(38, createShopItem(player, UtilityItem.LEAVES, 16));
+        inv.setItem(39, createShopItem(player, UtilityItem.SOUL_SPEED_BLOCK, 16));
+        inv.setItem(42, createShopItem(player, UtilityItem.ARROWS, 5));
     }
 
-    private static void populateCustomItemsCategory(Inventory inv, Player player) {
+    private static void populateCustomItemsCategory(Inventory inv) {
         // Row 1: Combat items
         inv.setItem(10, createCustomItemIcon(CustomItemType.GRENADE));
         inv.setItem(11, createCustomItemIcon(CustomItemType.SMOKE_CLOUD_GRENADE));
@@ -286,10 +290,8 @@ public class ShopGUI {
         );
         lore.add(Component.empty());
 
-        // Add description lines
-        for (String line : type.getLoreLines()) {
-            lore.addAll(Messages.wrapLines("<gray>" + line + "</gray>"));
-        }
+        // Add description
+        lore.addAll(Messages.wrapLines(type.getDescription()));
 
         // Add limit info if applicable
         if (type.hasLimit()) {
@@ -331,7 +333,7 @@ public class ShopGUI {
         }
     }
 
-    private static void populateInvestmentsCategory(Inventory inv, Player player) {
+    private static void populateInvestmentsCategory(Inventory inv) {
         ItemStack wallet = new ItemStack(Material.CHEST);
         ItemMeta wm = wallet.getItemMeta();
 
@@ -378,20 +380,6 @@ public class ShopGUI {
         inv.setItem(24, enderBag);
     }
 
-    private static void populateGenericCategory(Inventory inv, Player player, ShopCategory category) {
-        int slot = 10;
-        List<ShopItem> items = Arrays.stream(ShopItem.values())
-                .filter(i -> i.getCategory() == category)
-                .toList();
-
-        for (ShopItem si : items) {
-            if (slot >= 44) break;
-            inv.setItem(slot++, createShopItem(player, si));
-            if (slot == 17) slot = 19;
-            if (slot == 26) slot = 28;
-        }
-    }
-
     private static void addBottomRow(Inventory inv, Player player) {
         // Cancel button
         inv.setItem(45, createCancelButton());
@@ -410,11 +398,11 @@ public class ShopGUI {
         inv.setItem(53, createCoinDisplay(coins));
     }
 
-    private static ItemStack createShopItem(Player player, ShopItem item) {
+    private static ItemStack createShopItem(Player player, Purchasable item) {
         return createShopItem(player, item, 1);
     }
 
-    private static ItemStack createShopItem(Player player, ShopItem item, int quantity) {
+    private static ItemStack createShopItem(Player player, Purchasable item, int quantity) {
         ItemStack is = new ItemStack(item.getMaterial(), quantity);
         ItemMeta meta = is.getItemMeta();
 
@@ -451,7 +439,7 @@ public class ShopGUI {
         return is;
     }
 
-    private static ItemStack createUpgradableItem(ShopItem item, boolean maxed) {
+    private static ItemStack createUpgradableItem(Purchasable item, boolean maxed) {
         ItemStack is = new ItemStack(item.getMaterial());
         ItemMeta meta = is.getItemMeta();
 
@@ -521,7 +509,7 @@ public class ShopGUI {
         return false;
     }
 
-    private static boolean hasShopItem(Player player, ShopItem shopItem) {
+    private static boolean hasShopItem(Player player, Purchasable shopItem) {
         for (ItemStack is : player.getInventory().getContents()) {
             if (is != null && is.hasItemMeta()) {
                 String tag = is.getItemMeta().getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
