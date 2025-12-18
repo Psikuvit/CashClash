@@ -139,13 +139,14 @@ public final class ItemUtils {
             List<Component> wrappedLore = Messages.wrapLines("<gray>" + armor.getLore() + "</gray>");
             wrappedLore.add(Component.empty());
             wrappedLore.add(Messages.parse("<yellow>Special Armor</yellow>"));
+
             meta.lore(wrappedLore);
             meta.setUnbreakable(true);
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
             item.setItemMeta(meta);
         }
 
-        equipArmorOrReplace(player, item);
+        return equipArmorOrReplace(player, item);
     }
 
     public static void applyEnchantToBestItem(Player player, EnchantEntry ee, int lvl) {
@@ -239,5 +240,94 @@ public final class ItemUtils {
                 is.setItemMeta(meta);
             });
         }
+    }
+
+    public static void restoreReplacedItem(Player player, ItemStack replacedItem) {
+        if (replacedItem == null) return;
+
+        Material m = replacedItem.getType();
+        PlayerInventory inv = player.getInventory();
+
+        // Restore to appropriate slot based on item type
+        if (m.name().endsWith("HELMET")) {
+            inv.setHelmet(replacedItem);
+        } else if (m.name().endsWith("CHESTPLATE")) {
+            inv.setChestplate(replacedItem);
+        } else if (m.name().endsWith("LEGGINGS")) {
+            inv.setLeggings(replacedItem);
+        } else if (m.name().endsWith("BOOTS")) {
+            inv.setBoots(replacedItem);
+        } else if (m.name().contains("SWORD") || m.name().contains("AXE") ||
+                m.name().contains("PICKAXE") || m.name().contains("SHOVEL")) {
+            // Find an empty slot or add to inventory
+            int emptySlot = inv.firstEmpty();
+            if (emptySlot != -1) {
+                inv.setItem(emptySlot, replacedItem);
+            } else {
+                inv.addItem(replacedItem);
+            }
+        } else {
+            inv.addItem(replacedItem);
+        }
+    }
+
+    public static boolean removeItemFromPlayer(Player player, String itemTag, int quantity) {
+        int remaining = Math.max(1, quantity);
+        // Check main inventory
+        for (int i = 0; i < player.getInventory().getSize() && remaining > 0; i++) {
+            ItemStack is = player.getInventory().getItem(i);
+            if (is == null || !is.hasItemMeta()) continue;
+
+            ItemMeta meta = is.getItemMeta();
+            String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+            if (val != null && val.equals(itemTag)) {
+                int amt = is.getAmount();
+                if (amt > remaining) {
+                    is.setAmount(amt - remaining);
+                    remaining = 0;
+                } else {
+                    player.getInventory().setItem(i, null);
+                    remaining -= amt;
+                }
+            }
+        }
+
+        // Check off-hand
+        if (remaining > 0) {
+            ItemStack off = player.getInventory().getItemInOffHand();
+            if (off.getType() != Material.AIR && off.hasItemMeta()) {
+                ItemMeta meta = off.getItemMeta();
+                String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+                if (val != null && val.equals(itemTag)) {
+                    int amt = off.getAmount();
+                    if (amt > remaining) {
+                        off.setAmount(amt - remaining);
+                        remaining = 0;
+                    } else {
+                        player.getInventory().setItemInOffHand(null);
+                        remaining -= amt;
+                    }
+                }
+            }
+        }
+
+        // Check armor slots (each armor piece counts as 1)
+        if (remaining > 0) {
+            ItemStack[] armor = player.getInventory().getArmorContents();
+            for (int i = 0; i < armor.length && remaining > 0; i++) {
+                ItemStack is = armor[i];
+                if (is == null || !is.hasItemMeta()) continue;
+
+                ItemMeta meta = is.getItemMeta();
+                String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+                if (val != null && val.equals(itemTag)) {
+                    armor[i] = null;
+                    player.getInventory().setArmorContents(armor);
+                    remaining -= 1;
+                }
+            }
+        }
+
+        return remaining < Math.max(1, quantity);
     }
 }

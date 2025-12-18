@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.listener;
+package me.psikuvit.cashClash.listener.game;
 
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
@@ -6,10 +6,11 @@ import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.BonusManager;
+import me.psikuvit.cashClash.manager.CashQuakeManager;
 import me.psikuvit.cashClash.manager.CustomArmorManager;
 import me.psikuvit.cashClash.manager.EconomyManager;
 import me.psikuvit.cashClash.manager.GameManager;
-import me.psikuvit.cashClash.player.BonusType;
+
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.manager.PlayerDataManager;
 import me.psikuvit.cashClash.util.LocationUtils;
@@ -51,6 +52,8 @@ public class DeathListener implements Listener {
 
         // Increment persistent death count
         PlayerDataManager.getInstance().incDeaths(player.getUniqueId());
+
+        // Handle victim death logic
         victim.handleDeath();
         session.getCurrentRoundData().removeLife(player.getUniqueId());
 
@@ -101,6 +104,11 @@ public class DeathListener implements Listener {
         PlayerDataManager.getInstance().incKills(killer.getUniqueId());
         handleKillRewards(session, killerCCP, victim);
         armorManager.onPlayerKill(killer);
+
+        CashQuakeManager cashQuakeManager = session.getCashQuakeManager();
+        if (cashQuakeManager != null && cashQuakeManager.isLifeStealActive()) {
+            cashQuakeManager.onLifeStealKill(killer);
+        }
     }
 
     /**

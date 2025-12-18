@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.listener;
+package me.psikuvit.cashClash.listener.game;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -12,6 +12,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+
+import java.util.Objects;
 
 /**
  * Handles damage events for bonus tracking (close calls, damage tracking)
@@ -74,7 +76,7 @@ public class DamageListener implements Listener {
         double healthBefore = player.getHealth();
         double healthAfter = Math.min(
                 player.getHealth() + event.getAmount(),
-                player.getAttribute(Attribute.MAX_HEALTH).getValue()
+                Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getValue()
         );
 
         // Update lowest health tracking

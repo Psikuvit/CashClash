@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.listener;
+package me.psikuvit.cashClash.listener.lobby;
 
 import me.psikuvit.cashClash.manager.GameManager;
 import org.bukkit.entity.Player;

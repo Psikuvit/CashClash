@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.listener;
+package me.psikuvit.cashClash.listener.game;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

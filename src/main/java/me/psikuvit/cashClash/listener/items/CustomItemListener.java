@@ -1,8 +1,7 @@
-package me.psikuvit.cashClash.listener;
+package me.psikuvit.cashClash.listener.items;
 
-import me.psikuvit.cashClash.items.CustomItemType;
+import me.psikuvit.cashClash.shop.items.CustomItemType;
 import me.psikuvit.cashClash.manager.CustomItemManager;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -10,11 +9,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.projectiles.ProjectileSource;
 
 /**
  * Handles all custom item event interactions.
@@ -63,11 +64,10 @@ public class CustomItemListener implements Listener {
                 }
             }
             case INVIS_CLOAK -> {
+                // Right-click toggles invisibility on/off
                 if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                     event.setCancelled(true);
-                    manager.toggleInvisCloak(player, true);
-                } else if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
-                    manager.toggleInvisCloak(player, false);
+                    manager.handleInvisCloakRightClick(player, item);
                 }
             }
             case BOUNCE_PAD -> {
@@ -92,12 +92,20 @@ public class CustomItemListener implements Listener {
         if (!item.hasItemMeta()) return;
 
         CustomItemType type = manager.getCustomItemType(item);
-        if (type != CustomItemType.MEDIC_POUCH) return;
+        if (type == null) return;
 
         if (!(event.getRightClicked() instanceof Player target)) return;
 
-        event.setCancelled(true);
-        manager.useMedicPouchAlly(player, target, item);
+        switch (type) {
+            case MEDIC_POUCH -> {
+                event.setCancelled(true);
+                manager.useMedicPouchAlly(player, target, item);
+            }
+            case RESPAWN_ANCHOR -> {
+                event.setCancelled(true);
+                manager.useRespawnAnchor(player, target, item);
+            }
+        }
     }
 
     @EventHandler
@@ -113,22 +121,36 @@ public class CustomItemListener implements Listener {
 
         switch (type) {
             case BAG_OF_POTATOES -> manager.handleBagOfPotatoesHit(attacker, item);
-            case CASH_BLASTER -> manager.handleCashBlasterHit(attacker);
+        }
+    }
+
+    @EventHandler
+    public void onProjectileHit(ProjectileHitEvent event) {
+        // Handle Cash Blaster hits
+        if (!(event.getHitEntity() instanceof Player)) return;
+
+        ProjectileSource shooter = event.getEntity().getShooter();
+        if (!(shooter instanceof Player attacker)) return;
+
+        ItemStack item = attacker.getInventory().getItemInMainHand();
+        if (!item.hasItemMeta()) return;
+
+        CustomItemType type = manager.getCustomItemType(item);
+        if (type == CustomItemType.CASH_BLASTER) {
+            manager.handleCashBlasterHit(attacker);
         }
     }
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        Location loc = player.getLocation();
 
-        Location below = loc.clone().subtract(0, 1, 0);
-        Block blockBelow = below.getBlock();
+        // Check block player is standing on
+        Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
 
         if (blockBelow.getType() == Material.HEAVY_WEIGHTED_PRESSURE_PLATE) {
-            Location padLoc = blockBelow.getLocation();
-            if (manager.isBouncePad(padLoc)) {
-                manager.handleBouncePad(player, padLoc);
+            if (manager.isBouncePad(blockBelow)) {
+                manager.handleBouncePad(player, blockBelow);
             }
         }
     }

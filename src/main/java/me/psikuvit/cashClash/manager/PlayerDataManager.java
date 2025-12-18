@@ -1,6 +1,7 @@
-package me.psikuvit.cashClash.player;
+package me.psikuvit.cashClash.manager;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.player.PlayerData;
 import me.psikuvit.cashClash.storage.DatabaseProvider;
 import me.psikuvit.cashClash.storage.MySQLProvider;
 import me.psikuvit.cashClash.storage.SQLiteProvider;

@@ -2,7 +2,18 @@ package me.psikuvit.cashClash;
 
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.command.CommandHandler;
-import me.psikuvit.cashClash.listener.*;
+import me.psikuvit.cashClash.listener.PlayerConnectionListener;
+import me.psikuvit.cashClash.listener.game.BlockListener;
+import me.psikuvit.cashClash.listener.game.DamageListener;
+import me.psikuvit.cashClash.listener.game.DeathListener;
+import me.psikuvit.cashClash.listener.game.ShopListener;
+import me.psikuvit.cashClash.listener.game.SupplyDropListener;
+import me.psikuvit.cashClash.listener.gui.ArenaGuiListener;
+import me.psikuvit.cashClash.listener.gui.ShopGuiListener;
+import me.psikuvit.cashClash.listener.items.ConsumableListener;
+import me.psikuvit.cashClash.listener.items.CustomArmorListener;
+import me.psikuvit.cashClash.listener.items.CustomItemListener;
+import me.psikuvit.cashClash.listener.lobby.LobbyProtectionListener;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.manager.PlayerDataManager;
 import me.psikuvit.cashClash.manager.ScoreboardManager;
@@ -67,7 +78,8 @@ public final class CashClashPlugin extends JavaPlugin {
                 new CustomArmorListener(),
                 new ShopListener(),
                 new SupplyDropListener(),
-                new ConsumableListener()
+                new ConsumableListener(),
+                new CustomItemListener()
         };
 
         for (Listener listener : listeners) {

@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.manager.PlayerDataManager;
 import me.psikuvit.cashClash.manager.ScoreboardManager;
+import me.psikuvit.cashClash.manager.TabListManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
@@ -64,9 +65,6 @@ public class PlayerConnectionListener implements Listener {
         if (session != null) {
             session.removePlayer(player);
             GameManager.getInstance().removePlayerFromSession(player);
-
-            // TODO: Handle game with disconnected player
-            // For now, we'll just remove them
         }
     }
 }

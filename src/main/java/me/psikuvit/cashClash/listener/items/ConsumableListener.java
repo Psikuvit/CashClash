@@ -1,11 +1,10 @@
-package me.psikuvit.cashClash.listener;
+package me.psikuvit.cashClash.listener.items;
 
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.ShopItems;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SoundUtils;
-import org.bukkit.Registry;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

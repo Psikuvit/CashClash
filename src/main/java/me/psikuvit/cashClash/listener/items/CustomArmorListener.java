@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.listener;
+package me.psikuvit.cashClash.listener.items;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.CustomArmorManager;

@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.listener;
+package me.psikuvit.cashClash.listener.gui;
 
 import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
 import me.psikuvit.cashClash.gui.ArenaSelectionHolder;
