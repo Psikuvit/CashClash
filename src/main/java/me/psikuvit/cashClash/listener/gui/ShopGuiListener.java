@@ -1,17 +1,20 @@
 package me.psikuvit.cashClash.listener.gui;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gui.GuiType;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.ShopHolder;
 import me.psikuvit.cashClash.shop.items.CustomItemType;
 import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.manager.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.Investment;
 import me.psikuvit.cashClash.player.InvestmentType;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
+import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.ShopItems;
 import me.psikuvit.cashClash.game.GameSession;
@@ -86,6 +89,16 @@ public class ShopGuiListener implements Listener {
             return;
         }
 
+        // Check for mythic purchase (slots 38-42)
+        int slot = event.getSlot();
+        if (slot >= 38 && slot <= 42) {
+            String pdcValue = meta.getPersistentDataContainer().get(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING);
+            if (pdcValue != null) {
+                handleMythicPurchase(player, pdcValue);
+                return;
+            }
+        }
+
         // Check each category
         for (ShopCategory c : ShopCategory.values()) {
             Component expected = Messages.parse("<yellow>" + c.getDisplayName() + "</yellow>");
@@ -112,14 +125,12 @@ public class ShopGuiListener implements Listener {
             return;
         }
 
-        Component displayName = itemMeta.displayName();
-        if (displayName != null) {
-            String plainName = Messages.parseToLegacy(displayName);
-            if (plainName.contains("(Max)") || plainName.contains("(Owned)")) {
-                Messages.send(player, "<yellow>You already have the maximum tier of this item!</yellow>");
-                SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                return;
-            }
+        // Check if item is maxed/owned using PDC flag
+        Byte maxedFlag = itemMeta.getPersistentDataContainer().get(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE);
+        if (maxedFlag != null && maxedFlag == (byte) 1) {
+            Messages.send(player, "<yellow>You already have the maximum tier of this item!</yellow>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
         }
 
         String pdcValue = itemMeta.getPersistentDataContainer().get(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING);
@@ -183,8 +194,11 @@ public class ShopGuiListener implements Listener {
 
         SoundUtils.play(player, Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.5f);
 
-        // Refresh the GUI to show updated state
-        ShopGUI.openCategoryItems(player, category);
+        if (category != null) {
+            ShopGUI.openCategoryItems(player, category);
+        } else {
+            ShopGUI.openMain(player);
+        }
     }
 
     private void handleEnchantPurchase(Player player, String pdcValue, ShopCategory category) {
@@ -401,6 +415,10 @@ public class ShopGuiListener implements Listener {
         ccp.deductCoins(price);
         player.getInventory().addItem(customItem);
 
+        // Record the purchase for undo (custom items implement Purchasable)
+        int round = sess.getCurrentRound();
+        ccp.addPurchase(new PurchaseRecord(type, 1, price, round));
+
         Messages.send(player, "<green>Purchased " + type.getDisplayName() + " for $" + String.format("%,d", price) + "</green>");
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
 
@@ -438,5 +456,66 @@ public class ShopGuiListener implements Listener {
         item.setItemMeta(meta);
 
         return item;
+    }
+
+    private void handleMythicPurchase(Player player, String pdcValue) {
+        GameSession sess = GameManager.getInstance().getPlayerSession(player);
+        if (sess == null) {
+            Messages.send(player, "<red>You must be in a game to shop.</red>");
+            player.closeInventory();
+            return;
+        }
+
+        CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
+        if (ccp == null) return;
+
+        MythicItem mythic;
+        try {
+            mythic = MythicItem.valueOf(pdcValue);
+        } catch (IllegalArgumentException e) {
+            CashClashPlugin.getInstance().getLogger().warning("Unknown mythic item: " + pdcValue);
+            return;
+        }
+
+        // Check if mythic is available in this session
+        if (!MythicItemManager.getInstance().isMythicAvailableInSession(sess, mythic)) {
+            Messages.send(player, "<red>This mythic is not available in this game!</red>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        // Check if team already has a mythic
+        Team playerTeam = sess.getTeam1().hasPlayer(player.getUniqueId()) ? sess.getTeam1() : sess.getTeam2();
+        if (!MythicItemManager.getInstance().canTeamPurchaseMythic(sess, playerTeam)) {
+            MythicItem owned = MythicItemManager.getInstance().getTeamMythic(sess, playerTeam);
+            if (owned == mythic) {
+                Messages.send(player, "<yellow>Your team already owns this mythic!</yellow>");
+            } else {
+                Messages.send(player, "<red>Your team already owns a mythic (" + owned.getDisplayName() + ")!</red>");
+            }
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        long price = mythic.getPrice();
+        if (!ccp.canAfford(price)) {
+            Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        // Deduct coins and register purchase
+        ccp.deductCoins(price);
+        MythicItemManager.getInstance().registerMythicPurchase(sess, playerTeam, mythic);
+
+        ItemStack mythicItem = MythicItemManager.getInstance().createMythicItem(mythic, player);
+        player.getInventory().addItem(mythicItem);
+
+        Messages.send(player, "<light_purple>Purchased " + mythic.getDisplayName() + " for $" + String.format("%,d", price) + "!</light_purple>");
+        Messages.send(player, "<gray>Your team now owns this mythic weapon!</gray>");
+        SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+
+        // Refresh the main menu to show updated state
+        ShopGUI.openMain(player);
     }
 }

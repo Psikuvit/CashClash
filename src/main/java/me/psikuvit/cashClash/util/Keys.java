@@ -18,6 +18,8 @@ public class Keys {
     public static final NamespacedKey BOUNCE_PAD_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "bounce_pad");
     public static final NamespacedKey BOOMBOX_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "boombox");
 
+    // Mythic items
+    public static final NamespacedKey MYTHIC_ITEM_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "mythic_item");
     private Keys() {
         throw new AssertionError("Nope.");
     }

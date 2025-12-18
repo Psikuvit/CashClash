@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.manager.BonusManager;
 import me.psikuvit.cashClash.manager.CashQuakeManager;
 import me.psikuvit.cashClash.manager.EconomyManager;
 import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.manager.MythicItemManager;
 import me.psikuvit.cashClash.manager.RoundManager;
 import me.psikuvit.cashClash.manager.ScoreboardManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -164,6 +165,9 @@ public class GameSession {
         roundManager = new RoundManager(this);
         cashQuakeManager = new CashQuakeManager(this);
         bonusManager = new BonusManager(this);
+
+        // Select 5 random legendaries for this game session
+        MythicItemManager.getInstance().selectLegendariesForSession(this);
 
         roundManager.startShoppingPhase(currentRound);
         players.keySet().forEach(this::applyKit);

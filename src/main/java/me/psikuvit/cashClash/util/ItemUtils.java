@@ -12,6 +12,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.ItemFlag;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
@@ -279,7 +280,13 @@ public final class ItemUtils {
             if (is == null || !is.hasItemMeta()) continue;
 
             ItemMeta meta = is.getItemMeta();
-            String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+            PersistentDataContainer pdc = meta.getPersistentDataContainer();
+
+            // Check all possible keys
+            String val = pdc.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+            if (val == null) val = pdc.get(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING);
+            if (val == null) val = pdc.get(Keys.MYTHIC_ITEM_KEY, PersistentDataType.STRING);
+
             if (val != null && val.equals(itemTag)) {
                 int amt = is.getAmount();
                 if (amt > remaining) {
@@ -297,7 +304,12 @@ public final class ItemUtils {
             ItemStack off = player.getInventory().getItemInOffHand();
             if (off.getType() != Material.AIR && off.hasItemMeta()) {
                 ItemMeta meta = off.getItemMeta();
-                String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+                PersistentDataContainer pdc = meta.getPersistentDataContainer();
+
+                String val = pdc.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+                if (val == null) val = pdc.get(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING);
+                if (val == null) val = pdc.get(Keys.MYTHIC_ITEM_KEY, PersistentDataType.STRING);
+
                 if (val != null && val.equals(itemTag)) {
                     int amt = off.getAmount();
                     if (amt > remaining) {
@@ -319,7 +331,12 @@ public final class ItemUtils {
                 if (is == null || !is.hasItemMeta()) continue;
 
                 ItemMeta meta = is.getItemMeta();
-                String val = meta.getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+                PersistentDataContainer pdc = meta.getPersistentDataContainer();
+
+                String val = pdc.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+                if (val == null) val = pdc.get(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING);
+                if (val == null) val = pdc.get(Keys.MYTHIC_ITEM_KEY, PersistentDataType.STRING);
+
                 if (val != null && val.equals(itemTag)) {
                     armor[i] = null;
                     player.getInventory().setArmorContents(armor);

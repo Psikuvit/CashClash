@@ -22,6 +22,7 @@ public final class ShopItems {
         registerAll(FoodItem.values());
         registerAll(UtilityItem.values());
         registerAll(CustomItemType.values());
+        registerAll(MythicItem.values());
     }
 
     private ShopItems() {
@@ -128,6 +129,14 @@ public final class ShopItems {
     public static CustomItemType getCustomItem(String name) {
         Purchasable item = BY_NAME.get(name);
         return item instanceof CustomItemType c ? c : null;
+    }
+
+    /**
+     * Gets a MythicItem by name, or null if not found or not a mythic.
+     */
+    public static MythicItem getMythic(String name) {
+        Purchasable item = BY_NAME.get(name);
+        return item instanceof MythicItem m ? m : null;
     }
 }
 

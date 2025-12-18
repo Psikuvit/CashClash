@@ -1,13 +1,17 @@
 package me.psikuvit.cashClash.gui;
 
+import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.shop.items.CustomItemType;
 import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.manager.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
+import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
@@ -61,12 +65,6 @@ public class ShopGUI {
         // Row 3
         inv.setItem(30, createCategoryIcon(Material.ENCHANTING_TABLE, ShopCategory.ENCHANTS));
 
-        ItemStack coming = new ItemStack(Material.GRASS_BLOCK);
-        ItemMeta comingMeta = coming.getItemMeta();
-        comingMeta.displayName(Messages.parse("<gray>Coming Soon!</gray>"));
-        coming.setItemMeta(comingMeta);
-        inv.setItem(31, coming);
-
         ItemStack bundle = new ItemStack(Material.RED_BUNDLE);
         BundleMeta bundleMeta = (BundleMeta) bundle.getItemMeta();
         bundleMeta.displayName(Messages.parse("<yellow>" + ShopCategory.INVESTMENTS.getDisplayName() + "</yellow>"));
@@ -74,6 +72,32 @@ public class ShopGUI {
         bundleMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         bundle.setItemMeta(bundleMeta);
         inv.setItem(32, bundle);
+
+        // Row 4: Legendaries (slots 38-43)
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session != null) {
+            List<MythicItem> availableMythics = MythicItemManager.getInstance().getAvailableLegendaries(session);
+            Team playerTeam = session.getTeam1().hasPlayer(player.getUniqueId()) ? session.getTeam1() : session.getTeam2();
+            boolean teamHasMythic = !MythicItemManager.getInstance().canTeamPurchaseMythic(session, playerTeam);
+            MythicItem ownedMythic = MythicItemManager.getInstance().getTeamMythic(session, playerTeam);
+
+            // Legendaries header
+            ItemStack legendHeader = new ItemStack(Material.DRAGON_HEAD);
+            ItemMeta legendHeaderMeta = legendHeader.getItemMeta();
+            legendHeaderMeta.displayName(Messages.parse("<light_purple><bold>✦ MYTHIC WEAPONS ✦</bold></light_purple>"));
+            List<Component> headerLore = new ArrayList<>(Messages.wrapLines("<gray>Only <red>ONE</red> mythic per team per game!</gray>"));
+            legendHeaderMeta.lore(headerLore);
+            legendHeaderMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            legendHeader.setItemMeta(legendHeaderMeta);
+            inv.setItem(31, legendHeader);
+
+            int[] legendSlots = {38, 39, 40, 41, 42};
+            for (int i = 0; i < availableMythics.size() && i < legendSlots.length; i++) {
+                MythicItem mythic = availableMythics.get(i);
+                inv.setItem(legendSlots[i], createMythicShopItem(mythic, teamHasMythic, ownedMythic));
+            }
+        }
+
 
         // Balance display
         long coins = getPlayerCoins(player);
@@ -92,6 +116,50 @@ public class ShopGUI {
         meta.lore(Messages.wrapLines("<gray>Click to browse items</gray>"));
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
+        return item;
+    }
+
+    private static ItemStack createMythicShopItem(MythicItem mythic, boolean teamHasMythic, MythicItem ownedMythic) {
+        ItemStack item = new ItemStack(mythic.getMaterial());
+        ItemMeta meta = item.getItemMeta();
+
+        boolean isOwned = ownedMythic == mythic;
+
+        if (isOwned) {
+            meta.displayName(Messages.parse("<green><bold>" + mythic.getDisplayName() + "</bold> <gray>(Owned)</gray></green>"));
+            List<Component> lore = new ArrayList<>();
+            lore.add(Messages.parse("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>"));
+            lore.add(Component.empty());
+            lore.addAll(Messages.wrapLines(mythic.getDescription()));
+            lore.add(Component.empty());
+            lore.addAll(Messages.wrapLines("<green>Your team owns this mythic!</green>"));
+            meta.lore(lore);
+        } else if (teamHasMythic) {
+            meta.displayName(Messages.parse("<red><bold>" + mythic.getDisplayName() + "</bold> <gray>(Locked)</gray></red>"));
+            List<Component> lore = new ArrayList<>();
+            lore.add(Messages.parse("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>"));
+            lore.add(Component.empty());
+            lore.addAll(Messages.wrapLines(mythic.getDescription()));
+            lore.add(Component.empty());
+            lore.addAll(Messages.wrapLines("<red>Your team already owns a mythic!</red>"));
+            meta.lore(lore);
+        } else {
+            meta.displayName(Messages.parse("<light_purple><bold>" + mythic.getDisplayName() + "</bold></light_purple>"));
+            List<Component> lore = new ArrayList<>();
+            lore.add(Messages.parse("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>"));
+            lore.add(Component.empty());
+            lore.add(Messages.parse("<gray>Price: <gold>$" + String.format("%,d", mythic.getPrice()) + "</gold></gray>"));
+            lore.add(Component.empty());
+            lore.addAll(Messages.wrapLines(mythic.getDescription()));
+            lore.add(Component.empty());
+            lore.addAll(Messages.wrapLines("<yellow>Click to purchase!</yellow>"));
+            meta.lore(lore);
+        }
+
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
+        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, mythic.name());
+        item.setItemMeta(meta);
+
         return item;
     }
 
@@ -414,6 +482,7 @@ public class ShopGUI {
         if (owned) {
             meta.displayName(Messages.parse("<green>" + item.getDisplayName() + " <gray>(Owned)</gray></green>"));
             meta.lore(Messages.wrapLines("<gray>You already own this item</gray>"));
+            meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         } else {
             meta.displayName(Messages.parse("<yellow>" + item.getDisplayName() + "</yellow>"));
             List<Component> lore = new ArrayList<>();
@@ -446,6 +515,7 @@ public class ShopGUI {
         if (maxed) {
             meta.displayName(Messages.parse("<green>" + item.getDisplayName() + " <gray>(Max)</gray></green>"));
             meta.lore(Messages.wrapLines("<gray>Maximum tier reached!</gray>"));
+            meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         } else {
             meta.displayName(Messages.parse("<yellow>" + item.getDisplayName() + "</yellow>"));
             List<Component> lore = new ArrayList<>();
@@ -490,6 +560,7 @@ public class ShopGUI {
         meta.displayName(Messages.parse("<green>" + ee.getDisplayName() + " <gray>(Max)</gray></green>"));
         meta.lore(Messages.wrapLines("<gray>Maximum level reached!</gray>"));
         meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, ee.name());
+        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         is.setItemMeta(meta);
         return is;
     }
