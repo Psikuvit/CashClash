@@ -11,10 +11,8 @@ public class Team {
 
     private final int teamNumber;
     private final Set<UUID> players;
-    private boolean forfeitVoted;
     private final Set<UUID> forfeitVotes;
-    private boolean enderPearlsDisabled;
-    private long enderPearlReenableTime;
+    private final boolean enderPearlsDisabled;
     // Forfeit timing: when the 2nd teammate died (ms), used to enforce delay before allowing forfeit
     private long forfeitStartTime;
 
@@ -22,7 +20,6 @@ public class Team {
         this.teamNumber = teamNumber;
         this.players = new HashSet<>();
         this.forfeitVotes = new HashSet<>();
-        this.forfeitVoted = false;
         this.enderPearlsDisabled = false;
         this.forfeitStartTime = 0L;
     }
@@ -52,12 +49,6 @@ public class Team {
 
     public void resetForfeitVotes() {
         forfeitVotes.clear();
-        forfeitVoted = false;
-    }
-
-    public int getAliveCount() {
-        // TODO: Implement based on player lives
-        return players.size();
     }
 
     // Getters and setters
@@ -66,39 +57,19 @@ public class Team {
     }
 
     public Set<UUID> getPlayers() {
-        return new HashSet<>(players);
+        return players;
     }
 
     public int getSize() {
         return players.size();
     }
 
-    public boolean isForfeitVoted() {
-        return forfeitVoted;
-    }
-
-    public void setForfeitVoted(boolean voted) {
-        this.forfeitVoted = voted;
-    }
-
     public Set<UUID> getForfeitVotes() {
-        return new HashSet<>(forfeitVotes);
+        return forfeitVotes;
     }
 
     public boolean isEnderPearlsDisabled() {
         return enderPearlsDisabled;
-    }
-
-    public void setEnderPearlsDisabled(boolean disabled) {
-        this.enderPearlsDisabled = disabled;
-    }
-
-    public long getEnderPearlReenableTime() {
-        return enderPearlReenableTime;
-    }
-
-    public void setEnderPearlReenableTime(long time) {
-        this.enderPearlReenableTime = time;
     }
 
     public void setForfeitStartTime(long time) {
@@ -109,7 +80,4 @@ public class Team {
         return this.forfeitStartTime;
     }
 
-    public void resetForfeitStartTime() {
-        this.forfeitStartTime = 0L;
-    }
 }
