@@ -7,11 +7,11 @@ import org.bukkit.Material;
  * Custom crafted items in Cash Clash with unique abilities.
  * These are special items separate from armor/weapons.
  */
-public enum CustomItemType implements Purchasable {
+public enum CustomItem implements Purchasable {
     // Custom Crafts
     GRENADE(Material.FIRE_CHARGE, 1500, 1, 0,
             "Throwable Grenade",
-            "Explodes after 5 seconds dealing 4 hearts in 1-4 block radius, 1 heart in 5-6 blocks."),
+            "Explodes after 3 seconds dealing 4 hearts in 1-4 block radius, 1 heart in 5-6 blocks."),
 
     BOUNCE_PAD(Material.HEAVY_WEIGHTED_PRESSURE_PLATE, 3000, 1, 8,
             "Placeable Bounce Pad",
@@ -56,7 +56,7 @@ public enum CustomItemType implements Purchasable {
     private final String displayName;
     private final String description;
 
-    CustomItemType(Material material, long price, int initialAmount, int maxPurchase, String displayName, String description) {
+    CustomItem(Material material, long price, int initialAmount, int maxPurchase, String displayName, String description) {
         this.material = material;
         this.price = price;
         this.initialAmount = initialAmount;

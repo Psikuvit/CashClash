@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.kit;
 
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;

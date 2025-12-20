@@ -22,7 +22,7 @@ public final class ShopItems {
         registerAll(CustomArmorItem.values());
         registerAll(FoodItem.values());
         registerAll(UtilityItem.values());
-        registerAll(CustomItemType.values());
+        registerAll(CustomItem.values());
         registerAll(MythicItem.values());
         registerAll(InvestmentType.values());
     }
