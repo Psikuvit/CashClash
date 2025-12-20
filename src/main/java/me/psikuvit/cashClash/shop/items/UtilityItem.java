@@ -8,6 +8,7 @@ import org.bukkit.Material;
  */
 public enum UtilityItem implements Purchasable {
     LAVA_BUCKET(Material.LAVA_BUCKET, 1500, 1),
+    WATER_BUCKET(Material.WATER_BUCKET, 500, 1),
     COBWEB(Material.COBWEB, 625, 4),
     CROSSBOW(Material.CROSSBOW, 4500, 1),
     BOW(Material.BOW, 4000, 1),
