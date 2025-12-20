@@ -4,17 +4,23 @@ import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
+import me.psikuvit.cashClash.util.Keys;
+import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -63,8 +69,15 @@ public final class ItemUtils {
         }
         newArmor.setItemMeta(toMeta);
 
-        // Give the old armor piece back to the player's inventory
-        inv.addItem(old);
+        boolean isCustomOld = false;
+        PersistentDataContainer pdc = fromMeta.getPersistentDataContainer();
+        String boughtTag = pdc.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+
+        if (boughtTag != null) isCustomOld = true;
+        if (isCustomOld) inv.addItem(old);
+
+        if (isCustomOld) inv.addItem(old);
+
 
         return old;
     }
@@ -109,13 +122,16 @@ public final class ItemUtils {
         if (si == null) return null;
         ItemStack it = new ItemStack(si.getMaterial(), 1);
         var meta = it.getItemMeta();
-        if (si.getCategory() == ShopCategory.FOOD) return it;
+
         if (meta != null) {
             meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, si.name());
-            meta.displayName(Messages.parse("<yellow>" + si.name().replace('_', ' ') + "</yellow>"));
-            String desc = si.getDescription();
 
-            if (!desc.isEmpty()) meta.lore(Messages.wrapLines(desc));
+            // Skip display customization for regular food, but custom foods need it
+            if (si.getCategory() != ShopCategory.FOOD || !si.getDescription().isEmpty()) {
+                meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
+                String desc = si.getDescription();
+                if (!desc.isEmpty()) meta.lore(Messages.wrapLines(desc));
+            }
 
             String matName = it.getType().name();
             if (matName.endsWith("HELMET") || matName.endsWith("CHESTPLATE") || matName.endsWith("LEGGINGS") || matName.endsWith("BOOTS")) {
@@ -125,6 +141,38 @@ public final class ItemUtils {
             it.setItemMeta(meta);
         }
         return it;
+    }
+
+    public static ItemStack createCustomItem(CustomItem type, Player owner) {
+        ItemStack item = new ItemStack(type.getMaterial());
+        ItemMeta meta = item.getItemMeta();
+
+        meta.displayName(Messages.parse("<yellow>" + type.getDisplayName() + "</yellow>"));
+
+        List<Component> lore = new ArrayList<>(Messages.wrapLines(type.getDescription()));
+        meta.lore(lore);
+
+        // Add PDC tags
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        pdc.set(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING, type.name());
+        pdc.set(Keys.CUSTOM_ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+
+        // Special handling for specific items
+        switch (type) {
+            case BAG_OF_POTATOES -> {
+                if (meta instanceof Damageable damageable) {
+                    damageable.setDamage(item.getType().getMaxDurability() - 3);
+                }
+                meta.addEnchant(Enchantment.KNOCKBACK, 3, true);
+            }
+            case CASH_BLASTER -> meta.addEnchant(Enchantment.MULTISHOT, 1, true);
+            case INVIS_CLOAK -> pdc.set(Keys.CUSTOM_ITEM_USES, PersistentDataType.INTEGER, 5);
+        }
+
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
+        item.setItemMeta(meta);
+
+        return item;
     }
 
     public static ItemStack giveCustomArmorSet(Player player, CustomArmorItem armor) {
