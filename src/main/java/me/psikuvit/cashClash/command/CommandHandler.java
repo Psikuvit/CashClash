@@ -36,6 +36,10 @@ public class CommandHandler extends Command {
         registerSubcommand(new StatsCommand());
         registerSubcommand(new ForfeitCommand());
 
+        // Cash Quake event commands
+        registerSubcommand(new LotteryCommand());
+        registerSubcommand(new PayTaxCommand());
+
         // Admin / control commands
         registerSubcommand(new StopCommand());
         registerSubcommand(new ForceStartCommand());
