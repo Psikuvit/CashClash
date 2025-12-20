@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.player;
+package me.psikuvit.cashClash.util.enums;
 
 /**
  * Types of bonuses players can earn

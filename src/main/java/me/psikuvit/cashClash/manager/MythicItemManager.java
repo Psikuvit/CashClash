@@ -8,7 +8,7 @@ import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
-import me.psikuvit.cashClash.util.SoundUtils;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -906,7 +906,7 @@ public class MythicItemManager {
             // Volcano mode - explosive fire arrow
             world.spawnParticle(Particle.FLAME, hitLoc, 50, 1, 1, 1, 0.2);
             world.spawnParticle(Particle.EXPLOSION, hitLoc, 1);
-            world.playSound(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
+            SoundUtils.playAt(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
             GameSession session = GameManager.getInstance().getPlayerSession(shooter);
             Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;

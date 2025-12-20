@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.util;
+package me.psikuvit.cashClash.util.effects;
 
 import me.psikuvit.cashClash.game.GameSession;
 import net.kyori.adventure.text.Component;

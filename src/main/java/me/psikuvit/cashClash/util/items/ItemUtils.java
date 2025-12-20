@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.util;
+package me.psikuvit.cashClash.util.items;
 
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;

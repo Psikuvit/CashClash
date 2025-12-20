@@ -2,7 +2,7 @@ package me.psikuvit.cashClash.manager;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.util.Messages;
-import me.psikuvit.cashClash.util.TeamColorUtils;
+import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;

@@ -10,7 +10,7 @@ import me.psikuvit.cashClash.manager.TabListManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
-import me.psikuvit.cashClash.util.TeamColorUtils;
+import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;

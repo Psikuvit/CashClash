@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.player;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
+import me.psikuvit.cashClash.util.enums.BonusType;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayDeque;

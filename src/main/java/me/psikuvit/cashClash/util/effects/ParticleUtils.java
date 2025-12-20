@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.util;
+package me.psikuvit.cashClash.util.effects;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;

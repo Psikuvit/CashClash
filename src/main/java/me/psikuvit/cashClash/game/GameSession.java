@@ -21,7 +21,7 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.ShopManager;
 import me.psikuvit.cashClash.util.SchedulerUtils;
-import me.psikuvit.cashClash.util.SoundUtils;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;

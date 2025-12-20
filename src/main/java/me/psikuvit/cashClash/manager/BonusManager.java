@@ -2,12 +2,12 @@ package me.psikuvit.cashClash.manager;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.round.RoundData;
-import me.psikuvit.cashClash.player.BonusType;
+import me.psikuvit.cashClash.util.enums.BonusType;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
-import me.psikuvit.cashClash.util.SoundUtils;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
