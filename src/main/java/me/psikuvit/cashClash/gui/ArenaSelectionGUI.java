@@ -33,7 +33,7 @@ public class ArenaSelectionGUI {
         for (int i = 1; i <= 5; i++) {
             Arena arena = ArenaManager.getInstance().getArena(i);
             if (arena != null) {
-                gui.setItem(9 + i, createArenaItem(i, arena));
+                gui.setItem(10 + i, createArenaItem(i, arena));
             }
         }
 

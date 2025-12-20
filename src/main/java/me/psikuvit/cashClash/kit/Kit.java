@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.kit;
 
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -8,9 +9,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import net.kyori.adventure.text.Component;
 import org.bukkit.potion.PotionType;
 
 /**
@@ -137,28 +138,52 @@ public enum Kit {
             case FIRE_FIGHTER -> player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 2400, 0, false, false));
             case SPIDER -> player.getInventory().addItem(new ItemStack(Material.COBWEB, 2));
             case BOMBER -> {
-                // Give 2 TNT items as grenades (placeable but treated here as placeholder)
-                ItemStack t = new ItemStack(Material.TNT, 2);
-                ItemMeta tm = t.getItemMeta();
-
-                if (tm != null) tm.displayName(Component.text("§4Grenade"));
-                t.setItemMeta(tm);
-                player.getInventory().addItem(t);
+                // Give 2 actual grenades with proper custom item tags
+                for (int i = 0; i < 2; i++) {
+                    ItemStack grenade = new ItemStack(CustomItem.GRENADE.getMaterial());
+                    ItemMeta gm = grenade.getItemMeta();
+                    if (gm != null) {
+                        gm.displayName(Messages.parse("<yellow>Throwable Grenade</yellow>"));
+                        gm.lore(Messages.wrapLines(CustomItem.GRENADE.getDescription()));
+                        gm.getPersistentDataContainer().set(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING, CustomItem.GRENADE.name());
+                        gm.getPersistentDataContainer().set(Keys.CUSTOM_ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
+                        grenade.setItemMeta(gm);
+                    }
+                    player.getInventory().addItem(grenade);
+                }
             }
         }
     }
 
     private void giveBaseItems(Player player) {
-        player.getInventory().setHelmet(new ItemStack(Material.LEATHER_HELMET));
-        player.getInventory().setChestplate(new ItemStack(Material.LEATHER_CHESTPLATE));
-        player.getInventory().setLeggings(new ItemStack(Material.LEATHER_LEGGINGS));
-        player.getInventory().setBoots(new ItemStack(Material.LEATHER_BOOTS));
+        // Leather helmet (unbreakable)
+        ItemStack leatherHelmet = new ItemStack(Material.LEATHER_HELMET);
+        ItemMeta helmetMeta = leatherHelmet.getItemMeta();
+        if (helmetMeta != null) {
+            helmetMeta.setUnbreakable(true);
+            leatherHelmet.setItemMeta(helmetMeta);
+        }
+        player.getInventory().setHelmet(leatherHelmet);
+
+        player.getInventory().setChestplate(new ItemStack(Material.GOLDEN_CHESTPLATE));
+        player.getInventory().setLeggings(new ItemStack(Material.GOLDEN_LEGGINGS));
+        player.getInventory().setBoots(new ItemStack(Material.GOLDEN_BOOTS));
 
         // Stone tools
         player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
-        player.getInventory().addItem(new ItemStack(Material.STONE_PICKAXE));
         player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
-        player.getInventory().addItem(new ItemStack(Material.STONE_SHOVEL));
+
+        // Diamond pickaxe with Efficiency 2
+        ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
+        ItemMeta pickMeta = pickaxe.getItemMeta();
+        if (pickMeta != null) {
+            pickMeta.addEnchant(Enchantment.EFFICIENCY, 2, true);
+            pickaxe.setItemMeta(pickMeta);
+        }
+        player.getInventory().addItem(pickaxe);
+
+        // Shears
+        player.getInventory().addItem(new ItemStack(Material.SHEARS));
 
         // Food
         player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 8));
@@ -193,8 +218,4 @@ public enum Kit {
         return displayName;
     }
 
-    public static Kit getRandom() {
-        Kit[] kits = values();
-        return kits[(int) (Math.random() * kits.length)];
-    }
 }
