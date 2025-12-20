@@ -1,16 +1,15 @@
 package me.psikuvit.cashClash.listener.gui;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gui.GuiType;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.ShopHolder;
-import me.psikuvit.cashClash.shop.items.CustomItemType;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.manager.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.Investment;
-import me.psikuvit.cashClash.player.InvestmentType;
+import me.psikuvit.cashClash.util.enums.InvestmentType;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
@@ -20,15 +19,12 @@ import me.psikuvit.cashClash.shop.items.ShopItems;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.Keys;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.ItemFlag;
-import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.entity.Player;
 import net.kyori.adventure.text.Component;
@@ -39,8 +35,7 @@ import org.bukkit.Sound;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 
 /**
@@ -146,6 +141,10 @@ public class ShopGuiListener implements Listener {
             handleCustomItemPurchase(player, pdcValue, sh.getCategory());
             return;
         }
+        if (pdcValue != null && pdcValue.startsWith("SET_")) {
+            handleArmorSetPurchase(player, pdcValue);
+            return;
+        }
 
         Purchasable si = ShopItems.valueOf(pdcValue);
         if (si == null) {
@@ -170,12 +169,20 @@ public class ShopGuiListener implements Listener {
         }
 
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
-        PurchaseRecord rec = ccp.popLastPurchase();
+        PurchaseRecord rec = ccp.peekLastPurchase();
         if (rec == null || rec.round() != sess.getCurrentRound()) {
             Messages.send(player, "<red>No purchase to undo.</red>");
             return;
         }
 
+        // Check if the last purchase is from the same category
+        if (rec.item().getCategory() != category) {
+            Messages.send(player, "<red>No purchase to undo in this category.</red>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        ccp.popLastPurchase();
         ccp.addCoins(rec.price());
 
         // Handle investment-specific undo (clear the investment)
@@ -336,27 +343,65 @@ public class ShopGuiListener implements Listener {
             return;
         }
 
-        if (si.getCategory() == ShopCategory.CUSTOM_ARMOR) {
-            handleSpecialSet(player, si, ccp, price);
-            return;
-        }
-
         ccp.deductCoins(totalPrice);
         giveItemToPlayer(player, ccp, si, quantity, totalPrice);
 
         ShopGUI.openCategoryItems(player, category);
     }
 
-    private void handleSpecialSet(Player player, Purchasable si, CashClashPlayer ccp, long price) {
-        ccp.deductCoins(price);
+    /**
+     * Handles purchasing a complete armor set (must buy all pieces together).
+     */
+    private void handleArmorSetPurchase(Player player, String pdcValue) {
+        GameSession sess = GameManager.getInstance().getPlayerSession(player);
+        if (sess == null) {
+            Messages.send(player, "<red>You must be in a game to shop.</red>");
+            player.closeInventory();
+            return;
+        }
 
-        CustomArmorItem customArmor = ItemSelectionUtils.getCustomArmorItem(si);
-        ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, customArmor);
+        CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
+        if (ccp == null) return;
 
-        int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
-        ccp.addPurchase(new PurchaseRecord(si, 1, price, replacedItem, round));
-        Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", price) + "</green>");
+        // Extract set name from "SET_INVESTORS", "SET_DRAGON", etc.
+        String setName = pdcValue.substring(4); // Remove "SET_" prefix
+        CustomArmorItem.ArmorSet armorSet;
+        try {
+            armorSet = CustomArmorItem.ArmorSet.valueOf(setName);
+        } catch (IllegalArgumentException e) {
+            CashClashPlugin.getInstance().getLogger().warning("Unknown armor set: " + setName);
+            return;
+        }
+
+        long totalPrice = armorSet.getTotalPrice();
+
+        // Check if player can afford the entire set
+        if (!ccp.canAfford(totalPrice)) {
+            Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", totalPrice) + ")</red>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        // Deduct coins for the entire set
+        ccp.deductCoins(totalPrice);
+
+        int round = sess.getCurrentRound();
+
+        // Give each piece of the set to the player
+        for (CustomArmorItem piece : armorSet.getPieces()) {
+            ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, piece);
+            ccp.addPurchase(new PurchaseRecord(piece, 1, piece.getPrice(), replacedItem, round));
+        }
+
+        Messages.send(player, "");
+        Messages.send(player, "<green><bold>✓ SET PURCHASED</bold></green>");
+        Messages.send(player, "<yellow>" + armorSet.getDisplayName() + "</yellow>");
+        Messages.send(player, "<dark_gray>-$" + String.format("%,d", totalPrice) + "</dark_gray>");
+        Messages.send(player, "");
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
+
+        // Refresh the armor category
+        ShopGUI.openCategoryItems(player, ShopCategory.ARMOR);
     }
 
     private void giveItemToPlayer(Player player, CashClashPlayer ccp, Purchasable si, int quantity, long totalPrice) {
@@ -407,9 +452,9 @@ public class ShopGuiListener implements Listener {
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return;
 
-        CustomItemType type;
+        CustomItem type;
         try {
-            type = CustomItemType.valueOf(pdcValue);
+            type = CustomItem.valueOf(pdcValue);
         } catch (IllegalArgumentException e) {
             CashClashPlugin.getInstance().getLogger().warning("Unknown custom item type: " + pdcValue);
             return;
@@ -422,10 +467,8 @@ public class ShopGuiListener implements Listener {
             return;
         }
 
-        // Create the custom item
-        ItemStack customItem = createCustomItem(type, player);
+        ItemStack customItem = ItemUtils.createCustomItem(type, player);
 
-        // Give item to player
         ccp.deductCoins(price);
         player.getInventory().addItem(customItem);
 
@@ -438,38 +481,6 @@ public class ShopGuiListener implements Listener {
 
         // Refresh GUI
         ShopGUI.openCategoryItems(player, category);
-    }
-
-    private ItemStack createCustomItem(CustomItemType type, Player owner) {
-        ItemStack item = new ItemStack(type.getMaterial());
-        ItemMeta meta = item.getItemMeta();
-
-        meta.displayName(Messages.parse("<yellow>" + type.getDisplayName() + "</yellow>"));
-
-        List<Component> lore = new ArrayList<>(Messages.wrapLines(type.getDescription()));
-        meta.lore(lore);
-
-        // Add PDC tags
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING, type.name());
-        pdc.set(Keys.CUSTOM_ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
-
-        // Special handling for specific items
-        switch (type) {
-            case BAG_OF_POTATOES -> {
-                if (meta instanceof Damageable damageable) {
-                    damageable.setDamage(item.getType().getMaxDurability() - 3);
-                }
-                meta.addEnchant(Enchantment.KNOCKBACK, 3, true);
-            }
-            case CASH_BLASTER -> meta.addEnchant(Enchantment.MULTISHOT, 1, true);
-            case INVIS_CLOAK -> pdc.set(Keys.CUSTOM_ITEM_USES, PersistentDataType.INTEGER, 5);
-        }
-
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-        item.setItemMeta(meta);
-
-        return item;
     }
 
     private void handleMythicPurchase(Player player, String pdcValue) {
@@ -491,22 +502,28 @@ public class ShopGuiListener implements Listener {
             return;
         }
 
-        // Check if mythic is available in this session
+        UUID playerUuid = player.getUniqueId();
+
+        // Check if mythic is available in this session's random selection
         if (!MythicItemManager.getInstance().isMythicAvailableInSession(sess, mythic)) {
             Messages.send(player, "<red>This mythic is not available in this game!</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        // Check if team already has a mythic
-        Team playerTeam = sess.getTeam1().hasPlayer(player.getUniqueId()) ? sess.getTeam1() : sess.getTeam2();
-        if (!MythicItemManager.getInstance().canTeamPurchaseMythic(sess, playerTeam)) {
-            MythicItem owned = MythicItemManager.getInstance().getTeamMythic(sess, playerTeam);
-            if (owned == mythic) {
-                Messages.send(player, "<yellow>Your team already owns this mythic!</yellow>");
-            } else {
-                Messages.send(player, "<red>Your team already owns a mythic (" + owned.getDisplayName() + ")!</red>");
-            }
+        // Check if this mythic has already been purchased by anyone
+        if (!MythicItemManager.getInstance().isMythicAvailable(sess, mythic)) {
+            UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(sess, mythic);
+            String ownerName = ownerUuid != null ? Bukkit.getOfflinePlayer(ownerUuid).getName() : "Someone";
+            Messages.send(player, "<red>This mythic has already been purchased by " + ownerName + "!</red>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        // Check if player already has a mythic
+        if (!MythicItemManager.getInstance().canPlayerPurchaseMythic(sess, playerUuid)) {
+            MythicItem owned = MythicItemManager.getInstance().getPlayerMythic(sess, playerUuid);
+            Messages.send(player, "<red>You already own a mythic (" + owned.getDisplayName() + ")!</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -520,13 +537,16 @@ public class ShopGuiListener implements Listener {
 
         // Deduct coins and register purchase
         ccp.deductCoins(price);
-        MythicItemManager.getInstance().registerMythicPurchase(sess, playerTeam, mythic);
+        MythicItemManager.getInstance().registerMythicPurchase(sess, playerUuid, mythic);
 
         ItemStack mythicItem = MythicItemManager.getInstance().createMythicItem(mythic, player);
         player.getInventory().addItem(mythicItem);
 
-        Messages.send(player, "<light_purple>Purchased " + mythic.getDisplayName() + " for $" + String.format("%,d", price) + "!</light_purple>");
-        Messages.send(player, "<gray>Your team now owns this mythic weapon!</gray>");
+        Messages.send(player, "");
+        Messages.send(player, "<dark_purple><bold>✦ MYTHIC ACQUIRED ✦</bold></dark_purple>");
+        Messages.send(player, "<light_purple>" + mythic.getDisplayName() + "</light_purple>");
+        Messages.send(player, "<dark_gray>-$" + String.format("%,d", price) + "</dark_gray>");
+        Messages.send(player, "");
         SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 
         // Refresh the main menu to show updated state

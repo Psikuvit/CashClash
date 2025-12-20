@@ -2,7 +2,7 @@ package me.psikuvit.cashClash.manager;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.shop.items.CustomItemType;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.ShopItems;
 import me.psikuvit.cashClash.util.Keys;
@@ -50,6 +50,7 @@ public class CustomItemManager {
     private final Map<UUID, Integer> invisCloakUsesRemaining = new HashMap<>();
     private final Set<UUID> invisCloakActive = new HashSet<>();
     private final Map<UUID, BukkitTask> invisCloakTasks = new HashMap<>();
+    private final Map<UUID, ItemStack[]> invisCloakStoredArmor = new HashMap<>();
 
     // Grenade tracking
     private final Set<Item> activeGrenades = new HashSet<>();
@@ -59,6 +60,12 @@ public class CustomItemManager {
 
     // Boombox tracking
     private final Set<Location> activeBoomboxes = new HashSet<>();
+
+    // Respawn anchor tracking - stores reviver UUID -> target UUID and task
+    private final Map<UUID, UUID> respawnAnchorTargets = new HashMap<>();
+    private final Map<UUID, BukkitTask> respawnAnchorTasks = new HashMap<>();
+    private final Map<UUID, Integer> respawnAnchorsUsedThisRound = new HashMap<>();
+    private final Set<UUID> playersRevivedThisRound = new HashSet<>();
 
     private CustomItemManager() {}
 
@@ -71,7 +78,7 @@ public class CustomItemManager {
 
     // ==================== ITEM TYPE DETECTION ====================
 
-    public CustomItemType getCustomItemType(ItemStack item) {
+    public CustomItem getCustomItemType(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return null;
 
         ItemMeta meta = item.getItemMeta();
@@ -110,7 +117,7 @@ public class CustomItemManager {
             } else {
                 explodeGrenade(loc);
             }
-        }, 5 * 20L);
+        }, 3 * 20L); // 3 seconds
     }
 
     private void explodeGrenade(Location loc) {
@@ -308,9 +315,19 @@ public class CustomItemManager {
 
             invisCloakActive.add(uuid);
             invisCloakUsesRemaining.put(uuid, uses - 1);
+
+            // Store and hide armor
+            ItemStack[] currentArmor = player.getInventory().getArmorContents();
+            ItemStack[] armorCopy = new ItemStack[currentArmor.length];
+            for (int i = 0; i < currentArmor.length; i++) {
+                armorCopy[i] = currentArmor[i] != null ? currentArmor[i].clone() : null;
+            }
+            invisCloakStoredArmor.put(uuid, armorCopy);
+            player.getInventory().setArmorContents(new ItemStack[4]); // Clear visible armor
+
             player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
 
-            Messages.send(player, "<green>Invisibility activated! Left-click to deactivate.</green>");
+            Messages.send(player, "<green>Invisibility activated! Right-click to deactivate.</green>");
             Messages.send(player, "<yellow>Losing 100 coins per second...</yellow>");
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0f, 1.0f);
 
@@ -334,6 +351,12 @@ public class CustomItemManager {
             invisCloakActive.remove(uuid);
             player.removePotionEffect(PotionEffectType.INVISIBILITY);
 
+            // Restore armor
+            ItemStack[] storedArmor = invisCloakStoredArmor.remove(uuid);
+            if (storedArmor != null) {
+                player.getInventory().setArmorContents(storedArmor);
+            }
+
             BukkitTask task = invisCloakTasks.remove(uuid);
             if (task != null) task.cancel();
 
@@ -342,6 +365,24 @@ public class CustomItemManager {
             Messages.send(player, "<yellow>Invisibility deactivated.</yellow>");
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.0f, 0.8f);
         }
+    }
+
+    /**
+     * Handles right-click with invis cloak - toggles invisibility.
+     * @return true if action was handled
+     */
+    public boolean handleInvisCloakRightClick(Player player, ItemStack item) {
+        UUID uuid = player.getUniqueId();
+
+        // If already active, turn off
+        if (invisCloakActive.contains(uuid)) {
+            toggleInvisCloak(player, false);
+            return true;
+        }
+
+        // Otherwise, turn on
+        toggleInvisCloak(player, true);
+        return true;
     }
 
     public boolean isInvisActive(UUID uuid) {
@@ -390,56 +431,58 @@ public class CustomItemManager {
 
     // ==================== BOUNCE PAD IMPLEMENTATION ====================
 
-    public boolean placeBouncePad(Player player, ItemStack item, Block clickedBlock) {
+    public void placeBouncePad(Player player, ItemStack item, Block clickedBlock) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) return false;
+        if (session == null) return;
 
         Team team = session.getPlayerTeam(player);
-        if (team == null) return false;
+        if (team == null) return;
 
-        Location placeLoc = clickedBlock.getRelative(BlockFace.UP).getLocation();
-        Block placeBlock = placeLoc.getBlock();
+        Block placeBlock = clickedBlock.getRelative(BlockFace.UP);
 
-        if (placeBlock.getType() != Material.AIR) {
+        if (!placeBlock.getType().isAir()) {
             Messages.send(player, "<red>Cannot place bounce pad here!</red>");
-            return false;
+            return;
         }
 
-        placeBlock.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
-        bouncePadTeams.put(placeBlock.getLocation(), team.getTeamNumber());
+        // Use a full block so players can reliably trigger it
+        placeBlock.setType(Material.SLIME_BLOCK);
+        Location blockLoc = placeBlock.getLocation();
+        bouncePadTeams.put(blockLoc, team.getTeamNumber());
 
         consumeItem(player, item);
         Messages.send(player, "<green>Bounce pad placed!</green>");
-        SoundUtils.play(player, Sound.BLOCK_STONE_PLACE, 1.0f, 1.0f);
-        return true;
+        SoundUtils.play(player, Sound.BLOCK_SLIME_BLOCK_PLACE, 1.0f, 1.0f);
     }
 
-    public boolean handleBouncePad(Player player, Location padLoc) {
-        Integer padTeam = bouncePadTeams.get(padLoc);
-        if (padTeam == null) return false;
+    public void handleBouncePad(Player player, Block block) {
+        Location blockLoc = block.getLocation();
+        Integer padTeam = bouncePadTeams.get(blockLoc);
+        if (padTeam == null) return;
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) return false;
+        if (session == null) return;
 
         Team playerTeam = session.getPlayerTeam(player);
-        if (playerTeam == null) return false;
+        if (playerTeam == null) return;
 
         if (playerTeam.getTeamNumber() != padTeam) {
-            return false;
+            Messages.send(player, "<red>This bounce pad belongs to the enemy team!</red>");
+            return;
         }
 
+        // Launch player forward and up
         Vector direction = player.getLocation().getDirection();
         direction.setY(0).normalize();
-
-        Vector velocity = direction.multiply(1.4).setY(0.8);
+        Vector velocity = direction.multiply(1.4).setY(1.0);
         player.setVelocity(velocity);
 
         SoundUtils.play(player, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0f, 1.2f);
-        return true;
     }
 
-    public boolean isBouncePad(Location loc) {
-        return bouncePadTeams.containsKey(loc);
+    public boolean isBouncePad(Block block) {
+        if (block.getType() != Material.SLIME_BLOCK) return false;
+        return bouncePadTeams.containsKey(block.getLocation());
     }
 
     // ==================== BOOMBOX IMPLEMENTATION ====================
@@ -462,8 +505,9 @@ public class CustomItemManager {
 
         final Location boomLoc = placeBlock.getLocation().clone().add(0.5, 0.5, 0.5);
 
+        // Pulse every 3 seconds (0, 3, 6, 9 seconds = 4 pulses total)
         for (int i = 0; i < 4; i++) {
-            int delay = i * 60;
+            int delay = i * 3 * 20; // 3 seconds between pulses
             SchedulerUtils.runTaskLater(() -> {
                 if (!activeBoomboxes.contains(placeBlock.getLocation())) return;
 
@@ -474,15 +518,15 @@ public class CustomItemManager {
                 world.spawnParticle(Particle.SONIC_BOOM, boomLoc, 1);
 
                 for (Entity entity : world.getNearbyEntities(boomLoc, 5, 5, 5)) {
-                    if (!(entity instanceof Player)) continue;
-                    if (entity.equals(player)) continue;
+                    if (!(entity instanceof Player target)) continue;
+                    if (target.equals(player)) continue;
 
-                    Vector knockback = entity.getLocation().toVector()
+                    Vector knockback = target.getLocation().toVector()
                             .subtract(boomLoc.toVector())
                             .normalize()
                             .multiply(1.5)
                             .setY(0.5);
-                    entity.setVelocity(knockback);
+                    target.setVelocity(knockback);
                 }
             }, delay);
         }
@@ -494,6 +538,167 @@ public class CustomItemManager {
             }
         }, 12 * 20L);
 
+    }
+
+    // ==================== RESPAWN ANCHOR IMPLEMENTATION ====================
+
+    /**
+     * Start reviving a dead teammate with respawn anchor.
+     * @return true if revive started successfully
+     */
+    public boolean useRespawnAnchor(Player reviver, Player target, ItemStack item) {
+        UUID reviverUuid = reviver.getUniqueId();
+        UUID targetUuid = target.getUniqueId();
+
+        GameSession session = GameManager.getInstance().getPlayerSession(reviver);
+        if (session == null) {
+            Messages.send(reviver, "<red>You must be in a game!</red>");
+            return false;
+        }
+
+        // Check if same team
+        Team reviverTeam = session.getPlayerTeam(reviver);
+        Team targetTeam = session.getPlayerTeam(target);
+        if (reviverTeam == null || targetTeam == null || reviverTeam.getTeamNumber() != targetTeam.getTeamNumber()) {
+            Messages.send(reviver, "<red>You can only revive teammates!</red>");
+            return false;
+        }
+
+        // Check if target actually needs reviving (has 0 lives)
+        CashClashPlayer targetCcp = session.getCashClashPlayer(targetUuid);
+        if (targetCcp == null || targetCcp.getLives() > 0) {
+            Messages.send(reviver, "<red>" + target.getName() + " still has lives remaining!</red>");
+            return false;
+        }
+
+        // Check max 2 uses per round
+        int usesThisRound = respawnAnchorsUsedThisRound.getOrDefault(reviverUuid, 0);
+        if (usesThisRound >= 2) {
+            Messages.send(reviver, "<red>You've used the maximum respawn anchors this round!</red>");
+            return false;
+        }
+
+        // Check if target was already revived this round
+        if (playersRevivedThisRound.contains(targetUuid)) {
+            Messages.send(reviver, "<red>" + target.getName() + " was already revived this round!</red>");
+            return false;
+        }
+
+        // Check if already reviving someone
+        if (respawnAnchorTargets.containsKey(reviverUuid)) {
+            Messages.send(reviver, "<red>You're already reviving someone!</red>");
+            return false;
+        }
+
+        // Start the revive process
+        respawnAnchorTargets.put(reviverUuid, targetUuid);
+        consumeItem(reviver, item);
+        respawnAnchorsUsedThisRound.merge(reviverUuid, 1, Integer::sum);
+
+        Messages.send(reviver, "<yellow>Reviving " + target.getName() + "... Stay close for 10 seconds!</yellow>");
+        Messages.send(target, "<yellow>" + reviver.getName() + " is reviving you! Stay close for 10 seconds!</yellow>");
+        SoundUtils.play(reviver, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 1.0f);
+
+        final Location startLoc = reviver.getLocation();
+
+        // Progress task - check distance every second
+        BukkitTask progressTask = SchedulerUtils.runTaskTimer(() -> {
+            // Check if reviver moved too far
+            if (reviver.getLocation().distance(startLoc) > 3) {
+                cancelRevive(reviverUuid, "Revive cancelled - you moved too far!");
+                return;
+            }
+            // Check if target moved too far from reviver
+            if (reviver.getLocation().distance(target.getLocation()) > 5) {
+                cancelRevive(reviverUuid, "Revive cancelled - target moved too far!");
+                return;
+            }
+            // Particle effect
+            reviver.getWorld().spawnParticle(Particle.PORTAL, target.getLocation().add(0, 1, 0), 10, 0.5, 0.5, 0.5, 0.1);
+        }, 20L, 20L);
+
+        respawnAnchorTasks.put(reviverUuid, progressTask);
+
+        // Complete revive after 10 seconds
+        SchedulerUtils.runTaskLater(() -> {
+            if (!respawnAnchorTargets.containsKey(reviverUuid)) return; // Was cancelled
+
+            BukkitTask task = respawnAnchorTasks.remove(reviverUuid);
+            if (task != null) task.cancel();
+            respawnAnchorTargets.remove(reviverUuid);
+
+            // Final distance check
+            if (reviver.getLocation().distance(target.getLocation()) > 5) {
+                Messages.send(reviver, "<red>Revive failed - target too far!</red>");
+                return;
+            }
+
+            // Complete the revive
+            completeRevive(session, reviver, target);
+        }, 10 * 20L);
+
+        return true;
+    }
+
+    private void cancelRevive(UUID reviverUuid, String message) {
+        respawnAnchorTargets.remove(reviverUuid);
+        BukkitTask task = respawnAnchorTasks.remove(reviverUuid);
+        if (task != null) task.cancel();
+
+        Player reviver = Bukkit.getPlayer(reviverUuid);
+        if (reviver != null) {
+            Messages.send(reviver, "<red>" + message + "</red>");
+            SoundUtils.play(reviver, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.0f, 0.5f);
+        }
+    }
+
+    private void completeRevive(GameSession session, Player reviver, Player target) {
+        UUID targetUuid = target.getUniqueId();
+        CashClashPlayer targetCcp = session.getCashClashPlayer(targetUuid);
+
+        if (targetCcp == null) return;
+
+        // Grant 1 life
+        targetCcp.setLives(targetCcp.getLives() + 1);
+        playersRevivedThisRound.add(targetUuid);
+
+        // Grant +2 bonus hearts (4 max health increase)
+        var attr = target.getAttribute(Attribute.MAX_HEALTH);
+        if (attr != null) {
+            attr.setBaseValue(attr.getValue() + 4.0);
+        }
+        target.setHealth(target.getAttribute(Attribute.MAX_HEALTH).getValue());
+
+        // 3 seconds of invincibility
+        target.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 3 * 20, 4, false, true)); // Resistance V = invincible
+        target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 3 * 20, 0, false, true));
+
+        Messages.send(reviver, "<green>Successfully revived " + target.getName() + "!</green>");
+        Messages.send(target, "<green>You have been revived by " + reviver.getName() + "! +2 bonus hearts!</green>");
+
+        SoundUtils.play(reviver, Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 1.0f, 1.0f);
+        SoundUtils.play(target, Sound.ITEM_TOTEM_USE, 1.0f, 1.0f);
+
+        // Visual effect
+        target.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, target.getLocation().add(0, 1, 0), 50, 0.5, 1, 0.5, 0.1);
+    }
+
+    /**
+     * Check if a player can be targeted for revive (has 0 lives, same team, not already revived)
+     */
+    public boolean canBeRevived(Player reviver, Player target) {
+        GameSession session = GameManager.getInstance().getPlayerSession(reviver);
+        if (session == null) return false;
+
+        Team reviverTeam = session.getPlayerTeam(reviver);
+        Team targetTeam = session.getPlayerTeam(target);
+        if (reviverTeam == null || targetTeam == null) return false;
+        if (reviverTeam.getTeamNumber() != targetTeam.getTeamNumber()) return false;
+
+        CashClashPlayer targetCcp = session.getCashClashPlayer(target.getUniqueId());
+        if (targetCcp == null || targetCcp.getLives() > 0) return false;
+
+        return !playersRevivedThisRound.contains(target.getUniqueId());
     }
 
     // ==================== UTILITY METHODS ====================
@@ -512,10 +717,27 @@ public class CustomItemManager {
         medicPouchCooldown.remove(playerId);
         invisCloakCooldown.remove(playerId);
         invisCloakUsesRemaining.remove(playerId);
+
+        // Restore armor if invis was active
+        ItemStack[] storedArmor = invisCloakStoredArmor.remove(playerId);
+        if (storedArmor != null) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                player.getInventory().setArmorContents(storedArmor);
+            }
+        }
         invisCloakActive.remove(playerId);
 
-        BukkitTask task = invisCloakTasks.remove(playerId);
-        if (task != null) task.cancel();
+        BukkitTask invisTask = invisCloakTasks.remove(playerId);
+        if (invisTask != null) invisTask.cancel();
+
+        // Reset respawn anchor tracking
+        respawnAnchorsUsedThisRound.remove(playerId);
+        playersRevivedThisRound.remove(playerId);
+
+        BukkitTask reviveTask = respawnAnchorTasks.remove(playerId);
+        if (reviveTask != null) reviveTask.cancel();
+        respawnAnchorTargets.remove(playerId);
     }
 
     public void cleanup() {
@@ -524,7 +746,7 @@ public class CustomItemManager {
 
         bouncePadTeams.keySet().forEach(loc -> {
             Block block = loc.getBlock();
-            if (block.getType() == Material.HEAVY_WEIGHTED_PRESSURE_PLATE) {
+            if (block.getType() == Material.SLIME_BLOCK) {
                 block.setType(Material.AIR);
             }
         });
@@ -541,6 +763,13 @@ public class CustomItemManager {
         invisCloakTasks.values().forEach(BukkitTask::cancel);
         invisCloakTasks.clear();
         invisCloakActive.clear();
+        invisCloakStoredArmor.clear();
+
+        respawnAnchorTasks.values().forEach(BukkitTask::cancel);
+        respawnAnchorTasks.clear();
+        respawnAnchorTargets.clear();
+        respawnAnchorsUsedThisRound.clear();
+        playersRevivedThisRound.clear();
     }
 }
 

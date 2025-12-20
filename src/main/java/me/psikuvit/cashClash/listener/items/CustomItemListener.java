@@ -1,7 +1,10 @@
 package me.psikuvit.cashClash.listener.items;
 
-import me.psikuvit.cashClash.shop.items.CustomItemType;
+import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.manager.CustomItemManager;
+import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -33,7 +36,7 @@ public class CustomItemListener implements Listener {
         ItemStack item = event.getItem();
         if (item == null || !item.hasItemMeta()) return;
 
-        CustomItemType type = manager.getCustomItemType(item);
+        CustomItem type = manager.getCustomItemType(item);
         if (type == null) return;
 
         Action action = event.getAction();
@@ -42,12 +45,20 @@ public class CustomItemListener implements Listener {
             case GRENADE -> {
                 if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                     event.setCancelled(true);
+                    if (isInShoppingPhase(player)) {
+                        Messages.send(player, "<red>You cannot use grenades during the shopping phase!</red>");
+                        return;
+                    }
                     manager.throwGrenade(player, item, false);
                 }
             }
             case SMOKE_CLOUD_GRENADE -> {
                 if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                     event.setCancelled(true);
+                    if (isInShoppingPhase(player)) {
+                        Messages.send(player, "<red>You cannot use grenades during the shopping phase!</red>");
+                        return;
+                    }
                     manager.throwGrenade(player, item, true);
                 }
             }
@@ -73,6 +84,10 @@ public class CustomItemListener implements Listener {
             case BOUNCE_PAD -> {
                 if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
                     event.setCancelled(true);
+                    if (isInShoppingPhase(player)) {
+                        Messages.send(player, "<red>You cannot place bounce pads during the shopping phase!</red>");
+                        return;
+                    }
                     manager.placeBouncePad(player, item, event.getClickedBlock());
                 }
             }
@@ -85,13 +100,21 @@ public class CustomItemListener implements Listener {
         }
     }
 
+    /**
+     * Checks if the player is currently in a shopping phase.
+     */
+    private boolean isInShoppingPhase(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        return session != null && session.getState().isShopping();
+    }
+
     @EventHandler
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
         if (!item.hasItemMeta()) return;
 
-        CustomItemType type = manager.getCustomItemType(item);
+        CustomItem type = manager.getCustomItemType(item);
         if (type == null) return;
 
         if (!(event.getRightClicked() instanceof Player target)) return;
@@ -116,11 +139,11 @@ public class CustomItemListener implements Listener {
         ItemStack item = attacker.getInventory().getItemInMainHand();
         if (!item.hasItemMeta()) return;
 
-        CustomItemType type = manager.getCustomItemType(item);
+        CustomItem type = manager.getCustomItemType(item);
         if (type == null) return;
 
-        switch (type) {
-            case BAG_OF_POTATOES -> manager.handleBagOfPotatoesHit(attacker, item);
+        if (type == CustomItem.BAG_OF_POTATOES) {
+            manager.handleBagOfPotatoesHit(attacker, item);
         }
     }
 
@@ -135,8 +158,8 @@ public class CustomItemListener implements Listener {
         ItemStack item = attacker.getInventory().getItemInMainHand();
         if (!item.hasItemMeta()) return;
 
-        CustomItemType type = manager.getCustomItemType(item);
-        if (type == CustomItemType.CASH_BLASTER) {
+        CustomItem type = manager.getCustomItemType(item);
+        if (type == CustomItem.CASH_BLASTER) {
             manager.handleCashBlasterHit(attacker);
         }
     }
@@ -148,11 +171,10 @@ public class CustomItemListener implements Listener {
         // Check block player is standing on
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
 
-        if (blockBelow.getType() == Material.HEAVY_WEIGHTED_PRESSURE_PLATE) {
+        if (blockBelow.getType() == Material.SLIME_BLOCK) {
             if (manager.isBouncePad(blockBelow)) {
                 manager.handleBouncePad(player, blockBelow);
             }
         }
     }
 }
-
