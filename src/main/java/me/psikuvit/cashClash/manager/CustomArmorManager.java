@@ -1,8 +1,9 @@
 package me.psikuvit.cashClash.manager;
 
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.items.CustomArmor;
+import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.shop.items.ShopItems;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -36,7 +37,6 @@ public class CustomArmorManager {
 
     // Magic Helmet tracking
     private final Map<UUID, Long> magicHelmetLastMove;
-    private final Map<UUID, Long> magicHelmetInvisUntil;
     private final Map<UUID, Long> magicHelmetCooldownUntil;
     private final Set<UUID> magicHelmetActive;
     private final Map<UUID, BukkitTask> magicHelmetDelayTask;
@@ -64,7 +64,6 @@ public class CustomArmorManager {
 
     private CustomArmorManager() {
         this.magicHelmetLastMove = new ConcurrentHashMap<>();
-        this.magicHelmetInvisUntil = new ConcurrentHashMap<>();
         this.magicHelmetCooldownUntil = new ConcurrentHashMap<>();
         this.magicHelmetActive = ConcurrentHashMap.newKeySet();
         this.magicHelmetDelayTask = new ConcurrentHashMap<>();
@@ -93,8 +92,8 @@ public class CustomArmorManager {
         return instance;
     }
 
-    private List<CustomArmor> getEquippedCustomArmor(Player p) {
-        List<CustomArmor> found = new ArrayList<>();
+    private List<CustomArmorItem> getEquippedCustomArmor(Player p) {
+        List<CustomArmorItem> found = new ArrayList<>();
         for (ItemStack is : p.getInventory().getArmorContents()) {
             if (is == null) continue;
             ItemMeta m = is.getItemMeta();
@@ -105,7 +104,7 @@ public class CustomArmorManager {
             if (val == null) continue;
 
             try {
-                CustomArmor ca = CustomArmor.valueOf(val);
+                CustomArmorItem ca = ShopItems.getCustomArmor(val);
                 found.add(ca);
             } catch (IllegalArgumentException ignored) {}
         }
@@ -114,77 +113,70 @@ public class CustomArmorManager {
 
     public int countInvestorsPieces(Player p) {
         int cnt = 0;
-        for (CustomArmor ca : getEquippedCustomArmor(p)) {
+        for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
             if (ca.isInvestorsSet()) cnt++;
         }
         return cnt;
     }
 
     public boolean hasTaxEvasion(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmor.TAX_EVASION_PANTS) return true;
+        for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmorItem.TAX_EVASION_PANTS) return true;
         }
         return false;
     }
 
     public boolean hasMagicHelmet(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmor.MAGIC_HELMET) return true;
-        }
-        return false;
-    }
-
-    public boolean hasBunnyShoes(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmor.BUNNY_SHOES) return true;
-        }
-        return false;
-    }
-
-    public boolean hasGuardianVest(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmor.GUARDIANS_VEST) return true;
-        }
-        return false;
-    }
-
-    public boolean hasFlamebringerBoots(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmor.FLAMEBRINGER_BOOTS) return true;
-        }
-        return false;
-    }
-
-    public boolean hasFlamebringerLeggings(Player p) {
-        for (CustomArmor ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmor.FLAMEBRINGER_LEGGINGS) return true;
+        for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmorItem.MAGIC_HELMET) return true;
         }
         return false;
     }
 
     public boolean hasDeathmaulerSet(Player p) {
         boolean hasChest = false, hasLegs = false;
-        for (CustomArmor ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmor.DEATHMAULER_CHESTPLATE) hasChest = true;
-            if (ca == CustomArmor.DEATHMAULER_LEGGINGS) hasLegs = true;
+        for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmorItem.DEATHMAULER_CHESTPLATE) hasChest = true;
+            if (ca == CustomArmorItem.DEATHMAULER_LEGGINGS) hasLegs = true;
         }
         return hasChest && hasLegs;
     }
 
     public boolean hasDragonSet(Player p) {
         boolean hasChest = false, hasBoots = false, hasHelmet = false;
-        for (CustomArmor ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmor.DRAGON_CHESTPLATE) hasChest = true;
-            if (ca == CustomArmor.DRAGON_BOOTS) hasBoots = true;
-            if (ca == CustomArmor.DRAGON_HELMET) hasHelmet = true;
+        for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmorItem.DRAGON_CHESTPLATE) hasChest = true;
+            if (ca == CustomArmorItem.DRAGON_BOOTS) hasBoots = true;
+            if (ca == CustomArmorItem.DRAGON_HELMET) hasHelmet = true;
         }
         return hasChest && hasBoots && hasHelmet;
+    }
+
+    public boolean hasBunnyShoes(Player p) {
+        for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmorItem.BUNNY_SHOES) return true;
+        }
+        return false;
+    }
+
+    public boolean hasGuardianVest(Player p) {
+        for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmorItem.GUARDIANS_VEST) return true;
+        }
+        return false;
+    }
+
+    public boolean hasFlamebringerLeggings(Player p) {
+        for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmorItem.FLAMEBRINGER_LEGGINGS) return true;
+        }
+        return false;
     }
 
     // ==================== MAGIC HELMET ====================
 
     public void onPlayerMove(Player p) {
-        if (!hasMagicHelmet(p)) return;
+        if (hasMagicHelmet(p)) return;
 
         UUID id = p.getUniqueId();
         long now = System.currentTimeMillis();
@@ -209,7 +201,7 @@ public class CustomArmorManager {
         BukkitTask task = SchedulerUtils.runTaskLater(() -> {
             magicHelmetDelayTask.remove(id);
 
-            if (!hasMagicHelmet(p)) return;
+            if (hasMagicHelmet(p)) return;
             if (magicHelmetActive.contains(id)) return;
 
             long currentCd = magicHelmetCooldownUntil.getOrDefault(id, 0L);
@@ -224,32 +216,9 @@ public class CustomArmorManager {
         magicHelmetDelayTask.put(id, task);
     }
 
-    /**
-     * Simple cleanup for watchers/state when callers want to clear magic-helmet related data.
-     * This does not clear the cooldown value so players can't bypass it by forcing stop.
-     */
-    public void stopMagicHelmetWatcher(Player p) {
-        if (p == null) return;
-        UUID id = p.getUniqueId();
-        magicHelmetLastMove.remove(id);
-
-        // Cancel any pending delay task
-        BukkitTask task = magicHelmetDelayTask.remove(id);
-        if (task != null) {
-            task.cancel();
-        }
-
-        // If invisible, remove effect and keep cooldown
-        if (magicHelmetActive.remove(id)) {
-            p.removePotionEffect(PotionEffectType.INVISIBILITY);
-            magicHelmetInvisUntil.remove(id);
-        }
-    }
-
     private void activateMagicHelmetInvisibility(Player p) {
         UUID id = p.getUniqueId();
         p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10 * 20, 0, false, false, false));
-        magicHelmetInvisUntil.put(id, System.currentTimeMillis() + 10_000L);
         magicHelmetActive.add(id);
 
         Messages.send(p, "<dark_purple>You turned invisible!</dark_purple>");
@@ -268,13 +237,11 @@ public class CustomArmorManager {
 
         p.removePotionEffect(PotionEffectType.INVISIBILITY);
         magicHelmetCooldownUntil.put(id, System.currentTimeMillis() + 30_000L);
-        magicHelmetInvisUntil.remove(id);
-
         Messages.send(p, "<gray>Invisibility ended. Cooldown: 30 seconds.</gray>");
     }
 
     public void onMagicHelmetRightClick(Player p) {
-        if (!hasMagicHelmet(p)) return;
+        if (hasMagicHelmet(p)) return;
         if (magicHelmetActive.contains(p.getUniqueId())) {
             cancelMagicHelmetInvisibility(p);
         }
@@ -363,7 +330,7 @@ public class CustomArmorManager {
     // ==================== DEATHMAULER'S OUTFIT ====================
 
     public void onPlayerKill(Player killer) {
-        if (!hasDeathmaulerSet(killer)) return;
+        if (hasDeathmaulerSet(killer)) return;
         UUID id = killer.getUniqueId();
 
         // Heal 4 hearts (8 HP)
@@ -392,15 +359,15 @@ public class CustomArmorManager {
         UUID id = p.getUniqueId();
         deathmaulerLastDamage.put(id, System.currentTimeMillis());
 
-        // Schedule absorption check after 5 seconds
+        // Schedule absorption check after 8 seconds without damage
         SchedulerUtils.runTaskLater(() -> {
             Long last = deathmaulerLastDamage.get(id);
             if (last == null) return;
-            if (System.currentTimeMillis() - last >= 5000L) {
+            if (System.currentTimeMillis() - last >= 8000L) {
                 p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
                 Messages.send(p, "<dark_red>Deathmauler granted 2 absorption hearts!</dark_red>");
             }
-        }, 100L);
+        }, 160L);
     }
 
     // ==================== DRAGON SET ====================
@@ -491,7 +458,7 @@ public class CustomArmorManager {
     /**
      * Calculate the price for an investor piece based on how many are already owned.
      */
-    public long getInvestorPrice(CustomArmor armor, int piecesOwned) {
+    public long getInvestorPrice(CustomArmorItem armor, int piecesOwned) {
         if (!armor.isInvestorsSet()) return armor.getBasePrice();
         // Each piece increases price by 25%
         double multiplier = Math.pow(1.25, piecesOwned);
@@ -525,7 +492,6 @@ public class CustomArmorManager {
             task.cancel();
         }
         magicHelmetActive.remove(id);
-        magicHelmetInvisUntil.remove(id);
         magicHelmetCooldownUntil.remove(id);
 
         bunnyToggleReady.remove(id);

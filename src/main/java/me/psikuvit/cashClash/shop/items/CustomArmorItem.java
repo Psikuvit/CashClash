@@ -3,46 +3,55 @@ package me.psikuvit.cashClash.shop.items;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import org.bukkit.Material;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Custom armor items (Cash Clash exclusives) with special abilities.
  * This is the unified class for custom armor - handles both shop functionality and armor abilities.
+ *
+ * SET ITEMS: Deathmauler, Dragon, Flamebringer, and Investors sets MUST be bought as complete sets.
+ * INDIVIDUAL ITEMS: Tax Evasion Pants, Magic Helmet, Bunny Shoes, Guardian's Vest can be bought separately.
  */
 public enum CustomArmorItem implements Purchasable {
-    // Investor's Set (progressive pricing - increases 25% per piece bought)
-    INVESTORS_BOOTS(Material.IRON_BOOTS, 4250, "Investor's Boots", "Rich in luck, poor in power."),
-    INVESTORS_HELMET(Material.IRON_HELMET, 4500, "Investor's Helmet", "Rich in luck, poor in power."),
-    INVESTORS_LEGGINGS(Material.IRON_LEGGINGS, 4750, "Investor's Leggings", "Rich in luck, poor in power."),
-    INVESTORS_CHESTPLATE(Material.IRON_CHESTPLATE, 5000, "Investor's Chestplate", "Rich in luck, poor in power."),
+    // Investor's Set (must buy all 4 pieces together)
+    INVESTORS_BOOTS(Material.IRON_BOOTS, 4250, "Investor's Boots", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
+    INVESTORS_HELMET(Material.IRON_HELMET, 4500, "Investor's Helmet", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
+    INVESTORS_LEGGINGS(Material.IRON_LEGGINGS, 4750, "Investor's Leggings", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
+    INVESTORS_CHESTPLATE(Material.IRON_CHESTPLATE, 5000, "Investor's Chestplate", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
 
-    // Individual pieces
-    TAX_EVASION_PANTS(Material.LEATHER_LEGGINGS, 5000, "Tax Evasion Pants", "Not even the economy can catch you."),
-    MAGIC_HELMET(Material.IRON_HELMET, 7500, "Magic Helmet", "Hide in plain profit."),
-    BUNNY_SHOES(Material.LEATHER_BOOTS, 15000, "Bunny Shoes", "Agility is the best currency."),
-    GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, 20000, "Guardian's Vest", "A second chance, bought and paid for."),
+    // Individual pieces (no set requirement)
+    TAX_EVASION_PANTS(Material.LEATHER_LEGGINGS, 5000, "Tax Evasion Pants", "Not even the economy can catch you.", null),
+    MAGIC_HELMET(Material.IRON_HELMET, 7500, "Magic Helmet", "Hide in plain profit.", null),
+    BUNNY_SHOES(Material.LEATHER_BOOTS, 15000, "Bunny Shoes", "Agility is the best currency.", null),
+    GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, 20000, "Guardian's Vest", "A second chance, bought and paid for.", null),
 
-    // Flamebringer's Set
-    FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, 15000, "Flamebringer's Boots", "Forged from the scales of a mighty dragon."),
-    FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, 20000, "Flamebringer's Leggings", "Forged from the scales of a mighty dragon."),
+    // Flamebringer's Set (must buy boots + leggings together)
+    FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, 15000, "Flamebringer's Boots", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
+    FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, 20000, "Flamebringer's Leggings", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
 
-    // Deathmauler's Outfit (Chestplate + Leggings as a set)
-    DEATHMAULER_CHESTPLATE(Material.NETHERITE_CHESTPLATE, 25000, "Deathmauler's Chestplate", "No one waits for death to have a choice in where you may lie."),
-    DEATHMAULER_LEGGINGS(Material.NETHERITE_LEGGINGS, 25000, "Deathmauler's Leggings", "No one waits for death to have a choice in where you may lie."),
+    // Deathmauler's Outfit (must buy chestplate + leggings together)
+    DEATHMAULER_CHESTPLATE(Material.NETHERITE_CHESTPLATE, 25000, "Deathmauler's Chestplate", "No one waits for death to have a choice in where you may lie.", ArmorSet.DEATHMAULER),
+    DEATHMAULER_LEGGINGS(Material.NETHERITE_LEGGINGS, 25000, "Deathmauler's Leggings", "No one waits for death to have a choice in where you may lie.", ArmorSet.DEATHMAULER),
 
-    // Dragon Set (Chestplate + Boots + Helmet)
-    DRAGON_CHESTPLATE(Material.DIAMOND_CHESTPLATE, 25000, "Dragon Chestplate", "The power of ancient dragons flows through this armor."),
-    DRAGON_BOOTS(Material.DIAMOND_BOOTS, 25000, "Dragon Boots", "The power of ancient dragons flows through this armor."),
-    DRAGON_HELMET(Material.DIAMOND_HELMET, 25000, "Dragon Helmet", "The power of ancient dragons flows through this armor.");
+    // Dragon Set (must buy helmet + chestplate + boots together)
+    DRAGON_CHESTPLATE(Material.DIAMOND_CHESTPLATE, 25000, "Dragon Chestplate", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
+    DRAGON_BOOTS(Material.DIAMOND_BOOTS, 25000, "Dragon Boots", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
+    DRAGON_HELMET(Material.DIAMOND_HELMET, 25000, "Dragon Helmet", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON);
 
     private final Material material;
     private final long price;
     private final String displayName;
     private final String lore;
+    private final ArmorSet armorSet;
 
-    CustomArmorItem(Material material, long price, String displayName, String lore) {
+    CustomArmorItem(Material material, long price, String displayName, String lore, ArmorSet armorSet) {
         this.material = material;
         this.price = price;
         this.displayName = displayName;
         this.lore = lore;
+        this.armorSet = armorSet;
     }
 
     @Override
@@ -85,6 +94,27 @@ public enum CustomArmorItem implements Purchasable {
         return lore;
     }
 
+    /**
+     * Gets the armor set this piece belongs to, or null if it's an individual piece.
+     */
+    public ArmorSet getArmorSet() {
+        return armorSet;
+    }
+
+    /**
+     * Checks if this armor piece requires buying the full set.
+     */
+    public boolean requiresFullSet() {
+        return armorSet != null;
+    }
+
+    /**
+     * Checks if this piece is an individual item (not part of a set).
+     */
+    public boolean isIndividualPiece() {
+        return armorSet == null;
+    }
+
     @Override
     public String getDescription() {
         return switch (this) {
@@ -113,27 +143,73 @@ public enum CustomArmorItem implements Purchasable {
      * Checks if this armor piece is part of the Investor's set.
      */
     public boolean isInvestorsSet() {
-        return name().startsWith("INVESTORS_");
+        return armorSet == ArmorSet.INVESTORS;
     }
 
     /**
      * Checks if this armor piece is part of the Flamebringer set.
      */
     public boolean isFlamebringerSet() {
-        return name().startsWith("FLAMEBRINGER_");
+        return armorSet == ArmorSet.FLAMEBRINGER;
     }
 
     /**
      * Checks if this armor piece is part of the Deathmauler set.
      */
     public boolean isDeathmaulerSet() {
-        return name().startsWith("DEATHMAULER_");
+        return armorSet == ArmorSet.DEATHMAULER;
     }
 
     /**
      * Checks if this armor piece is part of the Dragon set.
      */
     public boolean isDragonSet() {
-        return name().startsWith("DRAGON_");
+        return armorSet == ArmorSet.DRAGON;
+    }
+
+    // ==================== ARMOR SET ENUM ====================
+
+    /**
+     * Represents armor sets that must be purchased together.
+     */
+    public enum ArmorSet {
+        INVESTORS("Investor's Set", "All 4 pieces grant increased coin bonuses."),
+        FLAMEBRINGER("Flamebringer Set", "Boots + Leggings grant fire effects."),
+        DEATHMAULER("Deathmauler Set", "Chestplate + Leggings heal on kill."),
+        DRAGON("Dragon Set", "Helmet + Chestplate + Boots for full dragon power.");
+
+        private final String displayName;
+        private final String description;
+
+        ArmorSet(String displayName, String description) {
+            this.displayName = displayName;
+            this.description = description;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        /**
+         * Gets all armor pieces that belong to this set.
+         */
+        public List<CustomArmorItem> getPieces() {
+            return Arrays.stream(CustomArmorItem.values())
+                    .filter(item -> item.getArmorSet() == this)
+                    .collect(Collectors.toList());
+        }
+
+        /**
+         * Calculates the total price for the entire set.
+         */
+        public long getTotalPrice() {
+            return getPieces().stream()
+                    .mapToLong(CustomArmorItem::getPrice)
+                    .sum();
+        }
     }
 }
