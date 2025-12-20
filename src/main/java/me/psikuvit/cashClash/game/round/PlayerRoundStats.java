@@ -42,10 +42,6 @@ public class PlayerRoundStats {
         }
     }
 
-    public void setLives(int lives) {
-        this.lives = Math.max(0, lives);
-    }
-
     public long getLastDamageTime() {
         return lastDamageTime;
     }

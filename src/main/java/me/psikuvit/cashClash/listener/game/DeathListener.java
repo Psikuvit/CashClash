@@ -195,7 +195,7 @@ public class DeathListener implements Listener {
         // Delegate bonus logic (FIRST_BLOOD, RAMPAGE, COMEBACK_KID) to BonusManager
         BonusManager bonusManager = session.getBonusManager();
         if (bonusManager != null) {
-            bonusManager.onKill(killer.getUuid(), victim.getUuid());
+            bonusManager.onKill(killer.getUuid());
         }
 
         // Calculate base rewards

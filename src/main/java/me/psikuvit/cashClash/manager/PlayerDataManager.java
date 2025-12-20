@@ -33,7 +33,6 @@ public class PlayerDataManager {
     public static void init(CashClashPlugin plugin) throws SQLException {
         if (instance != null) return;
 
-
         // pick provider from config
         var cfg = plugin.getConfig();
         String type = cfg.getString("storage.type", "sqlite").toLowerCase();

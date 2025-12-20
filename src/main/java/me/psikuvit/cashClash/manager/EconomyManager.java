@@ -44,8 +44,7 @@ public class EconomyManager {
         };
     }
 
-    public static boolean transferMoney(CashClashPlayer sender, CashClashPlayer receiver,
-                                       long amount, GameSession session) {
+    public static boolean transferMoney(CashClashPlayer sender, CashClashPlayer receiver, long amount, GameSession session) {
         if (!sender.canAfford(amount)) {
             return false;
         }

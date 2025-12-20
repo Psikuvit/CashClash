@@ -4,11 +4,8 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
-
-import java.util.UUID;
 
 /**
  * Simple manager to centralize tab-list behavior per context (lobby / game session).

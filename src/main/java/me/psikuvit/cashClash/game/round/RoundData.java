@@ -1,11 +1,7 @@
 package me.psikuvit.cashClash.game.round;
 
-import me.psikuvit.cashClash.game.CashQuakeEvent;
-
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -15,9 +11,7 @@ import java.util.UUID;
  */
 public class RoundData {
 
-    private final int roundNumber;
     private final Map<UUID, PlayerRoundStats> stats;
-    private final List<CashQuakeEvent> activeEvents;
     private UUID firstBloodPlayer;
 
     /**
@@ -26,9 +20,7 @@ public class RoundData {
      */
 
     public RoundData(int roundNumber, Collection<UUID> players) {
-        this.roundNumber = roundNumber;
         this.stats = new HashMap<>(players.size());
-        this.activeEvents = new ArrayList<>(4);
 
         int startingLives = roundNumber <= 3 ? 3 : 1;
         for (UUID uuid : players) {
@@ -73,11 +65,6 @@ public class RoundData {
         return s != null && s.isAlive();
     }
 
-    public int getLives(UUID player) {
-        PlayerRoundStats s = getStats(player);
-        return s == null ? 0 : s.getLives();
-    }
-
     public int getKills(UUID player) {
         PlayerRoundStats s = getStats(player);
         return s == null ? 0 : s.getKills();
@@ -106,23 +93,6 @@ public class RoundData {
         if (s != null) {
             s.markSurvivor();
         }
-    }
-
-    public boolean isSurvivor(UUID player) {
-        PlayerRoundStats s = getStats(player);
-        return s != null && s.isSurvivor();
-    }
-
-    public void addEvent(CashQuakeEvent event) {
-        activeEvents.add(event);
-    }
-
-    public List<CashQuakeEvent> getActiveEvents() {
-        return new ArrayList<>(activeEvents);
-    }
-
-    public int getRoundNumber() {
-        return roundNumber;
     }
 
     public UUID getMostKillsPlayer() {

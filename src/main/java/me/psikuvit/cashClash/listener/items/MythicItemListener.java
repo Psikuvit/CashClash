@@ -75,7 +75,7 @@ public class MythicItemListener implements Listener {
             case GOBLIN_SPEAR -> {
                 if (isRightClick) {
                     event.setCancelled(true);
-                    manager.throwGoblinSpear(player, item);
+                    manager.throwGoblinSpear(player);
                 }
             }
             case WARDEN_GLOVES -> {
@@ -119,7 +119,7 @@ public class MythicItemListener implements Listener {
                 case CARLS_BATTLEAXE -> {
                     // Check if attack is fully charged (0.9+ = fully charged)
                     if (attacker.getAttackCooldown() >= 0.9f) {
-                        manager.handleCarlsChargedAttack(attacker, victim);
+                        manager.handleCarlsChargedAttack(attacker);
 
                         // Check for critical hit (must be falling and not on ground)
                         if (attacker.getFallDistance() > 0 && !attacker.isOnGround()) {
@@ -243,9 +243,7 @@ public class MythicItemListener implements Listener {
     public void onPlayerTakeKnockback(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player victim)) return;
 
-        // Check if victim has Coin Cleaver (Sturdy Feet - no knockback)
         if (manager.hasCoinCleaverNoKnockback(victim)) {
-            // Reset velocity on next tick to cancel knockback
             Bukkit.getScheduler().runTask(CashClashPlugin.getInstance(), () -> {
                 if (victim.isOnline()) {
                     victim.setVelocity(victim.getVelocity().setX(0).setZ(0));

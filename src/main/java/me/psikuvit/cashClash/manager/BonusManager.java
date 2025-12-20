@@ -94,7 +94,7 @@ public class BonusManager {
     /**
      * Called when a player gets a kill. Handles FIRST_BLOOD and RAMPAGE bonuses.
      */
-    public void onKill(UUID killer, UUID victim) {
+    public void onKill(UUID killer) {
         RoundData roundData = session.getCurrentRoundData();
         if (roundData == null) {
             return;
@@ -358,12 +358,14 @@ public class BonusManager {
         Player player = Bukkit.getPlayer(playerUuid);
         if (player != null && player.isOnline()) {
             String bonusName = formatBonusName(bonusType);
-            Messages.send(player, "<gold><bold>⭐ BONUS!</bold></gold> <yellow>" + bonusName + "</yellow> <gray>+" + formatCoins(bonusType.getReward()) + " coins</gray>");
+            Messages.send(player, "");
+            Messages.send(player, "<dark_purple><bold>⭐ BONUS!</bold></dark_purple> <light_purple>" + bonusName + "</light_purple>");
+            Messages.send(player, "<gray>+$" + formatCoins(bonusType.getReward()) + " coins</gray>");
+            Messages.send(player, "");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         }
 
-        // Broadcast to session
-        Messages.broadcast(session.getPlayers(), "<gold>" + getPlayerName(playerUuid) + "</gold> <gray>earned</gray> <yellow>" + formatBonusName(bonusType) + "</yellow> <gray>bonus!</gray>");
+        Messages.broadcast(session.getPlayers(), "<dark_purple>" + getPlayerName(playerUuid) + "</dark_purple> <dark_gray>earned</dark_gray> <light_purple>" + formatBonusName(bonusType) + "</light_purple>");
     }
 
     private void stopTasks() {

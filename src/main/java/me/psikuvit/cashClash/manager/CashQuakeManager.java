@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.CashQuakeEvent;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
@@ -19,6 +20,7 @@ import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
@@ -37,12 +39,9 @@ import java.util.UUID;
  */
 public class CashQuakeManager {
 
-    private static final int MIN_GUARANTEED_EVENTS = 2;
-    private static final int MAX_EVENTS_PER_GAME = 10;
-    private static final int MAX_EVENTS_PER_ROUND = 2;
-
     private final GameSession session;
     private final Random random;
+    private final ConfigManager cfg;
     private BukkitTask eventTask;
     private int eventsThisGame;
     private int eventsThisRound;
@@ -72,6 +71,7 @@ public class CashQuakeManager {
     public CashQuakeManager(GameSession session) {
         this.session = session;
         this.random = new Random();
+        this.cfg = ConfigManager.getInstance();
         this.brokenGearStorage = new HashMap<>();
         this.brokenGearRestoreTasks = new HashMap<>();
         this.lifeStealActive = new HashSet<>();
@@ -86,34 +86,35 @@ public class CashQuakeManager {
         }
 
         eventTask = SchedulerUtils.runTaskTimer(() -> {
-            if (!session.getState().isCombat()) {
-                return;
-            }
-            if (eventsThisGame >= MAX_EVENTS_PER_GAME || eventsThisRound >= MAX_EVENTS_PER_ROUND) {
-                return;
-            }
+            if (!session.getState().isCombat()) return;
+
+            // Skip events in Round 1
+            int currentRound = session.getCurrentRound();
+            if (currentRound == cfg.getFirstRound()) return;
+
+            if (eventsThisGame >= cfg.getMaxEventsPerGame() ||
+                    eventsThisRound >= cfg.getMaxEventsPerRound()) return;
 
             boolean forceEvent = false;
-            if (guaranteedEventsTriggered < MIN_GUARANTEED_EVENTS) {
-                int currentRound = session.getCurrentRound();
+            if (guaranteedEventsTriggered < cfg.getMinGuaranteedEvents()) {
                 if (currentRound >= 3) {
                     forceEvent = random.nextDouble() < 0.5;
                 }
-                if (currentRound == 5) {
+                if (currentRound == cfg.getTotalRounds()) {
                     forceEvent = true;
                 }
             }
 
-            if (forceEvent || random.nextDouble() < 0.20) {
+            // Higher chance for events in rounds 2-5
+            if (forceEvent || random.nextDouble() < cfg.getEventBaseChance()) {
                 triggerRandomEvent();
             }
-        }, 0, 600L); // Check every 30 seconds
+        }, 0, cfg.getEventCheckIntervalTicks());
     }
 
     private void triggerRandomEvent() {
         CashQuakeEvent event = random.nextBoolean() ? CashQuakeEvent.SUPPLY_DROP : getRandomCashQuakeEvent();
         executeEvent(event);
-        session.getCurrentRoundData().addEvent(event);
         eventsThisGame++;
         eventsThisRound++;
         guaranteedEventsTriggered++;
@@ -391,8 +392,7 @@ public class CashQuakeManager {
                 Messages.send(p, "<red>Your " + name + " broke temporarily!</red>");
                 SoundUtils.play(p, Sound.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
 
-                int finalSlot = slot;
-                BukkitTask task = SchedulerUtils.runTaskLater(() -> restoreBrokenGear(uuid, finalSlot), 30 * 20L);
+                BukkitTask task = SchedulerUtils.runTaskLater(() -> restoreBrokenGear(uuid, slot), 30 * 20L);
                 brokenGearRestoreTasks.put(uuid, task);
             }
         }
@@ -544,6 +544,12 @@ public class CashQuakeManager {
             }
         }
 
+        // Fallback if no valid drop location found
+        if (dropLoc == null) {
+            dropLoc = world.getSpawnLocation();
+            dropLoc.setY(world.getHighestBlockYAt(dropLoc) + 1);
+        }
+
         Messages.broadcast(session.getPlayers(),
                 prefix + " <yellow><bold>📦 SUPPLY DROP!</bold></yellow> <green>Rich Man Bobby dropped his riches!</green>");
         Messages.broadcast(session.getPlayers(),
@@ -569,10 +575,9 @@ public class CashQuakeManager {
                 var meta = moneyItem.getItemMeta();
                 if (meta != null) {
                     meta.displayName(Messages.parse("<gold><bold>$" + String.format("%,d", money) + " Coins</bold></gold>"));
-                    meta.lore(List.of(Messages.parse("<yellow>Amount: " + money + "</yellow>")));
+                    meta.lore(Messages.wrapLines("<yellow>Amount: " + money + "</yellow>"));
 
-                    // Store amount in PDC so clicks can retrieve the value reliably
-                    meta.getPersistentDataContainer().set(me.psikuvit.cashClash.util.Keys.SUPPLY_DROP_AMOUNT, org.bukkit.persistence.PersistentDataType.INTEGER, money);
+                    meta.getPersistentDataContainer().set(Keys.SUPPLY_DROP_AMOUNT, PersistentDataType.INTEGER, money);
 
                     moneyItem.setItemMeta(meta);
                 }
@@ -608,12 +613,12 @@ public class CashQuakeManager {
         }
         // Give coins to player
         if (amount <= 0) return;
-         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
-         if (ccp != null) {
-             ccp.addCoins(amount);
-             Messages.send(player, "<gold>+$" + String.format("%,d", amount) + " from supply drop!</gold>");
-             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
-         }
+        CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
+        if (ccp != null) {
+            ccp.addCoins(amount);
+            Messages.send(player, "<gold>+$" + String.format("%,d", amount) + " from supply drop!</gold>");
+            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+        }
         // Remove one emerald instance from inventory (consume)
         player.getInventory().removeItem(new ItemStack(Material.EMERALD, 1));
     }
