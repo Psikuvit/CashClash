@@ -1,8 +1,7 @@
 package me.psikuvit.cashClash.gui;
 
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.shop.items.CustomItemType;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.manager.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -12,11 +11,12 @@ import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
-import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
-import me.psikuvit.cashClash.util.Keys;
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.enums.InvestmentType;
+import me.psikuvit.cashClash.util.items.GuiItemUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -26,11 +26,10 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 public class ShopGUI {
 
@@ -56,14 +55,14 @@ public class ShopGUI {
         }
 
         // Category items - Row 2
-        inv.setItem(20, createCategoryIcon(Material.IRON_AXE, ShopCategory.WEAPONS));
-        inv.setItem(21, createCategoryIcon(Material.IRON_CHESTPLATE, ShopCategory.ARMOR));
-        inv.setItem(22, createCategoryIcon(Material.GOLDEN_APPLE, ShopCategory.FOOD));
-        inv.setItem(23, createCategoryIcon(Material.ENDER_PEARL, ShopCategory.UTILITY));
-        inv.setItem(24, createCategoryIcon(Material.NAME_TAG, ShopCategory.CUSTOM_ITEMS));
+        inv.setItem(20, GuiItemUtils.createCategoryIcon(Material.IRON_AXE, ShopCategory.WEAPONS));
+        inv.setItem(21, GuiItemUtils.createCategoryIcon(Material.DIAMOND_CHESTPLATE, ShopCategory.ARMOR));
+        inv.setItem(22, GuiItemUtils.createCategoryIcon(Material.GOLDEN_APPLE, ShopCategory.FOOD));
+        inv.setItem(23, GuiItemUtils.createCategoryIcon(Material.ENDER_PEARL, ShopCategory.UTILITY));
+        inv.setItem(24, GuiItemUtils.createCategoryIcon(Material.NAME_TAG, ShopCategory.CUSTOM_ITEMS));
 
         // Row 3
-        inv.setItem(30, createCategoryIcon(Material.ENCHANTING_TABLE, ShopCategory.ENCHANTS));
+        inv.setItem(30, GuiItemUtils.createCategoryIcon(Material.ENCHANTING_TABLE, ShopCategory.ENCHANTS));
 
         ItemStack bundle = new ItemStack(Material.RED_BUNDLE);
         BundleMeta bundleMeta = (BundleMeta) bundle.getItemMeta();
@@ -77,15 +76,17 @@ public class ShopGUI {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null) {
             List<MythicItem> availableMythics = MythicItemManager.getInstance().getAvailableLegendaries(session);
-            Team playerTeam = session.getTeam1().hasPlayer(player.getUniqueId()) ? session.getTeam1() : session.getTeam2();
-            boolean teamHasMythic = !MythicItemManager.getInstance().canTeamPurchaseMythic(session, playerTeam);
-            MythicItem ownedMythic = MythicItemManager.getInstance().getTeamMythic(session, playerTeam);
+            UUID playerUuid = player.getUniqueId();
+            boolean playerHasMythic = !MythicItemManager.getInstance().canPlayerPurchaseMythic(session, playerUuid);
+            MythicItem ownedMythic = MythicItemManager.getInstance().getPlayerMythic(session, playerUuid);
 
             // Legendaries header
             ItemStack legendHeader = new ItemStack(Material.DRAGON_HEAD);
             ItemMeta legendHeaderMeta = legendHeader.getItemMeta();
-            legendHeaderMeta.displayName(Messages.parse("<light_purple><bold>✦ MYTHIC WEAPONS ✦</bold></light_purple>"));
-            List<Component> headerLore = new ArrayList<>(Messages.wrapLines("<gray>Only <red>ONE</red> mythic per team per game!</gray>"));
+            legendHeaderMeta.displayName(Messages.parse("<dark_purple><bold>✦ MYTHIC WEAPONS ✦</bold></dark_purple>"));
+            List<Component> headerLore = new ArrayList<>();
+            headerLore.add(Component.empty());
+            headerLore.addAll(Messages.wrapLines("<gray>One per player. Each mythic is unique per game.</gray>"));
             legendHeaderMeta.lore(headerLore);
             legendHeaderMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             legendHeader.setItemMeta(legendHeaderMeta);
@@ -94,90 +95,23 @@ public class ShopGUI {
             int[] legendSlots = {38, 39, 40, 41, 42};
             for (int i = 0; i < availableMythics.size() && i < legendSlots.length; i++) {
                 MythicItem mythic = availableMythics.get(i);
-                inv.setItem(legendSlots[i], createMythicShopItem(mythic, teamHasMythic, ownedMythic));
+                boolean mythicTaken = !MythicItemManager.getInstance().isMythicAvailable(session, mythic);
+                UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(session, mythic);
+                inv.setItem(legendSlots[i], GuiItemUtils.createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid));
             }
         }
 
 
         // Balance display
         long coins = getPlayerCoins(player);
-        inv.setItem(53, createCoinDisplay(coins));
+        inv.setItem(53, GuiItemUtils.createCoinDisplay(coins));
 
         // Cancel button
-        inv.setItem(45, createCancelButton());
+        inv.setItem(45, GuiItemUtils.createCancelButton());
 
         player.openInventory(inv);
     }
 
-    private static ItemStack createCategoryIcon(Material material, ShopCategory category) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(Messages.parse("<yellow>" + category.getDisplayName() + "</yellow>"));
-        meta.lore(Messages.wrapLines("<gray>Click to browse items</gray>"));
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        item.setItemMeta(meta);
-        return item;
-    }
-
-    private static ItemStack createMythicShopItem(MythicItem mythic, boolean teamHasMythic, MythicItem ownedMythic) {
-        ItemStack item = new ItemStack(mythic.getMaterial());
-        ItemMeta meta = item.getItemMeta();
-
-        boolean isOwned = ownedMythic == mythic;
-
-        if (isOwned) {
-            meta.displayName(Messages.parse("<green><bold>" + mythic.getDisplayName() + "</bold> <gray>(Owned)</gray></green>"));
-            List<Component> lore = new ArrayList<>();
-            lore.add(Messages.parse("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>"));
-            lore.add(Component.empty());
-            lore.addAll(Messages.wrapLines(mythic.getDescription()));
-            lore.add(Component.empty());
-            lore.addAll(Messages.wrapLines("<green>Your team owns this mythic!</green>"));
-            meta.lore(lore);
-        } else if (teamHasMythic) {
-            meta.displayName(Messages.parse("<red><bold>" + mythic.getDisplayName() + "</bold> <gray>(Locked)</gray></red>"));
-            List<Component> lore = new ArrayList<>();
-            lore.add(Messages.parse("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>"));
-            lore.add(Component.empty());
-            lore.addAll(Messages.wrapLines(mythic.getDescription()));
-            lore.add(Component.empty());
-            lore.addAll(Messages.wrapLines("<red>Your team already owns a mythic!</red>"));
-            meta.lore(lore);
-        } else {
-            meta.displayName(Messages.parse("<light_purple><bold>" + mythic.getDisplayName() + "</bold></light_purple>"));
-            List<Component> lore = new ArrayList<>();
-            lore.add(Messages.parse("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>"));
-            lore.add(Component.empty());
-            lore.add(Messages.parse("<gray>Price: <gold>$" + String.format("%,d", mythic.getPrice()) + "</gold></gray>"));
-            lore.add(Component.empty());
-            lore.addAll(Messages.wrapLines(mythic.getDescription()));
-            lore.add(Component.empty());
-            lore.addAll(Messages.wrapLines("<yellow>Click to purchase!</yellow>"));
-            meta.lore(lore);
-        }
-
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, mythic.name());
-        item.setItemMeta(meta);
-
-        return item;
-    }
-
-    private static ItemStack createCancelButton() {
-        ItemStack cancel = new ItemStack(Material.BARRIER);
-        ItemMeta meta = cancel.getItemMeta();
-        meta.displayName(Messages.parse("<red>Cancel</red>"));
-        cancel.setItemMeta(meta);
-        return cancel;
-    }
-
-    private static ItemStack createCoinDisplay(long coins) {
-        ItemStack coinItem = new ItemStack(Material.GOLD_NUGGET);
-        ItemMeta meta = coinItem.getItemMeta();
-        meta.displayName(Messages.parse("<green>Coins: <gold>$" + String.format("%,d", coins) + "</gold></green>"));
-        coinItem.setItemMeta(meta);
-        return coinItem;
-    }
 
     private static long getPlayerCoins(Player player) {
         var session = GameManager.getInstance().getPlayerSession(player);
@@ -218,164 +152,158 @@ public class ShopGUI {
         boolean hasIronSword = hasItem(player, Material.IRON_SWORD);
         boolean hasDiamondSword = hasItem(player, Material.DIAMOND_SWORD);
         if (hasDiamondSword) {
-            inv.setItem(23, createUpgradableItem(WeaponItem.DIAMOND_SWORD, true));
+            inv.setItem(23, GuiItemUtils.createUpgradableItem(WeaponItem.DIAMOND_SWORD, true));
         } else if (hasIronSword) {
-            inv.setItem(23, createUpgradableItem(WeaponItem.DIAMOND_SWORD, false));
+            inv.setItem(23, GuiItemUtils.createUpgradableItem(WeaponItem.DIAMOND_SWORD, false));
         } else {
-            inv.setItem(23, createUpgradableItem(WeaponItem.IRON_SWORD, false));
+            inv.setItem(23, GuiItemUtils.createUpgradableItem(WeaponItem.IRON_SWORD, false));
         }
 
         boolean hasIronAxe = hasItem(player, Material.IRON_AXE);
         boolean hasDiamondAxe = hasItem(player, Material.DIAMOND_AXE);
         if (hasDiamondAxe) {
-            inv.setItem(21, createUpgradableItem(WeaponItem.DIAMOND_AXE, true));
+            inv.setItem(21, GuiItemUtils.createUpgradableItem(WeaponItem.DIAMOND_AXE, true));
         } else if (hasIronAxe) {
-            inv.setItem(21, createUpgradableItem(WeaponItem.DIAMOND_AXE, false));
+            inv.setItem(21, GuiItemUtils.createUpgradableItem(WeaponItem.DIAMOND_AXE, false));
         } else {
-            inv.setItem(21, createUpgradableItem(WeaponItem.IRON_AXE, false));
+            inv.setItem(21, GuiItemUtils.createUpgradableItem(WeaponItem.IRON_AXE, false));
         }
     }
 
     private static void populateArmorCategory(Inventory inv, Player player) {
+        // Check round and diamond piece count for limit
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        int currentRound = session != null ? session.getCurrentRound() : 1;
+
+        // Count current diamond armor pieces
+        int diamondCount = 0;
+        if (hasItem(player, Material.DIAMOND_HELMET)) diamondCount++;
+        if (hasItem(player, Material.DIAMOND_CHESTPLATE)) diamondCount++;
+        if (hasItem(player, Material.DIAMOND_LEGGINGS)) diamondCount++;
+        if (hasItem(player, Material.DIAMOND_BOOTS)) diamondCount++;
+
+        // Diamond limit: max pieces until unlock round
+        ConfigManager cfg = ConfigManager.getInstance();
+        boolean diamondLimitReached = currentRound < cfg.getDiamondUnlockRound()
+                && diamondCount >= cfg.getMaxDiamondPiecesEarly();
+
         boolean hasIronHelmet = hasItem(player, Material.IRON_HELMET);
         boolean hasDiamondHelmet = hasItem(player, Material.DIAMOND_HELMET);
-       if (hasDiamondHelmet) {
-            inv.setItem(10, createUpgradableItem(ArmorItem.DIAMOND_HELMET, true));
+        if (hasDiamondHelmet) {
+            inv.setItem(10, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_HELMET, true));
         } else if (hasIronHelmet) {
-            inv.setItem(10, createUpgradableItem(ArmorItem.DIAMOND_HELMET, false));
+            if (diamondLimitReached) {
+                inv.setItem(10, GuiItemUtils.createLockedDiamondItem(ArmorItem.DIAMOND_HELMET, currentRound));
+            } else {
+                inv.setItem(10, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_HELMET, false));
+            }
         } else {
-            inv.setItem(10, createUpgradableItem(ArmorItem.IRON_HELMET, false));
+            inv.setItem(10, GuiItemUtils.createUpgradableItem(ArmorItem.IRON_HELMET, false));
         }
 
         boolean hasIronChest = hasItem(player, Material.IRON_CHESTPLATE);
         boolean hasDiamondChest = hasItem(player, Material.DIAMOND_CHESTPLATE);
         if (hasDiamondChest) {
-            inv.setItem(11, createUpgradableItem(ArmorItem.DIAMOND_CHESTPLATE, true));
+            inv.setItem(11, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_CHESTPLATE, true));
         } else if (hasIronChest) {
-            inv.setItem(11, createUpgradableItem(ArmorItem.DIAMOND_CHESTPLATE, false));
+            if (diamondLimitReached) {
+                inv.setItem(11, GuiItemUtils.createLockedDiamondItem(ArmorItem.DIAMOND_CHESTPLATE, currentRound));
+            } else {
+                inv.setItem(11, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_CHESTPLATE, false));
+            }
         } else {
-            inv.setItem(11, createUpgradableItem(ArmorItem.IRON_CHESTPLATE, false));
+            inv.setItem(11, GuiItemUtils.createUpgradableItem(ArmorItem.IRON_CHESTPLATE, false));
         }
 
         // Leggings (slot 12)
         boolean hasIronLegs = hasItem(player, Material.IRON_LEGGINGS);
         boolean hasDiamondLegs = hasItem(player, Material.DIAMOND_LEGGINGS);
         if (hasDiamondLegs) {
-            inv.setItem(12, createUpgradableItem(ArmorItem.DIAMOND_LEGGINGS, true));
+            inv.setItem(12, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_LEGGINGS, true));
         } else if (hasIronLegs) {
-            inv.setItem(12, createUpgradableItem(ArmorItem.DIAMOND_LEGGINGS, false));
+            if (diamondLimitReached) {
+                inv.setItem(12, GuiItemUtils.createLockedDiamondItem(ArmorItem.DIAMOND_LEGGINGS, currentRound));
+            } else {
+                inv.setItem(12, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_LEGGINGS, false));
+            }
         } else {
-            inv.setItem(12, createUpgradableItem(ArmorItem.IRON_LEGGINGS, false));
+            inv.setItem(12, GuiItemUtils.createUpgradableItem(ArmorItem.IRON_LEGGINGS, false));
         }
 
         // Boots (slot 13)
         boolean hasIronBoots = hasItem(player, Material.IRON_BOOTS);
         boolean hasDiamondBoots = hasItem(player, Material.DIAMOND_BOOTS);
         if (hasDiamondBoots) {
-            inv.setItem(13, createUpgradableItem(ArmorItem.DIAMOND_BOOTS, true));
+            inv.setItem(13, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_BOOTS, true));
         } else if (hasIronBoots) {
-            inv.setItem(13, createUpgradableItem(ArmorItem.DIAMOND_BOOTS, false));
+            if (diamondLimitReached) {
+                inv.setItem(13, GuiItemUtils.createLockedDiamondItem(ArmorItem.DIAMOND_BOOTS, currentRound));
+            } else {
+                inv.setItem(13, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_BOOTS, false));
+            }
         } else {
-            inv.setItem(13, createUpgradableItem(ArmorItem.IRON_BOOTS, false));
+            inv.setItem(13, GuiItemUtils.createUpgradableItem(ArmorItem.IRON_BOOTS, false));
         }
 
-        // Special/custom armor pieces
-        inv.setItem(19, createShopItem(player, CustomArmorItem.INVESTORS_HELMET));
-        inv.setItem(20, createShopItem(player, CustomArmorItem.INVESTORS_CHESTPLATE));
-        inv.setItem(21, createShopItem(player, CustomArmorItem.INVESTORS_LEGGINGS));
-        inv.setItem(22, createShopItem(player, CustomArmorItem.INVESTORS_BOOTS));
+        // Row 3: Armor Sets (buy as a complete set)
+        inv.setItem(19, GuiItemUtils.createArmorSetIcon(CustomArmorItem.ArmorSet.INVESTORS, player));
+        inv.setItem(20, GuiItemUtils.createArmorSetIcon(CustomArmorItem.ArmorSet.FLAMEBRINGER, player));
+        inv.setItem(21, GuiItemUtils.createArmorSetIcon(CustomArmorItem.ArmorSet.DEATHMAULER, player));
+        inv.setItem(22, GuiItemUtils.createArmorSetIcon(CustomArmorItem.ArmorSet.DRAGON, player));
 
-        inv.setItem(29, createShopItem(player, CustomArmorItem.MAGIC_HELMET));
-        inv.setItem(30, createShopItem(player, CustomArmorItem.GUARDIANS_VEST));
-        inv.setItem(38, createShopItem(player, CustomArmorItem.TAX_EVASION_PANTS));
-        inv.setItem(39, createShopItem(player, CustomArmorItem.BUNNY_SHOES));
-
-        inv.setItem(15, ItemStack.of(Material.BARRIER));
-        inv.setItem(24, createShopItem(player, CustomArmorItem.DEATHMAULER_CHESTPLATE));
-        inv.setItem(33, createShopItem(player, CustomArmorItem.DEATHMAULER_LEGGINGS));
-
-        inv.setItem(16, createShopItem(player, CustomArmorItem.DRAGON_HELMET));
-        inv.setItem(25, createShopItem(player, CustomArmorItem.DRAGON_CHESTPLATE));
-        inv.setItem(34, ItemStack.of(Material.BARRIER));
-        inv.setItem(43, createShopItem(player, CustomArmorItem.DRAGON_BOOTS));
+        // Row 4: Individual Pieces
+        inv.setItem(28, GuiItemUtils.createShopItem(player, CustomArmorItem.MAGIC_HELMET));
+        inv.setItem(29, GuiItemUtils.createShopItem(player, CustomArmorItem.GUARDIANS_VEST));
+        inv.setItem(30, GuiItemUtils.createShopItem(player, CustomArmorItem.TAX_EVASION_PANTS));
+        inv.setItem(31, GuiItemUtils.createShopItem(player, CustomArmorItem.BUNNY_SHOES));
     }
 
+
     private static void populateFoodCategory(Inventory inv, Player player) {
-        inv.setItem(19, createShopItem(player, FoodItem.BREAD, 4));
-        inv.setItem(20, createShopItem(player, FoodItem.COOKED_MUTTON, 4));
-        inv.setItem(21, createShopItem(player, FoodItem.STEAK, 4));
-        inv.setItem(22, createShopItem(player, FoodItem.PORKCHOP, 4));
-        inv.setItem(23, createShopItem(player, FoodItem.GOLDEN_CARROT, 4));
-        inv.setItem(25, createShopItem(player, FoodItem.GOLDEN_APPLE));
-        inv.setItem(28, createShopItem(player, FoodItem.SPEED_CARROT, 2));
-        inv.setItem(29, createShopItem(player, FoodItem.GOLDEN_CHICKEN, 2));
-        inv.setItem(30, createShopItem(player, FoodItem.COOKIE_OF_LIFE, 2));
-        inv.setItem(31, createShopItem(player, FoodItem.SUNSCREEN, 2));
-        inv.setItem(32, createShopItem(player, FoodItem.CAN_OF_SPINACH, 2));
-        inv.setItem(34, createShopItem(player, FoodItem.ENCHANTED_GOLDEN_APPLE));
+        inv.setItem(19, GuiItemUtils.createShopItem(player, FoodItem.BREAD, 4));
+        inv.setItem(20, GuiItemUtils.createShopItem(player, FoodItem.COOKED_MUTTON, 4));
+        inv.setItem(21, GuiItemUtils.createShopItem(player, FoodItem.STEAK, 4));
+        inv.setItem(22, GuiItemUtils.createShopItem(player, FoodItem.PORKCHOP, 4));
+        inv.setItem(23, GuiItemUtils.createShopItem(player, FoodItem.GOLDEN_CARROT, 4));
+        inv.setItem(25, GuiItemUtils.createShopItem(player, FoodItem.GOLDEN_APPLE));
+        inv.setItem(28, GuiItemUtils.createShopItem(player, FoodItem.SPEED_CARROT, 2));
+        inv.setItem(29, GuiItemUtils.createShopItem(player, FoodItem.GOLDEN_CHICKEN, 2));
+        inv.setItem(30, GuiItemUtils.createShopItem(player, FoodItem.COOKIE_OF_LIFE, 2));
+        inv.setItem(31, GuiItemUtils.createShopItem(player, FoodItem.SUNSCREEN, 2));
+        inv.setItem(32, GuiItemUtils.createShopItem(player, FoodItem.CAN_OF_SPINACH, 2));
+        inv.setItem(34, GuiItemUtils.createShopItem(player, FoodItem.ENCHANTED_GOLDEN_APPLE));
     }
 
     private static void populateUtilityCategory(Inventory inv, Player player) {
-        inv.setItem(20, createShopItem(player, UtilityItem.LAVA_BUCKET));
-        inv.setItem(21, createShopItem(player, UtilityItem.FISHING_ROD));
-        inv.setItem(22, createShopItem(player, UtilityItem.COBWEB, 4));
-        inv.setItem(24, createShopItem(player, UtilityItem.CROSSBOW));
-        inv.setItem(29, createShopItem(player, UtilityItem.LAVA_BUCKET));
-        inv.setItem(30, createShopItem(player, UtilityItem.ENDER_PEARL));
-        inv.setItem(31, createShopItem(player, UtilityItem.WIND_CHARGE, 4));
-        inv.setItem(33, createShopItem(player, UtilityItem.BOW));
-        inv.setItem(38, createShopItem(player, UtilityItem.LEAVES, 16));
-        inv.setItem(39, createShopItem(player, UtilityItem.SOUL_SPEED_BLOCK, 16));
-        inv.setItem(42, createShopItem(player, UtilityItem.ARROWS, 5));
+        inv.setItem(20, GuiItemUtils.createShopItem(player, UtilityItem.LAVA_BUCKET));
+        inv.setItem(21, GuiItemUtils.createShopItem(player, UtilityItem.FISHING_ROD));
+        inv.setItem(22, GuiItemUtils.createShopItem(player, UtilityItem.COBWEB, 4));
+        inv.setItem(24, GuiItemUtils.createShopItem(player, UtilityItem.CROSSBOW));
+        inv.setItem(29, GuiItemUtils.createShopItem(player, UtilityItem.WATER_BUCKET));
+        inv.setItem(30, GuiItemUtils.createShopItem(player, UtilityItem.ENDER_PEARL));
+        inv.setItem(31, GuiItemUtils.createShopItem(player, UtilityItem.WIND_CHARGE, 4));
+        inv.setItem(33, GuiItemUtils.createShopItem(player, UtilityItem.BOW));
+        inv.setItem(38, GuiItemUtils.createShopItem(player, UtilityItem.LEAVES, 16));
+        inv.setItem(39, GuiItemUtils.createShopItem(player, UtilityItem.SOUL_SPEED_BLOCK, 16));
+        inv.setItem(42, GuiItemUtils.createShopItem(player, UtilityItem.ARROWS, 5));
     }
 
     private static void populateCustomItemsCategory(Inventory inv) {
         // Row 1: Combat items
-        inv.setItem(10, createCustomItemIcon(CustomItemType.GRENADE));
-        inv.setItem(11, createCustomItemIcon(CustomItemType.SMOKE_CLOUD_GRENADE));
-        inv.setItem(12, createCustomItemIcon(CustomItemType.BAG_OF_POTATOES));
-        inv.setItem(13, createCustomItemIcon(CustomItemType.CASH_BLASTER));
+        inv.setItem(10, GuiItemUtils.createCustomItemIcon(CustomItem.GRENADE));
+        inv.setItem(11, GuiItemUtils.createCustomItemIcon(CustomItem.SMOKE_CLOUD_GRENADE));
+        inv.setItem(12, GuiItemUtils.createCustomItemIcon(CustomItem.BAG_OF_POTATOES));
+        inv.setItem(13, GuiItemUtils.createCustomItemIcon(CustomItem.CASH_BLASTER));
 
         // Row 2: Utility items
-        inv.setItem(19, createCustomItemIcon(CustomItemType.BOUNCE_PAD));
-        inv.setItem(20, createCustomItemIcon(CustomItemType.BOOMBOX));
-        inv.setItem(21, createCustomItemIcon(CustomItemType.MEDIC_POUCH));
-        inv.setItem(22, createCustomItemIcon(CustomItemType.INVIS_CLOAK));
+        inv.setItem(19, GuiItemUtils.createCustomItemIcon(CustomItem.BOUNCE_PAD));
+        inv.setItem(20, GuiItemUtils.createCustomItemIcon(CustomItem.BOOMBOX));
+        inv.setItem(21, GuiItemUtils.createCustomItemIcon(CustomItem.MEDIC_POUCH));
+        inv.setItem(22, GuiItemUtils.createCustomItemIcon(CustomItem.INVIS_CLOAK));
 
         // Row 3: Special items
-        inv.setItem(28, createCustomItemIcon(CustomItemType.TABLET_OF_HACKING));
-        inv.setItem(29, createCustomItemIcon(CustomItemType.RESPAWN_ANCHOR));
-    }
-
-    private static ItemStack createCustomItemIcon(CustomItemType type) {
-        ItemStack item = new ItemStack(type.getMaterial());
-        ItemMeta meta = item.getItemMeta();
-
-        meta.displayName(Messages.parse("<yellow>" + type.getDisplayName() + "</yellow>"));
-
-        List<Component> lore = new ArrayList<>(
-                Messages.wrapLines("<gold>Price: $" + String.format("%,d", type.getPrice()) + "</gold>")
-        );
-        lore.add(Component.empty());
-
-        // Add description
-        lore.addAll(Messages.wrapLines(type.getDescription()));
-
-        // Add limit info if applicable
-        if (type.hasLimit()) {
-            lore.add(Component.empty());
-            lore.addAll(Messages.wrapLines("<red>Max: " + type.getMaxPurchase() + " per round</red>"));
-        }
-
-        lore.add(Component.empty());
-        lore.addAll(Messages.wrapLines("<yellow>Click to purchase!</yellow>"));
-
-        meta.lore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        meta.getPersistentDataContainer().set(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING, type.name());
-        item.setItemMeta(meta);
-
-        return item;
+        inv.setItem(28, GuiItemUtils.createCustomItemIcon(CustomItem.TABLET_OF_HACKING));
+        inv.setItem(29, GuiItemUtils.createCustomItemIcon(CustomItem.RESPAWN_ANCHOR));
     }
 
     private static void populateEnchantsCategory(Inventory inv, Player player) {
@@ -389,10 +317,10 @@ public class ShopGUI {
 
             if (nextLevel > ee.getMaxLevel()) {
                 // Maxed out
-                inv.setItem(slot++, createMaxedEnchant(ee));
+                inv.setItem(slot++, GuiItemUtils.createMaxedEnchant(ee));
             } else {
                 long price = ee.getPriceForLevel(nextLevel);
-                inv.setItem(slot++, createEnchantItem(ee, nextLevel, price));
+                inv.setItem(slot++, GuiItemUtils.createEnchantItem(ee, nextLevel, price));
             }
 
             if (slot == 17) slot = 19;
@@ -402,167 +330,21 @@ public class ShopGUI {
     }
 
     private static void populateInvestmentsCategory(Inventory inv) {
-        ItemStack wallet = new ItemStack(Material.CHEST);
-        ItemMeta wm = wallet.getItemMeta();
-
-        wm.displayName(Messages.parse("<yellow>Wallet</yellow>"));
-        List<Component> walletLore = new ArrayList<>();
-
-        walletLore.addAll(Messages.wrapLines("<gray>Invest: <gold>$10,000</gold></gray>"));
-        walletLore.addAll(Messages.wrapLines("<green>Bonus: $30,000</green>"));
-        walletLore.addAll(Messages.wrapLines("<red>Negative: $5,000</red>"));
-        wm.lore(walletLore);
-
-        wm.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, "WALLET");
-        wallet.setItemMeta(wm);
-        inv.setItem(20, wallet);
-
-        ItemStack purse = new ItemStack(Material.PURPLE_BUNDLE);
-        ItemMeta pm = purse.getItemMeta();
-
-        pm.displayName(Messages.parse("<yellow>Purse</yellow>"));
-        List<Component> purseLore = new ArrayList<>();
-
-        purseLore.addAll(Messages.wrapLines("<gray>Invest: <gold>$30,000</gold></gray>"));
-        purseLore.addAll(Messages.wrapLines("<green>Bonus: $60,000</green>"));
-        purseLore.addAll(Messages.wrapLines("<red>Negative: $10,000</red>"));
-        pm.lore(purseLore);
-
-        pm.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, "PURSE");
-        purse.setItemMeta(pm);
-        inv.setItem(22, purse);
-
-        ItemStack enderBag = new ItemStack(Material.ENDER_CHEST);
-        ItemMeta em = enderBag.getItemMeta();
-
-        em.displayName(Messages.parse("<yellow>Ender Bag</yellow>"));
-        List<Component> enderLore = new ArrayList<>();
-
-        enderLore.addAll(Messages.wrapLines("<gray>Invest: <gold>$50,000</gold></gray>"));
-        enderLore.addAll(Messages.wrapLines("<green>Bonus: $100,000</green>"));
-        enderLore.addAll(Messages.wrapLines("<red>Negative: $20,000</red>"));
-        em.lore(enderLore);
-
-        em.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, "ENDER_BAG");
-        enderBag.setItemMeta(em);
-        inv.setItem(24, enderBag);
+        inv.setItem(20, GuiItemUtils.createInvestmentIcon(InvestmentType.WALLET));
+        inv.setItem(22, GuiItemUtils.createInvestmentIcon(InvestmentType.PURSE));
+        inv.setItem(24, GuiItemUtils.createInvestmentIcon(InvestmentType.ENDER_BAG));
     }
 
     private static void addBottomRow(Inventory inv, Player player) {
         // Cancel button
-        inv.setItem(45, createCancelButton());
+        inv.setItem(45, GuiItemUtils.createCancelButton());
 
         // Undo button
-        ItemStack undo = new ItemStack(Material.ARROW);
-        ItemMeta um = undo.getItemMeta();
-        um.displayName(Messages.parse("<yellow>Undo Purchase</yellow>"));
-        um.lore(Messages.wrapLines("<gray>Undo last purchase and receive a refund</gray>"));
-
-        undo.setItemMeta(um);
-        inv.setItem(49, undo);
+        inv.setItem(49, GuiItemUtils.createUndoButton());
 
         // Coins display
         long coins = getPlayerCoins(player);
-        inv.setItem(53, createCoinDisplay(coins));
-    }
-
-    private static ItemStack createShopItem(Player player, Purchasable item) {
-        return createShopItem(player, item, 1);
-    }
-
-    private static ItemStack createShopItem(Player player, Purchasable item, int quantity) {
-        ItemStack is = new ItemStack(item.getMaterial(), quantity);
-        ItemMeta meta = is.getItemMeta();
-
-        boolean owned = hasShopItem(player, item) && (item.getCategory() == ShopCategory.ARMOR
-                || item.getCategory() == ShopCategory.WEAPONS
-                || item.getCategory() == ShopCategory.CUSTOM_ARMOR
-        );
-
-        if (owned) {
-            meta.displayName(Messages.parse("<green>" + item.getDisplayName() + " <gray>(Owned)</gray></green>"));
-            meta.lore(Messages.wrapLines("<gray>You already own this item</gray>"));
-            meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
-        } else {
-            meta.displayName(Messages.parse("<yellow>" + item.getDisplayName() + "</yellow>"));
-            List<Component> lore = new ArrayList<>();
-            lore.add(Messages.parse("<gray>Price: <gold>$" + String.format("%,d", item.getPrice()) + "</gold></gray>"));
-
-            if (item.getInitialAmount() > 1) {
-                lore.add(Messages.parse("<gray>Max: <white>" + item.getInitialAmount() + "</white></gray>"));
-            }
-
-            String desc = item.getDescription();
-            if (!desc.isEmpty()) {
-                lore.addAll(Messages.wrapLines(desc));
-
-            }
-            lore.add(Component.empty());
-            lore.add(Messages.parse("<yellow>Click to purchase!</yellow>"));
-            meta.lore(lore);
-        }
-
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, item.name());
-        is.setItemMeta(meta);
-        return is;
-    }
-
-    private static ItemStack createUpgradableItem(Purchasable item, boolean maxed) {
-        ItemStack is = new ItemStack(item.getMaterial());
-        ItemMeta meta = is.getItemMeta();
-
-        if (maxed) {
-            meta.displayName(Messages.parse("<green>" + item.getDisplayName() + " <gray>(Max)</gray></green>"));
-            meta.lore(Messages.wrapLines("<gray>Maximum tier reached!</gray>"));
-            meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
-        } else {
-            meta.displayName(Messages.parse("<yellow>" + item.getDisplayName() + "</yellow>"));
-            List<Component> lore = new ArrayList<>();
-            lore.add(Messages.parse("<gray>Price: <gold>$" + String.format("%,d", item.getPrice()) + "</gold></gray>"));
-
-            // Show upgrade path
-            if (item.getMaterial().name().contains("IRON")) {
-                lore.add(Messages.parse("<aqua>Next: Diamond tier</aqua>"));
-            } else if (item.getMaterial().name().contains("DIAMOND")) {
-                lore.add(Messages.parse("<light_purple>Final tier!</light_purple>"));
-            }
-
-            lore.add(Component.empty());
-            lore.add(Messages.parse("<yellow>Click to purchase!</yellow>"));
-            meta.lore(lore);
-        }
-
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, item.name());
-        is.setItemMeta(meta);
-        return is;
-    }
-
-    private static ItemStack createEnchantItem(EnchantEntry ee, int level, long price) {
-        ItemStack is = new ItemStack(Material.ENCHANTED_BOOK);
-        ItemMeta meta = is.getItemMeta();
-        meta.displayName(Messages.parse("<yellow>" + ee.getDisplayName() + " " + level + "</yellow>"));
-        meta.lore(Arrays.asList(
-                Messages.parse("<gray>Price: <gold>$" + String.format("%,d", price) + "</gold></gray>"),
-                Messages.parse("<gray>Max Level: <white>" + ee.getMaxLevel() + "</white></gray>"),
-                Component.empty(),
-                Messages.parse("<yellow>Click to purchase!</yellow>")
-        ));
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, ee.name());
-        is.setItemMeta(meta);
-        return is;
-    }
-
-    private static ItemStack createMaxedEnchant(EnchantEntry ee) {
-        ItemStack is = new ItemStack(Material.ENCHANTED_BOOK);
-        ItemMeta meta = is.getItemMeta();
-        meta.displayName(Messages.parse("<green>" + ee.getDisplayName() + " <gray>(Max)</gray></green>"));
-        meta.lore(Messages.wrapLines("<gray>Maximum level reached!</gray>"));
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, ee.name());
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
-        is.setItemMeta(meta);
-        return is;
+        inv.setItem(53, GuiItemUtils.createCoinDisplay(coins));
     }
 
 
@@ -575,26 +357,6 @@ public class ShopGUI {
         for (ItemStack is : player.getInventory().getArmorContents()) {
             if (is != null && is.getType() == material) {
                 return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean hasShopItem(Player player, Purchasable shopItem) {
-        for (ItemStack is : player.getInventory().getContents()) {
-            if (is != null && is.hasItemMeta()) {
-                String tag = is.getItemMeta().getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
-                if (shopItem.name().equals(tag)) {
-                    return true;
-                }
-            }
-        }
-        for (ItemStack is : player.getInventory().getArmorContents()) {
-            if (is != null && is.hasItemMeta()) {
-                String tag = is.getItemMeta().getPersistentDataContainer().get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
-                if (shopItem.name().equals(tag)) {
-                    return true;
-                }
             }
         }
         return false;
