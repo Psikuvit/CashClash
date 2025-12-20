@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.player;
 
+import me.psikuvit.cashClash.util.enums.InvestmentType;
+
 /**
  * Represents an investment (Wallet, Purse, or Ender Bag).
  * Investment rules:

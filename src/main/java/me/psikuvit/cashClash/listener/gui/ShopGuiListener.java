@@ -179,6 +179,16 @@ public class ShopGuiListener implements Listener {
 
         ccp.addCoins(rec.price());
 
+        // Handle investment-specific undo (clear the investment)
+        if (category == ShopCategory.INVESTMENTS) {
+            ccp.setCurrentInvestment(null);
+            ccp.setInvestedCoins(0);
+            Messages.send(player, "<green>Investment cancelled. Refunded $" + String.format("%,d", rec.price()) + "</green>");
+            SoundUtils.play(player, Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.5f);
+            ShopGUI.openCategoryItems(player, category);
+            return;
+        }
+
         // Remove the purchased item(s) according to the recorded quantity
         int qty = rec.quantity();
         boolean removed = ItemUtils.removeItemFromPlayer(player, rec.item().name(), qty);
@@ -286,9 +296,14 @@ public class ShopGuiListener implements Listener {
 
         // Deduct coins and create investment
         ccp.deductCoins(cost);
+        
         Investment investment = new Investment(type, cost);
         ccp.setCurrentInvestment(investment);
         ccp.setInvestedCoins(cost);
+
+        // Record purchase for undo functionality
+        int round = sess.getCurrentRound();
+        ccp.addPurchase(new PurchaseRecord(type, 1, cost, round));
 
         String displayName = type.name().replace("_", " ");
         Messages.send(player, "<green>You invested <gold>$" + String.format("%,d", cost) +

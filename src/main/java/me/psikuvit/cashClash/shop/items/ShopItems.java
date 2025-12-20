@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.shop.items;
 
+import me.psikuvit.cashClash.util.enums.InvestmentType;
 import me.psikuvit.cashClash.shop.ShopCategory;
 
 import java.util.*;
@@ -23,6 +24,7 @@ public final class ShopItems {
         registerAll(UtilityItem.values());
         registerAll(CustomItemType.values());
         registerAll(MythicItem.values());
+        registerAll(InvestmentType.values());
     }
 
     private ShopItems() {
@@ -126,9 +128,9 @@ public final class ShopItems {
     /**
      * Gets a CustomItemType by name, or null if not found or not a custom item.
      */
-    public static CustomItemType getCustomItem(String name) {
+    public static CustomItem getCustomItem(String name) {
         Purchasable item = BY_NAME.get(name);
-        return item instanceof CustomItemType c ? c : null;
+        return item instanceof CustomItem c ? c : null;
     }
 
     /**
