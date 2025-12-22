@@ -1,0 +1,277 @@
+# ============================================
+# Cash Clash Items Configuration
+# ============================================
+# All item-related constants, stats, and mechanics
+# ============================================
+
+# ============================================
+# MYTHIC/LEGENDARY ITEMS
+# ============================================
+mythic-items:
+  # Number of legendaries available per game
+  legendaries-per-game: 5
+
+  # Coin Cleaver
+  coin-cleaver:
+    damage-bonus-multiplier: 1.25
+    grenade:
+      cooldown-seconds: 3
+      cost: 2000
+      damage: 4.0
+      radius: 5
+
+  # Carl's Battleaxe
+  carls-battleaxe:
+    charged-attack:
+      cooldown-seconds: 45
+      buff-duration-seconds: 25
+      speed-level: 2
+      strength-level: 0
+    critical-hit:
+      cooldown-milliseconds: 10000
+      launch-power: 1.5
+
+  # Wind Bow
+  wind-bow:
+    boost:
+      cooldown-seconds: 30
+      power: 2.0
+    arrow-push:
+      radius: 3
+      power: 1.5
+
+  # Electric Eel Sword
+  electric-eel:
+    chain-damage:
+      cooldown-seconds: 1
+      damage: 1.0
+      radius: 5
+    teleport:
+      cooldown-seconds: 15
+      distance: 4.0
+
+  # Goblin Spear
+  goblin-spear:
+    throw:
+      cooldown-seconds: 15
+      damage: 9.0
+    poison:
+      duration-seconds: 2
+      level: 3
+
+  # Sandstormer
+  sandstormer:
+    burst:
+      shots: 3
+      reload-cooldown-seconds: 14
+    supercharge:
+      charge-time-seconds: 28
+      storm-duration-seconds: 4
+      min-damage: 1.0
+      max-damage: 3.0
+      levitation-level: 3
+      levitation-duration-seconds: 4
+
+  # Warden Gloves
+  warden-gloves:
+    shockwave:
+      cooldown-seconds: 41
+      damage: 12.0
+      range: 8
+      knockback-power: 2.5
+    melee:
+      cooldown-seconds: 22
+      knockback-level: 2
+      reach-bonus: 2
+
+  # BlazeBite Crossbows
+  blazebite-crossbows:
+    shots-per-magazine: 8
+    reload-cooldown-seconds: 25
+    glacier:
+      slowness-level: 0
+      slowness-duration-seconds: 3
+      frostbite-duration-seconds: 3
+    volcano:
+      direct-damage: 4.0
+      splash-damage: 2.0
+      explosion-radius: 3
+      fire-duration-seconds: 5
+
+# ============================================
+# CUSTOM ARMOR SETS
+# ============================================
+custom-armor:
+  # Magic Helmet
+  magic-helmet:
+    stand-still-delay-seconds: 3
+    invisibility-duration-seconds: 10
+    cooldown-seconds: 30
+
+  # Bunny Shoes
+  bunny-shoes:
+    speed-level: 1
+    jump-boost-level: 0
+    duration-seconds: 15
+    cooldown-seconds: 25
+
+  # Guardian's Vest
+  guardians-vest:
+    trigger-health: 8.0
+    resistance-level: 1
+    resistance-duration-seconds: 15
+    uses-per-round: 3
+    cooldown-seconds: 20
+
+  # Deathmauler Set
+  deathmauler:
+    kill-heal-amount: 8.0
+    extra-heart-chance: 0.30
+    absorption:
+      no-damage-delay-seconds: 8
+      absorption-level: 0
+      absorption-duration-seconds: 60
+
+  # Dragon Set
+  dragon:
+    hit-regeneration-level: 0
+    hit-regeneration-duration-seconds: 3
+    hit-speed-level: 1
+    hit-speed-duration-seconds: 3
+    double-jump:
+      cooldown-seconds: 10
+      forward-velocity: 1.2
+      upward-velocity: 0.8
+
+  # Flamebringer Set
+  flamebringer:
+    ignite-chance: 0.30
+    fire-duration-seconds: 8
+
+  # Tax Evasion Pants
+  tax-evasion:
+    death-penalty-percentage: 0.075
+    survival-bonus: 3000
+    survival-interval-seconds: 60
+
+  # Investor's Set
+  investors:
+    money-bonus-per-piece: 0.125
+    melee-damage-bonus-per-piece: 0.05
+    melee-damage-min-round: 4
+    price-increase-multiplier: 1.25
+
+# ============================================
+# CUSTOM ITEMS
+# ============================================
+custom-items:
+  # Grenade
+  grenade:
+    fuse-seconds: 3
+    damage:
+      inner-radius: 4
+      inner-damage: 8.0
+      outer-radius: 6
+      outer-damage: 2.0
+
+  # Smoke Cloud Grenade
+  smoke-grenade:
+    fuse-seconds: 3
+    cloud-duration-seconds: 8
+    radius: 5
+    poison-level: 0
+    poison-duration-seconds: 3
+    blindness-duration-seconds: 3
+
+  # Bounce Pad
+  bounce-pad:
+    forward-velocity: 1.4
+    upward-velocity: 1.0
+
+  # Medic Pouch
+  medic-pouch:
+    cooldown-seconds: 10
+    self-heal: 6.0
+    ally-heal: 10.0
+    absorption-duration-seconds: 30
+
+  # Tablet of Hacking
+  tablet-of-hacking:
+    # No special configuration needed
+
+  # Bag of Potatoes
+  bag-of-potatoes:
+    knockback-level: 3
+    durability: 3
+    heal-per-hit: 2.0
+
+  # Boombox
+  boombox:
+    pulse-interval-seconds: 3
+    total-duration-seconds: 12
+    radius: 5
+    knockback-power: 1.5
+
+  # Invisibility Cloak
+  invis-cloak:
+    cost-per-second: 100
+    cooldown-seconds: 15
+    uses-per-round: 5
+
+  # Cash Blaster
+  cash-blaster:
+    coins-per-hit: 500
+
+  # Respawn Anchor
+  respawn-anchor:
+    revive-duration-seconds: 10
+    max-distance: 5
+    max-uses-per-round: 2
+    bonus-hearts: 4.0
+    invincibility-duration-seconds: 3
+    resistance-level: 4
+
+# ============================================
+# ENCHANTMENT PRICES
+# ============================================
+enchants:
+  protection:
+    tier-1: 10000
+    tier-2: 25000
+    tier-3: 50000
+    tier-4: 100000
+
+  sharpness:
+    tier-1: 5000
+    tier-2: 10000
+    tier-3: 15000
+    tier-4: 20000
+    tier-5: 25000
+
+  power:
+    tier-1: 5000
+    tier-2: 10000
+    tier-3: 15000
+    tier-4: 20000
+    tier-5: 25000
+
+  knockback:
+    tier-1: 3000
+    tier-2: 6000
+
+  punch:
+    tier-1: 3000
+    tier-2: 6000
+
+  fire-aspect:
+    tier-1: 8000
+    tier-2: 15000
+
+  flame:
+    tier-1: 10000
+
+  unbreaking:
+    tier-1: 2000
+    tier-2: 4000
+    tier-3: 6000
+
