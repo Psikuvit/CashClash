@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager;
 
+import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -94,6 +95,7 @@ public class CustomItemManager {
 
     public void throwGrenade(Player player, ItemStack item, boolean isSmoke) {
         consumeItem(player, item);
+        ItemsConfig cfg = ItemsConfig.getInstance();
 
         Item thrownItem = player.getWorld().dropItem(
                 player.getEyeLocation(),
@@ -105,6 +107,7 @@ public class CustomItemManager {
 
         SoundUtils.play(player, Sound.ENTITY_SNOWBALL_THROW, 1.0f, 0.8f);
 
+        int fuseSeconds = cfg.getGrenadeFuseSeconds();
         SchedulerUtils.runTaskLater(() -> {
             if (!thrownItem.isValid()) return;
             activeGrenades.remove(thrownItem);
@@ -117,7 +120,7 @@ public class CustomItemManager {
             } else {
                 explodeGrenade(loc);
             }
-        }, 3 * 20L); // 3 seconds
+        }, fuseSeconds * 20L);
     }
 
     private void explodeGrenade(Location loc) {
@@ -175,6 +178,7 @@ public class CustomItemManager {
     public boolean useMedicPouchSelf(Player player, ItemStack item) {
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
+        ItemsConfig cfg = ItemsConfig.getInstance();
 
         Long cd = medicPouchCooldown.get(uuid);
         if (cd != null && now < cd) {
@@ -186,7 +190,7 @@ public class CustomItemManager {
         double currentHealth = player.getHealth();
         var attr = player.getAttribute(Attribute.MAX_HEALTH);
         double maxHealth = attr != null ? attr.getValue() : 20.0;
-        double healAmount = 6.0; // 3 hearts
+        double healAmount = cfg.getMedicPouchSelfHeal();
 
         if (currentHealth >= maxHealth) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 20 * 30, 0, false, true));
@@ -206,7 +210,7 @@ public class CustomItemManager {
         }
 
         consumeItem(player, item);
-        medicPouchCooldown.put(uuid, now + 10000L);
+        medicPouchCooldown.put(uuid, now + (cfg.getMedicPouchCooldown() * 1000L));
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
         return true;
     }
@@ -214,6 +218,7 @@ public class CustomItemManager {
     public boolean useMedicPouchAlly(Player player, Player target, ItemStack item) {
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
+        ItemsConfig cfg = ItemsConfig.getInstance();
 
         Long cd = medicPouchCooldown.get(uuid);
         if (cd != null && now < cd) {
@@ -236,7 +241,7 @@ public class CustomItemManager {
         double currentHealth = target.getHealth();
         var attr = target.getAttribute(Attribute.MAX_HEALTH);
         double maxHealth = attr != null ? attr.getValue() : 20.0;
-        double healAmount = 10.0; // 5 hearts
+        double healAmount = cfg.getMedicPouchAllyHeal();
 
         if (currentHealth >= maxHealth) {
             target.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 20 * 30, 1, false, true));
@@ -254,7 +259,7 @@ public class CustomItemManager {
         }
 
         consumeItem(player, item);
-        medicPouchCooldown.put(uuid, now + 10000L);
+        medicPouchCooldown.put(uuid, now + (cfg.getMedicPouchCooldown() * 1000L));
         Messages.send(player, "<green>Healed " + target.getName() + "!</green>");
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
         SoundUtils.play(target, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
@@ -298,6 +303,7 @@ public class CustomItemManager {
     public void toggleInvisCloak(Player player, boolean turnOn) {
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
+        ItemsConfig cfg = ItemsConfig.getInstance();
 
         if (turnOn && !invisCloakActive.contains(uuid)) {
             Long cd = invisCloakCooldown.get(uuid);
@@ -328,7 +334,8 @@ public class CustomItemManager {
             player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
 
             Messages.send(player, "<green>Invisibility activated! Right-click to deactivate.</green>");
-            Messages.send(player, "<yellow>Losing 100 coins per second...</yellow>");
+            int costPerSecond = cfg.getInvisCloakCostPerSecond();
+            Messages.send(player, "<yellow>Losing " + costPerSecond + " coins per second...</yellow>");
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0f, 1.0f);
 
             GameSession session = GameManager.getInstance().getPlayerSession(player);
@@ -337,8 +344,8 @@ public class CustomItemManager {
             BukkitTask drainTask = SchedulerUtils.runTaskTimer(() -> {
                 if (!invisCloakActive.contains(uuid)) return;
 
-                if (ccp != null && ccp.getCoins() >= 100) {
-                    ccp.deductCoins(100);
+                if (ccp != null && ccp.getCoins() >= costPerSecond) {
+                    ccp.deductCoins(costPerSecond);
                 } else {
                     toggleInvisCloak(player, false);
                     Messages.send(player, "<red>Out of coins! Invisibility ended.</red>");
@@ -360,7 +367,7 @@ public class CustomItemManager {
             BukkitTask task = invisCloakTasks.remove(uuid);
             if (task != null) task.cancel();
 
-            invisCloakCooldown.put(uuid, now + 15000L);
+            invisCloakCooldown.put(uuid, now + (cfg.getInvisCloakCooldown() * 1000L));
 
             Messages.send(player, "<yellow>Invisibility deactivated.</yellow>");
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.0f, 0.8f);
@@ -420,11 +427,13 @@ public class CustomItemManager {
     public void handleCashBlasterHit(Player attacker) {
         GameSession session = GameManager.getInstance().getPlayerSession(attacker);
         if (session == null) return;
+        ItemsConfig cfg = ItemsConfig.getInstance();
 
         CashClashPlayer ccp = session.getCashClashPlayer(attacker.getUniqueId());
         if (ccp != null) {
-            ccp.addCoins(500);
-            Messages.send(attacker, "<green>+$500 from Cash Blaster hit!</green>");
+            int coinsPerHit = cfg.getCashBlasterCoinsPerHit();
+            ccp.addCoins(coinsPerHit);
+            Messages.send(attacker, "<green>+$" + coinsPerHit + " from Cash Blaster hit!</green>");
             SoundUtils.play(attacker, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
         }
     }
@@ -471,10 +480,11 @@ public class CustomItemManager {
             return;
         }
 
+        ItemsConfig cfg = ItemsConfig.getInstance();
         // Launch player forward and up
         Vector direction = player.getLocation().getDirection();
         direction.setY(0).normalize();
-        Vector velocity = direction.multiply(1.4).setY(1.0);
+        Vector velocity = direction.multiply(cfg.getBouncePadForwardVelocity()).setY(cfg.getBouncePadUpwardVelocity());
         player.setVelocity(velocity);
 
         SoundUtils.play(player, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0f, 1.2f);

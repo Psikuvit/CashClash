@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager;
 
+import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -180,6 +181,7 @@ public class CustomArmorManager {
 
         UUID id = p.getUniqueId();
         long now = System.currentTimeMillis();
+        ItemsConfig cfg = ItemsConfig.getInstance();
 
         if (magicHelmetActive.contains(id)) {
             cancelMagicHelmetInvisibility(p);
@@ -198,6 +200,7 @@ public class CustomArmorManager {
 
         magicHelmetLastMove.put(id, now);
 
+        int delaySeconds = cfg.getMagicHelmetStandDelay();
         BukkitTask task = SchedulerUtils.runTaskLater(() -> {
             magicHelmetDelayTask.remove(id);
 
@@ -208,36 +211,40 @@ public class CustomArmorManager {
             if (System.currentTimeMillis() < currentCd) return;
 
             Long lastMove = magicHelmetLastMove.get(id);
-            if (lastMove != null && System.currentTimeMillis() - lastMove >= 2900L) {
+            long delayMillis = (delaySeconds * 1000L) - 100L;
+            if (lastMove != null && System.currentTimeMillis() - lastMove >= delayMillis) {
                 activateMagicHelmetInvisibility(p);
             }
-        }, 3 * 20L); // 3 seconds = 60 ticks
+        }, delaySeconds * 20L);
 
         magicHelmetDelayTask.put(id, task);
     }
 
     private void activateMagicHelmetInvisibility(Player p) {
         UUID id = p.getUniqueId();
-        p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 10 * 20, 0, false, false, false));
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        int duration = cfg.getMagicHelmetInvisDuration();
+
+        p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, duration * 20, 0, false, false, false));
         magicHelmetActive.add(id);
 
         Messages.send(p, "<dark_purple>You turned invisible!</dark_purple>");
 
-        // Auto-end after 10 seconds
         SchedulerUtils.runTaskLater(() -> {
             if (magicHelmetActive.contains(id)) {
                 cancelMagicHelmetInvisibility(p);
             }
-        }, 10 * 20L);
+        }, duration * 20L);
     }
 
     public void cancelMagicHelmetInvisibility(Player p) {
         UUID id = p.getUniqueId();
         if (!magicHelmetActive.remove(id)) return;
 
+        ItemsConfig cfg = ItemsConfig.getInstance();
         p.removePotionEffect(PotionEffectType.INVISIBILITY);
-        magicHelmetCooldownUntil.put(id, System.currentTimeMillis() + 30_000L);
-        Messages.send(p, "<gray>Invisibility ended. Cooldown: 30 seconds.</gray>");
+        magicHelmetCooldownUntil.put(id, System.currentTimeMillis() + (cfg.getMagicHelmetCooldown() * 1000L));
+        Messages.send(p, "<gray>Invisibility ended. Cooldown: " + cfg.getMagicHelmetCooldown() + " seconds.</gray>");
     }
 
     public void onMagicHelmetRightClick(Player p) {
@@ -289,6 +296,7 @@ public class CustomArmorManager {
         UUID id = p.getUniqueId();
         long now = System.currentTimeMillis();
         Long cd = bunnyCooldownUntil.getOrDefault(id, 0L);
+        ItemsConfig cfg = ItemsConfig.getInstance();
 
         if (now < cd) {
             long remaining = (cd - now) / 1000;
@@ -296,11 +304,12 @@ public class CustomArmorManager {
             return;
         }
 
-        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 15 * 20, 1));
-        p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 15 * 20, 0));
-        bunnyCooldownUntil.put(id, now + 25_000L);
+        int duration = cfg.getBunnyShoesDuration();
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, duration * 20, 1));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, duration * 20, 0));
+        bunnyCooldownUntil.put(id, now + (cfg.getBunnyShoesCooldown() * 1000L));
 
-        Messages.send(p, "<green>Bunny Shoes activated! Speed II & Jump Boost for 15 seconds.</green>");
+        Messages.send(p, "<green>Bunny Shoes activated! Speed II & Jump Boost for " + duration + " seconds.</green>");
         SoundUtils.play(p, Sound.ENTITY_RABBIT_JUMP, 1.0f, 1.5f);
     }
 
@@ -357,17 +366,19 @@ public class CustomArmorManager {
     public void onDeathmaulerDamageTaken(Player p) {
         if (!hasDeathmaulerSet(p)) return;
         UUID id = p.getUniqueId();
+        ItemsConfig cfg = ItemsConfig.getInstance();
         deathmaulerLastDamage.put(id, System.currentTimeMillis());
 
-        // Schedule absorption check after 8 seconds without damage
+        int delaySeconds = cfg.getDeathmaulerAbsorptionDelay();
+        // Schedule absorption check after configured delay without damage
         SchedulerUtils.runTaskLater(() -> {
             Long last = deathmaulerLastDamage.get(id);
             if (last == null) return;
-            if (System.currentTimeMillis() - last >= 8000L) {
+            if (System.currentTimeMillis() - last >= (delaySeconds * 1000L)) {
                 p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
                 Messages.send(p, "<dark_red>Deathmauler granted 2 absorption hearts!</dark_red>");
             }
-        }, 160L);
+        }, delaySeconds * 20L);
     }
 
     // ==================== DRAGON SET ====================
@@ -388,6 +399,7 @@ public class CustomArmorManager {
     public boolean tryDragonDoubleJump(Player p) {
         if (!hasDragonSet(p)) return false;
         UUID id = p.getUniqueId();
+        ItemsConfig cfg = ItemsConfig.getInstance();
 
         if (!dragonCanDoubleJump.remove(id)) return false;
 
@@ -396,7 +408,7 @@ public class CustomArmorManager {
         Vector velocity = direction.multiply(1.2).setY(0.8);
         p.setVelocity(velocity);
 
-        dragonDoubleJumpCooldown.put(id, System.currentTimeMillis() + 10_000L);
+        dragonDoubleJumpCooldown.put(id, System.currentTimeMillis() + (cfg.getDragonDoubleJumpCooldown() * 1000L));
 
         Messages.send(p, "<light_purple>Dragon Double Jump!</light_purple>");
         SoundUtils.play(p, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.5f);
