@@ -104,10 +104,7 @@ public class CustomArmorManager {
             String val = c.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
             if (val == null) continue;
 
-            try {
-                CustomArmorItem ca = ShopItems.getCustomArmor(val);
-                found.add(ca);
-            } catch (IllegalArgumentException ignored) {}
+            found.add(ShopItems.getCustomArmor(val));
         }
         return found;
     }

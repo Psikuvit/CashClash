@@ -280,15 +280,13 @@ public class ShopGuiListener implements Listener {
         // Check if player already has an investment
         if (ccp.getCurrentInvestment() != null) {
             Messages.send(player, "<red>You already have an active investment! (" +
-                ccp.getCurrentInvestment().getType().name().replace("_", " ") + ")</red>");
+                    ccp.getCurrentInvestment().getType().name().replace("_", " ") + ")</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        InvestmentType type;
-        try {
-            type = InvestmentType.valueOf(pdcValue);
-        } catch (IllegalArgumentException e) {
+        InvestmentType type = ShopItems.getInvestment(pdcValue);
+        if (type == null) {
             Messages.send(player, "<red>Invalid investment type!</red>");
             return;
         }
@@ -302,7 +300,7 @@ public class ShopGuiListener implements Listener {
 
         // Deduct coins and create investment
         ccp.deductCoins(cost);
-        
+
         Investment investment = new Investment(type, cost);
         ccp.setCurrentInvestment(investment);
         ccp.setInvestedCoins(cost);
@@ -313,9 +311,9 @@ public class ShopGuiListener implements Listener {
 
         String displayName = type.name().replace("_", " ");
         Messages.send(player, "<green>You invested <gold>$" + String.format("%,d", cost) +
-            "</gold> in a <yellow>" + displayName + "</yellow>!</green>");
+                "</gold> in a <yellow>" + displayName + "</yellow>!</green>");
         Messages.send(player, "<gray>Bonus: <green>$" + String.format("%,d", type.getBonusReturn()) +
-            "</green> | Negative: <red>$" + String.format("%,d", type.getNegativeReturn()) + "</red></gray>");
+                "</green> | Negative: <red>$" + String.format("%,d", type.getNegativeReturn()) + "</red></gray>");
         Messages.send(player, "<gray>1 death = Bonus | 2 deaths = Break even | 3+ deaths = Loss</gray>");
 
         SoundUtils.play(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
@@ -363,8 +361,8 @@ public class ShopGuiListener implements Listener {
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return;
 
-        // Extract set name from "SET_INVESTORS", "SET_DRAGON", etc.
         String setName = pdcValue.substring(4); // Remove "SET_" prefix
+
         CustomArmorItem.ArmorSet armorSet;
         try {
             armorSet = CustomArmorItem.ArmorSet.valueOf(setName);
@@ -404,43 +402,6 @@ public class ShopGuiListener implements Listener {
         ShopGUI.openCategoryItems(player, ShopCategory.ARMOR);
     }
 
-    private void giveItemToPlayer(Player player, CashClashPlayer ccp, Purchasable si, int quantity, long totalPrice) {
-        int giveQty = Math.max(1, Math.min(quantity, si.getInitialAmount()));
-
-        ItemStack item = ItemUtils.createTaggedItem(si);
-        ItemStack replacedItem;
-
-        if (si.getCategory() == ShopCategory.ARMOR) {
-            replacedItem = ItemUtils.equipArmorOrReplace(player, item);
-
-            int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
-            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem, round));
-
-            ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
-            Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
-            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        } else if (si.getCategory() == ShopCategory.WEAPONS) {
-            replacedItem = ItemUtils.replaceBestMatchingTool(player, item);
-
-            int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
-            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem, round));
-
-            ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
-            Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
-            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        } else {
-            ItemStack stack = item.clone();
-            stack.setAmount(giveQty);
-
-            player.getInventory().addItem(stack);
-
-            int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
-            ccp.addPurchase(new PurchaseRecord(si, giveQty, totalPrice, round));
-            Messages.send(player, "<green>Purchased " + si.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
-            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        }
-    }
-
     private void handleCustomItemPurchase(Player player, String pdcValue, ShopCategory category) {
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         if (sess == null) {
@@ -452,10 +413,8 @@ public class ShopGuiListener implements Listener {
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return;
 
-        CustomItem type;
-        try {
-            type = CustomItem.valueOf(pdcValue);
-        } catch (IllegalArgumentException e) {
+        CustomItem type = ShopItems.getCustomItem(pdcValue);
+        if (type == null) {
             CashClashPlugin.getInstance().getLogger().warning("Unknown custom item type: " + pdcValue);
             return;
         }
@@ -494,10 +453,8 @@ public class ShopGuiListener implements Listener {
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return;
 
-        MythicItem mythic;
-        try {
-            mythic = MythicItem.valueOf(pdcValue);
-        } catch (IllegalArgumentException e) {
+        MythicItem mythic = ShopItems.getMythic(pdcValue);
+        if (mythic == null) {
             CashClashPlugin.getInstance().getLogger().warning("Unknown mythic item: " + pdcValue);
             return;
         }
@@ -551,5 +508,42 @@ public class ShopGuiListener implements Listener {
 
         // Refresh the main menu to show updated state
         ShopGUI.openMain(player);
+    }
+
+    private void giveItemToPlayer(Player player, CashClashPlayer ccp, Purchasable si, int quantity, long totalPrice) {
+        int giveQty = Math.max(1, Math.min(quantity, si.getInitialAmount()));
+
+        ItemStack item = ItemUtils.createTaggedItem(si);
+        ItemStack replacedItem;
+
+        if (si.getCategory() == ShopCategory.ARMOR) {
+            replacedItem = ItemUtils.equipArmorOrReplace(player, item);
+
+            int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
+            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem, round));
+
+            ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
+            Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
+            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+        } else if (si.getCategory() == ShopCategory.WEAPONS) {
+            replacedItem = ItemUtils.replaceBestMatchingTool(player, item);
+
+            int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
+            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem, round));
+
+            ItemUtils.applyOwnedEnchantsAfterPurchase(player, si);
+            Messages.send(player, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
+            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+        } else {
+            ItemStack stack = item.clone();
+            stack.setAmount(giveQty);
+
+            player.getInventory().addItem(stack);
+
+            int round = GameManager.getInstance().getPlayerSession(player).getCurrentRound();
+            ccp.addPurchase(new PurchaseRecord(si, giveQty, totalPrice, round));
+            Messages.send(player, "<green>Purchased " + si.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
+            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+        }
     }
 }

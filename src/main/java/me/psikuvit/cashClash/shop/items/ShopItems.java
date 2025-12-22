@@ -56,7 +56,7 @@ public final class ShopItems {
      * @return The item
      * @throws IllegalArgumentException if the item is not found
      */
-    public static Purchasable valueOfOrThrow(String name) {
+    public static Purchasable valueOfOrThrow(String name) throws IllegalArgumentException {
         Purchasable item = BY_NAME.get(name);
         if (item == null) {
             throw new IllegalArgumentException("Unknown shop item: " + name);
@@ -139,6 +139,14 @@ public final class ShopItems {
     public static MythicItem getMythic(String name) {
         Purchasable item = BY_NAME.get(name);
         return item instanceof MythicItem m ? m : null;
+    }
+
+    /**
+     * Gets an InvestmentType by name, or null if not found or not an investment.
+     */
+    public static InvestmentType getInvestment(String name) {
+        Purchasable item = BY_NAME.get(name);
+        return item instanceof InvestmentType i ? i : null;
     }
 }
 

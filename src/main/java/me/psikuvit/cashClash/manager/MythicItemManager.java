@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.shop.items.ShopItems;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -107,11 +108,7 @@ public class MythicItemManager {
 
         if (typeStr == null) return null;
 
-        try {
-            return MythicItem.valueOf(typeStr);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        return ShopItems.getMythic(typeStr);
     }
 
     // ==================== PURCHASE & OWNERSHIP ====================
