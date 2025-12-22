@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.shop.items;
 
+import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import org.bukkit.Material;
 
@@ -7,28 +8,27 @@ import org.bukkit.Material;
  * Food items available in the shop.
  */
 public enum FoodItem implements Purchasable {
-    BREAD(Material.BREAD, 10, 4),
-    COOKED_MUTTON(Material.COOKED_MUTTON, 50, 4),
-    STEAK(Material.COOKED_BEEF, 75, 4),
-    PORKCHOP(Material.COOKED_PORKCHOP, 75, 4),
-    GOLDEN_CARROT(Material.GOLDEN_CARROT, 100, 4),
-    GOLDEN_APPLE(Material.GOLDEN_APPLE, 3000, 1),
-    ENCHANTED_GOLDEN_APPLE(Material.ENCHANTED_GOLDEN_APPLE, 30000, 1),
+    BREAD(Material.BREAD, "bread", 4),
+    COOKED_MUTTON(Material.COOKED_MUTTON, "cooked-mutton", 4),
+    STEAK(Material.COOKED_BEEF, "steak", 4),
+    PORKCHOP(Material.COOKED_PORKCHOP, "porkchop", 4),
+    GOLDEN_CARROT(Material.GOLDEN_CARROT, "golden-carrot", 4),
+    GOLDEN_APPLE(Material.GOLDEN_APPLE, "golden-apple", 1),
+    ENCHANTED_GOLDEN_APPLE(Material.ENCHANTED_GOLDEN_APPLE, "enchanted-golden-apple", 1),
 
-    // Special consumables
-    SPEED_CARROT(Material.CARROT, 1200, 1),          // 20s speed
-    GOLDEN_CHICKEN(Material.COOKED_CHICKEN, 1400, 1), // 15s strength (nerfed)
-    COOKIE_OF_LIFE(Material.COOKIE, 1000, 1),         // 14s regen
-    SUNSCREEN(Material.HONEY_BOTTLE, 2500, 1),        // 30s fire res
-    CAN_OF_SPINACH(Material.SPIDER_EYE, 4000, 1);     // 15s strength (spinach)
+    SPEED_CARROT(Material.CARROT, "speed-carrot", 1),
+    GOLDEN_CHICKEN(Material.COOKED_CHICKEN, "golden-chicken", 1),
+    COOKIE_OF_LIFE(Material.COOKIE, "cookie-of-life", 1),
+    SUNSCREEN(Material.HONEY_BOTTLE, "sunscreen", 1),
+    CAN_OF_SPINACH(Material.SPIDER_EYE, "can-of-spinach", 1);
 
     private final Material material;
-    private final long price;
+    private final String configKey;
     private final int initialAmount;
 
-    FoodItem(Material material, long price, int initialAmount) {
+    FoodItem(Material material, String configKey, int initialAmount) {
         this.material = material;
-        this.price = price;
+        this.configKey = configKey;
         this.initialAmount = initialAmount;
     }
 
@@ -44,7 +44,7 @@ public enum FoodItem implements Purchasable {
 
     @Override
     public long getPrice() {
-        return price;
+        return ShopConfig.getInstance().getFoodPrice(configKey);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.shop.items;
 
+import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import org.bukkit.Material;
 
@@ -15,40 +16,35 @@ import java.util.stream.Collectors;
  * INDIVIDUAL ITEMS: Tax Evasion Pants, Magic Helmet, Bunny Shoes, Guardian's Vest can be bought separately.
  */
 public enum CustomArmorItem implements Purchasable {
-    // Investor's Set (must buy all 4 pieces together)
-    INVESTORS_BOOTS(Material.IRON_BOOTS, 4250, "Investor's Boots", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
-    INVESTORS_HELMET(Material.IRON_HELMET, 4500, "Investor's Helmet", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
-    INVESTORS_LEGGINGS(Material.IRON_LEGGINGS, 4750, "Investor's Leggings", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
-    INVESTORS_CHESTPLATE(Material.IRON_CHESTPLATE, 5000, "Investor's Chestplate", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
+    INVESTORS_BOOTS(Material.IRON_BOOTS, "investors-boots", "Investor's Boots", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
+    INVESTORS_HELMET(Material.IRON_HELMET, "investors-helmet", "Investor's Helmet", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
+    INVESTORS_LEGGINGS(Material.IRON_LEGGINGS, "investors-leggings", "Investor's Leggings", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
+    INVESTORS_CHESTPLATE(Material.IRON_CHESTPLATE, "investors-chestplate", "Investor's Chestplate", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
 
-    // Individual pieces (no set requirement)
-    TAX_EVASION_PANTS(Material.LEATHER_LEGGINGS, 5000, "Tax Evasion Pants", "Not even the economy can catch you.", null),
-    MAGIC_HELMET(Material.IRON_HELMET, 7500, "Magic Helmet", "Hide in plain profit.", null),
-    BUNNY_SHOES(Material.LEATHER_BOOTS, 15000, "Bunny Shoes", "Agility is the best currency.", null),
-    GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, 20000, "Guardian's Vest", "A second chance, bought and paid for.", null),
+    TAX_EVASION_PANTS(Material.LEATHER_LEGGINGS, "tax-evasion-pants", "Tax Evasion Pants", "Not even the economy can catch you.", null),
+    MAGIC_HELMET(Material.IRON_HELMET, "magic-helmet", "Magic Helmet", "Hide in plain profit.", null),
+    BUNNY_SHOES(Material.LEATHER_BOOTS, "bunny-shoes", "Bunny Shoes", "Agility is the best currency.", null),
+    GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, "guardians-vest", "Guardian's Vest", "A second chance, bought and paid for.", null),
 
-    // Flamebringer's Set (must buy boots + leggings together)
-    FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, 15000, "Flamebringer's Boots", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
-    FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, 20000, "Flamebringer's Leggings", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
+    FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, "flamebringer-boots", "Flamebringer's Boots", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
+    FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, "flamebringer-leggings", "Flamebringer's Leggings", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
 
-    // Deathmauler's Outfit (must buy chestplate + leggings together)
-    DEATHMAULER_CHESTPLATE(Material.NETHERITE_CHESTPLATE, 25000, "Deathmauler's Chestplate", "No one waits for death to have a choice in where you may lie.", ArmorSet.DEATHMAULER),
-    DEATHMAULER_LEGGINGS(Material.NETHERITE_LEGGINGS, 25000, "Deathmauler's Leggings", "No one waits for death to have a choice in where you may lie.", ArmorSet.DEATHMAULER),
+    DEATHMAULER_CHESTPLATE(Material.NETHERITE_CHESTPLATE, "deathmauler-chestplate", "Deathmauler's Chestplate", "No one waits for death to have a choice in where you may lie.", ArmorSet.DEATHMAULER),
+    DEATHMAULER_LEGGINGS(Material.NETHERITE_LEGGINGS, "deathmauler-leggings", "Deathmauler's Leggings", "No one waits for death to have a choice in where you may lie.", ArmorSet.DEATHMAULER),
 
-    // Dragon Set (must buy helmet + chestplate + boots together)
-    DRAGON_CHESTPLATE(Material.DIAMOND_CHESTPLATE, 25000, "Dragon Chestplate", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
-    DRAGON_BOOTS(Material.DIAMOND_BOOTS, 25000, "Dragon Boots", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
-    DRAGON_HELMET(Material.DIAMOND_HELMET, 25000, "Dragon Helmet", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON);
+    DRAGON_CHESTPLATE(Material.DIAMOND_CHESTPLATE, "dragon-chestplate", "Dragon Chestplate", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
+    DRAGON_BOOTS(Material.DIAMOND_BOOTS, "dragon-boots", "Dragon Boots", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
+    DRAGON_HELMET(Material.DIAMOND_HELMET, "dragon-head", "Dragon Helmet", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON);
 
     private final Material material;
-    private final long price;
+    private final String configKey;
     private final String displayName;
     private final String lore;
     private final ArmorSet armorSet;
 
-    CustomArmorItem(Material material, long price, String displayName, String lore, ArmorSet armorSet) {
+    CustomArmorItem(Material material, String configKey, String displayName, String lore, ArmorSet armorSet) {
         this.material = material;
-        this.price = price;
+        this.configKey = configKey;
         this.displayName = displayName;
         this.lore = lore;
         this.armorSet = armorSet;
@@ -66,7 +62,7 @@ public enum CustomArmorItem implements Purchasable {
 
     @Override
     public long getPrice() {
-        return price;
+        return ShopConfig.getInstance().getCustomArmorPrice(configKey);
     }
 
     /**
@@ -74,7 +70,7 @@ public enum CustomArmorItem implements Purchasable {
      * Used for progressive pricing calculations (e.g., Investor's set).
      */
     public long getBasePrice() {
-        return price;
+        return getPrice();
     }
 
     @Override
@@ -137,7 +133,6 @@ public enum CustomArmorItem implements Purchasable {
         };
     }
 
-    // ==================== SET DETECTION METHODS ====================
 
     /**
      * Checks if this armor piece is part of the Investor's set.
@@ -166,8 +161,6 @@ public enum CustomArmorItem implements Purchasable {
     public boolean isDragonSet() {
         return armorSet == ArmorSet.DRAGON;
     }
-
-    // ==================== ARMOR SET ENUM ====================
 
     /**
      * Represents armor sets that must be purchased together.

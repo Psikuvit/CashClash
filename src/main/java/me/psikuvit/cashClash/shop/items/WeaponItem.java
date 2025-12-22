@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.shop.items;
 
+import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import org.bukkit.Material;
 
@@ -7,19 +8,19 @@ import org.bukkit.Material;
  * Weapon items available in the shop.
  */
 public enum WeaponItem implements Purchasable {
-    IRON_SWORD(Material.IRON_SWORD, 1000),
-    IRON_AXE(Material.IRON_AXE, 2000),
-    DIAMOND_SWORD(Material.DIAMOND_SWORD, 3000),
-    DIAMOND_AXE(Material.DIAMOND_AXE, 4000),
-    NETHERITE_SWORD(Material.NETHERITE_SWORD, 10000),
-    NETHERITE_AXE(Material.NETHERITE_AXE, 12000);
+    IRON_SWORD(Material.IRON_SWORD, "iron-sword"),
+    IRON_AXE(Material.IRON_AXE, "iron-axe"),
+    DIAMOND_SWORD(Material.DIAMOND_SWORD, "diamond-sword"),
+    DIAMOND_AXE(Material.DIAMOND_AXE, "diamond-axe"),
+    NETHERITE_SWORD(Material.NETHERITE_SWORD, "netherite-sword"),
+    NETHERITE_AXE(Material.NETHERITE_AXE, "netherite-axe");
 
     private final Material material;
-    private final long price;
+    private final String configKey;
 
-    WeaponItem(Material material, long price) {
+    WeaponItem(Material material, String configKey) {
         this.material = material;
-        this.price = price;
+        this.configKey = configKey;
     }
 
     @Override
@@ -34,7 +35,7 @@ public enum WeaponItem implements Purchasable {
 
     @Override
     public long getPrice() {
-        return price;
+        return ShopConfig.getInstance().getWeaponPrice(configKey);
     }
 
     @Override

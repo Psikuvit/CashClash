@@ -1,83 +1,51 @@
 package me.psikuvit.cashClash.shop;
 
+import me.psikuvit.cashClash.config.ShopConfig;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 
 import java.util.List;
-import java.util.Map;
 
 public enum EnchantEntry {
-    SHARPNESS(Enchantment.SHARPNESS,
-            "Sharpness", 
-            Map.of(1, 5000L, 2, 10000L, 3, 20000L, 4, 30000L),
-            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD
+    SHARPNESS(Enchantment.SHARPNESS, "sharpness", "Sharpness", 5,
+            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
-    PROTECTION(Enchantment.PROTECTION,
-            "Protection",
-            Map.of(1, 7500L, 2, 15000L, 3, 30000L, 4, 50000L),
+    PROTECTION(Enchantment.PROTECTION, "protection", "Protection", 4,
             Material.LEATHER_CHESTPLATE, Material.LEATHER_HELMET, Material.LEATHER_LEGGINGS, Material.LEATHER_BOOTS,
-                    Material.IRON_CHESTPLATE, Material.IRON_HELMET, Material.IRON_LEGGINGS, Material.IRON_BOOTS,
-                    Material.DIAMOND_CHESTPLATE, Material.DIAMOND_HELMET, Material.DIAMOND_LEGGINGS, Material.DIAMOND_BOOTS
+            Material.IRON_CHESTPLATE, Material.IRON_HELMET, Material.IRON_LEGGINGS, Material.IRON_BOOTS,
+            Material.DIAMOND_CHESTPLATE, Material.DIAMOND_HELMET, Material.DIAMOND_LEGGINGS, Material.DIAMOND_BOOTS,
+            Material.NETHERITE_CHESTPLATE, Material.NETHERITE_HELMET, Material.NETHERITE_LEGGINGS, Material.NETHERITE_BOOTS
     ),
-    PROJECTILE_PROTECTION(Enchantment.PROJECTILE_PROTECTION,
-            "Projectile Protection", 
-            Map.of(1, 800L, 2, 1200L, 3, 1600L, 4, 2000L),
-            Material.IRON_CHESTPLATE, Material.DIAMOND_CHESTPLATE
+    KNOCKBACK(Enchantment.KNOCKBACK, "knockback", "Knockback", 2,
+            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
-    SHARPNESS_AXE(Enchantment.SHARPNESS,
-            "Axe Sharpness",
-            Map.of(1, 10000L, 2, 15000L, 3, 20000L, 4, 30000L),
-            Material.WOODEN_AXE, Material.STONE_AXE, Material.IRON_AXE, Material.DIAMOND_AXE
+    FIRE_ASPECT(Enchantment.FIRE_ASPECT, "fire-aspect", "Fire Aspect", 2,
+            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
-    KNOCKBACK(Enchantment.KNOCKBACK,
-            "Knockback", 
-            Map.of(1, 10000L, 2, 40000L),
-            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD
-    ),
-    FIRE_ASPECT(Enchantment.FIRE_ASPECT, 
-            "Fire Aspect", 
-            Map.of(1, 40000L), 
-            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD
-    ),
-    PIERCING(Enchantment.PIERCING,
-            "Piercing",
-            Map.of(1, 15000L), 
-            Material.CROSSBOW
-    ),
-    QUICK_CHARGE(Enchantment.QUICK_CHARGE,
-            "Quick Charge", 
-            Map.of(1, 10000L, 2, 15000L),
-            Material.CROSSBOW
-    ),
-    POWER(Enchantment.POWER, 
-            "Power", 
-            Map.of(1, 10000L, 2, 20000L, 3, 30000L, 4, 40000L),
+    POWER(Enchantment.POWER, "power", "Power", 5,
             Material.BOW
     ),
-    FLAME(Enchantment.FLAME, 
-            "Flame", Map.of(1, 15000L), 
+    FLAME(Enchantment.FLAME, "flame", "Flame", 1,
             Material.BOW
     ),
-    PUNCH(Enchantment.PUNCH, 
-            "Punch",
-            Map.of(1, 20000L, 2, 30000L),
+    PUNCH(Enchantment.PUNCH, "punch", "Punch", 2,
             Material.BOW
     ),
-    SOUL_SPEED(Enchantment.SOUL_SPEED,
-            "Soul Speed",
-            Map.of(1, 1000L, 2, 4000L, 3, 10000L),
-            Material.SOUL_SAND, Material.SOUL_SOIL
+    UNBREAKING(Enchantment.UNBREAKING, "unbreaking", "Unbreaking", 3,
+            Material.values() // All materials
     );
 
     private final Enchantment enchantment;
+    private final String configKey;
     private final String displayName;
-    private final Map<Integer, Long> levelPrices;
+    private final int maxLevel;
     private final List<Material> applicableMaterials;
 
-    EnchantEntry(Enchantment enchantment, String displayName, Map<Integer, Long> levelPrices, Material... applicableMaterials) {
+    EnchantEntry(Enchantment enchantment, String configKey, String displayName, int maxLevel, Material... applicableMaterials) {
         this.enchantment = enchantment;
+        this.configKey = configKey;
         this.displayName = displayName;
-        this.levelPrices = levelPrices;
+        this.maxLevel = maxLevel;
         this.applicableMaterials = List.of(applicableMaterials);
     }
 
@@ -90,7 +58,10 @@ public enum EnchantEntry {
     }
 
     public long getPriceForLevel(int level) {
-        return levelPrices.getOrDefault(level, -1L);
+        if (level < 1 || level > maxLevel) {
+            return -1L;
+        }
+        return ShopConfig.getInstance().getEnchantPrice(configKey, level);
     }
 
     public List<Material> getApplicableMaterials() {
@@ -98,6 +69,6 @@ public enum EnchantEntry {
     }
 
     public int getMaxLevel() {
-        return levelPrices.keySet().stream().mapToInt(Integer::intValue).max().orElse(1);
+        return maxLevel;
     }
 }

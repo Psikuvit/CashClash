@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.shop.items;
 
+import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import org.bukkit.Material;
 
@@ -7,27 +8,27 @@ import org.bukkit.Material;
  * Standard armor items available in the shop.
  */
 public enum ArmorItem implements Purchasable {
-    IRON_BOOTS(Material.IRON_BOOTS, 2250),
-    IRON_HELMET(Material.IRON_HELMET, 2500),
-    IRON_LEGGINGS(Material.IRON_LEGGINGS, 2750),
-    IRON_CHESTPLATE(Material.IRON_CHESTPLATE, 3000),
+    IRON_BOOTS(Material.IRON_BOOTS, "iron-boots"),
+    IRON_HELMET(Material.IRON_HELMET, "iron-helmet"),
+    IRON_LEGGINGS(Material.IRON_LEGGINGS, "iron-leggings"),
+    IRON_CHESTPLATE(Material.IRON_CHESTPLATE, "iron-chestplate"),
 
-    DIAMOND_BOOTS(Material.DIAMOND_BOOTS, 2250),
-    DIAMOND_HELMET(Material.DIAMOND_HELMET, 2500),
-    DIAMOND_LEGGINGS(Material.DIAMOND_LEGGINGS, 2750),
-    DIAMOND_CHESTPLATE(Material.DIAMOND_CHESTPLATE, 3000),
+    DIAMOND_BOOTS(Material.DIAMOND_BOOTS, "diamond-boots"),
+    DIAMOND_HELMET(Material.DIAMOND_HELMET, "diamond-helmet"),
+    DIAMOND_LEGGINGS(Material.DIAMOND_LEGGINGS, "diamond-leggings"),
+    DIAMOND_CHESTPLATE(Material.DIAMOND_CHESTPLATE, "diamond-chestplate"),
 
-    NETHERITE_BOOTS(Material.NETHERITE_BOOTS, 15000),
-    NETHERITE_HELMET(Material.NETHERITE_HELMET, 17500),
-    NETHERITE_LEGGINGS(Material.NETHERITE_LEGGINGS, 20000),
-    NETHERITE_CHESTPLATE(Material.NETHERITE_CHESTPLATE, 25000);
+    NETHERITE_BOOTS(Material.NETHERITE_BOOTS, "netherite-boots"),
+    NETHERITE_HELMET(Material.NETHERITE_HELMET, "netherite-helmet"),
+    NETHERITE_LEGGINGS(Material.NETHERITE_LEGGINGS, "netherite-leggings"),
+    NETHERITE_CHESTPLATE(Material.NETHERITE_CHESTPLATE, "netherite-chestplate");
 
     private final Material material;
-    private final long price;
+    private final String configKey;
 
-    ArmorItem(Material material, long price) {
+    ArmorItem(Material material, String configKey) {
         this.material = material;
-        this.price = price;
+        this.configKey = configKey;
     }
 
     @Override
@@ -42,7 +43,7 @@ public enum ArmorItem implements Purchasable {
 
     @Override
     public long getPrice() {
-        return price;
+        return ShopConfig.getInstance().getArmorPrice(configKey);
     }
 
     @Override

@@ -1,0 +1,196 @@
+# ============================================
+# Cash Clash Shop Configuration
+# ============================================
+# All shop item prices and shop-related settings
+# ============================================
+
+# ============================================
+# ARMOR PRICES
+# ============================================
+armor:
+  iron-boots: 2250
+  iron-helmet: 2500
+  iron-leggings: 2750
+  iron-chestplate: 3000
+
+  diamond-boots: 4500
+  diamond-helmet: 5000
+  diamond-leggings: 5500
+  diamond-chestplate: 6000
+
+  netherite-boots: 15000
+  netherite-helmet: 17500
+  netherite-leggings: 20000
+  netherite-chestplate: 25000
+
+# ============================================
+# WEAPON PRICES
+# ============================================
+weapons:
+  wooden-sword: 500
+  stone-sword: 750
+  iron-sword: 1250
+  diamond-sword: 3000
+  netherite-sword: 10000
+
+  wooden-axe: 500
+  stone-axe: 750
+  iron-axe: 1250
+  diamond-axe: 3000
+  netherite-axe: 10000
+
+# ============================================
+# FOOD PRICES
+# ============================================
+food:
+  bread: 25
+  cooked-mutton: 50
+  steak: 75
+  porkchop: 100
+  golden-carrot: 150
+  golden-apple: 500
+  speed-carrot: 1000
+  golden-chicken: 1500
+  cookie-of-life: 2000
+  sunscreen: 2500
+  can-of-spinach: 3000
+  enchanted-golden-apple: 10000
+
+# ============================================
+# UTILITY PRICES
+# ============================================
+utility:
+  lava-bucket: 500
+  fishing-rod: 750
+  cobweb: 1000
+  crossbow: 1500
+  water-bucket: 2000
+  ender-pearl: 2500
+  wind-charge: 3000
+  bow: 3500
+
+# ============================================
+# CUSTOM ITEM PRICES
+# ============================================
+custom-items:
+  grenade: 5000
+  smoke-grenade: 7500
+  bounce-pad: 10000
+  medic-pouch: 12500
+  tablet-of-hacking: 15000
+  bag-of-potatoes: 17500
+  boombox: 20000
+  invis-cloak: 25000
+  cash-blaster: 30000
+  respawn-anchor: 50000
+
+# ============================================
+# CUSTOM ARMOR PRICES
+# ============================================
+custom-armor:
+  # Individual pieces
+  magic-helmet: 15000
+  guardians-vest: 20000
+  tax-evasion-pants: 25000
+  bunny-shoes: 30000
+
+  # Investor's Set
+  investors-helmet: 35000
+  investors-chestplate: 40000
+  investors-leggings: 45000
+  investors-boots: 50000
+
+  # Flamebringer Set
+  flamebringer-helmet: 55000
+  flamebringer-chestplate: 60000
+  flamebringer-leggings: 65000
+  flamebringer-boots: 70000
+
+  # Deathmauler Set
+  deathmauler-helmet: 75000
+  deathmauler-chestplate: 80000
+  deathmauler-leggings: 85000
+  deathmauler-boots: 90000
+
+  # Dragon Set
+  dragon-head: 95000
+  dragon-chestplate: 100000
+  dragon-leggings: 105000
+  dragon-boots: 110000
+
+# ============================================
+# MYTHIC/LEGENDARY ITEM PRICES
+# ============================================
+mythic-items:
+  coin-cleaver: 75000
+  carls-battleaxe: 100000
+  wind-bow: 100000
+  electric-eel-sword: 125000
+  goblin-spear: 125000
+  sandstormer: 125000
+  warden-gloves: 150000
+  blazebite-crossbows: 150000
+
+# ============================================
+# ENCHANTMENT PRICES
+# ============================================
+enchants:
+  protection:
+    tier-1: 10000
+    tier-2: 25000
+    tier-3: 50000
+    tier-4: 100000
+
+  sharpness:
+    tier-1: 5000
+    tier-2: 10000
+    tier-3: 15000
+    tier-4: 20000
+    tier-5: 25000
+
+  power:
+    tier-1: 5000
+    tier-2: 10000
+    tier-3: 15000
+    tier-4: 20000
+    tier-5: 25000
+
+  knockback:
+    tier-1: 3000
+    tier-2: 6000
+
+  punch:
+    tier-1: 3000
+    tier-2: 6000
+
+  fire-aspect:
+    tier-1: 8000
+    tier-2: 15000
+
+  flame:
+    tier-1: 10000
+
+  unbreaking:
+    tier-1: 2000
+    tier-2: 4000
+    tier-3: 6000
+
+# ============================================
+# INVESTMENT PRICES
+# ============================================
+investments:
+  wallet:
+    cost: 10000
+    bonus-return: 30000
+    negative-return: 5000
+
+  purse:
+    cost: 30000
+    bonus-return: 60000
+    negative-return: 10000
+
+  ender-bag:
+    cost: 50000
+    bonus-return: 100000
+    negative-return: 20000
+
