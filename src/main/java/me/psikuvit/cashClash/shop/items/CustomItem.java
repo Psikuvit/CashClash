@@ -13,7 +13,7 @@ public enum CustomItem implements Purchasable {
             "Throwable Grenade",
             "Explodes after 3 seconds dealing 4 hearts in 1-4 block radius, 1 heart in 5-6 blocks."
     ),
-    BOUNCE_PAD(Material.HEAVY_WEIGHTED_PRESSURE_PLATE, "bounce-pad", 1, 8,
+    BOUNCE_PAD(Material.SLIME_BLOCK, "bounce-pad", 1, 8,
             "Placeable Bounce Pad",
             "Places a pad that launches players 7 blocks forward and 4 blocks up. Enemies cannot use your bounce pads."
     ),
