@@ -157,8 +157,12 @@ public class CashClashPlayer {
         purchaseHistory.addLast(record);
     }
 
-    public PurchaseRecord popLastPurchase() {
-        PurchaseRecord record = purchaseHistory.pollLast();
+    public void popLastPurchase() {
+        purchaseHistory.pollLast();
+    }
+
+    public PurchaseRecord peekLastPurchase() {
+        PurchaseRecord record = purchaseHistory.peekLast();
         if (record != null && record.item().getCategory() == ShopCategory.ENCHANTS) return null;
         return record;
     }
