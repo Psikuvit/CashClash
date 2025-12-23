@@ -5,8 +5,6 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.shop.items.ShopItems;
-import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
@@ -75,20 +73,6 @@ public class CustomItemManager {
             instance = new CustomItemManager();
         }
         return instance;
-    }
-
-    // ==================== ITEM TYPE DETECTION ====================
-
-    public CustomItem getCustomItemType(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return null;
-
-        ItemMeta meta = item.getItemMeta();
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        String typeStr = pdc.get(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING);
-
-        if (typeStr == null) return null;
-
-        return ShopItems.getCustomItem(typeStr);
     }
 
     // ==================== GRENADE IMPLEMENTATION ====================

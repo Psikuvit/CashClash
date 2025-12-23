@@ -1,9 +1,15 @@
 package me.psikuvit.cashClash.shop.items;
 
-import me.psikuvit.cashClash.util.enums.InvestmentType;
 import me.psikuvit.cashClash.shop.ShopCategory;
+import me.psikuvit.cashClash.util.enums.InvestmentType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 /**
  * Registry and utility class for all shop items.
@@ -50,47 +56,12 @@ public final class ShopItems {
     }
 
     /**
-     * Gets a purchasable item by its enum name, throwing if not found.
-     *
-     * @param name The name of the item
-     * @return The item
-     * @throws IllegalArgumentException if the item is not found
-     */
-    public static Purchasable valueOfOrThrow(String name) throws IllegalArgumentException {
-        Purchasable item = BY_NAME.get(name);
-        if (item == null) {
-            throw new IllegalArgumentException("Unknown shop item: " + name);
-        }
-        return item;
-    }
-
-    /**
-     * Gets all items in a specific category.
-     *
-     * @param category The shop category
-     * @return List of items in that category (unmodifiable)
-     */
-    public static List<Purchasable> getByCategory(ShopCategory category) {
-        return Collections.unmodifiableList(BY_CATEGORY.getOrDefault(category, Collections.emptyList()));
-    }
-
-    /**
      * Gets all registered shop items.
      *
      * @return List of all items (unmodifiable)
      */
     public static List<Purchasable> values() {
         return Collections.unmodifiableList(ALL_ITEMS);
-    }
-
-    /**
-     * Checks if an item with the given name exists.
-     *
-     * @param name The name to check
-     * @return true if an item with that name exists
-     */
-    public static boolean exists(String name) {
-        return BY_NAME.containsKey(name);
     }
 
     /**

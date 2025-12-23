@@ -6,11 +6,11 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.MythicItem;
-import me.psikuvit.cashClash.shop.items.ShopItems;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import net.kyori.adventure.text.Component;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
@@ -95,20 +95,6 @@ public class MythicItemManager {
             instance = new MythicItemManager();
         }
         return instance;
-    }
-
-    // ==================== MYTHIC DETECTION ====================
-
-    public MythicItem getMythicType(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return null;
-
-        ItemMeta meta = item.getItemMeta();
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        String typeStr = pdc.get(Keys.MYTHIC_ITEM_KEY, PersistentDataType.STRING);
-
-        if (typeStr == null) return null;
-
-        return ShopItems.getMythic(typeStr);
     }
 
     // ==================== PURCHASE & OWNERSHIP ====================
@@ -243,8 +229,8 @@ public class MythicItemManager {
 
         // PDC tags
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(Keys.MYTHIC_ITEM_KEY, PersistentDataType.STRING, mythic.name());
-        pdc.set(Keys.CUSTOM_ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, mythic.name());
+        pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
 
         // Apply special attributes based on mythic type
         applyMythicAttributes(mythic, meta);
@@ -365,8 +351,8 @@ public class MythicItemManager {
         ItemStack mainHand = player.getInventory().getItemInMainHand();
         ItemStack offHand = player.getInventory().getItemInOffHand();
 
-        return getMythicType(mainHand) == MythicItem.COIN_CLEAVER ||
-               getMythicType(offHand) == MythicItem.COIN_CLEAVER;
+        return PDCDetection.getMythic(mainHand) == MythicItem.COIN_CLEAVER ||
+               PDCDetection.getMythic(offHand) == MythicItem.COIN_CLEAVER;
     }
 
     /**
@@ -627,7 +613,7 @@ public class MythicItemManager {
         trident.setVelocity(player.getLocation().getDirection().multiply(2.5));
 
         // Tag it as goblin spear for hit detection
-        trident.getPersistentDataContainer().set(Keys.MYTHIC_ITEM_KEY, PersistentDataType.STRING, "GOBLIN_SPEAR");
+        trident.getItemStack().editPersistentDataContainer(pdc -> pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, "GOBLIN_SPEAR"));
 
         SoundUtils.play(player, Sound.ITEM_TRIDENT_THROW, 1.0f, 1.0f);
         Messages.send(player, "<green>Goblin Spear thrown!</green>");

@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.manager.MythicItemManager;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
@@ -20,7 +21,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Map;
@@ -46,7 +46,7 @@ public class MythicItemListener implements Listener {
         ItemStack item = event.getItem();
         if (item == null) return;
 
-        MythicItem mythic = manager.getMythicType(item);
+        MythicItem mythic = PDCDetection.getMythic(item);
         if (mythic == null) return;
 
         Action action = event.getAction();
@@ -107,7 +107,7 @@ public class MythicItemListener implements Listener {
         // Handle direct melee damage from player
         if (event.getDamager() instanceof Player attacker) {
             ItemStack item = attacker.getInventory().getItemInMainHand();
-            MythicItem mythic = manager.getMythicType(item);
+            MythicItem mythic = PDCDetection.getMythic(item);
             if (mythic == null) return;
 
             switch (mythic) {
@@ -146,7 +146,7 @@ public class MythicItemListener implements Listener {
         ItemStack bow = event.getBow();
         if (bow == null) return;
 
-        MythicItem mythic = manager.getMythicType(bow);
+        MythicItem mythic = PDCDetection.getMythic(bow);
         if (mythic == null) return;
 
         switch (mythic) {
@@ -170,7 +170,7 @@ public class MythicItemListener implements Listener {
             if (!(arrow.getShooter() instanceof Player shooter)) return;
 
             ItemStack bow = shooter.getInventory().getItemInMainHand();
-            MythicItem mythic = manager.getMythicType(bow);
+            MythicItem mythic = PDCDetection.getMythic(bow);
 
             if (mythic == MythicItem.WIND_BOW && event.getHitEntity() instanceof Player victim) {
                 manager.handleWindBowHit(shooter, victim);
@@ -192,7 +192,7 @@ public class MythicItemListener implements Listener {
         if (event.getEntity() instanceof Trident trident) {
             if (!(trident.getShooter() instanceof Player shooter)) return;
 
-            String tag = trident.getPersistentDataContainer().get(Keys.MYTHIC_ITEM_KEY, PersistentDataType.STRING);
+            String tag = PDCDetection.readTag(trident.getItemStack(), Keys.ITEM_ID);
 
             if ("GOBLIN_SPEAR".equals(tag) && event.getHitEntity() instanceof Player victim) {
                 manager.handleGoblinSpearHit(shooter, victim, trident);
@@ -214,7 +214,7 @@ public class MythicItemListener implements Listener {
         ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
         if (newItem == null) return;
 
-        MythicItem mythic = manager.getMythicType(newItem);
+        MythicItem mythic = PDCDetection.getMythic(newItem);
         if (mythic == MythicItem.SANDSTORMER) {
             // Start ambient particle task - sand particles when held
             BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
@@ -226,7 +226,7 @@ public class MythicItemListener implements Listener {
 
                 // Check if still holding Sandstormer
                 ItemStack currentItem = player.getInventory().getItemInMainHand();
-                if (manager.getMythicType(currentItem) == MythicItem.SANDSTORMER) {
+                if (PDCDetection.getMythic(currentItem) == MythicItem.SANDSTORMER) {
                     manager.spawnSandstormerParticles(player);
                 }
             }, 10L, 10L);
@@ -250,23 +250,5 @@ public class MythicItemListener implements Listener {
                 }
             });
         }
-    }
-
-    /**
-     * Cleanup particle tasks for a player.
-     */
-    public void cleanupPlayer(UUID playerId) {
-        BukkitTask task = sandstormerParticleTasks.remove(playerId);
-        if (task != null) {
-            task.cancel();
-        }
-    }
-
-    /**
-     * Full cleanup.
-     */
-    public void cleanup() {
-        sandstormerParticleTasks.values().forEach(BukkitTask::cancel);
-        sandstormerParticleTasks.clear();
     }
 }

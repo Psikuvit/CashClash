@@ -26,7 +26,7 @@ import java.util.List;
  *     .price(5000)
  *     .description("A sharp blade")
  *     .purchasePrompt()
- *     .shopKey("DIAMOND_SWORD")
+ *     .itemId("DIAMOND_SWORD")
  *     .build();
  * }</pre>
  */
@@ -73,7 +73,7 @@ public class ShopItemBuilder {
         return new ShopItemBuilder(purchasable.getMaterial(), purchasable.getInitialAmount())
                 .name("<yellow>" + purchasable.getDisplayName() + "</yellow>")
                 .price(purchasable.getPrice())
-                .shopKey(purchasable.name());
+                .itemId(purchasable.name());
     }
 
     /**
@@ -210,7 +210,7 @@ public class ShopItemBuilder {
     public ShopItemBuilder owned() {
         lore.clear();
         lore.addAll(Messages.wrapLines("<gray>You already own this item</gray>"));
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
+        meta.getPersistentDataContainer().set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         return this;
     }
 
@@ -223,7 +223,7 @@ public class ShopItemBuilder {
     public ShopItemBuilder maxed(String message) {
         lore.clear();
         lore.addAll(Messages.wrapLines(message));
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
+        meta.getPersistentDataContainer().set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         return this;
     }
 
@@ -236,29 +236,18 @@ public class ShopItemBuilder {
     public ShopItemBuilder locked(String reason) {
         lore.add(Component.empty());
         lore.addAll(Messages.wrapLines("<red>" + reason + "</red>"));
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
+        meta.getPersistentDataContainer().set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         return this;
     }
 
     /**
-     * Sets the shop item key in PDC.
+     * Sets the item identifier key in PDC.
      *
      * @param key The item identifier
      * @return This builder for chaining
      */
-    public ShopItemBuilder shopKey(String key) {
-        meta.getPersistentDataContainer().set(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING, key);
-        return this;
-    }
-
-    /**
-     * Sets the custom item key in PDC.
-     *
-     * @param key The custom item identifier
-     * @return This builder for chaining
-     */
-    public ShopItemBuilder customItemKey(String key) {
-        meta.getPersistentDataContainer().set(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING, key);
+    public ShopItemBuilder itemId(String key) {
+        meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, key);
         return this;
     }
 

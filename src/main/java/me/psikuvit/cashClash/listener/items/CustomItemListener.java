@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.manager.CustomItemManager;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;

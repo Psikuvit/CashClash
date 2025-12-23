@@ -59,7 +59,7 @@ public final class GuiItemUtils {
             return ShopItemBuilder.of(item.getMaterial(), quantity)
                     .name("<green>" + item.getDisplayName() + " <gray>(Owned)</gray></green>")
                     .owned()
-                    .shopKey(item.name())
+                    .itemId(item.name())
                     .build();
         }
 
@@ -67,17 +67,13 @@ public final class GuiItemUtils {
                 .name("<yellow>" + item.getDisplayName() + "</yellow>")
                 .price(item.getPrice());
 
-        if (item.getInitialAmount() > 1) {
-            builder.maxQuantity(item.getInitialAmount());
-        }
-
         String desc = item.getDescription();
         if (desc != null && !desc.isEmpty()) {
             builder.description(desc);
         }
 
         return builder.purchasePrompt()
-                .shopKey(item.name())
+                .itemId(item.name())
                 .build();
     }
 
@@ -95,7 +91,7 @@ public final class GuiItemUtils {
             return ShopItemBuilder.of(item.getMaterial())
                     .name("<green>" + item.getDisplayName() + " <gray>(Max)</gray></green>")
                     .maxed("<gray>Maximum tier reached!</gray>")
-                    .shopKey(item.name())
+                    .itemId(item.name())
                     .build();
         }
 
@@ -112,7 +108,7 @@ public final class GuiItemUtils {
         }
 
         return builder.purchasePrompt()
-                .shopKey(item.name())
+                .itemId(item.name())
                 .build();
     }
 
@@ -133,7 +129,7 @@ public final class GuiItemUtils {
                 .lore("<gray>Max " + cfg.getMaxDiamondPiecesEarly() +
                       " diamond pieces until Round " + cfg.getDiamondUnlockRound() + "</gray>")
                 .lore("<gray>Current round: <yellow>" + currentRound + "</yellow></gray>")
-                .shopKey(item.name())
+                .itemId(item.name())
                 .build();
     }
 
@@ -153,7 +149,7 @@ public final class GuiItemUtils {
                 .price(price)
                 .maxLevel(enchant.getMaxLevel())
                 .purchasePrompt()
-                .shopKey(enchant.name())
+                .itemId(enchant.name())
                 .build();
     }
 
@@ -167,7 +163,7 @@ public final class GuiItemUtils {
         return ShopItemBuilder.of(Material.ENCHANTED_BOOK)
                 .name("<green>" + enchant.getDisplayName() + " <gray>(Max)</gray></green>")
                 .maxed("<gray>Maximum level reached!</gray>")
-                .shopKey(enchant.name())
+                .itemId(enchant.name())
                 .build();
     }
 
@@ -191,7 +187,7 @@ public final class GuiItemUtils {
         }
 
         return builder.purchasePrompt()
-                .customItemKey(type.name())
+                .itemId(type.name())
                 .build();
     }
 
@@ -222,7 +218,7 @@ public final class GuiItemUtils {
                     .description(set.getDescription())
                     .emptyLine()
                     .lore("<green>✓ You own this set</green>")
-                    .shopKey("SET_" + set.name())
+                    .itemId("SET_" + set.name())
                     .build();
         }
 
@@ -244,7 +240,7 @@ public final class GuiItemUtils {
               .lore("<red>Must buy complete set!</red>")
               .purchasePrompt();
 
-        ItemStack item = builder.shopKey("SET_" + set.name()).build();
+        ItemStack item = builder.itemId("SET_" + set.name()).build();
 
         // Add piece lore manually since builder doesn't have a method for raw components
         var meta = item.getItemMeta();
@@ -280,9 +276,9 @@ public final class GuiItemUtils {
         return getAllInventoryItems(player)
                 .filter(Objects::nonNull)
                 .filter(ItemStack::hasItemMeta)
-                .map(is -> is.getItemMeta().getPersistentDataContainer()
-                        .get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING))
-                .anyMatch(piece.name()::equals);
+                .map(PDCDetection::getCustomArmor)
+                .filter(Objects::nonNull)
+                .anyMatch(customArmorItem -> piece.name().equals(customArmorItem.name()));
     }
 
     // ==================== INVESTMENT ITEMS ====================
@@ -305,7 +301,7 @@ public final class GuiItemUtils {
                 .lore("<gray>Invest: <gold>$" + String.format("%,d", type.getCost()) + "</gold></gray>")
                 .lore("<green>Bonus: $" + String.format("%,d", type.getBonusReturn()) + "</green>")
                 .lore("<red>Negative: $" + String.format("%,d", type.getNegativeReturn()) + "</red>")
-                .shopKey(type.name())
+                .itemId(type.name())
                 .build();
     }
 
@@ -345,7 +341,7 @@ public final class GuiItemUtils {
         ShopItemBuilder builder = ShopItemBuilder.of(mythic.getMaterial())
                 .hideAttributes()
                 .hideEnchants()
-                .shopKey(mythic.name());
+                .itemId(mythic.name());
 
         if (isOwned) {
             // Player owns this mythic
@@ -454,7 +450,7 @@ public final class GuiItemUtils {
                 .filter(Objects::nonNull)
                 .filter(ItemStack::hasItemMeta)
                 .map(is -> is.getItemMeta().getPersistentDataContainer()
-                        .get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING))
+                        .get(Keys.ITEM_ID, PersistentDataType.STRING))
                 .anyMatch(shopItem.name()::equals);
     }
 

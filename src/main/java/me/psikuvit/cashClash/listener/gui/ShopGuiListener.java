@@ -1,37 +1,35 @@
 package me.psikuvit.cashClash.listener.gui;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.GuiType;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.ShopHolder;
-import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.manager.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.Investment;
-import me.psikuvit.cashClash.util.enums.InvestmentType;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
+import me.psikuvit.cashClash.shop.ShopService;
+import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
-import me.psikuvit.cashClash.shop.items.ShopItems;
-import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.enums.InvestmentType;
 import me.psikuvit.cashClash.util.items.ItemUtils;
-import me.psikuvit.cashClash.util.Keys;
+import me.psikuvit.cashClash.util.items.PDCDetection;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.entity.Player;
-import net.kyori.adventure.text.Component;
-import me.psikuvit.cashClash.util.Messages;
-import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.shop.items.CustomArmorItem;
-import org.bukkit.Sound;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
@@ -86,11 +84,9 @@ public class ShopGuiListener implements Listener {
         // Check for mythic purchase (slots 38-42)
         int slot = event.getSlot();
         if (slot >= 38 && slot <= 42) {
-            String pdcValue = meta.getPersistentDataContainer().get(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING);
-            if (pdcValue != null) {
-                handleMythicPurchase(player, pdcValue);
-                return;
-            }
+            handleMythicPurchase(player, clicked);
+            return;
+
         }
 
         // Check each category
@@ -107,7 +103,7 @@ public class ShopGuiListener implements Listener {
          ItemStack clicked = event.getCurrentItem();
          if (clicked == null || !clicked.hasItemMeta()) return;
 
-         ItemMeta itemMeta = clicked.getItemMeta();
+        clicked.getItemMeta();
 
         if (event.getSlot() == 45) {
             ShopGUI.openMain(player);
@@ -120,35 +116,35 @@ public class ShopGuiListener implements Listener {
         }
 
         // Check if item is maxed/owned using PDC flag
-        Byte maxedFlag = itemMeta.getPersistentDataContainer().get(Keys.SHOP_ITEM_MAXED, PersistentDataType.BYTE);
+        Byte maxedFlag = PDCDetection.getMaxedFlag(clicked);
         if (maxedFlag != null && maxedFlag == (byte) 1) {
             Messages.send(player, "<yellow>You already have the maximum tier of this item!</yellow>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        String pdcValue = itemMeta.getPersistentDataContainer().get(Keys.SHOP_ITEM_KEY, PersistentDataType.STRING);
-
         ShopCategory category = sh.getCategory();
         if (category == ShopCategory.ENCHANTS) {
-            handleEnchantPurchase(player, pdcValue, category);
+            handleEnchantPurchase(player, clicked, category);
             return;
         } else if (category == ShopCategory.INVESTMENTS) {
-            handleInvestmentPurchase(player, pdcValue);
+            handleInvestmentPurchase(player, clicked);
             return;
         } else if (sh.getCategory() == ShopCategory.CUSTOM_ITEMS) {
-            pdcValue = itemMeta.getPersistentDataContainer().get(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING);
-            handleCustomItemPurchase(player, pdcValue, sh.getCategory());
-            return;
-        }
-        if (pdcValue != null && pdcValue.startsWith("SET_")) {
-            handleArmorSetPurchase(player, pdcValue);
+            handleCustomItemPurchase(player, clicked, sh.getCategory());
             return;
         }
 
-        Purchasable si = ShopItems.valueOf(pdcValue);
+        // Get item tag from PDC
+        String itemTag = PDCDetection.getAnyShopTag(clicked);
+        if (itemTag != null && itemTag.startsWith("SET_")) {
+            handleArmorSetPurchase(player, itemTag);
+            return;
+        }
+
+        Purchasable si = PDCDetection.getPurchasable(clicked);
         if (si == null) {
-            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown shop item: " + pdcValue);
+            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown shop item: " + clicked);
             return;
         }
 
@@ -183,7 +179,7 @@ public class ShopGuiListener implements Listener {
         }
 
         ccp.popLastPurchase();
-        ccp.addCoins(rec.price());
+        ShopService.getInstance().refund(player, rec.price());
 
         // Handle investment-specific undo (clear the investment)
         if (category == ShopCategory.INVESTMENTS) {
@@ -217,7 +213,7 @@ public class ShopGuiListener implements Listener {
         }
     }
 
-    private void handleEnchantPurchase(Player player, String pdcValue, ShopCategory category) {
+    private void handleEnchantPurchase(Player player, ItemStack stack, ShopCategory category) {
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         if (sess == null) {
             Messages.send(player, "<red>You must be in a game to shop.</red>");
@@ -229,7 +225,8 @@ public class ShopGuiListener implements Listener {
         if (ccp == null) return;
 
         try {
-            EnchantEntry ee = EnchantEntry.valueOf(pdcValue);
+            EnchantEntry ee = PDCDetection.getEnchantEntry(stack);
+            if (ee == null) return;
             int currentLevel = ccp.getOwnedEnchantLevel(ee);
             int nextLevel = currentLevel + 1;
 
@@ -239,27 +236,27 @@ public class ShopGuiListener implements Listener {
             }
 
             long price = ee.getPriceForLevel(nextLevel);
-            if (!ccp.canAfford(price)) {
+            if (!ShopService.getInstance().canAfford(player, price)) {
                 Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
                 SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 return;
             }
 
-            ccp.deductCoins(price);
+            ShopService.getInstance().purchase(player, price);
             ccp.addOwnedEnchant(ee, nextLevel);
 
             ItemUtils.applyEnchantToBestItem(player, ee, nextLevel);
             Messages.send(player, "<green>Purchased " + ee.getDisplayName() + " " + nextLevel + " for $" + String.format("%,d", price) + "</green>");
 
         } catch (IllegalArgumentException e) {
-            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown enchant entry: " + pdcValue, e);
+            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown enchant entry", e);
         }
 
         SoundUtils.play(player, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
         ShopGUI.openCategoryItems(player, category);
     }
 
-    private void handleInvestmentPurchase(Player player, String pdcValue) {
+    private void handleInvestmentPurchase(Player player, ItemStack stack) {
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         if (sess == null) {
             Messages.send(player, "<red>You must be in a game to shop.</red>");
@@ -285,7 +282,7 @@ public class ShopGuiListener implements Listener {
             return;
         }
 
-        InvestmentType type = ShopItems.getInvestment(pdcValue);
+        InvestmentType type = PDCDetection.getInvestment(stack);
         if (type == null) {
             Messages.send(player, "<red>Invalid investment type!</red>");
             return;
@@ -402,7 +399,7 @@ public class ShopGuiListener implements Listener {
         ShopGUI.openCategoryItems(player, ShopCategory.ARMOR);
     }
 
-    private void handleCustomItemPurchase(Player player, String pdcValue, ShopCategory category) {
+    private void handleCustomItemPurchase(Player player, ItemStack stack, ShopCategory category) {
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         if (sess == null) {
             Messages.send(player, "<red>You must be in a game to shop.</red>");
@@ -413,9 +410,9 @@ public class ShopGuiListener implements Listener {
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return;
 
-        CustomItem type = ShopItems.getCustomItem(pdcValue);
+        CustomItem type = PDCDetection.getCustomItem(stack);
         if (type == null) {
-            CashClashPlugin.getInstance().getLogger().warning("Unknown custom item type: " + pdcValue);
+            CashClashPlugin.getInstance().getLogger().warning("Unknown custom item type");
             return;
         }
 
@@ -442,7 +439,7 @@ public class ShopGuiListener implements Listener {
         ShopGUI.openCategoryItems(player, category);
     }
 
-    private void handleMythicPurchase(Player player, String pdcValue) {
+    private void handleMythicPurchase(Player player, ItemStack stack) {
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         if (sess == null) {
             Messages.send(player, "<red>You must be in a game to shop.</red>");
@@ -453,9 +450,9 @@ public class ShopGuiListener implements Listener {
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return;
 
-        MythicItem mythic = ShopItems.getMythic(pdcValue);
+        MythicItem mythic = PDCDetection.getMythic(stack);
         if (mythic == null) {
-            CashClashPlugin.getInstance().getLogger().warning("Unknown mythic item: " + pdcValue);
+            CashClashPlugin.getInstance().getLogger().warning("Unknown mythic item");
             return;
         }
 

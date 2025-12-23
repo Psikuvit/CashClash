@@ -145,8 +145,8 @@ public enum Kit {
                     if (gm != null) {
                         gm.displayName(Messages.parse("<yellow>Throwable Grenade</yellow>"));
                         gm.lore(Messages.wrapLines(CustomItem.GRENADE.getDescription()));
-                        gm.getPersistentDataContainer().set(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING, CustomItem.GRENADE.name());
-                        gm.getPersistentDataContainer().set(Keys.CUSTOM_ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
+                        gm.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.GRENADE.name());
+                        gm.getPersistentDataContainer().set(Keys.ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
                         grenade.setItemMeta(gm);
                     }
                     player.getInventory().addItem(grenade);

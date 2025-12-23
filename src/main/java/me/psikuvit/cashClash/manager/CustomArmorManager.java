@@ -2,20 +2,16 @@ package me.psikuvit.cashClash.manager;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.shop.items.ShopItems;
-import me.psikuvit.cashClash.util.Keys;
+import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -97,14 +93,7 @@ public class CustomArmorManager {
         List<CustomArmorItem> found = new ArrayList<>();
         for (ItemStack is : p.getInventory().getArmorContents()) {
             if (is == null) continue;
-            ItemMeta m = is.getItemMeta();
-            if (m == null) continue;
-
-            PersistentDataContainer c = m.getPersistentDataContainer();
-            String val = c.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
-            if (val == null) continue;
-
-            found.add(ShopItems.getCustomArmor(val));
+            found.add(PDCDetection.getCustomArmor(is));
         }
         return found;
     }

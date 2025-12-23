@@ -13,11 +13,11 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -72,7 +72,7 @@ public final class ItemUtils {
 
         boolean isCustomOld = false;
         PersistentDataContainer pdc = fromMeta.getPersistentDataContainer();
-        String boughtTag = pdc.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
+        String boughtTag = pdc.get(Keys.ITEM_ID, PersistentDataType.STRING);
 
         if (boughtTag != null) isCustomOld = true;
         if (isCustomOld) inv.addItem(old);
@@ -124,13 +124,13 @@ public final class ItemUtils {
         if (meta != null) {
             if (si instanceof FoodItem food) {
                 if (!food.getDescription().isEmpty()) {
-                    meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, si.name());
+                    meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, si.name());
                     meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
                     meta.lore(Messages.wrapLines(food.getDescription()));
                 }
             } else {
                 // Non-food items always get PDC tags and display
-                meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, si.name());
+                meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, si.name());
                 meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
                 String desc = si.getDescription();
                 if (!desc.isEmpty()) meta.lore(Messages.wrapLines(desc));
@@ -157,8 +157,8 @@ public final class ItemUtils {
 
         // Add PDC tags
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING, type.name());
-        pdc.set(Keys.CUSTOM_ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, type.name());
+        pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
 
         // Special handling for specific items
         switch (type) {
@@ -169,7 +169,7 @@ public final class ItemUtils {
                 meta.addEnchant(Enchantment.KNOCKBACK, 3, true);
             }
             case CASH_BLASTER -> meta.addEnchant(Enchantment.MULTISHOT, 1, true);
-            case INVIS_CLOAK -> pdc.set(Keys.CUSTOM_ITEM_USES, PersistentDataType.INTEGER, 5);
+            case INVIS_CLOAK -> pdc.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);
         }
 
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
@@ -185,7 +185,7 @@ public final class ItemUtils {
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
-            meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, armor.name());
+            meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, armor.name());
             meta.displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
 
             List<Component> wrappedLore = Messages.wrapLines("<gray>" + armor.getLore() + "</gray>");
@@ -333,10 +333,7 @@ public final class ItemUtils {
             ItemMeta meta = is.getItemMeta();
             PersistentDataContainer pdc = meta.getPersistentDataContainer();
 
-            // Check all possible keys
-            String val = pdc.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
-            if (val == null) val = pdc.get(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING);
-            if (val == null) val = pdc.get(Keys.MYTHIC_ITEM_KEY, PersistentDataType.STRING);
+            String val = pdc.get(Keys.ITEM_ID, PersistentDataType.STRING);
 
             if (val != null && val.equals(itemTag)) {
                 int amt = is.getAmount();
@@ -357,9 +354,7 @@ public final class ItemUtils {
                 ItemMeta meta = off.getItemMeta();
                 PersistentDataContainer pdc = meta.getPersistentDataContainer();
 
-                String val = pdc.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
-                if (val == null) val = pdc.get(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING);
-                if (val == null) val = pdc.get(Keys.MYTHIC_ITEM_KEY, PersistentDataType.STRING);
+                String val = pdc.get(Keys.ITEM_ID, PersistentDataType.STRING);
 
                 if (val != null && val.equals(itemTag)) {
                     int amt = off.getAmount();
@@ -384,9 +379,7 @@ public final class ItemUtils {
                 ItemMeta meta = is.getItemMeta();
                 PersistentDataContainer pdc = meta.getPersistentDataContainer();
 
-                String val = pdc.get(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING);
-                if (val == null) val = pdc.get(Keys.CUSTOM_ITEM_KEY, PersistentDataType.STRING);
-                if (val == null) val = pdc.get(Keys.MYTHIC_ITEM_KEY, PersistentDataType.STRING);
+                String val = pdc.get(Keys.ITEM_ID, PersistentDataType.STRING);
 
                 if (val != null && val.equals(itemTag)) {
                     armor[i] = null;

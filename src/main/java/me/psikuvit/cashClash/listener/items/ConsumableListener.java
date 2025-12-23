@@ -3,7 +3,8 @@ package me.psikuvit.cashClash.listener.items;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.items.ShopDetection;
+import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,7 +15,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.Sound;
 
 public class ConsumableListener implements Listener {
 
@@ -25,7 +25,7 @@ public class ConsumableListener implements Listener {
 
         if (consumed.getType().isAir()) return;
 
-        FoodItem fi = ShopDetection.getFood(consumed);
+        FoodItem fi = PDCDetection.getFood(consumed);
         if (fi == null) return;
 
         switch (fi) {
@@ -53,7 +53,7 @@ public class ConsumableListener implements Listener {
         if (item == null || item.getType().isAir()) return;
 
         // Check if it's a custom food item
-        FoodItem fi = ShopDetection.getFood(item);
+        FoodItem fi = PDCDetection.getFood(item);
         if (fi == null) return;
 
         // Only handle custom foods with effects (those with descriptions)
