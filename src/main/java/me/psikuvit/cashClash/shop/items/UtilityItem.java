@@ -10,12 +10,14 @@ import org.bukkit.Material;
 public enum UtilityItem implements Purchasable {
     LAVA_BUCKET(Material.LAVA_BUCKET, "lava-bucket", 1),
     WATER_BUCKET(Material.WATER_BUCKET, "water-bucket", 1),
-    COBWEB(Material.COBWEB, "cobweb", 4),
+    COBWEB(Material.COBWEB, "cobweb", 16),
     CROSSBOW(Material.CROSSBOW, "crossbow", 1),
     BOW(Material.BOW, "bow", 1),
     FISHING_ROD(Material.FISHING_ROD, "fishing-rod", 1),
-    ENDER_PEARL(Material.ENDER_PEARL, "ender-pearl", 1),
-    WIND_CHARGE(Material.WIND_CHARGE, "wind-charge", 4);
+    WIND_CHARGE(Material.WIND_CHARGE, "wind-charge", 4),
+    LEAVES(Material.OAK_LEAVES, "leaves", 16),
+    SOUL_SAND(Material.SOUL_SAND, "soul-sand", 16),
+    ARROWS(Material.ARROW, "arrow", 5);
 
     private final Material material;
     private final String configKey;
