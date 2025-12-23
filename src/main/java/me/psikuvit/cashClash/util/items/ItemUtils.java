@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
@@ -76,9 +77,6 @@ public final class ItemUtils {
         if (boughtTag != null) isCustomOld = true;
         if (isCustomOld) inv.addItem(old);
 
-        if (isCustomOld) inv.addItem(old);
-
-
         return old;
     }
 
@@ -124,10 +122,15 @@ public final class ItemUtils {
         var meta = it.getItemMeta();
 
         if (meta != null) {
-            meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, si.name());
-
-            // Skip display customization for regular food, but custom foods need it
-            if (si.getCategory() != ShopCategory.FOOD || !si.getDescription().isEmpty()) {
+            if (si instanceof FoodItem food) {
+                if (!food.getDescription().isEmpty()) {
+                    meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, si.name());
+                    meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
+                    meta.lore(Messages.wrapLines(food.getDescription()));
+                }
+            } else {
+                // Non-food items always get PDC tags and display
+                meta.getPersistentDataContainer().set(Keys.SHOP_BOUGHT_KEY, PersistentDataType.STRING, si.name());
                 meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
                 String desc = si.getDescription();
                 if (!desc.isEmpty()) meta.lore(Messages.wrapLines(desc));
