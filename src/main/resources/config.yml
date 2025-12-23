@@ -120,37 +120,6 @@ cash-quake:
     max-extra-coins: 1001
 
 # ============================================
-# CUSTOM ITEMS
-# ============================================
-custom-items:
-  # Invisibility Cloak
-  invis-cloak:
-    cost-per-second: 100
-    cooldown-seconds: 15
-    uses-per-round: 5
-
-  # Grenade
-  grenade:
-    fuse-seconds: 3
-
-  # Boombox
-  boombox:
-    pulse-interval-seconds: 3
-    duration-seconds: 12
-    radius: 5
-
-# ============================================
-# MYTHIC ITEMS
-# ============================================
-mythic-items:
-  # Coin Cleaver
-  coin-cleaver:
-    grenade-cooldown: 3
-    grenade-cost: 2000
-    grenade-damage: 4.0
-    grenade-radius: 5
-
-# ============================================
 # PLAYER DEFAULTS
 # ============================================
 player:

@@ -13,8 +13,10 @@ public class ItemsConfig {
 
     private static ItemsConfig instance;
     private FileConfiguration config;
+    private final ConfigValidator validator;
 
     private ItemsConfig() {
+        this.validator = new ConfigValidator();
         loadConfig();
     }
 
@@ -33,10 +35,15 @@ public class ItemsConfig {
         }
 
         config = YamlConfiguration.loadConfiguration(configFile);
+
+        if (!validator.validateItemsConfig(config)) {
+            CashClashPlugin.getInstance().getLogger().warning("Items configuration has errors - check warnings above");
+        }
     }
 
     public void reload() {
         loadConfig();
+        validator.logConfigDiff("items.yml", 0); // TODO: track actual changes
     }
 
     // ==================== MYTHIC ITEMS ====================

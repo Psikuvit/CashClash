@@ -2,7 +2,10 @@
 # Cash Clash Items Configuration
 # ============================================
 # All item-related constants, stats, and mechanics
+# Schema Version: 1 (for future migrations)
 # ============================================
+
+schema-version: 1
 
 # ============================================
 # MYTHIC/LEGENDARY ITEMS
