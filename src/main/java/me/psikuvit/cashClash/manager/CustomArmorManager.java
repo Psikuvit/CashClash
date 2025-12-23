@@ -241,12 +241,10 @@ public class CustomArmorManager {
     }
 
     public void onPlayerAttack(Player attacker, Player target) {
-        // Magic Helmet: attacking cancels invisibility
         if (magicHelmetActive.contains(attacker.getUniqueId())) {
             cancelMagicHelmetInvisibility(attacker);
         }
 
-        // Flamebringer Leggings: 30% chance to ignite
         if (hasFlamebringerLeggings(attacker)) {
             if (random.nextDouble() < 0.30) {
                 target.setFireTicks(8 * 20);
@@ -465,39 +463,26 @@ public class CustomArmorManager {
 
     // ==================== RESET ====================
 
-    public void resetRound(Player p) {
-        UUID id = p.getUniqueId();
-        guardianUsesThisRound.remove(id);
-        guardianLastActivated.remove(id);
+    public void cleanup() {
+        magicHelmetLastMove.clear();
+        magicHelmetCooldownUntil.clear();
+        magicHelmetActive.clear();
+        magicHelmetDelayTask.values().forEach(BukkitTask::cancel);
+        magicHelmetDelayTask.clear();
 
-        // Reset deathmauler extra hearts
-        Integer extraHearts = deathmaulerExtraHearts.remove(id);
-        if (extraHearts != null && extraHearts > 0) {
-            var attr = p.getAttribute(Attribute.MAX_HEALTH);
-            if (attr != null) {
-                attr.setBaseValue(20.0);
-            }
-        }
+        bunnyCooldownUntil.clear();
+        bunnyToggleReady.clear();
 
-        deathmaulerLastDamage.remove(id);
-        taxEvasionLastMinuteCheck.remove(id);
-        dragonCanDoubleJump.remove(id);
-        dragonDoubleJumpCooldown.remove(id);
+        guardianUsesThisRound.clear();
+        guardianLastActivated.clear();
 
-        // Cancel any pending magic helmet task
-        BukkitTask task = magicHelmetDelayTask.remove(id);
-        if (task != null) {
-            task.cancel();
-        }
-        magicHelmetActive.remove(id);
-        magicHelmetCooldownUntil.remove(id);
+        deathmaulerLastDamage.clear();
+        deathmaulerExtraHearts.clear();
 
-        bunnyToggleReady.remove(id);
-        bunnyCooldownUntil.remove(id);
-    }
+        dragonDoubleJumpCooldown.clear();
+        dragonCanDoubleJump.clear();
 
-    public void resetPlayer(Player p) {
-        resetRound(p);
-        magicHelmetLastMove.remove(p.getUniqueId());
+        taxEvasionLastMinuteCheck.clear();
     }
 }
+

@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -100,26 +101,27 @@ public class MythicItemManager {
     // ==================== PURCHASE & OWNERSHIP ====================
 
     /**
-     * Check if a player can purchase a mythic (only one per player per game).
-     * Returns false if the player already owns a mythic.
+     * Check if a player has already purchased a mythic (only one per player per game).
+     * @return true if player already owns a mythic
      */
-    public boolean canPlayerPurchaseMythic(GameSession session, UUID playerUuid) {
-        if (session == null || playerUuid == null) return true;
+    public boolean hasPlayerPurchasedMythic(GameSession session, UUID playerUuid) {
+        if (session == null || playerUuid == null) return false;
         UUID sessionId = session.getSessionId();
         Map<UUID, MythicItem> sessionPlayerMythics = playerMythics.get(sessionId);
-        if (sessionPlayerMythics == null) return true;
-        return !sessionPlayerMythics.containsKey(playerUuid);
+        if (sessionPlayerMythics == null) return false;
+        return sessionPlayerMythics.containsKey(playerUuid);
     }
 
     /**
-     * Check if a specific mythic is still available for purchase (not bought by anyone).
+     * Check if a specific mythic has been purchased by anyone.
+     * @return true if mythic is already purchased
      */
-    public boolean isMythicAvailable(GameSession session, MythicItem mythic) {
-        if (session == null || mythic == null) return true;
+    public boolean isMythicPurchased(GameSession session, MythicItem mythic) {
+        if (session == null || mythic == null) return false;
         UUID sessionId = session.getSessionId();
         Set<MythicItem> purchased = sessionPurchasedMythics.get(sessionId);
-        if (purchased == null) return true;
-        return !purchased.contains(mythic);
+        if (purchased == null) return false;
+        return purchased.contains(mythic);
     }
 
     /**
@@ -723,9 +725,8 @@ public class MythicItemManager {
         // Levitation IV for 4 seconds
         victim.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, cfg.getSandstormerStormDuration(), 3, false, true));
 
-        SchedulerUtils.runTaskLater(damageTask::cancel, cfg.getSandstormerStormDuration());
+        SchedulerUtils.runTaskLater(Objects.requireNonNull(damageTask)::cancel, cfg.getSandstormerStormDuration());
 
-        // Track task for cleanup
         activeTasks.computeIfAbsent(shooter.getUniqueId(), k -> new ArrayList<>()).add(damageTask);
 
         SoundUtils.play(victim, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.5f);
@@ -925,26 +926,6 @@ public class MythicItemManager {
 
     // ==================== CLEANUP ====================
 
-    /**
-     * Reset all mythic tracking for a player (called on round end/disconnect).
-     */
-    public void resetForPlayer(UUID playerId) {
-        cooldowns.remove(playerId);
-        sandstormerChargeStart.remove(playerId);
-        sandstormerShotsRemaining.remove(playerId);
-        blazebiteMode.remove(playerId);
-        blazebiteShotsRemaining.remove(playerId);
-        carlsCritCooldown.remove(playerId);
-
-        List<BukkitTask> tasks = activeTasks.remove(playerId);
-        if (tasks != null) {
-            tasks.forEach(BukkitTask::cancel);
-        }
-    }
-
-    /**
-     * Full cleanup (called on plugin disable).
-     */
     public void cleanup() {
         cooldowns.clear();
         sandstormerChargeStart.clear();
@@ -952,7 +933,6 @@ public class MythicItemManager {
         blazebiteMode.clear();
         blazebiteShotsRemaining.clear();
         carlsCritCooldown.clear();
-        sessionAvailableMythics.clear();
 
         activeTasks.values().forEach(tasks -> tasks.forEach(BukkitTask::cancel));
         activeTasks.clear();

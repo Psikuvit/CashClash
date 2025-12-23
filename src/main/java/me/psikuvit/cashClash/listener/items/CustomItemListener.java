@@ -1,9 +1,9 @@
 package me.psikuvit.cashClash.listener.items;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.CustomItemManager;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.shop.items.CustomItem;
-import me.psikuvit.cashClash.manager.CustomItemManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
@@ -37,7 +37,7 @@ public class CustomItemListener implements Listener {
         ItemStack item = event.getItem();
         if (item == null || !item.hasItemMeta()) return;
 
-        CustomItem type = manager.getCustomItemType(item);
+        CustomItem type = PDCDetection.getCustomItem(item);
         if (type == null) return;
 
         Action action = event.getAction();
@@ -79,7 +79,7 @@ public class CustomItemListener implements Listener {
                 // Right-click toggles invisibility on/off
                 if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
                     event.setCancelled(true);
-                    manager.handleInvisCloakRightClick(player, item);
+                    manager.handleInvisCloakRightClick(player);
                 }
             }
             case BOUNCE_PAD -> {
@@ -115,7 +115,7 @@ public class CustomItemListener implements Listener {
         ItemStack item = player.getInventory().getItemInMainHand();
         if (!item.hasItemMeta()) return;
 
-        CustomItem type = manager.getCustomItemType(item);
+        CustomItem type = PDCDetection.getCustomItem(item);
         if (type == null) return;
 
         if (!(event.getRightClicked() instanceof Player target)) return;
@@ -140,7 +140,7 @@ public class CustomItemListener implements Listener {
         ItemStack item = attacker.getInventory().getItemInMainHand();
         if (!item.hasItemMeta()) return;
 
-        CustomItem type = manager.getCustomItemType(item);
+        CustomItem type = PDCDetection.getCustomItem(item);
         if (type == null) return;
 
         if (type == CustomItem.BAG_OF_POTATOES) {
@@ -159,7 +159,7 @@ public class CustomItemListener implements Listener {
         ItemStack item = attacker.getInventory().getItemInMainHand();
         if (!item.hasItemMeta()) return;
 
-        CustomItem type = manager.getCustomItemType(item);
+        CustomItem type = PDCDetection.getCustomItem(item);
         if (type == CustomItem.CASH_BLASTER) {
             manager.handleCashBlasterHit(attacker);
         }

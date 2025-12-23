@@ -4,22 +4,24 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.round.RoundData;
+import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.BonusManager;
 import me.psikuvit.cashClash.manager.CashQuakeManager;
+import me.psikuvit.cashClash.manager.CustomArmorManager;
+import me.psikuvit.cashClash.manager.CustomItemManager;
 import me.psikuvit.cashClash.manager.EconomyManager;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.manager.MythicItemManager;
+import me.psikuvit.cashClash.manager.PlayerDataManager;
 import me.psikuvit.cashClash.manager.RoundManager;
 import me.psikuvit.cashClash.manager.ScoreboardManager;
+import me.psikuvit.cashClash.manager.ShopManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.Investment;
-import me.psikuvit.cashClash.manager.PlayerDataManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
-import me.psikuvit.cashClash.config.ConfigManager;
-import me.psikuvit.cashClash.kit.Kit;
-import me.psikuvit.cashClash.manager.ShopManager;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
@@ -29,16 +31,16 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.inventory.ItemStack;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
-import java.util.Collection;
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * Represents a single Cash Clash game instance
@@ -339,6 +341,10 @@ public class GameSession {
 
         notifyGameEnd(winner, finalSpawn);
 
+        CustomArmorManager.getInstance().cleanup();
+        CustomItemManager.getInstance().cleanup();
+        MythicItemManager.getInstance().cleanup();
+
         cancelStartCountdown();
         if (roundManager != null) roundManager.cleanup();
         if (cashQuakeManager != null) cashQuakeManager.cleanup();
@@ -549,7 +555,6 @@ public class GameSession {
         Team other = getOpposingTeam(forfeitingTeam);
         long bonus = ConfigManager.getInstance().getForfeitBonus();
 
-        forfeitingTeam.setForfeitVoted(true);
         forfeitingTeam.getPlayers().forEach(uuid -> {
             var p = players.get(uuid);
             if (p != null) EconomyManager.applyForfeitPenalty(this, p);

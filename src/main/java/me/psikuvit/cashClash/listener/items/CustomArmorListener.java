@@ -7,13 +7,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.event.block.Action;
 
 /**
  * Hooks runtime events to custom armor logic
@@ -22,29 +22,24 @@ public class CustomArmorListener implements Listener {
 
     private final CustomArmorManager manager = CustomArmorManager.getInstance();
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerMove(PlayerMoveEvent event) {
-        Player p = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(p);
-        if (session == null) return;
-
-        // Only trigger if player actually moved position (not just head rotation)
+        // Early exit: only trigger if player actually moved position (not just head rotation)
         if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
             event.getFrom().getBlockY() == event.getTo().getBlockY() &&
             event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
             return;
         }
 
+        Player p = event.getPlayer();
         manager.onPlayerMove(p);
 
-        // Check if player landed (was in air, now on ground)
-        if (!event.getFrom().getBlock().getRelative(0, -1, 0).getType().isAir() &&
-            event.getTo().getBlock().getRelative(0, -1, 0).getType().isSolid()) {
+        if (p.isOnGround() && !p.isFlying()) {
             manager.onPlayerLand(p);
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Player p = event.getPlayer();
@@ -54,7 +49,7 @@ public class CustomArmorListener implements Listener {
         manager.onMagicHelmetRightClick(p);
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player p = event.getPlayer();
         if (GameManager.getInstance().getPlayerSession(p) == null) return;

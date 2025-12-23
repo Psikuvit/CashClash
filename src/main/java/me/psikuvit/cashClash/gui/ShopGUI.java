@@ -1,7 +1,7 @@
 package me.psikuvit.cashClash.gui;
 
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.manager.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -9,11 +9,11 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
-import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.InvestmentType;
 import me.psikuvit.cashClash.util.items.GuiItemUtils;
@@ -55,47 +55,54 @@ public class ShopGUI {
         }
 
         // Category items - Row 2
-        inv.setItem(20, GuiItemUtils.createCategoryIcon(Material.IRON_AXE, ShopCategory.WEAPONS));
-        inv.setItem(21, GuiItemUtils.createCategoryIcon(Material.DIAMOND_CHESTPLATE, ShopCategory.ARMOR));
-        inv.setItem(22, GuiItemUtils.createCategoryIcon(Material.GOLDEN_APPLE, ShopCategory.FOOD));
-        inv.setItem(23, GuiItemUtils.createCategoryIcon(Material.ENDER_PEARL, ShopCategory.UTILITY));
-        inv.setItem(24, GuiItemUtils.createCategoryIcon(Material.NAME_TAG, ShopCategory.CUSTOM_ITEMS));
+        inv.setItem(11, GuiItemUtils.createCategoryIcon(Material.IRON_AXE, ShopCategory.WEAPONS));
+        inv.setItem(12, GuiItemUtils.createCategoryIcon(Material.DIAMOND_CHESTPLATE, ShopCategory.ARMOR));
+        inv.setItem(13, GuiItemUtils.createCategoryIcon(Material.GOLDEN_APPLE, ShopCategory.FOOD));
+        inv.setItem(14, GuiItemUtils.createCategoryIcon(Material.ENDER_PEARL, ShopCategory.UTILITY));
+        inv.setItem(15, GuiItemUtils.createCategoryIcon(Material.NAME_TAG, ShopCategory.CUSTOM_ITEMS));
 
         // Row 3
-        inv.setItem(30, GuiItemUtils.createCategoryIcon(Material.ENCHANTING_TABLE, ShopCategory.ENCHANTS));
+        inv.setItem(21, GuiItemUtils.createCategoryIcon(Material.ENCHANTING_TABLE, ShopCategory.ENCHANTS));
 
         ItemStack bundle = new ItemStack(Material.RED_BUNDLE);
         BundleMeta bundleMeta = (BundleMeta) bundle.getItemMeta();
+
         bundleMeta.displayName(Messages.parse("<yellow>" + ShopCategory.INVESTMENTS.getDisplayName() + "</yellow>"));
         bundleMeta.lore(Messages.wrapLines("<gray>Click to browse investments</gray>"));
         bundleMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+
         bundle.setItemMeta(bundleMeta);
-        inv.setItem(32, bundle);
+        inv.setItem(23, bundle);
 
         // Row 4: Legendaries (slots 38-43)
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null) {
             List<MythicItem> availableMythics = MythicItemManager.getInstance().getAvailableLegendaries(session);
             UUID playerUuid = player.getUniqueId();
-            boolean playerHasMythic = !MythicItemManager.getInstance().canPlayerPurchaseMythic(session, playerUuid);
+            boolean playerHasMythic = MythicItemManager.getInstance().hasPlayerPurchasedMythic(session, playerUuid);
             MythicItem ownedMythic = MythicItemManager.getInstance().getPlayerMythic(session, playerUuid);
 
             // Legendaries header
             ItemStack legendHeader = new ItemStack(Material.DRAGON_HEAD);
             ItemMeta legendHeaderMeta = legendHeader.getItemMeta();
+
             legendHeaderMeta.displayName(Messages.parse("<dark_purple><bold>✦ MYTHIC WEAPONS ✦</bold></dark_purple>"));
+
             List<Component> headerLore = new ArrayList<>();
             headerLore.add(Component.empty());
+
             headerLore.addAll(Messages.wrapLines("<gray>One per player. Each mythic is unique per game.</gray>"));
             legendHeaderMeta.lore(headerLore);
             legendHeaderMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+
             legendHeader.setItemMeta(legendHeaderMeta);
             inv.setItem(31, legendHeader);
 
             int[] legendSlots = {38, 39, 40, 41, 42};
             for (int i = 0; i < availableMythics.size() && i < legendSlots.length; i++) {
                 MythicItem mythic = availableMythics.get(i);
-                boolean mythicTaken = !MythicItemManager.getInstance().isMythicAvailable(session, mythic);
+                boolean mythicTaken = !MythicItemManager.getInstance().isMythicAvailableInSession(session, mythic);
+
                 UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(session, mythic);
                 inv.setItem(legendSlots[i], GuiItemUtils.createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid));
             }
@@ -280,11 +287,10 @@ public class ShopGUI {
         inv.setItem(22, GuiItemUtils.createShopItem(player, UtilityItem.COBWEB, 4));
         inv.setItem(24, GuiItemUtils.createShopItem(player, UtilityItem.CROSSBOW));
         inv.setItem(29, GuiItemUtils.createShopItem(player, UtilityItem.WATER_BUCKET));
-        inv.setItem(30, GuiItemUtils.createShopItem(player, UtilityItem.ENDER_PEARL));
-        inv.setItem(31, GuiItemUtils.createShopItem(player, UtilityItem.WIND_CHARGE, 4));
+        inv.setItem(30, GuiItemUtils.createShopItem(player, UtilityItem.WIND_CHARGE, 4));
         inv.setItem(33, GuiItemUtils.createShopItem(player, UtilityItem.BOW));
         inv.setItem(38, GuiItemUtils.createShopItem(player, UtilityItem.LEAVES, 16));
-        inv.setItem(39, GuiItemUtils.createShopItem(player, UtilityItem.SOUL_SPEED_BLOCK, 16));
+        inv.setItem(39, GuiItemUtils.createShopItem(player, UtilityItem.SOUL_SAND, 16));
         inv.setItem(42, GuiItemUtils.createShopItem(player, UtilityItem.ARROWS, 5));
     }
 

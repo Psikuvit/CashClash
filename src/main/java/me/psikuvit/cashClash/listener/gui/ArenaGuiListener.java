@@ -37,7 +37,7 @@ public class ArenaGuiListener implements Listener {
         }
 
         if (slot >= 10 && slot <= 14) {
-            int arenaNumber = slot - 9;
+            int arenaNumber = slot - 10;
             ArenaSelectionGUI.handleArenaClick(player, arenaNumber);
         }
     }

@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -147,7 +148,7 @@ public final class Messages {
     }
 
     public static List<Component> wrapLines(String miniMsg, int maxChars) {
-        if (miniMsg == null) return List.of();
+        if (miniMsg == null) return Collections.emptyList();
 
         String trimmed = miniMsg.trim();
         String prefixTag = null;

@@ -13,8 +13,10 @@ public class ShopConfig {
 
     private static ShopConfig instance;
     private FileConfiguration config;
+    private final ConfigValidator validator;
 
     private ShopConfig() {
+        this.validator = new ConfigValidator();
         loadConfig();
     }
 
@@ -33,10 +35,15 @@ public class ShopConfig {
         }
 
         config = YamlConfiguration.loadConfiguration(configFile);
+
+        if (!validator.validateShopConfig(config)) {
+            CashClashPlugin.getInstance().getLogger().warning("Shop configuration has errors - check warnings above");
+        }
     }
 
     public void reload() {
         loadConfig();
+        validator.logConfigDiff("shop.yml", 0); // TODO: track actual changes
     }
 
     public long getArmorPrice(String armorKey) {

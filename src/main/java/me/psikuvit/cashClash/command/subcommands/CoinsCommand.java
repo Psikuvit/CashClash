@@ -10,12 +10,12 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
-import java.util.List;
+import java.util.Collections;
 
 public class CoinsCommand extends AbstractArgCommand {
 
     public CoinsCommand() {
-        super("coins", List.of(), null);
+        super("coins", Collections.emptyList(), null);
     }
 
     @Override

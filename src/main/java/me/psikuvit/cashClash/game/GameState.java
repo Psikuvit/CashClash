@@ -21,6 +21,10 @@ public enum GameState {
         return this.name().contains("COMBAT");
     }
 
+    public boolean isShopping() {
+        return this.name().contains("SHOPPING");
+    }
+
     public int getRound() {
         if (this == WAITING || this == ENDING) return 0;
         return Character.getNumericValue(this.name().charAt(6));

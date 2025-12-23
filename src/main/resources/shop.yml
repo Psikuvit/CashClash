@@ -2,7 +2,10 @@
 # Cash Clash Shop Configuration
 # ============================================
 # All shop item prices and shop-related settings
+# Schema Version: 1 (for future migrations)
 # ============================================
+
+schema-version: 1
 
 # ============================================
 # ARMOR PRICES
@@ -65,9 +68,11 @@ utility:
   cobweb: 1000
   crossbow: 1500
   water-bucket: 2000
-  ender-pearl: 2500
   wind-charge: 3000
   bow: 3500
+  arrow: 500
+  leaves: 750
+  soul-sand: 1000
 
 # ============================================
 # CUSTOM ITEM PRICES

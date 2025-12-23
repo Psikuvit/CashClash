@@ -60,9 +60,9 @@ public class EconomyManager {
 
     public static void applyForfeitPenalty(GameSession session, CashClashPlayer player) {
         // Players go negative on investments when forfeiting
+        // Set deaths to max so investment will result in a loss
         if (player.getCurrentInvestment() != null) {
-            long penalty = player.getCurrentInvestment().getType().getNegativeReturn();
-            player.deductCoins(penalty);
+            player.getCurrentInvestment().setDeathsToMax();
         }
     }
 

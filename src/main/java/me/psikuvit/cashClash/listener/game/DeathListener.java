@@ -10,9 +10,8 @@ import me.psikuvit.cashClash.manager.CashQuakeManager;
 import me.psikuvit.cashClash.manager.CustomArmorManager;
 import me.psikuvit.cashClash.manager.EconomyManager;
 import me.psikuvit.cashClash.manager.GameManager;
-
-import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.manager.PlayerDataManager;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -50,14 +49,12 @@ public class DeathListener implements Listener {
         event.setKeepLevel(true);
         event.setDroppedExp(0);
 
-        // Increment persistent death count
         PlayerDataManager.getInstance().incDeaths(player.getUniqueId());
 
         // Handle victim death logic
         victim.handleDeath();
         session.getCurrentRoundData().removeLife(player.getUniqueId());
 
-        // Notify BonusManager of death for bonus tracking
         BonusManager bonusManager = session.getBonusManager();
         if (bonusManager != null) {
             bonusManager.onDeath(player.getUniqueId());
@@ -133,14 +130,12 @@ public class DeathListener implements Listener {
 
         Messages.send(player, "<yellow>You will respawn in " + respawnDelaySec + " seconds...</yellow>");
 
-        // Make player spectator immediately (skip death screen)
         SchedulerUtils.runTask(() -> {
             player.spigot().respawn();
             player.teleport(spectatorLocation);
             player.setGameMode(GameMode.SPECTATOR);
         });
 
-        // Schedule respawn after delay
         SchedulerUtils.runTaskLater(() -> respawnPlayer(player, respawnProtectionSec), respawnDelaySec * 20L);
     }
 
@@ -198,14 +193,11 @@ public class DeathListener implements Listener {
             bonusManager.onKill(killer.getUuid());
         }
 
-        // Calculate base rewards
         long killReward = EconomyManager.getKillReward(session, killer);
         long stolenAmount = EconomyManager.calculateStealAmount(session, victim);
 
-        // Apply investor armor multiplier to rewards
         double investorMultiplier = armorManager.getInvestorMultiplier(killer.getPlayer());
 
-        // Apply kill reward
         if (killReward > 0) {
             long adjustedReward = Math.round(killReward * investorMultiplier);
             killer.addCoins(adjustedReward);
@@ -221,7 +213,6 @@ public class DeathListener implements Listener {
             }
         }
 
-        // Apply stolen amount from victim
         if (stolenAmount > 0) {
             long adjustedStolen = Math.round(stolenAmount * investorMultiplier);
             victim.deductCoins(adjustedStolen);

@@ -289,14 +289,14 @@ public class ShopGuiListener implements Listener {
         }
 
         long cost = type.getCost();
-        if (!ccp.canAfford(cost)) {
+        if (!ShopService.getInstance().canAfford(player, cost)) {
             Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", cost) + ")</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         // Deduct coins and create investment
-        ccp.deductCoins(cost);
+        ShopService.getInstance().purchase(player, cost);
 
         Investment investment = new Investment(type, cost);
         ccp.setCurrentInvestment(investment);
@@ -332,13 +332,13 @@ public class ShopGuiListener implements Listener {
 
         long price = si.getPrice();
         long totalPrice = price * Math.max(1, quantity);
-        if (!ccp.canAfford(totalPrice)) {
-            Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
+        if (!ShopService.getInstance().canAfford(player, totalPrice)) {
+            Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", totalPrice) + ")</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        ccp.deductCoins(totalPrice);
+        ShopService.getInstance().purchase(player, totalPrice);
         giveItemToPlayer(player, ccp, si, quantity, totalPrice);
 
         ShopGUI.openCategoryItems(player, category);
@@ -371,14 +371,14 @@ public class ShopGuiListener implements Listener {
         long totalPrice = armorSet.getTotalPrice();
 
         // Check if player can afford the entire set
-        if (!ccp.canAfford(totalPrice)) {
+        if (!ShopService.getInstance().canAfford(player, totalPrice)) {
             Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", totalPrice) + ")</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         // Deduct coins for the entire set
-        ccp.deductCoins(totalPrice);
+        ShopService.getInstance().purchase(player, totalPrice);
 
         int round = sess.getCurrentRound();
 
@@ -417,7 +417,7 @@ public class ShopGuiListener implements Listener {
         }
 
         long price = type.getPrice();
-        if (!ccp.canAfford(price)) {
+        if (!ShopService.getInstance().canAfford(player, price)) {
             Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
@@ -425,7 +425,7 @@ public class ShopGuiListener implements Listener {
 
         ItemStack customItem = ItemUtils.createCustomItem(type, player);
 
-        ccp.deductCoins(price);
+        ShopService.getInstance().purchase(player, price);
         player.getInventory().addItem(customItem);
 
         // Record the purchase for undo (custom items implement Purchasable)
@@ -466,7 +466,7 @@ public class ShopGuiListener implements Listener {
         }
 
         // Check if this mythic has already been purchased by anyone
-        if (!MythicItemManager.getInstance().isMythicAvailable(sess, mythic)) {
+        if (MythicItemManager.getInstance().isMythicPurchased(sess, mythic)) {
             UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(sess, mythic);
             String ownerName = ownerUuid != null ? Bukkit.getOfflinePlayer(ownerUuid).getName() : "Someone";
             Messages.send(player, "<red>This mythic has already been purchased by " + ownerName + "!</red>");
@@ -475,7 +475,7 @@ public class ShopGuiListener implements Listener {
         }
 
         // Check if player already has a mythic
-        if (!MythicItemManager.getInstance().canPlayerPurchaseMythic(sess, playerUuid)) {
+        if (MythicItemManager.getInstance().hasPlayerPurchasedMythic(sess, playerUuid)) {
             MythicItem owned = MythicItemManager.getInstance().getPlayerMythic(sess, playerUuid);
             Messages.send(player, "<red>You already own a mythic (" + owned.getDisplayName() + ")!</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
@@ -483,18 +483,23 @@ public class ShopGuiListener implements Listener {
         }
 
         long price = mythic.getPrice();
-        if (!ccp.canAfford(price)) {
+        if (!ShopService.getInstance().canAfford(player, price)) {
             Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         // Deduct coins and register purchase
-        ccp.deductCoins(price);
+        ShopService.getInstance().purchase(player, price);
         MythicItemManager.getInstance().registerMythicPurchase(sess, playerUuid, mythic);
 
         ItemStack mythicItem = MythicItemManager.getInstance().createMythicItem(mythic, player);
         player.getInventory().addItem(mythicItem);
+
+        // Give 20 free arrows if purchasing Wind Bow
+        if (mythic == MythicItem.WIND_BOW) {
+            player.getInventory().addItem(new ItemStack(Material.ARROW, 20));
+        }
 
         Messages.send(player, "");
         Messages.send(player, "<dark_purple><bold>✦ MYTHIC ACQUIRED ✦</bold></dark_purple>");

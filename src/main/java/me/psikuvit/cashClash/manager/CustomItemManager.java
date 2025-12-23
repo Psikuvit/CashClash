@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.manager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -23,8 +22,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -33,6 +30,7 @@ import org.bukkit.util.Vector;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -159,7 +157,7 @@ public class CustomItemManager {
 
     // ==================== MEDIC POUCH IMPLEMENTATION ====================
 
-    public boolean useMedicPouchSelf(Player player, ItemStack item) {
+    public void useMedicPouchSelf(Player player, ItemStack item) {
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
         ItemsConfig cfg = ItemsConfig.getInstance();
@@ -168,7 +166,7 @@ public class CustomItemManager {
         if (cd != null && now < cd) {
             long remaining = (cd - now) / 1000;
             Messages.send(player, "<red>Medic Pouch on cooldown! (" + remaining + "s)</red>");
-            return false;
+            return;
         }
 
         double currentHealth = player.getHealth();
@@ -196,10 +194,9 @@ public class CustomItemManager {
         consumeItem(player, item);
         medicPouchCooldown.put(uuid, now + (cfg.getMedicPouchCooldown() * 1000L));
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        return true;
     }
 
-    public boolean useMedicPouchAlly(Player player, Player target, ItemStack item) {
+    public void useMedicPouchAlly(Player player, Player target, ItemStack item) {
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
         ItemsConfig cfg = ItemsConfig.getInstance();
@@ -208,18 +205,18 @@ public class CustomItemManager {
         if (cd != null && now < cd) {
             long remaining = (cd - now) / 1000;
             Messages.send(player, "<red>Medic Pouch on cooldown! (" + remaining + "s)</red>");
-            return false;
+            return;
         }
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) return false;
+        if (session == null) return;
 
         Team playerTeam = session.getPlayerTeam(player);
         Team targetTeam = session.getPlayerTeam(target);
 
         if (playerTeam == null || targetTeam == null || playerTeam.getTeamNumber() != targetTeam.getTeamNumber()) {
             Messages.send(player, "<red>You can only heal teammates!</red>");
-            return false;
+            return;
         }
 
         double currentHealth = target.getHealth();
@@ -247,7 +244,6 @@ public class CustomItemManager {
         Messages.send(player, "<green>Healed " + target.getName() + "!</green>");
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
         SoundUtils.play(target, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        return true;
     }
 
     // ==================== TABLET OF HACKING IMPLEMENTATION ====================
@@ -360,20 +356,18 @@ public class CustomItemManager {
 
     /**
      * Handles right-click with invis cloak - toggles invisibility.
-     * @return true if action was handled
      */
-    public boolean handleInvisCloakRightClick(Player player, ItemStack item) {
+    public void handleInvisCloakRightClick(Player player) {
         UUID uuid = player.getUniqueId();
 
         // If already active, turn off
         if (invisCloakActive.contains(uuid)) {
             toggleInvisCloak(player, false);
-            return true;
+            return;
         }
 
         // Otherwise, turn on
         toggleInvisCloak(player, true);
-        return true;
     }
 
     public boolean isInvisActive(UUID uuid) {
@@ -465,7 +459,6 @@ public class CustomItemManager {
         }
 
         ItemsConfig cfg = ItemsConfig.getInstance();
-        // Launch player forward and up
         Vector direction = player.getLocation().getDirection();
         direction.setY(0).normalize();
         Vector velocity = direction.multiply(cfg.getBouncePadForwardVelocity()).setY(cfg.getBouncePadUpwardVelocity());
@@ -538,16 +531,15 @@ public class CustomItemManager {
 
     /**
      * Start reviving a dead teammate with respawn anchor.
-     * @return true if revive started successfully
      */
-    public boolean useRespawnAnchor(Player reviver, Player target, ItemStack item) {
+    public void useRespawnAnchor(Player reviver, Player target, ItemStack item) {
         UUID reviverUuid = reviver.getUniqueId();
         UUID targetUuid = target.getUniqueId();
 
         GameSession session = GameManager.getInstance().getPlayerSession(reviver);
         if (session == null) {
             Messages.send(reviver, "<red>You must be in a game!</red>");
-            return false;
+            return;
         }
 
         // Check if same team
@@ -555,33 +547,33 @@ public class CustomItemManager {
         Team targetTeam = session.getPlayerTeam(target);
         if (reviverTeam == null || targetTeam == null || reviverTeam.getTeamNumber() != targetTeam.getTeamNumber()) {
             Messages.send(reviver, "<red>You can only revive teammates!</red>");
-            return false;
+            return;
         }
 
         // Check if target actually needs reviving (has 0 lives)
         CashClashPlayer targetCcp = session.getCashClashPlayer(targetUuid);
         if (targetCcp == null || targetCcp.getLives() > 0) {
             Messages.send(reviver, "<red>" + target.getName() + " still has lives remaining!</red>");
-            return false;
+            return;
         }
 
         // Check max 2 uses per round
         int usesThisRound = respawnAnchorsUsedThisRound.getOrDefault(reviverUuid, 0);
         if (usesThisRound >= 2) {
             Messages.send(reviver, "<red>You've used the maximum respawn anchors this round!</red>");
-            return false;
+            return;
         }
 
         // Check if target was already revived this round
         if (playersRevivedThisRound.contains(targetUuid)) {
             Messages.send(reviver, "<red>" + target.getName() + " was already revived this round!</red>");
-            return false;
+            return;
         }
 
         // Check if already reviving someone
         if (respawnAnchorTargets.containsKey(reviverUuid)) {
             Messages.send(reviver, "<red>You're already reviving someone!</red>");
-            return false;
+            return;
         }
 
         // Start the revive process
@@ -631,7 +623,6 @@ public class CustomItemManager {
             completeRevive(session, reviver, target);
         }, 10 * 20L);
 
-        return true;
     }
 
     private void cancelRevive(UUID reviverUuid, String message) {
@@ -661,7 +652,7 @@ public class CustomItemManager {
         if (attr != null) {
             attr.setBaseValue(attr.getValue() + 4.0);
         }
-        target.setHealth(target.getAttribute(Attribute.MAX_HEALTH).getValue());
+        target.setHealth(Objects.requireNonNull(target.getAttribute(Attribute.MAX_HEALTH)).getValue());
 
         // 3 seconds of invincibility
         target.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 3 * 20, 4, false, true)); // Resistance V = invincible
@@ -706,33 +697,6 @@ public class CustomItemManager {
     }
 
     // ==================== CLEANUP ====================
-
-    public void resetForRound(UUID playerId) {
-        medicPouchCooldown.remove(playerId);
-        invisCloakCooldown.remove(playerId);
-        invisCloakUsesRemaining.remove(playerId);
-
-        // Restore armor if invis was active
-        ItemStack[] storedArmor = invisCloakStoredArmor.remove(playerId);
-        if (storedArmor != null) {
-            Player player = Bukkit.getPlayer(playerId);
-            if (player != null) {
-                player.getInventory().setArmorContents(storedArmor);
-            }
-        }
-        invisCloakActive.remove(playerId);
-
-        BukkitTask invisTask = invisCloakTasks.remove(playerId);
-        if (invisTask != null) invisTask.cancel();
-
-        // Reset respawn anchor tracking
-        respawnAnchorsUsedThisRound.remove(playerId);
-        playersRevivedThisRound.remove(playerId);
-
-        BukkitTask reviveTask = respawnAnchorTasks.remove(playerId);
-        if (reviveTask != null) reviveTask.cancel();
-        respawnAnchorTargets.remove(playerId);
-    }
 
     public void cleanup() {
         activeGrenades.forEach(Item::remove);
