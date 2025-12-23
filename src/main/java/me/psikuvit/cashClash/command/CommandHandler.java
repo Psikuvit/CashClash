@@ -45,6 +45,8 @@ public class CommandHandler extends Command {
         registerSubcommand(new ForceStartCommand());
         registerSubcommand(new TransferCommand());
         registerSubcommand(new SetLobbyCommand());
+        registerSubcommand(new ReloadCommand());
+        registerSubcommand(new DebugCommand());
 
         // Arena/template admin commands
         registerSubcommand(new ArenasCommand());
