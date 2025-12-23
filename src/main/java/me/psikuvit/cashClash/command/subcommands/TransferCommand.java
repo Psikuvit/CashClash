@@ -10,12 +10,13 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 public class TransferCommand extends AbstractArgCommand {
     public TransferCommand() {
-        super("transfer", List.of(), null);
+        super("transfer", Collections.emptyList(), null);
     }
 
     @Override
@@ -72,7 +73,7 @@ public class TransferCommand extends AbstractArgCommand {
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull String[] args) {
-        if (!(sender instanceof Player)) return List.of();
+        if (!(sender instanceof Player)) return Collections.emptyList();
 
         if (args.length == 1) {
             String partial = args[0].toLowerCase(Locale.ROOT);
@@ -86,6 +87,6 @@ public class TransferCommand extends AbstractArgCommand {
             return List.of("1000", "5000", "10000", "25000", "50000");
         }
 
-        return List.of();
+        return Collections.emptyList();
     }
 }

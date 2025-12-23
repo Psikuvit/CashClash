@@ -13,12 +13,13 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 public class TemplateCommand extends AbstractArgCommand {
     public TemplateCommand() {
-        super("template", List.of(), "cashclash.admin");
+        super("template", Collections.emptyList(), "cashclash.admin");
     }
 
     @Override
@@ -49,7 +50,7 @@ public class TemplateCommand extends AbstractArgCommand {
 
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull String[] args) {
-        if (args.length == 0) return List.of();
+        if (args.length == 0) return Collections.emptyList();
         String last = args[args.length - 1].toLowerCase(Locale.ROOT);
         List<String> out = new ArrayList<>();
 
@@ -90,7 +91,7 @@ public class TemplateCommand extends AbstractArgCommand {
             return out;
         }
 
-        return List.of();
+        return Collections.emptyList();
     }
 
     // Implementation methods pulled from legacy command

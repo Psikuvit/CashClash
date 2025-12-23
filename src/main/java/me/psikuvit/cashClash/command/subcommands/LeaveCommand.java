@@ -9,11 +9,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.List;
 
 public class LeaveCommand extends AbstractArgCommand {
     public LeaveCommand() {
-        super("leave", List.of(), null);
+        super("leave", Collections.emptyList(), null);
     }
 
     @Override

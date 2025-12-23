@@ -10,12 +10,13 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 public class StatsCommand extends AbstractArgCommand {
     public StatsCommand() {
-        super("stats", List.of(), null);
+        super("stats", Collections.emptyList(), null);
     }
 
     @Override

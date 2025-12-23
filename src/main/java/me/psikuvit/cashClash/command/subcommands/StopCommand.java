@@ -8,11 +8,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.List;
 
 public class StopCommand extends AbstractArgCommand {
     public StopCommand() {
-        super("stop", List.of(), "cashclash.admin");
+        super("stop", Collections.emptyList(), "cashclash.admin");
     }
 
     @Override

@@ -12,13 +12,14 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 public class ArenaCommand extends AbstractArgCommand {
 
     public ArenaCommand() {
-        super("arena", List.of(), "cashclash.admin");
+        super("arena", Collections.emptyList(), "cashclash.admin");
     }
 
     @Override

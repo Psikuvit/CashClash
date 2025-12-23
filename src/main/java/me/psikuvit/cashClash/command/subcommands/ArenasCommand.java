@@ -7,12 +7,13 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ArenasCommand extends AbstractArgCommand {
 
     public ArenasCommand() {
-        super("arenas", List.of(), null);
+        super("arenas", Collections.emptyList(), null);
     }
 
     @Override

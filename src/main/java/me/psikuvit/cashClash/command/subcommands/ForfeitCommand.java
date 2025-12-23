@@ -7,11 +7,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ForfeitCommand extends AbstractArgCommand {
     public ForfeitCommand() {
-        super("forfeit", List.of(), null);
+        super("forfeit", Collections.emptyList(), null);
     }
 
     @Override

@@ -7,11 +7,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.List;
 
 public class JoinCommand extends AbstractArgCommand {
     public JoinCommand() {
-        super("join", List.of(), null);
+        super("join", Collections.emptyList(), null);
     }
 
     @Override
