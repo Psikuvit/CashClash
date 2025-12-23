@@ -163,7 +163,7 @@ public class CustomArmorManager {
     // ==================== MAGIC HELMET ====================
 
     public void onPlayerMove(Player p) {
-        if (hasMagicHelmet(p)) return;
+        if (!hasMagicHelmet(p)) return;
 
         UUID id = p.getUniqueId();
         long now = System.currentTimeMillis();
@@ -190,7 +190,7 @@ public class CustomArmorManager {
         BukkitTask task = SchedulerUtils.runTaskLater(() -> {
             magicHelmetDelayTask.remove(id);
 
-            if (hasMagicHelmet(p)) return;
+            if (!hasMagicHelmet(p)) return;
             if (magicHelmetActive.contains(id)) return;
 
             long currentCd = magicHelmetCooldownUntil.getOrDefault(id, 0L);
@@ -234,7 +234,7 @@ public class CustomArmorManager {
     }
 
     public void onMagicHelmetRightClick(Player p) {
-        if (hasMagicHelmet(p)) return;
+        if (!hasMagicHelmet(p)) return;
         if (magicHelmetActive.contains(p.getUniqueId())) {
             cancelMagicHelmetInvisibility(p);
         }
@@ -325,7 +325,7 @@ public class CustomArmorManager {
     // ==================== DEATHMAULER'S OUTFIT ====================
 
     public void onPlayerKill(Player killer) {
-        if (hasDeathmaulerSet(killer)) return;
+        if (!hasDeathmaulerSet(killer)) return;
         UUID id = killer.getUniqueId();
 
         // Heal 4 hearts (8 HP)
