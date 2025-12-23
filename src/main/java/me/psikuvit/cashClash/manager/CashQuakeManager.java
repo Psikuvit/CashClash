@@ -94,21 +94,18 @@ public class CashQuakeManager {
 
             if (eventsThisGame >= cfg.getMaxEventsPerGame() ||
                     eventsThisRound >= cfg.getMaxEventsPerRound()) return;
-
-            boolean forceEvent = false;
-            if (guaranteedEventsTriggered < cfg.getMinGuaranteedEvents()) {
-                if (currentRound >= 3) {
-                    forceEvent = random.nextDouble() < 0.5;
-                }
-                if (currentRound == cfg.getTotalRounds()) {
-                    forceEvent = true;
-                }
-            }
-
-            // Higher chance for events in rounds 2-5
-            if (forceEvent || random.nextDouble() < cfg.getEventBaseChance()) {
+            if (eventsThisRound == 0) {
                 triggerRandomEvent();
+            } else if (eventsThisRound < cfg.getMaxEventsPerRound()) {
+                int eventsLeft = cfg.getMaxEventsPerGame() - eventsThisGame;
+                int guaranteedLeft = 2 - guaranteedEventsTriggered;
+
+                double chance = 0.5;
+
+                if (eventsLeft <= guaranteedLeft) chance = 1.0;
+                if (random.nextDouble() < chance) triggerRandomEvent();
             }
+
         }, 0, cfg.getEventCheckIntervalTicks());
     }
 
