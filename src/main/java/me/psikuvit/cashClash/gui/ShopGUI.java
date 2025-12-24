@@ -34,7 +34,11 @@ import java.util.UUID;
 public class ShopGUI {
 
     private static ItemStack backgroundPane() {
-        ItemStack pane = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        return backgroundPane(Material.GRAY_STAINED_GLASS_PANE);
+    }
+
+    private static ItemStack backgroundPane(Material material) {
+        ItemStack pane = new ItemStack(material);
         ItemMeta meta = pane.getItemMeta();
         meta.displayName(Component.empty());
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
@@ -74,12 +78,16 @@ public class ShopGUI {
         bundle.setItemMeta(bundleMeta);
         inv.setItem(23, bundle);
 
-        // Row 4: Legendaries (slots 38-43)
+        int[] legendSlots = {38, 39, 40, 41, 42};
+        String[] legendColors = {"RED", "ORANGE", "YELLOW", "GREEN", "BLUE"};
+
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null) {
             List<MythicItem> availableMythics = MythicItemManager.getInstance().getAvailableLegendaries(session);
+
             UUID playerUuid = player.getUniqueId();
             boolean playerHasMythic = MythicItemManager.getInstance().hasPlayerPurchasedMythic(session, playerUuid);
+
             MythicItem ownedMythic = MythicItemManager.getInstance().getPlayerMythic(session, playerUuid);
 
             // Legendaries header
@@ -98,13 +106,22 @@ public class ShopGUI {
             legendHeader.setItemMeta(legendHeaderMeta);
             inv.setItem(31, legendHeader);
 
-            int[] legendSlots = {38, 39, 40, 41, 42};
             for (int i = 0; i < availableMythics.size() && i < legendSlots.length; i++) {
                 MythicItem mythic = availableMythics.get(i);
                 boolean mythicTaken = !MythicItemManager.getInstance().isMythicAvailableInSession(session, mythic);
 
                 UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(session, mythic);
                 inv.setItem(legendSlots[i], GuiItemUtils.createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid));
+
+                String material = session.getCurrentRound() == 1 ? "GRAY_STAINED_GLASS_PANE" : legendColors[i] + "_STAINED_GLASS_PANE";
+
+                ItemStack itemStack = new ItemStack(Material.valueOf(material));
+                ItemMeta itemMeta = itemStack.getItemMeta();
+
+                itemMeta.displayName(Component.empty());
+                itemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+                itemStack.setItemMeta(itemMeta);
+                inv.setItem(legendSlots[i] + 9, itemStack);
             }
         }
 
@@ -178,7 +195,6 @@ public class ShopGUI {
     }
 
     private static void populateArmorCategory(Inventory inv, Player player) {
-        // Check round and diamond piece count for limit
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         int currentRound = session != null ? session.getCurrentRound() : 1;
 
@@ -189,82 +205,74 @@ public class ShopGUI {
         if (hasItem(player, Material.DIAMOND_LEGGINGS)) diamondCount++;
         if (hasItem(player, Material.DIAMOND_BOOTS)) diamondCount++;
 
-        // Diamond limit: max pieces until unlock round
         ConfigManager cfg = ConfigManager.getInstance();
         boolean diamondLimitReached = currentRound < cfg.getDiamondUnlockRound()
                 && diamondCount >= cfg.getMaxDiamondPiecesEarly();
 
-        boolean hasIronHelmet = hasItem(player, Material.IRON_HELMET);
-        boolean hasDiamondHelmet = hasItem(player, Material.DIAMOND_HELMET);
-        if (hasDiamondHelmet) {
-            inv.setItem(10, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_HELMET, true));
-        } else if (hasIronHelmet) {
-            if (diamondLimitReached) {
-                inv.setItem(10, GuiItemUtils.createLockedDiamondItem(ArmorItem.DIAMOND_HELMET, currentRound));
-            } else {
-                inv.setItem(10, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_HELMET, false));
-            }
-        } else {
-            inv.setItem(10, GuiItemUtils.createUpgradableItem(ArmorItem.IRON_HELMET, false));
+
+        placeArmorItem(inv, player, 10, ArmorItem.IRON_HELMET, ArmorItem.DIAMOND_HELMET,
+                Material.IRON_HELMET, Material.DIAMOND_HELMET, diamondLimitReached, currentRound);
+        placeArmorItem(inv, player, 19, ArmorItem.IRON_CHESTPLATE, ArmorItem.DIAMOND_CHESTPLATE,
+                Material.IRON_CHESTPLATE, Material.DIAMOND_CHESTPLATE, diamondLimitReached, currentRound);
+        placeArmorItem(inv, player, 28, ArmorItem.IRON_LEGGINGS, ArmorItem.DIAMOND_LEGGINGS,
+                Material.IRON_LEGGINGS, Material.DIAMOND_LEGGINGS, diamondLimitReached, currentRound);
+        placeArmorItem(inv, player, 37, ArmorItem.IRON_BOOTS, ArmorItem.DIAMOND_BOOTS,
+                Material.IRON_BOOTS, Material.DIAMOND_BOOTS, diamondLimitReached, currentRound);
+
+        ItemStack[] investorPieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.INVESTORS, player);
+        inv.setItem(11, investorPieces.length > 0 ? investorPieces[0] : null);  // Helmet
+        inv.setItem(20, investorPieces.length > 1 ? investorPieces[1] : null); // Chestplate
+        inv.setItem(29, investorPieces.length > 2 ? investorPieces[2] : null); // Leggings
+        inv.setItem(38, investorPieces.length > 3 ? investorPieces[3] : null); // Boots
+
+        for (int i = 0; i < 4; i++) {
+            inv.setItem(12 + i * 9, backgroundPane(Material.LIGHT_BLUE_STAINED_GLASS_PANE));
         }
 
-        boolean hasIronChest = hasItem(player, Material.IRON_CHESTPLATE);
-        boolean hasDiamondChest = hasItem(player, Material.DIAMOND_CHESTPLATE);
-        if (hasDiamondChest) {
-            inv.setItem(11, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_CHESTPLATE, true));
-        } else if (hasIronChest) {
-            if (diamondLimitReached) {
-                inv.setItem(11, GuiItemUtils.createLockedDiamondItem(ArmorItem.DIAMOND_CHESTPLATE, currentRound));
-            } else {
-                inv.setItem(11, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_CHESTPLATE, false));
-            }
-        } else {
-            inv.setItem(11, GuiItemUtils.createUpgradableItem(ArmorItem.IRON_CHESTPLATE, false));
-        }
+        ItemStack[] deathmaulerPieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.DEATHMAULER, player);
+        inv.setItem(13, ItemStack.of(Material.BARRIER));
+        inv.setItem(14, deathmaulerPieces.length > 0 ? deathmaulerPieces[0] : null);
+        inv.setItem(15, deathmaulerPieces.length > 1 ? deathmaulerPieces[1] : null);
+        inv.setItem(16, ItemStack.of(Material.BARRIER));
 
-        // Leggings (slot 12)
-        boolean hasIronLegs = hasItem(player, Material.IRON_LEGGINGS);
-        boolean hasDiamondLegs = hasItem(player, Material.DIAMOND_LEGGINGS);
-        if (hasDiamondLegs) {
-            inv.setItem(12, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_LEGGINGS, true));
-        } else if (hasIronLegs) {
-            if (diamondLimitReached) {
-                inv.setItem(12, GuiItemUtils.createLockedDiamondItem(ArmorItem.DIAMOND_LEGGINGS, currentRound));
-            } else {
-                inv.setItem(12, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_LEGGINGS, false));
-            }
-        } else {
-            inv.setItem(12, GuiItemUtils.createUpgradableItem(ArmorItem.IRON_LEGGINGS, false));
-        }
+        ItemStack[] dragonPieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.DRAGON, player);
+        inv.setItem(22, dragonPieces.length > 0 ? dragonPieces[0] : null);
+        inv.setItem(23, dragonPieces.length > 1 ? dragonPieces[1] : null);
+        inv.setItem(24, ItemStack.of(Material.BARRIER));
+        inv.setItem(25, dragonPieces.length > 2 ? dragonPieces[2] : null);
 
-        // Boots (slot 13)
-        boolean hasIronBoots = hasItem(player, Material.IRON_BOOTS);
-        boolean hasDiamondBoots = hasItem(player, Material.DIAMOND_BOOTS);
-        if (hasDiamondBoots) {
-            inv.setItem(13, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_BOOTS, true));
-        } else if (hasIronBoots) {
-            if (diamondLimitReached) {
-                inv.setItem(13, GuiItemUtils.createLockedDiamondItem(ArmorItem.DIAMOND_BOOTS, currentRound));
-            } else {
-                inv.setItem(13, GuiItemUtils.createUpgradableItem(ArmorItem.DIAMOND_BOOTS, false));
-            }
-        } else {
-            inv.setItem(13, GuiItemUtils.createUpgradableItem(ArmorItem.IRON_BOOTS, false));
-        }
+        ItemStack[] flamebringerPieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.FLAMEBRINGER, player);
+        inv.setItem(31, ItemStack.of(Material.BARRIER));
+        inv.setItem(32, flamebringerPieces.length > 0 ? flamebringerPieces[0] : null);
+        inv.setItem(33, flamebringerPieces.length > 1 ? flamebringerPieces[1] : null);
+        inv.setItem(34, ItemStack.of(Material.BARRIER));
 
-        // Row 3: Armor Sets (buy as a complete set)
-        inv.setItem(19, GuiItemUtils.createArmorSetIcon(CustomArmorItem.ArmorSet.INVESTORS, player));
-        inv.setItem(20, GuiItemUtils.createArmorSetIcon(CustomArmorItem.ArmorSet.FLAMEBRINGER, player));
-        inv.setItem(21, GuiItemUtils.createArmorSetIcon(CustomArmorItem.ArmorSet.DEATHMAULER, player));
-        inv.setItem(22, GuiItemUtils.createArmorSetIcon(CustomArmorItem.ArmorSet.DRAGON, player));
-
-        // Row 4: Individual Pieces
-        inv.setItem(28, GuiItemUtils.createShopItem(player, CustomArmorItem.MAGIC_HELMET));
-        inv.setItem(29, GuiItemUtils.createShopItem(player, CustomArmorItem.GUARDIANS_VEST));
-        inv.setItem(30, GuiItemUtils.createShopItem(player, CustomArmorItem.TAX_EVASION_PANTS));
-        inv.setItem(31, GuiItemUtils.createShopItem(player, CustomArmorItem.BUNNY_SHOES));
+        // === COLUMN 6: Individual Custom Armor Pieces ===
+        inv.setItem(40, GuiItemUtils.createShopItem(player, CustomArmorItem.MAGIC_HELMET));
+        inv.setItem(41, GuiItemUtils.createShopItem(player, CustomArmorItem.BUNNY_SHOES));
+        inv.setItem(42, GuiItemUtils.createShopItem(player, CustomArmorItem.GUARDIANS_VEST));
+        inv.setItem(43, GuiItemUtils.createShopItem(player, CustomArmorItem.TAX_EVASION_PANTS));
     }
 
+    private static void placeArmorItem(Inventory inv, Player player, int slot,
+                                        ArmorItem ironItem, ArmorItem diamondItem,
+                                        Material ironMaterial, Material diamondMaterial,
+                                        boolean diamondLimitReached, int currentRound) {
+        boolean hasIron = hasItem(player, ironMaterial);
+        boolean hasDiamond = hasItem(player, diamondMaterial);
+
+        if (hasDiamond) {
+            inv.setItem(slot, GuiItemUtils.createUpgradableItem(diamondItem, true));
+        } else if (hasIron) {
+            if (diamondLimitReached) {
+                inv.setItem(slot, GuiItemUtils.createLockedDiamondItem(diamondItem, currentRound));
+            } else {
+                inv.setItem(slot, GuiItemUtils.createUpgradableItem(diamondItem, false));
+            }
+        } else {
+            inv.setItem(slot, GuiItemUtils.createUpgradableItem(ironItem, false));
+        }
+    }
 
     private static void populateFoodCategory(Inventory inv, Player player) {
         inv.setItem(19, GuiItemUtils.createShopItem(player, FoodItem.BREAD, 4));
@@ -282,16 +290,16 @@ public class ShopGUI {
     }
 
     private static void populateUtilityCategory(Inventory inv, Player player) {
-        inv.setItem(20, GuiItemUtils.createShopItem(player, UtilityItem.LAVA_BUCKET));
-        inv.setItem(21, GuiItemUtils.createShopItem(player, UtilityItem.FISHING_ROD));
-        inv.setItem(22, GuiItemUtils.createShopItem(player, UtilityItem.COBWEB, 4));
-        inv.setItem(24, GuiItemUtils.createShopItem(player, UtilityItem.CROSSBOW));
-        inv.setItem(29, GuiItemUtils.createShopItem(player, UtilityItem.WATER_BUCKET));
-        inv.setItem(30, GuiItemUtils.createShopItem(player, UtilityItem.WIND_CHARGE, 4));
-        inv.setItem(33, GuiItemUtils.createShopItem(player, UtilityItem.BOW));
-        inv.setItem(38, GuiItemUtils.createShopItem(player, UtilityItem.LEAVES, 16));
-        inv.setItem(39, GuiItemUtils.createShopItem(player, UtilityItem.SOUL_SAND, 16));
-        inv.setItem(42, GuiItemUtils.createShopItem(player, UtilityItem.ARROWS, 5));
+        inv.setItem(11, GuiItemUtils.createShopItem(player, UtilityItem.LAVA_BUCKET));
+        inv.setItem(12, GuiItemUtils.createShopItem(player, UtilityItem.FISHING_ROD));
+        inv.setItem(13, GuiItemUtils.createShopItem(player, UtilityItem.COBWEB, 4));
+        inv.setItem(15, GuiItemUtils.createShopItem(player, UtilityItem.CROSSBOW));
+        inv.setItem(20, GuiItemUtils.createShopItem(player, UtilityItem.LEAVES, 16));
+        inv.setItem(21, GuiItemUtils.createShopItem(player, UtilityItem.WATER_BUCKET));
+        inv.setItem(22, GuiItemUtils.createShopItem(player, UtilityItem.WIND_CHARGE, 4));
+        inv.setItem(24, GuiItemUtils.createShopItem(player, UtilityItem.BOW));
+        inv.setItem(30, GuiItemUtils.createShopItem(player, UtilityItem.SOUL_SAND, 16));
+        inv.setItem(33, GuiItemUtils.createShopItem(player, UtilityItem.ARROWS, 5));
     }
 
     private static void populateCustomItemsCategory(Inventory inv) {
