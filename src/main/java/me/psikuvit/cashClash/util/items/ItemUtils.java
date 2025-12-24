@@ -69,14 +69,6 @@ public final class ItemUtils {
             toMeta.addEnchant(e.getKey(), e.getValue(), true);
         }
         newArmor.setItemMeta(toMeta);
-
-        boolean isCustomOld = false;
-        PersistentDataContainer pdc = fromMeta.getPersistentDataContainer();
-        String boughtTag = pdc.get(Keys.ITEM_ID, PersistentDataType.STRING);
-
-        if (boughtTag != null) isCustomOld = true;
-        if (isCustomOld) inv.addItem(old);
-
         return old;
     }
 
