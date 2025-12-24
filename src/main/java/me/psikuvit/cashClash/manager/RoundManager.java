@@ -155,6 +155,8 @@ public class RoundManager {
             bonusManager.awardEndRoundBonuses();
         }
 
+        session.resolveRoundInvestments();
+
         // Move to next round or end game
         if (session.getCurrentRound() >= 5) {
             session.end();

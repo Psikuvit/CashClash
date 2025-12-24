@@ -334,7 +334,6 @@ public class GameSession {
 
     public void end() {
         state = GameState.ENDING;
-        resolveInvestments();
 
         Team winner = calculateWinner();
         Location finalSpawn = determineFinalSpawn();
@@ -389,10 +388,11 @@ public class GameSession {
     }
 
     /**
-     * Resolves all player investments at game end.
-     * Awards bonus, breaks even, or applies penalty based on deaths.
+     * Resolves all player investments at end of round.
+     * Awards bonus, breaks even, or applies penalty based on deaths this round.
+     * Called at end of each combat phase, not at game end.
      */
-    private void resolveInvestments() {
+    public void resolveRoundInvestments() {
         for (CashClashPlayer ccp : players.values()) {
             Investment investment = ccp.getCurrentInvestment();
             if (investment == null) continue;
