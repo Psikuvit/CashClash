@@ -295,21 +295,16 @@ public class ShopGUI {
     }
 
     private static void populateCustomItemsCategory(Inventory inv) {
-        // Row 1: Combat items
-        inv.setItem(10, GuiItemUtils.createCustomItemIcon(CustomItem.GRENADE));
-        inv.setItem(11, GuiItemUtils.createCustomItemIcon(CustomItem.SMOKE_CLOUD_GRENADE));
-        inv.setItem(12, GuiItemUtils.createCustomItemIcon(CustomItem.BAG_OF_POTATOES));
-        inv.setItem(13, GuiItemUtils.createCustomItemIcon(CustomItem.CASH_BLASTER));
-
-        // Row 2: Utility items
-        inv.setItem(19, GuiItemUtils.createCustomItemIcon(CustomItem.BOUNCE_PAD));
-        inv.setItem(20, GuiItemUtils.createCustomItemIcon(CustomItem.BOOMBOX));
-        inv.setItem(21, GuiItemUtils.createCustomItemIcon(CustomItem.MEDIC_POUCH));
-        inv.setItem(22, GuiItemUtils.createCustomItemIcon(CustomItem.INVIS_CLOAK));
-
-        // Row 3: Special items
-        inv.setItem(28, GuiItemUtils.createCustomItemIcon(CustomItem.TABLET_OF_HACKING));
-        inv.setItem(29, GuiItemUtils.createCustomItemIcon(CustomItem.RESPAWN_ANCHOR));
+        inv.setItem(20, GuiItemUtils.createCustomItemIcon(CustomItem.GRENADE));
+        inv.setItem(21, GuiItemUtils.createCustomItemIcon(CustomItem.SMOKE_CLOUD_GRENADE));
+        inv.setItem(22, GuiItemUtils.createCustomItemIcon(CustomItem.BAG_OF_POTATOES));
+        inv.setItem(23, GuiItemUtils.createCustomItemIcon(CustomItem.CASH_BLASTER));
+        inv.setItem(24, GuiItemUtils.createCustomItemIcon(CustomItem.BOUNCE_PAD));
+        inv.setItem(29, GuiItemUtils.createCustomItemIcon(CustomItem.BOOMBOX));
+        inv.setItem(30, GuiItemUtils.createCustomItemIcon(CustomItem.MEDIC_POUCH));
+        inv.setItem(31, GuiItemUtils.createCustomItemIcon(CustomItem.INVIS_CLOAK));
+        inv.setItem(32, GuiItemUtils.createCustomItemIcon(CustomItem.TABLET_OF_HACKING));
+        inv.setItem(33, GuiItemUtils.createCustomItemIcon(CustomItem.RESPAWN_ANCHOR));
     }
 
     private static void populateEnchantsCategory(Inventory inv, Player player) {
