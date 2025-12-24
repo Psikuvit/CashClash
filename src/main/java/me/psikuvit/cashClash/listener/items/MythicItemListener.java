@@ -186,16 +186,17 @@ public class MythicItemListener implements Listener {
                 manager.handleBlazebiteHit(shooter, event.getHitEntity(),
                     event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation());
             }
-        }
-
-        // Handle Trident projectiles (Goblin Spear)
-        if (event.getEntity() instanceof Trident trident) {
+        } else if (event.getEntity() instanceof Trident trident) {
             if (!(trident.getShooter() instanceof Player shooter)) return;
+            if (!(event.getHitEntity() instanceof LivingEntity victim)) return;
+            debug(shooter, "TRIDENT hit " + shooter.getName());
 
-            String tag = PDCDetection.readTag(trident.getItemStack(), Keys.ITEM_ID);
+            MythicItem mythic = PDCDetection.getMythic(trident.getItemStack());
 
             if ("GOBLIN_SPEAR".equals(tag) && event.getHitEntity() instanceof Player victim) {
                 manager.handleGoblinSpearHit(shooter, victim, trident);
+            if (mythic == MythicItem.GOBLIN_SPEAR) {
+                manager.handleGoblinSpearHit(shooter, victim);
             }
         }
     }

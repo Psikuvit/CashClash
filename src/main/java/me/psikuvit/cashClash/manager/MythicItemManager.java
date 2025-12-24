@@ -22,8 +22,8 @@ import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Trident;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -633,20 +633,17 @@ public class MythicItemManager {
      * Handle Goblin Spear hit.
      * Power 4 bow damage (~9 damage) + Poison III for 2 seconds.
      */
-    public void handleGoblinSpearHit(Player shooter, Player victim, Trident trident) {
+    public void handleGoblinSpearHit(Player shooter, LivingEntity victim) {
         ItemsConfig cfg = ItemsConfig.getInstance();
         
-        // Apply damage (goes through shields via direct damage)
-        victim.damage(cfg.getGoblinSpearDamage(), shooter);
+        debug(shooter, "GOBLIN_SPEAR: Hit " + victim.getName());
 
-        // Apply Poison III for 2 seconds
+        victim.damage(cfg.getGoblinSpearDamage(), shooter);
         victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true));
 
-        // Visual effects
-        victim.getWorld().spawnParticle(Particle.ITEM_SLIME, victim.getLocation().add(0, 1, 0), 20, 0.5, 1, 0.5, 0.1);
-        SoundUtils.play(victim, Sound.ENTITY_SLIME_SQUISH, 1.0f, 0.8f);
+        debug(shooter, "GOBLIN_SPEAR: Dealt " + cfg.getGoblinSpearDamage() + " damage + Poison III");
 
-        trident.remove();
+        victim.getWorld().spawnParticle(Particle.ITEM_SLIME, victim.getLocation().add(0, 1, 0), 20, 0.5, 1, 0.5, 0.1);
     }
 
     // ==================== SANDSTORMER ====================
