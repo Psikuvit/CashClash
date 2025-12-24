@@ -9,7 +9,36 @@ import java.util.UUID;
  */
 public class Team {
 
+    /**
+     * Team color identifiers
+     */
+    public enum TeamColor {
+        RED("Red", "<red>"),
+        BLUE("Blue", "<blue>");
+
+        private final String displayName;
+        private final String miniMessageColor;
+
+        TeamColor(String displayName, String miniMessageColor) {
+            this.displayName = displayName;
+            this.miniMessageColor = miniMessageColor;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public String getMiniMessageColor() {
+            return miniMessageColor;
+        }
+
+        public String getColoredName() {
+            return miniMessageColor + displayName + "</" + displayName.toLowerCase() + ">";
+        }
+    }
+
     private final int teamNumber;
+    private final TeamColor color;
     private final Set<UUID> players;
     private final Set<UUID> forfeitVotes;
     private final boolean enderPearlsDisabled;
@@ -18,6 +47,7 @@ public class Team {
 
     public Team(int teamNumber) {
         this.teamNumber = teamNumber;
+        this.color = teamNumber == 1 ? TeamColor.RED : TeamColor.BLUE;
         this.players = new HashSet<>();
         this.forfeitVotes = new HashSet<>();
         this.enderPearlsDisabled = false;
@@ -54,6 +84,24 @@ public class Team {
     // Getters and setters
     public int getTeamNumber() {
         return teamNumber;
+    }
+
+    public TeamColor getColor() {
+        return color;
+    }
+
+    /**
+     * Get the display name with color (e.g., "<red>Red</red>")
+     */
+    public String getColoredName() {
+        return color.getColoredName();
+    }
+
+    /**
+     * Get just the team name (e.g., "Red" or "Blue")
+     */
+    public String getName() {
+        return color.getDisplayName();
     }
 
     public Set<UUID> getPlayers() {

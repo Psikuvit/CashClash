@@ -218,8 +218,8 @@ public class GameSession {
                          .map(Bukkit::getPlayer)
                          .filter(Objects::nonNull)
                          .forEach(player -> {
-                             int teamNum = team1.hasPlayer(player.getUniqueId()) ? 1 : 2;
-                             Messages.send(player, "<yellow>You have been assigned to Team <gray>" + teamNum + "</gray></yellow>");
+                             Team team = team1.hasPlayer(player.getUniqueId()) ? team1 : team2;
+                             Messages.send(player, "<yellow>You have been assigned to Team " + team.getColoredName() + "</yellow>");
                          });
                  cancelStartCountdown();
                  start();
@@ -565,7 +565,7 @@ public class GameSession {
             if (p != null) p.addCoins(bonus);
         });
 
-        Messages.broadcast(players.keySet(), "<gold>Team " + forfeitingTeam.getTeamNumber() + " has chosen to forfeit the round. Team " + other.getTeamNumber() + " earns " + bonus + " each.</gold>");
+        Messages.broadcast(players.keySet(), "<gold>Team " + forfeitingTeam.getColoredName() + " has chosen to forfeit the round. Team " + other.getColoredName() + " earns " + bonus + " each.</gold>");
         if (roundManager != null) roundManager.endCombatPhase();
     }
 
@@ -597,7 +597,7 @@ public class GameSession {
             player.closeInventory();
 
             Messages.send(player, "<green><bold>=== GAME ENDED ===</bold></green>");
-            Messages.send(player, "<yellow>Winning Team: <gray>" + winner.getTeamNumber() + "</gray></yellow>");
+            Messages.send(player, "<yellow>Winning Team: " + winner.getColoredName() + "</yellow>");
             Messages.send(player, "<gray>Thanks for playing!</gray>");
         });
     }
