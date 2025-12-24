@@ -119,7 +119,7 @@ public enum CustomArmorItem implements Purchasable {
             case TAX_EVASION_PANTS ->
                     "<gray>Reduces death penalty and grants a small timeout bonus for staying alive.</gray>";
             case MAGIC_HELMET ->
-                    "<gray>Stand still to become invisible for a short time. Cooldown applies.</gray>";
+                    "<gray>Right-click to cycle effects: Resistance I → Absorption I → Speed I. Each lasts 4s.</gray>";
             case BUNNY_SHOES ->
                     "<gray>Activate to gain Speed II + Jump Boost I for 15s. 25s cooldown.</gray>";
             case GUARDIANS_VEST ->

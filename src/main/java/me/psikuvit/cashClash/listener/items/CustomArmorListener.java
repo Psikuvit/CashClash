@@ -32,7 +32,6 @@ public class CustomArmorListener implements Listener {
         }
 
         Player p = event.getPlayer();
-        manager.onPlayerMove(p);
 
         if (p.isOnGround() && !p.isFlying()) {
             manager.onPlayerLand(p);
@@ -41,11 +40,10 @@ public class CustomArmorListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getAction() != Action.RIGHT_CLICK_AIR || event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Player p = event.getPlayer();
         if (GameManager.getInstance().getPlayerSession(p) == null) return;
 
-        // Magic Helmet: right click to disable invisibility
         manager.onMagicHelmetRightClick(p);
     }
 

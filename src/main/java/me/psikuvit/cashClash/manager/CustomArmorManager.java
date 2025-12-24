@@ -14,7 +14,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -32,11 +31,8 @@ public class CustomArmorManager {
 
     private static CustomArmorManager instance;
 
-    // Magic Helmet tracking
-    private final Map<UUID, Long> magicHelmetLastMove;
+    private final Map<UUID, Integer> magicHelmetEffectIndex;
     private final Map<UUID, Long> magicHelmetCooldownUntil;
-    private final Set<UUID> magicHelmetActive;
-    private final Map<UUID, BukkitTask> magicHelmetDelayTask;
 
     // Bunny Shoes tracking
     private final Map<UUID, Long> bunnyCooldownUntil;
@@ -60,10 +56,8 @@ public class CustomArmorManager {
     private final Random random;
 
     private CustomArmorManager() {
-        this.magicHelmetLastMove = new ConcurrentHashMap<>();
+        this.magicHelmetEffectIndex = new ConcurrentHashMap<>();
         this.magicHelmetCooldownUntil = new ConcurrentHashMap<>();
-        this.magicHelmetActive = ConcurrentHashMap.newKeySet();
-        this.magicHelmetDelayTask = new ConcurrentHashMap<>();
 
         this.bunnyCooldownUntil = new ConcurrentHashMap<>();
         this.bunnyToggleReady = new ConcurrentHashMap<>();
@@ -162,88 +156,57 @@ public class CustomArmorManager {
 
     // ==================== MAGIC HELMET ====================
 
-    public void onPlayerMove(Player p) {
+    /**
+     * Magic Helmet cycling effect on right-click:
+     * 0 = Resistance I (4s effect, 4s cooldown)
+     * 1 = Absorption I (4s effect, 4s cooldown)
+     * 2 = Speed I (4s effect, 15s cooldown)
+     * Then cycles back to 0
+     */
+    public void onMagicHelmetRightClick(Player p) {
         if (!hasMagicHelmet(p)) return;
 
         UUID id = p.getUniqueId();
         long now = System.currentTimeMillis();
-        ItemsConfig cfg = ItemsConfig.getInstance();
+        Long cd = magicHelmetCooldownUntil.getOrDefault(id, 0L);
 
-        if (magicHelmetActive.contains(id)) {
-            cancelMagicHelmetInvisibility(p);
-            return;
-        }
-
-        long cd = magicHelmetCooldownUntil.getOrDefault(id, 0L);
         if (now < cd) {
+            long remaining = (cd - now) / 1000;
+            Messages.send(p, "<red>Magic Helmet on cooldown: " + remaining + "s</red>");
             return;
         }
 
-        BukkitTask existingTask = magicHelmetDelayTask.remove(id);
-        if (existingTask != null) {
-            existingTask.cancel();
-        }
+        int currentIndex = magicHelmetEffectIndex.getOrDefault(id, 0);
 
-        magicHelmetLastMove.put(id, now);
-
-        int delaySeconds = cfg.getMagicHelmetStandDelay();
-        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
-            magicHelmetDelayTask.remove(id);
-
-            if (!hasMagicHelmet(p)) return;
-            if (magicHelmetActive.contains(id)) return;
-
-            long currentCd = magicHelmetCooldownUntil.getOrDefault(id, 0L);
-            if (System.currentTimeMillis() < currentCd) return;
-
-            Long lastMove = magicHelmetLastMove.get(id);
-            long delayMillis = (delaySeconds * 1000L) - 100L;
-            if (lastMove != null && System.currentTimeMillis() - lastMove >= delayMillis) {
-                activateMagicHelmetInvisibility(p);
+        switch (currentIndex) {
+            case 0 -> {
+                // Resistance I for 4 seconds, 4 second cooldown
+                p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 4 * 20, 0, false, true, true));
+                magicHelmetCooldownUntil.put(id, now + 4000L);
+                magicHelmetEffectIndex.put(id, 1);
+                Messages.send(p, "<aqua>Resistance I activated! (4s)</aqua>");
+                SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
             }
-        }, delaySeconds * 20L);
-
-        magicHelmetDelayTask.put(id, task);
-    }
-
-    private void activateMagicHelmetInvisibility(Player p) {
-        UUID id = p.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
-        int duration = cfg.getMagicHelmetInvisDuration();
-
-        p.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, duration * 20, 0, false, false, false));
-        magicHelmetActive.add(id);
-
-        Messages.send(p, "<dark_purple>You turned invisible!</dark_purple>");
-
-        SchedulerUtils.runTaskLater(() -> {
-            if (magicHelmetActive.contains(id)) {
-                cancelMagicHelmetInvisibility(p);
+            case 1 -> {
+                // Absorption I for 4 seconds, 4 second cooldown
+                p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 4 * 20, 0, false, true, true));
+                magicHelmetCooldownUntil.put(id, now + 4000L);
+                magicHelmetEffectIndex.put(id, 2);
+                Messages.send(p, "<gold>Absorption I activated! (4s)</gold>");
+                SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.4f);
             }
-        }, duration * 20L);
-    }
-
-    public void cancelMagicHelmetInvisibility(Player p) {
-        UUID id = p.getUniqueId();
-        if (!magicHelmetActive.remove(id)) return;
-
-        ItemsConfig cfg = ItemsConfig.getInstance();
-        p.removePotionEffect(PotionEffectType.INVISIBILITY);
-        magicHelmetCooldownUntil.put(id, System.currentTimeMillis() + (cfg.getMagicHelmetCooldown() * 1000L));
-        Messages.send(p, "<gray>Invisibility ended. Cooldown: " + cfg.getMagicHelmetCooldown() + " seconds.</gray>");
-    }
-
-    public void onMagicHelmetRightClick(Player p) {
-        if (!hasMagicHelmet(p)) return;
-        if (magicHelmetActive.contains(p.getUniqueId())) {
-            cancelMagicHelmetInvisibility(p);
+            case 2 -> {
+                // Speed I for 4 seconds, 15 second cooldown
+                p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 4 * 20, 0, false, true, true));
+                magicHelmetCooldownUntil.put(id, now + 15000L);
+                magicHelmetEffectIndex.put(id, 0);  // Cycle back to Resistance
+                Messages.send(p, "<green>Speed I activated! (4s) - Cycle complete, 15s cooldown</green>");
+                SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.6f);
+            }
         }
     }
 
     public void onPlayerAttack(Player attacker, Player target) {
-        if (magicHelmetActive.contains(attacker.getUniqueId())) {
-            cancelMagicHelmetInvisibility(attacker);
-        }
 
         if (hasFlamebringerLeggings(attacker)) {
             if (random.nextDouble() < 0.30) {
@@ -464,11 +427,8 @@ public class CustomArmorManager {
     // ==================== RESET ====================
 
     public void cleanup() {
-        magicHelmetLastMove.clear();
+        magicHelmetEffectIndex.clear();
         magicHelmetCooldownUntil.clear();
-        magicHelmetActive.clear();
-        magicHelmetDelayTask.values().forEach(BukkitTask::cancel);
-        magicHelmetDelayTask.clear();
 
         bunnyCooldownUntil.clear();
         bunnyToggleReady.clear();
