@@ -16,11 +16,11 @@ public enum FoodItem implements Purchasable {
     GOLDEN_APPLE(Material.GOLDEN_APPLE, "golden-apple", 1),
     ENCHANTED_GOLDEN_APPLE(Material.ENCHANTED_GOLDEN_APPLE, "enchanted-golden-apple", 1),
 
-    SPEED_CARROT(Material.CARROT, "speed-carrot", 1),
-    GOLDEN_CHICKEN(Material.COOKED_CHICKEN, "golden-chicken", 1),
-    COOKIE_OF_LIFE(Material.COOKIE, "cookie-of-life", 1),
-    SUNSCREEN(Material.HONEY_BOTTLE, "sunscreen", 1),
-    CAN_OF_SPINACH(Material.SPIDER_EYE, "can-of-spinach", 1);
+    SPEED_CARROT(Material.CARROT, "speed-carrot", 2),
+    GOLDEN_CHICKEN(Material.COOKED_CHICKEN, "golden-chicken", 2),
+    COOKIE_OF_LIFE(Material.COOKIE, "cookie-of-life", 2),
+    SUNSCREEN(Material.HONEY_BOTTLE, "sunscreen", 2),
+    CAN_OF_SPINACH(Material.SPIDER_EYE, "can-of-spinach", 2);
 
     private final Material material;
     private final String configKey;
