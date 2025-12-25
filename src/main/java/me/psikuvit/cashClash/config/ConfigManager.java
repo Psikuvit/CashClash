@@ -27,6 +27,13 @@ public class ConfigManager {
 
     // ==================== GAME SETTINGS ====================
 
+    /**
+     * Check if debug mode is enabled globally.
+     */
+    public boolean isDebugEnabled() {
+        return config.getBoolean("debug", false);
+    }
+
     public int getMinPlayers() {
         return config.getInt("game.min-players", 8);
     }

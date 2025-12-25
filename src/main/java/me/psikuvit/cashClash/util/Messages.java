@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.Team;
 import net.kyori.adventure.text.Component;
@@ -28,6 +29,65 @@ public final class Messages {
     private Messages() {
         throw new AssertionError("Nope.");
     }
+
+    // ==================== DEBUG ====================
+
+    /**
+     * Check if debug mode is enabled in config.
+     */
+    public static boolean isDebugEnabled() {
+        return ConfigManager.getInstance().isDebugEnabled();
+    }
+
+    /**
+     * Log a debug message to the console if debug mode is enabled.
+     *
+     * @param category The debug category (e.g., "MYTHIC", "SHOP", "GAME")
+     * @param message The debug message
+     */
+    public static void debug(String category, String message) {
+        if (!isDebugEnabled()) return;
+        CashClashPlugin.getInstance().getLogger().info("[DEBUG:" + category + "] " + message);
+    }
+
+    /**
+     * Log a debug message to the console if debug mode is enabled.
+     * Simple format without category.
+     *
+     * @param message The debug message
+     */
+    public static void debug(String message) {
+        if (!isDebugEnabled()) return;
+        CashClashPlugin.getInstance().getLogger().info("[DEBUG] " + message);
+    }
+
+    /**
+     * Log a debug message with player context to the console if debug mode is enabled.
+     *
+     * @param player The player related to this debug message
+     * @param category The debug category
+     * @param message The debug message
+     */
+    public static void debug(Player player, String category, String message) {
+        if (!isDebugEnabled()) return;
+        String playerName = player != null ? player.getName() : "null";
+        CashClashPlugin.getInstance().getLogger().info("[DEBUG:" + category + "] [" + playerName + "] " + message);
+    }
+
+    /**
+     * Log a debug message with player context to the console if debug mode is enabled.
+     * Simple format without category.
+     *
+     * @param player The player related to this debug message
+     * @param message The debug message
+     */
+    public static void debug(Player player, String message) {
+        if (!isDebugEnabled()) return;
+        String playerName = player != null ? player.getName() : "null";
+        CashClashPlugin.getInstance().getLogger().info("[DEBUG] [" + playerName + "] " + message);
+    }
+
+    // ==================== PARSING ====================
 
     /**
      * Parse a MiniMessage or legacy string into a Component and disable italics on the root.

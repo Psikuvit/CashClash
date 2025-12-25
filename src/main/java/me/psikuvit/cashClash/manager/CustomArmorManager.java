@@ -87,7 +87,10 @@ public class CustomArmorManager {
         List<CustomArmorItem> found = new ArrayList<>();
         for (ItemStack is : p.getInventory().getArmorContents()) {
             if (is == null) continue;
-            found.add(PDCDetection.getCustomArmor(is));
+
+            CustomArmorItem P = PDCDetection.getCustomArmor(is);
+            if (P == null) continue;
+            found.add(P);
         }
         return found;
     }

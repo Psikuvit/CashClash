@@ -2,6 +2,9 @@
 # Cash Clash Configuration
 # ============================================
 
+# Enable debug mode (logs detailed info to console)
+debug: false
+
 # ============================================
 # GAME SETTINGS
 # ============================================
