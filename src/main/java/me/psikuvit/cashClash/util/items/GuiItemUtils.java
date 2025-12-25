@@ -5,20 +5,20 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Keys;
-import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.InvestmentType;
-import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 /**
@@ -192,69 +192,53 @@ public final class GuiItemUtils {
     }
 
     // ==================== ARMOR SET ITEMS ====================
-
     /**
-     * Creates an armor set icon that must be bought as a complete set.
+     * Creates individual armor set piece items for display in a row.
+     * Each piece when clicked will purchase the entire set.
      *
      * @param set    The armor set
      * @param player The player viewing the shop
-     * @return The configured ItemStack for display
+     * @return Array of ItemStacks for each piece in the set
      */
-    public static ItemStack createArmorSetIcon(CustomArmorItem.ArmorSet set, Player player) {
-        Material iconMaterial = switch (set) {
-            case INVESTORS -> Material.IRON_CHESTPLATE;
-            case FLAMEBRINGER -> Material.DIAMOND_LEGGINGS;
-            case DEATHMAULER -> Material.NETHERITE_CHESTPLATE;
-            case DRAGON -> Material.DRAGON_HEAD;
-        };
+    public static ItemStack[] createArmorSetPieces(CustomArmorItem.ArmorSet set, Player player) {
+        List<CustomArmorItem> pieces = set.getPieces();
+        ItemStack[] items = new ItemStack[pieces.size()];
 
         boolean ownsSet = playerOwnsArmorSet(player, set);
         long totalPrice = set.getTotalPrice();
 
-        if (ownsSet) {
-            return ShopItemBuilder.of(iconMaterial)
-                    .name("<green>" + set.getDisplayName() + " <gray>(Owned)</gray></green>")
-                    .emptyLine()
-                    .description(set.getDescription())
-                    .emptyLine()
-                    .lore("<green>✓ You own this set</green>")
-                    .itemId("SET_" + set.name())
-                    .build();
+        for (int i = 0; i < pieces.size(); i++) {
+            CustomArmorItem piece = pieces.get(i);
+
+            if (ownsSet) {
+                items[i] = ShopItemBuilder.of(piece.getMaterial())
+                        .name("<green>" + piece.getDisplayName() + " <gray>(Owned)</gray></green>")
+                        .lore("<dark_purple>" + set.getDisplayName() + " Set</dark_purple>")
+                        .emptyLine()
+                        .description(piece.getDescription())
+                        .emptyLine()
+                        .lore("<green>✓ Set owned</green>")
+                        .itemId("SET_" + set.name())
+                        .build();
+            } else {
+                items[i] = ShopItemBuilder.of(piece.getMaterial())
+                        .name("<yellow>" + piece.getDisplayName() + "</yellow>")
+                        .lore("<dark_purple>" + set.getDisplayName() + " Set</dark_purple>")
+                        .emptyLine()
+                        .lore("<dark_gray>Piece Price:</dark_gray> <gray>$" + String.format("%,d", piece.getPrice()) + "</gray>")
+                        .lore("<dark_gray>Set Total:</dark_gray> <gold>$" + String.format("%,d", totalPrice) + "</gold>")
+                        .emptyLine()
+                        .description(piece.getDescription())
+                        .emptyLine()
+                        .lore("<red>⚠ Must buy complete set!</red>")
+                        .emptyLine()
+                        .lore("<yellow>Click to purchase entire set</yellow>")
+                        .itemId("SET_" + set.name())
+                        .build();
+            }
         }
 
-        ShopItemBuilder builder = ShopItemBuilder.of(iconMaterial)
-                .name("<yellow>" + set.getDisplayName() + "</yellow>")
-                .emptyLine()
-                .lore("<dark_gray>Price:</dark_gray> <gold>$" + String.format("%,d", totalPrice) + "</gold>")
-                .emptyLine()
-                .description(set.getDescription())
-                .emptyLine()
-                .lore("<dark_gray>Includes:</dark_gray>");
-
-        // Add list of pieces
-        List<Component> lore = new ArrayList<>();
-        for (CustomArmorItem piece : set.getPieces()) {
-            lore.add(Messages.parse("<gray>  • " + piece.getDisplayName() + "</gray>"));
-        }
-        builder.emptyLine()
-              .lore("<red>Must buy complete set!</red>")
-              .purchasePrompt();
-
-        ItemStack item = builder.itemId("SET_" + set.name()).build();
-
-        // Add piece lore manually since builder doesn't have a method for raw components
-        var meta = item.getItemMeta();
-        List<Component> currentLore = meta.lore();
-        if (currentLore == null) {
-            currentLore = new ArrayList<>();
-        } else {
-            currentLore = new ArrayList<>(currentLore);
-        }
-        currentLore.addAll(6, lore); // Insert after description
-        meta.lore(currentLore);
-        item.setItemMeta(meta);
-
-        return item;
+        return items;
     }
 
     /**
@@ -331,11 +315,11 @@ public final class GuiItemUtils {
      * @param ownerUuid The UUID of the owner (if taken)
      * @return The configured mythic shop item
      */
-    public static ItemStack createMythicShopItem(me.psikuvit.cashClash.shop.items.MythicItem mythic,
-                                                  boolean playerHasMythic,
-                                                  me.psikuvit.cashClash.shop.items.MythicItem ownedMythic,
-                                                  boolean mythicTaken,
-                                                  java.util.UUID ownerUuid) {
+    public static ItemStack createMythicShopItem(MythicItem mythic,
+                                                 boolean playerHasMythic,
+                                                 MythicItem ownedMythic,
+                                                 boolean mythicTaken,
+                                                 UUID ownerUuid) {
         boolean isOwned = ownedMythic == mythic;
 
         ShopItemBuilder builder = ShopItemBuilder.of(mythic.getMaterial())
@@ -355,7 +339,7 @@ public final class GuiItemUtils {
                     .build();
         } else if (mythicTaken) {
             // Another player owns this mythic
-            String ownerName = ownerUuid != null ? org.bukkit.Bukkit.getOfflinePlayer(ownerUuid).getName() : "Someone";
+            String ownerName = ownerUuid != null ? Bukkit.getOfflinePlayer(ownerUuid).getName() : "Someone";
             return builder
                     .name("<dark_red><bold>" + mythic.getDisplayName() + "</bold> <dark_gray>(Taken)</dark_gray></dark_red>")
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
