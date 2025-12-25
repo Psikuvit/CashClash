@@ -72,7 +72,7 @@ public class GameSession {
         this.sessionId = UUID.randomUUID();
         this.arenaNumber = arenaNumber;
         this.state = GameState.WAITING;
-        this.currentRound = 0;
+        this.currentRound = 1;
         this.team1 = new Team(1);
         this.team2 = new Team(2);
         this.players = new HashMap<>();
@@ -156,7 +156,6 @@ public class GameSession {
         SoundUtils.playTo(players.keySet(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.0f);
 
         state = GameState.ROUND_1_SHOPPING;
-        currentRound = 1;
 
         ArenaManager.getInstance().setArenaState(arenaNumber, GameState.ROUND_1_SHOPPING);
 
@@ -166,9 +165,6 @@ public class GameSession {
         roundManager = new RoundManager(this);
         cashQuakeManager = new CashQuakeManager(this);
         bonusManager = new BonusManager(this);
-
-        // Select 5 random legendaries for this game session
-        MythicItemManager.getInstance().selectLegendariesForSession(this);
 
         roundManager.startShoppingPhase(currentRound);
         players.keySet().forEach(this::applyKit);
@@ -263,8 +259,8 @@ public class GameSession {
 
         players.keySet().forEach(uuid -> {
             CashClashPlayer ccp = players.get(uuid);
-            Player p = Bukkit.getPlayer(uuid);
-            if (p == null || !p.isOnline() || ccp == null) return;
+            Player p = ccp.getPlayer();
+            if (!p.isOnline()) return;
 
             Location spawn = getSpawnForPlayer(uuid);
             if (spawn != null) p.teleport(spawn);
@@ -312,6 +308,8 @@ public class GameSession {
         if (currentRound > 5) {
             end();
             return;
+        } else if (currentRound == 2) {
+            MythicItemManager.getInstance().selectLegendariesForSession(this);
         }
 
         currentRoundData = new RoundData(currentRound, players.keySet());
@@ -371,8 +369,6 @@ public class GameSession {
 
         GameManager.getInstance().removeSession(sessionId);
 
-        // Persist win statistics for the winning team
-
         if (winner != null) {
             for (UUID u : winner.getPlayers()) {
                 PlayerDataManager.getInstance().incWins(u);
@@ -381,7 +377,8 @@ public class GameSession {
 
         for (UUID u : team1.getPlayers()) team1.removePlayer(u);
         for (UUID u : team2.getPlayers()) team2.removePlayer(u);
-        team1.resetForfeitVotes(); team2.resetForfeitVotes();
+        team1.resetForfeitVotes();
+        team2.resetForfeitVotes();
         players.clear();
 
         CashClashPlugin.getInstance().getLogger().info("Arena " + arenaNumber + " reset to WAITING state after game ended");
