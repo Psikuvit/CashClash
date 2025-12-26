@@ -17,11 +17,15 @@ import java.util.Map;
  */
 public final class ShopItems {
 
-    private static final Map<String, Purchasable> BY_NAME = new HashMap<>();
-    private static final Map<ShopCategory, List<Purchasable>> BY_CATEGORY = new EnumMap<>(ShopCategory.class);
-    private static final List<Purchasable> ALL_ITEMS = new ArrayList<>();
+    private static final Map<String, Purchasable> BY_NAME;
+    private static final Map<ShopCategory, List<Purchasable>> BY_CATEGORY;
+    private static final List<Purchasable> ALL_ITEMS;
 
     static {
+        BY_NAME = new HashMap<>();
+        BY_CATEGORY = new EnumMap<>(ShopCategory.class);
+        ALL_ITEMS = new ArrayList<>();
+
         // Register all items from each enum
         registerAll(WeaponItem.values());
         registerAll(ArmorItem.values());

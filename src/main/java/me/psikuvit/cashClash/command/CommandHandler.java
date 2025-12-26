@@ -37,10 +37,11 @@ import java.util.Map;
 
 public class CommandHandler extends Command {
 
-    private final Map<String, AbstractArgCommand> subcommands = new LinkedHashMap<>();
+    private final Map<String, AbstractArgCommand> subcommands;
 
     public CommandHandler() {
         super("cashclash");
+        this.subcommands = new LinkedHashMap<>();
         setAliases(List.of("cc"));
 
         registerDefaults();

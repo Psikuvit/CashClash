@@ -46,29 +46,43 @@ public class CustomItemManager {
     private static CustomItemManager instance;
 
     // Cooldown tracking
-    private final Map<UUID, Long> medicPouchCooldown = new HashMap<>();
-    private final Map<UUID, Long> invisCloakCooldown = new HashMap<>();
-    private final Map<UUID, Integer> invisCloakUsesRemaining = new HashMap<>();
-    private final Set<UUID> invisCloakActive = new HashSet<>();
-    private final Map<UUID, BukkitTask> invisCloakTasks = new HashMap<>();
-    private final Map<UUID, List<ItemStack>> invisCloakStoredArmor = new HashMap<>();
+    private final Map<UUID, Long> medicPouchCooldown;
+    private final Map<UUID, Long> invisCloakCooldown;
+    private final Map<UUID, Integer> invisCloakUsesRemaining;
+    private final Set<UUID> invisCloakActive;
+    private final Map<UUID, BukkitTask> invisCloakTasks;
+    private final Map<UUID, List<ItemStack>> invisCloakStoredArmor;
 
     // Grenade tracking
-    private final Set<Item> activeGrenades = new HashSet<>();
+    private final Set<Item> activeGrenades;
 
     // Bounce pad tracking - stores location -> owner team
-    private final Map<Location, Integer> bouncePadTeams = new HashMap<>();
+    private final Map<Location, Integer> bouncePadTeams;
 
     // Boombox tracking
-    private final Set<Location> activeBoomboxes = new HashSet<>();
+    private final Set<Location> activeBoomboxes;
 
     // Respawn anchor tracking - stores reviver UUID -> target UUID and task
-    private final Map<UUID, UUID> respawnAnchorTargets = new HashMap<>();
-    private final Map<UUID, BukkitTask> respawnAnchorTasks = new HashMap<>();
-    private final Map<UUID, Integer> respawnAnchorsUsedThisRound = new HashMap<>();
-    private final Set<UUID> playersRevivedThisRound = new HashSet<>();
+    private final Map<UUID, UUID> respawnAnchorTargets;
+    private final Map<UUID, BukkitTask> respawnAnchorTasks;
+    private final Map<UUID, Integer> respawnAnchorsUsedThisRound;
+    private final Set<UUID> playersRevivedThisRound;
 
-    private CustomItemManager() {}
+    private CustomItemManager() {
+        this.medicPouchCooldown = new HashMap<>();
+        this.invisCloakCooldown = new HashMap<>();
+        this.invisCloakUsesRemaining = new HashMap<>();
+        this.invisCloakActive = new HashSet<>();
+        this.invisCloakTasks = new HashMap<>();
+        this.invisCloakStoredArmor = new HashMap<>();
+        this.activeGrenades = new HashSet<>();
+        this.bouncePadTeams = new HashMap<>();
+        this.activeBoomboxes = new HashSet<>();
+        this.respawnAnchorTargets = new HashMap<>();
+        this.respawnAnchorTasks = new HashMap<>();
+        this.respawnAnchorsUsedThisRound = new HashMap<>();
+        this.playersRevivedThisRound = new HashSet<>();
+    }
 
     public static CustomItemManager getInstance() {
         if (instance == null) {

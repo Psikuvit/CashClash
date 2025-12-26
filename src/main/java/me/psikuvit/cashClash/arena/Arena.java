@@ -30,24 +30,33 @@ public class Arena {
     private String templateId;
 
     // Track recently-deleted worlds to avoid reattempt storms (worldName -> skipUntilEpochMs)
-    private static final ConcurrentHashMap<String, Long> skipUnloadUntil = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Long> skipUnloadUntil;
 
     // Track worlds that have been deleted during this JVM run to prevent reattempts
-    private static final Set<String> deletedWorlds = ConcurrentHashMap.newKeySet();
+    private static final Set<String> deletedWorlds;
+
+    static {
+        skipUnloadUntil = new ConcurrentHashMap<>();
+        deletedWorlds = ConcurrentHashMap.newKeySet();
+    }
 
     // Track the active copied world for this arena and the session that created it.
-    private World activeCopiedWorld = null;
-    private UUID activeSessionId = null;
+    private World activeCopiedWorld;
+    private UUID activeSessionId;
 
     // If true, the arena was loaded from a persisted arena file and should be treated as configured
-    private boolean configuredFromFile = false;
+    private boolean configuredFromFile;
 
     // deletion guard to avoid repeated unload attempts
-    private volatile boolean deletionInProgress = false;
+    private volatile boolean deletionInProgress;
 
     public Arena(String name, String templateId) {
         this.name = name;
         this.templateId = templateId;
+        this.activeCopiedWorld = null;
+        this.activeSessionId = null;
+        this.configuredFromFile = false;
+        this.deletionInProgress = false;
     }
 
     private World getTemplateWorldInternal() {

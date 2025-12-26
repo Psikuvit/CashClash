@@ -37,14 +37,17 @@ public class ShopManager {
     private static final long LOOK_UPDATE_TICKS = 2L;
 
     // sessionId -> spawned entity UUIDs
-    private final Map<UUID, List<UUID>> sessionShops = new HashMap<>();
-    private final Map<UUID, UUID> entityToSession = new HashMap<>();
-    private final Map<UUID, Integer> entityTeam = new HashMap<>();
+    private final Map<UUID, List<UUID>> sessionShops;
+    private final Map<UUID, UUID> entityToSession;
+    private final Map<UUID, Integer> entityTeam;
 
     private BukkitTask lookAtPlayerTask;
 
 
     private ShopManager() {
+        this.sessionShops = new HashMap<>();
+        this.entityToSession = new HashMap<>();
+        this.entityTeam = new HashMap<>();
         startLookAtPlayerTask();
     }
 

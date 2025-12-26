@@ -11,33 +11,42 @@ public class Keys {
      * - Bought items in player inventory (to track origin)
      * - Custom items, mythic items, custom armor, food, etc.
      */
-    public static final NamespacedKey ITEM_ID = new NamespacedKey(CashClashPlugin.getInstance(), "item_id");
+    public static final NamespacedKey ITEM_ID;
 
     /**
      * Flag to mark an item as maxed/owned (cannot be purchased again).
      * Value: byte (1 = maxed)
      */
-    public static final NamespacedKey ITEM_MAXED = new NamespacedKey(CashClashPlugin.getInstance(), "item_maxed");
+    public static final NamespacedKey ITEM_MAXED;
 
     /**
      * UUID of the player who owns this item (for custom items like bounce pads).
      */
-    public static final NamespacedKey ITEM_OWNER = new NamespacedKey(CashClashPlugin.getInstance(), "item_owner");
+    public static final NamespacedKey ITEM_OWNER;
 
     /**
      * Remaining uses for items with limited durability.
      */
-    public static final NamespacedKey ITEM_USES = new NamespacedKey(CashClashPlugin.getInstance(), "item_uses");
+    public static final NamespacedKey ITEM_USES;
 
     /**
      * Key for shop NPC entities.
      */
-    public static final NamespacedKey SHOP_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "shop_npc");
+    public static final NamespacedKey SHOP_NPC_KEY;
 
     /**
      * Amount value for supply drop emeralds.
      */
-    public static final NamespacedKey SUPPLY_DROP_AMOUNT = new NamespacedKey(CashClashPlugin.getInstance(), "supply_amount");
+    public static final NamespacedKey SUPPLY_DROP_AMOUNT;
+
+    static {
+        ITEM_ID = new NamespacedKey(CashClashPlugin.getInstance(), "item_id");
+        ITEM_MAXED = new NamespacedKey(CashClashPlugin.getInstance(), "item_maxed");
+        ITEM_OWNER = new NamespacedKey(CashClashPlugin.getInstance(), "item_owner");
+        ITEM_USES = new NamespacedKey(CashClashPlugin.getInstance(), "item_uses");
+        SHOP_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "shop_npc");
+        SUPPLY_DROP_AMOUNT = new NamespacedKey(CashClashPlugin.getInstance(), "supply_amount");
+    }
 
     private Keys() {
         throw new AssertionError("Nope.");

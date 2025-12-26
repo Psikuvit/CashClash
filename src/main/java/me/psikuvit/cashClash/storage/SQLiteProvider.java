@@ -23,10 +23,11 @@ public class SQLiteProvider implements DatabaseProvider {
 
     private final File dbFile;
     private Connection conn;
-    private final Gson gson = new Gson();
+    private final Gson gson;
 
     public SQLiteProvider(File dbFile) {
         this.dbFile = dbFile;
+        this.gson = new Gson();
     }
 
     @Override

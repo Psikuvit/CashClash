@@ -36,10 +36,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MythicItemListener implements Listener {
 
-    private final MythicItemManager manager = MythicItemManager.getInstance();
+    private final MythicItemManager manager;
 
     // Track particle tasks for Sandstormer
-    private final Map<UUID, BukkitTask> sandstormerParticleTasks = new ConcurrentHashMap<>();
+    private final Map<UUID, BukkitTask> sandstormerParticleTasks;
+
+    public MythicItemListener() {
+        this.manager = MythicItemManager.getInstance();
+        this.sandstormerParticleTasks = new ConcurrentHashMap<>();
+    }
 
 
     @EventHandler

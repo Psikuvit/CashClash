@@ -23,12 +23,13 @@ public class MySQLProvider implements DatabaseProvider {
     private final String user;
     private final String pass;
     private Connection conn;
-    private final Gson gson = new Gson();
+    private final Gson gson;
 
     public MySQLProvider(String jdbcUrl, String user, String pass) {
         this.jdbcUrl = jdbcUrl;
         this.user = user;
         this.pass = pass;
+        this.gson = new Gson();
     }
 
     @Override
