@@ -11,10 +11,9 @@ public enum EnchantEntry {
             Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
     PROTECTION(Enchantment.PROTECTION, "protection", "Protection", 4,
-            Material.LEATHER_CHESTPLATE, Material.LEATHER_HELMET, Material.LEATHER_LEGGINGS, Material.LEATHER_BOOTS,
+            Material.LEATHER_HELMET, Material.GOLDEN_CHESTPLATE, Material.GOLDEN_LEGGINGS, Material.GOLDEN_BOOTS,
             Material.IRON_CHESTPLATE, Material.IRON_HELMET, Material.IRON_LEGGINGS, Material.IRON_BOOTS,
-            Material.DIAMOND_CHESTPLATE, Material.DIAMOND_HELMET, Material.DIAMOND_LEGGINGS, Material.DIAMOND_BOOTS,
-            Material.NETHERITE_CHESTPLATE, Material.NETHERITE_HELMET, Material.NETHERITE_LEGGINGS, Material.NETHERITE_BOOTS
+            Material.DIAMOND_CHESTPLATE, Material.DIAMOND_HELMET, Material.DIAMOND_LEGGINGS, Material.DIAMOND_BOOTS
     ),
     KNOCKBACK(Enchantment.KNOCKBACK, "knockback", "Knockback", 2,
             Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
@@ -31,8 +30,10 @@ public enum EnchantEntry {
     PUNCH(Enchantment.PUNCH, "punch", "Punch", 2,
             Material.BOW
     ),
-    UNBREAKING(Enchantment.UNBREAKING, "unbreaking", "Unbreaking", 3,
-            Material.values() // All materials
+    PROJECTILE_PROTECTION(Enchantment.PROJECTILE_PROTECTION, "projectile_protection", "Projectile Protection", 4,
+            Material.LEATHER_HELMET, Material.GOLDEN_CHESTPLATE, Material.GOLDEN_LEGGINGS, Material.GOLDEN_BOOTS,
+            Material.IRON_CHESTPLATE, Material.IRON_HELMET, Material.IRON_LEGGINGS, Material.IRON_BOOTS,
+            Material.DIAMOND_CHESTPLATE, Material.DIAMOND_HELMET, Material.DIAMOND_LEGGINGS, Material.DIAMOND_BOOTS
     );
 
     private final Enchantment enchantment;

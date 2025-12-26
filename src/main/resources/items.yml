@@ -273,8 +273,9 @@ enchants:
   flame:
     tier-1: 10000
 
-  unbreaking:
-    tier-1: 2000
-    tier-2: 4000
-    tier-3: 6000
+  projectile_protection:
+    tier-1: 8000
+    tier-2: 10000
+    tier-3: 12000
+    tier-4: 14000
 
