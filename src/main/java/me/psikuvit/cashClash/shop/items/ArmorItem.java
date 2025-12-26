@@ -16,12 +16,7 @@ public enum ArmorItem implements Purchasable {
     DIAMOND_BOOTS(Material.DIAMOND_BOOTS, "diamond-boots"),
     DIAMOND_HELMET(Material.DIAMOND_HELMET, "diamond-helmet"),
     DIAMOND_LEGGINGS(Material.DIAMOND_LEGGINGS, "diamond-leggings"),
-    DIAMOND_CHESTPLATE(Material.DIAMOND_CHESTPLATE, "diamond-chestplate"),
-
-    NETHERITE_BOOTS(Material.NETHERITE_BOOTS, "netherite-boots"),
-    NETHERITE_HELMET(Material.NETHERITE_HELMET, "netherite-helmet"),
-    NETHERITE_LEGGINGS(Material.NETHERITE_LEGGINGS, "netherite-leggings"),
-    NETHERITE_CHESTPLATE(Material.NETHERITE_CHESTPLATE, "netherite-chestplate");
+    DIAMOND_CHESTPLATE(Material.DIAMOND_CHESTPLATE, "diamond-chestplate");
 
     private final Material material;
     private final String configKey;

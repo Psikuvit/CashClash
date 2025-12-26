@@ -16,25 +16,25 @@ import java.util.stream.Collectors;
  * INDIVIDUAL ITEMS: Tax Evasion Pants, Magic Helmet, Bunny Shoes, Guardian's Vest can be bought separately.
  */
 public enum CustomArmorItem implements Purchasable {
-    INVESTORS_BOOTS(Material.IRON_BOOTS, "investors-boots", "Investor's Boots", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
-    INVESTORS_HELMET(Material.IRON_HELMET, "investors-helmet", "Investor's Helmet", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
-    INVESTORS_LEGGINGS(Material.IRON_LEGGINGS, "investors-leggings", "Investor's Leggings", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
-    INVESTORS_CHESTPLATE(Material.IRON_CHESTPLATE, "investors-chestplate", "Investor's Chestplate", "Rich in luck, poor in power.", ArmorSet.INVESTORS),
+    INVESTORS_HELMET(Material.IRON_HELMET, "investors-helmet", "Investor's Helmet", "Rich in luck, poor in power.", null),
+    INVESTORS_CHESTPLATE(Material.IRON_CHESTPLATE, "investors-chestplate", "Investor's Chestplate", "Rich in luck, poor in power.", null),
+    INVESTORS_LEGGINGS(Material.IRON_LEGGINGS, "investors-leggings", "Investor's Leggings", "Rich in luck, poor in power.", null),
+    INVESTORS_BOOTS(Material.IRON_BOOTS, "investors-boots", "Investor's Boots", "Rich in luck, poor in power.", null),
 
-    TAX_EVASION_PANTS(Material.LEATHER_LEGGINGS, "tax-evasion-pants", "Tax Evasion Pants", "Not even the economy can catch you.", null),
     MAGIC_HELMET(Material.IRON_HELMET, "magic-helmet", "Magic Helmet", "Hide in plain profit.", null),
-    BUNNY_SHOES(Material.LEATHER_BOOTS, "bunny-shoes", "Bunny Shoes", "Agility is the best currency.", null),
     GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, "guardians-vest", "Guardian's Vest", "A second chance, bought and paid for.", null),
+    TAX_EVASION_PANTS(Material.LEATHER_LEGGINGS, "tax-evasion-pants", "Tax Evasion Pants", "Not even the economy can catch you.", null),
+    BUNNY_SHOES(Material.LEATHER_BOOTS, "bunny-shoes", "Bunny Shoes", "Agility is the best currency.", null),
 
-    FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, "flamebringer-boots", "Flamebringer's Boots", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
     FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, "flamebringer-leggings", "Flamebringer's Leggings", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
+    FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, "flamebringer-boots", "Flamebringer's Boots", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
 
     DEATHMAULER_CHESTPLATE(Material.NETHERITE_CHESTPLATE, "deathmauler-chestplate", "Deathmauler's Chestplate", "No one waits for death to have a choice in where you may lie.", ArmorSet.DEATHMAULER),
     DEATHMAULER_LEGGINGS(Material.NETHERITE_LEGGINGS, "deathmauler-leggings", "Deathmauler's Leggings", "No one waits for death to have a choice in where you may lie.", ArmorSet.DEATHMAULER),
 
+    DRAGON_HELMET(Material.DIAMOND_HELMET, "dragon-head", "Dragon Helmet", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
     DRAGON_CHESTPLATE(Material.DIAMOND_CHESTPLATE, "dragon-chestplate", "Dragon Chestplate", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
-    DRAGON_BOOTS(Material.DIAMOND_BOOTS, "dragon-boots", "Dragon Boots", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
-    DRAGON_HELMET(Material.DIAMOND_HELMET, "dragon-head", "Dragon Helmet", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON);
+    DRAGON_BOOTS(Material.DIAMOND_BOOTS, "dragon-boots", "Dragon Boots", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON);
 
     private final Material material;
     private final String configKey;
