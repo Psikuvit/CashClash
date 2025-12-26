@@ -1,8 +1,9 @@
 package me.psikuvit.cashClash.player;
-
+ 
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
+import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.BonusType;
 import org.bukkit.entity.Player;
 
@@ -91,11 +92,13 @@ public class CashClashPlayer {
     }
 
     public void deductCoins(long amount) {
-        coins -= amount;
+        this.coins -= amount;
+        Messages.debug(player, "ECONOMY", "Deducted $" + amount + " (Total: $" + this.coins + ")");
     }
 
     public void addCoins(long amount) {
         coins += amount;
+        Messages.debug(player, "ECONOMY", "Added $" + amount + " (Total: $" + this.coins + ")");
     }
 
     public void handleDeath() {

@@ -1,9 +1,10 @@
 package me.psikuvit.cashClash.arena;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.util.LocationUtils;
+import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -67,19 +68,19 @@ public class ArenaManager {
                 try {
                     Arena arena = new Arena(arenaName, null);
                     arenas.put(i, arena);
-                    CashClashPlugin.getInstance().getLogger().info("Created placeholder " + arenaName);
+                    Messages.debug("ARENA", "Created placeholder " + arenaName);
                 } catch (Exception e) {
-                    CashClashPlugin.getInstance().getLogger().severe("Failed to create placeholder " + arenaName + ": " + e.getMessage());
+                    Messages.debug("ARENA", "Failed to create placeholder " + arenaName + ": " + e.getMessage());
                 }
             } else {
-                CashClashPlugin.getInstance().getLogger().info("Arena slot " + i + " already loaded: " + arenas.get(i).getName());
+                Messages.debug("ARENA", "Arena slot " + i + " already loaded: " + arenas.get(i).getName());
             }
 
             arenaStates.putIfAbsent(i, GameState.WAITING);
             arenaPlayerCounts.putIfAbsent(i, 0);
         }
 
-        CashClashPlugin.getInstance().getLogger().info("Arenas ensured (loaded or created placeholders). Configure templates and assign them via admin commands if needed.");
+        Messages.debug("ARENA", "Arenas ensured (loaded or created placeholders). Configure templates and assign them via admin commands if needed.");
     }
 
     /**
@@ -89,14 +90,14 @@ public class ArenaManager {
         File templatesDir = new File(CashClashPlugin.getInstance().getDataFolder(), "templates");
         if (!templatesDir.exists()) {
             if (!templatesDir.mkdirs()) {
-                CashClashPlugin.getInstance().getLogger().warning("Could not create templates directory: " + templatesDir.getAbsolutePath());
+                Messages.debug("ARENA", "Could not create templates directory: " + templatesDir.getAbsolutePath());
             }
             return;
         }
 
         File[] templateFiles = templatesDir.listFiles((dir, name) -> name.endsWith(".yml"));
         if (templateFiles == null || templateFiles.length == 0) {
-            CashClashPlugin.getInstance().getLogger().info("No template files found in templates folder");
+            Messages.debug("ARENA", "No template files found in templates folder");
             return;
         }
 
@@ -106,7 +107,7 @@ public class ArenaManager {
 
             String worldName = cfg.getString("world");
             if (worldName == null) {
-                CashClashPlugin.getInstance().getLogger().warning("Template " + id + " has no world configured, skipping");
+                Messages.debug("ARENA", "Template " + id + " has no world configured, skipping");
                 continue;
             }
 
@@ -117,13 +118,13 @@ public class ArenaManager {
                     try {
                         w = Bukkit.createWorld(new WorldCreator(worldName));
                     } catch (Exception ex) {
-                        CashClashPlugin.getInstance().getLogger().warning("Failed to load world for template " + id + ": " + ex.getMessage());
+                        Messages.debug("ARENA", "Failed to load world for template " + id + ": " + ex.getMessage());
                     }
                 }
             }
 
             if (w == null) {
-                CashClashPlugin.getInstance().getLogger().warning("Could not load world '" + worldName + "' for template " + id);
+                Messages.debug("ARENA", "Could not load world '" + worldName + "' for template " + id);
                 continue;
             }
 
@@ -171,7 +172,7 @@ public class ArenaManager {
             }
 
             templates.put(id, tpl);
-            CashClashPlugin.getInstance().getLogger().info("Loaded template: " + id + " -> " + w.getName());
+            Messages.debug("ARENA", "Loaded template: " + id + " -> " + w.getName());
         }
     }
 
@@ -185,7 +186,7 @@ public class ArenaManager {
         File templatesDir = new File(CashClashPlugin.getInstance().getDataFolder(), "templates");
         if (!templatesDir.exists()) {
             if (!templatesDir.mkdirs()) {
-                CashClashPlugin.getInstance().getLogger().warning("Could not create templates directory");
+                Messages.debug("ARENA", "Could not create templates directory");
                 return;
             }
         }
@@ -234,9 +235,9 @@ public class ArenaManager {
 
         try {
             cfg.save(file);
-            CashClashPlugin.getInstance().getLogger().info("Saved template: " + id + " to " + file.getName());
+            Messages.debug("ARENA", "Saved template: " + id + " to " + file.getName());
         } catch (IOException e) {
-            CashClashPlugin.getInstance().getLogger().warning("Failed to save template " + id + ": " + e.getMessage());
+            Messages.debug("ARENA", "Failed to save template " + id + ": " + e.getMessage());
         }
     }
 
@@ -249,7 +250,7 @@ public class ArenaManager {
                 try {
                     w = Bukkit.createWorld(new WorldCreator(worldName));
                 } catch (Exception ex) {
-                    CashClashPlugin.getInstance().getLogger().severe("Failed to load world for template '" + id + "': " + ex.getMessage());
+                    Messages.debug("ARENA", "Failed to load world for template '" + id + "': " + ex.getMessage());
                     return false;
                 }
             } else {
@@ -362,7 +363,7 @@ public class ArenaManager {
         File dir = new File(CashClashPlugin.getInstance().getDataFolder(), "arenas");
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
-                CashClashPlugin.getInstance().getLogger().warning("Could not create arenas directory: " + dir.getAbsolutePath());
+                Messages.debug("ARENA", "Could not create arenas directory: " + dir.getAbsolutePath());
             }
         }
 
@@ -377,7 +378,7 @@ public class ArenaManager {
                 // Note: spawn and shop positions are stored on templates now.
                 arenas.put(i, arena);
                 arena.setConfiguredFromFile(true);
-                CashClashPlugin.getInstance().getLogger().info("Loaded arena file: " + f.getName() + " -> " + name);
+                Messages.debug("ARENA", "Loaded arena file: " + f.getName() + " -> " + name);
             } else {
                 // create default empty arena placeholder
                 String arenaName = "Arena" + i;
@@ -400,7 +401,7 @@ public class ArenaManager {
         File dir = new File(CashClashPlugin.getInstance().getDataFolder(), "arenas");
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
-                CashClashPlugin.getInstance().getLogger().warning("Could not create arenas directory: " + dir.getAbsolutePath());
+                Messages.debug("ARENA", "Could not create arenas directory: " + dir.getAbsolutePath());
             }
         }
         File f = new File(dir, "arena" + arenaNumber + ".yml");
@@ -412,9 +413,9 @@ public class ArenaManager {
 
         try {
             cfg.save(f);
-            CashClashPlugin.getInstance().getLogger().info("Saved arena file: " + f.getName() + " -> " + arena.getName());
+            Messages.debug("ARENA", "Saved arena file: " + f.getName() + " -> " + arena.getName());
         } catch (IOException e) {
-            CashClashPlugin.getInstance().getLogger().warning("Failed to save arena file: " + f.getAbsolutePath() + " - " + e.getMessage());
+            Messages.debug("ARENA", "Failed to save arena file: " + f.getAbsolutePath() + " - " + e.getMessage());
         }
     }
 
@@ -439,7 +440,7 @@ public class ArenaManager {
         Location loc = LocationUtils.deserializeLocation(section);
         if (loc != null && loc.getWorld() != null) {
             this.serverLobbySpawn = loc;
-            CashClashPlugin.getInstance().getLogger().info("Loaded server lobby spawn: " + loc.getWorld().getName());
+            Messages.debug("ARENA", "Loaded server lobby spawn: " + loc.getWorld().getName());
         }
     }
 
@@ -450,7 +451,7 @@ public class ArenaManager {
         else cfg.set("lobby", null);
 
         CashClashPlugin.getInstance().saveConfig();
-        CashClashPlugin.getInstance().getLogger().info("Saved server lobby spawn to config");
+        Messages.debug("ARENA", "Saved server lobby spawn to config");
     }
 
     public Location getServerLobbySpawn() {

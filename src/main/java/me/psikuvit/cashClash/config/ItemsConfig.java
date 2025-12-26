@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.config;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -37,7 +38,7 @@ public class ItemsConfig {
         config = YamlConfiguration.loadConfiguration(configFile);
 
         if (!validator.validateItemsConfig(config)) {
-            CashClashPlugin.getInstance().getLogger().warning("Items configuration has errors - check warnings above");
+            Messages.debug("CONFIG", "Items configuration has errors - check warnings above");
         }
     }
 

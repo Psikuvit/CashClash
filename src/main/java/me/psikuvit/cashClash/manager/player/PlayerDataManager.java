@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.player.PlayerData;
 import me.psikuvit.cashClash.storage.DatabaseProvider;
 import me.psikuvit.cashClash.storage.MySQLProvider;
 import me.psikuvit.cashClash.storage.SQLiteProvider;
+import me.psikuvit.cashClash.util.Messages;
 
 import java.io.File;
 import java.io.IOException;
@@ -115,11 +116,6 @@ public class PlayerDataManager {
     }
 
     private static void pluginLog(String msg) {
-        var inst = CashClashPlugin.getInstance();
-        if (inst != null) {
-            inst.getLogger().warning(msg);
-        } else {
-            System.err.println(msg);
-        }
+        Messages.debug("STORAGE", msg);
     }
 }

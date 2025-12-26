@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.game;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
@@ -92,9 +91,7 @@ public class GameSession {
             throw new IllegalStateException("Failed to create world copy for session " + sessionId);
         }
 
-        CashClashPlugin.getInstance().getLogger().info(
-            "GameSession " + sessionId + " created for Arena " + arenaNumber + " with world: " + gameWorld.getName()
-        );
+        Messages.debug("GAME", "GameSession " + sessionId + " created for Arena " + arenaNumber + " with world: " + gameWorld.getName());
 
         // create shops in the copied world for this session
         ShopManager.getInstance().createShopsForSession(this);
@@ -171,7 +168,7 @@ public class GameSession {
         ScoreboardManager.getInstance().createBoardForSession(this);
 
 
-        CashClashPlugin.getInstance().getLogger().info("GameSession " + sessionId + " started in Arena " + arenaNumber);
+        Messages.debug("GAME", "GameSession " + sessionId + " started in Arena " + arenaNumber);
     }
 
     /**
@@ -381,7 +378,7 @@ public class GameSession {
         team2.resetForfeitVotes();
         players.clear();
 
-        CashClashPlugin.getInstance().getLogger().info("Arena " + arenaNumber + " reset to WAITING state after game ended");
+        Messages.debug("GAME", "Arena " + arenaNumber + " reset to WAITING state after game ended");
     }
 
     /**
@@ -456,7 +453,7 @@ public class GameSession {
             player.setHealth(Math.max(1.0, Math.min(maxHealth, player.getHealth())));
 
         } catch (Exception t) {
-            CashClashPlugin.getInstance().getLogger().warning("Failed to clear kit for player " + player.getName() + ": " + t.getMessage());
+            Messages.debug("GAME", "Failed to clear kit for player " + player.getName() + ": " + t.getMessage());
         }
     }
 

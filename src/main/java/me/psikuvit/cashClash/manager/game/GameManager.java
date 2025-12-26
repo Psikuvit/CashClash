@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.entity.Player;
 
 import java.util.Collection;
@@ -35,6 +36,7 @@ public class GameManager {
         GameSession session = new GameSession(arenaNumber);
         activeSessions.put(session.getSessionId(), session);
         arenaToSession.put(arenaNumber, session);
+        Messages.debug("GAME", "Registered new session " + session.getSessionId() + " for arena " + arenaNumber);
         return session;
     }
 
@@ -49,6 +51,7 @@ public class GameManager {
             playerToSession.entrySet().removeIf(e ->
                     e.getValue() != null && e.getValue().getSessionId().equals(sessionId));
             arenaToSession.values().removeIf(s -> s.getSessionId().equals(sessionId));
+            Messages.debug("GAME", "Removed session " + sessionId);
         }
     }
 
@@ -58,10 +61,12 @@ public class GameManager {
 
     public void addPlayerToSession(Player player, GameSession session) {
         playerToSession.put(player.getUniqueId(), session);
+        Messages.debug(player, "GAME", "Added to session " + session.getSessionId());
     }
 
     public void removePlayerFromSession(Player player) {
         playerToSession.remove(player.getUniqueId());
+        Messages.debug(player, "GAME", "Removed from session");
     }
 
     public Collection<GameSession> getActiveSessions() {

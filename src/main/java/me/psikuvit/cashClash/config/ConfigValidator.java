@@ -1,11 +1,10 @@
 package me.psikuvit.cashClash.config;
 
-import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Validates configuration files and ensures all required keys exist.
@@ -13,12 +12,10 @@ import java.util.logging.Logger;
  */
 public class ConfigValidator {
 
-    private final Logger logger;
     private final List<String> errors;
     private final List<String> warnings;
 
     public ConfigValidator() {
-        this.logger = CashClashPlugin.getInstance().getLogger();
         this.errors = new ArrayList<>();
         this.warnings = new ArrayList<>();
     }
@@ -31,7 +28,7 @@ public class ConfigValidator {
         errors.clear();
         warnings.clear();
 
-        logger.info("Validating shop.yml...");
+        Messages.debug("CONFIG", "Validating shop.yml...");
 
         // Check schema version
         int schemaVersion = config.getInt("schema-version", 0);
@@ -107,7 +104,7 @@ public class ConfigValidator {
         errors.clear();
         warnings.clear();
 
-        logger.info("Validating items.yml...");
+        Messages.debug("CONFIG", "Validating items.yml...");
 
         // Check schema version
         int schemaVersion = config.getInt("schema-version", 0);
@@ -184,18 +181,18 @@ public class ConfigValidator {
 
     private void logResults(String fileName) {
         if (errors.isEmpty() && warnings.isEmpty()) {
-            logger.info("✓ " + fileName + " validated successfully");
+            Messages.debug("CONFIG", "✓ " + fileName + " validated successfully");
             return;
         }
 
         if (!warnings.isEmpty()) {
-            logger.warning("⚠ " + fileName + " validation warnings:");
-            warnings.forEach(w -> logger.warning("  - " + w));
+            Messages.debug("CONFIG", "⚠ " + fileName + " validation warnings:");
+            warnings.forEach(w -> Messages.debug("CONFIG", "  - " + w));
         }
 
         if (!errors.isEmpty()) {
-            logger.severe("✗ " + fileName + " validation errors:");
-            errors.forEach(e -> logger.severe("  - " + e));
+            Messages.debug("CONFIG", "✗ " + fileName + " validation errors:");
+            errors.forEach(e -> Messages.debug("CONFIG", "  - " + e));
         }
     }
 
@@ -204,9 +201,9 @@ public class ConfigValidator {
      */
     public void logConfigDiff(String configName, int keysChanged) {
         if (keysChanged > 0) {
-            logger.info("↻ Reloaded " + configName + " (" + keysChanged + " values changed)");
+            Messages.debug("CONFIG", "↻ Reloaded " + configName + " (" + keysChanged + " values changed)");
         } else {
-            logger.info("↻ Reloaded " + configName + " (no changes)");
+            Messages.debug("CONFIG", "↻ Reloaded " + configName + " (no changes)");
         }
     }
 }

@@ -1,9 +1,27 @@
 package me.psikuvit.cashClash.command;
 
-import me.psikuvit.cashClash.command.subcommands.*;
+import me.psikuvit.cashClash.command.subcommands.ArenaCommand;
+import me.psikuvit.cashClash.command.subcommands.ArenasCommand;
+import me.psikuvit.cashClash.command.subcommands.CoinsCommand;
+import me.psikuvit.cashClash.command.subcommands.DebugCommand;
+import me.psikuvit.cashClash.command.subcommands.ForceStartCommand;
+import me.psikuvit.cashClash.command.subcommands.ForfeitCommand;
+import me.psikuvit.cashClash.command.subcommands.JoinCommand;
+import me.psikuvit.cashClash.command.subcommands.LeaveCommand;
+import me.psikuvit.cashClash.command.subcommands.LotteryCommand;
+import me.psikuvit.cashClash.command.subcommands.MythicsCommand;
+import me.psikuvit.cashClash.command.subcommands.PayTaxCommand;
+import me.psikuvit.cashClash.command.subcommands.ReloadCommand;
+import me.psikuvit.cashClash.command.subcommands.SetLobbyCommand;
+import me.psikuvit.cashClash.command.subcommands.ShopCommand;
+import me.psikuvit.cashClash.command.subcommands.StatsCommand;
+import me.psikuvit.cashClash.command.subcommands.StopCommand;
+import me.psikuvit.cashClash.command.subcommands.TemplateCommand;
+import me.psikuvit.cashClash.command.subcommands.TransferCommand;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
@@ -54,6 +72,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new ArenaCommand());
         registerSubcommand(new StatsCommand());
         registerSubcommand(new CoinsCommand());
+        registerSubcommand(new MythicsCommand());
     }
 
     public void registerSubcommand(AbstractArgCommand cmd) {
@@ -83,6 +102,7 @@ public class CommandHandler extends Command {
 
         // slice args
         String[] subArgs = args.length == 1 ? new String[0] : Arrays.copyOfRange(args, 1, args.length);
+        Messages.debug(sender instanceof Player ? (Player) sender : null, "COMMAND", "Executing subcommand: " + token + " with args: " + Arrays.toString(subArgs));
         return sub.onCommand(sender, subArgs);
     }
 

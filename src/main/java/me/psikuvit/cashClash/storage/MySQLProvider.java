@@ -2,10 +2,15 @@ package me.psikuvit.cashClash.storage;
 
 import com.google.gson.Gson;
 import me.psikuvit.cashClash.player.PlayerData;
-import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.util.Messages;
 
 import java.io.IOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -59,6 +64,6 @@ public class MySQLProvider implements DatabaseProvider {
 
     @Override
     public void close() throws IOException {
-        try { if (conn != null && !conn.isClosed()) conn.close(); } catch (SQLException ignored) { CashClashPlugin.getInstance().getLogger().warning("Unable to close MySQL provider: " + ignored.getMessage()); }
+        try { if (conn != null && !conn.isClosed()) conn.close(); } catch (SQLException ignored) { Messages.debug("STORAGE", "Unable to close MySQL provider: " + ignored.getMessage()); }
     }
 }

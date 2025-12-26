@@ -187,8 +187,7 @@ public class MythicItemManager {
 
         sessionAvailableMythics.put(sessionId, selectedMythics);
 
-        CashClashPlugin.getInstance().getLogger().info(
-            "Selected " + count + " legendaries for session " + sessionId + ": " +
+        Messages.debug("MYTHIC", "Selected " + count + " legendaries for session " + sessionId + ": " +
             selectedMythics.stream().map(MythicItem::getDisplayName).reduce((a, b) -> a + ", " + b).orElse("none")
         );
     }

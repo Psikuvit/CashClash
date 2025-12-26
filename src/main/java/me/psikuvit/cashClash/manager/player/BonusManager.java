@@ -352,6 +352,8 @@ public class BonusManager {
             return;
         }
 
+        Messages.debug("GAME", "Awarding bonus " + bonusType.name() + " to " + playerUuid + " (+$" + bonusType.getReward() + ")");
+
         // Use the existing earnBonus method
         ccp.earnBonus(bonusType);
 

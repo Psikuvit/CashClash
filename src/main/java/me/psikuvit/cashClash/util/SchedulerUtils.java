@@ -2,8 +2,8 @@ package me.psikuvit.cashClash.util;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.plugin.IllegalPluginAccessException;
+import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Utility wrapper for scheduling tasks that safely handles plugin-disable races.
@@ -19,7 +19,7 @@ public class SchedulerUtils {
         try {
             return Bukkit.getScheduler().runTask(CashClashPlugin.getInstance(), runnable);
         } catch (IllegalPluginAccessException ex) {
-            CashClashPlugin.getInstance().getLogger().warning("Scheduler prevented runTask: " + ex.getMessage());
+            Messages.debug("SYSTEM", "Scheduler prevented runTask: " + ex.getMessage());
             return null;
         }
     }
@@ -29,7 +29,7 @@ public class SchedulerUtils {
         try {
             return Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), runnable, ticks);
         } catch (IllegalPluginAccessException ex) {
-            CashClashPlugin.getInstance().getLogger().warning("Scheduler prevented runTaskLater: " + ex.getMessage());
+            Messages.debug("SYSTEM", "Scheduler prevented runTaskLater: " + ex.getMessage());
             return  null;
         }
     }
@@ -39,7 +39,7 @@ public class SchedulerUtils {
         try {
             return Bukkit.getScheduler().runTaskAsynchronously(CashClashPlugin.getInstance(), runnable);
         } catch (IllegalPluginAccessException ex) {
-            CashClashPlugin.getInstance().getLogger().warning("Scheduler prevented runTaskAsync: " + ex.getMessage());
+            Messages.debug("SYSTEM", "Scheduler prevented runTaskAsync: " + ex.getMessage());
             return null;
         }
     }
@@ -49,7 +49,7 @@ public class SchedulerUtils {
         try {
             return Bukkit.getScheduler().runTaskTimer(CashClashPlugin.getInstance(), runnable, delay, period);
         } catch (IllegalPluginAccessException ex) {
-            CashClashPlugin.getInstance().getLogger().warning("Scheduler prevented runTaskTimer: " + ex.getMessage());
+            Messages.debug("SYSTEM", "Scheduler prevented runTaskTimer: " + ex.getMessage());
             return null;
         }
     }
@@ -59,7 +59,7 @@ public class SchedulerUtils {
         try {
             return Bukkit.getScheduler().runTaskTimerAsynchronously(CashClashPlugin.getInstance(), runnable, delay, period);
         } catch (IllegalPluginAccessException ex) {
-            CashClashPlugin.getInstance().getLogger().warning("Scheduler prevented runTaskTimerAsync: " + ex.getMessage());
+            Messages.debug("SYSTEM", "Scheduler prevented runTaskTimerAsync: " + ex.getMessage());
             return null;
         }
     }

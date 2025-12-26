@@ -34,6 +34,7 @@ public class RoundManager {
     }
 
     public void startShoppingPhase(int roundNumber) {
+        Messages.debug("GAME", "Starting shopping phase for round " + roundNumber + " in session " + session.getSessionId());
         // ensure previous task is cancelled to avoid double timers
         if (phaseTask != null) {
             phaseTask.cancel();
@@ -111,6 +112,7 @@ public class RoundManager {
     }
 
     public void startCombatPhase() {
+        Messages.debug("GAME", "Starting combat phase for round " + session.getCurrentRound() + " in session " + session.getSessionId());
         // ensure previous task is cancelled to avoid double timers
         if (phaseTask != null) {
             phaseTask.cancel();

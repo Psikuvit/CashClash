@@ -32,11 +32,13 @@ public class PlayerConnectionListener implements Listener {
         );
 
         PlayerDataManager.getInstance().getOrLoadData(player.getUniqueId());
+        Messages.debug(player, "SYSTEM", "Player joined and data loaded");
 
         // Teleport to configured server lobby spawn if present
         var lobbyLoc = ArenaManager.getInstance().getServerLobbySpawn();
         if (lobbyLoc != null) {
             player.teleport(lobbyLoc);
+            Messages.debug(player, "SYSTEM", "Teleported to lobby spawn");
         }
 
         // Set lobby scoreboard
@@ -63,6 +65,7 @@ public class PlayerConnectionListener implements Listener {
         // Remove from game if in one
         var session = GameManager.getInstance().getPlayerSession(player);
         if (session != null) {
+            Messages.debug(player, "GAME", "Player quit while in session " + session.getSessionId());
             session.removePlayer(player);
             GameManager.getInstance().removePlayerFromSession(player);
         }

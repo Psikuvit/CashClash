@@ -1,9 +1,10 @@
 package me.psikuvit.cashClash.manager.game;
-
+ 
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-
+import me.psikuvit.cashClash.util.Messages;
+ 
 /**
  * Manages economy and transactions
  */
@@ -48,13 +49,15 @@ public class EconomyManager {
         if (!sender.canAfford(amount)) {
             return false;
         }
-
+ 
         double fee = getTransferFee(session);
         long netAmount = (long) (amount * (1 - fee));
+ 
+        Messages.debug("ECONOMY", "Transfer: " + sender.getPlayer().getName() + " -> " + receiver.getPlayer().getName() + " Amount: " + amount + " Fee: " + fee + " Net: " + netAmount);
 
         sender.deductCoins(amount);
         receiver.addCoins(netAmount);
-
+ 
         return true;
     }
 

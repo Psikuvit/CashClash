@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.arena;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
@@ -66,7 +67,7 @@ public class Arena {
         // If we already created a copy for this session, return it.
         if (activeSessionId != null && activeSessionId.equals(sessionId) && activeCopiedWorld != null) {
             if (Bukkit.getWorld(activeCopiedWorld.getName()) != null) {
-                CashClashPlugin.getInstance().getLogger().info("Reusing existing copied world for arena " + name + " session " + sessionId);
+                Messages.debug("ARENA", "Reusing existing copied world for arena " + name + " session " + sessionId);
                 return activeCopiedWorld;
             } else {
                 // World object stale, clear references and continue to recreate
@@ -77,7 +78,7 @@ public class Arena {
 
         World templateWorld = getTemplateWorldInternal();
         if (templateWorld == null) {
-            CashClashPlugin.getInstance().getLogger().severe("Template world not set for arena " + name);
+            Messages.debug("ARENA", "Template world not set for arena " + name);
             return null;
         }
 
@@ -93,7 +94,7 @@ public class Arena {
             for (World w : Bukkit.getWorlds()) {
                 if (w.getName().startsWith(name + "_session_")) {
                     // If found reuse it for this session (helps across reloads where names match)
-                    CashClashPlugin.getInstance().getLogger().info("Found already loaded copy for arena " + name + ": " + w.getName());
+                    Messages.debug("ARENA", "Found already loaded copy for arena " + name + ": " + w.getName());
                     activeCopiedWorld = w;
                     activeSessionId = sessionId;
                     return activeCopiedWorld;
@@ -113,19 +114,19 @@ public class Arena {
                         World loaded = Bukkit.getWorld(fname);
                         if (loaded != null) {
                             try {
-                                CashClashPlugin.getInstance().getLogger().info("Unloading stale loaded world before pruning: " + fname);
+                                Messages.debug("ARENA", "Unloading stale loaded world before pruning: " + fname);
                                 Bukkit.unloadWorld(loaded, false);
                             } catch (Exception t) {
-                                CashClashPlugin.getInstance().getLogger().warning("Failed to unload stale world " + fname + ": " + t.getMessage());
+                                Messages.debug("ARENA", "Failed to unload stale world " + fname + ": " + t.getMessage());
                                 continue;
                             }
                         }
 
                         try {
                             deleteWorld(child);
-                            CashClashPlugin.getInstance().getLogger().info("Pruned stale arena world folder: " + child.getAbsolutePath());
+                            Messages.debug("ARENA", "Pruned stale arena world folder: " + child.getAbsolutePath());
                         } catch (Exception t) {
-                            CashClashPlugin.getInstance().getLogger().warning("Failed to prune stale folder " + child.getAbsolutePath() + ": " + t.getMessage());
+                            Messages.debug("ARENA", "Failed to prune stale folder " + child.getAbsolutePath() + ": " + t.getMessage());
                         }
                     }
                 }
@@ -134,7 +135,7 @@ public class Arena {
             if (copyWorldFolder.exists()) {
                 World maybeLoaded = Bukkit.getWorld(copyWorldName);
                 if (maybeLoaded != null) {
-                    CashClashPlugin.getInstance().getLogger().info("World copy already loaded: " + copyWorldName + " - reusing it.");
+                    Messages.debug("ARENA", "World copy already loaded: " + copyWorldName + " - reusing it.");
                     activeCopiedWorld = maybeLoaded;
                     activeSessionId = sessionId;
                     return activeCopiedWorld;
@@ -143,7 +144,7 @@ public class Arena {
                 // Attempt a best-effort delete of the old folder before copying new
                 deleteWorld(copyWorldFolder);
                 if (copyWorldFolder.exists()) {
-                    CashClashPlugin.getInstance().getLogger().warning("Existing world folder couldn't be deleted: " + copyWorldFolder.getAbsolutePath());
+                    Messages.debug("ARENA", "Existing world folder couldn't be deleted: " + copyWorldFolder.getAbsolutePath());
                 }
             }
 
@@ -160,6 +161,7 @@ public class Arena {
                 if (sessionLock.exists()) Files.deleteIfExists(sessionLock.toPath());
             } catch (IOException ignored) {}
 
+            Messages.debug("ARENA", "Starting world creator for " + copyWorldName);
             WorldCreator creator = new WorldCreator(copyWorldName);
             creator.environment(templateWorld.getEnvironment());
             creator.generator(templateWorld.getGenerator());
@@ -178,20 +180,20 @@ public class Arena {
                 copiedWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
                 copiedWorld.setGameRule(GameRule.KEEP_INVENTORY, true);
 
-                CashClashPlugin.getInstance().getLogger().info("Created world copy: " + copyWorldName + " for arena " + name);
+                Messages.debug("ARENA", "Created world copy: " + copyWorldName + " for arena " + name);
 
                 // Track active copy for lifecycle management
                 activeCopiedWorld = copiedWorld;
                 activeSessionId = sessionId;
                 return copiedWorld;
             } else {
-                CashClashPlugin.getInstance().getLogger().severe("WorldCreator returned null when creating " + copyWorldName);
+                Messages.debug("ARENA", "WorldCreator returned null when creating " + copyWorldName);
             }
 
         } catch (IOException e) {
-            CashClashPlugin.getInstance().getLogger().severe("Failed to copy world for arena " + name + ": " + e.getMessage());
+            Messages.debug("ARENA", "Failed to copy world for arena " + name + ": " + e.getMessage());
         } catch (Exception t) {
-            CashClashPlugin.getInstance().getLogger().severe("Unexpected error while creating world copy for arena " + name + ": " + t.getMessage());
+            Messages.debug("ARENA", "Unexpected error while creating world copy for arena " + name + ": " + t.getMessage());
         }
 
         return null;
@@ -210,12 +212,14 @@ public class Arena {
         Long skipUntil = skipUnloadUntil.get(worldName);
         long now = System.currentTimeMillis();
         if (skipUntil != null && now < skipUntil) {
-            CashClashPlugin.getInstance().getLogger().info("Skipping delete for world " + worldName + " because a recent attempt is in progress.");
+            Messages.debug("ARENA", "Skipping delete for world " + worldName + " because a recent attempt is in progress.");
             return;
         }
 
         // mark cooldown to avoid another simultaneous/quick retry for 60s
         skipUnloadUntil.put(worldName, now + TimeUnit.SECONDS.toMillis(60));
+
+        Messages.debug("ARENA", "Attempting to delete world copy: " + worldName);
 
         // If this world equals the template world, ignore
         if (world.equals(getTemplateWorldInternal())) {
@@ -225,14 +229,14 @@ public class Arena {
 
         // If the world was already fully deleted earlier in this runtime, skip
         if (deletedWorlds.contains(worldName)) {
-            CashClashPlugin.getInstance().getLogger().info("World " + worldName + " already deleted earlier in this runtime - skipping.");
+            Messages.debug("ARENA", "World " + worldName + " already deleted earlier in this runtime - skipping.");
             skipUnloadUntil.remove(worldName);
             return;
         }
 
         // If another deletion is already in progress for this arena, skip
         if (deletionInProgress) {
-            CashClashPlugin.getInstance().getLogger().info("Deletion already in progress for arena " + name + " - skipping duplicate delete for " + worldName);
+            Messages.debug("ARENA", "Deletion already in progress for arena " + name + " - skipping duplicate delete for " + worldName);
             return;
         }
 
@@ -247,18 +251,18 @@ public class Arena {
 
             // If the world is already unloaded, just delete the folder (async if possible) and clear refs
             if (Bukkit.getWorld(worldName) == null) {
-                CashClashPlugin.getInstance().getLogger().info("World " + worldName + " is not loaded - performing folder deletion.");
+                Messages.debug("ARENA", "World " + worldName + " is not loaded - performing folder deletion.");
                 if (CashClashPlugin.getInstance().isEnabled()) {
                     Bukkit.getScheduler().runTaskAsynchronously(CashClashPlugin.getInstance(), () -> {
                         deleteWorld(worldFolder);
-                        CashClashPlugin.getInstance().getLogger().info("Deleted world folder: " + worldFolder.getAbsolutePath());
+                        Messages.debug("ARENA", "Deleted world folder: " + worldFolder.getAbsolutePath());
                         skipUnloadUntil.remove(worldName);
                         // world already marked deleted in deletedWorlds set
                     });
                 } else {
                     // Server shutting down - delete synchronously
                     deleteWorld(worldFolder);
-                    CashClashPlugin.getInstance().getLogger().info("Deleted world folder (shutdown path): " + worldFolder.getAbsolutePath());
+                    Messages.debug("ARENA", "Deleted world folder (shutdown path): " + worldFolder.getAbsolutePath());
                     skipUnloadUntil.remove(worldName);
                 }
 
@@ -291,16 +295,16 @@ public class Arena {
 
                         boolean unloaded = Bukkit.unloadWorld(world, false);
                         if (!unloaded) {
-                            CashClashPlugin.getInstance().getLogger().warning("Failed to unload world: " + worldName + ", will still attempt to delete folder.");
+                            Messages.debug("ARENA", "Failed to unload world: " + worldName + ", will still attempt to delete folder.");
                         }
 
                         // Async delete files to avoid blocking server thread
                         SchedulerUtils.runTaskAsync(() -> {
                             try {
                                 deleteWorld(worldFolder);
-                                CashClashPlugin.getInstance().getLogger().info("Deleted world copy folder: " + worldFolder.getAbsolutePath());
+                                Messages.debug("ARENA", "Deleted world copy folder: " + worldFolder.getAbsolutePath());
                             } catch (Exception t) {
-                                CashClashPlugin.getInstance().getLogger().warning("Error deleting world folder " + worldFolder.getAbsolutePath() + ": " + t.getMessage());
+                                Messages.debug("ARENA", "Error deleting world folder " + worldFolder.getAbsolutePath() + ": " + t.getMessage());
                             } finally {
                                 // ensure we clear the deletion flag on the main thread and clear skip entry
                                 SchedulerUtils.runTask(() -> {
@@ -311,7 +315,7 @@ public class Arena {
                         });
 
                     } catch (Exception t) {
-                        CashClashPlugin.getInstance().getLogger().warning("Error while unloading/deleting world " + worldName + ": " + t.getMessage());
+                        Messages.debug("ARENA", "Error while unloading/deleting world " + worldName + ": " + t.getMessage());
                         deletionInProgress = false;
                         skipUnloadUntil.remove(worldName);
                         // if the deletion failed we should remove the deletedWorlds marker so retries are possible
@@ -327,16 +331,16 @@ public class Arena {
 
             boolean unloaded = Bukkit.unloadWorld(world, false);
             if (!unloaded) {
-                CashClashPlugin.getInstance().getLogger().warning("Failed to unload world during shutdown: " + worldName);
+                Messages.debug("ARENA", "Failed to unload world during shutdown: " + worldName);
             }
 
 
             try {
                 // synchronous delete (may block but we're shutting down)
                 deleteWorld(worldFolder);
-                CashClashPlugin.getInstance().getLogger().info("Deleted world copy folder (shutdown path): " + worldFolder.getAbsolutePath());
+                Messages.debug("ARENA", "Deleted world copy folder (shutdown path): " + worldFolder.getAbsolutePath());
             } catch (Exception t) {
-                CashClashPlugin.getInstance().getLogger().warning("Error deleting world folder during shutdown " + worldFolder.getAbsolutePath() + ": " + t.getMessage());
+                Messages.debug("ARENA", "Error deleting world folder during shutdown " + worldFolder.getAbsolutePath() + ": " + t.getMessage());
             }
 
             // During shutdown skip reloading the template world; simply clear tracked refs
@@ -399,7 +403,7 @@ public class Arena {
                     } catch (Exception ignored) {}
                 });
         } catch (IOException e) {
-            CashClashPlugin.getInstance().getLogger().warning("Error deleting world folder: " + e.getMessage());
+            Messages.debug("ARENA", "Error deleting world folder: " + e.getMessage());
         }
     }
 

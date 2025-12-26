@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.manager.shop;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
@@ -61,25 +60,25 @@ public class ShopManager {
     public void createShopsForSession(GameSession session) {
         Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
         if (arena == null) {
-            CashClashPlugin.getInstance().getLogger().warning("Cannot create shops: Arena not found for session " + session.getSessionId());
+            Messages.debug("SHOP", "Cannot create shops: Arena not found for session " + session.getSessionId());
             return;
         }
 
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
         if (tpl == null) {
-            CashClashPlugin.getInstance().getLogger().warning("Cannot create shops: Template not configured for arena " + arena.getName());
+            Messages.debug("SHOP", "Cannot create shops: Template not configured for arena " + arena.getName());
             return;
         }
 
         World world = session.getGameWorld();
         if (world == null) {
-            CashClashPlugin.getInstance().getLogger().warning("Cannot create shops: Game world not found for session " + session.getSessionId());
+            Messages.debug("SHOP", "Cannot create shops: Game world not found for session " + session.getSessionId());
             return;
         }
 
         List<Location> villagerSpawns = tpl.getVillagersSpawnPoint();
         if (villagerSpawns.isEmpty()) {
-            CashClashPlugin.getInstance().getLogger().warning("No villager spawn points configured for template " + tpl.getId());
+            Messages.debug("SHOP", "No villager spawn points configured for template " + tpl.getId());
             return;
         }
 
@@ -107,7 +106,7 @@ public class ShopManager {
 
             if (!spawned.isEmpty()) {
                 sessionShops.put(session.getSessionId(), spawned);
-                CashClashPlugin.getInstance().getLogger().info("Spawned " + spawned.size() + " shop villagers for session " + session.getSessionId());
+                Messages.debug("SHOP", "Spawned " + spawned.size() + " shop villagers for session " + session.getSessionId());
             }
         }
     }

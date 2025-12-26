@@ -1,13 +1,18 @@
 package me.psikuvit.cashClash.storage;
 
 import com.google.gson.Gson;
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.player.PlayerData;
+import me.psikuvit.cashClash.util.Messages;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -69,7 +74,7 @@ public class SQLiteProvider implements DatabaseProvider {
     @Override
     public void close() throws IOException {
         try { if (conn != null && !conn.isClosed()) conn.close(); } catch (SQLException sqlException) {
-            CashClashPlugin.getInstance().getLogger().warning("Unable to close SQLite provider: " + sqlException.getMessage());
+            Messages.debug("STORAGE", "Unable to close SQLite provider: " + sqlException.getMessage());
         }
     }
 }

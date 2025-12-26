@@ -1,11 +1,12 @@
 package me.psikuvit.cashClash.listener.game;
-
+ 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -33,6 +34,7 @@ public class DamageListener implements Listener {
         GameState state = session.getState();
         if (state == GameState.WAITING || state.isShopping()) {
             event.setCancelled(true);
+            Messages.debug(player, "GAME", "Damage cancelled due to state: " + state);
             return;
         }
 

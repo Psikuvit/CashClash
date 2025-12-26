@@ -58,9 +58,10 @@ public class GameScoreboardManager {
         if (session == null) {
             return;
         }
-
+ 
         UUID sessionId = session.getSessionId();
-
+        Messages.debug("SYSTEM", "Creating scoreboards for session " + sessionId);
+ 
         removeForSession(sessionId);
 
         Map<UUID, Scoreboard> playerBoards = new HashMap<>();

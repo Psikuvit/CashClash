@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.listener.gui;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.GuiType;
 import me.psikuvit.cashClash.gui.ShopGUI;
@@ -34,7 +33,6 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
-import java.util.logging.Level;
 
 /**
  * Listener dedicated to shop GUI interactions.
@@ -144,7 +142,7 @@ public class ShopGuiListener implements Listener {
 
         Purchasable si = PDCDetection.getPurchasable(clicked);
         if (si == null) {
-            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown shop item: " + clicked);
+            Messages.debug(player, "SHOP", "Unknown shop item: " + clicked);
             return;
         }
 
@@ -244,12 +242,13 @@ public class ShopGuiListener implements Listener {
 
             ShopService.getInstance().purchase(player, price);
             ccp.addOwnedEnchant(ee, nextLevel);
+            Messages.debug(player, "SHOP", "Purchased enchant " + ee.name() + " level " + nextLevel + " for " + price);
 
             ItemUtils.applyEnchantToBestItem(player, ee, nextLevel);
             Messages.send(player, "<green>Purchased " + ee.getDisplayName() + " " + nextLevel + " for $" + String.format("%,d", price) + "</green>");
 
         } catch (IllegalArgumentException e) {
-            CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Unknown enchant entry", e);
+            Messages.debug(player, "SHOP", "Unknown enchant entry: " + e.getMessage());
         }
 
         SoundUtils.play(player, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
@@ -364,7 +363,7 @@ public class ShopGuiListener implements Listener {
         try {
             armorSet = CustomArmorItem.ArmorSet.valueOf(setName);
         } catch (IllegalArgumentException e) {
-            CashClashPlugin.getInstance().getLogger().warning("Unknown armor set: " + setName);
+            Messages.debug(player, "SHOP", "Unknown armor set: " + setName);
             return;
         }
 
@@ -379,6 +378,7 @@ public class ShopGuiListener implements Listener {
 
         // Deduct coins for the entire set
         ShopService.getInstance().purchase(player, totalPrice);
+        Messages.debug(player, "SHOP", "Purchased armor set: " + armorSet.name() + " for " + totalPrice);
 
         int round = sess.getCurrentRound();
 
@@ -412,7 +412,7 @@ public class ShopGuiListener implements Listener {
 
         CustomItem type = PDCDetection.getCustomItem(stack);
         if (type == null) {
-            CashClashPlugin.getInstance().getLogger().warning("Unknown custom item type");
+            Messages.debug(player, "SHOP", "Unknown custom item type");
             return;
         }
 
@@ -426,6 +426,7 @@ public class ShopGuiListener implements Listener {
         ItemStack customItem = ItemUtils.createCustomItem(type, player);
 
         ShopService.getInstance().purchase(player, price);
+        Messages.debug(player, "SHOP", "Purchased custom item: " + type.name() + " for " + price);
         player.getInventory().addItem(customItem);
 
         // Record the purchase for undo (custom items implement Purchasable)
@@ -452,7 +453,7 @@ public class ShopGuiListener implements Listener {
 
         MythicItem mythic = PDCDetection.getMythic(stack);
         if (mythic == null) {
-            CashClashPlugin.getInstance().getLogger().warning("Unknown mythic item");
+            Messages.debug(player, "SHOP", "Unknown mythic item");
             return;
         }
 

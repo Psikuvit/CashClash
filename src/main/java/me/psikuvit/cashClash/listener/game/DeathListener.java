@@ -38,6 +38,7 @@ public class DeathListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
         if (session == null) return;
+        Messages.debug(player, "GAME", "Player died in session " + session.getSessionId());
 
         CashClashPlayer victim = session.getCashClashPlayer(player.getUniqueId());
         if (victim == null) return;
@@ -60,7 +61,10 @@ public class DeathListener implements Listener {
         }
 
         Player killer = player.getKiller();
-        if (killer != null) handleKillerRewards(session, killer, victim);
+        if (killer != null) {
+            Messages.debug(player, "GAME", "Killed by " + killer.getName());
+            handleKillerRewards(session, killer, victim);
+        }
 
         Location spectatorLocation = getSpectatorLocation(session);
 
@@ -112,6 +116,7 @@ public class DeathListener implements Listener {
      */
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {
         Messages.send(player, "<red>You are out of lives for this round!</red>");
+        Messages.debug(player, "GAME", "Lives exhausted. Setting to permanent spectator for round.");
 
         SchedulerUtils.runTask(() -> {
             player.spigot().respawn();
@@ -128,6 +133,7 @@ public class DeathListener implements Listener {
         int respawnProtectionSec = ConfigManager.getInstance().getRespawnProtection();
 
         Messages.send(player, "<yellow>You will respawn in " + respawnDelaySec + " seconds...</yellow>");
+        Messages.debug(player, "GAME", "Temporary spectator. Respawn in " + respawnDelaySec + "s");
 
         SchedulerUtils.runTask(() -> {
             player.spigot().respawn();
