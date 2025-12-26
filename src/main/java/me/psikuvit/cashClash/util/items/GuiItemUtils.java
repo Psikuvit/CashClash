@@ -7,19 +7,14 @@ import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
-import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.enums.InvestmentType;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 /**
  * Utility class for creating GUI items in the shop system.
@@ -53,7 +48,7 @@ public final class GuiItemUtils {
      * @return The configured ItemStack for display
      */
     public static ItemStack createShopItem(Player player, Purchasable item, int quantity) {
-        boolean owned = isItemOwned(player, item);
+        boolean owned = ItemUtils.isItemOwned(player, item);
 
         if (owned) {
             return ShopItemBuilder.of(item.getMaterial(), quantity)
@@ -204,7 +199,7 @@ public final class GuiItemUtils {
         List<CustomArmorItem> pieces = set.getPieces();
         ItemStack[] items = new ItemStack[pieces.size()];
 
-        boolean ownsSet = playerOwnsArmorSet(player, set);
+        boolean ownsSet = ItemUtils.playerOwnsArmorSet(player, set);
         long totalPrice = set.getTotalPrice();
 
         for (int i = 0; i < pieces.size(); i++) {
@@ -239,30 +234,6 @@ public final class GuiItemUtils {
         }
 
         return items;
-    }
-
-    /**
-     * Checks if the player owns all pieces of an armor set.
-     */
-    private static boolean playerOwnsArmorSet(Player player, CustomArmorItem.ArmorSet set) {
-        for (CustomArmorItem piece : set.getPieces()) {
-            if (!hasCustomArmorPiece(player, piece)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Checks if the player has a specific custom armor piece (in inventory or equipped).
-     */
-    private static boolean hasCustomArmorPiece(Player player, CustomArmorItem piece) {
-        return getAllInventoryItems(player)
-                .filter(Objects::nonNull)
-                .filter(ItemStack::hasItemMeta)
-                .map(PDCDetection::getCustomArmor)
-                .filter(Objects::nonNull)
-                .anyMatch(customArmorItem -> piece.name().equals(customArmorItem.name()));
     }
 
     // ==================== INVESTMENT ITEMS ====================
@@ -409,45 +380,5 @@ public final class GuiItemUtils {
                 .name("<gold>Your Coins</gold>")
                 .lore("<yellow>$" + formatted + "</yellow>")
                 .build();
-    }
-
-    // ==================== HELPER METHODS ====================
-
-    /**
-     * Checks if a player owns a specific shop item.
-     * Uses single-pass stream for better performance.
-     *
-     * @param player   The player to check
-     * @param shopItem The item to look for
-     * @return true if the player owns the item
-     */
-    private static boolean isItemOwned(Player player, Purchasable shopItem) {
-        // Only check ownership for categories where duplicates aren't allowed
-        ShopCategory category = shopItem.getCategory();
-        if (category != ShopCategory.ARMOR &&
-            category != ShopCategory.WEAPONS &&
-            category != ShopCategory.CUSTOM_ARMOR) {
-            return false;
-        }
-
-        return getAllInventoryItems(player)
-                .filter(Objects::nonNull)
-                .filter(ItemStack::hasItemMeta)
-                .map(is -> is.getItemMeta().getPersistentDataContainer()
-                        .get(Keys.ITEM_ID, PersistentDataType.STRING))
-                .anyMatch(shopItem.name()::equals);
-    }
-
-    /**
-     * Gets all items from player inventory and armor slots as a single stream.
-     *
-     * @param player The player
-     * @return Stream of all inventory items
-     */
-    private static Stream<ItemStack> getAllInventoryItems(Player player) {
-        return Stream.concat(
-                Arrays.stream(player.getInventory().getContents()),
-                Arrays.stream(player.getInventory().getArmorContents())
-        );
     }
 }
