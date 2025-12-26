@@ -2,8 +2,8 @@ package me.psikuvit.cashClash.gui;
 
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.manager.GameManager;
-import me.psikuvit.cashClash.manager.MythicItemManager;
+import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
@@ -83,7 +83,7 @@ public class ShopGUI {
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null) {
-            List<MythicItem> availableMythics = MythicItemManager.getInstance().getAvailableLegendaries(session);
+            List<MythicItem> availableMythics = MythicItemManager.getInstance().getAvailableMythics(session);
 
             UUID playerUuid = player.getUniqueId();
             boolean playerHasMythic = MythicItemManager.getInstance().hasPlayerPurchasedMythic(session, playerUuid);
@@ -210,20 +210,15 @@ public class ShopGUI {
                 && diamondCount >= cfg.getMaxDiamondPiecesEarly();
 
 
-        placeArmorItem(inv, player, 10, ArmorItem.IRON_HELMET, ArmorItem.DIAMOND_HELMET,
-                Material.IRON_HELMET, Material.DIAMOND_HELMET, diamondLimitReached, currentRound);
-        placeArmorItem(inv, player, 19, ArmorItem.IRON_CHESTPLATE, ArmorItem.DIAMOND_CHESTPLATE,
-                Material.IRON_CHESTPLATE, Material.DIAMOND_CHESTPLATE, diamondLimitReached, currentRound);
-        placeArmorItem(inv, player, 28, ArmorItem.IRON_LEGGINGS, ArmorItem.DIAMOND_LEGGINGS,
-                Material.IRON_LEGGINGS, Material.DIAMOND_LEGGINGS, diamondLimitReached, currentRound);
-        placeArmorItem(inv, player, 37, ArmorItem.IRON_BOOTS, ArmorItem.DIAMOND_BOOTS,
-                Material.IRON_BOOTS, Material.DIAMOND_BOOTS, diamondLimitReached, currentRound);
+        placeArmorItem(inv, player, 10, ArmorItem.IRON_HELMET, ArmorItem.DIAMOND_HELMET, diamondLimitReached, currentRound);
+        placeArmorItem(inv, player, 19, ArmorItem.IRON_CHESTPLATE, ArmorItem.DIAMOND_CHESTPLATE, diamondLimitReached, currentRound);
+        placeArmorItem(inv, player, 28, ArmorItem.IRON_LEGGINGS, ArmorItem.DIAMOND_LEGGINGS, diamondLimitReached, currentRound);
+        placeArmorItem(inv, player, 37, ArmorItem.IRON_BOOTS, ArmorItem.DIAMOND_BOOTS, diamondLimitReached, currentRound);
 
-        ItemStack[] investorPieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.INVESTORS, player);
-        inv.setItem(11, investorPieces.length > 0 ? investorPieces[0] : null);  // Helmet
-        inv.setItem(20, investorPieces.length > 1 ? investorPieces[1] : null); // Chestplate
-        inv.setItem(29, investorPieces.length > 2 ? investorPieces[2] : null); // Leggings
-        inv.setItem(38, investorPieces.length > 3 ? investorPieces[3] : null); // Boots
+        inv.setItem(11, GuiItemUtils.createShopItem(player, CustomArmorItem.INVESTORS_HELMET));
+        inv.setItem(20, GuiItemUtils.createShopItem(player, CustomArmorItem.INVESTORS_CHESTPLATE));
+        inv.setItem(29, GuiItemUtils.createShopItem(player, CustomArmorItem.INVESTORS_LEGGINGS));
+        inv.setItem(38, GuiItemUtils.createShopItem(player, CustomArmorItem.INVESTORS_BOOTS));
 
         for (int i = 0; i < 4; i++) {
             inv.setItem(12 + i * 9, backgroundPane(Material.LIGHT_BLUE_STAINED_GLASS_PANE));
@@ -256,10 +251,9 @@ public class ShopGUI {
 
     private static void placeArmorItem(Inventory inv, Player player, int slot,
                                         ArmorItem ironItem, ArmorItem diamondItem,
-                                        Material ironMaterial, Material diamondMaterial,
                                         boolean diamondLimitReached, int currentRound) {
-        boolean hasIron = hasItem(player, ironMaterial);
-        boolean hasDiamond = hasItem(player, diamondMaterial);
+        boolean hasIron = hasItem(player, ironItem.getMaterial());
+        boolean hasDiamond = hasItem(player, diamondItem.getMaterial());
 
         if (hasDiamond) {
             inv.setItem(slot, GuiItemUtils.createUpgradableItem(diamondItem, true));

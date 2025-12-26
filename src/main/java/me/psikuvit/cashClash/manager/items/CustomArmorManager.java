@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.manager;
+package me.psikuvit.cashClash.manager.items;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
@@ -150,11 +150,13 @@ public class CustomArmorManager {
         return false;
     }
 
-    public boolean hasFlamebringerLeggings(Player p) {
+    public boolean hasFlamebringerSet(Player p) {
+        boolean hasBoots = false, hasLegs = false;
         for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmorItem.FLAMEBRINGER_LEGGINGS) return true;
+            if (ca == CustomArmorItem.FLAMEBRINGER_BOOTS) hasBoots = true;
+            if (ca == CustomArmorItem.FLAMEBRINGER_LEGGINGS) hasLegs = true;
         }
-        return false;
+        return hasBoots && hasLegs;
     }
 
     // ==================== MAGIC HELMET ====================
@@ -211,14 +213,15 @@ public class CustomArmorManager {
 
     public void onPlayerAttack(Player attacker, Player target) {
 
-        if (hasFlamebringerLeggings(attacker)) {
+        // Flamebringer Set: 30% chance to ignite enemy (requires full set: boots + leggings)
+        if (hasFlamebringerSet(attacker)) {
             if (random.nextDouble() < 0.30) {
                 target.setFireTicks(8 * 20);
                 Messages.send(attacker, "<red>🔥 Blue flames ignited your enemy!</red>");
             }
         }
 
-        // Dragon Set: regen and speed on hit
+        // Dragon Set: regen and speed on hit (requires full set: helmet + chestplate + boots)
         if (hasDragonSet(attacker)) {
             attacker.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 3 * 20, 0));
             attacker.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 3 * 20, 1));

@@ -1,6 +1,6 @@
 package me.psikuvit.cashClash.listener.game;
 
-import me.psikuvit.cashClash.manager.ShopManager;
+import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.util.Keys;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;

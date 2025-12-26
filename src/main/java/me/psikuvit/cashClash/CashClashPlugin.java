@@ -17,9 +17,9 @@ import me.psikuvit.cashClash.listener.items.CustomArmorListener;
 import me.psikuvit.cashClash.listener.items.CustomItemListener;
 import me.psikuvit.cashClash.listener.items.MythicItemListener;
 import me.psikuvit.cashClash.listener.lobby.LobbyProtectionListener;
-import me.psikuvit.cashClash.manager.GameManager;
-import me.psikuvit.cashClash.manager.PlayerDataManager;
-import me.psikuvit.cashClash.manager.ScoreboardManager;
+import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.player.PlayerDataManager;
+import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -58,7 +58,6 @@ public final class CashClashPlugin extends JavaPlugin {
     public void onDisable() {
         // Shutdown scoreboard system first
         ScoreboardManager.getInstance().shutdown();
-
         PlayerDataManager.getInstance().shutdown();
         GameManager.getInstance().shutdown();
 

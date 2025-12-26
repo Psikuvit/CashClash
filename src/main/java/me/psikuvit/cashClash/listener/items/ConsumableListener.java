@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.listener.items;
 
+import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -10,7 +12,6 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -26,6 +27,16 @@ public class ConsumableListener implements Listener {
         ItemStack consumed = event.getItem();
 
         if (consumed.getType().isAir()) return;
+
+        // Block special consumables during the shopping phase
+        if (isInShoppingPhase(p)) {
+            FoodItem fi = PDCDetection.getFood(consumed);
+            if (fi != null && !fi.getDescription().isEmpty()) {
+                event.setCancelled(true);
+                Messages.send(p, "<red>You cannot use special consumables during the shopping phase!</red>");
+                return;
+            }
+        }
 
         FoodItem fi = PDCDetection.getFood(consumed);
         if (fi == null) return;
@@ -52,7 +63,7 @@ public class ConsumableListener implements Listener {
     @EventHandler
     public void onPlayerRightClick(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) return;
-        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (!event.getAction().isRightClick()) return;
 
         Player p = event.getPlayer();
         ItemStack item = event.getItem();
@@ -62,6 +73,13 @@ public class ConsumableListener implements Listener {
         if (fi == null) return;
 
         if (fi.getDescription().isEmpty()) return;
+
+        // Block special consumables during shopping phase
+        if (isInShoppingPhase(p)) {
+            event.setCancelled(true);
+            Messages.send(p, "<red>You cannot use special consumables during the shopping phase!</red>");
+            return;
+        }
 
         if (p.getFoodLevel() >= 20) {
             event.setCancelled(true);
@@ -109,5 +127,13 @@ public class ConsumableListener implements Listener {
                 return;
             }
         }
+    }
+
+    /**
+     * Checks if the player is currently in a shopping phase.
+     */
+    private boolean isInShoppingPhase(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        return session != null && session.getState().isShopping();
     }
 }

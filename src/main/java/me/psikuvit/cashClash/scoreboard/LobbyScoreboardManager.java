@@ -1,8 +1,8 @@
 package me.psikuvit.cashClash.scoreboard;
 
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.player.PlayerData;
-import me.psikuvit.cashClash.manager.PlayerDataManager;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;

@@ -1,13 +1,15 @@
-package me.psikuvit.cashClash.manager;
+package me.psikuvit.cashClash.manager.items;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -27,8 +29,10 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -47,7 +51,7 @@ public class CustomItemManager {
     private final Map<UUID, Integer> invisCloakUsesRemaining = new HashMap<>();
     private final Set<UUID> invisCloakActive = new HashSet<>();
     private final Map<UUID, BukkitTask> invisCloakTasks = new HashMap<>();
-    private final Map<UUID, ItemStack[]> invisCloakStoredArmor = new HashMap<>();
+    private final Map<UUID, List<ItemStack>> invisCloakStoredArmor = new HashMap<>();
 
     // Grenade tracking
     private final Set<Item> activeGrenades = new HashSet<>();
@@ -304,12 +308,16 @@ public class CustomItemManager {
 
             // Store and hide armor
             ItemStack[] currentArmor = player.getInventory().getArmorContents();
-            ItemStack[] armorCopy = new ItemStack[currentArmor.length];
-            for (int i = 0; i < currentArmor.length; i++) {
-                armorCopy[i] = currentArmor[i] != null ? currentArmor[i].clone() : null;
+            List<ItemStack> armorCopy = new ArrayList<>();
+            for (ItemStack stack : currentArmor) {
+                armorCopy.add(stack != null ? stack.clone() : null);
+            }
+            if (player.getInventory().getItemInOffHand().getType() == Material.SHIELD) {
+                armorCopy.add(player.getInventory().getItemInOffHand().clone());
             }
             invisCloakStoredArmor.put(uuid, armorCopy);
             player.getInventory().setArmorContents(new ItemStack[4]); // Clear visible armor
+            player.getInventory().setItemInOffHand(null); // Clear shield if any
 
             player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
 
@@ -339,9 +347,23 @@ public class CustomItemManager {
             player.removePotionEffect(PotionEffectType.INVISIBILITY);
 
             // Restore armor
-            ItemStack[] storedArmor = invisCloakStoredArmor.remove(uuid);
+            List<ItemStack> storedArmor = invisCloakStoredArmor.remove(uuid);
             if (storedArmor != null) {
-                player.getInventory().setArmorContents(storedArmor);
+                storedArmor.forEach(item -> {
+                    if (item != null && item.getType() == Material.SHIELD) {
+                        player.getInventory().setItemInOffHand(item);
+                    } else {
+                        ItemStack[] armorContents = player.getInventory().getArmorContents();
+                        for (int i = 0; i < 4; i++) {
+                            if (armorContents[i] == null) {
+                                armorContents[i] = item;
+                                break;
+                            }
+                        }
+                        player.getInventory().setArmorContents(armorContents);
+                    }
+                });
+
             }
 
             BukkitTask task = invisCloakTasks.remove(uuid);
@@ -440,6 +462,13 @@ public class CustomItemManager {
         consumeItem(player, item);
         Messages.send(player, "<green>Bounce pad placed!</green>");
         SoundUtils.play(player, Sound.BLOCK_SLIME_BLOCK_PLACE, 1.0f, 1.0f);
+
+        SchedulerUtils.runTaskLater(() -> {
+            bouncePadTeams.remove(blockLoc);
+            if (placeBlock.getType() == Material.SLIME_BLOCK) {
+                placeBlock.setType(Material.AIR);
+            }
+        }, 5 * 20L);
     }
 
     public void handleBouncePad(Player player, Block block) {
@@ -652,7 +681,20 @@ public class CustomItemManager {
         if (attr != null) {
             attr.setBaseValue(attr.getValue() + 4.0);
         }
+
+        // Get spawn location for the revived player
+        Location spawnLocation = session.getSpawnForPlayer(targetUuid);
+        if (spawnLocation == null) {
+            spawnLocation = reviver.getLocation(); // Fallback to reviver's location
+        }
+
+        // Teleport and change game mode to SURVIVAL
+        target.teleport(spawnLocation);
+        target.setGameMode(GameMode.SURVIVAL);
+
+        // Set health to full after teleport
         target.setHealth(Objects.requireNonNull(target.getAttribute(Attribute.MAX_HEALTH)).getValue());
+        target.setFoodLevel(20);
 
         // 3 seconds of invincibility
         target.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 3 * 20, 4, false, true)); // Resistance V = invincible
@@ -664,7 +706,7 @@ public class CustomItemManager {
         SoundUtils.play(reviver, Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 1.0f, 1.0f);
         SoundUtils.play(target, Sound.ITEM_TOTEM_USE, 1.0f, 1.0f);
 
-        // Visual effect
+        // Visual effect at spawn location
         target.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, target.getLocation().add(0, 1, 0), 50, 0.5, 1, 0.5, 0.1);
     }
 

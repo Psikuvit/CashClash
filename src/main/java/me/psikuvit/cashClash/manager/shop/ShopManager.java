@@ -1,22 +1,23 @@
-package me.psikuvit.cashClash.manager;
+package me.psikuvit.cashClash.manager.shop;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.arena.Arena;
+import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.arena.ArenaManager;
-import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.gui.ShopGUI;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
-import org.bukkit.entity.Entity;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 

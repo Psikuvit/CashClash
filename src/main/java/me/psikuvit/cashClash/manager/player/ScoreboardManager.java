@@ -1,8 +1,8 @@
-package me.psikuvit.cashClash.manager;
+package me.psikuvit.cashClash.manager.player;
 
+import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.scoreboard.GameScoreboardManager;
 import me.psikuvit.cashClash.scoreboard.LobbyScoreboardManager;
-import me.psikuvit.cashClash.game.GameSession;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.manager;
+package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.game.GameSession;
 import org.bukkit.entity.Player;

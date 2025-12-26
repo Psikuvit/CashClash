@@ -1,7 +1,9 @@
 package me.psikuvit.cashClash.listener.items;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.manager.MythicItemManager;
+import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.MythicItemManager;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -34,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class MythicItemListener implements Listener {
 
-    private static final String DEBUG_CAT = "MYTHIC_LISTENER";
     private final MythicItemManager manager = MythicItemManager.getInstance();
 
     // Track particle tasks for Sandstormer
@@ -53,55 +54,59 @@ public class MythicItemListener implements Listener {
         if (mythic == null) return;
 
         Action action = event.getAction();
-        boolean isRightClick = action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK;
 
-        Messages.debug(player, DEBUG_CAT, "Interact: " + mythic.name() + " action=" + action);
+        if (!action.isRightClick()) return;
+
+        // Block mythic abilities during shopping phase
+        if (isInShoppingPhase(player)) {
+            event.setCancelled(true);
+            Messages.send(player, "<red>You cannot use mythic abilities during the shopping phase!</red>");
+            return;
+        }
+
+        Messages.debug(player, "Interact: " + mythic.name() + " action=" + action);
 
         switch (mythic) {
             case COIN_CLEAVER -> {
-                if (isRightClick) {
-                    Messages.debug(player, DEBUG_CAT, "COIN_CLEAVER -> grenade");
-                    event.setCancelled(true);
-                    manager.useCoinCleaverGrenade(player);
-                }
+                Messages.debug(player, "COIN_CLEAVER -> grenade");
+                event.setCancelled(true);
+                manager.useCoinCleaverGrenade(player);
+
             }
             case WIND_BOW -> {
                 // Sneak + right click for boost, regular right click for drawing bow
-                if (isRightClick && player.isSneaking()) {
-                    Messages.debug(player, DEBUG_CAT, "WIND_BOW -> boost");
+                if (player.isSneaking()) {
+                    Messages.debug(player, "WIND_BOW -> boost");
                     event.setCancelled(true);
                     manager.useWindBowBoost(player);
                 }
             }
             case ELECTRIC_EEL_SWORD -> {
-                if (isRightClick) {
-                    Messages.debug(player, DEBUG_CAT, "ELECTRIC_EEL -> teleport");
-                    event.setCancelled(true);
-                    manager.useElectricEelTeleport(player);
-                }
+                Messages.debug(player, "ELECTRIC_EEL -> teleport");
+                event.setCancelled(true);
+                manager.useElectricEelTeleport(player);
+
             }
             case WARDEN_GLOVES -> {
-                if (isRightClick) {
-                    Messages.debug(player, DEBUG_CAT, "WARDEN_GLOVES -> shockwave");
-                    event.setCancelled(true);
-                    manager.useWardenShockwave(player);
-                }
+                Messages.debug(player, "WARDEN_GLOVES -> shockwave");
+                event.setCancelled(true);
+                manager.useWardenShockwave(player);
+
             }
             case BLAZEBITE_CROSSBOWS -> {
                 // Sneak + right click to toggle mode
-                if (isRightClick && player.isSneaking()) {
-                    Messages.debug(player, DEBUG_CAT, "BLAZEBITE -> toggle mode");
+                if (player.isSneaking()) {
+                    Messages.debug(player, "BLAZEBITE -> toggle mode");
                     event.setCancelled(true);
                     manager.toggleBlazebiteMode(player);
                 }
             }
             case BLOODWRENCH_CROSSBOW -> {
                 // Track charge start for supercharged shot when starting to draw
-                if (isRightClick) {
-                    Messages.debug(player, DEBUG_CAT, "BLOODWRENCH_CROSSBOW -> charge");
-                    manager.startSandstormerCharge(player);
-                }
+                Messages.debug(player, "BLOODWRENCH_CROSSBOW -> charge");
+                manager.startSandstormerCharge(player);
             }
+
         }
     }
 
@@ -115,7 +120,7 @@ public class MythicItemListener implements Listener {
             MythicItem mythic = PDCDetection.getMythic(item);
             if (mythic == null) return;
 
-            Messages.debug(attacker, DEBUG_CAT, "Damage: " + mythic.name() + " -> " + victim.getName());
+            Messages.debug(attacker, "Damage: " + mythic.name() + " -> " + victim.getName());
 
             switch (mythic) {
                 case COIN_CLEAVER -> {
@@ -126,12 +131,12 @@ public class MythicItemListener implements Listener {
                 case CARLS_BATTLEAXE -> {
                     // Check if attack is fully charged (0.9+ = fully charged)
                     if (attacker.getAttackCooldown() >= 0.9f) {
-                        Messages.debug(attacker, DEBUG_CAT, "CARLS charged hit");
+                        Messages.debug(attacker, "CARLS charged hit");
                         manager.handleCarlsChargedAttack(attacker);
 
                         // Check for critical hit (must be falling and not on ground)
                         if (attacker.getFallDistance() > 0 && !attacker.isOnGround()) {
-                            Messages.debug(attacker, DEBUG_CAT, "CARLS crit launch");
+                            Messages.debug(attacker, "CARLS crit launch");
                             manager.handleCarlsCriticalHit(attacker, victim);
                         }
                     }
@@ -139,12 +144,12 @@ public class MythicItemListener implements Listener {
                 case ELECTRIC_EEL_SWORD -> {
                     // Chain damage on fully charged hits
                     if (attacker.getAttackCooldown() >= 0.9f) {
-                        Messages.debug(attacker, DEBUG_CAT, "ELECTRIC_EEL chain");
+                        Messages.debug(attacker, "ELECTRIC_EEL chain");
                         manager.handleElectricEelChain(attacker, victim);
                     }
                 }
                 case WARDEN_GLOVES -> {
-                    Messages.debug(attacker, DEBUG_CAT, "WARDEN melee");
+                    Messages.debug(attacker, "WARDEN melee");
                     manager.useWardenMelee(attacker, victim);
                 }
             }
@@ -161,18 +166,18 @@ public class MythicItemListener implements Listener {
         MythicItem mythic = PDCDetection.getMythic(bow);
         if (mythic == null) return;
 
-        Messages.debug(player, DEBUG_CAT, "Bow shoot: " + mythic.name());
+        Messages.debug(player, "Bow shoot: " + mythic.name());
 
         switch (mythic) {
             case BLOODWRENCH_CROSSBOW -> {
                 if (!manager.handleSandstormerShot(player)) {
-                    Messages.debug(player, DEBUG_CAT, "BLOODWRENCH_CROSSBOW shot blocked");
+                    Messages.debug(player, "BLOODWRENCH_CROSSBOW shot blocked");
                     event.setCancelled(true);
                 }
             }
             case BLAZEBITE_CROSSBOWS -> {
                 if (!manager.handleBlazebiteShot(player)) {
-                    Messages.debug(player, DEBUG_CAT, "BLAZEBITE shot blocked");
+                    Messages.debug(player, "BLAZEBITE shot blocked");
                     event.setCancelled(true);
                 }
             }
@@ -188,26 +193,27 @@ public class MythicItemListener implements Listener {
             MythicItem mythic = PDCDetection.getMythic(bow);
 
             if (mythic == MythicItem.WIND_BOW && event.getHitEntity() instanceof Player victim) {
-                Messages.debug(shooter, DEBUG_CAT, "WIND_BOW hit " + victim.getName());
+                Messages.debug(shooter, "WIND_BOW hit " + victim.getName());
                 manager.handleWindBowHit(shooter, victim);
             }
 
             if (mythic == MythicItem.BLOODWRENCH_CROSSBOW && event.getHitEntity() instanceof Player victim) {
                 if (manager.isSandstormerSupercharged(shooter)) {
-                    Messages.debug(shooter, DEBUG_CAT, "BLOODWRENCH_CROSSBOW supercharged hit " + victim.getName());
+                    Messages.debug(shooter, "BLOODWRENCH_CROSSBOW supercharged hit " + victim.getName());
                     manager.fireSuperchargedSandstormer(shooter, victim);
                 }
             }
 
             if (mythic == MythicItem.BLAZEBITE_CROSSBOWS) {
-                Messages.debug(shooter, DEBUG_CAT, "BLAZEBITE hit");
+                Messages.debug(shooter, "BLAZEBITE hit");
                 manager.handleBlazebiteHit(shooter, event.getHitEntity(),
                     event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation());
             }
         } else if (event.getEntity() instanceof Trident trident) {
             if (!(trident.getShooter() instanceof Player shooter)) return;
             if (!(event.getHitEntity() instanceof LivingEntity victim)) return;
-            Messages.debug(shooter, DEBUG_CAT, "TRIDENT hit " + shooter.getName());
+
+            Messages.debug(shooter, "TRIDENT hit " + shooter.getName());
 
             MythicItem mythic = PDCDetection.getMythic(trident.getItemStack());
 
@@ -267,5 +273,13 @@ public class MythicItemListener implements Listener {
                 }
             });
         }
+    }
+
+    /**
+     * Checks if the player is currently in a shopping phase.
+     */
+    private boolean isInShoppingPhase(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        return session != null && session.getState().isShopping();
     }
 }

@@ -1,13 +1,12 @@
 package me.psikuvit.cashClash.listener.items;
 
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.manager.CustomArmorManager;
-import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -40,9 +39,13 @@ public class CustomArmorListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_AIR || event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (!event.getAction().isRightClick()) return;
         Player p = event.getPlayer();
-        if (GameManager.getInstance().getPlayerSession(p) == null) return;
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        if (session == null) return;
+
+        // Block magic helmet usage during shopping phase
+        if (isInShoppingPhase(p)) return;
 
         manager.onMagicHelmetRightClick(p);
     }
@@ -50,7 +53,11 @@ public class CustomArmorListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player p = event.getPlayer();
-        if (GameManager.getInstance().getPlayerSession(p) == null) return;
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        if (session == null) return;
+
+        // Block bunny shoes activation during shopping phase
+        if (isInShoppingPhase(p)) return;
 
         // Bunny Shoes: crouch + uncrouch to activate
         manager.onPlayerToggleSneak(p, event.isSneaking());
@@ -61,6 +68,9 @@ public class CustomArmorListener implements Listener {
         Player p = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(p);
         if (session == null) return;
+
+        // Block dragon double jump during shopping phase
+        if (isInShoppingPhase(p)) return;
 
         // Dragon Set: double jump
         if (event.isFlying() && manager.tryDragonDoubleJump(p)) {
@@ -128,5 +138,13 @@ public class CustomArmorListener implements Listener {
                 p.setAllowFlight(true);
             }
         }
+    }
+
+    /**
+     * Checks if the player is currently in a shopping phase.
+     */
+    private boolean isInShoppingPhase(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        return session != null && session.getState().isShopping();
     }
 }

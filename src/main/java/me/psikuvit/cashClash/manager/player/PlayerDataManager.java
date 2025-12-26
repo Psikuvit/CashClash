@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.manager;
+package me.psikuvit.cashClash.manager.player;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.player.PlayerData;

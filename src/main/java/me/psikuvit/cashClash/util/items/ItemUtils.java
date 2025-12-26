@@ -1,6 +1,6 @@
 package me.psikuvit.cashClash.util.items;
 
-import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
@@ -22,7 +22,10 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Utility methods that centralize ItemStack creation/modification logic.
@@ -37,6 +40,7 @@ public final class ItemUtils {
     /**
      * Equip armor or replace existing armor piece.
      * If there was an old armor piece, it will be added to the player's inventory.
+     *
      * @return The old armor piece that was replaced (null if slot was empty)
      */
     public static ItemStack equipArmorOrReplace(Player player, ItemStack newArmor) {
@@ -75,6 +79,7 @@ public final class ItemUtils {
 
     /**
      * Replace the best matching tool/weapon in inventory with the new item.
+     *
      * @return The old item that was replaced (null if nothing was replaced)
      */
     public static ItemStack replaceBestMatchingTool(Player player, ItemStack newItem) {
@@ -195,7 +200,7 @@ public final class ItemUtils {
 
     public static void applyEnchantToBestItem(Player player, EnchantEntry ee, int lvl) {
         if (player == null || ee == null) return;
-        if (ee == EnchantEntry.PROTECTION) {
+        if (ee == EnchantEntry.PROTECTION || ee == EnchantEntry.PROJECTILE_PROTECTION) {
             boolean appliedAny = false;
 
             PlayerInventory inv = player.getInventory();
@@ -382,5 +387,54 @@ public final class ItemUtils {
         }
 
         return remaining < Math.max(1, quantity);
+    }
+
+
+    /**
+     * Checks if the player owns all pieces of an armor set.
+     */
+    public static boolean playerOwnsArmorSet(Player player, CustomArmorItem.ArmorSet set) {
+        for (CustomArmorItem piece : set.getPieces()) {
+            if (!hasCustomArmorPiece(player, piece)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Checks if the player has a specific custom armor piece (in inventory or equipped).
+     */
+    public static boolean hasCustomArmorPiece(Player player, CustomArmorItem piece) {
+        return Arrays.stream(player.getInventory().getArmorContents())
+                .filter(Objects::nonNull)
+                .filter(ItemStack::hasItemMeta)
+                .map(PDCDetection::getCustomArmor)
+                .filter(Objects::nonNull)
+                .anyMatch(customArmorItem -> piece.name().equals(customArmorItem.name()));
+    }
+
+    /**
+     * Checks if a player owns a specific shop item.
+     * Uses single-pass stream for better performance.
+     *
+     * @param player   The player to check
+     * @param shopItem The item to look for
+     * @return true if the player owns the item
+     */
+    public static boolean isItemOwned(Player player, Purchasable shopItem) {
+        // Only check ownership for categories where duplicates aren't allowed
+        ShopCategory category = shopItem.getCategory();
+        if (category != ShopCategory.ARMOR &&
+                category != ShopCategory.WEAPONS &&
+                category != ShopCategory.CUSTOM_ARMOR) {
+            return false;
+        }
+        return Stream.concat(Arrays.stream(player.getInventory().getContents()), Arrays.stream(player.getInventory().getArmorContents()))
+                .filter(Objects::nonNull)
+                .filter(ItemStack::hasItemMeta)
+                .map(is -> is.getItemMeta().getPersistentDataContainer()
+                        .get(Keys.ITEM_ID, PersistentDataType.STRING))
+                .anyMatch(shopItem.name()::equals);
     }
 }

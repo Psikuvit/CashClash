@@ -5,12 +5,12 @@ import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.manager.BonusManager;
-import me.psikuvit.cashClash.manager.CashQuakeManager;
-import me.psikuvit.cashClash.manager.CustomArmorManager;
-import me.psikuvit.cashClash.manager.EconomyManager;
-import me.psikuvit.cashClash.manager.GameManager;
-import me.psikuvit.cashClash.manager.PlayerDataManager;
+import me.psikuvit.cashClash.manager.game.CashQuakeManager;
+import me.psikuvit.cashClash.manager.game.EconomyManager;
+import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.CustomArmorManager;
+import me.psikuvit.cashClash.manager.player.BonusManager;
+import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
@@ -38,7 +38,6 @@ public class DeathListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
         if (session == null) return;
-
 
         CashClashPlayer victim = session.getCashClashPlayer(player.getUniqueId());
         if (victim == null) return;

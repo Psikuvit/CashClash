@@ -1,9 +1,10 @@
-package me.psikuvit.cashClash.manager;
+package me.psikuvit.cashClash.manager.items;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Keys;
@@ -21,6 +22,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -56,6 +58,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class MythicItemManager {
 
     private static MythicItemManager instance;
+    private final ItemsConfig cfg = ItemsConfig.getInstance();
 
     private final Map<UUID, Map<UUID, MythicItem>> playerMythics;
     private final Map<UUID, Set<MythicItem>> sessionPurchasedMythics;
@@ -87,7 +90,6 @@ public class MythicItemManager {
         blazebiteShotsRemaining = new HashMap<>();
         carlsCritCooldown = new HashMap<>();
         activeTasks = new HashMap<>();
-            
     }
 
     public static MythicItemManager getInstance() {
@@ -130,6 +132,7 @@ public class MythicItemManager {
     public UUID getMythicOwner(GameSession session, MythicItem mythic) {
         if (session == null || mythic == null) return null;
         UUID sessionId = session.getSessionId();
+
         Map<UUID, MythicItem> sessionPlayerMythics = playerMythics.get(sessionId);
         if (sessionPlayerMythics == null) return null;
 
@@ -159,9 +162,9 @@ public class MythicItemManager {
     public MythicItem getPlayerMythic(GameSession session, UUID playerUuid) {
         if (session == null || playerUuid == null) return null;
         UUID sessionId = session.getSessionId();
+
         Map<UUID, MythicItem> sessionPlayerMythics = playerMythics.get(sessionId);
-        if (sessionPlayerMythics == null) return null;
-        return sessionPlayerMythics.get(playerUuid);
+        return sessionPlayerMythics.getOrDefault(playerUuid, null);
     }
 
     // ==================== RANDOM LEGENDARY SELECTION ====================
@@ -194,7 +197,7 @@ public class MythicItemManager {
      * Get the available legendaries for a game session.
      * Returns an empty list if none have been selected.
      */
-    public List<MythicItem> getAvailableLegendaries(GameSession session) {
+    public List<MythicItem> getAvailableMythics(GameSession session) {
         if (session == null) return Collections.emptyList();
         UUID sessionId = session.getSessionId();
         return sessionAvailableMythics.getOrDefault(sessionId, Collections.emptyList());
@@ -205,7 +208,7 @@ public class MythicItemManager {
      */
     public boolean isMythicAvailableInSession(GameSession session, MythicItem mythic) {
         if (session == null || mythic == null) return false;
-        List<MythicItem> available = getAvailableLegendaries(session);
+        List<MythicItem> available = getAvailableMythics(session);
         return available.contains(mythic);
     }
 
@@ -277,6 +280,9 @@ public class MythicItemManager {
                 );
                 meta.addAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, reachMod);
             }
+            case BLOODWRENCH_CROSSBOW -> {
+                meta.addEnchant(Enchantment.MULTISHOT, 1, false);
+            }
             default -> {
             }
         }
@@ -294,6 +300,7 @@ public class MythicItemManager {
     private long getRemainingCooldown(UUID player, String ability) {
         Map<String, Long> playerCooldowns = cooldowns.get(player);
         if (playerCooldowns == null) return 0;
+
         Long cooldownEnd = playerCooldowns.get(ability);
         if (cooldownEnd == null) return 0;
         return Math.max(0, (cooldownEnd - System.currentTimeMillis()) / 1000);
@@ -360,7 +367,6 @@ public class MythicItemManager {
      */
     public void useCoinCleaverGrenade(Player player) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         Messages.debug(player, "COIN_CLEAVER: Grenade ability triggered");
 
@@ -427,7 +433,7 @@ public class MythicItemManager {
      */
     public void handleCarlsChargedAttack(Player attacker) {
         UUID uuid = attacker.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
+        
 
         Messages.debug(attacker, "CARLS_BATTLEAXE: Charged attack detected");
 
@@ -454,7 +460,7 @@ public class MythicItemManager {
      */
     public void handleCarlsCriticalHit(Player attacker, Player victim) {
         UUID uuid = attacker.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
+        
         long now = System.currentTimeMillis();
 
         Messages.debug(attacker, "CARLS_BATTLEAXE: Critical hit detected (falling)");
@@ -485,7 +491,6 @@ public class MythicItemManager {
      */
     public void useWindBowBoost(Player player) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         Messages.debug(player, "WIND_BOW: Boost ability triggered");
 
@@ -498,7 +503,8 @@ public class MythicItemManager {
         setCooldown(uuid, "wind_bow_boost", cfg.getWindBowBoostCooldown());
 
         Vector direction = player.getLocation().getDirection();
-        direction.setY(Math.max(direction.getY() + 0.5, 0.5)); // Ensure upward boost
+        direction.setY(Math.max(direction.getY() + 0.5, 0.5));
+
         Vector velocity = direction.multiply(cfg.getWindBowBoostPower());
         player.setVelocity(velocity);
 
@@ -514,7 +520,6 @@ public class MythicItemManager {
      * Acts as a wind gust in 3 block radius. Passive ability.
      */
     public void handleWindBowHit(Player shooter, Player target) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
         Location hitLoc = target.getLocation();
         Vector pushDirection = hitLoc.toVector().subtract(shooter.getLocation().toVector()).normalize();
         pushDirection.setY(0.3);
@@ -543,7 +548,7 @@ public class MythicItemManager {
      */
     public void handleElectricEelChain(Player attacker, Player victim) {
         UUID uuid = attacker.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
+        
 
         Messages.debug(attacker, "ELECTRIC_EEL: Chain damage check");
 
@@ -591,7 +596,6 @@ public class MythicItemManager {
      */
     public void useElectricEelTeleport(Player player) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         Messages.debug(player, "ELECTRIC_EEL: Teleport ability triggered");
 
@@ -602,35 +606,29 @@ public class MythicItemManager {
         }
 
         Location start = player.getEyeLocation();
-        Vector direction = start.getDirection();
+        Vector direction = start.getDirection().normalize();
         World world = player.getWorld();
 
-        double distance = cfg.getEelTeleportDistance();
-        // Ray trace to find destination (stop at walls)
+        double distance = cfg.getEelTeleportDistance(); // treat as push strength
+
         RayTraceResult result = world.rayTraceBlocks(start, direction, distance, FluidCollisionMode.NEVER, true);
 
-        Location destination;
+        double pushStrength = distance; // you can tune this
+
         if (result != null && result.getHitBlock() != null) {
-            // Hit a wall, teleport just before it
-            destination = result.getHitPosition().toLocation(world).subtract(direction.multiply(0.5));
-            Messages.debug(player, "ELECTRIC_EEL: Hit wall, shortened distance");
+            // Stop before the wall
+            double hitDistance = result.getHitPosition().distance(start.toVector());
+            pushStrength = Math.max(0.1, hitDistance - 0.5);
+            Messages.debug(player, "ELECTRIC_EEL: Hit wall, reduced push strength");
         } else {
-            // No wall, teleport full distance
-            destination = start.add(direction.multiply(distance));
-            Messages.debug(player, "ELECTRIC_EEL: Full distance teleport");
+            Messages.debug(player, "ELECTRIC_EEL: Full push strength");
         }
 
-        destination.setYaw(player.getLocation().getYaw());
-        destination.setPitch(player.getLocation().getPitch());
-
-        // Effects at start location
-        world.spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
-        SoundUtils.playAt(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.5f);
-
-        player.teleport(destination);
+        Vector velocity = direction.multiply(pushStrength);
+        player.setVelocity(velocity);
 
         // Effects at destination
-        world.spawnParticle(Particle.ELECTRIC_SPARK, destination.add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
+        world.spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
 
         setCooldown(uuid, "eel_teleport", cfg.getEelTeleportCooldown());
         Messages.debug(player, "ELECTRIC_EEL: Teleported! Distance: " + distance + ", Cooldown: " + cfg.getEelTeleportCooldown() + "s");
@@ -642,8 +640,6 @@ public class MythicItemManager {
      * Power 4 bow damage (~9 damage) + Poison III for 2 seconds.
      */
     public void handleGoblinSpearHit(Player shooter, LivingEntity victim) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
-        
         Messages.debug(shooter, "GOBLIN_SPEAR: Hit " + victim.getName());
 
         victim.damage(cfg.getGoblinSpearDamage(), shooter);
@@ -663,7 +659,6 @@ public class MythicItemManager {
      */
     public boolean handleSandstormerShot(Player player) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         Messages.debug(player, "BLOODWRENCH_CROSSBOW: Shot triggered");
 
@@ -719,7 +714,6 @@ public class MythicItemManager {
      */
     public void fireSuperchargedSandstormer(Player shooter, Player victim) {
         sandstormerChargeStart.remove(shooter.getUniqueId());
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         Messages.debug(shooter, "BLOODWRENCH_CROSSBOW: Supercharged shot hit " + victim.getName());
 
@@ -761,7 +755,7 @@ public class MythicItemManager {
      */
     public void useWardenShockwave(Player player) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
+        
 
         Messages.debug(player, "WARDEN_GLOVES: Shockwave ability triggered");
 
@@ -822,7 +816,7 @@ public class MythicItemManager {
      */
     public void useWardenMelee(Player player, Player victim) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
+        
 
         Messages.debug(player, "WARDEN_GLOVES: Melee attack on " + victim.getName());
 
@@ -853,7 +847,7 @@ public class MythicItemManager {
      */
     public void toggleBlazebiteMode(Player player) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
+        
         boolean isGlacier = blazebiteMode.getOrDefault(uuid, true);
 
         Messages.debug(player, "BLAZEBITE: Toggle mode triggered, current: " + (isGlacier ? "Glacier" : "Volcano"));
@@ -879,7 +873,7 @@ public class MythicItemManager {
      */
     public boolean handleBlazebiteShot(Player player) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
+        
         boolean isGlacier = blazebiteMode.getOrDefault(uuid, true);
 
         Messages.debug(player, "BLAZEBITE: Shot triggered (" + (isGlacier ? "Glacier" : "Volcano") + " mode)");
@@ -915,7 +909,7 @@ public class MythicItemManager {
      */
     public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc) {
         UUID uuid = shooter.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
+        
         boolean isGlacier = blazebiteMode.getOrDefault(uuid, true);
         World world = hitLoc.getWorld();
         if (world == null) return;

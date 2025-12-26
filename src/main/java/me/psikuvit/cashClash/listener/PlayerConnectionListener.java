@@ -1,10 +1,10 @@
 package me.psikuvit.cashClash.listener;
 
-import me.psikuvit.cashClash.manager.GameManager;
 import me.psikuvit.cashClash.arena.ArenaManager;
-import me.psikuvit.cashClash.manager.PlayerDataManager;
-import me.psikuvit.cashClash.manager.ScoreboardManager;
-import me.psikuvit.cashClash.manager.TabListManager;
+import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.player.PlayerDataManager;
+import me.psikuvit.cashClash.manager.player.ScoreboardManager;
+import me.psikuvit.cashClash.manager.player.TabListManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;

@@ -1,7 +1,7 @@
 package me.psikuvit.cashClash.shop;
 
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Messages;

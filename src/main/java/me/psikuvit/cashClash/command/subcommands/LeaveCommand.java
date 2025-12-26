@@ -1,16 +1,15 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
-import me.psikuvit.cashClash.arena.ArenaManager;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
-import java.util.List;
 
 public class LeaveCommand extends AbstractArgCommand {
     public LeaveCommand() {

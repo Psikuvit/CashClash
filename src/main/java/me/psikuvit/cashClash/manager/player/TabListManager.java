@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.manager;
+package me.psikuvit.cashClash.manager.player;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.util.Messages;

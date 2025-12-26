@@ -1,8 +1,8 @@
 package me.psikuvit.cashClash.listener.items;
 
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.manager.CustomItemManager;
-import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.CustomItemManager;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -42,24 +42,19 @@ public class CustomItemListener implements Listener {
 
         Action action = event.getAction();
 
+        if (isInShoppingPhase(player)) return;
+
+
         switch (type) {
             case GRENADE -> {
-                if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+                if (action.isRightClick()) {
                     event.setCancelled(true);
-                    if (isInShoppingPhase(player)) {
-                        Messages.send(player, "<red>You cannot use grenades during the shopping phase!</red>");
-                        return;
-                    }
                     manager.throwGrenade(player, item, false);
                 }
             }
             case SMOKE_CLOUD_GRENADE -> {
-                if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+                if (action.isRightClick()) {
                     event.setCancelled(true);
-                    if (isInShoppingPhase(player)) {
-                        Messages.send(player, "<red>You cannot use grenades during the shopping phase!</red>");
-                        return;
-                    }
                     manager.throwGrenade(player, item, true);
                 }
             }
@@ -70,14 +65,15 @@ public class CustomItemListener implements Listener {
                 }
             }
             case TABLET_OF_HACKING -> {
-                if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+                if (action.isRightClick()) {
                     event.setCancelled(true);
+                    // Tablet of hacking is allowed in shopping phase - it shows enemy coins
                     manager.useTabletOfHacking(player, item);
                 }
             }
             case INVIS_CLOAK -> {
                 // Right-click toggles invisibility on/off
-                if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+                if (action.isRightClick()) {
                     event.setCancelled(true);
                     manager.handleInvisCloakRightClick(player);
                 }
@@ -85,10 +81,6 @@ public class CustomItemListener implements Listener {
             case BOUNCE_PAD -> {
                 if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
                     event.setCancelled(true);
-                    if (isInShoppingPhase(player)) {
-                        Messages.send(player, "<red>You cannot place bounce pads during the shopping phase!</red>");
-                        return;
-                    }
                     manager.placeBouncePad(player, item, event.getClickedBlock());
                 }
             }
@@ -116,9 +108,10 @@ public class CustomItemListener implements Listener {
         if (!item.hasItemMeta()) return;
 
         CustomItem type = PDCDetection.getCustomItem(item);
-        if (type == null) return;
 
+        if (type == null) return;
         if (!(event.getRightClicked() instanceof Player target)) return;
+        if (isInShoppingPhase(player)) return;
 
         switch (type) {
             case MEDIC_POUCH -> {
@@ -159,6 +152,12 @@ public class CustomItemListener implements Listener {
         ItemStack item = attacker.getInventory().getItemInMainHand();
         if (!item.hasItemMeta()) return;
 
+        if (isInShoppingPhase(attacker)) {
+            Messages.send(attacker, "<red>You cannot use custom items during the shopping phase!</red>");
+            event.setCancelled(true);
+            return;
+        }
+
         CustomItem type = PDCDetection.getCustomItem(item);
         if (type == CustomItem.CASH_BLASTER) {
             manager.handleCashBlasterHit(attacker);
@@ -168,6 +167,8 @@ public class CustomItemListener implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+
+        if (isInShoppingPhase(player)) return;
 
         // Check block player is standing on
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();

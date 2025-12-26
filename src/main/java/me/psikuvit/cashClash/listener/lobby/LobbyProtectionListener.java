@@ -1,6 +1,6 @@
 package me.psikuvit.cashClash.listener.lobby;
 
-import me.psikuvit.cashClash.manager.GameManager;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -45,9 +45,7 @@ public class LobbyProtectionListener implements Listener {
         var damagerSession = GameManager.getInstance().getPlayerSession(damager);
         var victimSession = GameManager.getInstance().getPlayerSession(victim);
 
-        if (damagerSession != null && damagerSession.equals(victimSession)) {
-            return;
-        }
+        if (damagerSession != null && damagerSession.equals(victimSession)) return;
 
         event.setCancelled(true);
     }

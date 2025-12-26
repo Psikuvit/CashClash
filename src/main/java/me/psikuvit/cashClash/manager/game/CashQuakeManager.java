@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.manager;
+package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.config.ConfigManager;
