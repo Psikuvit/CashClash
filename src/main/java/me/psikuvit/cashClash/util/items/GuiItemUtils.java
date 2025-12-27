@@ -291,7 +291,7 @@ public final class GuiItemUtils {
                                                  MythicItem ownedMythic,
                                                  boolean mythicTaken,
                                                  UUID ownerUuid) {
-        boolean isOwned = ownedMythic == mythic;
+        boolean isOwned = ownedMythic != null && ownedMythic == mythic;
 
         ShopItemBuilder builder = ShopItemBuilder.of(mythic.getMaterial())
                 .hideAttributes()
