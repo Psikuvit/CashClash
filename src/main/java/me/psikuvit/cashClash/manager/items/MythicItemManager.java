@@ -164,6 +164,7 @@ public class MythicItemManager {
         UUID sessionId = session.getSessionId();
 
         Map<UUID, MythicItem> sessionPlayerMythics = playerMythics.get(sessionId);
+        if (sessionPlayerMythics == null) return null;
         return sessionPlayerMythics.getOrDefault(playerUuid, null);
     }
 

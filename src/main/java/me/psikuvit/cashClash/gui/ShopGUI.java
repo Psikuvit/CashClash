@@ -83,45 +83,60 @@ public class ShopGUI {
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null) {
-            List<MythicItem> availableMythics = MythicItemManager.getInstance().getAvailableMythics(session);
+            if (session.getCurrentRound() == 1) {
+                for (int slot : legendSlots) {
+                    ItemStack itemStack = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+                    ItemMeta itemMeta = itemStack.getItemMeta();
 
-            UUID playerUuid = player.getUniqueId();
-            boolean playerHasMythic = MythicItemManager.getInstance().hasPlayerPurchasedMythic(session, playerUuid);
+                    itemMeta.displayName(Component.empty());
+                    itemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+                    itemStack.setItemMeta(itemMeta);
+                    inv.setItem(slot + 9, itemStack);
+                }
+                // Skip mythic display in round 1
+                player.openInventory(inv);
+                return;
+            } else {
+                List<MythicItem> availableMythics = MythicItemManager.getInstance().getAvailableMythics(session);
 
-            MythicItem ownedMythic = MythicItemManager.getInstance().getPlayerMythic(session, playerUuid);
+                UUID playerUuid = player.getUniqueId();
+                boolean playerHasMythic = MythicItemManager.getInstance().hasPlayerPurchasedMythic(session, playerUuid);
+                Messages.debug(String.valueOf(playerHasMythic));
 
-            // Legendaries header
-            ItemStack legendHeader = new ItemStack(Material.DRAGON_HEAD);
-            ItemMeta legendHeaderMeta = legendHeader.getItemMeta();
+                MythicItem ownedMythic = MythicItemManager.getInstance().getPlayerMythic(session, playerUuid);
 
-            legendHeaderMeta.displayName(Messages.parse("<dark_purple><bold>✦ MYTHIC WEAPONS ✦</bold></dark_purple>"));
+                // Legendaries header
+                ItemStack legendHeader = new ItemStack(Material.DRAGON_HEAD);
+                ItemMeta legendHeaderMeta = legendHeader.getItemMeta();
 
-            List<Component> headerLore = new ArrayList<>();
-            headerLore.add(Component.empty());
+                legendHeaderMeta.displayName(Messages.parse("<dark_purple><bold>✦ MYTHIC WEAPONS ✦</bold></dark_purple>"));
+                List<Component> headerLore = new ArrayList<>();
+                headerLore.add(Component.empty());
 
-            headerLore.addAll(Messages.wrapLines("<gray>One per player. Each mythic is unique per game.</gray>"));
-            legendHeaderMeta.lore(headerLore);
-            legendHeaderMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+                headerLore.addAll(Messages.wrapLines("<gray>One per player. Each mythic is unique per game.</gray>"));
+                legendHeaderMeta.lore(headerLore);
+                legendHeaderMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
-            legendHeader.setItemMeta(legendHeaderMeta);
-            inv.setItem(31, legendHeader);
+                legendHeader.setItemMeta(legendHeaderMeta);
+                inv.setItem(31, legendHeader);
 
-            for (int i = 0; i < availableMythics.size() && i < legendSlots.length; i++) {
-                MythicItem mythic = availableMythics.get(i);
-                boolean mythicTaken = !MythicItemManager.getInstance().isMythicAvailableInSession(session, mythic);
+                for (int i = 0; i < availableMythics.size() && i < legendSlots.length; i++) {
+                    MythicItem mythic = availableMythics.get(i);
+                    boolean mythicTaken = !MythicItemManager.getInstance().isMythicAvailableInSession(session, mythic);
 
-                UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(session, mythic);
-                inv.setItem(legendSlots[i], GuiItemUtils.createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid));
+                    UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(session, mythic);
+                    inv.setItem(legendSlots[i], GuiItemUtils.createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid));
 
-                String material = session.getCurrentRound() == 1 ? "GRAY_STAINED_GLASS_PANE" : legendColors[i] + "_STAINED_GLASS_PANE";
+                    String material = legendColors[i] + "_STAINED_GLASS_PANE";
 
-                ItemStack itemStack = new ItemStack(Material.valueOf(material));
-                ItemMeta itemMeta = itemStack.getItemMeta();
+                    ItemStack itemStack = new ItemStack(Material.valueOf(material));
+                    ItemMeta itemMeta = itemStack.getItemMeta();
 
-                itemMeta.displayName(Component.empty());
-                itemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-                itemStack.setItemMeta(itemMeta);
-                inv.setItem(legendSlots[i] + 9, itemStack);
+                    itemMeta.displayName(Component.empty());
+                    itemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+                    itemStack.setItemMeta(itemMeta);
+                    inv.setItem(legendSlots[i] + 9, itemStack);
+                }
             }
         }
 
