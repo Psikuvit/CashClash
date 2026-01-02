@@ -161,8 +161,10 @@ public class MythicItemListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onEntityShootBow(EntityShootBowEvent event) {
+        if (event.isCancelled()) return;
+
         if (!(event.getEntity() instanceof Player player)) return;
 
         ItemStack bow = event.getBow();
@@ -189,8 +191,9 @@ public class MythicItemListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onProjectileHit(ProjectileHitEvent event) {
+        if (event.isCancelled()) return;
         if (event.getEntity() instanceof Arrow arrow) {
             if (!(arrow.getShooter() instanceof Player shooter)) return;
 

@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -17,10 +18,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+/**
+ * Handles supply drop item collection.
+ * Uses HIGH priority to run after protection listeners.
+ */
 public class SupplyDropListener implements Listener {
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
+        if (event.isCancelled()) return;
+
         if (!(event.getWhoClicked() instanceof Player p)) return;
         ItemStack current = event.getCurrentItem();
         if (current == null || current.getType() != Material.EMERALD) return;
@@ -54,8 +61,10 @@ public class SupplyDropListener implements Listener {
         SoundUtils.play(p, org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
+        if (event.useItemInHand() == org.bukkit.event.Event.Result.DENY) return;
+
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Player p = event.getPlayer();
         ItemStack held = p.getInventory().getItemInMainHand();

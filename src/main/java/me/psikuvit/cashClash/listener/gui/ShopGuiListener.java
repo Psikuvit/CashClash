@@ -49,6 +49,10 @@ public class ShopGuiListener implements Listener {
         GuiType type = sh.getType();
         if (type == null) return;
 
+        if (event.getClickedInventory() != event.getView().getTopInventory()) {
+            return;
+        }
+
         event.setCancelled(true);
 
         ItemStack clicked = event.getCurrentItem();

@@ -60,8 +60,9 @@ public class ConsumableListener implements Listener {
      * Allow custom foods to be consumed even at full hunger.
      * When right-clicking with a custom food at full hunger, manually apply the effect.
      */
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerRightClick(PlayerInteractEvent event) {
+        if (event.useItemInHand() == org.bukkit.event.Event.Result.DENY) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (!event.getAction().isRightClick()) return;
 
@@ -98,6 +99,7 @@ public class ConsumableListener implements Listener {
     }
 
     private void applyConsumable(Player p, PotionEffect effect, String msg) {
+        p.removePotionEffect(effect.getType());
         p.addPotionEffect(effect);
         Messages.send(p, msg);
         SoundUtils.play(p, Sound.ENTITY_PLAYER_BURP, 1.0f, 1.0f);

@@ -9,6 +9,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -16,12 +17,15 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Prevents ender pearl usage during respawn protection or when pearls are disabled by TeamDislodgeManager
+ * Prevents ender pearl usage during respawn protection or when pearls are disabled by TeamDislodgeManager.
+ * Uses HIGH priority to run after protection listeners.
  */
 public class EnderPearlListener implements Listener {
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onProjectileLaunch(ProjectileLaunchEvent event) {
+        if (event.isCancelled()) return;
+
         if (event.getEntity() instanceof EnderPearl pearl) {
             if (pearl.getShooter() instanceof Player player) {
                 GameSession session = GameManager.getInstance().getPlayerSession(player);
@@ -43,8 +47,10 @@ public class EnderPearlListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
+        if (event.useItemInHand() == org.bukkit.event.Event.Result.DENY) return;
+
         // Block right-click usage of ender pearls or custom bounce pad items
         if (event.getHand() == EquipmentSlot.OFF_HAND) return; // ignore off-hand duplicate
         Player player = event.getPlayer();

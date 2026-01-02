@@ -29,7 +29,7 @@ public class CustomItemListener implements Listener {
 
     private final CustomItemManager manager = CustomItemManager.getInstance();
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) return;
 
@@ -101,8 +101,10 @@ public class CustomItemListener implements Listener {
         return session != null && session.getState().isShopping();
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+        if (event.isCancelled()) return;
+
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
         if (!item.hasItemMeta()) return;
@@ -125,8 +127,10 @@ public class CustomItemListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        if (event.isCancelled()) return;
+
         if (!(event.getDamager() instanceof Player attacker)) return;
         if (!(event.getEntity() instanceof Player)) return;
 
@@ -141,8 +145,10 @@ public class CustomItemListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onProjectileHit(ProjectileHitEvent event) {
+        if (event.isCancelled()) return;
+
         // Handle Cash Blaster hits
         if (!(event.getHitEntity() instanceof Player)) return;
 
@@ -164,7 +170,7 @@ public class CustomItemListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
 
@@ -177,6 +183,26 @@ public class CustomItemListener implements Listener {
             if (manager.isBouncePad(blockBelow)) {
                 manager.handleBouncePad(player, blockBelow);
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onBreak(BlockBreakEvent event) {
+        if (event.isCancelled()) return;
+
+        Block block = event.getBlock();
+        if (manager.isBouncePad(block) || manager.isBoombox(block)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPlace(BlockPlaceEvent event) {
+        if (event.isCancelled()) return;
+
+        Block block = event.getBlock();
+        if (manager.isBouncePad(block) || manager.isBoombox(block)) {
+            event.setCancelled(true);
         }
     }
 }

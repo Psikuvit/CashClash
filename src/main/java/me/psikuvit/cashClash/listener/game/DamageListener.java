@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
@@ -17,12 +18,15 @@ import org.bukkit.event.entity.EntityRegainHealthEvent;
 import java.util.Objects;
 
 /**
- * Handles damage events for bonus tracking (close calls, damage tracking)
+ * Handles damage events for bonus tracking (close calls, damage tracking).
+ * Uses NORMAL priority to run after protection listeners but before item effect listeners.
  */
 public class DamageListener implements Listener {
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerDamage(EntityDamageEvent event) {
+        if (event.isCancelled()) return;
+
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
@@ -64,8 +68,10 @@ public class DamageListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerHeal(EntityRegainHealthEvent event) {
+        if (event.isCancelled()) return;
+
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }

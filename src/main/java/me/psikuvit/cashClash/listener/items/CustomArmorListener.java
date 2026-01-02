@@ -103,8 +103,10 @@ public class CustomArmorListener implements Listener {
         manager.onDeathmaulerDamageTaken(p);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        if (event.isCancelled()) return;
+
         if (!(event.getDamager() instanceof Player attacker)) return;
         if (!(event.getEntity() instanceof Player target)) return;
 
@@ -121,7 +123,7 @@ public class CustomArmorListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerJump(PlayerMoveEvent event) {
         Player p = event.getPlayer();
         if (GameManager.getInstance().getPlayerSession(p) == null) return;
