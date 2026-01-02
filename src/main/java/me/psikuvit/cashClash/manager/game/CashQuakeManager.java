@@ -80,33 +80,50 @@ public class CashQuakeManager {
         this.weightOfWealthPaid = new HashSet<>();
     }
 
+    /**
+     * Start the event scheduler for the combat phase.
+     * Triggers the first event immediately at the start of the round,
+     * then schedules checks for additional events.
+     */
     public void startEventScheduler() {
         if (eventTask != null) {
             eventTask.cancel();
         }
 
+        // Skip events in Round 1
+        int currentRound = session.getCurrentRound();
+        if (currentRound == cfg.getFirstRound()) {
+            return;
+        }
+
+        // Trigger first event immediately at the start of combat phase
+        if (eventsThisGame < cfg.getMaxEventsPerGame() && eventsThisRound < cfg.getMaxEventsPerRound()) {
+            triggerRandomEvent();
+        }
+
+        // Schedule checks for additional events during the round
         eventTask = SchedulerUtils.runTaskTimer(() -> {
             if (!session.getState().isCombat()) return;
 
             // Skip events in Round 1
-            int currentRound = session.getCurrentRound();
-            if (currentRound == cfg.getFirstRound()) return;
+            if (session.getCurrentRound() == cfg.getFirstRound()) return;
 
             if (eventsThisGame >= cfg.getMaxEventsPerGame() ||
                     eventsThisRound >= cfg.getMaxEventsPerRound()) return;
-            if (eventsThisRound == 0) {
-                triggerRandomEvent();
-            } else if (eventsThisRound < cfg.getMaxEventsPerRound()) {
+
+            // Check for additional events (second event of the round)
+            if (eventsThisRound < cfg.getMaxEventsPerRound()) {
                 int eventsLeft = cfg.getMaxEventsPerGame() - eventsThisGame;
                 int guaranteedLeft = 2 - guaranteedEventsTriggered;
 
                 double chance = 0.5;
 
                 if (eventsLeft <= guaranteedLeft) chance = 1.0;
+
                 if (random.nextDouble() < chance) triggerRandomEvent();
             }
 
-        }, 0, cfg.getEventCheckIntervalTicks());
+        }, cfg.getEventCheckIntervalTicks(), cfg.getEventCheckIntervalTicks());
     }
 
     private void triggerRandomEvent() {
