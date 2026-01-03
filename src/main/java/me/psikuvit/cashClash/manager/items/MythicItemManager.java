@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import net.kyori.adventure.text.Component;
 import org.bukkit.FluidCollisionMode;
@@ -239,6 +240,12 @@ public class MythicItemManager {
 
         // Apply special attributes based on mythic type
         applyMythicAttributes(mythic, meta);
+
+        // Set item model directly (base state - for crossbows/bows, this will be updated dynamically)
+        NamespacedKey modelKey = CustomModelDataMapper.getItemModel(mythic);
+        if (modelKey != null) {
+            meta.setItemModel(modelKey);
+        }
 
         meta.setUnbreakable(true);
         meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);

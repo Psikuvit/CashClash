@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
@@ -157,6 +158,12 @@ public final class ItemUtils {
         pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, type.name());
         pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
 
+        // Set item model directly
+        NamespacedKey modelKey = CustomModelDataMapper.getItemModel(type);
+        if (modelKey != null) {
+            meta.setItemModel(modelKey);
+        }
+
         // Special handling for specific items
         switch (type) {
             case BAG_OF_POTATOES -> {
@@ -192,6 +199,13 @@ public final class ItemUtils {
             meta.lore(wrappedLore);
             meta.setUnbreakable(true);
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
+            
+            // Set item model directly
+            NamespacedKey modelKey = CustomModelDataMapper.getItemModel(armor);
+            if (modelKey != null) {
+                meta.setItemModel(modelKey);
+            }
+            
             item.setItemMeta(meta);
         }
 
@@ -436,5 +450,15 @@ public final class ItemUtils {
                 .map(is -> is.getItemMeta().getPersistentDataContainer()
                         .get(Keys.ITEM_ID, PersistentDataType.STRING))
                 .anyMatch(shopItem.name()::equals);
+    }
+
+    /**
+     * Updates the item model on an ItemStack.
+     * @param item The item to update
+     * @param modelKey The model NamespacedKey
+     */
+    public static void updateItemModel(ItemStack item, NamespacedKey modelKey) {
+        if (item == null || modelKey == null) return;
+        item.editMeta(meta -> meta.setItemModel(modelKey));
     }
 }
