@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.kit.Kit;
+import me.psikuvit.cashClash.listener.game.BlockProtectionListener;
 import me.psikuvit.cashClash.manager.game.CashQuakeManager;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -344,6 +345,9 @@ public class GameSession {
         if (cashQuakeManager != null) cashQuakeManager.cleanup();
         if (bonusManager != null) bonusManager.cleanup();
 
+        // Clean up tracked player-placed blocks
+        BlockProtectionListener.cleanupSession(sessionId);
+
         if (gameWorld != null) {
             Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
             if (arena != null) {
@@ -366,10 +370,8 @@ public class GameSession {
 
         GameManager.getInstance().removeSession(sessionId);
 
-        if (winner != null) {
-            for (UUID u : winner.getPlayers()) {
-                PlayerDataManager.getInstance().incWins(u);
-            }
+        for (UUID u : winner.getPlayers()) {
+            PlayerDataManager.getInstance().incWins(u);
         }
 
         for (UUID u : team1.getPlayers()) team1.removePlayer(u);
@@ -497,6 +499,10 @@ public class GameSession {
         return null;
     }
 
+    public Team getOpposingTeam(Player player) {
+        return getPlayerTeam(player) == team1 ? team2 : team1;
+    }
+
     public Team getOpposingTeam(Team team) {
         return team == team1 ? team2 : team1;
     }
@@ -534,7 +540,8 @@ public class GameSession {
     }
 
     public void castForfeitVote(Player voter) {
-        Team team = getPlayerTeam(voter); if (team == null) return;
+        Team team = getPlayerTeam(voter);
+        if (team == null) return;
         if (team.getForfeitVotes().isEmpty()) {
             requestForfeit(voter);
             return;
@@ -577,6 +584,19 @@ public class GameSession {
     }
 
     private void notifyGameEnd(Team winner, Location finalSpawn) {
+        Team loser = (winner == team1) ? team2 : team1;
+        String winnerList = winner.getPlayers().stream()
+                .map(uuid -> {
+                    Player p = Bukkit.getPlayer(uuid);
+                    return p != null ? p.getName() : uuid.toString();
+                })
+                .reduce((a, b) -> a + ", " + b).orElse("");
+        String loserList = loser.getPlayers().stream()
+                .map(uuid -> {
+                    Player p = Bukkit.getPlayer(uuid);
+                    return p != null ? p.getName() : uuid.toString();
+                })
+                .reduce((a, b) -> a + ", " + b).orElse("");
         players.keySet().forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null || !player.isOnline()) return;
@@ -586,13 +606,28 @@ public class GameSession {
             var attr = player.getAttribute(Attribute.MAX_HEALTH);
             double maxHealth = attr != null ? attr.getValue() : 20.0;
 
-            player.setHealth(Math.max(1.0, Math.min(maxHealth, player.getHealth())));
+            player.setHealth(maxHealth);
             player.setFoodLevel(20);
             player.closeInventory();
 
-            Messages.send(player, "<green><bold>=== GAME ENDED ===</bold></green>");
+            boolean isWinner = winner.getPlayers().contains(uuid);
+            Messages.send(player, isWinner ? "<green><bold>YOU WIN!</bold></green>" : "<red><bold>YOU LOSE</bold></red>");
             Messages.send(player, "<yellow>Winning Team: " + winner.getColoredName() + "</yellow>");
+            Messages.send(player, "<gray>Winners: " + winnerList + "</gray>");
+            Messages.send(player, "<gray>Losers: " + loserList + "</gray>");
             Messages.send(player, "<gray>Thanks for playing!</gray>");
         });
+    }
+
+    public void healAllPlayers() {
+        for (UUID uuid : players.keySet()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && player.isOnline()) {
+                var attr = player.getAttribute(Attribute.MAX_HEALTH);
+                double maxHealth = attr != null ? attr.getValue() : 20.0;
+                player.setHealth(maxHealth);
+                player.setFoodLevel(20);
+            }
+        }
     }
 }

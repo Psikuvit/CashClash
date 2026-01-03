@@ -9,9 +9,13 @@ import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -24,6 +28,7 @@ import org.bukkit.projectiles.ProjectileSource;
 /**
  * Handles all custom item event interactions.
  * Delegates business logic to CustomItemManager.
+ * Uses HIGH priority to run after game protection listeners.
  */
 public class CustomItemListener implements Listener {
 
@@ -31,6 +36,7 @@ public class CustomItemListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
+        if (event.useItemInHand() == Event.Result.DENY) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
 
         Player player = event.getPlayer();

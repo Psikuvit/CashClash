@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.manager.items;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.gui.PlayerSelectorGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
@@ -99,7 +100,7 @@ public class CustomItemManager {
 
         Item thrownItem = player.getWorld().dropItem(
                 player.getEyeLocation(),
-                new ItemStack(isSmoke ? Material.GRAY_DYE : Material.FIRE_CHARGE)
+                new ItemStack(Material.FIRE_CHARGE) // Both grenades use FIRE_CHARGE for resource pack compatibility
         );
         thrownItem.setVelocity(player.getLocation().getDirection().multiply(1.2));
         thrownItem.setPickupDelay(Integer.MAX_VALUE);
@@ -472,6 +473,11 @@ public class CustomItemManager {
         Team team = session.getPlayerTeam(player);
         if (team == null) return;
 
+        if (session.getState().isShopping()) {
+            Messages.send(player, "<red>You can't place this item during shopping!</red>");
+            return;
+        }
+
         Block placeBlock = clickedBlock.getRelative(BlockFace.UP);
 
         if (!placeBlock.getType().isAir()) {
@@ -532,6 +538,11 @@ public class CustomItemManager {
         Location placeLoc = clickedBlock.getRelative(BlockFace.UP).getLocation();
         Block placeBlock = placeLoc.getBlock();
 
+        if (GameManager.getInstance().getPlayerSession(player).getState().isShopping()) {
+            Messages.send(player, "<red>You can't place this item during shopping!</red>");
+            return;
+        }
+
         if (placeBlock.getType() != Material.AIR) {
             Messages.send(player, "<red>Cannot place boombox here!</red>");
             return;
@@ -579,6 +590,11 @@ public class CustomItemManager {
             }
         }, 12 * 20L);
 
+    }
+
+    public boolean isBoombox(Block block) {
+        if (block.getType() != Material.JUKEBOX) return false;
+        return activeBoomboxes.contains(block.getLocation());
     }
 
     // ==================== RESPAWN ANCHOR IMPLEMENTATION ====================

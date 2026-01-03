@@ -293,7 +293,7 @@ public final class GuiItemUtils {
                                                  UUID ownerUuid) {
         boolean isOwned = ownedMythic != null && ownedMythic == mythic;
 
-        ShopItemBuilder builder = ShopItemBuilder.of(mythic.getMaterial())
+        ShopItemBuilder builder = ShopItemBuilder.of(Material.BARRIER)
                 .hideAttributes()
                 .hideEnchants()
                 .itemId(mythic.name());
@@ -331,7 +331,10 @@ public final class GuiItemUtils {
                     .build();
         } else {
             // Available for purchase
-            return builder
+            return ShopItemBuilder.of(mythic.getMaterial())
+                    .hideAttributes()
+                    .hideEnchants()
+                    .itemId(mythic.name())
                     .name("<light_purple><bold>" + mythic.getDisplayName() + "</bold></light_purple>")
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
                     .emptyLine()

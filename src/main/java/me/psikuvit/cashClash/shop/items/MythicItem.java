@@ -104,6 +104,6 @@ public enum MythicItem implements Purchasable {
      * Check if this mythic is a ranged weapon.
      */
     public boolean isRanged() {
-        return this == WIND_BOW || this == SANDSTORMER || this == BLAZEBITE_CROSSBOWS;
+        return this == WIND_BOW || this == BLOODWRENCH_CROSSBOW || this == BLAZEBITE_CROSSBOWS;
     }
 }
