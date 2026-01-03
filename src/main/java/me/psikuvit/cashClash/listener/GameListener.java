@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.CashQuakeManager;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
@@ -19,6 +20,7 @@ import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
@@ -262,9 +264,23 @@ public class GameListener implements Listener {
         FoodItem fi = PDCDetection.getFood(consumed);
         if (fi == null) return;
 
+        // Check if this is a special consumable (has custom effects)
+        if (isSpecialConsumable(fi)) {
+            CooldownManager cooldownManager = CooldownManager.getInstance();
+            if (cooldownManager.isOnCooldown(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE)) {
+                long remaining = cooldownManager.getRemainingCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE);
+                event.setCancelled(true);
+                Messages.send(p, "<red>Consumable on cooldown! (" + remaining + "s)</red>");
+                return;
+            }
+            // Set cooldown
+            int cooldownSeconds = ItemsConfig.getInstance().getConsumableCooldown();
+            cooldownManager.setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE, cooldownSeconds);
+        }
+
         switch (fi) {
             case SPEED_CARROT -> applyConsumable(p, new PotionEffect(PotionEffectType.SPEED, 20 * 20, 0), "<green>Speed I activated!</green>");
-            case GOLDEN_CHICKEN -> applyAbsorption(p, 3, "<gold>+3 Absorption Hearts!</gold>");
+            case GOLDEN_CHICKEN -> applyAbsorption(p);
             case COOKIE_OF_LIFE -> applyConsumable(p, new PotionEffect(PotionEffectType.REGENERATION, 14 * 20, 0), "<dark_green>Regeneration I activated!</dark_green>");
             case SUNSCREEN -> {
                 applyConsumable(p, new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 30 * 20, 0), "<aqua>Fire Resistance activated!</aqua>");
@@ -274,6 +290,17 @@ public class GameListener implements Listener {
         }
     }
 
+    /**
+     * Check if a food item is a special consumable with custom effects.
+     */
+    private boolean isSpecialConsumable(FoodItem fi) {
+        return fi == FoodItem.SPEED_CARROT ||
+               fi == FoodItem.GOLDEN_CHICKEN ||
+               fi == FoodItem.COOKIE_OF_LIFE ||
+               fi == FoodItem.SUNSCREEN ||
+               fi == FoodItem.CAN_OF_SPINACH;
+    }
+
     private void applyConsumable(Player p, PotionEffect effect, String msg) {
         p.removePotionEffect(effect.getType());
         p.addPotionEffect(effect);
@@ -281,12 +308,12 @@ public class GameListener implements Listener {
         SoundUtils.play(p, Sound.ENTITY_PLAYER_BURP, 1.0f, 1.0f);
     }
 
-    private void applyAbsorption(Player p, int maxHearts, String msg) {
-        double maxAbsorption = maxHearts * 2.0;
+    private void applyAbsorption(Player p) {
+        double maxAbsorption = 3 * 2.0;
         if (p.getAbsorptionAmount() < maxAbsorption) {
             p.setAbsorptionAmount(maxAbsorption);
         }
-        Messages.send(p, msg);
+        Messages.send(p, "<gold>+3 Absorption Hearts!</gold>");
         SoundUtils.play(p, Sound.ENTITY_PLAYER_BURP, 1.0f, 1.0f);
     }
 

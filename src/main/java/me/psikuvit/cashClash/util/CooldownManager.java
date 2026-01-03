@@ -339,6 +339,7 @@ public class CooldownManager {
         // Custom Items
         public static final String MEDIC_POUCH = "MEDIC_POUCH";
         public static final String INVIS_CLOAK = "INVIS_CLOAK";
+        public static final String CONSUMABLE = "CONSUMABLE";
 
         // Mythic Items
         public static final String COIN_CLEAVER_GRENADE = "COIN_CLEAVER_GRENADE";
