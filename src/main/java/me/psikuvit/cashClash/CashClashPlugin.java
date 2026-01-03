@@ -2,16 +2,16 @@ package me.psikuvit.cashClash;
 
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.command.CommandHandler;
+import me.psikuvit.cashClash.gui.builder.GuiListener;
 import me.psikuvit.cashClash.listener.PlayerConnectionListener;
-import me.psikuvit.cashClash.listener.game.BlockListener;
+import me.psikuvit.cashClash.listener.game.BlockProtectionListener;
 import me.psikuvit.cashClash.listener.game.DamageListener;
 import me.psikuvit.cashClash.listener.game.DeathListener;
 import me.psikuvit.cashClash.listener.game.EnderPearlListener;
 import me.psikuvit.cashClash.listener.game.InteractListener;
 import me.psikuvit.cashClash.listener.game.ShopListener;
+import me.psikuvit.cashClash.listener.game.ShopPhaseProtectionListener;
 import me.psikuvit.cashClash.listener.game.SupplyDropListener;
-import me.psikuvit.cashClash.listener.gui.ArenaGuiListener;
-import me.psikuvit.cashClash.listener.gui.ShopGuiListener;
 import me.psikuvit.cashClash.listener.items.ConsumableListener;
 import me.psikuvit.cashClash.listener.items.CustomArmorListener;
 import me.psikuvit.cashClash.listener.items.CustomItemListener;
@@ -70,21 +70,21 @@ public final class CashClashPlugin extends JavaPlugin {
 
     private void registerEvents() {
         Listener[] listeners = {
-                new BlockListener(),
+                new GuiListener(),
+                new BlockProtectionListener(),
                 new DamageListener(),
                 new DeathListener(),
                 new EnderPearlListener(),
                 new InteractListener(),
                 new ShopListener(),
                 new SupplyDropListener(),
-                new ArenaGuiListener(),
-                new ShopGuiListener(),
                 new ConsumableListener(),
                 new CustomArmorListener(),
                 new CustomItemListener(),
                 new MythicItemListener(),
                 new LobbyProtectionListener(),
-                new PlayerConnectionListener()
+                new PlayerConnectionListener(),
+                new ShopPhaseProtectionListener(),
         };
 
         for (Listener listener : listeners) {
