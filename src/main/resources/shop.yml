@@ -144,7 +144,6 @@ enchants:
     tier-1: 10000
     tier-2: 25000
     tier-3: 50000
-    tier-4: 100000
 
   sharpness:
     tier-1: 5000
