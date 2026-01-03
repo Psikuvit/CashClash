@@ -146,21 +146,21 @@ public class ItemsConfig {
         return config.getInt("mythic-items.goblin-spear.poison.level", 3) - 1; // 0-indexed
     }
 
-    // Sandstormer
-    public int getSandstormerBurstShots() {
-        return config.getInt("mythic-items.sandstormer.burst.shots", 3);
+    // BloodWrench Crossbow
+    public int getBloodwrenchBurstShots() {
+        return config.getInt("mythic-items.bloodwrench.burst.shots", 3);
     }
 
-    public int getSandstormerReloadCooldown() {
-        return config.getInt("mythic-items.sandstormer.burst.reload-cooldown-seconds", 14);
+    public int getBloodwrenchReloadCooldown() {
+        return config.getInt("mythic-items.bloodwrench.burst.reload-cooldown-seconds", 14);
     }
 
-    public long getSandstormerSuperchargeTime() {
-        return config.getLong("mythic-items.sandstormer.supercharge.charge-time-seconds", 28) * 1000;
+    public long getBloodwrenchSuperchargeTime() {
+        return config.getLong("mythic-items.bloodwrench.supercharge.charge-time-seconds", 28) * 1000;
     }
 
-    public int getSandstormerStormDuration() {
-        return config.getInt("mythic-items.sandstormer.supercharge.storm-duration-seconds", 4) * 20;
+    public int getBloodwrenchDuration() {
+        return config.getInt("mythic-items.bloodwrench.supercharge.storm-duration-seconds", 4) * 20;
     }
 
     // Warden Gloves

@@ -110,16 +110,16 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         boolean hasDiamond = hasItem(diamondItem.getMaterial());
 
         if (hasDiamond) {
-            setButton(slot, createPurchasableButton(diamondItem, true));
+            setButton(slot, createPurchasableButtonMaxed(diamondItem, true));
         } else if (hasIron) {
             if (diamondLimitReached) {
                 ItemStack locked = GuiItemUtils.createLockedDiamondItem(diamondItem, currentRound);
                 setButton(slot, GuiButton.of(locked));
             } else {
-                setButton(slot, createPurchasableButton(diamondItem, false));
+                setButton(slot, createPurchasableButtonMaxed(diamondItem, false));
             }
         } else {
-            setButton(slot, createPurchasableButton(ironItem, false));
+            setButton(slot, createPurchasableButtonMaxed(ironItem, false));
         }
     }
 

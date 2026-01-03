@@ -39,17 +39,16 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             final int level = nextLevel;
 
             if (nextLevel > ee.getMaxLevel()) {
-                setButton(slot++, GuiButton.of(GuiItemUtils.createMaxedEnchant(ee)));
+                setButton(slot, GuiButton.of(GuiItemUtils.createMaxedEnchant(ee)));
             } else {
                 long price = ee.getPriceForLevel(nextLevel);
                 ItemStack enchantItem = GuiItemUtils.createEnchantItem(ee, nextLevel, price);
-                setButton(slot++, GuiButton.of(enchantItem).onClick(p -> handleEnchantPurchase(enchant, level)));
+                setButton(slot, GuiButton.of(enchantItem).onClick(p -> handleEnchantPurchase(enchant, level)));
             }
 
             // Skip to next row at certain slots
-            if (slot == 17) slot = 19;
-            if (slot == 26) slot = 28;
-            if (slot == 35) slot = 37;
+            slot += 2;
+            if (slot == 18) slot = 28;
         }
     }
 

@@ -21,7 +21,7 @@ public enum CustomItem implements Purchasable {
             "Medic Pouch",
             "Right-click ally: Heal 5 hearts. Right-click air: Heal yourself 3 hearts. Excess healing becomes absorption. 10 second cooldown."
     ),
-    TABLET_OF_HACKING(Material.MAP, "tablet-of-hacking", 1, 0,
+    TABLET_OF_HACKING(Material.FILLED_MAP, "tablet-of-hacking", 1, 0,
             "Tablet of Hacking",
             "Shows enemy team's coin amounts during this shopping phase."
     ),

@@ -8,7 +8,6 @@ import me.psikuvit.cashClash.manager.items.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
-import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
@@ -89,8 +88,7 @@ public class InteractListener implements Listener {
         if (handleSupplyDrop(event, player, item, action)) return;
         if (handleCustomItem(event, player, item, action)) return;
         if (handleMythicItem(event, player, item, action)) return;
-        if (handleCustomArmor(player, action)) return;
-        handleConsumable(event, player, item, action);
+        handleCustomArmor(player, action);
     }
 
     // ==================== ENDER PEARL ====================
@@ -272,13 +270,6 @@ public class InteractListener implements Listener {
                 mythicManager.useWardenShockwave(player);
                 return true;
             }
-            case BLAZEBITE_CROSSBOWS -> {
-                if (player.isSneaking()) {
-                    event.setCancelled(true);
-                    mythicManager.toggleBlazebiteMode(player);
-                    return true;
-                }
-            }
             case BLOODWRENCH_CROSSBOW -> {
                 mythicManager.startSandstormerCharge(player);
                 return true;
@@ -289,64 +280,16 @@ public class InteractListener implements Listener {
 
     // ==================== CUSTOM ARMOR (Magic Helmet) ====================
 
-    private boolean handleCustomArmor(Player player, Action action) {
-        if (!action.isRightClick()) return false;
-
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) return false;
-
-        if (isInShoppingPhase(player)) return false;
-
-        armorManager.onMagicHelmetRightClick(player);
-        return true; // Don't cancel - let other handlers process too
-    }
-
-    // ==================== CONSUMABLES ====================
-
-    private void handleConsumable(PlayerInteractEvent event, Player player, ItemStack item, Action action) {
+    private void handleCustomArmor(Player player, Action action) {
         if (!action.isRightClick()) return;
 
-        FoodItem fi = PDCDetection.getFood(item);
-        if (fi == null) return;
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) return;
 
-        if (fi.getDescription().isEmpty()) return;
+        if (isInShoppingPhase(player)) return;
 
-        if (isInShoppingPhase(player)) {
-            event.setCancelled(true);
-            Messages.send(player, "<red>You cannot use special consumables during the shopping phase!</red>");
-            return;
-        }
+        armorManager.onMagicHelmetRightClick(player);
 
-        if (player.getFoodLevel() >= 20) {
-            event.setCancelled(true);
-
-            switch (fi) {
-                case SPEED_CARROT -> applyConsumable(player, new PotionEffect(PotionEffectType.SPEED, 20 * 20, 0), "<green>Speed I activated!</green>");
-                case GOLDEN_CHICKEN -> applyAbsorption(player);
-                case COOKIE_OF_LIFE -> applyConsumable(player, new PotionEffect(PotionEffectType.REGENERATION, 14 * 20, 0), "<dark_green>Regeneration I activated!</dark_green>");
-                case SUNSCREEN -> applyConsumable(player, new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 30 * 20, 0), "<aqua>Fire Resistance activated!</aqua>");
-                case CAN_OF_SPINACH -> applyConsumable(player, new PotionEffect(PotionEffectType.STRENGTH, 15 * 20, 0), "<gold>Spinach Strength activated!</gold>");
-            }
-
-            item.setAmount(item.getAmount() - 1);
-        }
-    }
-
-    private void applyConsumable(Player p, PotionEffect effect, String msg) {
-        p.removePotionEffect(effect.getType());
-        p.addPotionEffect(effect);
-        Messages.send(p, msg);
-        SoundUtils.play(p, Sound.ENTITY_PLAYER_BURP, 1.0f, 1.0f);
-    }
-
-    private void applyAbsorption(Player p) {
-        double maxAbsorption = 3 * 2.0;
-        double currentAbsorption = p.getAbsorptionAmount();
-        if (currentAbsorption < maxAbsorption) {
-            p.setAbsorptionAmount(maxAbsorption);
-        }
-        Messages.send(p, "<gold>+3 Absorption Hearts!</gold>");
-        SoundUtils.play(p, Sound.ENTITY_PLAYER_BURP, 1.0f, 1.0f);
     }
 
     // ==================== UTILITIES ====================

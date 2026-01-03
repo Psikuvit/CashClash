@@ -235,7 +235,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
     /**
      * Create a purchasable button with click handler.
      */
-    protected GuiButton createPurchasableButton(Purchasable item, boolean maxed) {
+    protected GuiButton createPurchasableButtonMaxed(Purchasable item, boolean maxed) {
         ItemStack itemStack = GuiItemUtils.createUpgradableItem(item, maxed);
         return GuiButton.of(itemStack).onClick((p, clickType) -> {
             if (maxed) {
@@ -250,7 +250,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
     /**
      * Create a shop item button with click handler.
      */
-    protected GuiButton createShopItemButton(Purchasable item, int quantity) {
+    protected GuiButton createPurchasableButton(Purchasable item, int quantity) {
         ItemStack itemStack = GuiItemUtils.createShopItem(viewer, item, quantity);
         return GuiButton.of(itemStack).onClick((p, clickType) -> handlePurchasableClick(item, clickType));
     }

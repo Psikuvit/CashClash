@@ -18,20 +18,20 @@ public class UtilityCategoryGui extends AbstractShopCategoryGui {
     @Override
     protected void populateItems() {
         // Row 2
-        setButton(11, createShopItemButton(UtilityItem.LAVA_BUCKET, 1));
-        setButton(12, createShopItemButton(UtilityItem.FISHING_ROD, 1));
-        setButton(13, createShopItemButton(UtilityItem.COBWEB, 4));
-        setButton(15, createShopItemButton(UtilityItem.CROSSBOW, 1));
+        setButton(11, createPurchasableButton(UtilityItem.LAVA_BUCKET, 1));
+        setButton(12, createPurchasableButton(UtilityItem.FISHING_ROD, 1));
+        setButton(13, createPurchasableButton(UtilityItem.COBWEB, 4));
+        setButton(15, createPurchasableButton(UtilityItem.CROSSBOW, 1));
 
         // Row 3
-        setButton(20, createShopItemButton(UtilityItem.LEAVES, 16));
-        setButton(21, createShopItemButton(UtilityItem.WATER_BUCKET, 1));
-        setButton(22, createShopItemButton(UtilityItem.WIND_CHARGE, 4));
-        setButton(24, createShopItemButton(UtilityItem.BOW, 1));
+        setButton(20, createPurchasableButton(UtilityItem.LEAVES, 16));
+        setButton(21, createPurchasableButton(UtilityItem.WATER_BUCKET, 1));
+        setButton(22, createPurchasableButton(UtilityItem.WIND_CHARGE, 4));
+        setButton(24, createPurchasableButton(UtilityItem.BOW, 1));
 
         // Row 4
-        setButton(30, createShopItemButton(UtilityItem.SOUL_SAND, 16));
-        setButton(33, createShopItemButton(UtilityItem.ARROWS, 5));
+        setButton(30, createPurchasableButton(UtilityItem.SOUL_SAND, 16));
+        setButton(33, createPurchasableButton(UtilityItem.ARROWS, 5));
     }
 }
 

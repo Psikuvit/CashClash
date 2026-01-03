@@ -631,20 +631,20 @@ public class MythicItemManager {
      * Burst attack - 3 arrows before reload.
      * 14 second cooldown after all shots used.
      */
-    public boolean handleSandstormerShot(Player player) {
+    public boolean handleBloodwrenchShot(Player player) {
         UUID uuid = player.getUniqueId();
 
         Messages.debug(player, "BLOODWRENCH_CROSSBOW: Shot triggered");
 
-        int shots = sandstormerShotsRemaining.getOrDefault(uuid, cfg.getSandstormerBurstShots());
+        int shots = sandstormerShotsRemaining.getOrDefault(uuid, cfg.getBloodwrenchBurstShots());
         if (shots <= 0) {
             if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD)) {
                 Messages.debug(player, "BLOODWRENCH_CROSSBOW: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD) + "s");
                 Messages.send(player, "<red>Sandstormer reloading! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD) + "s)</red>");
                 return false;
             }
-            sandstormerShotsRemaining.put(uuid, cfg.getSandstormerBurstShots());
-            shots = cfg.getSandstormerBurstShots();
+            sandstormerShotsRemaining.put(uuid, cfg.getBloodwrenchBurstShots());
+            shots = cfg.getBloodwrenchBurstShots();
             Messages.debug(player, "BLOODWRENCH_CROSSBOW: Reloaded! Shots reset to " + shots);
         }
 
@@ -652,8 +652,8 @@ public class MythicItemManager {
         Messages.debug(player, "BLOODWRENCH_CROSSBOW: Shot fired! Remaining: " + (shots - 1));
 
         if (shots - 1 <= 0) {
-            cooldownManager.setCooldown(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD, cfg.getSandstormerReloadCooldown());
-            Messages.debug(player, "BLOODWRENCH_CROSSBOW: Out of shots, reloading for " + cfg.getSandstormerReloadCooldown() + "s");
+            cooldownManager.setCooldown(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD, cfg.getBloodwrenchReloadCooldown());
+            Messages.debug(player, "BLOODWRENCH_CROSSBOW: Out of shots, reloading for " + cfg.getBloodwrenchReloadCooldown() + "s");
             Messages.send(player, "<yellow>Sandstormer reloading...</yellow>");
         }
 
@@ -671,11 +671,11 @@ public class MythicItemManager {
     /**
      * Check if Sandstormer is supercharged (held charged for 28 seconds).
      */
-    public boolean isSandstormerSupercharged(Player player) {
+    public boolean isBloodwrenchSupercharged(Player player) {
         long start = cooldownManager.getTimestamp(player.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE);
         if (start == 0) return false;
         boolean supercharged = cooldownManager.hasTimePassedSeconds(player.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE,
-                ItemsConfig.getInstance().getSandstormerSuperchargeTime() / 1000);
+                ItemsConfig.getInstance().getBloodwrenchSuperchargeTime() / 1000);
         if (supercharged) {
             Messages.debug(player, "BLOODWRENCH_CROSSBOW: Supercharged! (held for 28s+)");
         }
@@ -710,13 +710,13 @@ public class MythicItemManager {
         }, 0L, 20L);
 
         // Levitation IV for 4 seconds
-        victim.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, cfg.getSandstormerStormDuration(), 3, false, true));
+        victim.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, cfg.getBloodwrenchDuration(), 3, false, true));
 
-        SchedulerUtils.runTaskLater(Objects.requireNonNull(damageTask)::cancel, cfg.getSandstormerStormDuration());
+        SchedulerUtils.runTaskLater(Objects.requireNonNull(damageTask)::cancel, cfg.getBloodwrenchDuration());
 
         activeTasks.computeIfAbsent(shooter.getUniqueId(), k -> new ArrayList<>()).add(damageTask);
 
-        Messages.debug(shooter, "BLOODWRENCH_CROSSBOW: Sandstorm activated! Duration: " + (cfg.getSandstormerStormDuration() / 20) + "s");
+        Messages.debug(shooter, "BLOODWRENCH_CROSSBOW: Sandstorm activated! Duration: " + (cfg.getBloodwrenchDuration() / 20) + "s");
         SoundUtils.play(victim, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.5f);
         Messages.send(shooter, "<gold>Supercharged shot!</gold>");
     }

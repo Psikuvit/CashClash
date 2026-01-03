@@ -22,22 +22,22 @@ public class WeaponsCategoryGui extends AbstractShopCategoryGui {
         boolean hasIronSword = hasItem(Material.IRON_SWORD);
         boolean hasDiamondSword = hasItem(Material.DIAMOND_SWORD);
         if (hasDiamondSword) {
-            setButton(23, createPurchasableButton(WeaponItem.DIAMOND_SWORD, true));
+            setButton(23, createPurchasableButtonMaxed(WeaponItem.DIAMOND_SWORD, true));
         } else if (hasIronSword) {
-            setButton(23, createPurchasableButton(WeaponItem.DIAMOND_SWORD, false));
+            setButton(23, createPurchasableButtonMaxed(WeaponItem.DIAMOND_SWORD, false));
         } else {
-            setButton(23, createPurchasableButton(WeaponItem.IRON_SWORD, false));
+            setButton(23, createPurchasableButtonMaxed(WeaponItem.IRON_SWORD, false));
         }
 
         // Axe progression
         boolean hasIronAxe = hasItem(Material.IRON_AXE);
         boolean hasDiamondAxe = hasItem(Material.DIAMOND_AXE);
         if (hasDiamondAxe) {
-            setButton(21, createPurchasableButton(WeaponItem.DIAMOND_AXE, true));
+            setButton(21, createPurchasableButtonMaxed(WeaponItem.DIAMOND_AXE, true));
         } else if (hasIronAxe) {
-            setButton(21, createPurchasableButton(WeaponItem.DIAMOND_AXE, false));
+            setButton(21, createPurchasableButtonMaxed(WeaponItem.DIAMOND_AXE, false));
         } else {
-            setButton(21, createPurchasableButton(WeaponItem.IRON_AXE, false));
+            setButton(21, createPurchasableButtonMaxed(WeaponItem.IRON_AXE, false));
         }
     }
 }

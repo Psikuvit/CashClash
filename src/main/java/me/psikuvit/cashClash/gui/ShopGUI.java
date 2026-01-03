@@ -48,16 +48,15 @@ public class ShopGUI extends AbstractGui {
 
     @Override
     protected void build() {
-        // Category buttons - Row 2
-        setButton(11, createCategoryButton(ShopCategory.WEAPONS, Material.IRON_AXE));
-        setButton(12, createCategoryButton(ShopCategory.ARMOR, Material.DIAMOND_CHESTPLATE));
-        setButton(13, createCategoryButton(ShopCategory.FOOD, Material.GOLDEN_APPLE));
-        setButton(14, createCategoryButton(ShopCategory.UTILITY, Material.ENDER_PEARL));
-        setButton(15, createCategoryButton(ShopCategory.CUSTOM_ITEMS, Material.NAME_TAG));
+        setButton(12, createCategoryButton(ShopCategory.WEAPONS, Material.IRON_AXE));
+        setButton(13, createCategoryButton(ShopCategory.ARMOR, Material.DIAMOND_CHESTPLATE));
+        setButton(14, createCategoryButton(ShopCategory.FOOD, Material.GOLDEN_APPLE));
 
-        // Row 3
         setButton(21, createCategoryButton(ShopCategory.ENCHANTS, Material.ENCHANTING_TABLE));
-        setButton(23, createInvestmentCategoryButton());
+        setButton(22, createCategoryButton(ShopCategory.UTILITY, Material.ENDER_PEARL));
+        setButton(23, createCategoryButton(ShopCategory.CUSTOM_ITEMS, Material.NAME_TAG));
+
+        setButton(31, createInvestmentCategoryButton());
 
         // Mythic items section
         addMythicItems();
@@ -98,12 +97,8 @@ public class ShopGUI extends AbstractGui {
         if (session.getCurrentRound() == 1) {
             // Round 1 - show locked mythics
             for (int slot : legendSlots) {
-                ItemStack itemStack = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-                ItemMeta itemMeta = itemStack.getItemMeta();
-                itemMeta.displayName(Component.empty());
-                itemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-                itemStack.setItemMeta(itemMeta);
-                setItem(slot + 9, itemStack);
+                setItem(slot, ItemStack.empty());
+                setItem(slot + 9, createPane(Material.BLACK_STAINED_GLASS_PANE));
             }
             return;
         }
@@ -117,6 +112,7 @@ public class ShopGUI extends AbstractGui {
         // Legendaries header
         ItemStack legendHeader = new ItemStack(Material.DRAGON_HEAD);
         ItemMeta legendHeaderMeta = legendHeader.getItemMeta();
+
         legendHeaderMeta.displayName(Messages.parse("<dark_purple><bold>✦ MYTHIC WEAPONS ✦</bold></dark_purple>"));
         List<Component> headerLore = new ArrayList<>();
         headerLore.add(Component.empty());

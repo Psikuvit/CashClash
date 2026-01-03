@@ -121,7 +121,7 @@ public enum CustomArmorItem implements Purchasable {
             case MAGIC_HELMET ->
                     "<gray>Right-click to cycle effects: Resistance I → Absorption I → Speed I. Each lasts 4s.</gray>";
             case BUNNY_SHOES ->
-                    "<gray>Activate to gain Speed II + Jump Boost I for 15s. 25s cooldown.</gray>";
+                    "<gray>Crouch to activate Speed II + Jump Boost I for 15s. 25s cooldown.</gray>";
             case GUARDIANS_VEST ->
                     "<gray>Provides Resistance II when low on health (limited uses per round).</gray>";
             case FLAMEBRINGER_BOOTS, FLAMEBRINGER_LEGGINGS ->

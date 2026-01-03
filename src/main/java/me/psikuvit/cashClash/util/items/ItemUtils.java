@@ -121,6 +121,9 @@ public final class ItemUtils {
 
         if (meta != null) {
             if (si instanceof FoodItem food) {
+                FoodProperties.Builder builder = it.getData(DataComponentTypes.FOOD).toBuilder();
+                builder.canAlwaysEat(true);
+                it.setData(DataComponentTypes.FOOD, builder.build());
                 if (!food.getDescription().isEmpty()) {
                     meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, si.name());
                     meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
