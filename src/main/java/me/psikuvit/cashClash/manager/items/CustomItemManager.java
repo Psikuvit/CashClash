@@ -268,32 +268,43 @@ public class CustomItemManager {
 
     public void useTabletOfHacking(Player player, ItemStack item) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) {
-            Messages.send(player, "<red>You must be in a game!</red>");
+        if (session == null || !session.getState().isShopping()) {
+            Messages.send(player, "<red>You must be in a game and in the shopping phase!");
             return;
         }
-
         Team playerTeam = session.getPlayerTeam(player);
         if (playerTeam == null) return;
 
-        Team enemyTeam = playerTeam.getTeamNumber() == 1 ? session.getTeam2() : session.getTeam1();
+        Team enemyTeam = session.getOpposingTeam(playerTeam);
+        if (enemyTeam == null) return;
 
-        Messages.send(player, "<gold><bold>===== ENEMY TEAM COINS =====</bold></gold>");
-
-        for (UUID enemyUuid : enemyTeam.getPlayers()) {
-            CashClashPlayer enemyCcp = session.getCashClashPlayer(enemyUuid);
-            Player enemyPlayer = Bukkit.getPlayer(enemyUuid);
-
-            if (enemyCcp != null && enemyPlayer != null) {
-                Messages.send(player, "<yellow>" + enemyPlayer.getName() + ": <gold>$" +
-                        String.format("%,d", enemyCcp.getCoins()) + "</gold></yellow>");
-            }
+        long cost = 2000L;
+        CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
+        if (ccp == null || ccp.getCoins() < cost) {
+            Messages.send(player, "<red>Not enough coins to use Tablet of Hacking! Cost: $2,000");
+            return;
         }
 
-        Messages.send(player, "<gold><bold>============================</bold></gold>");
+        PlayerSelectorGUI.openTabletOfHacking(player, enemyTeam.getPlayers());
+    }
 
-        consumeItem(player, item);
-        SoundUtils.play(player, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.5f);
+    // Called when a player selects an enemy in the PlayerSelector for Tablet of Hacking
+    public void handleTabletOfHackingSelection(Player viewer, Player target) {
+        GameSession session = GameManager.getInstance().getPlayerSession(viewer);
+        if (session == null || !session.getState().isShopping()) {
+            Messages.send(viewer, "<red>You must be in a game and in the shopping phase!");
+            return;
+        }
+        long cost = 2000L;
+        CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
+        if (ccp == null || ccp.getCoins() < cost) {
+            Messages.send(viewer, "<red>Not enough coins to use Tablet of Hacking! Cost: $2,000");
+            return;
+        }
+        ccp.deductCoins(cost);
+        viewer.openInventory(target.getInventory());
+        Messages.send(viewer, "<gray>Viewing " + target.getName() + "'s inventory.</gray>");
+        SoundUtils.play(viewer, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.5f);
     }
 
     // ==================== INVIS CLOAK IMPLEMENTATION ====================
