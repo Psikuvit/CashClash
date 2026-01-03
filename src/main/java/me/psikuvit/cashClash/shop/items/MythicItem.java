@@ -34,7 +34,7 @@ public enum MythicItem implements Purchasable {
             "Throwable spear with Power 4 damage + Poison III for 2s. Goes through shields (15s cooldown). " +
             "Fast attack speed, +1 block range."
     ),
-    SANDSTORMER(Material.CROSSBOW, "sandstormer",
+    BLOODWRENCH_CROSSBOW(Material.CROSSBOW, "sandstormer",
             "Sandstormer",
             "Burst fire 3 arrows (14s cooldown). Hold charged 28s for supercharged shot: " +
             "sandstorm effect (1-3 hearts/sec) + Levitation IV for 4s."

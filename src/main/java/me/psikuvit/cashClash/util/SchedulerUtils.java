@@ -30,7 +30,7 @@ public class SchedulerUtils {
             return Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), runnable, ticks);
         } catch (IllegalPluginAccessException ex) {
             Messages.debug("SYSTEM", "Scheduler prevented runTaskLater: " + ex.getMessage());
-            return  null;
+            return null;
         }
     }
 

@@ -43,7 +43,6 @@ public class ShopManager {
 
     private BukkitTask lookAtPlayerTask;
 
-
     private ShopManager() {
         this.sessionShops = new HashMap<>();
         this.entityToSession = new HashMap<>();

@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.potion.PotionEffect;
 
 /**
  * Handles player connection events
@@ -27,9 +28,9 @@ public class PlayerConnectionListener implements Listener {
         player.setFoodLevel(20);
         player.setSaturation(20.0f);
 
-        player.getActivePotionEffects().forEach(effect ->
-            player.removePotionEffect(effect.getType())
-        );
+        player.getActivePotionEffects().stream().
+                map(PotionEffect::getType).
+                forEach(player::removePotionEffect);
 
         PlayerDataManager.getInstance().getOrLoadData(player.getUniqueId());
         Messages.debug(player, "SYSTEM", "Player joined and data loaded");
