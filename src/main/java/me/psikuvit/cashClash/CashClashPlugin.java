@@ -3,23 +3,16 @@ package me.psikuvit.cashClash;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.command.CommandHandler;
 import me.psikuvit.cashClash.gui.builder.GuiListener;
+import me.psikuvit.cashClash.listener.BlockListener;
+import me.psikuvit.cashClash.listener.DamageListener;
+import me.psikuvit.cashClash.listener.GameListener;
+import me.psikuvit.cashClash.listener.InteractListener;
+import me.psikuvit.cashClash.listener.MoveListener;
 import me.psikuvit.cashClash.listener.PlayerConnectionListener;
-import me.psikuvit.cashClash.listener.game.BlockProtectionListener;
-import me.psikuvit.cashClash.listener.game.DamageListener;
-import me.psikuvit.cashClash.listener.game.DeathListener;
-import me.psikuvit.cashClash.listener.game.EnderPearlListener;
-import me.psikuvit.cashClash.listener.game.InteractListener;
-import me.psikuvit.cashClash.listener.game.ShopListener;
-import me.psikuvit.cashClash.listener.game.ShopPhaseProtectionListener;
-import me.psikuvit.cashClash.listener.game.SupplyDropListener;
-import me.psikuvit.cashClash.listener.items.ConsumableListener;
-import me.psikuvit.cashClash.listener.items.CustomArmorListener;
-import me.psikuvit.cashClash.listener.items.CustomItemListener;
-import me.psikuvit.cashClash.listener.items.MythicItemListener;
-import me.psikuvit.cashClash.listener.lobby.LobbyProtectionListener;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
+import me.psikuvit.cashClash.util.CooldownManager;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -60,6 +53,7 @@ public final class CashClashPlugin extends JavaPlugin {
         ScoreboardManager.getInstance().shutdown();
         PlayerDataManager.getInstance().shutdown();
         GameManager.getInstance().shutdown();
+        CooldownManager.getInstance().clearAll();
 
         getLogger().info("Cash Clash has been disabled!");
     }
@@ -71,20 +65,12 @@ public final class CashClashPlugin extends JavaPlugin {
     private void registerEvents() {
         Listener[] listeners = {
                 new GuiListener(),
-                new BlockProtectionListener(),
+                new BlockListener(),
                 new DamageListener(),
-                new DeathListener(),
-                new EnderPearlListener(),
                 new InteractListener(),
-                new ShopListener(),
-                new SupplyDropListener(),
-                new ConsumableListener(),
-                new CustomArmorListener(),
-                new CustomItemListener(),
-                new MythicItemListener(),
-                new LobbyProtectionListener(),
+                new MoveListener(),
+                new GameListener(),
                 new PlayerConnectionListener(),
-                new ShopPhaseProtectionListener(),
         };
 
         for (Listener listener : listeners) {

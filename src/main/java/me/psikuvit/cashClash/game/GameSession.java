@@ -6,7 +6,7 @@ import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.kit.Kit;
-import me.psikuvit.cashClash.listener.game.BlockProtectionListener;
+import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.manager.game.CashQuakeManager;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -346,7 +346,7 @@ public class GameSession {
         if (bonusManager != null) bonusManager.cleanup();
 
         // Clean up tracked player-placed blocks
-        BlockProtectionListener.cleanupSession(sessionId);
+        BlockListener.cleanupSession(sessionId);
 
         if (gameWorld != null) {
             Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
