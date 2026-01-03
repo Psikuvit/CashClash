@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -60,36 +61,30 @@ public class MythicItemManager {
 
     private static MythicItemManager instance;
     private final ItemsConfig cfg = ItemsConfig.getInstance();
+    private final CooldownManager cooldownManager;
 
     private final Map<UUID, Map<UUID, MythicItem>> playerMythics;
     private final Map<UUID, Set<MythicItem>> sessionPurchasedMythics;
     private final Map<UUID, List<MythicItem>> sessionAvailableMythics;
-    private final Map<UUID, Map<String, Long>> cooldowns;
 
     // Sandstormer charge tracking
-    private final Map<UUID, Long> sandstormerChargeStart;
     private final Map<UUID, Integer> sandstormerShotsRemaining;
 
     // BlazeBite mode tracking (true = glacier, false = volcano)
     private final Map<UUID, Boolean> blazebiteMode;
     private final Map<UUID, Integer> blazebiteShotsRemaining;
 
-    // Carl's Battleaxe crit tracking
-    private final Map<UUID, Long> carlsCritCooldown;
-
     // Active tasks for cleanup
     private final Map<UUID, List<BukkitTask>> activeTasks;
 
     private MythicItemManager() {
+        cooldownManager = CooldownManager.getInstance();
         playerMythics = new HashMap<>();
         sessionPurchasedMythics = new HashMap<>();
         sessionAvailableMythics = new HashMap<>();
-        cooldowns = new HashMap<>();
-        sandstormerChargeStart = new HashMap<>();
         sandstormerShotsRemaining = new HashMap<>();
         blazebiteMode = new HashMap<>();
         blazebiteShotsRemaining = new HashMap<>();
-        carlsCritCooldown = new HashMap<>();
         activeTasks = new HashMap<>();
     }
 
@@ -287,35 +282,10 @@ public class MythicItemManager {
                 );
                 meta.addAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, reachMod);
             }
-            case BLOODWRENCH_CROSSBOW -> {
-                meta.addEnchant(Enchantment.MULTISHOT, 1, false);
-            }
+            case BLOODWRENCH_CROSSBOW -> meta.addEnchant(Enchantment.MULTISHOT, 1, false);
             default -> {
             }
         }
-    }
-
-    // ==================== COOLDOWN MANAGEMENT ====================
-
-    private boolean isOnCooldown(UUID player, String ability) {
-        Map<String, Long> playerCooldowns = cooldowns.get(player);
-        if (playerCooldowns == null) return false;
-        Long cooldownEnd = playerCooldowns.get(ability);
-        return cooldownEnd != null && System.currentTimeMillis() < cooldownEnd;
-    }
-
-    private long getRemainingCooldown(UUID player, String ability) {
-        Map<String, Long> playerCooldowns = cooldowns.get(player);
-        if (playerCooldowns == null) return 0;
-
-        Long cooldownEnd = playerCooldowns.get(ability);
-        if (cooldownEnd == null) return 0;
-        return Math.max(0, (cooldownEnd - System.currentTimeMillis()) / 1000);
-    }
-
-    private void setCooldown(UUID player, String ability, long seconds) {
-        cooldowns.computeIfAbsent(player, k -> new HashMap<>())
-                 .put(ability, System.currentTimeMillis() + (seconds * 1000));
     }
 
     // ==================== COIN CLEAVER ====================
@@ -377,9 +347,9 @@ public class MythicItemManager {
 
         Messages.debug(player, "COIN_CLEAVER: Grenade ability triggered");
 
-        if (isOnCooldown(uuid, "coin_cleaver_grenade")) {
-            Messages.debug(player, "COIN_CLEAVER: On cooldown - " + getRemainingCooldown(uuid, "coin_cleaver_grenade") + "s remaining");
-            Messages.send(player, "<red>Grenade on cooldown! (" + getRemainingCooldown(uuid, "coin_cleaver_grenade") + "s)</red>");
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE)) {
+            Messages.debug(player, "COIN_CLEAVER: On cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE) + "s remaining");
+            Messages.send(player, "<red>Grenade on cooldown! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE) + "s)</red>");
             return;
         }
 
@@ -397,7 +367,7 @@ public class MythicItemManager {
         }
 
         ccp.deductCoins(cfg.getCoinCleaverGrenadeCost());
-        setCooldown(uuid, "coin_cleaver_grenade", cfg.getCoinCleaverGrenadeCooldown());
+        cooldownManager.setCooldown(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE, cfg.getCoinCleaverGrenadeCooldown());
 
         Messages.debug(player, "COIN_CLEAVER: Grenade fired! Cost: $" + cfg.getCoinCleaverGrenadeCost() + ", Cooldown: " + cfg.getCoinCleaverGrenadeCooldown() + "s");
 
@@ -444,12 +414,12 @@ public class MythicItemManager {
 
         Messages.debug(attacker, "CARLS_BATTLEAXE: Charged attack detected");
 
-        if (isOnCooldown(uuid, "carls_charged")) {
-            Messages.debug(attacker, "CARLS_BATTLEAXE: Charged attack on cooldown - " + getRemainingCooldown(uuid, "carls_charged") + "s");
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH)) {
+            Messages.debug(attacker, "CARLS_BATTLEAXE: Charged attack on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH) + "s");
             return;
         }
 
-        setCooldown(uuid, "carls_charged", cfg.getCarlsChargedCooldown());
+        cooldownManager.setCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH, cfg.getCarlsChargedCooldown());
 
         // Grant Speed III (level 2) and Strength I (level 0) for 25 seconds
         attacker.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, cfg.getCarlsBuffDuration(), 2, false, true));
@@ -467,18 +437,15 @@ public class MythicItemManager {
      */
     public void handleCarlsCriticalHit(Player attacker, Player victim) {
         UUID uuid = attacker.getUniqueId();
-        
-        long now = System.currentTimeMillis();
 
         Messages.debug(attacker, "CARLS_BATTLEAXE: Critical hit detected (falling)");
 
-        Long lastCrit = carlsCritCooldown.get(uuid);
-        if (lastCrit != null && now - lastCrit < cfg.getCarlsCritCooldown()) {
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_CRIT)) {
             Messages.debug(attacker, "CARLS_BATTLEAXE: Crit launch on cooldown");
             return;
         }
 
-        carlsCritCooldown.put(uuid, now);
+        cooldownManager.setCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_CRIT, cfg.getCarlsCritCooldown() / 1000);
 
         // Launch victim into the air
         victim.setVelocity(new Vector(0, cfg.getCarlsCritLaunchPower(), 0));
@@ -501,13 +468,13 @@ public class MythicItemManager {
 
         Messages.debug(player, "WIND_BOW: Boost ability triggered");
 
-        if (isOnCooldown(uuid, "wind_bow_boost")) {
-            Messages.debug(player, "WIND_BOW: Boost on cooldown - " + getRemainingCooldown(uuid, "wind_bow_boost") + "s");
-            Messages.send(player, "<red>Wind boost on cooldown! (" + getRemainingCooldown(uuid, "wind_bow_boost") + "s)</red>");
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_BOOST)) {
+            Messages.debug(player, "WIND_BOW: Boost on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST) + "s");
+            Messages.send(player, "<red>Wind boost on cooldown! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST) + "s)</red>");
             return;
         }
 
-        setCooldown(uuid, "wind_bow_boost", cfg.getWindBowBoostCooldown());
+        cooldownManager.setCooldown(uuid, CooldownManager.Keys.WIND_BOW_BOOST, cfg.getWindBowBoostCooldown());
 
         Vector direction = player.getLocation().getDirection();
         direction.setY(Math.max(direction.getY() + 0.5, 0.5));
@@ -559,11 +526,11 @@ public class MythicItemManager {
 
         Messages.debug(attacker, "ELECTRIC_EEL: Chain damage check");
 
-        if (isOnCooldown(uuid, "eel_chain")) {
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_CHAIN)) {
             Messages.debug(attacker, "ELECTRIC_EEL: Chain on cooldown");
             return;
         }
-        setCooldown(uuid, "eel_chain", cfg.getEelChainCooldown());
+        cooldownManager.setCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_CHAIN, cfg.getEelChainCooldown());
 
         GameSession session = GameManager.getInstance().getPlayerSession(attacker);
         if (session == null) {
@@ -606,9 +573,9 @@ public class MythicItemManager {
 
         Messages.debug(player, "ELECTRIC_EEL: Teleport ability triggered");
 
-        if (isOnCooldown(uuid, "eel_teleport")) {
-            Messages.debug(player, "ELECTRIC_EEL: Teleport on cooldown - " + getRemainingCooldown(uuid, "eel_teleport") + "s");
-            Messages.send(player, "<red>Teleport on cooldown! (" + getRemainingCooldown(uuid, "eel_teleport") + "s)</red>");
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING)) {
+            Messages.debug(player, "ELECTRIC_EEL: Teleport on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING) + "s");
+            Messages.send(player, "<red>Teleport on cooldown! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING) + "s)</red>");
             return;
         }
 
@@ -637,7 +604,7 @@ public class MythicItemManager {
         // Effects at destination
         world.spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
 
-        setCooldown(uuid, "eel_teleport", cfg.getEelTeleportCooldown());
+        cooldownManager.setCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING, cfg.getEelTeleportCooldown());
         Messages.debug(player, "ELECTRIC_EEL: Teleported! Distance: " + distance + ", Cooldown: " + cfg.getEelTeleportCooldown() + "s");
         Messages.send(player, "<aqua>Zap!</aqua>");
     }
@@ -671,9 +638,9 @@ public class MythicItemManager {
 
         int shots = sandstormerShotsRemaining.getOrDefault(uuid, cfg.getSandstormerBurstShots());
         if (shots <= 0) {
-            if (isOnCooldown(uuid, "sandstormer")) {
-                Messages.debug(player, "BLOODWRENCH_CROSSBOW: Reloading - " + getRemainingCooldown(uuid, "sandstormer") + "s");
-                Messages.send(player, "<red>Sandstormer reloading! (" + getRemainingCooldown(uuid, "sandstormer") + "s)</red>");
+            if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD)) {
+                Messages.debug(player, "BLOODWRENCH_CROSSBOW: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD) + "s");
+                Messages.send(player, "<red>Sandstormer reloading! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD) + "s)</red>");
                 return false;
             }
             sandstormerShotsRemaining.put(uuid, cfg.getSandstormerBurstShots());
@@ -685,7 +652,7 @@ public class MythicItemManager {
         Messages.debug(player, "BLOODWRENCH_CROSSBOW: Shot fired! Remaining: " + (shots - 1));
 
         if (shots - 1 <= 0) {
-            setCooldown(uuid, "sandstormer", cfg.getSandstormerReloadCooldown());
+            cooldownManager.setCooldown(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD, cfg.getSandstormerReloadCooldown());
             Messages.debug(player, "BLOODWRENCH_CROSSBOW: Out of shots, reloading for " + cfg.getSandstormerReloadCooldown() + "s");
             Messages.send(player, "<yellow>Sandstormer reloading...</yellow>");
         }
@@ -697,7 +664,7 @@ public class MythicItemManager {
      * Start charging Sandstormer for supercharged shot.
      */
     public void startSandstormerCharge(Player player) {
-        sandstormerChargeStart.put(player.getUniqueId(), System.currentTimeMillis());
+        cooldownManager.setTimestamp(player.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE);
         Messages.debug(player, "BLOODWRENCH_CROSSBOW: Started charging for supercharged shot");
     }
 
@@ -705,9 +672,10 @@ public class MythicItemManager {
      * Check if Sandstormer is supercharged (held charged for 28 seconds).
      */
     public boolean isSandstormerSupercharged(Player player) {
-        Long start = sandstormerChargeStart.get(player.getUniqueId());
-        if (start == null) return false;
-        boolean supercharged = System.currentTimeMillis() - start >= ItemsConfig.getInstance().getSandstormerSuperchargeTime();
+        long start = cooldownManager.getTimestamp(player.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE);
+        if (start == 0) return false;
+        boolean supercharged = cooldownManager.hasTimePassedSeconds(player.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE,
+                ItemsConfig.getInstance().getSandstormerSuperchargeTime() / 1000);
         if (supercharged) {
             Messages.debug(player, "BLOODWRENCH_CROSSBOW: Supercharged! (held for 28s+)");
         }
@@ -720,7 +688,7 @@ public class MythicItemManager {
      * Target gets Levitation IV for 4 seconds.
      */
     public void fireSuperchargedSandstormer(Player shooter, Player victim) {
-        sandstormerChargeStart.remove(shooter.getUniqueId());
+        cooldownManager.clearTimestamp(shooter.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE);
 
         Messages.debug(shooter, "BLOODWRENCH_CROSSBOW: Supercharged shot hit " + victim.getName());
 
@@ -766,13 +734,13 @@ public class MythicItemManager {
 
         Messages.debug(player, "WARDEN_GLOVES: Shockwave ability triggered");
 
-        if (isOnCooldown(uuid, "warden_shockwave")) {
-            Messages.debug(player, "WARDEN_GLOVES: Shockwave on cooldown - " + getRemainingCooldown(uuid, "warden_shockwave") + "s");
-            Messages.send(player, "<red>Shockwave on cooldown! (" + getRemainingCooldown(uuid, "warden_shockwave") + "s)</red>");
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE)) {
+            Messages.debug(player, "WARDEN_GLOVES: Shockwave on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE) + "s");
+            Messages.send(player, "<red>Shockwave on cooldown! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE) + "s)</red>");
             return;
         }
 
-        setCooldown(uuid, "warden_shockwave", cfg.getWardenShockwaveCooldown());
+        cooldownManager.setCooldown(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE, cfg.getWardenShockwaveCooldown());
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) {
@@ -827,12 +795,12 @@ public class MythicItemManager {
 
         Messages.debug(player, "WARDEN_GLOVES: Melee attack on " + victim.getName());
 
-        if (isOnCooldown(uuid, "warden_melee")) {
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_MELEE)) {
             Messages.debug(player, "WARDEN_GLOVES: Melee on cooldown");
             return;
         }
 
-        setCooldown(uuid, "warden_melee", cfg.getWardenMeleeCooldown());
+        cooldownManager.setCooldown(uuid, CooldownManager.Keys.WARDEN_MELEE, cfg.getWardenMeleeCooldown());
 
         // Knockback II equivalent
         Vector knockback = victim.getLocation().toVector()
@@ -859,7 +827,7 @@ public class MythicItemManager {
 
         Messages.debug(player, "BLAZEBITE: Toggle mode triggered, current: " + (isGlacier ? "Glacier" : "Volcano"));
 
-        if (isOnCooldown(uuid, "blazebite")) {
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD)) {
             Messages.debug(player, "BLAZEBITE: Cannot toggle while reloading");
             Messages.send(player, "<red>Cannot switch modes while reloading!</red>");
             return;
@@ -887,9 +855,9 @@ public class MythicItemManager {
 
         int shots = blazebiteShotsRemaining.getOrDefault(uuid, cfg.getBlazebiteShotsPerMag());
         if (shots <= 0) {
-            if (isOnCooldown(uuid, "blazebite")) {
-                Messages.debug(player, "BLAZEBITE: Reloading - " + getRemainingCooldown(uuid, "blazebite") + "s");
-                Messages.send(player, "<red>BlazeBite reloading! (" + getRemainingCooldown(uuid, "blazebite") + "s)</red>");
+            if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD)) {
+                Messages.debug(player, "BLAZEBITE: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD) + "s");
+                Messages.send(player, "<red>BlazeBite reloading! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD) + "s)</red>");
                 return false;
             }
             blazebiteShotsRemaining.put(uuid, cfg.getBlazebiteShotsPerMag());
@@ -901,7 +869,7 @@ public class MythicItemManager {
         Messages.debug(player, "BLAZEBITE: Shot fired! Remaining: " + (shots - 1));
 
         if (shots - 1 <= 0) {
-            setCooldown(uuid, "blazebite", cfg.getBlazebiteReloadCooldown());
+            cooldownManager.setCooldown(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD, cfg.getBlazebiteReloadCooldown());
             Messages.debug(player, "BLAZEBITE: Out of shots, reloading for " + cfg.getBlazebiteReloadCooldown() + "s");
             Messages.send(player, "<yellow>BlazeBite reloading...</yellow>");
         }
@@ -978,15 +946,14 @@ public class MythicItemManager {
     // ==================== CLEANUP ====================
 
     public void cleanup() {
-        cooldowns.clear();
-        sandstormerChargeStart.clear();
         sandstormerShotsRemaining.clear();
         blazebiteMode.clear();
         blazebiteShotsRemaining.clear();
-        carlsCritCooldown.clear();
 
         activeTasks.values().forEach(tasks -> tasks.forEach(BukkitTask::cancel));
         activeTasks.clear();
+
+        // Note: cooldowns are managed by CooldownManager and will be cleared when players are cleared
     }
 }
 

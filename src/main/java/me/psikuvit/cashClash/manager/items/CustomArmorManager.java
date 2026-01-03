@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
@@ -31,47 +32,36 @@ public class CustomArmorManager {
 
     private static CustomArmorManager instance;
 
+    private final CooldownManager cooldownManager;
+
     private final Map<UUID, Integer> magicHelmetEffectIndex;
-    private final Map<UUID, Long> magicHelmetCooldownUntil;
 
     // Bunny Shoes tracking
-    private final Map<UUID, Long> bunnyCooldownUntil;
     private final Map<UUID, Boolean> bunnyToggleReady;
 
     // Guardian's Vest tracking
     private final Map<UUID, Integer> guardianUsesThisRound;
-    private final Map<UUID, Long> guardianLastActivated;
 
     // Deathmauler tracking
-    private final Map<UUID, Long> deathmaulerLastDamage;
     private final Map<UUID, Integer> deathmaulerExtraHearts;
 
     // Dragon Set tracking
-    private final Map<UUID, Long> dragonDoubleJumpCooldown;
     private final Set<UUID> dragonCanDoubleJump;
-
-    // Tax Evasion tracking
-    private final Map<UUID, Long> taxEvasionLastMinuteCheck;
 
     private final Random random;
 
     private CustomArmorManager() {
+        this.cooldownManager = CooldownManager.getInstance();
         this.magicHelmetEffectIndex = new ConcurrentHashMap<>();
-        this.magicHelmetCooldownUntil = new ConcurrentHashMap<>();
 
-        this.bunnyCooldownUntil = new ConcurrentHashMap<>();
         this.bunnyToggleReady = new ConcurrentHashMap<>();
 
         this.guardianUsesThisRound = new ConcurrentHashMap<>();
-        this.guardianLastActivated = new ConcurrentHashMap<>();
 
-        this.deathmaulerLastDamage = new ConcurrentHashMap<>();
         this.deathmaulerExtraHearts = new ConcurrentHashMap<>();
 
-        this.dragonDoubleJumpCooldown = new ConcurrentHashMap<>();
         this.dragonCanDoubleJump = ConcurrentHashMap.newKeySet();
 
-        this.taxEvasionLastMinuteCheck = new ConcurrentHashMap<>();
 
         this.random = new Random();
     }
@@ -172,11 +162,9 @@ public class CustomArmorManager {
         if (!hasMagicHelmet(p)) return;
 
         UUID id = p.getUniqueId();
-        long now = System.currentTimeMillis();
-        Long cd = magicHelmetCooldownUntil.getOrDefault(id, 0L);
 
-        if (now < cd) {
-            long remaining = (cd - now) / 1000;
+        if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.MAGIC_HELMET)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(id, CooldownManager.Keys.MAGIC_HELMET);
             Messages.send(p, "<red>Magic Helmet on cooldown: " + remaining + "s</red>");
             return;
         }
@@ -187,7 +175,7 @@ public class CustomArmorManager {
             case 0 -> {
                 // Resistance I for 4 seconds, 4 second cooldown
                 p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 4 * 20, 0, false, true, true));
-                magicHelmetCooldownUntil.put(id, now + 4000L);
+                cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.MAGIC_HELMET, 4);
                 magicHelmetEffectIndex.put(id, 1);
                 Messages.send(p, "<aqua>Resistance I activated! (4s)</aqua>");
                 SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
@@ -195,7 +183,7 @@ public class CustomArmorManager {
             case 1 -> {
                 // Absorption I for 4 seconds, 4 second cooldown
                 p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 4 * 20, 0, false, true, true));
-                magicHelmetCooldownUntil.put(id, now + 4000L);
+                cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.MAGIC_HELMET, 4);
                 magicHelmetEffectIndex.put(id, 2);
                 Messages.send(p, "<gold>Absorption I activated! (4s)</gold>");
                 SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.4f);
@@ -203,7 +191,7 @@ public class CustomArmorManager {
             case 2 -> {
                 // Speed I for 4 seconds, 15 second cooldown
                 p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 4 * 20, 0, false, true, true));
-                magicHelmetCooldownUntil.put(id, now + 15000L);
+                cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.MAGIC_HELMET, 15);
                 magicHelmetEffectIndex.put(id, 0);  // Cycle back to Resistance
                 Messages.send(p, "<green>Speed I activated! (4s) - Cycle complete, 15s cooldown</green>");
                 SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.6f);
@@ -247,12 +235,10 @@ public class CustomArmorManager {
 
     private void tryActivateBunnyShoes(Player p) {
         UUID id = p.getUniqueId();
-        long now = System.currentTimeMillis();
-        Long cd = bunnyCooldownUntil.getOrDefault(id, 0L);
         ItemsConfig cfg = ItemsConfig.getInstance();
 
-        if (now < cd) {
-            long remaining = (cd - now) / 1000;
+        if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.BUNNY_SHOES)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES);
             Messages.send(p, "<red>Bunny Shoes on cooldown: " + remaining + "s</red>");
             return;
         }
@@ -260,7 +246,7 @@ public class CustomArmorManager {
         int duration = cfg.getBunnyShoesDuration();
         p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, duration * 20, 1));
         p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, duration * 20, 0));
-        bunnyCooldownUntil.put(id, now + (cfg.getBunnyShoesCooldown() * 1000L));
+        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES, cfg.getBunnyShoesCooldown());
 
         Messages.send(p, "<green>Bunny Shoes activated! Speed II & Jump Boost for " + duration + " seconds.</green>");
         SoundUtils.play(p, Sound.ENTITY_RABBIT_JUMP, 1.0f, 1.5f);
@@ -277,13 +263,11 @@ public class CustomArmorManager {
         int used = guardianUsesThisRound.getOrDefault(id, 0);
         if (used >= 3) return;
 
-        long now = System.currentTimeMillis();
-        long last = guardianLastActivated.getOrDefault(id, 0L);
-        if (now < last + 20_000L) return;
+        if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.GUARDIAN_VEST)) return;
 
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 15 * 20, 1));
         guardianUsesThisRound.put(id, used + 1);
-        guardianLastActivated.put(id, now);
+        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.GUARDIAN_VEST, 20);
 
         Messages.send(p, "<gold>Guardian's Vest activated! Resistance II for 15 seconds. (" + (used + 1) + "/3 uses)</gold>");
         SoundUtils.play(p, Sound.ITEM_TOTEM_USE, 0.5f, 1.5f);
@@ -320,17 +304,16 @@ public class CustomArmorManager {
         if (!hasDeathmaulerSet(p)) return;
         UUID id = p.getUniqueId();
         ItemsConfig cfg = ItemsConfig.getInstance();
-        deathmaulerLastDamage.put(id, System.currentTimeMillis());
+        cooldownManager.setTimestamp(id, CooldownManager.Keys.DEATHMAULER_DAMAGE);
 
         int delaySeconds = cfg.getDeathmaulerAbsorptionDelay();
         // Schedule absorption check after configured delay without damage
         SchedulerUtils.runTaskLater(() -> {
-            Long last = deathmaulerLastDamage.get(id);
-            if (last == null) return;
-            if (System.currentTimeMillis() - last >= (delaySeconds * 1000L)) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
-                Messages.send(p, "<dark_red>Deathmauler granted 2 absorption hearts!</dark_red>");
+            if (!cooldownManager.hasTimePassedSeconds(id, CooldownManager.Keys.DEATHMAULER_DAMAGE, delaySeconds)) {
+                return;
             }
+            p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
+            Messages.send(p, "<dark_red>Deathmauler granted 2 absorption hearts!</dark_red>");
         }, delaySeconds * 20L);
     }
 
@@ -342,8 +325,7 @@ public class CustomArmorManager {
 
         // Enable double jump on first jump
         if (!dragonCanDoubleJump.contains(id)) {
-            Long cd = dragonDoubleJumpCooldown.getOrDefault(id, 0L);
-            if (System.currentTimeMillis() >= cd) {
+            if (!cooldownManager.isOnCooldown(id, CooldownManager.Keys.DRAGON_DOUBLE_JUMP)) {
                 dragonCanDoubleJump.add(id);
             }
         }
@@ -361,7 +343,7 @@ public class CustomArmorManager {
         Vector velocity = direction.multiply(1.2).setY(0.8);
         p.setVelocity(velocity);
 
-        dragonDoubleJumpCooldown.put(id, System.currentTimeMillis() + (cfg.getDragonDoubleJumpCooldown() * 1000L));
+        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.DRAGON_DOUBLE_JUMP, cfg.getDragonDoubleJumpCooldown());
 
         Messages.send(p, "<light_purple>Dragon Double Jump!</light_purple>");
         SoundUtils.play(p, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.5f);
@@ -381,23 +363,22 @@ public class CustomArmorManager {
     public void onTaxEvasionTick(Player p, GameSession session) {
         if (!hasTaxEvasion(p)) return;
         UUID id = p.getUniqueId();
-        long now = System.currentTimeMillis();
 
-        Long lastCheck = taxEvasionLastMinuteCheck.get(id);
-        if (lastCheck == null) {
-            taxEvasionLastMinuteCheck.put(id, now);
+        long lastCheck = cooldownManager.getTimestamp(id, CooldownManager.Keys.TAX_EVASION_MINUTE);
+        if (lastCheck == 0) {
+            cooldownManager.setTimestamp(id, CooldownManager.Keys.TAX_EVASION_MINUTE);
             return;
         }
 
         // Living for 1 minute grants 3k
-        if (now - lastCheck >= 60_000L) {
+        if (cooldownManager.hasTimePassedSeconds(id, CooldownManager.Keys.TAX_EVASION_MINUTE, 60)) {
             CashClashPlayer ccp = session.getCashClashPlayer(id);
             if (ccp != null) {
                 ccp.addCoins(3000);
                 Messages.send(p, "<green>Tax Evasion Pants: +3,000 coins for surviving 1 minute!</green>");
                 SoundUtils.play(p, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
             }
-            taxEvasionLastMinuteCheck.put(id, now);
+            cooldownManager.setTimestamp(id, CooldownManager.Keys.TAX_EVASION_MINUTE);
         }
     }
 
@@ -434,21 +415,16 @@ public class CustomArmorManager {
 
     public void cleanup() {
         magicHelmetEffectIndex.clear();
-        magicHelmetCooldownUntil.clear();
 
-        bunnyCooldownUntil.clear();
         bunnyToggleReady.clear();
 
         guardianUsesThisRound.clear();
-        guardianLastActivated.clear();
 
-        deathmaulerLastDamage.clear();
         deathmaulerExtraHearts.clear();
 
-        dragonDoubleJumpCooldown.clear();
         dragonCanDoubleJump.clear();
 
-        taxEvasionLastMinuteCheck.clear();
+        // Note: cooldowns are managed by CooldownManager and will be cleared when players are cleared
     }
 }
 

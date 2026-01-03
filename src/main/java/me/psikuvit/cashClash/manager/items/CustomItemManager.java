@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gui.PlayerSelectorGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
@@ -46,9 +47,9 @@ public class CustomItemManager {
 
     private static CustomItemManager instance;
 
-    // Cooldown tracking
-    private final Map<UUID, Long> medicPouchCooldown;
-    private final Map<UUID, Long> invisCloakCooldown;
+    private final CooldownManager cooldownManager;
+
+    // Invis Cloak state tracking
     private final Map<UUID, Integer> invisCloakUsesRemaining;
     private final Set<UUID> invisCloakActive;
     private final Map<UUID, BukkitTask> invisCloakTasks;
@@ -70,8 +71,7 @@ public class CustomItemManager {
     private final Set<UUID> playersRevivedThisRound;
 
     private CustomItemManager() {
-        this.medicPouchCooldown = new HashMap<>();
-        this.invisCloakCooldown = new HashMap<>();
+        this.cooldownManager = CooldownManager.getInstance();
         this.invisCloakUsesRemaining = new HashMap<>();
         this.invisCloakActive = new HashSet<>();
         this.invisCloakTasks = new HashMap<>();
@@ -178,12 +178,10 @@ public class CustomItemManager {
 
     public void useMedicPouchSelf(Player player, ItemStack item) {
         UUID uuid = player.getUniqueId();
-        long now = System.currentTimeMillis();
         ItemsConfig cfg = ItemsConfig.getInstance();
 
-        Long cd = medicPouchCooldown.get(uuid);
-        if (cd != null && now < cd) {
-            long remaining = (cd - now) / 1000;
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.MEDIC_POUCH)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH);
             Messages.send(player, "<red>Medic Pouch on cooldown! (" + remaining + "s)</red>");
             return;
         }
@@ -211,18 +209,16 @@ public class CustomItemManager {
         }
 
         consumeItem(player, item);
-        medicPouchCooldown.put(uuid, now + (cfg.getMedicPouchCooldown() * 1000L));
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH, cfg.getMedicPouchCooldown());
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
     }
 
     public void useMedicPouchAlly(Player player, Player target, ItemStack item) {
         UUID uuid = player.getUniqueId();
-        long now = System.currentTimeMillis();
         ItemsConfig cfg = ItemsConfig.getInstance();
 
-        Long cd = medicPouchCooldown.get(uuid);
-        if (cd != null && now < cd) {
-            long remaining = (cd - now) / 1000;
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.MEDIC_POUCH)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH);
             Messages.send(player, "<red>Medic Pouch on cooldown! (" + remaining + "s)</red>");
             return;
         }
@@ -259,7 +255,7 @@ public class CustomItemManager {
         }
 
         consumeItem(player, item);
-        medicPouchCooldown.put(uuid, now + (cfg.getMedicPouchCooldown() * 1000L));
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH, cfg.getMedicPouchCooldown());
         Messages.send(player, "<green>Healed " + target.getName() + "!</green>");
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
         SoundUtils.play(target, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
@@ -312,13 +308,11 @@ public class CustomItemManager {
 
     public void toggleInvisCloak(Player player, boolean turnOn) {
         UUID uuid = player.getUniqueId();
-        long now = System.currentTimeMillis();
         ItemsConfig cfg = ItemsConfig.getInstance();
 
         if (turnOn && !invisCloakActive.contains(uuid)) {
-            Long cd = invisCloakCooldown.get(uuid);
-            if (cd != null && now < cd) {
-                long remaining = (cd - now) / 1000;
+            if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.INVIS_CLOAK)) {
+                long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK);
                 Messages.send(player, "<red>Invisibility Cloak on cooldown! (" + remaining + "s)</red>");
                 return;
             }
@@ -395,7 +389,7 @@ public class CustomItemManager {
             BukkitTask task = invisCloakTasks.remove(uuid);
             if (task != null) task.cancel();
 
-            invisCloakCooldown.put(uuid, now + (cfg.getInvisCloakCooldown() * 1000L));
+            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK, cfg.getInvisCloakCooldown());
 
             Messages.send(player, "<yellow>Invisibility deactivated.</yellow>");
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.0f, 0.8f);
