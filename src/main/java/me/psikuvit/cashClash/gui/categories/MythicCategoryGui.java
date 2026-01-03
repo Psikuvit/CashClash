@@ -79,8 +79,15 @@ public final class MythicCategoryGui {
         ShopService.getInstance().purchase(player, price);
         MythicItemManager.getInstance().registerMythicPurchase(sess, playerUuid, mythic);
 
-        ItemStack mythicItem = MythicItemManager.getInstance().createMythicItem(mythic, player);
-        player.getInventory().addItem(mythicItem);
+        // BlazeBite gives two crossbows (Glacier + Volcano)
+        if (mythic == MythicItem.BLAZEBITE_CROSSBOWS) {
+            ItemStack[] crossbows = MythicItemManager.getInstance().createBlazebiteBundle(player);
+            player.getInventory().addItem(crossbows[0]); // Glacier
+            player.getInventory().addItem(crossbows[1]); // Volcano
+        } else {
+            ItemStack mythicItem = MythicItemManager.getInstance().createMythicItem(mythic, player);
+            player.getInventory().addItem(mythicItem);
+        }
 
         if (mythic == MythicItem.WIND_BOW) {
             player.getInventory().addItem(new ItemStack(Material.ARROW, 20));

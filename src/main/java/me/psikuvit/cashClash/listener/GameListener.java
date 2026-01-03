@@ -381,13 +381,25 @@ public class GameListener implements Listener {
 
         switch (mythic) {
             case BLOODWRENCH_CROSSBOW -> {
-                if (!mythicManager.handleSandstormerShot(player)) {
+                if (!mythicManager.handleBloodwrenchShot(player)) {
                     event.setCancelled(true);
                 }
             }
             case BLAZEBITE_CROSSBOWS -> {
-                if (!mythicManager.handleBlazebiteShot(player)) {
+                if (!mythicManager.handleBlazebiteShot(player, bow)) {
                     event.setCancelled(true);
+                } else {
+                    // Tag the arrow with the BlazeBite mode for hit detection
+                    if (event.getProjectile() instanceof Arrow arrow) {
+                        String mode = mythicManager.getBlazebiteMode(bow);
+                        if (mode != null) {
+                            arrow.getPersistentDataContainer().set(
+                                Keys.BLAZEBITE_MODE,
+                                PersistentDataType.STRING,
+                                mode
+                            );
+                        }
+                    }
                 }
             }
         }
@@ -403,6 +415,16 @@ public class GameListener implements Listener {
         if (event.getEntity() instanceof Arrow arrow) {
             if (!(arrow.getShooter() instanceof Player shooter)) return;
 
+            // Check for BlazeBite arrow (tagged in onEntityShootBow)
+            String blazebiteMode = arrow.getPersistentDataContainer().get(Keys.BLAZEBITE_MODE, PersistentDataType.STRING);
+            if (blazebiteMode != null) {
+                Location hitLoc = event.getHitEntity() != null
+                    ? event.getHitEntity().getLocation()
+                    : arrow.getLocation();
+                boolean isGlacier = "glacier".equals(blazebiteMode);
+                mythicManager.handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc, isGlacier);
+            }
+
             ItemStack bow = shooter.getInventory().getItemInMainHand();
             MythicItem mythic = PDCDetection.getMythic(bow);
 
@@ -410,7 +432,7 @@ public class GameListener implements Listener {
                 mythicManager.handleWindBowHit(shooter, hitPlayer);
             }
             if (mythic == MythicItem.BLOODWRENCH_CROSSBOW) {
-                if (event.getHitEntity() instanceof Player hitPlayer) {
+                if (event.getHitEntity() instanceof Player hitPlayer && mythicManager.isBloodwrenchSupercharged(shooter)) {
                     mythicManager.fireSuperchargedSandstormer(shooter, hitPlayer);
                 }
             }

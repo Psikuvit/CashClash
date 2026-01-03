@@ -39,6 +39,13 @@ public class Keys {
      */
     public static final NamespacedKey SUPPLY_DROP_AMOUNT;
 
+    /**
+     * BlazeBite crossbow mode identifier.
+     * "glacier" = Glacier Crossbow, "volcano" = Volcano Crossbow
+     */
+    public static final NamespacedKey BLAZEBITE_MODE;
+
+
     static {
         ITEM_ID = new NamespacedKey(CashClashPlugin.getInstance(), "item_id");
         ITEM_MAXED = new NamespacedKey(CashClashPlugin.getInstance(), "item_maxed");
@@ -46,6 +53,7 @@ public class Keys {
         ITEM_USES = new NamespacedKey(CashClashPlugin.getInstance(), "item_uses");
         SHOP_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "shop_npc");
         SUPPLY_DROP_AMOUNT = new NamespacedKey(CashClashPlugin.getInstance(), "supply_amount");
+        BLAZEBITE_MODE = new NamespacedKey(CashClashPlugin.getInstance(), "blazebite_mode");
     }
 
     private Keys() {

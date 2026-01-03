@@ -29,8 +29,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 
 /**
  * Consolidated listener for all PlayerInteractEvent handling.
@@ -271,7 +269,7 @@ public class InteractListener implements Listener {
                 return true;
             }
             case BLOODWRENCH_CROSSBOW -> {
-                mythicManager.startSandstormerCharge(player);
+                mythicManager.startBloodwrenchCharge(player);
                 return true;
             }
         }

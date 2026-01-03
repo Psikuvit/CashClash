@@ -70,8 +70,7 @@ public class MythicItemManager {
     // Sandstormer charge tracking
     private final Map<UUID, Integer> sandstormerShotsRemaining;
 
-    // BlazeBite mode tracking (true = glacier, false = volcano)
-    private final Map<UUID, Boolean> blazebiteMode;
+    // BlazeBite shots tracking (shared between both crossbows)
     private final Map<UUID, Integer> blazebiteShotsRemaining;
 
     // Active tasks for cleanup
@@ -83,7 +82,6 @@ public class MythicItemManager {
         sessionPurchasedMythics = new HashMap<>();
         sessionAvailableMythics = new HashMap<>();
         sandstormerShotsRemaining = new HashMap<>();
-        blazebiteMode = new HashMap<>();
         blazebiteShotsRemaining = new HashMap<>();
         activeTasks = new HashMap<>();
     }
@@ -210,8 +208,14 @@ public class MythicItemManager {
 
     /**
      * Create the mythic item with proper tags and appearance.
+     * For BlazeBite, use createBlazebiteBundle() instead to get both crossbows.
      */
     public ItemStack createMythicItem(MythicItem mythic, Player owner) {
+        // For BlazeBite, return just the Glacier crossbow (use createBlazebiteBundle for both)
+        if (mythic == MythicItem.BLAZEBITE_CROSSBOWS) {
+            return createBlazebiteItem(owner, true); // Default to Glacier
+        }
+
         ItemStack item = new ItemStack(mythic.getMaterial());
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
@@ -247,6 +251,83 @@ public class MythicItemManager {
         item.setItemMeta(meta);
 
         return item;
+    }
+
+    /**
+     * Create the BlazeBite crossbow bundle - returns array of [Glacier, Volcano] crossbows.
+     */
+    public ItemStack[] createBlazebiteBundle(Player owner) {
+        return new ItemStack[] {
+            createBlazebiteItem(owner, true),  // Glacier
+            createBlazebiteItem(owner, false)  // Volcano
+        };
+    }
+
+    /**
+     * Create a single BlazeBite crossbow (Glacier or Volcano).
+     */
+    private ItemStack createBlazebiteItem(Player owner, boolean isGlacier) {
+        ItemStack item = new ItemStack(Material.CROSSBOW);
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return item;
+
+        String name = isGlacier ? "Glacier Crossbow" : "Volcano Crossbow";
+        String color = isGlacier ? "<aqua>" : "<red>";
+
+        meta.displayName(Messages.parse("<light_purple><bold>" + name + "</bold></light_purple>"));
+
+        // Lore
+        List<Component> lore = new ArrayList<>();
+        lore.add(Messages.parse("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>"));
+        lore.add(Component.empty());
+        if (isGlacier) {
+            lore.add(Messages.parse(color + "Glacier Mode: Arrows inflict Slowness I"));
+            lore.add(Messages.parse(color + "and Frostbite for 3 seconds."));
+        } else {
+            lore.add(Messages.parse(color + "Volcano Mode: Explosive fire arrows!"));
+            lore.add(Messages.parse(color + "2 hearts direct, 1 heart splash (3 blocks)."));
+        }
+        lore.add(Component.empty());
+        lore.add(Messages.parse("<gray>8 shots per magazine, 25s reload</gray>"));
+        lore.add(Messages.parse("<gray>Owner: " + owner.getName() + "</gray>"));
+        meta.lore(lore);
+
+        // PDC tags - mark as BlazeBite and store mode
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, MythicItem.BLAZEBITE_CROSSBOWS.name());
+        pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+        pdc.set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, isGlacier ? "glacier" : "volcano");
+
+        // Apply enchantments - Piercing 3, Quick Charge 1
+        meta.addEnchant(Enchantment.PIERCING, 3, true);
+        meta.addEnchant(Enchantment.QUICK_CHARGE, 1, true);
+
+        meta.setUnbreakable(true);
+        meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
+        item.setItemMeta(meta);
+
+        return item;
+    }
+
+    /**
+     * Check if an item is a BlazeBite crossbow and return its mode.
+     * @return "glacier", "volcano", or null if not a BlazeBite item
+     */
+    public String getBlazebiteMode(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return null;
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return null;
+
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        if (!pdc.has(Keys.BLAZEBITE_MODE, PersistentDataType.STRING)) return null;
+        return pdc.get(Keys.BLAZEBITE_MODE, PersistentDataType.STRING);
+    }
+
+    /**
+     * Check if a BlazeBite crossbow is in Glacier mode.
+     */
+    public boolean isGlacierMode(ItemStack item) {
+        return "glacier".equals(getBlazebiteMode(item));
     }
 
     private void applyMythicAttributes(MythicItem mythic, ItemMeta meta) {
@@ -663,7 +744,7 @@ public class MythicItemManager {
     /**
      * Start charging Sandstormer for supercharged shot.
      */
-    public void startSandstormerCharge(Player player) {
+    public void startBloodwrenchCharge(Player player) {
         cooldownManager.setTimestamp(player.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE);
         Messages.debug(player, "BLOODWRENCH_CROSSBOW: Started charging for supercharged shot");
     }
@@ -817,39 +898,15 @@ public class MythicItemManager {
     // ==================== BLAZEBITE CROSSBOWS ====================
 
     /**
-     * Toggle BlazeBite mode between Glacier and Volcano.
-     * Can only toggle when not reloading and at full shots.
-     */
-    public void toggleBlazebiteMode(Player player) {
-        UUID uuid = player.getUniqueId();
-        
-        boolean isGlacier = blazebiteMode.getOrDefault(uuid, true);
-
-        Messages.debug(player, "BLAZEBITE: Toggle mode triggered, current: " + (isGlacier ? "Glacier" : "Volcano"));
-
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD)) {
-            Messages.debug(player, "BLAZEBITE: Cannot toggle while reloading");
-            Messages.send(player, "<red>Cannot switch modes while reloading!</red>");
-            return;
-        }
-
-        blazebiteMode.put(uuid, !isGlacier);
-        blazebiteShotsRemaining.put(uuid, cfg.getBlazebiteShotsPerMag());
-
-        String mode = !isGlacier ? "<aqua>Glacier</aqua>" : "<red>Volcano</red>";
-        Messages.debug(player, "BLAZEBITE: Switched to " + (!isGlacier ? "Glacier" : "Volcano") + ", shots reset to " + cfg.getBlazebiteShotsPerMag());
-        Messages.send(player, "<light_purple>BlazeBite switched to " + mode + " mode!</light_purple>");
-        SoundUtils.play(player, Sound.ITEM_CROSSBOW_LOADING_END, 1.0f, isGlacier ? 0.5f : 1.5f);
-    }
-
-    /**
      * Handle BlazeBite shot.
      * 8 shots per magazine, 25 second reload.
+     * Mode is determined by which crossbow is being used (stored in item PDC).
      */
-    public boolean handleBlazebiteShot(Player player) {
+    public boolean handleBlazebiteShot(Player player, ItemStack crossbow) {
         UUID uuid = player.getUniqueId();
         
-        boolean isGlacier = blazebiteMode.getOrDefault(uuid, true);
+        String mode = getBlazebiteMode(crossbow);
+        boolean isGlacier = "glacier".equals(mode);
 
         Messages.debug(player, "BLAZEBITE: Shot triggered (" + (isGlacier ? "Glacier" : "Volcano") + " mode)");
 
@@ -882,16 +939,13 @@ public class MythicItemManager {
      * Glacier: Slowness I + Frostbite for 3 seconds.
      * Volcano: Explosive fire arrow (2 hearts direct, 1 heart splash in 3 blocks).
      */
-    public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc) {
-        UUID uuid = shooter.getUniqueId();
-        
-        boolean isGlacier = blazebiteMode.getOrDefault(uuid, true);
+    public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc, boolean isGlacierMode) {
         World world = hitLoc.getWorld();
         if (world == null) return;
 
-        Messages.debug(shooter, "BLAZEBITE: Hit detected (" + (isGlacier ? "Glacier" : "Volcano") + " mode)");
+        Messages.debug(shooter, "BLAZEBITE: Hit detected (" + (isGlacierMode ? "Glacier" : "Volcano") + " mode)");
 
-        if (isGlacier) {
+        if (isGlacierMode) {
             // Glacier mode - slowness and frostbite
             if (hitEntity instanceof Player victim) {
                 victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, cfg.getBlazebiteFreezeDuration(), 0, false, true));
@@ -947,7 +1001,6 @@ public class MythicItemManager {
 
     public void cleanup() {
         sandstormerShotsRemaining.clear();
-        blazebiteMode.clear();
         blazebiteShotsRemaining.clear();
 
         activeTasks.values().forEach(tasks -> tasks.forEach(BukkitTask::cancel));

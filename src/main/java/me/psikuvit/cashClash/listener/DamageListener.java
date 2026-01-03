@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -22,6 +23,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Vector;
 
 import java.util.Objects;
 
@@ -50,7 +52,7 @@ public class DamageListener implements Listener {
         // Allow if both players are in the same game session
         if (damagerSession != null && damagerSession.equals(victimSession)) return;
 
-        // Cancel PvP outside of games
+        // Cancel PvP outside games
         event.setCancelled(true);
     }
 
@@ -173,9 +175,23 @@ public class DamageListener implements Listener {
                     mythicManager.handleElectricEelChain(attacker, victim);
                 }
             }
-            case WARDEN_GLOVES -> {
-                mythicManager.useWardenMelee(attacker, victim);
-            }
+            case WARDEN_GLOVES -> mythicManager.useWardenMelee(attacker, victim);
+        }
+    }
+
+    /**
+     * Handle Coin Cleaver knockback immunity.
+     * If the victim is holding Coin Cleaver in main or offhand, cancel knockback.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDamageKnockbackImmunity(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;
+
+        // Check if victim has Coin Cleaver (sturdy feet - no knockback)
+        if (mythicManager.hasCoinCleaverNoKnockback(victim)) {
+            // Store current velocity and restore it after a tick to cancel knockback
+            Vector currentVelocity = victim.getVelocity().clone();
+            SchedulerUtils.runTaskLater(() -> victim.setVelocity(currentVelocity), 1L);
         }
     }
 
