@@ -348,6 +348,7 @@ public class MythicItemManager {
                         EquipmentSlotGroup.MAINHAND
                 );
                 meta.addAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, rangeMod);
+                meta.addEnchant(Enchantment.LOYALTY, 3, true);
             }
             case WARDEN_GLOVES -> {
                 // +2 block reach for both hands (takes up main and off hand conceptually)
@@ -946,7 +947,10 @@ public class MythicItemManager {
             // Glacier mode - slowness and frostbite
             if (hitEntity instanceof Player victim) {
                 victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, cfg.getBlazebiteFreezeDuration(), 0, false, true));
-                victim.setFreezeTicks(cfg.getBlazebiteFreezeDuration()); // Frostbite effect
+                // Freeze ticks need to be set high enough - max is 140 for full freeze effect
+                // We set it to 140 + duration ticks so it stays frozen for the duration
+                int freezeTicks = 140 + cfg.getBlazebiteFreezeDuration();
+                victim.setFreezeTicks(freezeTicks);
 
                 Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - Slowness + Frostbite for " + (cfg.getBlazebiteFreezeDuration() / 20) + "s");
                 world.spawnParticle(Particle.SNOWFLAKE, victim.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
