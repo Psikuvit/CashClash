@@ -139,7 +139,7 @@ custom-armor:
   dragon:
     hit-regeneration-level: 0
     hit-regeneration-duration-seconds: 3
-    hit-speed-level: 1
+    hit-speed-level: 0
     hit-speed-duration-seconds: 3
     double-jump:
       cooldown-seconds: 10
@@ -243,4 +243,47 @@ consumables:
   # (speed carrot, golden chicken, cookie of life, sunscreen, can of spinach)
   # Prevents spam-eating. In seconds.
   effect-cooldown-seconds: 2
+
+
+# ============================================
+# LOBBY ITEMS
+# ============================================
+# Items given to players when they join the lobby
+lobby-items:
+  # Stats Item - Shows player statistics
+  stats:
+    material: PAPER
+    name: "<gold><bold>Your Statistics</bold></gold>"
+    lore:
+      - ""
+      - "<gray>View your gameplay statistics</gray>"
+      - "<gray>including wins, kills, and more!</gray>"
+      - ""
+      - "<yellow>Right-click to view!</yellow>"
+    slot: 0
+
+  # Arena Selector - Opens arena selection GUI
+  arena-selector:
+    material: COMPASS
+    name: "<green><bold>Arena Selector</bold></green>"
+    lore:
+      - ""
+      - "<gray>Browse available arenas</gray>"
+      - "<gray>and join a game!</gray>"
+      - ""
+      - "<yellow>Right-click to select!</yellow>"
+    slot: 4
+
+  # Layout Configurator - Configure kit layout (future feature)
+  layout-configurator:
+    material: ANVIL
+    name: "<yellow><bold>Layout Configurator</bold></yellow>"
+    lore:
+      - ""
+      - "<gray>Customize your inventory layout</gray>"
+      - "<gray>for items and equipment.</gray>"
+      - ""
+      - "<red>Coming Soon!</red>"
+    slot: 8
+
 

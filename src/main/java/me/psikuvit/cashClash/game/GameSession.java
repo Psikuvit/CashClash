@@ -14,6 +14,7 @@ import me.psikuvit.cashClash.manager.game.RoundManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.MythicItemManager;
+import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
@@ -472,6 +473,9 @@ public class GameSession {
     }
 
     public void addPlayer(Player player, int teamNumber) {
+        // Clear lobby items when joining a game
+        LobbyManager.getInstance().clearLobbyItems(player);
+
         CashClashPlayer ccPlayer = new CashClashPlayer(player);
         players.put(player.getUniqueId(), ccPlayer);
 

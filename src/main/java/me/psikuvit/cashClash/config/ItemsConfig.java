@@ -321,5 +321,58 @@ public class ItemsConfig {
     public int getConsumableCooldown() {
         return config.getInt("consumables.effect-cooldown-seconds", 2);
     }
+
+    // ==================== LOBBY ITEMS ====================
+
+    // Stats Item
+    public String getLobbyStatsMaterial() {
+        return config.getString("lobby-items.stats.material", "PAPER");
+    }
+
+    public String getLobbyStatsName() {
+        return config.getString("lobby-items.stats.name", "<gold><bold>Your Statistics</bold></gold>");
+    }
+
+    public java.util.List<String> getLobbyStatsLore() {
+        return config.getStringList("lobby-items.stats.lore");
+    }
+
+    public int getLobbyStatsSlot() {
+        return config.getInt("lobby-items.stats.slot", 0);
+    }
+
+    // Arena Selector Item
+    public String getLobbyArenaSelectorMaterial() {
+        return config.getString("lobby-items.arena-selector.material", "COMPASS");
+    }
+
+    public String getLobbyArenaSelectorName() {
+        return config.getString("lobby-items.arena-selector.name", "<green><bold>Arena Selector</bold></green>");
+    }
+
+    public java.util.List<String> getLobbyArenaSelectorLore() {
+        return config.getStringList("lobby-items.arena-selector.lore");
+    }
+
+    public int getLobbyArenaSelectorSlot() {
+        return config.getInt("lobby-items.arena-selector.slot", 4);
+    }
+
+    // Layout Configurator Item
+    public String getLobbyLayoutConfiguratorMaterial() {
+        return config.getString("lobby-items.layout-configurator.material", "ANVIL");
+    }
+
+    public String getLobbyLayoutConfiguratorName() {
+        return config.getString("lobby-items.layout-configurator.name", "<yellow><bold>Layout Configurator</bold></yellow>");
+    }
+
+    public java.util.List<String> getLobbyLayoutConfiguratorLore() {
+        return config.getStringList("lobby-items.layout-configurator.lore");
+    }
+
+    public int getLobbyLayoutConfiguratorSlot() {
+        return config.getInt("lobby-items.layout-configurator.slot", 8);
+    }
 }
 

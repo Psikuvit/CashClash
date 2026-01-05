@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.manager.player.TabListManager;
@@ -41,6 +42,9 @@ public class PlayerConnectionListener implements Listener {
             player.teleport(lobbyLoc);
             Messages.debug(player, "SYSTEM", "Teleported to lobby spawn");
         }
+
+        // Give lobby items
+        LobbyManager.getInstance().giveLobbyItems(player);
 
         // Set lobby scoreboard
         ScoreboardManager.getInstance().setLobbyScoreboard(player);
