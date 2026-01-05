@@ -8,9 +8,9 @@ import org.bukkit.Material;
  * Types of investments available
  */
 public enum InvestmentType implements Purchasable {
-    WALLET(10000, 30000, 5000, Material.LEATHER),
+    WALLET(10000, 30000, 5000, Material.PAPER),
     PURSE(30000, 60000, 10000, Material.BUNDLE),
-    ENDER_BAG(50000, 100000, 20000, Material.ENDER_CHEST);
+    ENDER_BAG(50000, 100000, 20000, Material.POPPED_CHORUS_FRUIT);
 
     private final long cost;
     private final long bonusReturn;
