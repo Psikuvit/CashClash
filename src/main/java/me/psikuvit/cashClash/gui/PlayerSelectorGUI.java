@@ -3,15 +3,12 @@ package me.psikuvit.cashClash.gui;
 import me.psikuvit.cashClash.gui.builder.GuiBuilder;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
-import me.psikuvit.cashClash.util.Messages;
-import net.kyori.adventure.text.Component;
+import me.psikuvit.cashClash.util.items.GuiItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.SkullMeta;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -50,18 +47,12 @@ public class PlayerSelectorGUI {
      * Create a clickable player head button that shows enemy inventory.
      */
     private static GuiButton createPlayerHeadButton(Player target) {
-        ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta meta = (SkullMeta) skull.getItemMeta();
-        meta.setOwningPlayer(target);
-        meta.displayName(Messages.parse("<yellow>" + target.getName() + "</yellow>"));
-
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.empty());
-        lore.add(Messages.parse("<gray>Click to view inventory</gray>"));
-        lore.add(Messages.parse("<dark_gray>Cost: <gold>$2,000</gold></dark_gray>"));
-        meta.lore(lore);
-
-        skull.setItemMeta(meta);
+        ItemStack skull = GuiItemUtils.createPlayerHead(target,
+                "<yellow>" + target.getName() + "</yellow>",
+                List.of(
+                "<gray>Click to view inventory</gray>",
+                "<dark_gray>Cost: <gold>$2,000</gold></dark_gray>"
+        ));
 
         return GuiButton.of(skull).onClick(clicker -> {
             clicker.closeInventory();

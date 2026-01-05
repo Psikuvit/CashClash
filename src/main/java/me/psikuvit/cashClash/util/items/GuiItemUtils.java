@@ -7,11 +7,13 @@ import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
+import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.InvestmentType;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.List;
 import java.util.UUID;
@@ -390,5 +392,23 @@ public final class GuiItemUtils {
         CustomModelDataMapper.applyStringModelData(item, CustomModelDataMapper.CASH_COINS_KEY);
 
         return item;
+    }
+
+    /**
+     * Creates a player head item representing the target player.
+     *
+     * @param target The target player
+     * @return The player head ItemStack
+     */
+    public static ItemStack createPlayerHead(Player target, String displayName, List<String> lore) {
+        ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) skull.getItemMeta();
+
+        meta.setPlayerProfile(target.getPlayerProfile());
+        meta.displayName(Messages.parse(displayName));
+        meta.lore(lore.stream().map(Messages::parse).toList());
+
+        skull.setItemMeta(meta);
+        return skull;
     }
 }
