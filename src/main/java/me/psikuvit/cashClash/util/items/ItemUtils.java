@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.util.items;
 
+import io.papermc.paper.datacomponent.DataComponentTypes;
+import io.papermc.paper.datacomponent.item.FoodProperties;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
@@ -139,7 +141,6 @@ public final class ItemUtils {
                 meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
                 String desc = si.getDescription();
                 if (!desc.isEmpty()) meta.lore(Messages.wrapLines(desc));
-            }
 
                 String matName = it.getType().name();
                 if (matName.endsWith("HELMET") || matName.endsWith("CHESTPLATE") || matName.endsWith("LEGGINGS") || matName.endsWith("BOOTS")) {
@@ -165,12 +166,6 @@ public final class ItemUtils {
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, type.name());
         pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
-
-        // Set item model directly
-        NamespacedKey modelKey = CustomModelDataMapper.getItemModel(type);
-        if (modelKey != null) {
-            meta.setItemModel(modelKey);
-        }
 
         // Special handling for specific items
         switch (type) {
@@ -210,12 +205,6 @@ public final class ItemUtils {
             meta.lore(wrappedLore);
             meta.setUnbreakable(true);
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
-            
-            // Set item model directly
-            NamespacedKey modelKey = CustomModelDataMapper.getItemModel(armor);
-            if (modelKey != null) {
-                meta.setItemModel(modelKey);
-            }
             
             item.setItemMeta(meta);
 
@@ -322,37 +311,30 @@ public final class ItemUtils {
         }
     }
 
-    public static void restoreReplacedItem(Player player, ItemStack replacedItem) {
-        if (replacedItem == null) return;
-
-        Material m = replacedItem.getType();
-        PlayerInventory inv = player.getInventory();
-
-        // Restore to appropriate slot based on item type
-        if (m.name().endsWith("HELMET")) {
-            inv.setHelmet(replacedItem);
-        } else if (m.name().endsWith("CHESTPLATE")) {
-            inv.setChestplate(replacedItem);
-        } else if (m.name().endsWith("LEGGINGS")) {
-            inv.setLeggings(replacedItem);
-        } else if (m.name().endsWith("BOOTS")) {
-            inv.setBoots(replacedItem);
-        } else if (m.name().contains("SWORD") || m.name().contains("AXE") ||
-                m.name().contains("PICKAXE") || m.name().contains("SHOVEL")) {
-            // Find an empty slot or add to inventory
-            int emptySlot = inv.firstEmpty();
-            if (emptySlot != -1) {
-                inv.setItem(emptySlot, replacedItem);
-            } else {
-                inv.addItem(replacedItem);
-            }
-        } else {
-            inv.addItem(replacedItem);
-        }
-    }
-
     public static boolean removeItemFromPlayer(Player player, String itemTag, int quantity) {
         int remaining = Math.max(1, quantity);
+
+        ItemStack[] armor = player.getInventory().getArmorContents();
+        boolean armorModified = false;
+        for (int i = 0; i < armor.length && remaining > 0; i++) {
+            ItemStack is = armor[i];
+            if (is == null || !is.hasItemMeta()) continue;
+
+            ItemMeta meta = is.getItemMeta();
+            PersistentDataContainer pdc = meta.getPersistentDataContainer();
+
+            String val = pdc.get(Keys.ITEM_ID, PersistentDataType.STRING);
+
+            if (val != null && val.equals(itemTag)) {
+                armor[i] = null;
+                remaining -= 1;
+                armorModified = true;
+            }
+        }
+        if (armorModified) {
+            player.getInventory().setArmorContents(armor);
+        }
+
         // Check main inventory
         for (int i = 0; i < player.getInventory().getSize() && remaining > 0; i++) {
             ItemStack is = player.getInventory().getItem(i);
@@ -397,25 +379,6 @@ public final class ItemUtils {
             }
         }
 
-        // Check armor slots (each armor piece counts as 1)
-        if (remaining > 0) {
-            ItemStack[] armor = player.getInventory().getArmorContents();
-            for (int i = 0; i < armor.length && remaining > 0; i++) {
-                ItemStack is = armor[i];
-                if (is == null || !is.hasItemMeta()) continue;
-
-                ItemMeta meta = is.getItemMeta();
-                PersistentDataContainer pdc = meta.getPersistentDataContainer();
-
-                String val = pdc.get(Keys.ITEM_ID, PersistentDataType.STRING);
-
-                if (val != null && val.equals(itemTag)) {
-                    armor[i] = null;
-                    player.getInventory().setArmorContents(armor);
-                    remaining -= 1;
-                }
-            }
-        }
 
         return remaining < Math.max(1, quantity);
     }

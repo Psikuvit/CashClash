@@ -1,7 +1,5 @@
 package me.psikuvit.cashClash.util.items;
 
-import me.psikuvit.cashClash.shop.items.CustomArmorItem;
-import me.psikuvit.cashClash.shop.items.Purchasable;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -82,14 +80,5 @@ public final class ItemSelectionUtils {
         return bestSlot;
     }
 
-    /**
-     * Converts a Purchasable item to CustomArmorItem if applicable.
-     * Returns the CustomArmorItem if the item is custom armor, null otherwise.
-     */
-    public static CustomArmorItem getCustomArmorItem(Purchasable item) {
-        if (item == null) return null;
-
-        return item instanceof CustomArmorItem ca ? ca : null;
-    }
 }
 
