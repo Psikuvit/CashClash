@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
+import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Messages;
@@ -95,8 +96,8 @@ public class ShopService {
             ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
             Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        } else if (item.getCategory() == ShopCategory.ARMOR) {
-            ItemStack armorItem = ItemUtils.createTaggedItem(item);
+        } else if (item instanceof ArmorItem) {
+            ItemStack armorItem = ItemUtils.createTaggedItem(item).clone();
             ItemStack replacedItem = ItemUtils.equipArmorOrReplace(player, armorItem);
 
             if (replacedItem != null) {

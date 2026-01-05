@@ -34,6 +34,12 @@ public enum EnchantEntry {
             Material.LEATHER_HELMET, Material.GOLDEN_CHESTPLATE, Material.GOLDEN_LEGGINGS, Material.GOLDEN_BOOTS,
             Material.IRON_CHESTPLATE, Material.IRON_HELMET, Material.IRON_LEGGINGS, Material.IRON_BOOTS,
             Material.DIAMOND_CHESTPLATE, Material.DIAMOND_HELMET, Material.DIAMOND_LEGGINGS, Material.DIAMOND_BOOTS
+    ),
+    SOUL_SPEED(Enchantment.SOUL_SPEED, "soul-speed", "Soul Speed", 3,
+            Material.LEATHER_BOOTS, Material.GOLDEN_BOOTS, Material.IRON_BOOTS, Material.DIAMOND_BOOTS, Material.NETHERITE_BOOTS
+    ),
+    PIERCING(Enchantment.PIERCING, "piercing", "Piercing", 4,
+            Material.CROSSBOW
     );
 
     private final Enchantment enchantment;

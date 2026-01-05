@@ -279,7 +279,7 @@ public class InteractListener implements Listener {
     // ==================== CUSTOM ARMOR (Magic Helmet) ====================
 
     private void handleCustomArmor(Player player, Action action) {
-        if (!action.isRightClick()) return;
+        if (!action.isRightClick() && player.isSneaking()) return;
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
@@ -287,7 +287,6 @@ public class InteractListener implements Listener {
         if (isInShoppingPhase(player)) return;
 
         armorManager.onMagicHelmetRightClick(player);
-
     }
 
     // ==================== UTILITIES ====================

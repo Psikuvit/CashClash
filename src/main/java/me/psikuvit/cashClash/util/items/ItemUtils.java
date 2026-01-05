@@ -122,12 +122,14 @@ public final class ItemUtils {
         var meta = it.getItemMeta();
 
         if (meta != null) {
+            // Always set ITEM_ID for all purchasable items (required for refunds)
+            meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, si.name());
+
             if (si instanceof FoodItem food) {
                 FoodProperties.Builder builder = it.getData(DataComponentTypes.FOOD).toBuilder();
                 builder.canAlwaysEat(true);
                 it.setData(DataComponentTypes.FOOD, builder.build());
                 if (!food.getDescription().isEmpty()) {
-                    meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, si.name());
                     meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
                     meta.lore(Messages.wrapLines(food.getDescription()));
                 }
@@ -136,8 +138,7 @@ public final class ItemUtils {
                 // Apply custom model data for food items with custom textures
                 CustomModelDataMapper.applyCustomModel(it, food);
             } else {
-                // Non-food items always get PDC tags and display
-                meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, si.name());
+                // Non-food items get display name and description
                 meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
                 String desc = si.getDescription();
                 if (!desc.isEmpty()) meta.lore(Messages.wrapLines(desc));
@@ -349,6 +350,7 @@ public final class ItemUtils {
                 int amt = is.getAmount();
                 if (amt > remaining) {
                     is.setAmount(amt - remaining);
+                    player.getInventory().setItem(i, is);
                     remaining = 0;
                 } else {
                     player.getInventory().setItem(i, null);
@@ -370,6 +372,7 @@ public final class ItemUtils {
                     int amt = off.getAmount();
                     if (amt > remaining) {
                         off.setAmount(amt - remaining);
+                        player.getInventory().setItemInOffHand(off);
                         remaining = 0;
                     } else {
                         player.getInventory().setItemInOffHand(null);

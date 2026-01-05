@@ -21,7 +21,7 @@ public enum MythicItem implements Purchasable {
     ),
     WIND_BOW(Material.BOW, "wind-bow",
             "Wind Bow",
-            "Right-click to boost forward (30s cooldown). " +
+            "Shift + Right-click to boost forward (30s cooldown). " +
             "Arrow hits propel target and nearby players (3 block radius) backwards."
     ),
     ELECTRIC_EEL_SWORD(Material.DIAMOND_SWORD, "electric-eel-sword",

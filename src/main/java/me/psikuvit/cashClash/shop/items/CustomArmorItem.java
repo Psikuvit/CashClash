@@ -23,7 +23,7 @@ public enum CustomArmorItem implements Purchasable {
 
     MAGIC_HELMET(Material.IRON_HELMET, "magic-helmet", "Magic Helmet", "Hide in plain profit.", null),
     GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, "guardians-vest", "Guardian's Vest", "A second chance, bought and paid for.", null),
-    TAX_EVASION_PANTS(Material.LEATHER_LEGGINGS, "tax-evasion-pants", "Tax Evasion Pants", "Not even the economy can catch you.", null),
+    TAX_EVASION_PANTS(Material.GOLDEN_LEGGINGS, "tax-evasion-pants", "Tax Evasion Pants", "Not even the economy can catch you.", null),
     BUNNY_SHOES(Material.LEATHER_BOOTS, "bunny-shoes", "Bunny Shoes", "Agility is the best currency.", null),
 
     FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, "flamebringer-leggings", "Flamebringer's Leggings", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
