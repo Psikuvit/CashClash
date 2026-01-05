@@ -129,6 +129,10 @@ public final class ItemUtils {
                     meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
                     meta.lore(Messages.wrapLines(food.getDescription()));
                 }
+                it.setItemMeta(meta);
+
+                // Apply custom model data for food items with custom textures
+                CustomModelDataMapper.applyCustomModel(it, food);
             } else {
                 // Non-food items always get PDC tags and display
                 meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, si.name());
@@ -137,12 +141,13 @@ public final class ItemUtils {
                 if (!desc.isEmpty()) meta.lore(Messages.wrapLines(desc));
             }
 
-            String matName = it.getType().name();
-            if (matName.endsWith("HELMET") || matName.endsWith("CHESTPLATE") || matName.endsWith("LEGGINGS") || matName.endsWith("BOOTS")) {
-                meta.setUnbreakable(true);
-                meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+                String matName = it.getType().name();
+                if (matName.endsWith("HELMET") || matName.endsWith("CHESTPLATE") || matName.endsWith("LEGGINGS") || matName.endsWith("BOOTS")) {
+                    meta.setUnbreakable(true);
+                    meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+                }
+                it.setItemMeta(meta);
             }
-            it.setItemMeta(meta);
         }
         return it;
     }
@@ -182,6 +187,9 @@ public final class ItemUtils {
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
         item.setItemMeta(meta);
 
+        // Apply custom model data using string key for resource pack
+        CustomModelDataMapper.applyCustomModel(item, type);
+
         return item;
     }
 
@@ -210,6 +218,12 @@ public final class ItemUtils {
             }
             
             item.setItemMeta(meta);
+
+            // Apply custom model data using string key for resource pack
+            String modelKey = CustomModelDataMapper.getItemKey(armor);
+            if (modelKey != null) {
+                CustomModelDataMapper.applyStringModelData(item, modelKey);
+            }
         }
 
         return equipArmorOrReplace(player, item);

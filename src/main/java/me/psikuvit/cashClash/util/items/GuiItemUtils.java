@@ -245,19 +245,21 @@ public final class GuiItemUtils {
      * @return The configured ItemStack for display
      */
     public static ItemStack createInvestmentIcon(InvestmentType type) {
-        Material iconMaterial = switch (type) {
-            case WALLET -> Material.CHEST;
-            case PURSE -> Material.PURPLE_BUNDLE;
-            case ENDER_BAG -> Material.ENDER_CHEST;
-        };
+        // Use the material from InvestmentType (matches resource pack base items)
+        Material iconMaterial = type.getMaterial();
 
-        return ShopItemBuilder.of(iconMaterial)
+        ItemStack item = ShopItemBuilder.of(iconMaterial)
                 .name("<yellow>" + type.name().replace("_", " ") + "</yellow>")
                 .lore("<gray>Invest: <gold>$" + String.format("%,d", type.getCost()) + "</gold></gray>")
                 .lore("<green>Bonus: $" + String.format("%,d", type.getBonusReturn()) + "</green>")
                 .lore("<red>Negative: $" + String.format("%,d", type.getNegativeReturn()) + "</red>")
                 .itemId(type.name())
                 .build();
+
+        // Apply custom model data for investment items
+        CustomModelDataMapper.applyCustomModel(item, type);
+
+        return item;
     }
 
     // ==================== GUI CONTROL ITEMS ====================
@@ -379,9 +381,14 @@ public final class GuiItemUtils {
      */
     public static ItemStack createCoinDisplay(long coins) {
         String formatted = String.format("%,d", coins);
-        return ShopItemBuilder.of(Material.GOLD_INGOT)
+        ItemStack item = ShopItemBuilder.of(Material.SUNFLOWER)
                 .name("<gold>Your Coins</gold>")
                 .lore("<yellow>$" + formatted + "</yellow>")
                 .build();
+
+        // Apply custom model data for cash coins texture
+        CustomModelDataMapper.applyStringModelData(item, CustomModelDataMapper.CASH_COINS_KEY);
+
+        return item;
     }
 }

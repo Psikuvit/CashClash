@@ -240,15 +240,12 @@ public class MythicItemManager {
         // Apply special attributes based on mythic type
         applyMythicAttributes(mythic, meta);
 
-        // Set item model directly (base state - for crossbows/bows, this will be updated dynamically)
-        NamespacedKey modelKey = CustomModelDataMapper.getItemModel(mythic);
-        if (modelKey != null) {
-            meta.setItemModel(modelKey);
-        }
-
         meta.setUnbreakable(true);
         meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
         item.setItemMeta(meta);
+
+        // Apply custom model data using string key for resource pack
+        CustomModelDataMapper.applyCustomModel(item, mythic);
 
         return item;
     }
