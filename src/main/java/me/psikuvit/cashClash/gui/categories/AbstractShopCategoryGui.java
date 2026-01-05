@@ -13,7 +13,6 @@ import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.GuiItemUtils;
-import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -126,8 +125,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
             qty = Math.min(10, item.getInitialAmount());
         }
 
-        long price = item.getPrice();
-        long totalPrice = price * Math.max(1, qty);
+        long totalPrice = ShopService.getInstance().calculateTotalPrice(item, qty);
 
         if (!ShopService.getInstance().canAfford(viewer, totalPrice)) {
             Messages.send(viewer, "<red>Not enough coins! (Cost: $" + String.format("%,d", totalPrice) + ")</red>");
@@ -135,43 +133,8 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
             return;
         }
 
-        ShopService.getInstance().purchase(viewer, totalPrice);
-        giveItemToPlayer(ccp, item, qty, totalPrice);
+        ShopService.getInstance().processPurchase(viewer, item, qty, totalPrice);
         refresh();
-    }
-
-    /**
-     * Give the purchased item to the player.
-     */
-    protected void giveItemToPlayer(CashClashPlayer ccp, Purchasable si, int quantity, long totalPrice) {
-        int giveQty = Math.max(1, Math.min(quantity, si.getInitialAmount()));
-
-        ItemStack item = ItemUtils.createTaggedItem(si);
-        ItemStack replacedItem;
-
-        GameSession sess = getSession();
-        int round = sess != null ? sess.getCurrentRound() : 1;
-
-        if (si.getCategory() == ShopCategory.ARMOR) {
-            replacedItem = ItemUtils.equipArmorOrReplace(viewer, item);
-            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem, round));
-            ItemUtils.applyOwnedEnchantsAfterPurchase(viewer, si);
-            Messages.send(viewer, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
-            SoundUtils.play(viewer, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        } else if (si.getCategory() == ShopCategory.WEAPONS) {
-            replacedItem = ItemUtils.replaceBestMatchingTool(viewer, item);
-            ccp.addPurchase(new PurchaseRecord(si, 1, si.getPrice(), replacedItem, round));
-            ItemUtils.applyOwnedEnchantsAfterPurchase(viewer, si);
-            Messages.send(viewer, "<green>Purchased " + si.getDisplayName() + " for $" + String.format("%,d", si.getPrice()) + "</green>");
-            SoundUtils.play(viewer, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        } else {
-            ItemStack stack = item.clone();
-            stack.setAmount(giveQty);
-            viewer.getInventory().addItem(stack);
-            ccp.addPurchase(new PurchaseRecord(si, giveQty, totalPrice, round));
-            Messages.send(viewer, "<green>Purchased " + si.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
-            SoundUtils.play(viewer, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        }
     }
 
     /**
@@ -200,21 +163,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
             return;
         }
 
-        ccp.popLastPurchase();
-        ShopService.getInstance().refund(viewer, rec.price());
-
-        int qty = rec.quantity();
-        boolean removed = ItemUtils.removeItemFromPlayer(viewer, rec.item().name(), qty);
-
-        if (rec.replacedItem() != null) {
-            ItemUtils.restoreReplacedItem(viewer, rec.replacedItem());
-            Messages.send(viewer, "<green>Purchase undone. Refunded $" + String.format("%,d", rec.price()) + " and restored your previous item.</green>");
-        } else {
-            Messages.send(viewer, "<green>Purchase undone. Refunded $" + String.format("%,d", rec.price()) +
-                    (removed ? "" : " (could not find item(s) to remove)") + "</green>");
-        }
-
-        SoundUtils.play(viewer, Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.5f);
+        ShopService.getInstance().processRefund(viewer, rec);
         refresh();
     }
 
@@ -255,4 +204,3 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         return GuiButton.of(itemStack).onClick((p, clickType) -> handlePurchasableClick(item, clickType));
     }
 }
-

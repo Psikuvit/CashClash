@@ -144,14 +144,14 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         if (ccp == null) return;
 
         long totalPrice = armorSet.getTotalPrice();
-
-        if (!ShopService.getInstance().canAfford(viewer, totalPrice)) {
-            Messages.send(viewer, "<red>Not enough coins! (Cost: $" + String.format("%,d", totalPrice) + ")</red>");
-            SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+        if (!ShopService.getInstance().canAfford(player, totalPrice)) {
+            Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", totalPrice) + ")</red>");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        ShopService.getInstance().purchase(viewer, totalPrice);
+        ShopService.getInstance().deductCoins(player, totalPrice);
+        int round = session.getCurrentRound();
 
         int round = sess.getCurrentRound();
         for (CustomArmorItem piece : armorSet.getPieces()) {

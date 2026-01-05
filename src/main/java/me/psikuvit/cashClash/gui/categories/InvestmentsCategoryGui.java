@@ -69,7 +69,7 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
-        ShopService.getInstance().purchase(viewer, cost);
+        ShopService.getInstance().processPurchase(viewer, type, 1, cost);
 
         Investment investment = new Investment(type, cost);
         ccp.setCurrentInvestment(investment);

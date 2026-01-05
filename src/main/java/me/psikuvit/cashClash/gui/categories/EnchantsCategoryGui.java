@@ -82,8 +82,8 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
-        ShopService.getInstance().purchase(viewer, price);
-        ccp.addOwnedEnchant(ee, nextLevel);
+        ShopService.getInstance().deductCoins(viewer, price);
+        ccp.setOwnedEnchantLevel(ee, nextLevel);
 
         ItemUtils.applyEnchantToBestItem(viewer, ee, nextLevel);
         Messages.send(viewer, "<green>Purchased " + ee.getDisplayName() + " " + nextLevel + " for $" + String.format("%,d", price) + "</green>");

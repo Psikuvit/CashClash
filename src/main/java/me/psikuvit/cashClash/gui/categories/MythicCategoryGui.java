@@ -76,7 +76,7 @@ public final class MythicCategoryGui {
             return;
         }
 
-        ShopService.getInstance().purchase(player, price);
+        ShopService.getInstance().processPurchase(player, mythic, 1, price);
         MythicItemManager.getInstance().registerMythicPurchase(sess, playerUuid, mythic);
 
         // BlazeBite gives two crossbows (Glacier + Volcano)

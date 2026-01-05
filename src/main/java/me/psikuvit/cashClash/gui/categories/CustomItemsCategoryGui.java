@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.gui.categories;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -68,11 +67,8 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
 
         ItemStack customItem = ItemUtils.createCustomItem(type, viewer);
 
-        ShopService.getInstance().purchase(viewer, price);
+        ShopService.getInstance().processPurchase(viewer, type, 1, price);
         viewer.getInventory().addItem(customItem);
-
-        int round = sess.getCurrentRound();
-        ccp.addPurchase(new PurchaseRecord(type, 1, price, round));
 
         Messages.send(viewer, "<green>Purchased " + type.getDisplayName() + " for $" + String.format("%,d", price) + "</green>");
         SoundUtils.play(viewer, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
@@ -80,4 +76,3 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
         refresh();
     }
 }
-
