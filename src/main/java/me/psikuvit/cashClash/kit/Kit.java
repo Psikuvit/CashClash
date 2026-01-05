@@ -1,8 +1,10 @@
 package me.psikuvit.cashClash.kit;
 
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -185,9 +187,14 @@ public enum Kit {
         // Shears
         player.getInventory().addItem(new ItemStack(Material.SHEARS));
 
-        // Food
-        player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 8));
-        player.getInventory().addItem(new ItemStack(Material.BREAD, 16));
+        // Food (with ITEM_ID for refund tracking)
+        ItemStack steak = ItemUtils.createTaggedItem(FoodItem.STEAK);
+        steak.setAmount(8);
+        player.getInventory().addItem(steak);
+
+        ItemStack bread = ItemUtils.createTaggedItem(FoodItem.BREAD);
+        bread.setAmount(16);
+        player.getInventory().addItem(bread);
 
         // Shield
         player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
