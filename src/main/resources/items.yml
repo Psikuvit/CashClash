@@ -63,7 +63,7 @@ mythic-items:
       level: 3
 
   # Sandstormer
-  sandstormer:
+  bloodwrench:
     burst:
       shots: 3
       reload-cooldown-seconds: 14
@@ -234,48 +234,13 @@ custom-items:
     invincibility-duration-seconds: 3
     resistance-level: 4
 
+
 # ============================================
-# ENCHANTMENT PRICES
+# CONSUMABLES
 # ============================================
-enchants:
-  protection:
-    tier-1: 10000
-    tier-2: 25000
-    tier-3: 50000
-    tier-4: 100000
-
-  sharpness:
-    tier-1: 5000
-    tier-2: 10000
-    tier-3: 15000
-    tier-4: 20000
-    tier-5: 25000
-
-  power:
-    tier-1: 5000
-    tier-2: 10000
-    tier-3: 15000
-    tier-4: 20000
-    tier-5: 25000
-
-  knockback:
-    tier-1: 3000
-    tier-2: 6000
-
-  punch:
-    tier-1: 3000
-    tier-2: 6000
-
-  fire-aspect:
-    tier-1: 8000
-    tier-2: 15000
-
-  flame:
-    tier-1: 10000
-
-  projectile_protection:
-    tier-1: 8000
-    tier-2: 10000
-    tier-3: 12000
-    tier-4: 14000
+consumables:
+  # Global cooldown for special effect consumables
+  # (speed carrot, golden chicken, cookie of life, sunscreen, can of spinach)
+  # Prevents spam-eating. In seconds.
+  effect-cooldown-seconds: 2
 

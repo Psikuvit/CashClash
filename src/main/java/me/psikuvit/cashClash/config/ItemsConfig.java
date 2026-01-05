@@ -311,5 +311,15 @@ public class ItemsConfig {
     public int getDragonDoubleJumpCooldown() {
         return config.getInt("custom-armor.dragon.double-jump.cooldown-seconds", 10);
     }
+
+    // ==================== CONSUMABLES ====================
+
+    /**
+     * Global cooldown for special effect consumables (speed carrot, golden chicken, etc.)
+     * Prevents spam-eating. Default: 2 seconds.
+     */
+    public int getConsumableCooldown() {
+        return config.getInt("consumables.effect-cooldown-seconds", 2);
+    }
 }
 

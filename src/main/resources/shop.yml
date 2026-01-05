@@ -21,25 +21,15 @@ armor:
   diamond-leggings: 5500
   diamond-chestplate: 6000
 
-  netherite-boots: 15000
-  netherite-helmet: 17500
-  netherite-leggings: 20000
-  netherite-chestplate: 25000
-
 # ============================================
 # WEAPON PRICES
 # ============================================
 weapons:
-  wooden-sword: 500
-  stone-sword: 750
   iron-sword: 1250
-  diamond-sword: 3000
-  netherite-sword: 10000
-
-  wooden-axe: 500
-  stone-axe: 750
   iron-axe: 1250
+  diamond-sword: 3000
   diamond-axe: 3000
+  netherite-sword: 10000
   netherite-axe: 10000
 
 # ============================================
@@ -105,22 +95,17 @@ custom-armor:
   investors-leggings: 45000
   investors-boots: 50000
 
-  # Flamebringer Set
-  flamebringer-helmet: 55000
-  flamebringer-chestplate: 60000
+  # Flamebringer Set (only leggings + boots in code)
   flamebringer-leggings: 65000
   flamebringer-boots: 70000
 
-  # Deathmauler Set
-  deathmauler-helmet: 75000
+  # Deathmauler Set (only chestplate + leggings in code)
   deathmauler-chestplate: 80000
   deathmauler-leggings: 85000
-  deathmauler-boots: 90000
 
-  # Dragon Set
+  # Dragon Set (helmet, chestplate, boots in code)
   dragon-head: 95000
   dragon-chestplate: 100000
-  dragon-leggings: 105000
   dragon-boots: 110000
 
 # ============================================
@@ -132,7 +117,7 @@ mythic-items:
   wind-bow: 100000
   electric-eel-sword: 125000
   goblin-spear: 125000
-  sandstormer: 125000
+  bloodwrench-crossbow: 125000
   warden-gloves: 150000
   blazebite-crossbows: 150000
 
@@ -174,10 +159,11 @@ enchants:
   flame:
     tier-1: 10000
 
-  unbreaking:
-    tier-1: 2000
-    tier-2: 4000
-    tier-3: 6000
+  projectile_protection:
+    tier-1: 8000
+    tier-2: 10000
+    tier-3: 12000
+    tier-4: 14000
 
 # ============================================
 # INVESTMENT PRICES

@@ -16,6 +16,7 @@ public class ConfigManager {
 
     private ConfigManager() {
         this.config = CashClashPlugin.getInstance().getConfig();
+        CashClashPlugin.getInstance().saveDefaultConfig();
     }
 
     public static ConfigManager getInstance() {
