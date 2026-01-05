@@ -67,7 +67,7 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
 
         ItemStack customItem = ItemUtils.createCustomItem(type, viewer);
 
-        ShopService.getInstance().processPurchase(viewer, type, 1, price);
+        ShopService.getInstance().deductCoins(viewer, price);
         viewer.getInventory().addItem(customItem);
 
         Messages.send(viewer, "<green>Purchased " + type.getDisplayName() + " for $" + String.format("%,d", price) + "</green>");
