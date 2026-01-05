@@ -83,7 +83,7 @@ public class ShopService {
     }
 
     private void giveItemToPlayer(Player player, CashClashPlayer ccp, Purchasable item, int quantity, long totalPrice) {
-        int giveQty = Math.max(1, Math.min(quantity, item.getInitialAmount()));
+        int giveQty = Math.max(1, quantity);
 
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         int round = sess != null ? sess.getCurrentRound() : 1;

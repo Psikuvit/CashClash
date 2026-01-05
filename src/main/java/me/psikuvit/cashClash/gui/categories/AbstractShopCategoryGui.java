@@ -121,8 +121,8 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         if (ccp == null) return;
 
         int qty = item.getInitialAmount();
-        if (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT) {
-            qty = Math.min(10, item.getInitialAmount());
+        if (clickType.isShiftClick()) {
+            qty = 10;
         }
 
         long totalPrice = ShopService.getInstance().calculateTotalPrice(item, qty);
@@ -163,6 +163,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
             return;
         }
 
+        ccp.popLastPurchase();
         ShopService.getInstance().processRefund(viewer, rec);
         refresh();
     }
