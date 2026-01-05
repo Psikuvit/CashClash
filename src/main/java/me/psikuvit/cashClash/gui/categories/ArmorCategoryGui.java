@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.gui.categories;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.ShopCategory;
@@ -90,18 +91,18 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         ItemStack[] flamebringerPieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.FLAMEBRINGER, viewer);
         setItem(31, ItemStack.of(Material.BARRIER));
         if (flamebringerPieces.length > 0) {
-            setButton(32, createArmorSetButton(flamebringerPieces[0], CustomArmorItem.ArmorSet.FLAMEBRINGER));
+            setButton(33, createArmorSetButton(flamebringerPieces[0], CustomArmorItem.ArmorSet.FLAMEBRINGER));
         }
         if (flamebringerPieces.length > 1) {
-            setButton(33, createArmorSetButton(flamebringerPieces[1], CustomArmorItem.ArmorSet.FLAMEBRINGER));
+            setButton(34, createArmorSetButton(flamebringerPieces[1], CustomArmorItem.ArmorSet.FLAMEBRINGER));
         }
-        setItem(34, ItemStack.of(Material.BARRIER));
+        setItem(32, ItemStack.of(Material.BARRIER));
 
         // Individual custom armor pieces
         setButton(40, createCustomArmorButton(CustomArmorItem.MAGIC_HELMET));
-        setButton(41, createCustomArmorButton(CustomArmorItem.BUNNY_SHOES));
-        setButton(42, createCustomArmorButton(CustomArmorItem.GUARDIANS_VEST));
-        setButton(43, createCustomArmorButton(CustomArmorItem.TAX_EVASION_PANTS));
+        setButton(43, createCustomArmorButton(CustomArmorItem.BUNNY_SHOES));
+        setButton(41, createCustomArmorButton(CustomArmorItem.GUARDIANS_VEST));
+        setButton(42, createCustomArmorButton(CustomArmorItem.TAX_EVASION_PANTS));
     }
 
     private void placeArmorButton(int slot, ArmorItem ironItem, ArmorItem diamondItem,
@@ -129,19 +130,19 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     }
 
     private GuiButton createArmorSetButton(ItemStack itemStack, CustomArmorItem.ArmorSet set) {
-        return GuiButton.of(itemStack).onClick(p -> handleArmorSetPurchase(set));
+        return GuiButton.of(itemStack).onClick(p -> handleArmorSetPurchase(p, set));
     }
 
-    private void handleArmorSetPurchase(CustomArmorItem.ArmorSet armorSet) {
-        GameSession sess = getSession();
-        if (sess == null) {
-            Messages.send(viewer, "<red>You must be in a game to shop.</red>");
-            viewer.closeInventory();
-            return;
-        }
-
+    public void handleArmorSetPurchase(Player player, CustomArmorItem.ArmorSet armorSet) {
         CashClashPlayer ccp = getCashClashPlayer();
         if (ccp == null) return;
+
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) {
+            Messages.send(player, "<red>You must be in a game to shop.</red>");
+            player.closeInventory();
+            return;
+        }
 
         long totalPrice = armorSet.getTotalPrice();
         if (!ShopService.getInstance().canAfford(player, totalPrice)) {
@@ -153,20 +154,24 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         ShopService.getInstance().deductCoins(player, totalPrice);
         int round = session.getCurrentRound();
 
-        int round = sess.getCurrentRound();
         for (CustomArmorItem piece : armorSet.getPieces()) {
-            ItemStack replacedItem = ItemUtils.giveCustomArmorSet(viewer, piece);
+            ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, piece);
+            if (replacedItem != null && replacedItem.getType() != Material.AIR) {
+                if (player.getInventory().firstEmpty() != -1) {
+                    player.getInventory().addItem(replacedItem);
+                } else {
+                    player.getWorld().dropItemNaturally(player.getLocation(), replacedItem);
+                }
+            }
             ccp.addPurchase(new PurchaseRecord(piece, 1, piece.getPrice(), replacedItem, round));
         }
 
-        Messages.send(viewer, "");
-        Messages.send(viewer, "<green><bold>✓ SET PURCHASED</bold></green>");
-        Messages.send(viewer, "<yellow>" + armorSet.getDisplayName() + "</yellow>");
-        Messages.send(viewer, "<dark_gray>-$" + String.format("%,d", totalPrice) + "</dark_gray>");
-        Messages.send(viewer, "");
-        SoundUtils.play(viewer, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
-
-        refresh();
+        Messages.send(player, "");
+        Messages.send(player, "<green><bold>✓ SET PURCHASED</bold></green>");
+        Messages.send(player, "<yellow>" + armorSet.getDisplayName() + "</yellow>");
+        Messages.send(player, "<dark_gray>-$" + String.format("%,d", totalPrice) + "</dark_gray>");
+        Messages.send(player, "");
+        SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
     }
-}
 
+}
