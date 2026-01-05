@@ -28,27 +28,13 @@ public class BlockListener implements Listener {
 
     // ==================== BLOCK PLACE ====================
 
-    @EventHandler(priority = EventPriority.LOW)
-    public void onBlockPlaceLobby(BlockPlaceEvent event) {
-        if (event.isCancelled()) return;
-
-        Player player = event.getPlayer();
-
-        // Skip if player is in a game session
-        if (GameManager.getInstance().getPlayerSession(player) != null) return;
-
-        // Cancel for non-admins in lobby
-        if (!player.hasPermission("cashclash.admin")) {
-            event.setCancelled(true);
-        }
-    }
-
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockPlaceTrack(BlockPlaceEvent event) {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
+        event.setCancelled(true);
 
-        if (session == null) return;
+        if (session == null || !session.getState().isCombat()) return;
 
         // Track this block as player-placed
         UUID sessionId = session.getSessionId();
@@ -56,6 +42,7 @@ public class BlockListener implements Listener {
         Location loc = block.getLocation();
 
         placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
+        event.setCancelled(false);
     }
 
     // ==================== BLOCK BREAK ====================
