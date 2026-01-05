@@ -145,12 +145,12 @@ public class CashClashPlayer {
         return false;
     }
 
-    public void addOwnedEnchant(EnchantEntry entry, int level) {
-        ownedEnchants.put(entry, Math.max(ownedEnchants.getOrDefault(entry, 0), level));
+    public void setOwnedEnchantLevel(EnchantEntry enchant, int level) {
+        ownedEnchants.put(enchant, level);
     }
 
-    public int getOwnedEnchantLevel(EnchantEntry entry) {
-        return ownedEnchants.getOrDefault(entry, 0);
+    public int getOwnedEnchantLevel(EnchantEntry enchant) {
+        return ownedEnchants.getOrDefault(enchant, 0);
     }
 
     public Map<EnchantEntry, Integer> getOwnedEnchants() { return Map.copyOf(ownedEnchants); }
