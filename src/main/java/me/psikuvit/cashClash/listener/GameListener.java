@@ -43,7 +43,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityShootBowEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -206,30 +205,6 @@ public class GameListener implements Listener {
         Messages.send(player, "<green>You have respawned.</green>");
     }
 
-    // ==================== FOOD LEVEL ====================
-
-    @EventHandler(priority = EventPriority.LOW)
-    public void onFoodLevelChangeLobby(FoodLevelChangeEvent event) {
-        if (event.isCancelled()) return;
-        if (!(event.getEntity() instanceof Player player)) return;
-
-        if (GameManager.getInstance().getPlayerSession(player) != null) return;
-
-        event.setCancelled(true);
-    }
-
-    @EventHandler(priority = EventPriority.NORMAL)
-    public void onFoodLevelChangeShop(FoodLevelChangeEvent event) {
-        if (event.isCancelled()) return;
-        if (!(event.getEntity() instanceof Player player)) return;
-
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session != null && session.getState().isShopping()) {
-            event.setCancelled(true);
-            player.setFoodLevel(20);
-        }
-    }
-
     // ==================== ITEM DROP ====================
 
     @EventHandler(priority = EventPriority.LOW)
@@ -309,11 +284,9 @@ public class GameListener implements Listener {
     }
 
     private void applyAbsorption(Player p) {
-        double maxAbsorption = 3 * 2.0;
-        if (p.getAbsorptionAmount() < maxAbsorption) {
-            p.setAbsorptionAmount(maxAbsorption);
-        }
-        Messages.send(p, "<gold>+3 Absorption Hearts!</gold>");
+        p.removePotionEffect(PotionEffectType.ABSORPTION);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 2 * 60 * 20, 1, false, true, true));
+        Messages.send(p, "<gold>+4 Absorption Hearts!</gold>");
         SoundUtils.play(p, Sound.ENTITY_PLAYER_BURP, 1.0f, 1.0f);
     }
 

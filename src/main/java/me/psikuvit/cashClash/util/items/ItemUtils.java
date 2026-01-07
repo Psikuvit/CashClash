@@ -42,9 +42,10 @@ public final class ItemUtils {
 
     /**
      * Equip armor or replace existing armor piece.
-     * If there was an old armor piece, it will be added to the player's inventory.
+     * If there was an old armor piece that was purchased (has ITEM_ID), it will be returned.
+     * Starter armor (without ITEM_ID) is discarded on upgrade.
      *
-     * @return The old armor piece that was replaced (null if slot was empty)
+     * @return The old armor piece that was replaced (null if slot was empty or was starter armor)
      */
     public static ItemStack equipArmorOrReplace(Player player, ItemStack newArmor) {
         if (player == null || newArmor == null) return null;
@@ -76,24 +77,37 @@ public final class ItemUtils {
             toMeta.addEnchant(e.getKey(), e.getValue(), true);
         }
         newArmor.setItemMeta(toMeta);
+
+        if (!hasPurchaseTag(old)) {
+            return null;
+        }
         return old;
+    }
+
+    /**
+     * Check if an item has a purchase tag (ITEM_ID), indicating it was bought from shop.
+     */
+    public static boolean hasPurchaseTag(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
+        return pdc.has(Keys.ITEM_ID, PersistentDataType.STRING);
     }
 
 
     /**
      * Replace the best matching tool/weapon in inventory with the new item.
-     *
-     * @return The old item that was replaced (null if nothing was replaced)
+     * Starter tools (stone tools without ITEM_ID) are discarded on upgrade.
+     * Purchased tools (with ITEM_ID) are returned.
      */
-    public static ItemStack replaceBestMatchingTool(Player player, ItemStack newItem) {
-        if (player == null || newItem == null) return null;
+    public static void replaceBestMatchingTool(Player player, ItemStack newItem) {
+        if (player == null || newItem == null) return;
         PlayerInventory inv = player.getInventory();
 
         int bestSlot = ItemSelectionUtils.findBestMatchingToolSlot(inv, newItem.getType());
 
         if (bestSlot != -1) {
             ItemStack best = inv.getItem(bestSlot);
-            if (best == null) return null;
+            if (best == null) return;
 
             ItemStack oldItem = best.clone(); // Save the old item before replacing
 
@@ -108,10 +122,8 @@ public final class ItemUtils {
             }
 
             inv.setItem(bestSlot, newItem);
-            return oldItem;
         } else {
             inv.addItem(newItem);
-            return null;
         }
     }
 
@@ -122,27 +134,35 @@ public final class ItemUtils {
         var meta = it.getItemMeta();
 
         if (meta != null) {
-            // Always set ITEM_ID for all purchasable items (required for refunds)
             meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, si.name());
+            if (!si.getDescription().isEmpty()) {
+                meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
+                meta.lore(Messages.wrapLines(si.getDescription()));
+            }
+            it.setItemMeta(meta);
 
             if (si instanceof FoodItem food) {
-                FoodProperties.Builder builder = it.getData(DataComponentTypes.FOOD).toBuilder();
-                builder.canAlwaysEat(true);
-                it.setData(DataComponentTypes.FOOD, builder.build());
-                if (!food.getDescription().isEmpty()) {
-                    meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
-                    meta.lore(Messages.wrapLines(food.getDescription()));
+                FoodProperties existing = it.getData(DataComponentTypes.FOOD);
+                Messages.debug(String.valueOf(existing));
+                if (existing != null) {
+                    FoodProperties.Builder builder = existing.toBuilder();
+                    builder.canAlwaysEat(true);
+                    it.setData(DataComponentTypes.FOOD, builder.build());
+                    Messages.debug("Updated existing food component for " + si.getDisplayName());
+                } else {
+                    // Item doesn't have food component by default, create one
+                    it.setData(DataComponentTypes.FOOD, FoodProperties.food()
+                            .canAlwaysEat(true)
+                            .nutrition(4)
+                            .saturation(2.0f)
+                            .build());
+                    Messages.debug("Created new food component for " + si.getDisplayName());
                 }
-                it.setItemMeta(meta);
+                Messages.debug(String.valueOf(it.getData(DataComponentTypes.FOOD)));
 
                 // Apply custom model data for food items with custom textures
                 CustomModelDataMapper.applyCustomModel(it, food);
             } else {
-                // Non-food items get display name and description
-                meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
-                String desc = si.getDescription();
-                if (!desc.isEmpty()) meta.lore(Messages.wrapLines(desc));
-
                 String matName = it.getType().name();
                 if (matName.endsWith("HELMET") || matName.endsWith("CHESTPLATE") || matName.endsWith("LEGGINGS") || matName.endsWith("BOOTS")) {
                     meta.setUnbreakable(true);
