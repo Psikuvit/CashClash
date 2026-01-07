@@ -1,7 +1,5 @@
 package me.psikuvit.cashClash.storage;
 
-import me.psikuvit.cashClash.player.PlayerData;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.SQLException;

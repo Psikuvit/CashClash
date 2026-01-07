@@ -2,7 +2,7 @@ package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
-import me.psikuvit.cashClash.player.PlayerData;
+import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;

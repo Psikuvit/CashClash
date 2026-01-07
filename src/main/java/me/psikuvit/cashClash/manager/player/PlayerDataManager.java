@@ -1,9 +1,9 @@
 package me.psikuvit.cashClash.manager.player;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.player.PlayerData;
 import me.psikuvit.cashClash.storage.DatabaseProvider;
 import me.psikuvit.cashClash.storage.MySQLProvider;
+import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.storage.SQLiteProvider;
 import me.psikuvit.cashClash.util.Messages;
 
@@ -111,10 +111,5 @@ public class PlayerDataManager {
     public void addInvestedCoins(UUID uuid, long amount) {
         PlayerData d = getOrLoadData(uuid);
         d.addInvestedCoins(amount);
-    }
-
-    public void setLayout(UUID uuid, String kitName, int[] slotArray) {
-        PlayerData data = getOrLoadData(uuid);
-        data.setKitLayout(kitName, slotArray);
     }
 }

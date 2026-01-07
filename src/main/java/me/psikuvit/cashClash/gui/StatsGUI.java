@@ -3,7 +3,7 @@ package me.psikuvit.cashClash.gui;
 import me.psikuvit.cashClash.gui.builder.GuiBuilder;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
-import me.psikuvit.cashClash.player.PlayerData;
+import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.GuiItemUtils;
 import net.kyori.adventure.text.Component;
