@@ -225,4 +225,251 @@ public enum Kit {
         return displayName;
     }
 
+    /**
+     * Apply kit items for layout editing (no armor, just inventory items).
+     * Used by LayoutManager to let players arrange items.
+     */
+    public void applyForLayout(Player player) {
+        player.getInventory().clear();
+
+        // Stone tools
+        player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
+        player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
+
+        // Diamond pickaxe with Efficiency 2
+        ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
+        ItemMeta pickMeta = pickaxe.getItemMeta();
+        if (pickMeta != null) {
+            pickMeta.addEnchant(Enchantment.EFFICIENCY, 2, true);
+            pickaxe.setItemMeta(pickMeta);
+        }
+        player.getInventory().addItem(pickaxe);
+
+        // Shears
+        player.getInventory().addItem(new ItemStack(Material.SHEARS));
+
+        // Food (with ITEM_ID for refund tracking)
+        ItemStack steak = ItemUtils.createTaggedItem(FoodItem.STEAK);
+        steak.setAmount(8);
+        player.getInventory().addItem(steak);
+
+        ItemStack bread = ItemUtils.createTaggedItem(FoodItem.BREAD);
+        bread.setAmount(16);
+        player.getInventory().addItem(bread);
+
+        // Water bucket
+        player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
+
+        // Kit-specific items (no potion effects for layout)
+        switch (this) {
+            case ARCHER -> {
+                player.getInventory().addItem(new ItemStack(Material.BOW));
+                player.getInventory().addItem(new ItemStack(Material.ARROW, 10));
+            }
+            case BUILDER -> player.getInventory().addItem(new ItemStack(Material.COBBLESTONE, 64));
+            case HEALER -> {
+                ItemStack splash = new ItemStack(Material.SPLASH_POTION);
+                PotionMeta meta = (PotionMeta) splash.getItemMeta();
+                if (meta != null) {
+                    meta.setBasePotionType(PotionType.HEALING);
+                    meta.displayName(Messages.parse("<blue>Potion of Instant Health"));
+                    splash.setItemMeta(meta);
+                }
+                player.getInventory().addItem(splash);
+            }
+            case SCOUT -> {
+                ItemStack crossbow = new ItemStack(Material.CROSSBOW);
+                ItemMeta meta = crossbow.getItemMeta();
+                if (meta != null) meta.addEnchant(Enchantment.QUICK_CHARGE, 1, true);
+                crossbow.setItemMeta(meta);
+                player.getInventory().addItem(crossbow);
+                player.getInventory().addItem(new ItemStack(Material.ARROW, 10));
+            }
+            case PYROMANIAC -> {
+                player.getInventory().addItem(new ItemStack(Material.LAVA_BUCKET));
+                player.getInventory().addItem(new ItemStack(Material.FIRE_CHARGE, 2));
+            }
+            case SPIDER -> player.getInventory().addItem(new ItemStack(Material.COBWEB, 2));
+            case BOMBER -> {
+                for (int i = 0; i < 2; i++) {
+                    ItemStack grenade = new ItemStack(CustomItem.GRENADE.getMaterial());
+                    ItemMeta gm = grenade.getItemMeta();
+                    if (gm != null) {
+                        gm.displayName(Messages.parse("<yellow>Throwable Grenade</yellow>"));
+                        gm.lore(Messages.wrapLines(CustomItem.GRENADE.getDescription()));
+                        gm.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.GRENADE.name());
+                        gm.getPersistentDataContainer().set(Keys.ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
+                        grenade.setItemMeta(gm);
+                    }
+                    player.getInventory().addItem(grenade);
+                }
+            }
+            // TANK, LUMBERJACK, FIGHTER modify existing items - handled in apply()
+            // GHOST, FIRE_FIGHTER only add potion effects - nothing to add here
+            default -> {}
+        }
+    }
+
+    /**
+     * Apply kit with a custom layout.
+     * Items are placed in the specified slots.
+     *
+     * @param player The player to give the kit to
+     * @param layout Array of slot positions for items
+     */
+    public void applyWithLayout(Player player, int[] layout) {
+        player.getInventory().clear();
+
+        // Apply armor
+        ItemStack leatherHelmet = new ItemStack(Material.LEATHER_HELMET);
+        ItemMeta helmetMeta = leatherHelmet.getItemMeta();
+        if (helmetMeta != null) {
+            helmetMeta.setUnbreakable(true);
+            leatherHelmet.setItemMeta(helmetMeta);
+        }
+        player.getInventory().setHelmet(leatherHelmet);
+        player.getInventory().setChestplate(new ItemStack(Material.GOLDEN_CHESTPLATE));
+        player.getInventory().setLeggings(new ItemStack(Material.GOLDEN_LEGGINGS));
+        player.getInventory().setBoots(new ItemStack(Material.GOLDEN_BOOTS));
+        player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
+
+        // Collect all items to place
+        java.util.List<ItemStack> items = new java.util.ArrayList<>();
+
+        // Base items
+        items.add(new ItemStack(Material.STONE_SWORD));
+        items.add(new ItemStack(Material.STONE_AXE));
+
+        ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
+        ItemMeta pickMeta = pickaxe.getItemMeta();
+        if (pickMeta != null) {
+            pickMeta.addEnchant(Enchantment.EFFICIENCY, 2, true);
+            pickaxe.setItemMeta(pickMeta);
+        }
+        items.add(pickaxe);
+        items.add(new ItemStack(Material.SHEARS));
+
+        ItemStack steak = ItemUtils.createTaggedItem(FoodItem.STEAK);
+        steak.setAmount(8);
+        items.add(steak);
+
+        ItemStack bread = ItemUtils.createTaggedItem(FoodItem.BREAD);
+        bread.setAmount(16);
+        items.add(bread);
+
+        items.add(new ItemStack(Material.WATER_BUCKET));
+
+        // Kit-specific items
+        switch (this) {
+            case ARCHER -> {
+                items.add(new ItemStack(Material.BOW));
+                items.add(new ItemStack(Material.ARROW, 10));
+            }
+            case BUILDER -> {
+                items.add(new ItemStack(Material.COBBLESTONE, 64));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 2400, 0, false, false));
+            }
+            case HEALER -> {
+                ItemStack splash = new ItemStack(Material.SPLASH_POTION);
+                PotionMeta meta = (PotionMeta) splash.getItemMeta();
+                if (meta != null) {
+                    meta.setBasePotionType(PotionType.HEALING);
+                    meta.displayName(Messages.parse("<blue>Potion of Instant Health"));
+                    splash.setItemMeta(meta);
+                }
+                items.add(splash);
+            }
+            case TANK -> player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 2400, 0, false, false));
+            case SCOUT -> {
+                ItemStack crossbow = new ItemStack(Material.CROSSBOW);
+                ItemMeta meta = crossbow.getItemMeta();
+                if (meta != null) meta.addEnchant(Enchantment.QUICK_CHARGE, 1, true);
+                crossbow.setItemMeta(meta);
+                items.add(crossbow);
+                items.add(new ItemStack(Material.ARROW, 10));
+            }
+            case PYROMANIAC -> {
+                items.add(new ItemStack(Material.LAVA_BUCKET));
+                items.add(new ItemStack(Material.FIRE_CHARGE, 2));
+            }
+            case GHOST -> player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 2400, 0, false, false));
+            case FIRE_FIGHTER -> player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 2400, 0, false, false));
+            case SPIDER -> items.add(new ItemStack(Material.COBWEB, 2));
+            case BOMBER -> {
+                for (int i = 0; i < 2; i++) {
+                    ItemStack grenade = new ItemStack(CustomItem.GRENADE.getMaterial());
+                    ItemMeta gm = grenade.getItemMeta();
+                    if (gm != null) {
+                        gm.displayName(Messages.parse("<yellow>Throwable Grenade</yellow>"));
+                        gm.lore(Messages.wrapLines(CustomItem.GRENADE.getDescription()));
+                        gm.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.GRENADE.name());
+                        gm.getPersistentDataContainer().set(Keys.ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
+                        grenade.setItemMeta(gm);
+                    }
+                    items.add(grenade);
+                }
+            }
+            default -> {}
+        }
+
+        // Place items according to layout
+        int layoutIndex = 0;
+        for (ItemStack item : items) {
+            if (layoutIndex < layout.length) {
+                int slot = layout[layoutIndex];
+                if (slot >= 0 && slot < 36) {
+                    player.getInventory().setItem(slot, item);
+                } else {
+                    player.getInventory().addItem(item);
+                }
+                layoutIndex++;
+            } else {
+                player.getInventory().addItem(item);
+            }
+        }
+
+        // Apply kit-specific enchants to existing items
+        switch (this) {
+            case TANK -> {
+                ItemStack chest = player.getInventory().getChestplate();
+                ItemStack legs = player.getInventory().getLeggings();
+                if (chest != null) {
+                    ItemMeta m = chest.getItemMeta();
+                    if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
+                    chest.setItemMeta(m);
+                    player.getInventory().setChestplate(chest);
+                }
+                if (legs != null) {
+                    ItemMeta m = legs.getItemMeta();
+                    if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
+                    legs.setItemMeta(m);
+                    player.getInventory().setLeggings(legs);
+                }
+            }
+            case LUMBERJACK -> {
+                int axeSlot = getAxeSlot(player);
+                if (axeSlot >= 0) {
+                    ItemStack axe = player.getInventory().getItem(axeSlot);
+                    if (axe != null) {
+                        ItemMeta meta = axe.getItemMeta();
+                        if (meta != null) meta.addEnchant(Enchantment.SHARPNESS, 1, true);
+                        axe.setItemMeta(meta);
+                    }
+                }
+            }
+            case FIGHTER -> {
+                int swordSlot = getSwordSlot(player);
+                if (swordSlot >= 0) {
+                    ItemStack sword = player.getInventory().getItem(swordSlot);
+                    if (sword != null) {
+                        ItemMeta meta = sword.getItemMeta();
+                        if (meta != null) meta.addEnchant(Enchantment.SHARPNESS, 1, true);
+                        sword.setItemMeta(meta);
+                    }
+                }
+            }
+            default -> {}
+        }
+    }
+
 }

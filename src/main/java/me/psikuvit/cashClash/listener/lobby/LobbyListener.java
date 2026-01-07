@@ -1,8 +1,10 @@
 package me.psikuvit.cashClash.listener.lobby;
 
 import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
+import me.psikuvit.cashClash.gui.LayoutKitSelectorGUI;
 import me.psikuvit.cashClash.gui.StatsGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.lobby.LayoutManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager.LobbyItemType;
 import me.psikuvit.cashClash.util.Messages;
@@ -70,12 +72,17 @@ public class LobbyListener implements Listener {
     }
 
     /**
-     * Handle the layout configurator item - Placeholder for future implementation.
+     * Handle the layout configurator item - Opens the layout kit selector GUI.
      */
     private void handleLayoutConfiguratorItem(Player player) {
-        // TODO: Implement layout configurator system in the future
-        Messages.send(player, "<yellow>Layout Configurator coming soon!</yellow>");
-        Messages.send(player, "<gray>This feature will allow you to customize your kit layout.</gray>");
+        // Check if already editing a layout
+        if (LayoutManager.getInstance().isEditing(player)) {
+            Messages.send(player, "<yellow>You are currently editing a layout.</yellow>");
+            Messages.send(player, "<gray>Use <yellow>/cc layout confirm</yellow> to save or <yellow>/cc layout cancel</yellow> to cancel.</gray>");
+            return;
+        }
+
+        LayoutKitSelectorGUI.open(player);
     }
 
     // ==================== PREVENT LOBBY ITEM MANIPULATION ====================
@@ -86,6 +93,9 @@ public class LobbyListener implements Listener {
 
         // Only protect if player is NOT in a game
         if (GameManager.getInstance().getPlayerSession(player) != null) return;
+
+        // Allow clicks when editing a layout
+        if (LayoutManager.getInstance().isEditing(player)) return;
 
         ItemStack clicked = event.getCurrentItem();
         ItemStack cursor = event.getCursor();

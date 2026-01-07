@@ -109,15 +109,26 @@ public class PlayerData {
         this.totalCoinsEarned += amount;
     }
 
-    public Map<String, Integer> getOwnedEnchants() {
-        return ownedEnchants;
+    public Map<String, int[]> getKitLayouts() {
+        if (kitLayouts == null) kitLayouts = new HashMap<>();
+        return kitLayouts;
     }
 
-    public void setOwnedEnchants(Map<String, Integer> ownedEnchants) {
-        this.ownedEnchants = ownedEnchants;
+    public void setKitLayouts(Map<String, int[]> kitLayouts) {
+        this.kitLayouts = kitLayouts;
     }
 
-    public void addOwnedEnchant(String key, int level) {
-        this.ownedEnchants.put(key, Math.max(this.ownedEnchants.getOrDefault(key, 0), level));
+    public int[] getKitLayout(String kitName) {
+        if (kitLayouts == null) return null;
+        return kitLayouts.get(kitName);
+    }
+
+    public void setKitLayout(String kitName, int[] slots) {
+        if (kitLayouts == null) kitLayouts = new HashMap<>();
+        kitLayouts.put(kitName, slots);
+    }
+
+    public boolean hasKitLayout(String kitName) {
+        return kitLayouts != null && kitLayouts.containsKey(kitName);
     }
 }

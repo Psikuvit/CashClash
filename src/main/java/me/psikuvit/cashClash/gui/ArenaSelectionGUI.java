@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.gui.builder.GuiBuilder;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.lobby.LayoutManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
@@ -118,6 +119,14 @@ public class ArenaSelectionGUI {
     public static void handleArenaClick(Player player, int arenaNumber) {
         ArenaManager arenaManager = ArenaManager.getInstance();
         GameManager gameManager = GameManager.getInstance();
+
+        // Prevent joining while editing a layout
+        if (LayoutManager.getInstance().isEditing(player)) {
+            Messages.send(player, "<red>You cannot join a game while editing a layout!</red>");
+            Messages.send(player, "<gray>Use <yellow>/cc layout confirm</yellow> or <yellow>/cc layout cancel</yellow> first.</gray>");
+            player.closeInventory();
+            return;
+        }
 
         if (gameManager.getPlayerSession(player) != null) {
             Messages.send(player, "<red>You're already in a game!</red>");

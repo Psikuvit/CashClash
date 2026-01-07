@@ -113,7 +113,8 @@ public class PlayerDataManager {
         d.addInvestedCoins(amount);
     }
 
-    private static void pluginLog(String msg) {
-        Messages.debug("STORAGE", msg);
+    public void setLayout(UUID uuid, String kitName, int[] slotArray) {
+        PlayerData data = getOrLoadData(uuid);
+        data.setKitLayout(kitName, slotArray);
     }
 }

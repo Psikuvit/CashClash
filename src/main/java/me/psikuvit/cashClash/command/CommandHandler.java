@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.command.subcommands.DebugCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceStartCommand;
 import me.psikuvit.cashClash.command.subcommands.ForfeitCommand;
 import me.psikuvit.cashClash.command.subcommands.JoinCommand;
+import me.psikuvit.cashClash.command.subcommands.LayoutCommand;
 import me.psikuvit.cashClash.command.subcommands.LeaveCommand;
 import me.psikuvit.cashClash.command.subcommands.LotteryCommand;
 import me.psikuvit.cashClash.command.subcommands.MythicsCommand;
@@ -54,6 +55,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new ShopCommand());
         registerSubcommand(new StatsCommand());
         registerSubcommand(new ForfeitCommand());
+        registerSubcommand(new LayoutCommand());
 
         // Cash Quake event commands
         registerSubcommand(new LotteryCommand());
@@ -136,6 +138,7 @@ public class CommandHandler extends Command {
         Messages.send(sender, "<yellow>/cc stats <gray>- View your stats</gray>");
         Messages.send(sender, "<yellow>/cc forfeit <gray>- Vote to forfeit the round</gray>");
         Messages.send(sender, "<yellow>/cc transfer <gray>- Transfer money to a teammate</gray>");
+        Messages.send(sender, "<yellow>/cc layout <gray>- Customize your kit item layout</gray>");
         if (sender.hasPermission("cashclash.admin")) {
             Messages.send(sender, "<gray>--- Admin Commands ---</gray>");
             Messages.send(sender, "<yellow>/cc arena <gray>- Arena admin actions (tp,set,assign)</gray>");

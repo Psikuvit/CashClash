@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.lobby.LayoutManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
@@ -60,6 +61,9 @@ public class PlayerConnectionListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+
+        // Clean up layout editing state
+        LayoutManager.getInstance().handleDisconnect(player.getUniqueId());
 
         // Remove lobby scoreboard
         ScoreboardManager.getInstance().removeLobbyScoreboard(player);
