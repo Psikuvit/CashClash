@@ -20,6 +20,12 @@ import org.bukkit.inventory.ItemStack;
 public class EnchantsCategoryGui extends AbstractShopCategoryGui {
 
     private static final String GUI_ID = "shop_enchants";
+    private static final int[] ENCHANT_SLOTS = {
+            3, 5, 10,
+            16, 21, 23,
+            28, 34, 39,
+            41
+    };
 
     public EnchantsCategoryGui(Player viewer) {
         super(GUI_ID, viewer, ShopCategory.ENCHANTS);
@@ -27,15 +33,14 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
 
     @Override
     protected void populateItems() {
-        int slot = 10;
-        for (EnchantEntry ee : EnchantEntry.values()) {
-            if (slot >= 44) break;
+        for (int i = 0; i < EnchantEntry.values().length; i++) {
+            EnchantEntry ee = EnchantEntry.values()[i];
+            int slot = ENCHANT_SLOTS[i];
 
             CashClashPlayer ccp = getCashClashPlayer();
             int currentLevel = ccp != null ? ccp.getOwnedEnchantLevel(ee) : 0;
             int nextLevel = currentLevel + 1;
 
-            final EnchantEntry enchant = ee;
             final int level = nextLevel;
 
             if (nextLevel > ee.getMaxLevel()) {
@@ -43,12 +48,8 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             } else {
                 long price = ee.getPriceForLevel(nextLevel);
                 ItemStack enchantItem = GuiItemUtils.createEnchantItem(ee, nextLevel, price);
-                setButton(slot, GuiButton.of(enchantItem).onClick(p -> handleEnchantPurchase(enchant, level)));
+                setButton(slot, GuiButton.of(enchantItem).onClick(p -> handleEnchantPurchase(ee, level)));
             }
-
-            // Skip to next row at certain slots
-            slot += 2;
-            if (slot == 18) slot = 28;
         }
     }
 

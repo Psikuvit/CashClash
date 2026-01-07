@@ -10,9 +10,11 @@ import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.ItemUtils;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /**
  * Service class for handling shop-related operations.
@@ -61,14 +63,56 @@ public class ShopService {
         boolean removed = ItemUtils.removeItemFromPlayer(player, record.item().name(), record.quantity());
 
         if (record.replacedItem() != null) {
-            player.getInventory().addItem(record.replacedItem());
+            // Restore the previous purchased item
+            restoreReplacedItem(player, record);
             Messages.send(player, "<green>Purchase undone. Refunded $" + String.format("%,d", record.price()) + " and restored your previous item.</green>");
         } else {
+            // No purchased item to restore - restore round 1 starter gear if applicable
+            restoreStarterGear(player, record.item());
             Messages.send(player, "<green>Purchase undone. Refunded $" + String.format("%,d", record.price()) +
                     (removed ? "" : " (could not find item(s) to remove)") + "</green>");
         }
 
         SoundUtils.play(player, Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.5f);
+    }
+
+    private void restoreReplacedItem(Player player, PurchaseRecord record) {
+        Purchasable item = record.item();
+        if (item instanceof ArmorItem || item instanceof CustomArmorItem) {
+            ItemUtils.equipArmorOrReplace(player, record.replacedItem());
+        } else if (item.getCategory() == ShopCategory.WEAPONS) {
+            ItemUtils.replaceBestMatchingTool(player, record.replacedItem());
+        } else {
+            player.getInventory().addItem(record.replacedItem());
+        }
+    }
+
+    private void restoreStarterGear(Player player, Purchasable item) {
+        Material material = item.getMaterial();
+        String matName = material.name();
+
+        // Check if this was an armor piece - restore round 1 starter armor
+        if (matName.endsWith("HELMET")) {
+            ItemStack starterHelmet = new ItemStack(Material.LEATHER_HELMET);
+            ItemMeta meta = starterHelmet.getItemMeta();
+            if (meta != null) {
+                meta.setUnbreakable(true);
+                starterHelmet.setItemMeta(meta);
+            }
+            player.getInventory().setHelmet(starterHelmet);
+        } else if (matName.endsWith("CHESTPLATE")) {
+            player.getInventory().setChestplate(new ItemStack(Material.GOLDEN_CHESTPLATE));
+        } else if (matName.endsWith("LEGGINGS")) {
+            player.getInventory().setLeggings(new ItemStack(Material.GOLDEN_LEGGINGS));
+        } else if (matName.endsWith("BOOTS")) {
+            player.getInventory().setBoots(new ItemStack(Material.GOLDEN_BOOTS));
+        }
+        // Check if this was a sword/axe - restore stone tools
+        else if (matName.contains("SWORD")) {
+            player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
+        } else if (matName.contains("AXE") && !matName.contains("PICKAXE")) {
+            player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
+        }
     }
 
     /**

@@ -6,7 +6,7 @@
 
     <groupId>me.psikuvit</groupId>
     <artifactId>CashClash</artifactId>
-    <version>1.0</version>
+    <version>1.2</version>
     <packaging>jar</packaging>
 
     <name>CashClash</name>

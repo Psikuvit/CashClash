@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class PlayerData {
+
     private UUID uuid;
     private int wins;
     private int losses;
@@ -12,7 +13,7 @@ public class PlayerData {
     private int kills;
     private long totalCoinsInvested;
     private long totalCoinsEarned;
-    private Map<String, Integer> ownedEnchants;
+    private Map<String, int[]> kitLayouts;
 
     // No-arg constructor for Gson
     public PlayerData() {}
@@ -25,7 +26,7 @@ public class PlayerData {
         this.kills = 0;
         this.totalCoinsInvested = 0L;
         this.totalCoinsEarned = 0L;
-        this.ownedEnchants = new HashMap<>();
+        this.kitLayouts = new HashMap<>();
     }
 
     public UUID getUuid() {

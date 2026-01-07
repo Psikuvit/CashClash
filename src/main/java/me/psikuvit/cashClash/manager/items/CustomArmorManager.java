@@ -212,7 +212,7 @@ public class CustomArmorManager {
         // Dragon Set: regen and speed on hit (requires full set: helmet + chestplate + boots)
         if (hasDragonSet(attacker)) {
             attacker.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 3 * 20, 0));
-            attacker.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 3 * 20, 1));
+            attacker.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 3 * 20, 0));
         }
     }
 

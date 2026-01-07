@@ -65,6 +65,10 @@ public class MySQLProvider implements DatabaseProvider {
 
     @Override
     public void close() throws IOException {
-        try { if (conn != null && !conn.isClosed()) conn.close(); } catch (SQLException ignored) { Messages.debug("STORAGE", "Unable to close MySQL provider: " + ignored.getMessage()); }
+        try {
+            if (conn != null && !conn.isClosed()) conn.close();
+        } catch (SQLException ignored) {
+            Messages.debug("STORAGE", "Unable to close MySQL provider: " + ignored.getMessage());
+        }
     }
 }

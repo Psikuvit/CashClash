@@ -66,9 +66,8 @@ public class PlayerDataManager {
             try {
                 Optional<PlayerData> opt = provider.loadPlayer(id);
                 if (opt.isPresent()) return opt.get();
-            }
-            catch (SQLException e) {
-                pluginLog("Failed to load player from DB: " + e.getMessage());
+            } catch (SQLException e) {
+                Messages.debug("Failed to load player from DB: " + e.getMessage());
             }
             return new PlayerData(uuid);
         });
@@ -78,16 +77,15 @@ public class PlayerDataManager {
         cache.values().forEach(d -> {
             try {
                 provider.savePlayer(d);
-            }
-            catch (SQLException e) {
-                pluginLog("Failed to save player during shutdown: " + e.getMessage());
+            } catch (SQLException e) {
+                Messages.debug("Failed to save player during shutdown: " + e.getMessage());
             }
         });
 
         try {
             provider.close();
         } catch (IOException e) {
-            pluginLog("Failed to close DB provider: " + e.getMessage());
+            Messages.debug("Failed to close DB provider: " + e.getMessage());
         }
     }
 

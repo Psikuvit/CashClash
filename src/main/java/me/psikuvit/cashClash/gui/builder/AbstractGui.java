@@ -151,7 +151,7 @@ public abstract class AbstractGui {
      * Add a back button that opens a specific GUI.
      */
     protected void setBackButton(int slot, Consumer<Player> openPreviousGui) {
-        ItemStack item = new ItemStack(Material.ARROW);
+        ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
         meta.displayName(Messages.parse("<gray>← Back</gray>"));
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);

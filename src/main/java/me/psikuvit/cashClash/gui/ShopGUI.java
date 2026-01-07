@@ -27,7 +27,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,7 +52,7 @@ public class ShopGUI extends AbstractGui {
         setButton(14, createCategoryButton(ShopCategory.FOOD, Material.GOLDEN_APPLE));
 
         setButton(21, createCategoryButton(ShopCategory.ENCHANTS, Material.ENCHANTING_TABLE));
-        setButton(22, createCategoryButton(ShopCategory.UTILITY, Material.ENDER_PEARL));
+        setButton(22, createCategoryButton(ShopCategory.UTILITY, Material.WATER_BUCKET));
         setButton(23, createCategoryButton(ShopCategory.CUSTOM_ITEMS, Material.NAME_TAG));
 
         setButton(31, createInvestmentCategoryButton());
@@ -108,19 +107,6 @@ public class ShopGUI extends AbstractGui {
         UUID playerUuid = viewer.getUniqueId();
         boolean playerHasMythic = MythicItemManager.getInstance().hasPlayerPurchasedMythic(session, playerUuid);
         MythicItem ownedMythic = MythicItemManager.getInstance().getPlayerMythic(session, playerUuid);
-
-        // Legendaries header
-        ItemStack legendHeader = new ItemStack(Material.DRAGON_HEAD);
-        ItemMeta legendHeaderMeta = legendHeader.getItemMeta();
-
-        legendHeaderMeta.displayName(Messages.parse("<dark_purple><bold>✦ MYTHIC WEAPONS ✦</bold></dark_purple>"));
-        List<Component> headerLore = new ArrayList<>();
-        headerLore.add(Component.empty());
-        headerLore.addAll(Messages.wrapLines("<gray>One per player. Each mythic is unique per game.</gray>"));
-        legendHeaderMeta.lore(headerLore);
-        legendHeaderMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        legendHeader.setItemMeta(legendHeaderMeta);
-        setItem(31, legendHeader);
 
         for (int i = 0; i < availableMythics.size() && i < legendSlots.length; i++) {
             MythicItem mythic = availableMythics.get(i);
@@ -181,13 +167,4 @@ public class ShopGUI extends AbstractGui {
         new ShopGUI(player).open();
     }
 
-    /**
-     * Static convenience method to open a category GUI directly.
-     */
-    public static void openCategoryItems(Player player, ShopCategory category) {
-        ShopGUI mainGui = new ShopGUI(player);
-        AbstractShopCategoryGui categoryGui = mainGui.createCategoryGui(category);
-        categoryGui.setParentGui(mainGui);
-        categoryGui.open();
-    }
 }

@@ -281,9 +281,9 @@ lobby-items:
     lore:
       - ""
       - "<gray>Customize your inventory layout</gray>"
-      - "<gray>for items and equipment.</gray>"
+      - "<gray>for each kit.</gray>"
       - ""
-      - "<red>Coming Soon!</red>"
+      - "<yellow>Right-click to configure!</yellow>"
     slot: 8
 
 

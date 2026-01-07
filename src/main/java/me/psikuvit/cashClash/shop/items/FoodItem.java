@@ -61,7 +61,7 @@ public enum FoodItem implements Purchasable {
     public String getDescription() {
         return switch (this) {
             case SPEED_CARROT -> "<gray>Grants 20s of Speed I when consumed.</gray>";
-            case GOLDEN_CHICKEN -> "<gray>Grants 3 hearts of Absorption when consumed. Does not stack.</gray>";
+            case GOLDEN_CHICKEN -> "<gray>Grants 4 hearts of Absorption for 2 minutes when consumed.</gray>";
             case CAN_OF_SPINACH -> "<gray>Grants 15s of Strength I when consumed.</gray>";
             case COOKIE_OF_LIFE -> "<gray>Grants 14s of Regeneration I when consumed.</gray>";
             case SUNSCREEN -> "<gray>Grants 30s of Fire Resistance when consumed.</gray>";
