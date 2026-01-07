@@ -1,8 +1,10 @@
 package me.psikuvit.cashClash.config;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -13,10 +15,32 @@ public class ConfigManager {
 
     private static ConfigManager instance;
     private FileConfiguration config;
+    private final ConfigValidator validator = new ConfigValidator();
 
     private ConfigManager() {
-        this.config = CashClashPlugin.getInstance().getConfig();
-        CashClashPlugin.getInstance().saveDefaultConfig();
+        loadConfig();
+    }
+
+    private void loadConfig() {
+        CashClashPlugin plugin = CashClashPlugin.getInstance();
+        plugin.saveDefaultConfig();
+        this.config = plugin.getConfig();
+
+        // Validate and auto-add missing fields
+        if (!validator.validateMainConfig(config, true)) {
+            Messages.debug("CONFIG", "Main configuration has errors - check warnings above");
+        }
+
+        // Save if any fields were added
+        if (validator.getAddedCount() > 0) {
+            try {
+                File configFile = new File(plugin.getDataFolder(), "config.yml");
+                config.save(configFile);
+                Messages.debug("CONFIG", "Saved config.yml with " + validator.getAddedCount() + " new default values");
+            } catch (Exception e) {
+                Messages.debug("CONFIG", "Failed to save config.yml: " + e.getMessage());
+            }
+        }
     }
 
     public static ConfigManager getInstance() {
@@ -24,6 +48,12 @@ public class ConfigManager {
             instance = new ConfigManager();
         }
         return instance;
+    }
+
+    public void reload() {
+        CashClashPlugin.getInstance().reloadConfig();
+        loadConfig();
+        validator.logConfigDiff("config.yml", 0);
     }
 
     // ==================== GAME SETTINGS ====================
@@ -199,12 +229,5 @@ public class ConfigManager {
 
     public List<String> getGameScoreboardLines() {
         return config.getStringList("scoreboard.game.lines");
-    }
-
-    // ==================== UTILITY ====================
-
-    public void reload() {
-        CashClashPlugin.getInstance().reloadConfig();
-        this.config = CashClashPlugin.getInstance().getConfig();
     }
 }

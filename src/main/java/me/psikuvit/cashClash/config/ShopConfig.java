@@ -37,8 +37,19 @@ public class ShopConfig {
 
         config = YamlConfiguration.loadConfiguration(configFile);
 
-        if (!validator.validateShopConfig(config)) {
+        // Validate and auto-add missing fields
+        if (!validator.validateShopConfig(config, true)) {
             Messages.debug("CONFIG", "Shop configuration has errors - check warnings above");
+        }
+
+        // Save if any fields were added
+        if (validator.getAddedCount() > 0) {
+            try {
+                config.save(configFile);
+                Messages.debug("CONFIG", "Saved shop.yml with " + validator.getAddedCount() + " new default values");
+            } catch (Exception e) {
+                Messages.debug("CONFIG", "Failed to save shop.yml: " + e.getMessage());
+            }
         }
     }
 

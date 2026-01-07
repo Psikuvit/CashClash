@@ -37,8 +37,19 @@ public class ItemsConfig {
 
         config = YamlConfiguration.loadConfiguration(configFile);
 
-        if (!validator.validateItemsConfig(config)) {
+        // Validate and auto-add missing fields
+        if (!validator.validateItemsConfig(config, true)) {
             Messages.debug("CONFIG", "Items configuration has errors - check warnings above");
+        }
+
+        // Save if any fields were added
+        if (validator.getAddedCount() > 0) {
+            try {
+                config.save(configFile);
+                Messages.debug("CONFIG", "Saved items.yml with " + validator.getAddedCount() + " new default values");
+            } catch (Exception e) {
+                Messages.debug("CONFIG", "Failed to save items.yml: " + e.getMessage());
+            }
         }
     }
 
