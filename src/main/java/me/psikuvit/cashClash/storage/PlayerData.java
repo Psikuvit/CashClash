@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.player;
+package me.psikuvit.cashClash.storage;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +13,8 @@ public class PlayerData {
     private int kills;
     private long totalCoinsInvested;
     private long totalCoinsEarned;
-    private Map<String, int[]> kitLayouts;
+    // Kit name -> (slot -> item identifier) for custom layouts
+    private Map<String, Map<Integer, String>> kitLayouts;
 
     // No-arg constructor for Gson
     public PlayerData() {}
@@ -109,23 +110,21 @@ public class PlayerData {
         this.totalCoinsEarned += amount;
     }
 
-    public Map<String, int[]> getKitLayouts() {
+    public Map<String, Map<Integer, String>> getKitLayouts() {
         if (kitLayouts == null) kitLayouts = new HashMap<>();
         return kitLayouts;
     }
 
-    public void setKitLayouts(Map<String, int[]> kitLayouts) {
+    public void setKitLayouts(Map<String, Map<Integer, String>> kitLayouts) {
         this.kitLayouts = kitLayouts;
     }
 
-    public int[] getKitLayout(String kitName) {
-        if (kitLayouts == null) return null;
+    public Map<Integer, String> getKitLayout(String kitName) {
         return kitLayouts.get(kitName);
     }
 
-    public void setKitLayout(String kitName, int[] slots) {
-        if (kitLayouts == null) kitLayouts = new HashMap<>();
-        kitLayouts.put(kitName, slots);
+    public void setKitLayout(String kitName, Map<Integer, String> slotItemMap) {
+        kitLayouts.put(kitName, slotItemMap);
     }
 
     public boolean hasKitLayout(String kitName) {

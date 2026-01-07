@@ -282,7 +282,7 @@ public class GameSession {
         // Check for custom layout
         PlayerData playerData = PlayerDataManager.getInstance().getData(uuid);
         if (playerData.hasKitLayout(randomKit.name())) {
-            int[] layout = playerData.getKitLayout(randomKit.name());
+            Map<Integer, String> layout = playerData.getKitLayout(randomKit.name());
             randomKit.applyWithLayout(p, layout);
         } else {
             randomKit.apply(p);
@@ -373,7 +373,11 @@ public class GameSession {
         // Clear kits/effects for all players in this session before removing them
         for (UUID u : players.keySet()) {
             Player p = Bukkit.getPlayer(u);
-            if (p != null && p.isOnline()) clearPlayerKit(p);
+            if (p != null && p.isOnline()) {
+                clearPlayerKit(p);
+                LobbyManager.getInstance().giveLobbyItems(p);
+            }
+
         }
 
         ArenaManager.getInstance().setArenaState(arenaNumber, GameState.WAITING);

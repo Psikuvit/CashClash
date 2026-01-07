@@ -2,14 +2,16 @@ package me.psikuvit.cashClash.manager.lobby;
 
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
+import me.psikuvit.cashClash.storage.PlayerData;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -70,6 +72,7 @@ public class LayoutManager {
 
     /**
      * Confirm and save the current layout.
+     * Saves a mapping of slot -> item identifier for each item.
      *
      * @param player The player confirming their layout
      * @return true if layout was saved, false if not editing
@@ -83,23 +86,24 @@ public class LayoutManager {
             return false;
         }
 
-        // Capture current item slots
+        // Capture slot -> item identifier mapping
         PlayerInventory inv = player.getInventory();
-        List<Integer> slots = new ArrayList<>();
+        Map<Integer, String> slotItemMap = new HashMap<>();
 
         // Record slots 0-35 (hotbar + main inventory, not armor)
         for (int i = 0; i < 36; i++) {
             ItemStack item = inv.getItem(i);
             if (item != null && !item.getType().isAir()) {
-                slots.add(i);
+                String itemId = getItemIdentifier(item);
+                slotItemMap.put(i, itemId);
             }
         }
 
-        // Convert to array
-        int[] slotArray = slots.stream().mapToInt(Integer::intValue).toArray();
-
         // Save to player data
-        PlayerDataManager.getInstance().setLayout(uuid, kit.name(), slotArray);
+        PlayerData data = PlayerDataManager.getInstance().getData(uuid);
+        if (data != null) {
+            data.setKitLayout(kit.name(), slotItemMap);
+        }
 
         // Restore original inventory
         restoreInventory(player);
@@ -110,6 +114,23 @@ public class LayoutManager {
 
         Messages.send(player, "<green>Layout for <yellow>" + kit.getDisplayName() + "</yellow> saved!</green>");
         return true;
+    }
+
+    /**
+     * Get a unique identifier for an item.
+     * Uses ITEM_ID from PDC if available, otherwise uses material name.
+     */
+    private String getItemIdentifier(ItemStack item) {
+        if (item == null) return null;
+
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null && meta.getPersistentDataContainer().has(Keys.ITEM_ID, PersistentDataType.STRING)) {
+            // Custom item - use ITEM_ID
+            return "CUSTOM:" + meta.getPersistentDataContainer().get(Keys.ITEM_ID, PersistentDataType.STRING);
+        }
+
+        // Standard item - use material name
+        return "MATERIAL:" + item.getType().name();
     }
 
     /**

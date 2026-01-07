@@ -16,6 +16,11 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Starter kits for Round 1
  */
@@ -312,12 +317,12 @@ public enum Kit {
 
     /**
      * Apply kit with a custom layout.
-     * Items are placed in the specified slots.
+     * Items are placed according to the slot -> item identifier mapping.
      *
      * @param player The player to give the kit to
-     * @param layout Array of slot positions for items
+     * @param layout Map of slot -> item identifier
      */
-    public void applyWithLayout(Player player, int[] layout) {
+    public void applyWithLayout(Player player, Map<Integer, String> layout) {
         player.getInventory().clear();
 
         // Apply armor
@@ -333,12 +338,12 @@ public enum Kit {
         player.getInventory().setBoots(new ItemStack(Material.GOLDEN_BOOTS));
         player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
 
-        // Collect all items to place
-        java.util.List<ItemStack> items = new java.util.ArrayList<>();
+        // Build a map of item identifier -> ItemStack for all kit items
+        Map<String, ItemStack> itemMap = new HashMap<>();
 
         // Base items
-        items.add(new ItemStack(Material.STONE_SWORD));
-        items.add(new ItemStack(Material.STONE_AXE));
+        itemMap.put("MATERIAL:STONE_SWORD", new ItemStack(Material.STONE_SWORD));
+        itemMap.put("MATERIAL:STONE_AXE", new ItemStack(Material.STONE_AXE));
 
         ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
         ItemMeta pickMeta = pickaxe.getItemMeta();
@@ -346,27 +351,30 @@ public enum Kit {
             pickMeta.addEnchant(Enchantment.EFFICIENCY, 2, true);
             pickaxe.setItemMeta(pickMeta);
         }
-        items.add(pickaxe);
-        items.add(new ItemStack(Material.SHEARS));
+        itemMap.put("MATERIAL:DIAMOND_PICKAXE", pickaxe);
+        itemMap.put("MATERIAL:SHEARS", new ItemStack(Material.SHEARS));
 
         ItemStack steak = ItemUtils.createTaggedItem(FoodItem.STEAK);
         steak.setAmount(8);
-        items.add(steak);
+        itemMap.put("CUSTOM:STEAK", steak);
+        itemMap.put("MATERIAL:COOKED_BEEF", steak); // Fallback
 
         ItemStack bread = ItemUtils.createTaggedItem(FoodItem.BREAD);
         bread.setAmount(16);
-        items.add(bread);
+        itemMap.put("CUSTOM:BREAD", bread);
+        itemMap.put("MATERIAL:BREAD", bread); // Fallback
 
-        items.add(new ItemStack(Material.WATER_BUCKET));
+        itemMap.put("MATERIAL:WATER_BUCKET", new ItemStack(Material.WATER_BUCKET));
 
         // Kit-specific items
         switch (this) {
             case ARCHER -> {
-                items.add(new ItemStack(Material.BOW));
-                items.add(new ItemStack(Material.ARROW, 10));
+                itemMap.put("MATERIAL:BOW", new ItemStack(Material.BOW));
+                ItemStack arrows = new ItemStack(Material.ARROW, 10);
+                itemMap.put("MATERIAL:ARROW", arrows);
             }
             case BUILDER -> {
-                items.add(new ItemStack(Material.COBBLESTONE, 64));
+                itemMap.put("MATERIAL:COBBLESTONE", new ItemStack(Material.COBBLESTONE, 64));
                 player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 2400, 0, false, false));
             }
             case HEALER -> {
@@ -377,25 +385,34 @@ public enum Kit {
                     meta.displayName(Messages.parse("<blue>Potion of Instant Health"));
                     splash.setItemMeta(meta);
                 }
-                items.add(splash);
+                itemMap.put("MATERIAL:SPLASH_POTION", splash);
             }
-            case TANK -> player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 2400, 0, false, false));
+            case TANK -> {
+                // Tank gets Protection on armor - applied after placement
+            }
             case SCOUT -> {
                 ItemStack crossbow = new ItemStack(Material.CROSSBOW);
                 ItemMeta meta = crossbow.getItemMeta();
                 if (meta != null) meta.addEnchant(Enchantment.QUICK_CHARGE, 1, true);
                 crossbow.setItemMeta(meta);
-                items.add(crossbow);
-                items.add(new ItemStack(Material.ARROW, 10));
+                itemMap.put("MATERIAL:CROSSBOW", crossbow);
+                itemMap.put("MATERIAL:ARROW", new ItemStack(Material.ARROW, 10));
+            }
+            case LUMBERJACK -> {
+                // Sharpness on axe - applied after placement
             }
             case PYROMANIAC -> {
-                items.add(new ItemStack(Material.LAVA_BUCKET));
-                items.add(new ItemStack(Material.FIRE_CHARGE, 2));
+                itemMap.put("MATERIAL:LAVA_BUCKET", new ItemStack(Material.LAVA_BUCKET));
+                itemMap.put("MATERIAL:FIRE_CHARGE", new ItemStack(Material.FIRE_CHARGE, 2));
             }
             case GHOST -> player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 2400, 0, false, false));
+            case FIGHTER -> {
+                // Sharpness on sword - applied after placement
+            }
             case FIRE_FIGHTER -> player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 2400, 0, false, false));
-            case SPIDER -> items.add(new ItemStack(Material.COBWEB, 2));
+            case SPIDER -> itemMap.put("MATERIAL:COBWEB", new ItemStack(Material.COBWEB, 2));
             case BOMBER -> {
+                // Grenades need to be created with player UUID
                 for (int i = 0; i < 2; i++) {
                     ItemStack grenade = new ItemStack(CustomItem.GRENADE.getMaterial());
                     ItemMeta gm = grenade.getItemMeta();
@@ -406,25 +423,37 @@ public enum Kit {
                         gm.getPersistentDataContainer().set(Keys.ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
                         grenade.setItemMeta(gm);
                     }
-                    items.add(grenade);
+                    // Add grenades as GRENADE_1 and GRENADE_2
+                    itemMap.put("CUSTOM:GRENADE_" + i, grenade);
+                    itemMap.put("CUSTOM:GRENADE", grenade); // Also map without number
                 }
             }
             default -> {}
         }
 
+        // Track which items have been placed to avoid duplicates
+        Set<String> placedItems = new HashSet<>();
+
         // Place items according to layout
-        int layoutIndex = 0;
-        for (ItemStack item : items) {
-            if (layoutIndex < layout.length) {
-                int slot = layout[layoutIndex];
-                if (slot >= 0 && slot < 36) {
-                    player.getInventory().setItem(slot, item);
-                } else {
-                    player.getInventory().addItem(item);
-                }
-                layoutIndex++;
-            } else {
-                player.getInventory().addItem(item);
+        for (Map.Entry<Integer, String> entry : layout.entrySet()) {
+            int slot = entry.getKey();
+            String itemId = entry.getValue();
+
+            if (slot < 0 || slot >= 36) continue;
+
+            ItemStack item = itemMap.get(itemId);
+            if (item != null && !placedItems.contains(itemId)) {
+                player.getInventory().setItem(slot, item.clone());
+                placedItems.add(itemId);
+            }
+        }
+
+        // Add any remaining items that weren't in the layout
+        for (Map.Entry<String, ItemStack> entry : itemMap.entrySet()) {
+            if (!placedItems.contains(entry.getKey())) {
+                // Skip duplicate mappings (fallbacks)
+                if (entry.getKey().startsWith("CUSTOM:GRENADE_")) continue;
+                player.getInventory().addItem(entry.getValue().clone());
             }
         }
 
