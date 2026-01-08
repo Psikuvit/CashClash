@@ -142,6 +142,14 @@ public final class CashClashPlugin extends JavaPlugin {
             getLogger().log(Level.WARNING, "Error shutting down PartyManager", e);
         }
 
+        try {
+            // Step 7: Shutdown chat manager
+            ChatManager.getInstance().shutdown();
+            getLogger().info("Chat manager shut down");
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error shutting down ChatManager", e);
+        }
+
         getLogger().info("Cash Clash has been disabled!");
     }
 

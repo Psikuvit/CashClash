@@ -60,7 +60,10 @@ public class CommandHandler extends Command {
         registerSubcommand(new ForfeitCommand());
         registerSubcommand(new LayoutCommand());
 
+        // Party and chat commands
         registerSubcommand(new PartyCommand());
+        registerSubcommand(new ChatCommand());
+
         // Cash Quake event commands
         registerSubcommand(new LotteryCommand());
         registerSubcommand(new PayTaxCommand());
