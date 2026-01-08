@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash;
 
 import me.psikuvit.cashClash.arena.ArenaManager;
+import me.psikuvit.cashClash.chat.ChatManager;
 import me.psikuvit.cashClash.command.CommandHandler;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
@@ -18,6 +19,7 @@ import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.lobby.MannequinManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
+import me.psikuvit.cashClash.party.PartyManager;
 import me.psikuvit.cashClash.util.CooldownManager;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -130,6 +132,14 @@ public final class CashClashPlugin extends JavaPlugin {
             getLogger().info("Mannequins removed");
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "Error shutting down MannequinManager", e);
+        }
+
+        try {
+            // Step 6: Shutdown party system
+            PartyManager.getInstance().shutdown();
+            getLogger().info("Party system shut down");
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error shutting down PartyManager", e);
         }
 
         getLogger().info("Cash Clash has been disabled!");
