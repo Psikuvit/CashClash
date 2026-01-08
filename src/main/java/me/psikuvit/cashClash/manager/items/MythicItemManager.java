@@ -658,6 +658,8 @@ public class MythicItemManager {
             return;
         }
 
+        cooldownManager.setCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING, cfg.getEelTeleportCooldown());
+
         Location start = player.getEyeLocation();
         Vector direction = start.getDirection().normalize();
         World world = player.getWorld();
