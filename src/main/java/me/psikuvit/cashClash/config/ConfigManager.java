@@ -1,10 +1,11 @@
 package me.psikuvit.cashClash.config;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -23,23 +24,31 @@ public class ConfigManager {
 
     private void loadConfig() {
         CashClashPlugin plugin = CashClashPlugin.getInstance();
+
         plugin.saveDefaultConfig();
-        this.config = plugin.getConfig();
+        File configFile = new File(plugin.getDataFolder(), "config.yml");
+        this.config = YamlConfiguration.loadConfiguration(configFile);
 
-        // Validate and auto-add missing fields
-        if (!validator.validateMainConfig(config, true)) {
-            Messages.debug("CONFIG", "Main configuration has errors - check warnings above");
+        plugin.getLogger().info("Validating config.yml...");
+
+        boolean hasIssues = !validator.validateMainConfig(config, true);
+
+        plugin.getLogger().info("Validation complete. Added count: " + validator.getAddedCount());
+
+        if (hasIssues) {
+            plugin.getLogger().warning("Main configuration has validation issues - check warnings above");
         }
-
         // Save if any fields were added
         if (validator.getAddedCount() > 0) {
+            plugin.getLogger().info("Attempting to save config with " + validator.getAddedCount() + " new values...");
             try {
-                File configFile = new File(plugin.getDataFolder(), "config.yml");
                 config.save(configFile);
-                Messages.debug("CONFIG", "Saved config.yml with " + validator.getAddedCount() + " new default values");
-            } catch (Exception e) {
-                Messages.debug("CONFIG", "Failed to save config.yml: " + e.getMessage());
+                plugin.getLogger().info("Successfully saved config.yml with new default values");
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to save config.yml: " + e.getMessage());
             }
+        } else {
+            plugin.getLogger().info("No new values to add, config is up to date");
         }
     }
 
@@ -229,5 +238,22 @@ public class ConfigManager {
 
     public List<String> getGameScoreboardLines() {
         return config.getStringList("scoreboard.game.lines");
+    }
+
+    // ==================== NPC SETTINGS ====================
+
+    /**
+     * Get the display name for the arena NPC.
+     */
+    public String getArenaNPCDisplayName() {
+        return config.getString("npc.arena.display-name", "<gold><bold>Arena Selector</bold></gold>");
+    }
+
+    /**
+     * Get the skin texture value for the arena NPC.
+     * This is the base64 encoded texture value from Minecraft skin data.
+     */
+    public String getArenaNPCSkinURL() {
+        return config.getString("npc.arena.skin-url", "");
     }
 }

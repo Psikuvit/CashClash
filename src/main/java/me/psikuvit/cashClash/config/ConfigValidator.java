@@ -307,12 +307,15 @@ public class ConfigValidator {
         validateAndSet(config, "game.min-players", 8, autoAdd);
         validateAndSet(config, "game.max-players", 8, autoAdd);
         validateAndSet(config, "game.total-rounds", 5, autoAdd);
+        validateAndSet(config, "game.first-round", 1, autoAdd);
         validateAndSet(config, "game.combat-phase-duration", 360, autoAdd);
         validateAndSet(config, "game.shopping-phase-duration", 90, autoAdd);
         validateAndSet(config, "game.first-round-shopping-duration", 120, autoAdd);
         validateAndSet(config, "game.respawn-delay", 5, autoAdd);
         validateAndSet(config, "game.respawn-protection", 15, autoAdd);
         validateAndSet(config, "game.forfeit-enabled", true, autoAdd);
+        validateAndSet(config, "game.forfeit-delay", 10, autoAdd);
+        validateAndSet(config, "game.forfeit-combat-grace", 5, autoAdd);
 
         // Round settings
         validateAndSet(config, "rounds.early-round-lives", 3, autoAdd);
@@ -331,16 +334,104 @@ public class ConfigValidator {
         validateAndSet(config, "economy.round-5-minimum", 20000, autoAdd);
         validateAndSet(config, "economy.round-5-bonus", 10000, autoAdd);
         validateAndSet(config, "economy.round-1-kill-reward", 3000, autoAdd);
+        validateAndSet(config, "economy.round-1-transfer-fee", 0.50, autoAdd);
+        validateAndSet(config, "economy.round-2-3-transfer-fee", 0.10, autoAdd);
+        validateAndSet(config, "economy.round-4-5-transfer-fee", 0.05, autoAdd);
+        validateAndSet(config, "economy.late-round-steal-percentage", 0.25, autoAdd);
 
         // Cash Quake settings
         validateAndSet(config, "cash-quake.min-guaranteed-events", 2, autoAdd);
         validateAndSet(config, "cash-quake.max-events-per-game", 10, autoAdd);
+        validateAndSet(config, "cash-quake.max-events-per-round", 2, autoAdd);
+        validateAndSet(config, "cash-quake.event-check-interval-ticks", 600L, autoAdd);
+        validateAndSet(config, "cash-quake.event-base-chance", 0.30, autoAdd);
+
+        // Cash Quake - Lottery
         validateAndSet(config, "cash-quake.lottery.entry-cost", 5000, autoAdd);
         validateAndSet(config, "cash-quake.lottery.prize", 10000, autoAdd);
         validateAndSet(config, "cash-quake.lottery.duration-seconds", 30, autoAdd);
+
+        // Cash Quake - Weight of Wealth
         validateAndSet(config, "cash-quake.weight-of-wealth.tax-cost", 5000, autoAdd);
         validateAndSet(config, "cash-quake.weight-of-wealth.duration-seconds", 20, autoAdd);
 
+        // Cash Quake - Life Steal
+        validateAndSet(config, "cash-quake.life-steal.duration-minutes", 2, autoAdd);
+        validateAndSet(config, "cash-quake.life-steal.health-per-kill", 4.0, autoAdd);
+        validateAndSet(config, "cash-quake.life-steal.max-health", 40.0, autoAdd);
+
+        // Cash Quake - Check Up
+        validateAndSet(config, "cash-quake.check-up.duration-minutes", 2, autoAdd);
+        validateAndSet(config, "cash-quake.check-up.min-hearts", 1, autoAdd);
+        validateAndSet(config, "cash-quake.check-up.max-hearts", 5, autoAdd);
+
+        // Cash Quake - Broken Gear
+        validateAndSet(config, "cash-quake.broken-gear.duration-seconds", 30, autoAdd);
+
+        // Cash Quake - Supply Drop
+        validateAndSet(config, "cash-quake.supply-drop.min-chests", 3, autoAdd);
+        validateAndSet(config, "cash-quake.supply-drop.max-extra-chests", 4, autoAdd);
+        validateAndSet(config, "cash-quake.supply-drop.min-coins", 1000, autoAdd);
+        validateAndSet(config, "cash-quake.supply-drop.max-extra-coins", 1001, autoAdd);
+
+        // Player defaults
+        validateAndSet(config, "player.default-health", 20.0, autoAdd);
+        validateAndSet(config, "player.max-health-cap", 40.0, autoAdd);
+
+        // Messages
+        validateAndSet(config, "messages.prefix", "<gold><bold>[Cash Clash]</bold></gold>", autoAdd);
+        validateAndSet(config, "messages.game-starting", "<green>Game starting in {time} seconds!</green>", autoAdd);
+        validateAndSet(config, "messages.round-starting", "<yellow>Round {round} - Shopping Phase!</yellow>", autoAdd);
+        validateAndSet(config, "messages.combat-starting", "<red>Combat Phase Starting!</red>", autoAdd);
+        validateAndSet(config, "messages.team-eliminated", "<red>Team {team} has been eliminated!</red>", autoAdd);
+        validateAndSet(config, "messages.team-forfeited", "<yellow>Team {team} has forfeited! Team {winner} earns {amount} each!</yellow>", autoAdd);
+        validateAndSet(config, "messages.winner", "<gold><bold>Team {team} wins with ${amount}!</bold></gold>", autoAdd);
+
+        // Scoreboard - Lobby
+        validateAndSet(config, "scoreboard.lobby.enabled", true, autoAdd);
+        validateAndSet(config, "scoreboard.lobby.title", "<gold><bold>Cash Clash</bold></gold>", autoAdd);
+        validateAndSetList(config, "scoreboard.lobby.lines", List.of(
+                "",
+                "<gray>Player:</gray> <white>{player}",
+                "",
+                "<yellow>Your Stats:</yellow>",
+                "<gray>Wins:</gray> <green>{wins}",
+                "<gray>Losses:</gray> <red>{losses}",
+                "<gray>K/D:</gray> <white>{kdr}",
+                "",
+                "<gray>Kills:</gray> <white>{kills}",
+                "<gray>Deaths:</gray> <white>{deaths}",
+                "",
+                "<gray>Online:</gray> <white>{online}/{max_online}",
+                "",
+                "<yellow>play.cashclash.net</yellow>"
+        ), autoAdd);
+
+        // Scoreboard - Game
+        validateAndSet(config, "scoreboard.game.enabled", true, autoAdd);
+        validateAndSet(config, "scoreboard.game.title", "<gold><bold>Round {round} - {phase}</bold></gold>", autoAdd);
+        validateAndSetList(config, "scoreboard.game.lines", List.of(
+                "",
+                "<yellow>Time:</yellow> <white>{time}",
+                "<yellow>Phase:</yellow> <white>{phase}",
+                "",
+                "<green>Your Team ({your_team}):</green>",
+                "<gray>Coins:</gray> <white>${your_team_coins}",
+                "<gray>Alive:</gray> <white>{your_team_alive}/4",
+                "",
+                "<red>Enemy Team ({enemy_team}):</red>",
+                "<gray>Coins:</gray> <white>${enemy_team_coins}",
+                "<gray>Alive:</gray> <white>{enemy_team_alive}/4",
+                "",
+                "<aqua>You:</aqua>",
+                "<gray>Coins:</gray> <gold>${player_coins}",
+                "<gray>Lives:</gray> <white>{player_lives}",
+                "<gray>Kills:</gray> <white>{player_kills}",
+                "",
+                "<yellow>play.cashclash.net</yellow>"
+        ), autoAdd);
+
+        // NPC settings
         validateAndSet(config, "npc.arena.display-name", "<gold><bold>Arena Selector</bold></gold>", autoAdd);
         validateAndSet(config, "npc.arena.skin-url", "https://textures.minecraft.net/texture/c2e93825cdc4c7ec014143f170ff05ef7ca5f3606716eb5429eb427bb05b7e17", autoAdd);
         logResults("config.yml");
@@ -390,37 +481,57 @@ public class ConfigValidator {
     }
 
     private void validateAndSet(FileConfiguration config, String path, Object defaultValue, boolean autoAdd) {
-        if (!config.contains(path)) {
+        boolean exists = config.contains(path);
+        if (!exists) {
             if (autoAdd) {
                 config.set(path, defaultValue);
                 added.add("Added: " + path + " = " + defaultValue);
+                CashClashPlugin.getInstance().getLogger().info("[CashClash] [VALIDATOR] Added missing key: " + path);
             } else {
                 warnings.add("Missing key: " + path + " (default: " + defaultValue + ")");
             }
         }
     }
 
+    private void validateAndSetList(FileConfiguration config, String path, List<String> defaultValue, boolean autoAdd) {
+        if (!config.contains(path) || config.getStringList(path).isEmpty()) {
+            if (autoAdd) {
+                config.set(path, defaultValue);
+                added.add("Added: " + path + " = [" + defaultValue.size() + " items]");
+                CashClashPlugin.getInstance().getLogger().info("[CashClash] [VALIDATOR] Added missing list: " + path);
+            } else {
+                warnings.add("Missing key: " + path + " (default: [" + defaultValue.size() + " items])");
+            }
+        }
+    }
+
     private void logResults(String fileName) {
-        // Use Bukkit logger directly to avoid circular dependency with ConfigManager
         Logger logger = CashClashPlugin.getInstance().getLogger();
-        String prefix = "[CashClash] ";
 
         if (errors.isEmpty() && warnings.isEmpty() && added.isEmpty()) {
-            logger.info(prefix + "✓ " + fileName + " validated successfully");
+            logger.info("[CashClash] ✓ " + fileName + " validated successfully (all keys present)");
             return;
         }
 
         if (!added.isEmpty()) {
-            logger.info(prefix + "➕ " + fileName + " - Added " + added.size() + " missing keys");
+            logger.info("[CashClash] ➕ " + fileName + " - Added " + added.size() + " missing keys:");
+            for (String addedKey : added) {
+                logger.info("[CashClash]   - " + addedKey);
+            }
         }
 
         if (!warnings.isEmpty()) {
-            logger.warning(prefix + "⚠ " + fileName + " has " + warnings.size() + " validation warnings");
+            logger.warning("[CashClash] ⚠ " + fileName + " has " + warnings.size() + " validation warnings:");
+            for (String warning : warnings) {
+                logger.warning("[CashClash]   - " + warning);
+            }
         }
 
         if (!errors.isEmpty()) {
-            logger.severe(prefix + "✗ " + fileName + " has " + errors.size() + " validation errors");
-            errors.forEach(e -> logger.severe(prefix + "  - " + e));
+            logger.severe("[CashClash] ✗ " + fileName + " has " + errors.size() + " validation errors:");
+            for (String error : errors) {
+                logger.severe("[CashClash]   - " + error);
+            }
         }
     }
 
