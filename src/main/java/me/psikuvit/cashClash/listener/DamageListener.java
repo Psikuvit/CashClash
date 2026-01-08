@@ -169,7 +169,8 @@ public class DamageListener implements Listener {
 
             switch (mythic) {
                 case COIN_CLEAVER -> {
-                    double newDamage = mythicManager.handleCoinCleaverDamage(attacker, victim, event.getDamage());
+                    boolean isFullyCharged = attacker.getAttackCooldown() >= 0.9f;
+                    double newDamage = mythicManager.handleCoinCleaverDamage(attacker, victim, event.getDamage(), isFullyCharged);
                     event.setDamage(newDamage);
                 }
                 case CARLS_BATTLEAXE -> {

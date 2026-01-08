@@ -328,6 +328,9 @@ public class GameSession {
         team1.resetForfeitVotes();
         team2.resetForfeitVotes();
 
+        // Reset Coin Cleaver charge tracking for new round
+        MythicItemManager.getInstance().resetCoinCleaverTrackingForSession(this);
+
         switch (currentRound) {
             case 2 -> state = GameState.ROUND_2_SHOPPING;
             case 3 -> state = GameState.ROUND_3_SHOPPING;

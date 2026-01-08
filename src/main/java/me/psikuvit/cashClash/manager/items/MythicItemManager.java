@@ -203,14 +203,7 @@ public class MythicItemManager {
         return sessionAvailableMythics.getOrDefault(sessionId, Collections.emptyList());
     }
 
-    /**
-     * Check if a specific mythic is available in this session.
-     */
-    public boolean isMythicAvailableInSession(GameSession session, MythicItem mythic) {
-        if (session == null || mythic == null) return false;
-        List<MythicItem> available = getAvailableMythics(session);
-        return available.contains(mythic);
-    }
+    private static final int COIN_CLEAVER_HITS_REQUIRED = 10;
 
     /**
      * Create the mythic item with proper tags and appearance.
@@ -374,12 +367,32 @@ public class MythicItemManager {
     }
 
     // ==================== COIN CLEAVER ====================
+    private static final int COIN_CLEAVER_NO_KB_DURATION_SECONDS = 15;
+    private static final int COIN_CLEAVER_MAX_USES_PER_ROUND = 3;
+    // Track charged hits for No KB ability (UUID -> hit count)
+    private final Map<UUID, Integer> coinCleaverChargedHits = new HashMap<>();
+    // Track No KB uses this round (UUID -> uses remaining, max 3)
+    private final Map<UUID, Integer> coinCleaverNoKBUsesRemaining = new HashMap<>();
+    // Track players currently with active No KB buff
+    private final Map<UUID, Long> coinCleaverNoKBActiveUntil = new HashMap<>();
+    // Track players currently in spin attack
+    private final Set<UUID> spinningPlayers = new HashSet<>();
+
+    /**
+     * Check if a specific mythic is available in this session.
+     */
+    public boolean isUnavailable(GameSession session, MythicItem mythic) {
+        if (session == null || mythic == null) return true;
+        List<MythicItem> available = getAvailableMythics(session);
+        return !available.contains(mythic);
+    }
 
     /**
      * Handle Coin Cleaver damage bonus against richer players.
      * +25% damage if victim has more coins than attacker.
+     * Also tracks fully charged hits for the No KB ability.
      */
-    public double handleCoinCleaverDamage(Player attacker, Player victim, double baseDamage) {
+    public double handleCoinCleaverDamage(Player attacker, Player victim, double baseDamage, boolean isFullyCharged) {
         Messages.debug(attacker, "COIN_CLEAVER: Checking damage bonus...");
 
         GameSession session = GameManager.getInstance().getPlayerSession(attacker);
@@ -396,6 +409,11 @@ public class MythicItemManager {
             return baseDamage;
         }
 
+        // Track fully charged hits for No KB ability
+        if (isFullyCharged) {
+            trackCoinCleaverChargedHit(attacker);
+        }
+
         if (victimCcp.getCoins() > attackerCcp.getCoins()) {
             double newDamage = baseDamage * ItemsConfig.getInstance().getCoinCleaverDamageBonus();
             Messages.debug(attacker, "COIN_CLEAVER: +25% damage! (" + baseDamage + " -> " + newDamage + ") Victim has more coins");
@@ -406,20 +424,139 @@ public class MythicItemManager {
     }
 
     /**
-     * Check if player should have no knockback (Coin Cleaver in hand/offhand).
-     * Sturdy Feet passive ability.
+     * Track a fully charged hit with Coin Cleaver.
+     * After 10 hits, grants No KB for 15 seconds (max 3 uses per round).
+     */
+    private void trackCoinCleaverChargedHit(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        // Check if player has uses remaining this round
+        int usesRemaining = coinCleaverNoKBUsesRemaining.getOrDefault(uuid, COIN_CLEAVER_MAX_USES_PER_ROUND);
+        if (usesRemaining <= 0) {
+            Messages.debug(player, "COIN_CLEAVER: No KB uses exhausted for this round");
+            return;
+        }
+
+        // Check if already has active No KB
+        if (hasCoinCleaverNoKBActive(uuid)) {
+            Messages.debug(player, "COIN_CLEAVER: Already has active No KB buff");
+            return;
+        }
+
+        // Increment hit count
+        int hits = coinCleaverChargedHits.getOrDefault(uuid, 0) + 1;
+        coinCleaverChargedHits.put(uuid, hits);
+
+        Messages.debug(player, "COIN_CLEAVER: Charged hit! " + hits + "/" + COIN_CLEAVER_HITS_REQUIRED);
+
+        // Check if reached threshold
+        if (hits >= COIN_CLEAVER_HITS_REQUIRED) {
+            activateCoinCleaverNoKB(player);
+        } else if (hits == COIN_CLEAVER_HITS_REQUIRED - 3) {
+            // Warn player they're close
+            Messages.send(player, "<yellow>Coin Cleaver: " + (COIN_CLEAVER_HITS_REQUIRED - hits) + " more charged hits for No KB!</yellow>");
+        }
+    }
+
+    /**
+     * Activate the No KB buff for a player.
+     */
+    private void activateCoinCleaverNoKB(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        // Reset hit counter
+        coinCleaverChargedHits.put(uuid, 0);
+
+        // Decrement uses remaining
+        int usesRemaining = coinCleaverNoKBUsesRemaining.getOrDefault(uuid, COIN_CLEAVER_MAX_USES_PER_ROUND);
+        coinCleaverNoKBUsesRemaining.put(uuid, usesRemaining - 1);
+
+        // Set active until timestamp
+        long activeUntil = System.currentTimeMillis() + (COIN_CLEAVER_NO_KB_DURATION_SECONDS * 1000L);
+        coinCleaverNoKBActiveUntil.put(uuid, activeUntil);
+
+        int usesLeft = usesRemaining - 1;
+        Messages.send(player, "<gold><bold>COIN CLEAVER: NO KNOCKBACK ACTIVATED!</bold></gold>");
+        Messages.send(player, "<yellow>Duration: " + COIN_CLEAVER_NO_KB_DURATION_SECONDS + "s | Uses remaining: " + usesLeft + "/" + COIN_CLEAVER_MAX_USES_PER_ROUND + "</yellow>");
+
+        SoundUtils.play(player, Sound.BLOCK_ANVIL_LAND, 1.0f, 0.5f);
+        player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
+
+        Messages.debug(player, "COIN_CLEAVER: No KB activated! " + COIN_CLEAVER_NO_KB_DURATION_SECONDS + "s, " + usesLeft + " uses left this round");
+
+        // Schedule expiration message
+        SchedulerUtils.runTaskLater(() -> {
+            if (player.isOnline()) {
+                Messages.send(player, "<gray>Coin Cleaver No KB expired.</gray>");
+                if (usesLeft > 0) {
+                    Messages.send(player, "<gray>Land " + COIN_CLEAVER_HITS_REQUIRED + " more charged hits for another use.</gray>");
+                } else {
+                    Messages.send(player, "<red>No more No KB uses available this round.</red>");
+                }
+            }
+        }, COIN_CLEAVER_NO_KB_DURATION_SECONDS * 20L);
+    }
+
+    /**
+     * Check if player currently has active No KB from charged hits.
+     */
+    private boolean hasCoinCleaverNoKBActive(UUID uuid) {
+        Long activeUntil = coinCleaverNoKBActiveUntil.get(uuid);
+        if (activeUntil == null) return false;
+        return System.currentTimeMillis() < activeUntil;
+    }
+
+    /**
+     * Check if player should have no knockback.
+     * Returns true if player has earned No KB buff from 10 charged hits.
      */
     public boolean hasCoinCleaverNoKnockback(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        // Check if player has Coin Cleaver equipped
         ItemStack mainHand = player.getInventory().getItemInMainHand();
         ItemStack offHand = player.getInventory().getItemInOffHand();
 
-        boolean hasIt = PDCDetection.getMythic(mainHand) == MythicItem.COIN_CLEAVER ||
+        boolean hasCleaver = PDCDetection.getMythic(mainHand) == MythicItem.COIN_CLEAVER ||
                PDCDetection.getMythic(offHand) == MythicItem.COIN_CLEAVER;
 
-        if (hasIt) {
-            Messages.debug(player, "COIN_CLEAVER: Sturdy Feet - No knockback applied");
+        if (!hasCleaver) {
+            return false;
         }
-        return hasIt;
+
+        // Check if has active No KB buff
+        if (hasCoinCleaverNoKBActive(uuid)) {
+            Messages.debug(player, "COIN_CLEAVER: No KB active - knockback prevented");
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Reset Coin Cleaver tracking for a player (call on round start/end).
+     */
+    public void resetCoinCleaverTracking(UUID playerId) {
+        coinCleaverChargedHits.remove(playerId);
+        coinCleaverNoKBUsesRemaining.remove(playerId);
+        coinCleaverNoKBActiveUntil.remove(playerId);
+        Messages.debug("COIN_CLEAVER: Reset tracking for " + playerId);
+    }
+
+    /**
+     * Reset Coin Cleaver tracking for all players in a session (call on round end).
+     */
+    public void resetCoinCleaverTrackingForSession(GameSession session) {
+        for (UUID playerId : session.getPlayers()) {
+            resetCoinCleaverTracking(playerId);
+        }
+    }
+
+    /**
+     * Get the current charged hit count for a player.
+     */
+    public int getCoinCleaverChargedHits(UUID playerId) {
+        return coinCleaverChargedHits.getOrDefault(playerId, 0);
     }
 
     /**
