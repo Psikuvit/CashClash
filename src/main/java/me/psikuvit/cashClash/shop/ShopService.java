@@ -7,13 +7,16 @@ import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.ItemSelectionUtils;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 
 /**
@@ -133,36 +136,93 @@ public class ShopService {
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         int round = sess != null ? sess.getCurrentRound() : 1;
 
-        if (item instanceof CustomArmorItem customArmor) {
-            ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, customArmor);
-            ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
+        switch (item) {
+            case CustomArmorItem customArmor -> {
+                ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, customArmor);
 
-            ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
-            Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
-            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        } else if (item instanceof ArmorItem) {
-            ItemStack armorItem = ItemUtils.createTaggedItem(item).clone();
-            ItemStack replacedItem = ItemUtils.equipArmorOrReplace(player, armorItem);
+                ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
 
-            if (replacedItem != null) {
-                player.getInventory().addItem(replacedItem);
+                ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
+                Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
+                SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
             }
+            case ArmorItem ignored -> {
+                ItemStack armorItem = ItemUtils.createTaggedItem(item).clone();
+                ItemStack replacedItem = ItemUtils.equipArmorOrReplace(player, armorItem);
 
-            ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
-            ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
+                ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
+                ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
 
-            Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
-            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-        } else {
-            ItemStack stack = ItemUtils.createTaggedItem(item).clone();
-            stack.setAmount(giveQty);
-            player.getInventory().addItem(stack);
-            ccp.addPurchase(new PurchaseRecord(item, giveQty, totalPrice, round));
+                Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
+                SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+            }
+            case WeaponItem ignored -> {
+                ItemStack weaponItem = ItemUtils.createTaggedItem(item).clone();
+                ItemStack replacedItem = replaceWeaponInInventory(player, weaponItem);
 
-            Messages.send(player, "<green>Purchased " + item.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
-            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+                ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
+                ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
+
+                Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
+                SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+            }
+            default -> {
+                // Other items - just add to inventory
+                ItemStack stack = ItemUtils.createTaggedItem(item).clone();
+                stack.setAmount(giveQty);
+                player.getInventory().addItem(stack);
+                ccp.addPurchase(new PurchaseRecord(item, giveQty, totalPrice, round));
+
+                Messages.send(player, "<green>Purchased " + item.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
+                SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+            }
         }
     }
+
+    /**
+     * Replace a weapon in the player's inventory with a new one.
+     * Finds the matching weapon category (sword/axe) and replaces it.
+     * The old weapon is discarded (not returned to inventory).
+     *
+     * @param player The player
+     * @param newWeapon The new weapon to give
+     * @return The replaced item (for PurchaseRecord tracking), null if nothing was replaced
+     */
+    private ItemStack replaceWeaponInInventory(Player player, ItemStack newWeapon) {
+        PlayerInventory inv = player.getInventory();
+        Material newType = newWeapon.getType();
+
+        // Find matching weapon slot
+        int bestSlot = ItemSelectionUtils.findBestMatchingToolSlot(inv, newType);
+
+        if (bestSlot != -1) {
+            ItemStack existing = inv.getItem(bestSlot);
+            if (existing != null) {
+                ItemStack oldItem = existing.clone();
+
+                // Transfer enchantments from old to new
+                ItemMeta oldMeta = existing.getItemMeta();
+                ItemMeta newMeta = newWeapon.getItemMeta();
+                if (oldMeta != null && newMeta != null) {
+                    for (var e : oldMeta.getEnchants().entrySet()) {
+                        newMeta.addEnchant(e.getKey(), e.getValue(), true);
+                    }
+                    newWeapon.setItemMeta(newMeta);
+                }
+
+                // Replace the weapon (old one is discarded)
+                inv.setItem(bestSlot, newWeapon);
+
+                // Return old item for PurchaseRecord (needed for undo)
+                return oldItem;
+            }
+        }
+
+        // No matching weapon found, just add to inventory
+        inv.addItem(newWeapon);
+        return null;
+    }
+
 
     public void deductCoins(Player player, long cost) {
         CashClashPlayer ccp = getCashClashPlayer(player);
