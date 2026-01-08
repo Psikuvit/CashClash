@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.gui.builder.GuiListener;
 import me.psikuvit.cashClash.listener.BlockListener;
+import me.psikuvit.cashClash.listener.ChatListener;
 import me.psikuvit.cashClash.listener.DamageListener;
 import me.psikuvit.cashClash.listener.GameListener;
 import me.psikuvit.cashClash.listener.InteractListener;
@@ -168,6 +169,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new PlayerConnectionListener(),
                 new LobbyListener(),
                 new ArenaNPCListener(),
+                new ChatListener()
         };
 
         for (Listener listener : listeners) {
