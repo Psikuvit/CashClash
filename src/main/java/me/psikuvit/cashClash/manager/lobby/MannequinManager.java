@@ -14,6 +14,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.profile.PlayerTextures;
 
 import java.io.File;
 import java.io.IOException;
@@ -95,8 +96,6 @@ public class MannequinManager {
             double x = section.getDouble("x");
             double y = section.getDouble("y");
             double z = section.getDouble("z");
-            float yaw = (float) section.getDouble("yaw");
-            float pitch = (float) section.getDouble("pitch");
 
             World world = Bukkit.getWorld(worldName);
             if (world == null) {
@@ -104,7 +103,7 @@ public class MannequinManager {
                 continue;
             }
 
-            Location loc = new Location(world, x, y, z, yaw, pitch);
+            Location loc = new Location(world, x, y, z);
 
             if ("arena".equals(type)) {
                 spawnArenaMannequin(loc, id);
@@ -166,8 +165,6 @@ public class MannequinManager {
         data.set(path + ".x", loc.getX());
         data.set(path + ".y", loc.getY());
         data.set(path + ".z", loc.getZ());
-        data.set(path + ".yaw", loc.getYaw());
-        data.set(path + ".pitch", loc.getPitch());
         data.set(path + ".created-by", creator.getName());
         data.set(path + ".created-at", System.currentTimeMillis());
         saveData();
@@ -185,6 +182,8 @@ public class MannequinManager {
     private void spawnArenaMannequin(Location loc, String id) {
         ConfigManager config = ConfigManager.getInstance();
         String skinUrl = config.getArenaNPCSkinURL();
+        loc.setYaw(90);
+        loc.setPitch(0);
 
         loc.getWorld().spawn(loc, Mannequin.class, mannequin -> {
             mannequin.customName(Messages.parse(config.getArenaNPCDisplayName()));
@@ -194,10 +193,14 @@ public class MannequinManager {
 
             // Apply skin if URL is configured
             if (skinUrl != null && !skinUrl.isEmpty()) {
+                Messages.debug(skinUrl);
                 try {
                     PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID(), "ArenaNPC");
-                    profile.getTextures().setSkin(URI.create(skinUrl).toURL());
+                    PlayerTextures playerTextures = profile.getTextures();
+                    playerTextures.setSkin(URI.create(skinUrl).toURL());
+                    profile.setTextures(playerTextures);
                     mannequin.setProfile(ResolvableProfile.resolvableProfile(profile));
+                    Messages.debug("[MannequinManager] Applied skin to mannequin " + id);
                 } catch (MalformedURLException e) {
                     plugin.getLogger().warning("[MannequinManager] Failed to apply skin for mannequin " + id + ": " + e.getMessage());
                 }
