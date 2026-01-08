@@ -46,14 +46,11 @@ public class DamageListener implements Listener {
         if (event.isCancelled()) return;
 
         if (!(event.getDamager() instanceof Player damager)) return;
-        if (!(event.getEntity() instanceof Player victim)) return;
-
         try {
             GameSession damagerSession = GameManager.getInstance().getPlayerSession(damager);
-            GameSession victimSession = GameManager.getInstance().getPlayerSession(victim);
 
-            // Allow if both players are in the same game session
-            if (damagerSession != null && damagerSession.equals(victimSession)) return;
+            // Allow if player in a game
+            if (damagerSession != null) return;
 
             // Cancel PvP outside games
             event.setCancelled(true);
@@ -121,7 +118,7 @@ public class DamageListener implements Listener {
             EntityDamageEvent.DamageCause cause = event.getCause();
             if (cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION ||
                 cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION) {
-                if (armorManager.isDragonSetImmuneToExplosion(player)) {
+                if (armorManager.hasDragonSet(player)) {
                     event.setCancelled(true);
                     return;
                 }
