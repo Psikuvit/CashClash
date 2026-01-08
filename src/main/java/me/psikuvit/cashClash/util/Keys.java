@@ -45,6 +45,11 @@ public class Keys {
      */
     public static final NamespacedKey BLAZEBITE_MODE;
 
+    /**
+     * Key for arena NPC mannequins (opens arena selector GUI).
+     */
+    public static final NamespacedKey ARENA_NPC_KEY;
+
 
     static {
         ITEM_ID = new NamespacedKey(CashClashPlugin.getInstance(), "item_id");
@@ -54,6 +59,7 @@ public class Keys {
         SHOP_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "shop_npc");
         SUPPLY_DROP_AMOUNT = new NamespacedKey(CashClashPlugin.getInstance(), "supply_amount");
         BLAZEBITE_MODE = new NamespacedKey(CashClashPlugin.getInstance(), "blazebite_mode");
+        ARENA_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "arena_npc");
     }
 
     private Keys() {

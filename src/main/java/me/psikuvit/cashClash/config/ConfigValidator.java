@@ -341,6 +341,8 @@ public class ConfigValidator {
         validateAndSet(config, "cash-quake.weight-of-wealth.tax-cost", 5000, autoAdd);
         validateAndSet(config, "cash-quake.weight-of-wealth.duration-seconds", 20, autoAdd);
 
+        validateAndSet(config, "npc.arena.display-name", "<gold><bold>Arena Selector</bold></gold>", autoAdd);
+        validateAndSet(config, "npc.arena.skin-url", "https://textures.minecraft.net/texture/c2e93825cdc4c7ec014143f170ff05ef7ca5f3606716eb5429eb427bb05b7e17", autoAdd);
         logResults("config.yml");
         return errors.isEmpty();
     }

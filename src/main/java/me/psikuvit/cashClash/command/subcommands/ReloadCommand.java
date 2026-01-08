@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.config.ShopConfig;
+import me.psikuvit.cashClash.manager.lobby.MannequinManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
@@ -50,17 +51,23 @@ public class ReloadCommand extends AbstractArgCommand {
                     reloaded = 1;
                     Messages.send(sender, "<green>✓ Reloaded items.yml</green>");
                 }
+                case "mannequins", "npcs" -> {
+                    MannequinManager.getInstance().reload();
+                    reloaded = 1;
+                    Messages.send(sender, "<green>✓ Reloaded mannequins (respawned all NPCs)</green>");
+                }
                 case "all" -> {
                     CashClashPlugin.getInstance().reloadConfig();
                     ConfigManager.getInstance().reload();
                     ShopConfig.getInstance().reload();
                     ItemsConfig.getInstance().reload();
-                    reloaded = 3;
-                    Messages.send(sender, "<green>✓ Reloaded all configuration files</green>");
+                    MannequinManager.getInstance().reload();
+                    reloaded = 4;
+                    Messages.send(sender, "<green>✓ Reloaded all configuration files and mannequins</green>");
                 }
                 default -> {
                     Messages.send(sender, "<red>Unknown config: " + target + "</red>");
-                    Messages.send(sender, "<gray>Usage: /cc reload [config|shop|items|all]</gray>");
+                    Messages.send(sender, "<gray>Usage: /cc reload [config|shop|items|mannequins|all]</gray>");
                     return false;
                 }
             }
@@ -85,7 +92,7 @@ public class ReloadCommand extends AbstractArgCommand {
         if (args.length == 1) {
             List<String> completions = new ArrayList<>();
             String input = args[0].toLowerCase();
-            for (String option : List.of("all", "config", "shop", "items")) {
+            for (String option : List.of("all", "config", "shop", "items", "mannequins", "npcs")) {
                 if (option.startsWith(input)) {
                     completions.add(option);
                 }

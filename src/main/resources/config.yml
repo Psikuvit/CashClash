@@ -188,3 +188,18 @@ scoreboard:
       - "<gray>Kills:</gray> <white>{player_kills}"
       - ""
       - "<yellow>play.cashclash.net</yellow>"
+
+# ============================================
+# NPC CONFIGURATION
+# ============================================
+npc:
+  # Arena selector NPC (Mannequin)
+  arena:
+    # Display name shown above the NPC (MiniMessage format)
+    display-name: "<gold><bold>Arena Selector</bold></gold>"
+    # Skin texture value (base64 encoded)
+    # Get custom skins from https://mineskin.org/
+    # Leave empty for default Steve skin
+    skin-url: "https://textures.minecraft.net/texture/c2e93825cdc4c7ec014143f170ff05ef7ca5f3606716eb5429eb427bb05b7e17"
+
+

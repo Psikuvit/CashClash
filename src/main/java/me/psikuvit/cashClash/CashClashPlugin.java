@@ -12,8 +12,10 @@ import me.psikuvit.cashClash.listener.GameListener;
 import me.psikuvit.cashClash.listener.InteractListener;
 import me.psikuvit.cashClash.listener.MoveListener;
 import me.psikuvit.cashClash.listener.PlayerConnectionListener;
+import me.psikuvit.cashClash.listener.lobby.ArenaNPCListener;
 import me.psikuvit.cashClash.listener.lobby.LobbyListener;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.lobby.MannequinManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -49,6 +51,10 @@ public final class CashClashPlugin extends JavaPlugin {
             // Step 4: Register events and commands
             registerEvents();
             registerCommands();
+
+            // Step 5: Spawn persistent mannequins
+            MannequinManager.getInstance().spawnAll();
+            getLogger().info("Mannequin NPCs spawned");
 
             // Mark as successfully initialized
             initialized = true;
@@ -118,6 +124,14 @@ public final class CashClashPlugin extends JavaPlugin {
             getLogger().log(Level.WARNING, "Error clearing cooldowns", e);
         }
 
+        try {
+            // Step 5: Remove mannequins
+            MannequinManager.getInstance().shutdown();
+            getLogger().info("Mannequins removed");
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error shutting down MannequinManager", e);
+        }
+
         getLogger().info("Cash Clash has been disabled!");
     }
 
@@ -135,6 +149,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new GameListener(),
                 new PlayerConnectionListener(),
                 new LobbyListener(),
+                new ArenaNPCListener(),
         };
 
         for (Listener listener : listeners) {
