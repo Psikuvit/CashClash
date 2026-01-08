@@ -188,10 +188,13 @@ public class ConfigValidator {
         validateAndSet(config, "mythic-items.coin-cleaver.grenade.radius", 5, autoAdd);
 
         // Carl's Battleaxe
-        validateAndSet(config, "mythic-items.carls-battleaxe.charged-attack.cooldown-seconds", 45, autoAdd);
-        validateAndSet(config, "mythic-items.carls-battleaxe.charged-attack.buff-duration-seconds", 25, autoAdd);
+        validateAndSet(config, "mythic-items.carls-battleaxe.spin-attack.cooldown-seconds", 30, autoAdd);
+        validateAndSet(config, "mythic-items.carls-battleaxe.spin-attack.duration-ticks", 80, autoAdd);
+        validateAndSet(config, "mythic-items.carls-battleaxe.spin-attack.damage", 6.0, autoAdd);
+        validateAndSet(config, "mythic-items.carls-battleaxe.spin-attack.radius", 2.5, autoAdd);
+        validateAndSet(config, "mythic-items.carls-battleaxe.spin-attack.hit-interval-ticks", 10, autoAdd);
         validateAndSet(config, "mythic-items.carls-battleaxe.critical-hit.cooldown-milliseconds", 10000, autoAdd);
-        validateAndSet(config, "mythic-items.carls-battleaxe.critical-hit.launch-power", 1.5, autoAdd);
+        validateAndSet(config, "mythic-items.carls-battleaxe.critical-hit.launch-power", 1.2, autoAdd);
 
         // Wind Bow
         validateAndSet(config, "mythic-items.wind-bow.boost.cooldown-seconds", 30, autoAdd);

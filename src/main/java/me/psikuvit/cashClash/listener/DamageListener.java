@@ -173,11 +173,9 @@ public class DamageListener implements Listener {
                     event.setDamage(newDamage);
                 }
                 case CARLS_BATTLEAXE -> {
-                    if (attacker.getAttackCooldown() >= 0.9f) {
-                        mythicManager.handleCarlsChargedAttack(attacker);
-                        if (attacker.getFallDistance() > 0 && !attacker.isOnGround()) {
-                            mythicManager.handleCarlsCriticalHit(attacker, victim);
-                        }
+                    // Critical hit launch when falling
+                    if (attacker.getAttackCooldown() >= 0.9f && event.isCritical()) {
+                        mythicManager.handleCarlsCriticalHit(attacker, victim);
                     }
                 }
                 case ELECTRIC_EEL_SWORD -> {

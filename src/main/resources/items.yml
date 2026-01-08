@@ -25,14 +25,17 @@ mythic-items:
 
   # Carl's Battleaxe
   carls-battleaxe:
-    charged-attack:
-      cooldown-seconds: 45
-      buff-duration-seconds: 25
-      speed-level: 2
-      strength-level: 0
+    # Spin Attack - Right-click to spin the axe around you, dealing damage to nearby enemies
+    spin-attack:
+      cooldown-seconds: 30
+      duration-ticks: 80        # 4 seconds (80 ticks)
+      damage: 6.0               # Damage per hit
+      radius: 2.5               # Hit radius around player
+      hit-interval-ticks: 10    # How often to check for hits (every 0.5 seconds)
+    # Critical Hit - Hitting while falling launches enemy up
     critical-hit:
       cooldown-milliseconds: 10000
-      launch-power: 1.5
+      launch-power: 1.2
 
   # Wind Bow
   wind-bow:

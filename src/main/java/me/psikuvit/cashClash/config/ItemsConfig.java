@@ -86,12 +86,24 @@ public class ItemsConfig {
     }
 
     // Carl's Battleaxe
-    public int getCarlsChargedCooldown() {
-        return config.getInt("mythic-items.carls-battleaxe.charged-attack.cooldown-seconds", 45);
+    public int getCarlsSpinCooldown() {
+        return config.getInt("mythic-items.carls-battleaxe.spin-attack.cooldown-seconds", 30);
     }
 
-    public int getCarlsBuffDuration() {
-        return config.getInt("mythic-items.carls-battleaxe.charged-attack.buff-duration-seconds", 25) * 20;
+    public int getCarlsSpinDuration() {
+        return config.getInt("mythic-items.carls-battleaxe.spin-attack.duration-ticks", 80); // 4 seconds
+    }
+
+    public double getCarlsSpinDamage() {
+        return config.getDouble("mythic-items.carls-battleaxe.spin-attack.damage", 6.0);
+    }
+
+    public double getCarlsSpinRadius() {
+        return config.getDouble("mythic-items.carls-battleaxe.spin-attack.radius", 2.5);
+    }
+
+    public int getCarlsSpinHitInterval() {
+        return config.getInt("mythic-items.carls-battleaxe.spin-attack.hit-interval-ticks", 10);
     }
 
     public int getCarlsCritCooldown() {
@@ -99,7 +111,7 @@ public class ItemsConfig {
     }
 
     public double getCarlsCritLaunchPower() {
-        return config.getDouble("mythic-items.carls-battleaxe.critical-hit.launch-power", 1.5);
+        return config.getDouble("mythic-items.carls-battleaxe.critical-hit.launch-power", 1.2);
     }
 
     // Wind Bow

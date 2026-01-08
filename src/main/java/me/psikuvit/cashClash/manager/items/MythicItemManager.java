@@ -25,7 +25,9 @@ import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlotGroup;
@@ -36,9 +38,13 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -483,30 +489,188 @@ public class MythicItemManager {
     // ==================== CARL'S BATTLEAXE ====================
 
     /**
-     * Handle Carl's Battleaxe charged attack.
-     * Fully charged hit grants Speed III + Strength I for 25 seconds.
-     * 45 second cooldown.
+     * Get the remaining No KB uses for a player this round.
      */
-    public void handleCarlsChargedAttack(Player attacker) {
-        UUID uuid = attacker.getUniqueId();
-        
+    public int getCoinCleaverNoKBUsesRemaining(UUID playerId) {
+        return coinCleaverNoKBUsesRemaining.getOrDefault(playerId, COIN_CLEAVER_MAX_USES_PER_ROUND);
+    }
 
-        Messages.debug(attacker, "CARLS_BATTLEAXE: Charged attack detected");
+    /**
+     * Activate Carl's Battleaxe spinning attack.
+     * Player spins the axe around their body, slowed down, dealing high damage to nearby enemies.
+     * Includes a spinning Item Display visual effect.
+     */
+    public void activateCarlsSpinAttack(Player attacker) {
+        UUID uuid = attacker.getUniqueId();
+
+        Messages.debug(attacker, "CARLS_BATTLEAXE: Spin attack activated");
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH)) {
-            Messages.debug(attacker, "CARLS_BATTLEAXE: Charged attack on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH) + "s");
+            Messages.debug(attacker, "CARLS_BATTLEAXE: Spin attack on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH) + "s");
+            Messages.send(attacker, "<red>Spin attack on cooldown! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH) + "s)</red>");
             return;
         }
 
-        cooldownManager.setCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH, cfg.getCarlsChargedCooldown());
+        if (spinningPlayers.contains(uuid)) {
+            Messages.send(attacker, "<red>You're already spinning!</red>");
+            return;
+        }
 
-        // Grant Speed III (level 2) and Strength I (level 0) for 25 seconds
-        attacker.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, cfg.getCarlsBuffDuration(), 2, false, true));
-        attacker.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, cfg.getCarlsBuffDuration(), 0, false, true));
+        cooldownManager.setCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH, cfg.getCarlsSpinCooldown());
+        spinningPlayers.add(uuid);
 
-        Messages.debug(attacker, "CARLS_BATTLEAXE: Buffs applied! Speed III + Strength I for " + (cfg.getCarlsBuffDuration() / 20) + "s, Cooldown: " + cfg.getCarlsChargedCooldown() + "s");
-        Messages.send(attacker, "<gold>Carl's Battleaxe activated! Speed III + Strength I for 25s!</gold>");
+        // Apply slowness during spin
+        attacker.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, cfg.getCarlsSpinDuration(), 1, false, false));
+
+        Messages.send(attacker, "<gold>Carl's Battleaxe: SPIN ATTACK!</gold>");
         SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.5f);
+
+        // Spawn the spinning axe display
+        ItemDisplay axeDisplay = spawnSpinningAxeDisplay(attacker);
+
+        // Start the spin attack runnable
+        final int duration = cfg.getCarlsSpinDuration();
+        final double damage = cfg.getCarlsSpinDamage();
+        final double radius = cfg.getCarlsSpinRadius();
+        final int hitInterval = cfg.getCarlsSpinHitInterval();
+        final Set<UUID> recentlyHit = new HashSet<>();
+
+        new BukkitRunnable() {
+            int ticks = 0;
+            double angle = 0;
+            double heightOffset = 0;
+            boolean goingUp = true;
+
+            @Override
+            public void run() {
+                if (ticks >= duration || !attacker.isOnline() || attacker.isDead()) {
+                    cleanup();
+                    return;
+                }
+
+                // Update axe display position - spin around player and bob up/down
+                if (axeDisplay != null && axeDisplay.isValid()) {
+                    angle += Math.PI / 8; // Spin speed
+
+                    // Bob up and down
+                    if (goingUp) {
+                        heightOffset += 0.05;
+                        if (heightOffset >= 0.5) goingUp = false;
+                    } else {
+                        heightOffset -= 0.05;
+                        if (heightOffset <= -0.3) goingUp = true;
+                    }
+
+                    double x = Math.cos(angle) * 1.2;
+                    double z = Math.sin(angle) * 1.2;
+                    Location newLoc = attacker.getLocation().add(x, 1.0 + heightOffset, z);
+
+                    // Make the axe face the player (handle towards player)
+                    float yaw = (float) Math.toDegrees(Math.atan2(-x, -z));
+                    newLoc.setYaw(yaw);
+                    newLoc.setPitch(0);
+
+                    axeDisplay.teleport(newLoc);
+                    // Rotate the axe itself for spinning visual
+                    axeDisplay.setRotation(yaw + (ticks * 15), 90); // Vertical orientation with spin
+                }
+
+                // Deal damage every hitInterval ticks
+                if (ticks % hitInterval == 0) {
+                    recentlyHit.clear();
+
+                    for (Entity entity : attacker.getNearbyEntities(radius, radius, radius)) {
+                        if (!(entity instanceof Player victim)) continue;
+                        if (victim.equals(attacker)) continue;
+                        if (recentlyHit.contains(victim.getUniqueId())) continue;
+
+                        // Check if in same game and different team
+                        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
+                        if (session == null) continue;
+
+                        Team attackerTeam = session.getPlayerTeam(attacker);
+                        Team victimTeam = session.getPlayerTeam(victim);
+                        if (attackerTeam == null || victimTeam == null) continue;
+                        if (attackerTeam.equals(victimTeam)) continue;
+
+                        // Deal damage
+                        victim.damage(damage, attacker);
+                        recentlyHit.add(victim.getUniqueId());
+
+                        // Visual feedback
+                        SoundUtils.playAt(victim.getLocation(), Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
+                        victim.getWorld().spawnParticle(Particle.CRIT, victim.getLocation().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.1);
+                        Messages.debug(attacker, "CARLS_BATTLEAXE: Spin hit " + victim.getName() + " for " + damage + " damage");
+                    }
+                }
+
+                // Spinning particles around player
+                if (ticks % 2 == 0) {
+                    double particleAngle = angle + Math.PI;
+                    double px = Math.cos(particleAngle) * radius;
+                    double pz = Math.sin(particleAngle) * radius;
+                    attacker.getWorld().spawnParticle(Particle.SWEEP_ATTACK,
+                            attacker.getLocation().add(px, 1, pz), 1, 0, 0, 0, 0);
+                }
+
+                // Sound every 10 ticks
+                if (ticks % 10 == 0) {
+                    SoundUtils.playAt(attacker.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.8f, 1.2f);
+                }
+
+                ticks++;
+            }
+
+            private void cleanup() {
+                spinningPlayers.remove(uuid);
+                if (axeDisplay.isValid()) {
+                    axeDisplay.remove();
+                }
+                attacker.removePotionEffect(PotionEffectType.SLOWNESS);
+                Messages.send(attacker, "<gray>Spin attack ended.</gray>");
+                cancel();
+            }
+        }.runTaskTimer(CashClashPlugin.getInstance(), 0L, 1L);
+
+        Messages.debug(attacker, "CARLS_BATTLEAXE: Spin attack started! Duration: " + (duration / 20) + "s, Damage: " + damage + ", Radius: " + radius);
+    }
+
+    /**
+     * Spawn an ItemDisplay entity showing Carl's Battleaxe spinning around the player.
+     */
+    private ItemDisplay spawnSpinningAxeDisplay(Player player) {
+        Location spawnLoc = player.getLocation().add(1.2, 1.0, 0);
+
+        return player.getWorld().spawn(spawnLoc, ItemDisplay.class, display -> {
+            // Create the axe item
+            ItemStack axe = new ItemStack(Material.NETHERITE_AXE);
+            display.setItemStack(axe);
+
+            // Set the transformation for vertical orientation (handle facing player)
+            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+
+            // Make it larger and rotate to vertical (handle down)
+            Transformation transform = display.getTransformation();
+            Quaternionf leftRotation = new Quaternionf();
+            leftRotation.rotateX((float) Math.toRadians(90)); // Rotate to vertical
+
+            display.setTransformation(new Transformation(
+                    transform.getTranslation(),
+                    leftRotation,
+                    new Vector3f(1.5f, 1.5f, 1.5f), // Scale up
+                    transform.getRightRotation()
+            ));
+
+            display.setBillboard(Display.Billboard.FIXED);
+            display.setBrightness(new Display.Brightness(15, 15));
+        });
+    }
+
+    /**
+     * Check if a player is currently in a spin attack.
+     */
+    public boolean isSpinning(UUID playerId) {
+        return spinningPlayers.contains(playerId);
     }
 
     /**
@@ -526,10 +690,18 @@ public class MythicItemManager {
 
         cooldownManager.setCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_CRIT, cfg.getCarlsCritCooldown() / 1000);
 
-        // Launch victim into the air
-        victim.setVelocity(new Vector(0, cfg.getCarlsCritLaunchPower(), 0));
+        // Launch victim into the air with consistent velocity
+        double launchPower = cfg.getCarlsCritLaunchPower();
+        Vector launchVelocity = new Vector(0, launchPower, 0);
 
-        Messages.debug(attacker, "CARLS_BATTLEAXE: Launched " + victim.getName() + " with power " + cfg.getCarlsCritLaunchPower());
+        // Add slight horizontal push away from attacker for consistency
+        Vector direction = victim.getLocation().toVector().subtract(attacker.getLocation().toVector()).normalize();
+        direction.setY(0);
+        launchVelocity.add(direction.multiply(0.3));
+
+        victim.setVelocity(launchVelocity);
+
+        Messages.debug(attacker, "CARLS_BATTLEAXE: Launched " + victim.getName() + " with power " + launchPower);
         SoundUtils.play(victim, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0f, 0.8f);
         victim.getWorld().spawnParticle(Particle.CRIT, victim.getLocation().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.1);
         Messages.send(attacker, "<gold>Critical launch!</gold>");

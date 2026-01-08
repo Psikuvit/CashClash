@@ -251,6 +251,11 @@ public class InteractListener implements Listener {
                 mythicManager.useCoinCleaverGrenade(player);
                 return true;
             }
+            case CARLS_BATTLEAXE -> {
+                event.setCancelled(true);
+                mythicManager.activateCarlsSpinAttack(player);
+                return true;
+            }
             case WIND_BOW -> {
                 if (player.isSneaking()) {
                     event.setCancelled(true);
