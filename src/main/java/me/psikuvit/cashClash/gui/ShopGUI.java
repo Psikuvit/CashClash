@@ -110,7 +110,7 @@ public class ShopGUI extends AbstractGui {
 
         for (int i = 0; i < availableMythics.size() && i < legendSlots.length; i++) {
             MythicItem mythic = availableMythics.get(i);
-            boolean mythicTaken = !MythicItemManager.getInstance().isMythicAvailableInSession(session, mythic);
+            boolean mythicTaken = MythicItemManager.getInstance().isUnavailable(session, mythic);
             UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(session, mythic);
 
             ItemStack mythicItem = GuiItemUtils.createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);

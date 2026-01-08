@@ -48,7 +48,7 @@ public final class MythicCategoryGui {
 
         UUID playerUuid = player.getUniqueId();
 
-        if (!MythicItemManager.getInstance().isMythicAvailableInSession(sess, mythic)) {
+        if (MythicItemManager.getInstance().isUnavailable(sess, mythic)) {
             Messages.send(player, "<red>This mythic is not available in this game!</red>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;

@@ -354,10 +354,6 @@ public class CustomArmorManager {
         dragonCanDoubleJump.remove(p.getUniqueId());
     }
 
-    public boolean isDragonSetImmuneToExplosion(Player p) {
-        return hasDragonSet(p);
-    }
-
     // ==================== TAX EVASION PANTS ====================
 
     public void onTaxEvasionTick(Player p, GameSession session) {

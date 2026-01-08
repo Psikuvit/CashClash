@@ -109,8 +109,6 @@ public final class ItemUtils {
             ItemStack best = inv.getItem(bestSlot);
             if (best == null) return;
 
-            ItemStack oldItem = best.clone(); // Save the old item before replacing
-
             ItemMeta oldMeta = best.getItemMeta();
             ItemMeta newMeta = newItem.getItemMeta();
 
