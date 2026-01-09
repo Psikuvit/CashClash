@@ -210,10 +210,17 @@ public class ConfigValidator {
         validateAndSet(config, "mythic-items.electric-eel.teleport.distance", 4.0, autoAdd);
 
         // Goblin Spear
-        validateAndSet(config, "mythic-items.goblin-spear.throw.cooldown-seconds", 15, autoAdd);
+        validateAndSet(config, "mythic-items.goblin-spear.throw.shots-per-magazine", 8, autoAdd);
+        validateAndSet(config, "mythic-items.goblin-spear.throw.reload-cooldown-seconds", 15, autoAdd);
         validateAndSet(config, "mythic-items.goblin-spear.throw.damage", 9.0, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.poison.duration-seconds", 2, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.poison.level", 3, autoAdd);
+        validateAndSet(config, "mythic-items.goblin-spear.poison.duration-seconds", 3, autoAdd);
+        validateAndSet(config, "mythic-items.goblin-spear.poison.level", 1, autoAdd);
+        validateAndSet(config, "mythic-items.goblin-spear.charge.cooldown-seconds", 30, autoAdd);
+        validateAndSet(config, "mythic-items.goblin-spear.charge.speed", 1.5, autoAdd);
+        validateAndSet(config, "mythic-items.goblin-spear.charge.max-duration-ticks", 60, autoAdd);
+        validateAndSet(config, "mythic-items.goblin-spear.charge.wall-impact-damage", 12.0, autoAdd);
+        validateAndSet(config, "mythic-items.goblin-spear.charge.poison-duration-seconds", 3, autoAdd);
+        validateAndSet(config, "mythic-items.goblin-spear.charge.poison-level", 1, autoAdd);
 
         // Bloodwrench Crossbow
         validateAndSet(config, "mythic-items.bloodwrench.burst.shots", 3, autoAdd);

@@ -420,6 +420,7 @@ public class GameListener implements Listener {
 
             if (mythic == MythicItem.GOBLIN_SPEAR && event.getHitEntity() instanceof LivingEntity target) {
                 mythicManager.handleGoblinSpearHit(shooter, target);
+                Messages.debug("GOBLIN_SPEAR hit handled for " + target.getName());
             }
         }
 

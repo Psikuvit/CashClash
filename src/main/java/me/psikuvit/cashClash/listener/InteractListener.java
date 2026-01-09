@@ -18,6 +18,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Trident;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -46,6 +47,7 @@ public class InteractListener implements Listener {
     public void onProjectileLaunch(ProjectileLaunchEvent event) {
         if (event.isCancelled()) return;
 
+        // Handle Ender Pearl restrictions
         if (event.getEntity() instanceof EnderPearl pearl) {
             if (pearl.getShooter() instanceof Player player) {
                 GameSession session = GameManager.getInstance().getPlayerSession(player);
@@ -62,6 +64,27 @@ public class InteractListener implements Listener {
                 if (team != null && team.isEnderPearlsDisabled()) {
                     event.setCancelled(true);
                     Messages.send(player, "<red>Your team's Ender Pearls are currently disabled.</red>");
+                }
+            }
+        }
+
+        // Handle Trident (Goblin Spear) shot system
+        if (event.getEntity() instanceof Trident trident) {
+            if (trident.getShooter() instanceof Player player) {
+                ItemStack mainHand = player.getInventory().getItemInMainHand();
+                MythicItem mythic = PDCDetection.getMythic(mainHand);
+
+                if (mythic == MythicItem.GOBLIN_SPEAR) {
+                    // Check if player is charging - prevent throw during charge
+                    if (mythicManager.isGoblinSpearCharging(player.getUniqueId())) {
+                        event.setCancelled(true);
+                        return;
+                    }
+
+                    // Check shot system
+                    if (!mythicManager.handleGoblinSpearThrow(player)) {
+                        event.setCancelled(true);
+                    }
                 }
             }
         }
@@ -266,6 +289,11 @@ public class InteractListener implements Listener {
             case ELECTRIC_EEL_SWORD -> {
                 event.setCancelled(true);
                 mythicManager.useElectricEelTeleport(player);
+                return true;
+            }
+            case GOBLIN_SPEAR -> {
+                event.setCancelled(true);
+                mythicManager.startGoblinSpearCharge(player);
                 return true;
             }
             case WARDEN_GLOVES -> {

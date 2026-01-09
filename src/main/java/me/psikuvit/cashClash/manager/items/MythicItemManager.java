@@ -81,6 +81,13 @@ public class MythicItemManager {
 
     // BlazeBite Glacier frozen players tracking (UUID -> expiration timestamp)
     private final Map<UUID, Long> glacierFrozenPlayers;
+
+    // Goblin Spear shots tracking
+    private final Map<UUID, Integer> goblinSpearShotsRemaining;
+
+    // Goblin Spear charge state tracking (player -> list of caught players)
+    private final Map<UUID, List<Player>> goblinSpearCharging;
+
     // Active tasks for cleanup
     private final Map<UUID, List<BukkitTask>> activeTasks;
 
@@ -92,6 +99,8 @@ public class MythicItemManager {
         sandstormerShotsRemaining = new HashMap<>();
         blazebiteShotsRemaining = new HashMap<>();
         glacierFrozenPlayers = new HashMap<>();
+        goblinSpearShotsRemaining = new HashMap<>();
+        goblinSpearCharging = new HashMap<>();
         activeTasks = new HashMap<>();
     }
 
@@ -1339,6 +1348,8 @@ public class MythicItemManager {
         sandstormerShotsRemaining.clear();
         blazebiteShotsRemaining.clear();
         glacierFrozenPlayers.clear();
+        goblinSpearShotsRemaining.clear();
+        goblinSpearCharging.clear();
 
         activeTasks.values().forEach(tasks -> tasks.forEach(BukkitTask::cancel));
         activeTasks.clear();

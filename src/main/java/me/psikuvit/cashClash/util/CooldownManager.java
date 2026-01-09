@@ -303,6 +303,8 @@ public class CooldownManager {
         public static final String ELECTRIC_EEL_LIGHTNING = "ELECTRIC_EEL_LIGHTNING";
         public static final String ELECTRIC_EEL_CHAIN = "ELECTRIC_EEL_CHAIN";
         public static final String GOBLIN_SPEAR_THROW = "GOBLIN_SPEAR_THROW";
+        public static final String GOBLIN_SPEAR_RELOAD = "GOBLIN_SPEAR_RELOAD";
+        public static final String GOBLIN_SPEAR_CHARGE = "GOBLIN_SPEAR_CHARGE";
         public static final String SANDSTORMER_RELOAD = "SANDSTORMER_RELOAD";
         public static final String WARDEN_SHOCKWAVE = "WARDEN_SHOCKWAVE";
         public static final String WARDEN_MELEE = "WARDEN_MELEE";

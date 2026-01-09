@@ -153,8 +153,12 @@ public class ItemsConfig {
     }
 
     // Goblin Spear
-    public int getGoblinThrowCooldown() {
-        return config.getInt("mythic-items.goblin-spear.throw.cooldown-seconds", 15);
+    public int getGoblinShotsPerMag() {
+        return config.getInt("mythic-items.goblin-spear.throw.shots-per-magazine", 8);
+    }
+
+    public int getGoblinReloadCooldown() {
+        return config.getInt("mythic-items.goblin-spear.throw.reload-cooldown-seconds", 15);
     }
 
     public double getGoblinSpearDamage() {
@@ -162,11 +166,35 @@ public class ItemsConfig {
     }
 
     public int getGoblinPoisonDuration() {
-        return config.getInt("mythic-items.goblin-spear.poison.duration-seconds", 2) * 20;
+        return config.getInt("mythic-items.goblin-spear.poison.duration-seconds", 3) * 20;
     }
 
     public int getGoblinPoisonLevel() {
-        return config.getInt("mythic-items.goblin-spear.poison.level", 3) - 1; // 0-indexed
+        return config.getInt("mythic-items.goblin-spear.poison.level", 1) - 1; // 0-indexed
+    }
+
+    public int getGoblinChargeCooldown() {
+        return config.getInt("mythic-items.goblin-spear.charge.cooldown-seconds", 30);
+    }
+
+    public double getGoblinChargeSpeed() {
+        return config.getDouble("mythic-items.goblin-spear.charge.speed", 1.5);
+    }
+
+    public int getGoblinChargeMaxDuration() {
+        return config.getInt("mythic-items.goblin-spear.charge.max-duration-ticks", 60);
+    }
+
+    public double getGoblinChargeWallDamage() {
+        return config.getDouble("mythic-items.goblin-spear.charge.wall-impact-damage", 12.0);
+    }
+
+    public int getGoblinChargePoisonDuration() {
+        return config.getInt("mythic-items.goblin-spear.charge.poison-duration-seconds", 3) * 20;
+    }
+
+    public int getGoblinChargePoisonLevel() {
+        return config.getInt("mythic-items.goblin-spear.charge.poison-level", 1) - 1; // 0-indexed
     }
 
     // BloodWrench Crossbow

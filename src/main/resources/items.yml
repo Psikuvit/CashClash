@@ -58,12 +58,23 @@ mythic-items:
 
   # Goblin Spear
   goblin-spear:
+    # Throw attack - 8 shots then 15 second reload
     throw:
-      cooldown-seconds: 15
+      shots-per-magazine: 8
+      reload-cooldown-seconds: 15
       damage: 9.0
+    # Poison applied on hit
     poison:
-      duration-seconds: 2
-      level: 3
+      duration-seconds: 3
+      level: 1
+    # Charge ability - Right click to charge forward, catching enemies
+    charge:
+      cooldown-seconds: 30
+      speed: 1.5                    # Charge speed multiplier
+      max-duration-ticks: 60        # Max charge time (3 seconds)
+      wall-impact-damage: 12.0      # Damage when hitting wall with caught players
+      poison-duration-seconds: 3
+      poison-level: 1
 
   # Sandstormer
   bloodwrench:
