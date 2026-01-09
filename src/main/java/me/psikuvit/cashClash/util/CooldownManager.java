@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.util;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 /**
  * Centralized API for managing all cooldowns across the plugin.
@@ -33,20 +32,6 @@ public class CooldownManager {
     }
 
     // ==================== COOLDOWN METHODS ====================
-
-    /**
-     * Set a cooldown for a player's ability.
-     *
-     * @param playerId  The player's UUID
-     * @param ability   The unique ability key (e.g., "MAGIC_HELMET", "MEDIC_POUCH")
-     * @param durationMs Duration of the cooldown in milliseconds
-     */
-    public void setCooldown(UUID playerId, String ability, long durationMs) {
-        if (playerId == null || ability == null) return;
-        playerCooldowns.computeIfAbsent(playerId, k -> new ConcurrentHashMap<>())
-                .put(ability, System.currentTimeMillis() + durationMs);
-    }
-
     /**
      * Set a cooldown for a player's ability in seconds.
      *
@@ -55,7 +40,9 @@ public class CooldownManager {
      * @param durationSeconds Duration of the cooldown in seconds
      */
     public void setCooldownSeconds(UUID playerId, String ability, long durationSeconds) {
-        setCooldown(playerId, ability, durationSeconds * 1000L);
+        if (playerId == null || ability == null) return;
+        playerCooldowns.computeIfAbsent(playerId, k -> new ConcurrentHashMap<>())
+                .put(ability, System.currentTimeMillis() + durationSeconds * 1000L);
     }
 
     /**
@@ -141,40 +128,6 @@ public class CooldownManager {
         if (playerId == null) return;
         playerCooldowns.remove(playerId);
     }
-
-    /**
-     * Try to use an ability - returns true if not on cooldown (and sets cooldown), false if on cooldown.
-     *
-     * @param playerId      The player's UUID
-     * @param ability       The ability key
-     * @param cooldownMs    The cooldown to set if successful
-     * @param onCooldown    Optional callback to run if on cooldown (receives remaining seconds)
-     * @return true if ability can be used, false if on cooldown
-     */
-    public boolean tryUse(UUID playerId, String ability, long cooldownMs, Consumer<Long> onCooldown) {
-        if (isOnCooldown(playerId, ability)) {
-            if (onCooldown != null) {
-                onCooldown.accept(getRemainingCooldownSeconds(playerId, ability));
-            }
-            return false;
-        }
-        setCooldown(playerId, ability, cooldownMs);
-        return true;
-    }
-
-    /**
-     * Try to use an ability with seconds-based cooldown.
-     *
-     * @param playerId        The player's UUID
-     * @param ability         The ability key
-     * @param cooldownSeconds The cooldown to set if successful (in seconds)
-     * @param onCooldown      Optional callback to run if on cooldown
-     * @return true if ability can be used, false if on cooldown
-     */
-    public boolean tryUseSeconds(UUID playerId, String ability, long cooldownSeconds, Consumer<Long> onCooldown) {
-        return tryUse(playerId, ability, cooldownSeconds * 1000L, onCooldown);
-    }
-
     // ==================== TIMESTAMP METHODS ====================
 
     /**
