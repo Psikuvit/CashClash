@@ -237,8 +237,8 @@ public final class ItemUtils {
         return equipArmorOrReplace(player, item);
     }
 
-    public static void applyEnchantToBestItem(Player player, EnchantEntry ee, int lvl) {
-        if (player == null || ee == null) return;
+    public static boolean applyEnchant(Player player, EnchantEntry ee, int lvl) {
+        if (player == null || ee == null) return false;
         if (ee == EnchantEntry.PROTECTION || ee == EnchantEntry.PROJECTILE_PROTECTION) {
             boolean appliedAny = false;
 
@@ -262,44 +262,22 @@ public final class ItemUtils {
             } else {
                 Messages.send(player, "<red>No eligible armor pieces found to apply Protection. It will be saved for future purchases.</red>");
             }
-            return;
+            return true;
         }
 
-        ItemStack best = null;
-        int bestSlot = -1;
-        int eligibleCount = 0;
+        ItemStack held = player.getInventory().getItemInMainHand();
 
-        for (int i = 0; i < player.getInventory().getSize(); i++) {
-            ItemStack is = player.getInventory().getItem(i);
-            if (is == null) continue;
-            if (!ee.getApplicableMaterials().contains(is.getType())) continue;
-            eligibleCount++;
-
-            if (best == null) {
-                best = is;
-                bestSlot = i;
-                continue;
-            }
-
-            if (ItemSelectionUtils.rankMaterial(is.getType()) > ItemSelectionUtils.rankMaterial(best.getType())) {
-                best = is;
-                bestSlot = i;
-            }
+        if (!ee.getApplicableMaterials().contains(held.getType())) {
+            Messages.send(player, "<red>The item in your main hand is not eligible for this enchantment. It will be saved for future purchases.</red>");
+            return false;
         }
-        if (best != null) {
-            ItemMeta meta = best.getItemMeta();
-            if (meta != null) {
-                meta.addEnchant(ee.getEnchantment(), lvl, true);
-                best.setItemMeta(meta);
 
-                player.getInventory().setItem(bestSlot, best);
-                if (eligibleCount > 1) {
-                    Messages.send(player, "<yellow>Multiple eligible items found; enchant auto-applied to the strongest matching item.</yellow>");
-                }
-            }
-        } else {
-            Messages.send(player, "<red>No eligible item found in your inventory to apply that enchant. It will be saved and applied to future purchases when appropriate.</red>");
+        ItemMeta meta = held.getItemMeta();
+        if (meta != null) {
+            meta.addEnchant(ee.getEnchantment(), lvl, true);
+            held.setItemMeta(meta);
         }
+        return true;
     }
 
     public static void applyOwnedEnchantsAfterPurchase(Player player, Purchasable si) {

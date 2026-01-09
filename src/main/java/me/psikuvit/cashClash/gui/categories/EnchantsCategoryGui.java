@@ -83,14 +83,14 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
-        ShopService.getInstance().deductCoins(viewer, price);
-        ccp.setOwnedEnchantLevel(ee, nextLevel);
 
-        ItemUtils.applyEnchantToBestItem(viewer, ee, nextLevel);
-        Messages.send(viewer, "<green>Purchased " + ee.getDisplayName() + " " + nextLevel + " for $" + String.format("%,d", price) + "</green>");
-        SoundUtils.play(viewer, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
-
-        refresh();
+        if (ItemUtils.applyEnchant(viewer, ee, nextLevel)) {
+            ShopService.getInstance().deductCoins(viewer, price);
+            ccp.setOwnedEnchantLevel(ee, nextLevel);
+            Messages.send(viewer, "<green>Purchased " + ee.getDisplayName() + " " + nextLevel + " for $" + String.format("%,d", price) + "</green>");
+            SoundUtils.play(viewer, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
+            refresh();
+        }
     }
 }
 
