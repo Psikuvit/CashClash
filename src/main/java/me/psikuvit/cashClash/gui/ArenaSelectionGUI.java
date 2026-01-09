@@ -10,6 +10,8 @@ import me.psikuvit.cashClash.gui.builder.GuiBuilder;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.lobby.LayoutManager;
+import me.psikuvit.cashClash.party.Party;
+import me.psikuvit.cashClash.party.PartyManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
@@ -22,6 +24,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * GUI for browsing and joining arenas.
@@ -119,6 +122,7 @@ public class ArenaSelectionGUI {
     public static void handleArenaClick(Player player, int arenaNumber) {
         ArenaManager arenaManager = ArenaManager.getInstance();
         GameManager gameManager = GameManager.getInstance();
+        PartyManager partyManager = PartyManager.getInstance();
 
         // Prevent joining while editing a layout
         if (LayoutManager.getInstance().isEditing(player)) {
@@ -147,6 +151,18 @@ public class ArenaSelectionGUI {
             return;
         }
 
+        // Check if player is in a party and is the owner
+        Party party = partyManager.getPlayerParty(player);
+        boolean isPartyOwner = party != null && party.isOwner(player.getUniqueId());
+
+        // If player is in a party but not the owner, they can't join on their own
+        if (party != null && !isPartyOwner) {
+            Messages.send(player, "<red>Only the party owner can join games for the party!</red>");
+            Messages.send(player, "<gray>Ask <yellow>" + getOwnerName(party) + "</yellow> to join a game.</gray>");
+            player.closeInventory();
+            return;
+        }
+
         player.closeInventory();
 
         GameSession session = gameManager.getSessionForArena(arenaNumber);
@@ -155,25 +171,160 @@ public class ArenaSelectionGUI {
             session = gameManager.createSession(arenaNumber);
         }
 
-        // Determine team - provisional balanced assignment based on config
-        int currentPlayers = arenaManager.getArenaPlayerCount(arenaNumber);
         int maxPlayers = ConfigManager.getInstance().getMaxPlayers();
         int capacityPerTeam = Math.max(1, maxPlayers / 2);
 
-        int teamNumber = 1;
-        GameSession existing = gameManager.getSessionForArena(arenaNumber);
-
-        if (existing != null) {
-            int t1size = existing.getTeam1().getSize();
-            int t2size = existing.getTeam2().getSize();
-
-            if (t1size > t2size && t2size < capacityPerTeam) {
-                teamNumber = 2;
-            } else if (t1size >= capacityPerTeam) {
-                teamNumber = 2;
-            }
+        if (isPartyOwner) {
+            // Handle party join
+            handlePartyJoin(player, party, session, arena, arenaNumber, capacityPerTeam, maxPlayers);
         } else {
-            teamNumber = currentPlayers < capacityPerTeam ? 1 : 2;
+            // Solo player join
+            handleSoloJoin(player, session, arena, arenaNumber, capacityPerTeam, maxPlayers);
+        }
+    }
+
+    /**
+     * Handle a party joining together.
+     * Party members are placed on the same team, with overflow going to the other team.
+     */
+    private static void handlePartyJoin(Player owner, Party party, GameSession session, Arena arena,
+                                        int arenaNumber, int capacityPerTeam, int maxPlayers) {
+        ArenaManager arenaManager = ArenaManager.getInstance();
+        GameManager gameManager = GameManager.getInstance();
+
+        // Get online party members
+        Set<Player> partyMembers = party.getOnlineMembers();
+
+        // Check if all party members are available (not in games, not editing layouts)
+        for (Player member : partyMembers) {
+            if (gameManager.getPlayerSession(member) != null) {
+                Messages.send(owner, "<red>Party member " + member.getName() + " is already in a game!</red>");
+                return;
+            }
+            if (LayoutManager.getInstance().isEditing(member)) {
+                Messages.send(owner, "<red>Party member " + member.getName() + " is editing a layout!</red>");
+                return;
+            }
+        }
+
+        // Check if there's enough space in the arena for the party
+        int currentPlayers = arenaManager.getArenaPlayerCount(arenaNumber);
+        int availableSlots = maxPlayers - currentPlayers;
+
+        if (partyMembers.size() > availableSlots) {
+            Messages.send(owner, "<red>Not enough space in this arena for your party!</red>");
+            Messages.send(owner, "<gray>Party size: <white>" + partyMembers.size() + "</white>, Available slots: <white>" + availableSlots + "</white></gray>");
+            return;
+        }
+
+        // Determine the best team for the party
+        int t1size = session.getTeam1().getSize();
+        int t2size = session.getTeam2().getSize();
+        int t1available = capacityPerTeam - t1size;
+        int t2available = capacityPerTeam - t2size;
+
+        // Primary team is the one with more space, or team 1 if equal
+        int primaryTeam;
+        int primaryAvailable;
+        int secondaryTeam;
+
+        if (t1available >= t2available) {
+            primaryTeam = 1;
+            primaryAvailable = t1available;
+            secondaryTeam = 2;
+        } else {
+            primaryTeam = 2;
+            primaryAvailable = t2available;
+            secondaryTeam = 1;
+        }
+
+        // Add party members - prioritize keeping them together on primary team
+        List<Player> primaryTeamMembers = new ArrayList<>();
+        List<Player> secondaryTeamMembers = new ArrayList<>();
+
+        int addedToPrimary = 0;
+        for (Player member : partyMembers) {
+            if (addedToPrimary < primaryAvailable) {
+                primaryTeamMembers.add(member);
+                addedToPrimary++;
+            } else {
+                secondaryTeamMembers.add(member);
+            }
+        }
+
+        // Teleport location
+        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        Location lobbySpawn = null;
+        if (tpl != null && tpl.isConfigured() && tpl.getLobbySpawn() != null && session.getGameWorld() != null) {
+            lobbySpawn = LocationUtils.adjustLocationToWorld(tpl.getLobbySpawn(), session.getGameWorld());
+        }
+
+        // Add primary team members
+        for (Player member : primaryTeamMembers) {
+            session.addPlayer(member, primaryTeam);
+            gameManager.addPlayerToSession(member, session);
+
+            if (lobbySpawn != null) {
+                member.teleport(lobbySpawn);
+            }
+
+            String teamColor = primaryTeam == 1 ? "<red>Red</red>" : "<blue>Blue</blue>";
+            Messages.send(member, "<green>Joined " + arena.getName() + " with your party!</green>");
+            Messages.send(member, "<yellow>Team: " + teamColor + "</yellow>");
+        }
+
+        // Add secondary team members (overflow)
+        if (!secondaryTeamMembers.isEmpty()) {
+            for (Player member : partyMembers) {
+                Messages.send(member, "<yellow>Party was split due to team size limits!</yellow>");
+            }
+        }
+
+        for (Player member : secondaryTeamMembers) {
+            session.addPlayer(member, secondaryTeam);
+            gameManager.addPlayerToSession(member, session);
+
+            if (lobbySpawn != null) {
+                member.teleport(lobbySpawn);
+            }
+
+            String teamColor = secondaryTeam == 1 ? "<red>Red</red>" : "<blue>Blue</blue>";
+            Messages.send(member, "<green>Joined " + arena.getName() + " with your party!</green>");
+            Messages.send(member, "<yellow>Team: " + teamColor + " <gray>(overflow)</gray></yellow>");
+        }
+
+        // Notify all players in the session
+        int newPlayerCount = arenaManager.getArenaPlayerCount(arenaNumber);
+        session.getPlayers().forEach(uuid -> {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null) {
+                Messages.send(p, "<gray>Waiting for players... (" + newPlayerCount + "/" + maxPlayers + ")</gray>");
+            }
+        });
+
+        // Check for countdown start
+        checkAndStartCountdown(session, newPlayerCount);
+    }
+
+    /**
+     * Handle a solo player joining.
+     */
+    private static void handleSoloJoin(Player player, GameSession session, Arena arena,
+                                       int arenaNumber, int capacityPerTeam, int maxPlayers) {
+        ArenaManager arenaManager = ArenaManager.getInstance();
+        GameManager gameManager = GameManager.getInstance();
+
+        // Determine team - balanced assignment
+        int t1size = session.getTeam1().getSize();
+        int t2size = session.getTeam2().getSize();
+
+        int teamNumber;
+        if (t1size > t2size && t2size < capacityPerTeam) {
+            teamNumber = 2;
+        } else if (t1size >= capacityPerTeam) {
+            teamNumber = 2;
+        } else {
+            teamNumber = 1;
         }
 
         session.addPlayer(player, teamNumber);
@@ -198,15 +349,31 @@ public class ArenaSelectionGUI {
             }
         });
 
-        // If we have min players, start a 2-minute countdown
+        // Check for countdown start
+        checkAndStartCountdown(session, newPlayerCount);
+    }
+
+    /**
+     * Check and start countdown if minimum players reached.
+     */
+    private static void checkAndStartCountdown(GameSession session, int playerCount) {
         int minPlayers = ConfigManager.getInstance().getMinPlayers();
-        if (newPlayerCount >= minPlayers) {
+        if (playerCount >= minPlayers) {
             if (!session.isStartingCountdown()) {
                 session.startCountdown(120); // 120s = 2 minutes
-            } else {
-                Messages.send(player, "<gray>Game is already counting down. Please wait...</gray>");
             }
         }
+    }
+
+    /**
+     * Get the party owner's name.
+     */
+    private static String getOwnerName(Party party) {
+        Player owner = party.getOwnerPlayer();
+        if (owner != null) {
+            return owner.getName();
+        }
+        return "the party owner";
     }
 }
 
