@@ -12,7 +12,6 @@ import me.psikuvit.cashClash.command.subcommands.LayoutCommand;
 import me.psikuvit.cashClash.command.subcommands.LeaveCommand;
 import me.psikuvit.cashClash.command.subcommands.LotteryCommand;
 import me.psikuvit.cashClash.command.subcommands.MythicsCommand;
-import me.psikuvit.cashClash.command.subcommands.PartyCommand;
 import me.psikuvit.cashClash.command.subcommands.PayTaxCommand;
 import me.psikuvit.cashClash.command.subcommands.ReloadCommand;
 import me.psikuvit.cashClash.command.subcommands.SetLobbyCommand;
@@ -60,8 +59,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new ForfeitCommand());
         registerSubcommand(new LayoutCommand());
 
-        // Party and chat commands
-        registerSubcommand(new PartyCommand());
+        //chat commands
         registerSubcommand(new ChatCommand());
 
         // Cash Quake event commands

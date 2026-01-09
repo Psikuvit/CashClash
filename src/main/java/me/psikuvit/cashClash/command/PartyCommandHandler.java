@@ -1,12 +1,13 @@
-package me.psikuvit.cashClash.command.subcommands;
+package me.psikuvit.cashClash.command;
 
-import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.party.PartyManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,17 +15,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Party management command.
- * Usage: /cc party <create|invite|accept|deny|leave|kick|transfer|disband|info|chat|list>
+ * Standalone party command handler.
+ * Usage: /party <create|invite|accept|deny|leave|kick|transfer|disband|info|chat|list>
  */
-public class PartyCommand extends AbstractArgCommand {
+public class PartyCommandHandler extends Command {
 
-    public PartyCommand() {
-        super("party", List.of("p"), null);
+    public PartyCommandHandler() {
+        super("party");
+        setDescription("Party management commands");
+        setUsage("/<command> <create|invite|accept|deny|leave|kick|transfer|disband|info|chat>");
+        setAliases(List.of("p"));
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
+    public boolean execute(@NotNull CommandSender sender, @NotNull String label, @NotNull @NonNull String[] args) {
         if (!(sender instanceof Player player)) {
             Messages.send(sender, "<red>Only players can use party commands.</red>");
             return true;
@@ -134,7 +138,7 @@ public class PartyCommand extends AbstractArgCommand {
     }
 
     @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull String[] args) {
+    public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull @NonNull String[] args) {
         if (!(sender instanceof Player)) {
             return Collections.emptyList();
         }
