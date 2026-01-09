@@ -220,6 +220,10 @@ public class ItemsConfig {
         return config.getInt("mythic-items.blazebite-crossbows.glacier.slowness-duration-seconds", 3) * 20;
     }
 
+    public int getBlazebiteMaxSlownessDuration() {
+        return config.getInt("mythic-items.blazebite-crossbows.glacier.max-slowness-duration-seconds", 5) * 20;
+    }
+
     public double getBlazebiteVolcanoDirectDamage() {
         return config.getDouble("mythic-items.blazebite-crossbows.volcano.direct-damage", 4.0);
     }

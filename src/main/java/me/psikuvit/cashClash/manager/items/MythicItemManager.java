@@ -79,6 +79,8 @@ public class MythicItemManager {
     // BlazeBite shots tracking (shared between both crossbows)
     private final Map<UUID, Integer> blazebiteShotsRemaining;
 
+    // BlazeBite Glacier frozen players tracking (UUID -> expiration timestamp)
+    private final Map<UUID, Long> glacierFrozenPlayers;
     // Active tasks for cleanup
     private final Map<UUID, List<BukkitTask>> activeTasks;
 
@@ -89,6 +91,7 @@ public class MythicItemManager {
         sessionAvailableMythics = new HashMap<>();
         sandstormerShotsRemaining = new HashMap<>();
         blazebiteShotsRemaining = new HashMap<>();
+        glacierFrozenPlayers = new HashMap<>();
         activeTasks = new HashMap<>();
     }
 
@@ -1255,20 +1258,41 @@ public class MythicItemManager {
         Messages.debug(shooter, "BLAZEBITE: Hit detected (" + (isGlacierMode ? "Glacier" : "Volcano") + " mode)");
 
         if (isGlacierMode) {
-            // Glacier mode - slowness and frostbite
             if (hitEntity instanceof Player victim) {
-                victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, cfg.getBlazebiteFreezeDuration(), 0, false, true));
-                // Freeze ticks need to be set high enough - max is 140 for full freeze effect
-                // We set it to 140 + duration ticks so it stays frozen for the duration
+                UUID victimId = victim.getUniqueId();
+                long currentTime = System.currentTimeMillis();
+
+                // Check if player is already frozen (hit while frozen)
+                boolean alreadyFrozen = glacierFrozenPlayers.containsKey(victimId)
+                        && glacierFrozenPlayers.get(victimId) > currentTime;
+
+                if (alreadyFrozen) {
+                    // Apply max slowness (level 255 = max effect) for configured duration
+                    int maxSlownessDuration = cfg.getBlazebiteMaxSlownessDuration();
+                    victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, maxSlownessDuration, 255, false, true));
+
+                    Messages.debug(shooter, "BLAZEBITE: Glacier DOUBLE HIT on " + victim.getName() + " - Max Slowness for " + (maxSlownessDuration / 20) + "s");
+                    world.spawnParticle(Particle.SNOWFLAKE, victim.getLocation().add(0, 1, 0), 60, 0.5, 1.5, 0.5, 0.15);
+                    SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
+                    SoundUtils.play(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);
+                } else {
+                    // Normal freeze effect
+                    victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, cfg.getBlazebiteFreezeDuration(), 0, false, true));
+
+                    Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - Slowness + Frostbite for " + (cfg.getBlazebiteFreezeDuration() / 20) + "s");
+                    world.spawnParticle(Particle.SNOWFLAKE, victim.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
+                    SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
+                }
+
+                // Apply frostbite and track frozen state
                 int freezeTicks = 140 + cfg.getBlazebiteFreezeDuration();
                 victim.setFreezeTicks(freezeTicks);
 
-                Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - Slowness + Frostbite for " + (cfg.getBlazebiteFreezeDuration() / 20) + "s");
-                world.spawnParticle(Particle.SNOWFLAKE, victim.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
-                SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
+                // Track frozen player with expiration time
+                long expirationTime = currentTime + (cfg.getBlazebiteFreezeDuration() / 20 * 1000L);
+                glacierFrozenPlayers.put(victimId, expirationTime);
             }
         } else {
-            // Volcano mode - explosive fire arrow
             world.spawnParticle(Particle.FLAME, hitLoc, 50, 1, 1, 1, 0.2);
             world.spawnParticle(Particle.EXPLOSION, hitLoc, 1);
             SoundUtils.playAt(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
@@ -1314,6 +1338,7 @@ public class MythicItemManager {
     public void cleanup() {
         sandstormerShotsRemaining.clear();
         blazebiteShotsRemaining.clear();
+        glacierFrozenPlayers.clear();
 
         activeTasks.values().forEach(tasks -> tasks.forEach(BukkitTask::cancel));
         activeTasks.clear();

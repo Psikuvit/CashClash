@@ -98,6 +98,7 @@ mythic-items:
       slowness-level: 0
       slowness-duration-seconds: 3
       frostbite-duration-seconds: 3
+      max-slowness-duration-seconds: 5  # Duration of max slowness when hit while already frozen
     volcano:
       direct-damage: 4.0
       splash-damage: 2.0

@@ -232,6 +232,7 @@ public class ConfigValidator {
         validateAndSet(config, "mythic-items.blazebite-crossbows.reload-cooldown-seconds", 25, autoAdd);
         validateAndSet(config, "mythic-items.blazebite-crossbows.glacier.slowness-duration-seconds", 3, autoAdd);
         validateAndSet(config, "mythic-items.blazebite-crossbows.glacier.frostbite-duration-seconds", 3, autoAdd);
+        validateAndSet(config, "mythic-items.blazebite-crossbows.glacier.max-slowness-duration-seconds", 5, autoAdd);
         validateAndSet(config, "mythic-items.blazebite-crossbows.volcano.direct-damage", 4.0, autoAdd);
         validateAndSet(config, "mythic-items.blazebite-crossbows.volcano.fire-duration-seconds", 5, autoAdd);
 
