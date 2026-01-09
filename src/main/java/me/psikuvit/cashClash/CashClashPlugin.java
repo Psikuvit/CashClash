@@ -15,6 +15,7 @@ import me.psikuvit.cashClash.listener.GameListener;
 import me.psikuvit.cashClash.listener.InteractListener;
 import me.psikuvit.cashClash.listener.MoveListener;
 import me.psikuvit.cashClash.listener.PlayerConnectionListener;
+import me.psikuvit.cashClash.listener.TransferInputListener;
 import me.psikuvit.cashClash.listener.lobby.ArenaNPCListener;
 import me.psikuvit.cashClash.listener.lobby.LobbyListener;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -170,7 +171,8 @@ public final class CashClashPlugin extends JavaPlugin {
                 new PlayerConnectionListener(),
                 new LobbyListener(),
                 new ArenaNPCListener(),
-                new ChatListener()
+                new ChatListener(),
+                TransferInputListener.getInstance()
         };
 
         for (Listener listener : listeners) {

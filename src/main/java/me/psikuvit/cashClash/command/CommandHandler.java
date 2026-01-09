@@ -20,7 +20,6 @@ import me.psikuvit.cashClash.command.subcommands.SpawnNPCCommand;
 import me.psikuvit.cashClash.command.subcommands.StatsCommand;
 import me.psikuvit.cashClash.command.subcommands.StopCommand;
 import me.psikuvit.cashClash.command.subcommands.TemplateCommand;
-import me.psikuvit.cashClash.command.subcommands.TransferCommand;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -69,7 +68,6 @@ public class CommandHandler extends Command {
         // Admin / control commands
         registerSubcommand(new StopCommand());
         registerSubcommand(new ForceStartCommand());
-        registerSubcommand(new TransferCommand());
         registerSubcommand(new SetLobbyCommand());
         registerSubcommand(new ReloadCommand());
         registerSubcommand(new DebugCommand());

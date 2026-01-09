@@ -64,6 +64,9 @@ public class ShopGUI extends AbstractGui {
         long coins = getPlayerCoins();
         setButton(53, GuiButton.of(GuiItemUtils.createCoinDisplay(coins)));
 
+        // Transfer money button (next to balance)
+        setButton(52, createTransferButton());
+
         // Cancel button
         setCloseButton(45);
     }
@@ -156,6 +159,22 @@ public class ShopGUI extends AbstractGui {
         if (session == null) return 0;
         CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
         return ccp != null ? ccp.getCoins() : 0;
+    }
+
+    private GuiButton createTransferButton() {
+        ItemStack item = new ItemStack(Material.HOPPER);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(Messages.parse("<green>Transfer Money</green>"));
+        meta.lore(List.of(
+                Messages.parse("<gray>Send coins to a teammate</gray>"),
+                Messages.parse("<gray>Fee: <red>10%</red></gray>"),
+                Messages.parse(""),
+                Messages.parse("<yellow>Click to transfer</yellow>")
+        ));
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        item.setItemMeta(meta);
+
+        return GuiButton.of(item).onClick(TransferGUI::open);
     }
 
     // ==================== STATIC CONVENIENCE METHODS ====================
