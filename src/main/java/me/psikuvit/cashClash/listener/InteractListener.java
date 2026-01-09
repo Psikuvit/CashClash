@@ -284,7 +284,7 @@ public class InteractListener implements Listener {
     // ==================== CUSTOM ARMOR (Magic Helmet) ====================
 
     private void handleCustomArmor(Player player, Action action) {
-        if (!action.isRightClick() && player.isSneaking()) return;
+        if (!action.isRightClick() || !player.isSneaking()) return;
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;

@@ -589,7 +589,7 @@ public class MythicItemManager {
         }
 
         ccp.deductCoins(cfg.getCoinCleaverGrenadeCost());
-        cooldownManager.setCooldown(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE, cfg.getCoinCleaverGrenadeCooldown());
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE, cfg.getCoinCleaverGrenadeCooldown());
 
         Messages.debug(player, "COIN_CLEAVER: Grenade fired! Cost: $" + cfg.getCoinCleaverGrenadeCost() + ", Cooldown: " + cfg.getCoinCleaverGrenadeCooldown() + "s");
 
@@ -653,7 +653,7 @@ public class MythicItemManager {
             return;
         }
 
-        cooldownManager.setCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH, cfg.getCarlsSpinCooldown());
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH, cfg.getCarlsSpinCooldown());
         spinningPlayers.add(uuid);
 
         // Apply slowness during spin
@@ -825,7 +825,7 @@ public class MythicItemManager {
             return;
         }
 
-        cooldownManager.setCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_CRIT, cfg.getCarlsCritCooldown() / 1000);
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_CRIT, cfg.getCarlsCritCooldown() / 1000);
 
         // Launch victim into the air with consistent velocity
         double launchPower = cfg.getCarlsCritLaunchPower();
@@ -862,7 +862,7 @@ public class MythicItemManager {
             return;
         }
 
-        cooldownManager.setCooldown(uuid, CooldownManager.Keys.WIND_BOW_BOOST, cfg.getWindBowBoostCooldown());
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST, cfg.getWindBowBoostCooldown());
 
         Vector direction = player.getLocation().getDirection();
         direction.setY(Math.max(direction.getY() + 0.5, 0.5));
@@ -908,7 +908,7 @@ public class MythicItemManager {
      * Fully charged hits damage nearby enemies in 5 block radius for 0.5 hearts.
      * 1 second cooldown.
      */
-    public void handleElectricEelChain(Player attacker, Player victim) {
+    public void handleElectricEelChain(Player attacker, LivingEntity victim) {
         UUID uuid = attacker.getUniqueId();
         
 
@@ -918,7 +918,7 @@ public class MythicItemManager {
             Messages.debug(attacker, "ELECTRIC_EEL: Chain on cooldown");
             return;
         }
-        cooldownManager.setCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_CHAIN, cfg.getEelChainCooldown());
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_CHAIN, cfg.getEelChainCooldown());
 
         GameSession session = GameManager.getInstance().getPlayerSession(attacker);
         if (session == null) {
@@ -967,7 +967,7 @@ public class MythicItemManager {
             return;
         }
 
-        cooldownManager.setCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING, cfg.getEelTeleportCooldown());
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING, cfg.getEelTeleportCooldown());
 
         Location start = player.getEyeLocation();
         Vector direction = start.getDirection().normalize();
@@ -994,7 +994,7 @@ public class MythicItemManager {
         // Effects at destination
         world.spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
 
-        cooldownManager.setCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING, cfg.getEelTeleportCooldown());
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING, cfg.getEelTeleportCooldown());
         Messages.debug(player, "ELECTRIC_EEL: Teleported! Distance: " + distance + ", Cooldown: " + cfg.getEelTeleportCooldown() + "s");
         Messages.send(player, "<aqua>Zap!</aqua>");
     }
@@ -1042,7 +1042,7 @@ public class MythicItemManager {
         Messages.debug(player, "BLOODWRENCH_CROSSBOW: Shot fired! Remaining: " + (shots - 1));
 
         if (shots - 1 <= 0) {
-            cooldownManager.setCooldown(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD, cfg.getBloodwrenchReloadCooldown());
+            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD, cfg.getBloodwrenchReloadCooldown());
             Messages.debug(player, "BLOODWRENCH_CROSSBOW: Out of shots, reloading for " + cfg.getBloodwrenchReloadCooldown() + "s");
             Messages.send(player, "<yellow>Sandstormer reloading...</yellow>");
         }
@@ -1130,7 +1130,7 @@ public class MythicItemManager {
             return;
         }
 
-        cooldownManager.setCooldown(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE, cfg.getWardenShockwaveCooldown());
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE, cfg.getWardenShockwaveCooldown());
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) {
@@ -1190,7 +1190,7 @@ public class MythicItemManager {
             return;
         }
 
-        cooldownManager.setCooldown(uuid, CooldownManager.Keys.WARDEN_MELEE, cfg.getWardenMeleeCooldown());
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_MELEE, cfg.getWardenMeleeCooldown());
 
         // Knockback II equivalent
         Vector knockback = victim.getLocation().toVector()
@@ -1235,7 +1235,7 @@ public class MythicItemManager {
         Messages.debug(player, "BLAZEBITE: Shot fired! Remaining: " + (shots - 1));
 
         if (shots - 1 <= 0) {
-            cooldownManager.setCooldown(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD, cfg.getBlazebiteReloadCooldown());
+            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD, cfg.getBlazebiteReloadCooldown());
             Messages.debug(player, "BLAZEBITE: Out of shots, reloading for " + cfg.getBlazebiteReloadCooldown() + "s");
             Messages.send(player, "<yellow>BlazeBite reloading...</yellow>");
         }
