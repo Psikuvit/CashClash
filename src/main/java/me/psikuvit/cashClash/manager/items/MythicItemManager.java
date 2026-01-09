@@ -1012,8 +1012,42 @@ public class MythicItemManager {
     }
 
     /**
+     * Handle Goblin Spear throw.
+     * 8 shots per magazine, 15 second reload.
+     * @return true if shot was successful, false if on reload cooldown
+     */
+    public boolean handleGoblinSpearThrow(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        Messages.debug(player, "GOBLIN_SPEAR: Throw triggered");
+
+        int shots = goblinSpearShotsRemaining.getOrDefault(uuid, cfg.getGoblinShotsPerMag());
+        if (shots <= 0) {
+            if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD)) {
+                Messages.debug(player, "GOBLIN_SPEAR: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD) + "s");
+                Messages.send(player, "<red>Goblin Spear reloading! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD) + "s)</red>");
+                return false;
+            }
+            goblinSpearShotsRemaining.put(uuid, cfg.getGoblinShotsPerMag());
+            shots = cfg.getGoblinShotsPerMag();
+            Messages.debug(player, "GOBLIN_SPEAR: Magazine reloaded to " + shots);
+        }
+
+        goblinSpearShotsRemaining.put(uuid, shots - 1);
+        Messages.debug(player, "GOBLIN_SPEAR: Shot fired! Remaining: " + (shots - 1));
+
+        if (shots - 1 <= 0) {
+            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD, cfg.getGoblinReloadCooldown());
+            Messages.debug(player, "GOBLIN_SPEAR: Out of shots, reloading for " + cfg.getGoblinReloadCooldown() + "s");
+            Messages.send(player, "<yellow>Goblin Spear reloading...</yellow>");
+        }
+
+        return true;
+    }
+
+    /**
      * Handle Goblin Spear hit.
-     * Power 4 bow damage (~9 damage) + Poison III for 2 seconds.
+     * Deals damage + Poison.
      */
     public void handleGoblinSpearHit(Player shooter, LivingEntity victim) {
         Messages.debug(shooter, "GOBLIN_SPEAR: Hit " + victim.getName());
@@ -1021,9 +1055,158 @@ public class MythicItemManager {
         victim.damage(cfg.getGoblinSpearDamage(), shooter);
         victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true));
 
-        Messages.debug(shooter, "GOBLIN_SPEAR: Dealt " + cfg.getGoblinSpearDamage() + " damage + Poison III");
+        Messages.debug(shooter, "GOBLIN_SPEAR: Dealt " + cfg.getGoblinSpearDamage() + " damage + Poison " + (cfg.getGoblinPoisonLevel() + 1));
 
         victim.getWorld().spawnParticle(Particle.ITEM_SLIME, victim.getLocation().add(0, 1, 0), 20, 0.5, 1, 0.5, 0.1);
+    }
+
+    /**
+     * Start Goblin Spear charge ability.
+     * Player charges forward, catching enemies and dealing damage + poison when hitting a wall.
+     */
+    public void startGoblinSpearCharge(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        // Check cooldown
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE);
+            Messages.send(player, "<red>Charge on cooldown! (" + remaining + "s)</red>");
+            return;
+        }
+
+        // Check if already charging
+        if (goblinSpearCharging.containsKey(uuid)) {
+            return;
+        }
+
+        Messages.debug(player, "GOBLIN_SPEAR: Charge started!");
+        Messages.send(player, "<green>Charge!</green>");
+        SoundUtils.play(player, Sound.ENTITY_RAVAGER_ROAR, 1.0f, 1.5f);
+
+        // Initialize caught players list
+        goblinSpearCharging.put(uuid, new ArrayList<>());
+
+        // Get session for team checking
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
+
+        // Get charge direction
+        Vector chargeDirection = player.getLocation().getDirection().setY(0).normalize();
+        double chargeSpeed = cfg.getGoblinChargeSpeed();
+        int maxDuration = cfg.getGoblinChargeMaxDuration();
+
+        // Start charge runnable
+        BukkitTask chargeTask = new BukkitRunnable() {
+            int ticks = 0;
+
+            @Override
+            public void run() {
+                if (!player.isOnline() || ticks >= maxDuration) {
+                    endCharge(player, false);
+                    cancel();
+                    return;
+                }
+
+                // Move player forward
+                Vector velocity = chargeDirection.clone().multiply(chargeSpeed);
+                velocity.setY(player.getVelocity().getY()); // Preserve Y velocity
+                player.setVelocity(velocity);
+
+                // Check for wall collision
+                Location checkLoc = player.getLocation().add(chargeDirection.clone().multiply(0.5));
+                if (checkLoc.getBlock().getType().isSolid()) {
+                    endCharge(player, true);
+                    cancel();
+                    return;
+                }
+
+                // Check for nearby enemies to catch
+                List<Player> caughtPlayers = goblinSpearCharging.get(uuid);
+                for (Entity entity : player.getNearbyEntities(1.5, 1.5, 1.5)) {
+                    if (!(entity instanceof Player target)) continue;
+                    if (target.equals(player)) continue;
+                    if (caughtPlayers.contains(target)) continue;
+
+                    // Team check
+                    if (session != null && playerTeam != null) {
+                        Team targetTeam = session.getPlayerTeam(target);
+                        if (targetTeam != null && targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) {
+                            continue;
+                        }
+                    }
+
+                    // Catch the player
+                    caughtPlayers.add(target);
+                    Messages.debug(player, "GOBLIN_SPEAR: Caught " + target.getName());
+                    SoundUtils.play(target, Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
+                }
+
+                // Drag caught players along
+                Location dragLoc = player.getLocation().add(0, 0.5, 0);
+                for (Player caught : caughtPlayers) {
+                    if (caught.isOnline()) {
+                        caught.teleport(dragLoc);
+                    }
+                }
+
+                // Spawn particles
+                player.getWorld().spawnParticle(Particle.CRIT, player.getLocation().add(0, 1, 0), 5, 0.3, 0.3, 0.3, 0.1);
+
+                ticks++;
+            }
+        }.runTaskTimer(CashClashPlugin.getInstance(), 0L, 1L);
+
+        // Track the task
+        activeTasks.computeIfAbsent(uuid, k -> new ArrayList<>()).add(chargeTask);
+    }
+
+    /**
+     * End Goblin Spear charge, applying damage if hit wall.
+     */
+    private void endCharge(Player player, boolean hitWall) {
+        UUID uuid = player.getUniqueId();
+        List<Player> caughtPlayers = goblinSpearCharging.remove(uuid);
+
+        if (caughtPlayers == null || caughtPlayers.isEmpty()) {
+            Messages.debug(player, "GOBLIN_SPEAR: Charge ended, no players caught");
+        } else if (hitWall) {
+            // Deal damage and poison to all caught players
+            double damage = cfg.getGoblinChargeWallDamage();
+            int poisonDuration = cfg.getGoblinChargePoisonDuration();
+            int poisonLevel = cfg.getGoblinChargePoisonLevel();
+
+            for (Player caught : caughtPlayers) {
+                if (!caught.isOnline()) continue;
+
+                caught.damage(damage, player);
+                caught.addPotionEffect(new PotionEffect(PotionEffectType.POISON, poisonDuration, poisonLevel, false, true));
+
+                // Visual effects
+                caught.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, caught.getLocation().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.1);
+                SoundUtils.play(caught, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
+
+                Messages.debug(player, "GOBLIN_SPEAR: Wall impact dealt " + damage + " damage + Poison to " + caught.getName());
+            }
+
+            Messages.send(player, "<gold>Wall impact! Dealt " + (int) damage + " damage to " + caughtPlayers.size() + " enemies!</gold>");
+            SoundUtils.play(player, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 1.0f, 0.8f);
+        } else {
+            Messages.debug(player, "GOBLIN_SPEAR: Charge ended without wall impact");
+        }
+
+        // Set cooldown
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE, cfg.getGoblinChargeCooldown());
+        Messages.debug(player, "GOBLIN_SPEAR: Charge cooldown set to " + cfg.getGoblinChargeCooldown() + "s");
+
+        // Stop the player
+        player.setVelocity(new Vector(0, 0, 0));
+    }
+
+    /**
+     * Check if player is currently charging with Goblin Spear.
+     */
+    public boolean isGoblinSpearCharging(UUID playerId) {
+        return goblinSpearCharging.containsKey(playerId);
     }
 
     // ==================== BLOODWRENCH_CROSSBOW ====================
@@ -1257,7 +1440,7 @@ public class MythicItemManager {
 
     /**
      * Handle BlazeBite hit effects.
-     * Glacier: Slowness I + Frostbite for 3 seconds.
+     * Glacier: Slowness I + Frostbite for 3 seconds. If already frozen, apply max slowness.
      * Volcano: Explosive fire arrow (2 hearts direct, 1 heart splash in 3 blocks).
      */
     public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc, boolean isGlacierMode) {
