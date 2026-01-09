@@ -169,18 +169,17 @@ public class DamageListener implements Listener {
 
             switch (mythic) {
                 case COIN_CLEAVER -> {
-                    boolean isFullyCharged = attacker.getAttackCooldown() >= 0.9f;
-                    double newDamage = mythicManager.handleCoinCleaverDamage(attacker, victim, event.getDamage(), isFullyCharged);
+                    double newDamage = mythicManager.handleCoinCleaverDamage(attacker, victim, event.getDamage(), event.isCritical());
                     event.setDamage(newDamage);
                 }
                 case CARLS_BATTLEAXE -> {
                     // Critical hit launch when falling
-                    if (attacker.getAttackCooldown() >= 0.9f && event.isCritical()) {
+                    if (event.isCritical()) {
                         mythicManager.handleCarlsCriticalHit(attacker, victim);
                     }
                 }
                 case ELECTRIC_EEL_SWORD -> {
-                    if (attacker.getAttackCooldown() >= 0.9f) {
+                    if (event.isCritical()) {
                         mythicManager.handleElectricEelChain(attacker, victim);
                     }
                 }
