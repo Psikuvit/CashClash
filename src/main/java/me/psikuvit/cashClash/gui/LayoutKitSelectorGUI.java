@@ -40,13 +40,14 @@ public class LayoutKitSelectorGUI extends AbstractGui {
     protected void build() {
         // Add kit buttons in a 3x4 grid (slots 10-12, 19-21, 28-30, 37)
         Kit[] kits = Kit.values();
-        int[] slots = {10, 11, 12, 13, 14, 15, 19, 20, 21, 22, 23, 24};
+        int[] slots = {10, 11, 12, 14, 15, 16, 19, 20, 21, 23, 24, 25};
 
         for (int i = 0; i < kits.length && i < slots.length; i++) {
             Kit kit = kits[i];
             setButton(slots[i], createKitButton(kit));
         }
-
+        setItem(13, createPane(Material.LIGHT_BLUE_STAINED_GLASS_PANE));
+        setItem(22, createPane(Material.LIGHT_BLUE_STAINED_GLASS_PANE));
         // Close button
         setCloseButton(31);
     }

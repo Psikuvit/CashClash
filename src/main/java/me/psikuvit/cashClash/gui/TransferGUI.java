@@ -2,7 +2,7 @@ package me.psikuvit.cashClash.gui;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.gui.builder.GuiBuilder;
+import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.listener.TransferInputListener;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -20,11 +20,23 @@ import java.util.UUID;
 
 /**
  * GUI for transferring money to teammates.
- * Player selects a teammate, then enters amount via chat.
+ * Player selects a teammate, then enters amount via sign input.
+ * Extends AbstractGui for consistent GUI implementation.
  */
-public class TransferGUI {
+public class TransferGUI extends AbstractGui {
 
     private static final String GUI_ID = "transfer_main";
+    private final GameSession session;
+    private final Team playerTeam;
+
+    public TransferGUI(Player viewer, GameSession session, Team playerTeam) {
+        super(GUI_ID, viewer);
+        this.session = session;
+        this.playerTeam = playerTeam;
+        setTitle("<gold><bold>Transfer Money</bold></gold>");
+        setRows(3);
+        setFillMaterial(Material.GRAY_STAINED_GLASS_PANE);
+    }
 
     /**
      * Open the transfer GUI for a player.
@@ -42,11 +54,13 @@ public class TransferGUI {
             return;
         }
 
-        GuiBuilder builder = GuiBuilder.create(GUI_ID)
-                .title("<gold><bold>Transfer Money</bold></gold>")
-                .rows(3)
-                .fill(Material.GRAY_STAINED_GLASS_PANE)
-                .backButton(18, ShopGUI::openMain);
+        new TransferGUI(player, session, playerTeam).open();
+    }
+
+    @Override
+    protected void build() {
+        // Back button to shop
+        setBackButton(18, ShopGUI::openMain);
 
         // Info item showing transfer fee
         ItemStack infoItem = new ItemStack(Material.PAPER);
@@ -57,19 +71,19 @@ public class TransferGUI {
                 Messages.parse("<gray>Select a teammate to transfer coins</gray>")
         ));
         infoItem.setItemMeta(infoMeta);
-        builder.item(4, infoItem);
+        setItem(4, infoItem);
 
         // Balance display
-        CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
+        CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
         long coins = ccp != null ? ccp.getCoins() : 0;
-        builder.item(22, GuiItemUtils.createCoinDisplay(coins));
+        setItem(22, GuiItemUtils.createCoinDisplay(coins));
 
         // Teammate slots: 11, 12, 13, 14 (4 players max per team)
         int[] slots = {11, 12, 13, 14};
         int slotIndex = 0;
 
         for (UUID teammateUuid : playerTeam.getPlayers()) {
-            if (teammateUuid.equals(player.getUniqueId())) {
+            if (teammateUuid.equals(viewer.getUniqueId())) {
                 continue; // Skip self
             }
 
@@ -79,15 +93,13 @@ public class TransferGUI {
             }
 
             if (slotIndex < slots.length) {
-                builder.button(slots[slotIndex], createTeammateButton(teammate, session));
+                setButton(slots[slotIndex], createTeammateButton(teammate));
                 slotIndex++;
             }
         }
-
-        builder.open(player);
     }
 
-    private static GuiButton createTeammateButton(Player teammate, GameSession session) {
+    private GuiButton createTeammateButton(Player teammate) {
         CashClashPlayer teammateCcp = session.getCashClashPlayer(teammate.getUniqueId());
         long teammateCoins = teammateCcp != null ? teammateCcp.getCoins() : 0;
 
@@ -101,7 +113,7 @@ public class TransferGUI {
 
         return GuiButton.of(skull).onClick(clicker -> {
             clicker.closeInventory();
-            // Start chat input for transfer amount
+            // Start sign input for transfer amount
             TransferInputListener.getInstance().startTransferInput(clicker, teammate, session);
         });
     }

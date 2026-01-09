@@ -6,7 +6,7 @@ import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
-import me.psikuvit.cashClash.gui.builder.GuiBuilder;
+import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.lobby.LayoutManager;
@@ -28,32 +28,42 @@ import java.util.Set;
 
 /**
  * GUI for browsing and joining arenas.
- * Uses the GuiBuilder system for cleaner implementation.
+ * Extends AbstractGui for consistent GUI implementation.
  */
-public class ArenaSelectionGUI {
+public class ArenaSelectionGUI extends AbstractGui {
 
     private static final String GUI_ID = "arena_selection";
 
-    public static void openArenaGUI(Player player) {
-        GuiBuilder builder = GuiBuilder.create(GUI_ID)
-                .title("<gold><bold>Cash Clash - Select Arena</bold></gold>")
-                .rows(3)
-                .fill(Material.GRAY_STAINED_GLASS_PANE)
-                .closeButton(22);
+    public ArenaSelectionGUI(Player viewer) {
+        super(GUI_ID, viewer);
+        setTitle("<gold><bold>Cash Clash - Select Arena</bold></gold>");
+        setRows(3);
+        setFillMaterial(Material.GRAY_STAINED_GLASS_PANE);
+    }
 
+    /**
+     * Static convenience method to open the arena GUI.
+     */
+    public static void openArenaGUI(Player player) {
+        new ArenaSelectionGUI(player).open();
+    }
+
+    @Override
+    protected void build() {
         // Add arenas to GUI (slots 11, 12, 13, 14, 15)
         for (int i = 1; i <= 5; i++) {
             Arena arena = ArenaManager.getInstance().getArena(i);
             if (arena != null) {
                 int slot = 10 + i;
-                builder.button(slot, createArenaButton(i, arena));
+                setButton(slot, createArenaButton(i, arena));
             }
         }
 
-        builder.open(player);
+        // Close button
+        setCloseButton(22);
     }
 
-    private static GuiButton createArenaButton(int arenaNumber, Arena arena) {
+    private GuiButton createArenaButton(int arenaNumber, Arena arena) {
         ArenaManager manager = ArenaManager.getInstance();
         GameState state = manager.getArenaState(arenaNumber);
         int playerCount = manager.getArenaPlayerCount(arenaNumber);
