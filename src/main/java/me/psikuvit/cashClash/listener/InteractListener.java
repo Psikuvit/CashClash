@@ -293,8 +293,10 @@ public class InteractListener implements Listener {
             }
             case GOBLIN_SPEAR -> {
                 event.setCancelled(true);
-                mythicManager.startGoblinSpearCharge(player);
-                return true;
+                if (player.isSneaking()) {
+                    mythicManager.startGoblinSpearCharge(player);
+                    return true;
+                }
             }
             case WARDEN_GLOVES -> {
                 event.setCancelled(true);
