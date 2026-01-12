@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -19,7 +20,6 @@ import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -502,7 +502,7 @@ public class MythicItemManager {
         Messages.send(player, "<yellow>Duration: " + COIN_CLEAVER_NO_KB_DURATION_SECONDS + "s | Uses remaining: " + usesLeft + "/" + COIN_CLEAVER_MAX_USES_PER_ROUND + "</yellow>");
 
         SoundUtils.play(player, Sound.BLOCK_ANVIL_LAND, 1.0f, 0.5f);
-        player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
+        ParticleUtils.totem(player.getLocation().add(0, 1, 0), 30, 0.5);
 
         Messages.debug(player, "COIN_CLEAVER: No KB activated! " + COIN_CLEAVER_NO_KB_DURATION_SECONDS + "s, " + usesLeft + " uses left this round");
 
@@ -620,7 +620,7 @@ public class MythicItemManager {
         if (world == null) return;
 
         // Instant explosion at feet
-        world.spawnParticle(Particle.EXPLOSION, loc, 1);
+        ParticleUtils.explosion(loc);
         SoundUtils.playAt(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
         Team playerTeam = session.getPlayerTeam(player);
@@ -758,7 +758,7 @@ public class MythicItemManager {
 
                         // Visual feedback
                         SoundUtils.playAt(victim.getLocation(), Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
-                        victim.getWorld().spawnParticle(Particle.CRIT, victim.getLocation().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.1);
+                        ParticleUtils.crit(victim.getLocation().add(0, 1, 0), 15, 0.3);
                         Messages.debug(attacker, "CARLS_BATTLEAXE: Spin hit " + victim.getName() + " for " + damage + " damage");
                     }
                 }
@@ -768,8 +768,7 @@ public class MythicItemManager {
                     double particleAngle = angle + Math.PI;
                     double px = Math.cos(particleAngle) * radius;
                     double pz = Math.sin(particleAngle) * radius;
-                    attacker.getWorld().spawnParticle(Particle.SWEEP_ATTACK,
-                            attacker.getLocation().add(px, 1, pz), 1, 0, 0, 0, 0);
+                    ParticleUtils.sweep(attacker.getLocation().add(px, 1, pz));
                 }
 
                 // Sound every 10 ticks
@@ -862,7 +861,7 @@ public class MythicItemManager {
 
         Messages.debug(attacker, "CARLS_BATTLEAXE: Launched " + victim.getName() + " with power " + launchPower);
         SoundUtils.play(victim, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0f, 0.8f);
-        victim.getWorld().spawnParticle(Particle.CRIT, victim.getLocation().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.1);
+        ParticleUtils.crit(victim.getLocation().add(0, 1, 0), 20, 0.5);
         Messages.send(attacker, "<gold>Critical launch!</gold>");
     }
 
@@ -894,7 +893,7 @@ public class MythicItemManager {
 
         Messages.debug(player, "WIND_BOW: Boosted! Power: " + cfg.getWindBowBoostPower() + ", Cooldown: " + cfg.getWindBowBoostCooldown() + "s");
         SoundUtils.play(player, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.0f, 1.0f);
-        player.getWorld().spawnParticle(Particle.CLOUD, player.getLocation(), 20, 0.5, 0.5, 0.5, 0.1);
+        ParticleUtils.cloud(player.getLocation(), 20, 0.5);
 
         Messages.send(player, "<aqua>Wind boost!</aqua>");
     }
@@ -920,7 +919,7 @@ public class MythicItemManager {
 
         Messages.debug(shooter, "WIND_BOW: Wind gust pushed " + hitCount + " players, radius: " + cfg.getWindBowPushRadius() + ", power: " + cfg.getWindBowPushPower());
         SoundUtils.playAt(hitLoc, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.0f, 0.8f);
-        target.getWorld().spawnParticle(Particle.CLOUD, hitLoc, 30, 1, 1, 1, 0.2);
+        ParticleUtils.cloud(hitLoc, 30, 1);
     }
 
     // ==================== ELECTRIC EEL SWORD ====================
@@ -966,7 +965,7 @@ public class MythicItemManager {
             chainCount++;
 
             // Lightning spark effect
-            target.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, target.getLocation().add(0, 1, 0), 15, 0.3, 0.5, 0.3, 0.1);
+            ParticleUtils.electricSpark(target.getLocation().add(0, 1, 0), 15, 0.3);
         }
 
         Messages.debug(attacker, "ELECTRIC_EEL: Chained to " + chainCount + " enemies, radius: " + radius + ", damage: " + cfg.getEelChainDamage());
@@ -1014,7 +1013,7 @@ public class MythicItemManager {
         player.setVelocity(velocity);
 
         // Effects at destination
-        world.spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
+        ParticleUtils.electricSpark(player.getLocation().add(0, 1, 0), 30, 0.5);
 
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING, cfg.getEelTeleportCooldown());
         Messages.debug(player, "ELECTRIC_EEL: Teleported! Distance: " + distance + ", Cooldown: " + cfg.getEelTeleportCooldown() + "s");
@@ -1067,7 +1066,7 @@ public class MythicItemManager {
 
         Messages.debug(shooter, "GOBLIN_SPEAR: Dealt " + cfg.getGoblinSpearDamage() + " damage + Poison " + (cfg.getGoblinPoisonLevel() + 1));
 
-        victim.getWorld().spawnParticle(Particle.ITEM_SLIME, victim.getLocation().add(0, 1, 0), 20, 0.5, 1, 0.5, 0.1);
+        ParticleUtils.slime(victim.getLocation().add(0, 1, 0), 20, 0.5);
     }
 
     /**
@@ -1160,7 +1159,7 @@ public class MythicItemManager {
                 }
 
                 // Spawn particles
-                player.getWorld().spawnParticle(Particle.CRIT, player.getLocation().add(0, 1, 0), 5, 0.3, 0.3, 0.3, 0.1);
+                ParticleUtils.crit(player.getLocation().add(0, 1, 0), 5, 0.3);
 
                 ticks++;
             }
@@ -1192,7 +1191,7 @@ public class MythicItemManager {
                 caught.addPotionEffect(new PotionEffect(PotionEffectType.POISON, poisonDuration, poisonLevel, false, true));
 
                 // Visual effects
-                caught.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, caught.getLocation().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.1);
+                ParticleUtils.damageIndicator(caught.getLocation().add(0, 1, 0), 20, 0.5);
                 SoundUtils.play(caught, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
 
                 Messages.debug(player, "GOBLIN_SPEAR: Wall impact dealt " + damage + " damage + Poison to " + caught.getName());
@@ -1521,7 +1520,7 @@ public class MythicItemManager {
         World world = player.getWorld();
 
         // Sonic boom visual effect
-        world.spawnParticle(Particle.SONIC_BOOM, loc.clone().add(direction.clone().multiply(2)).add(0, 1, 0), 1);
+        ParticleUtils.sonicBoom(loc.clone().add(direction.clone().multiply(2)).add(0, 1, 0));
         SoundUtils.playAt(loc, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.0f);
 
         int range = cfg.getWardenShockwaveRange();
@@ -1646,7 +1645,7 @@ public class MythicItemManager {
                     victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, maxSlownessDuration, 255, false, true));
 
                     Messages.debug(shooter, "BLAZEBITE: Glacier DOUBLE HIT on " + victim.getName() + " - Max Slowness for " + (maxSlownessDuration / 20) + "s");
-                    world.spawnParticle(Particle.SNOWFLAKE, victim.getLocation().add(0, 1, 0), 60, 0.5, 1.5, 0.5, 0.15);
+                    ParticleUtils.snowflake(victim.getLocation().add(0, 1, 0), 60, 0.5, 1.5, 0.5, 0.15);
                     SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
                     SoundUtils.play(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);
                 } else {
@@ -1654,7 +1653,7 @@ public class MythicItemManager {
                     victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, cfg.getBlazebiteFreezeDuration(), 0, false, true));
 
                     Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - Slowness + Frostbite for " + (cfg.getBlazebiteFreezeDuration() / 20) + "s");
-                    world.spawnParticle(Particle.SNOWFLAKE, victim.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
+                    ParticleUtils.snowflake(victim.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
                     SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
                 }
 
@@ -1667,8 +1666,8 @@ public class MythicItemManager {
                 glacierFrozenPlayers.put(victimId, expirationTime);
             }
         } else {
-            world.spawnParticle(Particle.FLAME, hitLoc, 50, 1, 1, 1, 0.2);
-            world.spawnParticle(Particle.EXPLOSION, hitLoc, 1);
+            ParticleUtils.flame(hitLoc, 50, 1);
+            ParticleUtils.explosion(hitLoc);
             SoundUtils.playAt(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
             GameSession session = GameManager.getInstance().getPlayerSession(shooter);

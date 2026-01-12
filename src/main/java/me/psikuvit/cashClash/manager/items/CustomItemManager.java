@@ -9,12 +9,12 @@ import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -128,7 +128,7 @@ public class CustomItemManager {
         World world = loc.getWorld();
         if (world == null) return;
 
-        world.spawnParticle(Particle.EXPLOSION, loc, 1);
+        ParticleUtils.explosion(loc);
         world.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
 
         for (Entity entity : world.getNearbyEntities(loc, 6, 6, 6)) {
@@ -157,7 +157,7 @@ public class CustomItemManager {
         world.playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 0.5f);
 
         BukkitTask cloudTask = SchedulerUtils.runTaskTimer(() -> {
-            world.spawnParticle(Particle.CAMPFIRE_SIGNAL_SMOKE, loc, 20, 2.5, 1, 2.5, 0.01);
+            ParticleUtils.campfireSmoke(loc, 20, 2.5, 1, 2.5);
 
             for (Entity entity : world.getNearbyEntities(loc, 5, 5, 5)) {
                 if (!(entity instanceof Player target)) continue;
@@ -439,7 +439,7 @@ public class CustomItemManager {
             }
         }
 
-        attacker.getWorld().spawnParticle(Particle.HEART, attacker.getLocation().add(0, 2, 0), 3);
+        ParticleUtils.hearts(attacker, 3);
     }
 
     // ==================== CASH BLASTER IMPLEMENTATION ====================
@@ -561,7 +561,7 @@ public class CustomItemManager {
                 if (world == null) return;
 
                 world.playSound(boomLoc, Sound.BLOCK_NOTE_BLOCK_BASS, 2.0f, 0.5f);
-                world.spawnParticle(Particle.SONIC_BOOM, boomLoc, 1);
+                ParticleUtils.sonicBoom(boomLoc);
 
                 for (Entity entity : world.getNearbyEntities(boomLoc, 5, 5, 5)) {
                     if (!(entity instanceof Player target)) continue;
@@ -664,7 +664,7 @@ public class CustomItemManager {
                 return;
             }
             // Particle effect
-            reviver.getWorld().spawnParticle(Particle.PORTAL, target.getLocation().add(0, 1, 0), 10, 0.5, 0.5, 0.5, 0.1);
+            ParticleUtils.portal(target.getLocation().add(0, 1, 0), 10, 0.5);
         }, 20L, 20L);
 
         respawnAnchorTasks.put(reviverUuid, progressTask);
@@ -742,7 +742,7 @@ public class CustomItemManager {
         SoundUtils.play(target, Sound.ITEM_TOTEM_USE, 1.0f, 1.0f);
 
         // Visual effect at spawn location
-        target.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, target.getLocation().add(0, 1, 0), 50, 0.5, 1, 0.5, 0.1);
+        ParticleUtils.totem(target.getLocation().add(0, 1, 0), 50, 0.5);
     }
 
     /**
