@@ -16,6 +16,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -850,17 +851,37 @@ public class MythicItemManager {
 
         // Launch victim into the air with consistent velocity
         double launchPower = cfg.getCarlsCritLaunchPower();
-        Vector launchVelocity = new Vector(0, launchPower, 0);
 
-        // Add slight horizontal push away from attacker for consistency
-        Vector direction = victim.getLocation().toVector().subtract(attacker.getLocation().toVector()).normalize();
+        // Ensure minimum launch power for noticeable effect
+        if (launchPower < 1.5) {
+            launchPower = 1.5;
+        }
+
+        final double finalLaunchPower = launchPower;
+
+        // Create launch velocity - primarily upward with horizontal push
+        Vector direction = victim.getLocation().toVector().subtract(attacker.getLocation().toVector());
         direction.setY(0);
-        launchVelocity.add(direction.multiply(0.3));
+        if (direction.lengthSquared() > 0) {
+            direction.normalize().multiply(0.5);
+        } else {
+            direction = new Vector(0, 0, 0);
+        }
 
-        victim.setVelocity(launchVelocity);
+        final Vector horizontalPush = direction;
 
-        Messages.debug(attacker, "CARLS_BATTLEAXE: Launched " + victim.getName() + " with power " + launchPower);
+        // Apply velocity on next tick to ensure it takes effect after damage knockback
+        SchedulerUtils.runTaskLater(() -> {
+            if (victim.isOnline()) {
+                Vector launchVelocity = new Vector(horizontalPush.getX(), finalLaunchPower, horizontalPush.getZ());
+                victim.setVelocity(launchVelocity);
+                Messages.debug(attacker, "CARLS_BATTLEAXE: Applied velocity to " + victim.getName() + " - Y: " + finalLaunchPower);
+            }
+        }, 1L);
+
+        Messages.debug(attacker, "CARLS_BATTLEAXE: Launching " + victim.getName() + " with power " + launchPower);
         SoundUtils.play(victim, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0f, 0.8f);
+        SoundUtils.play(attacker, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.8f);
         ParticleUtils.crit(victim.getLocation().add(0, 1, 0), 20, 0.5);
         Messages.send(attacker, "<gold>Critical launch!</gold>");
     }
@@ -1621,7 +1642,7 @@ public class MythicItemManager {
 
     /**
      * Handle BlazeBite hit effects.
-     * Glacier: Slowness I + Frostbite for 3 seconds. If already frozen, apply max slowness.
+     * Glacier: First hit applies frostbite for 5 seconds. Second hit while frozen freezes player in place for 3 seconds.
      * Volcano: Explosive fire arrow (2 hearts direct, 1 heart splash in 3 blocks).
      */
     public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc, boolean isGlacierMode) {
@@ -1640,30 +1661,59 @@ public class MythicItemManager {
                         && glacierFrozenPlayers.get(victimId) > currentTime;
 
                 if (alreadyFrozen) {
-                    // Apply max slowness (level 255 = max effect) for configured duration
-                    int maxSlownessDuration = cfg.getBlazebiteMaxSlownessDuration();
-                    victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, maxSlownessDuration, 255, false, true));
+                    // FREEZE IN PLACE - Apply max slowness (level 255 = completely frozen) for 3 seconds
+                    int freezeInPlaceDuration = cfg.getBlazebiteMaxSlownessDuration(); // 3 seconds = 60 ticks
+                    victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, freezeInPlaceDuration, 255, false, true));
+                    victim.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, freezeInPlaceDuration, 128, false, true)); // Prevent jumping
 
-                    Messages.debug(shooter, "BLAZEBITE: Glacier DOUBLE HIT on " + victim.getName() + " - Max Slowness for " + (maxSlownessDuration / 20) + "s");
-                    ParticleUtils.snowflake(victim.getLocation().add(0, 1, 0), 60, 0.5, 1.5, 0.5, 0.15);
+                    Messages.debug(shooter, "BLAZEBITE: Glacier DOUBLE HIT on " + victim.getName() + " - FROZEN IN PLACE for " + (freezeInPlaceDuration / 20) + "s");
+                    Messages.send(shooter, "<aqua>Target frozen solid!</aqua>");
+                    Messages.send(victim, "<aqua>You are frozen in place!</aqua>");
+
+                    // Intense freeze sound
                     SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
                     SoundUtils.play(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);
-                } else {
-                    // Normal freeze effect
-                    victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, cfg.getBlazebiteFreezeDuration(), 0, false, true));
 
-                    Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - Slowness + Frostbite for " + (cfg.getBlazebiteFreezeDuration() / 20) + "s");
+                    // Continuous light blue particles above head while frozen in place
+                    final UUID victimUUID = victimId;
+                    BukkitTask particleTask = SchedulerUtils.runTaskTimer(() -> {
+                        Player frozenPlayer = Bukkit.getPlayer(victimUUID);
+                        if (frozenPlayer == null || !frozenPlayer.isOnline()) return;
+
+                        // Light blue snowflake particles above head
+                        ParticleUtils.snowflake(frozenPlayer.getLocation().add(0, 2.2, 0), 15, 0.3, 0.2, 0.3, 0.05);
+                    }, 0L, 5L); // Every 5 ticks (0.25 seconds)
+
+                    // Cancel particle task after freeze duration
+                    final BukkitTask taskToCancel = particleTask;
+                    SchedulerUtils.runTaskLater(() -> {
+                        if (taskToCancel != null && !taskToCancel.isCancelled()) {
+                            taskToCancel.cancel();
+                        }
+                    }, freezeInPlaceDuration);
+
+                    // Track task for cleanup
+                    activeTasks.computeIfAbsent(victimId, k -> new ArrayList<>()).add(particleTask);
+
+                    // Clear frozen state so they can be frozen again after this wears off
+                    glacierFrozenPlayers.remove(victimId);
+                } else {
+                    // FIRST HIT - Apply frostbite for 5 seconds
+                    int frostbiteDuration = cfg.getBlazebiteFreezeDuration(); // 5 seconds = 100 ticks
+                    victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, frostbiteDuration, 0, false, true));
+
+                    Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - Frostbite for " + (frostbiteDuration / 20) + "s");
                     ParticleUtils.snowflake(victim.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
                     SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
+
+                    // Apply frostbite visual effect (freeze ticks)
+                    int freezeTicks = 140 + frostbiteDuration;
+                    victim.setFreezeTicks(freezeTicks);
+
+                    // Track frozen player with expiration time (5 seconds from now)
+                    long expirationTime = currentTime + (frostbiteDuration / 20 * 1000L);
+                    glacierFrozenPlayers.put(victimId, expirationTime);
                 }
-
-                // Apply frostbite and track frozen state
-                int freezeTicks = 140 + cfg.getBlazebiteFreezeDuration();
-                victim.setFreezeTicks(freezeTicks);
-
-                // Track frozen player with expiration time
-                long expirationTime = currentTime + (cfg.getBlazebiteFreezeDuration() / 20 * 1000L);
-                glacierFrozenPlayers.put(victimId, expirationTime);
             }
         } else {
             ParticleUtils.flame(hitLoc, 50, 1);
