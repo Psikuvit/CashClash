@@ -10,6 +10,8 @@ import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.manager.game.CashQuakeManager;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.game.RejoinData;
+import me.psikuvit.cashClash.manager.game.RejoinManager;
 import me.psikuvit.cashClash.manager.game.RoundManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
@@ -21,6 +23,8 @@ import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.Investment;
+import me.psikuvit.cashClash.player.PurchaseRecord;
+import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
@@ -345,6 +349,9 @@ public class GameSession {
     public void end() {
         state = GameState.ENDING;
 
+        // Clear any pending rejoins for this session
+        RejoinManager.getInstance().clearSessionRejoins(sessionId);
+
         Team winner = calculateWinner();
         Location finalSpawn = determineFinalSpawn();
 
@@ -648,6 +655,179 @@ public class GameSession {
                 double maxHealth = attr != null ? attr.getValue() : 20.0;
                 player.setHealth(maxHealth);
                 player.setFoodLevel(20);
+            }
+        }
+    }
+
+    // ==================== REJOIN SYSTEM ====================
+
+    /**
+     * Mark a player as disconnected but keep their data for potential rejoin.
+     * This is called when a player disconnects during an active game.
+     *
+     * @param player The player who disconnected
+     */
+    public void markPlayerDisconnected(Player player) {
+        UUID uuid = player.getUniqueId();
+        CashClashPlayer ccp = players.get(uuid);
+        if (ccp == null) return;
+
+        Messages.debug("REJOIN", "Marking player " + player.getName() + " as disconnected in session " + sessionId);
+
+        // Don't remove from teams - just mark for potential rejoin
+        // The RejoinManager will handle the timeout and removal if they don't return
+    }
+
+    /**
+     * Handle a player's rejoin timeout expiring.
+     * Called by RejoinManager when a player doesn't rejoin in time.
+     *
+     * @param playerUuid The UUID of the player who didn't rejoin
+     */
+    public void handleRejoinTimeout(UUID playerUuid) {
+        CashClashPlayer ccp = players.remove(playerUuid);
+        if (ccp != null) {
+            team1.removePlayer(playerUuid);
+            team2.removePlayer(playerUuid);
+            ArenaManager.getInstance().decrementPlayerCount(arenaNumber);
+            Messages.debug("REJOIN", "Player " + playerUuid + " removed due to rejoin timeout");
+        }
+
+        // Check if we need to end the game due to not enough players
+        checkForceEndGame();
+    }
+
+    /**
+     * Rejoin a player to the session, restoring their data.
+     *
+     * @param player The player rejoining
+     * @param data   The rejoin data containing their saved state
+     * @return true if rejoin was successful
+     */
+    public boolean rejoinPlayer(Player player, RejoinData data) {
+        UUID uuid = player.getUniqueId();
+
+        // Check if player is still in our records (they should be marked as disconnected)
+        CashClashPlayer existingCcp = players.get(uuid);
+
+        if (existingCcp == null) {
+            // Player was already removed (e.g., game ended while they were gone)
+            // Re-add them to the appropriate team
+            CashClashPlayer newCcp = new CashClashPlayer(player);
+            players.put(uuid, newCcp);
+
+            if (data.teamNumber() == 1) {
+                team1.addPlayer(uuid);
+            } else {
+                team2.addPlayer(uuid);
+            }
+
+            existingCcp = newCcp;
+        }
+
+        // Restore player state from rejoin data
+        restorePlayerState(player, existingCcp, data);
+
+        // Teleport to spawn location
+        Location spawn = getSpawnForPlayer(uuid);
+        if (spawn != null) {
+            player.teleport(spawn);
+        } else if (gameWorld != null) {
+            player.teleport(gameWorld.getSpawnLocation());
+        }
+
+        // Apply respawn protection
+        int protSec = ConfigManager.getInstance().getRespawnProtection();
+        existingCcp.setRespawnProtection(protSec * 1000L);
+
+        // Set up scoreboard
+        ScoreboardManager.getInstance().createBoardForSession(this);
+
+        Messages.send(player, "<green>You have successfully rejoined the game!</green>");
+        Messages.send(player, "<yellow>Round: <gold>" + currentRound + "</gold> | Lives: <gold>" + existingCcp.getLives() + "</gold></yellow>");
+
+        return true;
+    }
+
+    /**
+     * Restore a player's state from rejoin data.
+     */
+    private void restorePlayerState(Player player, CashClashPlayer ccp, RejoinData data) {
+        // Restore kit
+        if (data.kit() != null) {
+            ccp.setCurrentKit(data.kit());
+        }
+
+        // Restore economy
+        if (ConfigManager.getInstance().isRejoinRestoreBalance()) {
+            ccp.setCoins(data.coins());
+        }
+
+        // Restore lives and stats
+        ccp.setLives(data.lives());
+
+        // Restore inventory
+        if (ConfigManager.getInstance().isRejoinRestoreInventory()) {
+            player.getInventory().clear();
+
+            if (data.inventoryContents() != null) {
+                player.getInventory().setContents(data.inventoryContents());
+            }
+            if (data.armorContents() != null) {
+                player.getInventory().setArmorContents(data.armorContents());
+            }
+            if (data.offhandItem() != null) {
+                player.getInventory().setItemInOffHand(data.offhandItem());
+            }
+        } else {
+            // Apply kit if not restoring inventory
+            if (data.kit() != null) {
+                data.kit().apply(player);
+            }
+        }
+
+        // Restore purchase history
+        if (data.purchaseHistory() != null) {
+            for (PurchaseRecord record : data.purchaseHistory()) {
+                ccp.addPurchase(record);
+            }
+        }
+
+        // Restore owned enchants
+        if (data.ownedEnchants() != null) {
+            for (Map.Entry<EnchantEntry, Integer> entry : data.ownedEnchants().entrySet()) {
+                ccp.setOwnedEnchantLevel(entry.getKey(), entry.getValue());
+            }
+        }
+
+        // Reset health and food
+        player.setHealth(20.0);
+        player.setFoodLevel(20);
+        player.setSaturation(20.0f);
+        player.setGameMode(GameMode.SURVIVAL);
+
+        // Clear potion effects
+        player.getActivePotionEffects().stream()
+                .map(PotionEffect::getType)
+                .forEach(player::removePotionEffect);
+    }
+
+    /**
+     * Check if the game should be force-ended due to not enough players.
+     */
+    private void checkForceEndGame() {
+        // If both teams have no players, end the game
+        if (team1.getPlayers().isEmpty() && team2.getPlayers().isEmpty()) {
+            Messages.debug("GAME", "Force ending game - no players remain");
+            end();
+            return;
+        }
+
+        // If one team has no players and the game is active
+        if (state != GameState.WAITING && state != GameState.ENDING) {
+            if (team1.getPlayers().isEmpty() || team2.getPlayers().isEmpty()) {
+                Messages.broadcast(players.keySet(), "<yellow>Game ending - one team has no remaining players.</yellow>");
+                end();
             }
         }
     }

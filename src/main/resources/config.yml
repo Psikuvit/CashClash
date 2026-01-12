@@ -202,4 +202,17 @@ npc:
     # Leave empty for default Steve skin
     skin-url: "https://textures.minecraft.net/texture/c2e93825cdc4c7ec014143f170ff05ef7ca5f3606716eb5429eb427bb05b7e17"
 
+# ============================================
+# REJOIN SETTINGS
+# ============================================
+rejoin:
+  # Enable the rejoin system for disconnected players
+  enabled: true
+  # How long (seconds) a player has to rejoin after disconnecting
+  timeout-seconds: 120
+  # Restore player inventory on rejoin
+  restore-inventory: true
+  # Restore player balance on rejoin
+  restore-balance: true
+
 

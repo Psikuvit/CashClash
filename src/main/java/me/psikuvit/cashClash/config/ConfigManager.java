@@ -256,4 +256,34 @@ public class ConfigManager {
     public String getArenaNPCSkinURL() {
         return config.getString("npc.arena.skin-url", "");
     }
+
+    // ==================== REJOIN SETTINGS ====================
+
+    /**
+     * Check if the rejoin system is enabled.
+     */
+    public boolean isRejoinEnabled() {
+        return config.getBoolean("rejoin.enabled", true);
+    }
+
+    /**
+     * Get the timeout in seconds for rejoining after disconnect.
+     */
+    public int getRejoinTimeoutSeconds() {
+        return config.getInt("rejoin.timeout-seconds", 120);
+    }
+
+    /**
+     * Check if inventory should be restored on rejoin.
+     */
+    public boolean isRejoinRestoreInventory() {
+        return config.getBoolean("rejoin.restore-inventory", true);
+    }
+
+    /**
+     * Check if balance should be restored on rejoin.
+     */
+    public boolean isRejoinRestoreBalance() {
+        return config.getBoolean("rejoin.restore-balance", true);
+    }
 }

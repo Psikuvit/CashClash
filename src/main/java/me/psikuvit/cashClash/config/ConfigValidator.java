@@ -452,6 +452,13 @@ public class ConfigValidator {
         // NPC settings
         validateAndSet(config, "npc.arena.display-name", "<gold><bold>Arena Selector</bold></gold>", autoAdd);
         validateAndSet(config, "npc.arena.skin-url", "https://textures.minecraft.net/texture/c2e93825cdc4c7ec014143f170ff05ef7ca5f3606716eb5429eb427bb05b7e17", autoAdd);
+
+        // Rejoin settings
+        validateAndSet(config, "rejoin.enabled", true, autoAdd);
+        validateAndSet(config, "rejoin.timeout-seconds", 120, autoAdd);
+        validateAndSet(config, "rejoin.restore-inventory", true, autoAdd);
+        validateAndSet(config, "rejoin.restore-balance", true, autoAdd);
+
         logResults("config.yml");
         return errors.isEmpty();
     }

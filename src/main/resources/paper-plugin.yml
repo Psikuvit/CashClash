@@ -1,5 +1,5 @@
 name: CashClash
-version: '1.3'
+version: '1.4'
 main: me.psikuvit.cashClash.CashClashPlugin
 api-version: '1.21'
 description: A 4v4 PvP strategy minigame with economy mechanics
