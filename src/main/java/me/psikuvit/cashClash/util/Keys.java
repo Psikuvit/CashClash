@@ -46,6 +46,12 @@ public class Keys {
     public static final NamespacedKey BLAZEBITE_MODE;
 
     /**
+     * BloodWrench crossbow mode identifier.
+     * "rapid" = Rapid Fire mode, "supercharged" = Supercharged mode
+     */
+    public static final NamespacedKey BLOODWRENCH_MODE;
+
+    /**
      * Key for arena NPC mannequins (opens arena selector GUI).
      */
     public static final NamespacedKey ARENA_NPC_KEY;
@@ -59,6 +65,7 @@ public class Keys {
         SHOP_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "shop_npc");
         SUPPLY_DROP_AMOUNT = new NamespacedKey(CashClashPlugin.getInstance(), "supply_amount");
         BLAZEBITE_MODE = new NamespacedKey(CashClashPlugin.getInstance(), "blazebite_mode");
+        BLOODWRENCH_MODE = new NamespacedKey(CashClashPlugin.getInstance(), "bloodwrench_mode");
         ARENA_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "arena_npc");
     }
 

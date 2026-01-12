@@ -76,18 +76,21 @@ mythic-items:
       poison-duration-seconds: 3
       poison-level: 1
 
-  # Sandstormer
+  # BloodWrench Crossbow
   bloodwrench:
-    burst:
+    mode-toggle-cooldown-seconds: 1
+    rapid:
       shots: 3
       reload-cooldown-seconds: 14
+      sphere-radius: 3.0
+      sphere-duration-ticks: 60  # 3 seconds
+      sphere-burst-damage: 4.0  # 2 hearts
     supercharge:
-      charge-time-seconds: 28
-      storm-duration-seconds: 4
-      min-damage: 1.0
-      max-damage: 3.0
-      levitation-level: 3
-      levitation-duration-seconds: 4
+      cooldown-seconds: 25
+      vortex-radius: 4.0
+      vortex-duration-ticks: 80  # 4 seconds
+      vortex-damage-per-tick: 2.0  # 1 heart per tick (every 0.5s)
+      vortex-levitation-level: 3
 
   # Warden Gloves
   warden-gloves:

@@ -306,6 +306,9 @@ public class CooldownManager {
         public static final String GOBLIN_SPEAR_RELOAD = "GOBLIN_SPEAR_RELOAD";
         public static final String GOBLIN_SPEAR_CHARGE = "GOBLIN_SPEAR_CHARGE";
         public static final String SANDSTORMER_RELOAD = "SANDSTORMER_RELOAD";
+        public static final String BLOODWRENCH_MODE_TOGGLE = "BLOODWRENCH_MODE_TOGGLE";
+        public static final String BLOODWRENCH_RAPID_RELOAD = "BLOODWRENCH_RAPID_RELOAD";
+        public static final String BLOODWRENCH_SUPERCHARGE_COOLDOWN = "BLOODWRENCH_SUPERCHARGE_COOLDOWN";
         public static final String WARDEN_SHOCKWAVE = "WARDEN_SHOCKWAVE";
         public static final String WARDEN_MELEE = "WARDEN_MELEE";
         public static final String BLAZEBITE_RELOAD = "BLAZEBITE_RELOAD";

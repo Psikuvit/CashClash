@@ -36,8 +36,9 @@ public enum MythicItem implements Purchasable {
     ),
     BLOODWRENCH_CROSSBOW(Material.CROSSBOW, "bloodwrench-crossbow",
             "BloodWrench Crossbow",
-            "Burst fire 3 arrows (14s cooldown). Hold charged 28s for supercharged shot: " +
-            "sandstorm effect (1-3 hearts/sec) + Levitation IV for 4s."
+            "Shift+Right-click to toggle modes (1s cooldown). " +
+            "Rapid Fire: 3 blood shots creating slowness spheres with burst damage. " +
+            "Supercharged: Single powerful shot creating a blood vortex with levitation and damage."
     ),
     WARDEN_GLOVES(Material.NETHERITE_SWORD, "warden-gloves",
             "Warden Gloves",

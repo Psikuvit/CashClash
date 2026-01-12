@@ -73,9 +73,6 @@ public class MythicItemManager {
     private final Map<UUID, Set<MythicItem>> sessionPurchasedMythics;
     private final Map<UUID, List<MythicItem>> sessionAvailableMythics;
 
-    // Sandstormer charge tracking
-    private final Map<UUID, Integer> sandstormerShotsRemaining;
-
     // BlazeBite shots tracking (shared between both crossbows)
     private final Map<UUID, Integer> blazebiteShotsRemaining;
 
@@ -88,6 +85,15 @@ public class MythicItemManager {
     // Goblin Spear charge state tracking (player -> list of caught players)
     private final Map<UUID, List<Player>> goblinSpearCharging;
 
+    // BloodWrench mode tracking (true = rapid fire, false = supercharged)
+    private final Map<UUID, Boolean> bloodwrenchRapidMode;
+
+    // BloodWrench rapid fire shots remaining (must fire all 3 before switching)
+    private final Map<UUID, Integer> bloodwrenchRapidShotsRemaining;
+
+    // BloodWrench rapid fire in progress (cannot switch modes while firing)
+    private final Set<UUID> bloodwrenchRapidFiring;
+
     // Active tasks for cleanup
     private final Map<UUID, List<BukkitTask>> activeTasks;
 
@@ -96,11 +102,13 @@ public class MythicItemManager {
         playerMythics = new HashMap<>();
         sessionPurchasedMythics = new HashMap<>();
         sessionAvailableMythics = new HashMap<>();
-        sandstormerShotsRemaining = new HashMap<>();
         blazebiteShotsRemaining = new HashMap<>();
         glacierFrozenPlayers = new HashMap<>();
         goblinSpearShotsRemaining = new HashMap<>();
         goblinSpearCharging = new HashMap<>();
+        bloodwrenchRapidMode = new HashMap<>();
+        bloodwrenchRapidShotsRemaining = new HashMap<>();
+        bloodwrenchRapidFiring = new HashSet<>();
         activeTasks = new HashMap<>();
     }
 
@@ -372,7 +380,9 @@ public class MythicItemManager {
                 );
                 meta.addAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, reachMod);
             }
-            case BLOODWRENCH_CROSSBOW -> meta.addEnchant(Enchantment.MULTISHOT, 1, false);
+            case BLOODWRENCH_CROSSBOW -> {
+                // No enchantments - mode system handles functionality
+            }
             default -> {
             }
         }
@@ -1212,98 +1222,270 @@ public class MythicItemManager {
     // ==================== BLOODWRENCH_CROSSBOW ====================
 
     /**
-     * Handle Sandstormer shot.
-     * Burst attack - 3 arrows before reload.
-     * 14 second cooldown after all shots used.
+     * Toggle BloodWrench mode between Rapid Fire and Supercharged.
+     * Cannot switch modes while rapid firing or on cooldown.
+     * 1 second cooldown between toggles.
      */
-    public boolean handleBloodwrenchShot(Player player) {
+    public void toggleBloodwrenchMode(Player player) {
         UUID uuid = player.getUniqueId();
 
-        Messages.debug(player, "BLOODWRENCH_CROSSBOW: Shot triggered");
-
-        int shots = sandstormerShotsRemaining.getOrDefault(uuid, cfg.getBloodwrenchBurstShots());
-        if (shots <= 0) {
-            if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD)) {
-                Messages.debug(player, "BLOODWRENCH_CROSSBOW: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD) + "s");
-                Messages.send(player, "<red>Sandstormer reloading! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD) + "s)</red>");
-                return false;
-            }
-            sandstormerShotsRemaining.put(uuid, cfg.getBloodwrenchBurstShots());
-            shots = cfg.getBloodwrenchBurstShots();
-            Messages.debug(player, "BLOODWRENCH_CROSSBOW: Reloaded! Shots reset to " + shots);
+        // Cannot switch while in rapid fire burst
+        if (bloodwrenchRapidFiring.contains(uuid)) {
+            Messages.send(player, "<red>Cannot switch modes while firing!</red>");
+            return;
         }
 
-        sandstormerShotsRemaining.put(uuid, shots - 1);
-        Messages.debug(player, "BLOODWRENCH_CROSSBOW: Shot fired! Remaining: " + (shots - 1));
+        // Check toggle cooldown
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE)) {
+            Messages.send(player, "<red>Mode switch on cooldown! (" +
+                cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE) + "s)</red>");
+            return;
+        }
 
+        // Toggle mode (default is rapid mode = true)
+        boolean currentRapid = bloodwrenchRapidMode.getOrDefault(uuid, true);
+        boolean newRapid = !currentRapid;
+        bloodwrenchRapidMode.put(uuid, newRapid);
+
+        // Set toggle cooldown
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE, cfg.getBloodwrenchModeToggleCooldown());
+
+        String modeName = newRapid ? "<red>Rapid Fire</red>" : "<dark_purple>Supercharged</dark_purple>";
+        Messages.send(player, "<gold>BloodWrench mode: " + modeName);
+        SoundUtils.play(player, Sound.BLOCK_LEVER_CLICK, 1.0f, newRapid ? 1.5f : 0.8f);
+        Messages.debug(player, "BLOODWRENCH: Switched to " + (newRapid ? "Rapid Fire" : "Supercharged") + " mode");
+    }
+
+    /**
+     * Check if BloodWrench is in Rapid Fire mode.
+     */
+    public boolean isBloodwrenchRapidMode(Player player) {
+        return bloodwrenchRapidMode.getOrDefault(player.getUniqueId(), true);
+    }
+
+    /**
+     * Handle BloodWrench shot based on current mode.
+     * Returns false if shot should be cancelled.
+     */
+    public boolean handleBloodwrenchShot(Player player) {
+        player.getUniqueId();
+        boolean isRapid = isBloodwrenchRapidMode(player);
+
+        Messages.debug(player, "BLOODWRENCH: Shot triggered (" + (isRapid ? "Rapid" : "Supercharged") + " mode)");
+
+        if (isRapid) {
+            return handleBloodwrenchRapidShot(player);
+        } else {
+            return handleBloodwrenchSuperchargedShot(player);
+        }
+    }
+
+    /**
+     * Handle Rapid Fire mode shot.
+     * Player fires 3 blood shots. Once started, must complete all 3 before switching modes.
+     * After 3 shots, cooldown begins.
+     */
+    private boolean handleBloodwrenchRapidShot(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        // Check if on reload cooldown
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD);
+            Messages.send(player, "<red>BloodWrench reloading! (" + remaining + "s)</red>");
+            Messages.debug(player, "BLOODWRENCH: Rapid reloading - " + remaining + "s");
+            return false;
+        }
+
+        int shots = bloodwrenchRapidShotsRemaining.getOrDefault(uuid, cfg.getBloodwrenchRapidShots());
+
+        // First shot starts the burst
+        if (shots == cfg.getBloodwrenchRapidShots()) {
+            bloodwrenchRapidFiring.add(uuid);
+            Messages.debug(player, "BLOODWRENCH: Rapid fire burst started");
+        }
+
+        // Fire the shot
+        bloodwrenchRapidShotsRemaining.put(uuid, shots - 1);
+        Messages.debug(player, "BLOODWRENCH: Rapid shot fired! Remaining: " + (shots - 1));
+
+        // Check if burst complete
         if (shots - 1 <= 0) {
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.SANDSTORMER_RELOAD, cfg.getBloodwrenchReloadCooldown());
-            Messages.debug(player, "BLOODWRENCH_CROSSBOW: Out of shots, reloading for " + cfg.getBloodwrenchReloadCooldown() + "s");
-            Messages.send(player, "<yellow>Sandstormer reloading...</yellow>");
+            bloodwrenchRapidFiring.remove(uuid);
+            bloodwrenchRapidShotsRemaining.remove(uuid);
+            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD, cfg.getBloodwrenchRapidReloadCooldown());
+            Messages.send(player, "<yellow>BloodWrench reloading...</yellow>");
+            Messages.debug(player, "BLOODWRENCH: Rapid burst complete, reloading for " + cfg.getBloodwrenchRapidReloadCooldown() + "s");
         }
 
         return true;
     }
 
     /**
-     * Start charging Sandstormer for supercharged shot.
+     * Handle Supercharged mode shot.
+     * Single powerful shot creating a blood vortex.
      */
-    public void startBloodwrenchCharge(Player player) {
-        cooldownManager.setTimestamp(player.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE);
-        Messages.debug(player, "BLOODWRENCH_CROSSBOW: Started charging for supercharged shot");
-    }
+    private boolean handleBloodwrenchSuperchargedShot(Player player) {
+        UUID uuid = player.getUniqueId();
 
-    /**
-     * Check if Sandstormer is supercharged (held charged for 28 seconds).
-     */
-    public boolean isBloodwrenchSupercharged(Player player) {
-        long start = cooldownManager.getTimestamp(player.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE);
-        if (start == 0) return false;
-        boolean supercharged = cooldownManager.hasTimePassedSeconds(player.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE,
-                ItemsConfig.getInstance().getBloodwrenchSuperchargeTime() / 1000);
-        if (supercharged) {
-            Messages.debug(player, "BLOODWRENCH_CROSSBOW: Supercharged! (held for 28s+)");
+        // Check cooldown
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN);
+            Messages.send(player, "<red>Supercharged shot on cooldown! (" + remaining + "s)</red>");
+            Messages.debug(player, "BLOODWRENCH: Supercharged on cooldown - " + remaining + "s");
+            return false;
         }
-        return supercharged;
+
+        Messages.debug(player, "BLOODWRENCH: Supercharged shot fired!");
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN, cfg.getBloodwrenchSuperchargeCooldown());
+        return true;
     }
 
     /**
-     * Fire supercharged Sandstormer shot.
-     * Creates sandstorm effect dealing 1-3 hearts per second for 4 seconds.
-     * Target gets Levitation IV for 4 seconds.
+     * Handle BloodWrench Rapid Fire hit - creates blood sphere.
+     * Blood sphere gives Slowness I when inside and burst damage (nerfed grenade).
      */
-    public void fireSuperchargedSandstormer(Player shooter, Player victim) {
-        cooldownManager.clearTimestamp(shooter.getUniqueId(), CooldownManager.Keys.SANDSTORMER_CHARGE);
+    public void handleBloodwrenchRapidHit(Player shooter, Location hitLocation) {
+        World world = hitLocation.getWorld();
+        if (world == null) return;
 
-        Messages.debug(shooter, "BLOODWRENCH_CROSSBOW: Supercharged shot hit " + victim.getName());
+        GameSession session = GameManager.getInstance().getPlayerSession(shooter);
+        Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
 
-        // Sandstorm damage effect for 4 seconds (damage every second)
-        BukkitTask damageTask = SchedulerUtils.runTaskTimer(() -> {
-            if (!victim.isOnline() || victim.isDead()) return;
+        Messages.debug(shooter, "BLOODWRENCH: Rapid hit - creating blood sphere at " + hitLocation);
 
-            // Damage 1-3 hearts randomly (2-6 damage)
-            int hearts = 1 + ThreadLocalRandom.current().nextInt(3);
-            double damage = hearts * 2.0;
-            victim.damage(damage, shooter);
+        // Visual blood sphere
+        ParticleUtils.spawnDust(hitLocation, org.bukkit.Color.fromRGB(139, 0, 0), 2.0f, 50,
+            cfg.getBloodwrenchSphereRadius());
+        SoundUtils.playAt(hitLocation, Sound.BLOCK_SLIME_BLOCK_BREAK, 1.0f, 0.5f);
 
-            // Sand particles around victim
-            victim.getWorld().spawnParticle(Particle.BLOCK,
-                    victim.getLocation().add(0, 1, 0),
-                    50, 2, 2, 2, 0.5,
-                    Material.SAND.createBlockData()
-            );
-        }, 0L, 20L);
+        // Create blood sphere effect that lingers
+        int durationTicks = cfg.getBloodwrenchSphereDuration();
+        double radius = cfg.getBloodwrenchSphereRadius();
+        double damage = cfg.getBloodwrenchSphereDamage();
 
-        // Levitation IV for 4 seconds
-        victim.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, cfg.getBloodwrenchDuration(), 3, false, true));
+        // Initial burst damage (nerfed grenade - smaller radius, less damage)
+        for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius, radius)) {
+            if (!(entity instanceof Player target)) continue;
+            if (target.equals(shooter)) continue;
 
-        SchedulerUtils.runTaskLater(Objects.requireNonNull(damageTask)::cancel, cfg.getBloodwrenchDuration());
+            if (session != null) {
+                Team targetTeam = session.getPlayerTeam(target);
+                if (targetTeam != null && shooterTeam != null &&
+                    targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
+            }
 
-        activeTasks.computeIfAbsent(shooter.getUniqueId(), k -> new ArrayList<>()).add(damageTask);
+            // Burst damage
+            target.damage(damage, shooter);
+            Messages.debug(shooter, "BLOODWRENCH: Blood sphere damaged " + target.getName() + " for " + damage);
+        }
 
-        Messages.debug(shooter, "BLOODWRENCH_CROSSBOW: Sandstorm activated! Duration: " + (cfg.getBloodwrenchDuration() / 20) + "s");
-        SoundUtils.play(victim, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.5f);
-        Messages.send(shooter, "<gold>Supercharged shot!</gold>");
+        // Lingering sphere effect
+        BukkitTask sphereTask = SchedulerUtils.runTaskTimer(() -> {
+            // Particle effect
+            ParticleUtils.spawnDust(hitLocation, org.bukkit.Color.fromRGB(139, 0, 0), 1.5f, 20, radius * 0.8);
+
+            // Apply slowness to enemies inside
+            for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius, radius)) {
+                if (!(entity instanceof Player target)) continue;
+                if (target.equals(shooter)) continue;
+
+                if (session != null) {
+                    Team targetTeam = session.getPlayerTeam(target);
+                    if (targetTeam != null && shooterTeam != null &&
+                        targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
+                }
+
+                // Slowness I while inside sphere
+                target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 0, false, false));
+            }
+        }, 0L, 10L);
+
+        // Cancel after duration
+        SchedulerUtils.runTaskLater(() -> {
+            Objects.requireNonNull(sphereTask).cancel();
+            Messages.debug(shooter, "BLOODWRENCH: Blood sphere expired");
+        }, durationTicks);
+
+        activeTasks.computeIfAbsent(shooter.getUniqueId(), k -> new ArrayList<>()).add(sphereTask);
+    }
+
+    /**
+     * Handle BloodWrench Supercharged hit - creates blood vortex.
+     * Vortex has red particles, gives Levitation and deals damage to enemies inside.
+     */
+    public void handleBloodwrenchSuperchargedHit(Player shooter, Location hitLocation) {
+        World world = hitLocation.getWorld();
+        if (world == null) return;
+
+        GameSession session = GameManager.getInstance().getPlayerSession(shooter);
+        Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
+
+        Messages.debug(shooter, "BLOODWRENCH: Supercharged hit - creating blood vortex at " + hitLocation);
+        Messages.send(shooter, "<dark_purple>Blood Vortex activated!</dark_purple>");
+
+        SoundUtils.playAt(hitLocation, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.5f);
+        SoundUtils.playAt(hitLocation, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 1.2f);
+
+        int durationTicks = cfg.getBloodwrenchVortexDuration();
+        double radius = cfg.getBloodwrenchVortexRadius();
+        double damagePerTick = cfg.getBloodwrenchVortexDamage();
+
+        // Vortex effect with spiraling particles
+        final int[] tick = {0};
+        BukkitTask vortexTask = SchedulerUtils.runTaskTimer(() -> {
+            tick[0]++;
+
+            // Spiraling red particles
+            double angle = tick[0] * 0.3;
+            for (int i = 0; i < 3; i++) {
+                double offsetAngle = angle + (i * (Math.PI * 2 / 3));
+                double x = Math.cos(offsetAngle) * radius * 0.8;
+                double z = Math.sin(offsetAngle) * radius * 0.8;
+                double y = (tick[0] % 20) * 0.15; // Spiral up
+
+                ParticleUtils.spawnDust(hitLocation.clone().add(x, y, z), org.bukkit.Color.fromRGB(180, 0, 0), 2.0f, 5, 0.1);
+            }
+
+            // Central column of particles
+            ParticleUtils.spawnDust(hitLocation.clone().add(0, 1.5, 0), org.bukkit.Color.fromRGB(100, 0, 0), 1.5f, 15, 0.3, 1.5, 0.3);
+
+            // Apply effects every 10 ticks (0.5 seconds)
+            if (tick[0] % 10 == 0) {
+                for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius + 2, radius)) {
+                    if (!(entity instanceof Player target)) continue;
+                    if (target.equals(shooter)) continue;
+
+                    if (session != null) {
+                        Team targetTeam = session.getPlayerTeam(target);
+                        if (targetTeam != null && shooterTeam != null &&
+                            targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
+                    }
+
+                    // Levitation and damage while inside vortex
+                    target.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 30, cfg.getBloodwrenchVortexLevitationLevel() - 1, false, false));
+                    target.damage(damagePerTick, shooter);
+                    Messages.debug(shooter, "BLOODWRENCH: Vortex affecting " + target.getName());
+                }
+            }
+        }, 0L, 2L);
+
+        // Cancel after duration
+        SchedulerUtils.runTaskLater(() -> {
+            Objects.requireNonNull(vortexTask).cancel();
+            Messages.debug(shooter, "BLOODWRENCH: Blood vortex expired");
+            // Final burst effect
+            ParticleUtils.spawnDust(hitLocation.clone().add(0, 1, 0), org.bukkit.Color.fromRGB(139, 0, 0), 3.0f, 80, radius, 2, radius);
+            SoundUtils.playAt(hitLocation, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.5f);
+        }, durationTicks);
+
+        activeTasks.computeIfAbsent(shooter.getUniqueId(), k -> new ArrayList<>()).add(vortexTask);
+    }
+
+    /**
+     * Check if player is currently in rapid fire burst (cannot switch modes).
+     */
+    public boolean isBloodwrenchRapidFiring(UUID playerId) {
+        return bloodwrenchRapidFiring.contains(playerId);
     }
 
     // ==================== WARDEN GLOVES ====================
@@ -1514,25 +1696,16 @@ public class MythicItemManager {
         }
     }
 
-    // ==================== PARTICLE EFFECTS ====================
-
-    /**
-     * Spawn ambient sand particles for Sandstormer when held in hotbar.
-     */
-    public void spawnSandstormerParticles(Player player) {
-        Location loc = player.getLocation().add(0, 1, 0);
-        player.getWorld().spawnParticle(Particle.BLOCK, loc, 5, 0.5, 0.5, 0.5, 0.01,
-            Material.SAND.createBlockData());
-    }
-
     // ==================== CLEANUP ====================
 
     public void cleanup() {
-        sandstormerShotsRemaining.clear();
         blazebiteShotsRemaining.clear();
         glacierFrozenPlayers.clear();
         goblinSpearShotsRemaining.clear();
         goblinSpearCharging.clear();
+        bloodwrenchRapidMode.clear();
+        bloodwrenchRapidShotsRemaining.clear();
+        bloodwrenchRapidFiring.clear();
 
         activeTasks.values().forEach(tasks -> tasks.forEach(BukkitTask::cancel));
         activeTasks.clear();

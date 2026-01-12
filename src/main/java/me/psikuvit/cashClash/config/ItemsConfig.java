@@ -197,21 +197,51 @@ public class ItemsConfig {
         return config.getInt("mythic-items.goblin-spear.charge.poison-level", 1) - 1; // 0-indexed
     }
 
-    // BloodWrench Crossbow
-    public int getBloodwrenchBurstShots() {
-        return config.getInt("mythic-items.bloodwrench.burst.shots", 3);
+    // BloodWrench Crossbow - Mode Toggle
+    public int getBloodwrenchModeToggleCooldown() {
+        return config.getInt("mythic-items.bloodwrench.mode-toggle-cooldown-seconds", 1);
     }
 
-    public int getBloodwrenchReloadCooldown() {
-        return config.getInt("mythic-items.bloodwrench.burst.reload-cooldown-seconds", 14);
+    // BloodWrench Crossbow - Rapid Fire Mode
+    public int getBloodwrenchRapidShots() {
+        return config.getInt("mythic-items.bloodwrench.rapid.shots", 3);
     }
 
-    public long getBloodwrenchSuperchargeTime() {
-        return config.getLong("mythic-items.bloodwrench.supercharge.charge-time-seconds", 28) * 1000;
+    public int getBloodwrenchRapidReloadCooldown() {
+        return config.getInt("mythic-items.bloodwrench.rapid.reload-cooldown-seconds", 14);
     }
 
-    public int getBloodwrenchDuration() {
-        return config.getInt("mythic-items.bloodwrench.supercharge.storm-duration-seconds", 4) * 20;
+    public double getBloodwrenchSphereRadius() {
+        return config.getDouble("mythic-items.bloodwrench.rapid.sphere-radius", 3.0);
+    }
+
+    public int getBloodwrenchSphereDuration() {
+        return config.getInt("mythic-items.bloodwrench.rapid.sphere-duration-ticks", 60);
+    }
+
+    public double getBloodwrenchSphereDamage() {
+        return config.getDouble("mythic-items.bloodwrench.rapid.sphere-burst-damage", 4.0);
+    }
+
+    // BloodWrench Crossbow - Supercharged Mode
+    public int getBloodwrenchSuperchargeCooldown() {
+        return config.getInt("mythic-items.bloodwrench.supercharge.cooldown-seconds", 25);
+    }
+
+    public double getBloodwrenchVortexRadius() {
+        return config.getDouble("mythic-items.bloodwrench.supercharge.vortex-radius", 4.0);
+    }
+
+    public int getBloodwrenchVortexDuration() {
+        return config.getInt("mythic-items.bloodwrench.supercharge.vortex-duration-ticks", 80);
+    }
+
+    public double getBloodwrenchVortexDamage() {
+        return config.getDouble("mythic-items.bloodwrench.supercharge.vortex-damage-per-tick", 2.0);
+    }
+
+    public int getBloodwrenchVortexLevitationLevel() {
+        return config.getInt("mythic-items.bloodwrench.supercharge.vortex-levitation-level", 3);
     }
 
     // Warden Gloves

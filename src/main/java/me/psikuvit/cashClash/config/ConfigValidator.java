@@ -223,10 +223,17 @@ public class ConfigValidator {
         validateAndSet(config, "mythic-items.goblin-spear.charge.poison-level", 1, autoAdd);
 
         // Bloodwrench Crossbow
-        validateAndSet(config, "mythic-items.bloodwrench.burst.shots", 3, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.burst.reload-cooldown-seconds", 14, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.supercharge.charge-time-seconds", 28, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.supercharge.storm-duration-seconds", 4, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.mode-toggle-cooldown-seconds", 1, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.rapid.shots", 3, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.rapid.reload-cooldown-seconds", 14, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.rapid.sphere-radius", 3.0, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.rapid.sphere-duration-ticks", 60, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.rapid.sphere-burst-damage", 4.0, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.supercharge.cooldown-seconds", 25, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.supercharge.vortex-radius", 4.0, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.supercharge.vortex-duration-ticks", 80, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.supercharge.vortex-damage-per-tick", 2.0, autoAdd);
+        validateAndSet(config, "mythic-items.bloodwrench.supercharge.vortex-levitation-level", 3, autoAdd);
 
         // Warden Gloves
         validateAndSet(config, "mythic-items.warden-gloves.shockwave.cooldown-seconds", 41, autoAdd);

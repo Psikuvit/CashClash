@@ -356,6 +356,16 @@ public class GameListener implements Listener {
             case BLOODWRENCH_CROSSBOW -> {
                 if (!mythicManager.handleBloodwrenchShot(player)) {
                     event.setCancelled(true);
+                } else {
+                    // Tag the arrow with BloodWrench mode for hit detection
+                    if (event.getProjectile() instanceof Arrow arrow) {
+                        boolean isRapid = mythicManager.isBloodwrenchRapidMode(player);
+                        arrow.getPersistentDataContainer().set(
+                            Keys.BLOODWRENCH_MODE,
+                            PersistentDataType.STRING,
+                            isRapid ? "rapid" : "supercharged"
+                        );
+                    }
                 }
             }
             case BLAZEBITE_CROSSBOWS -> {
@@ -404,9 +414,18 @@ public class GameListener implements Listener {
             if (mythic == MythicItem.WIND_BOW && event.getHitEntity() instanceof Player hitPlayer) {
                 mythicManager.handleWindBowHit(shooter, hitPlayer);
             }
-            if (mythic == MythicItem.BLOODWRENCH_CROSSBOW) {
-                if (event.getHitEntity() instanceof Player hitPlayer && mythicManager.isBloodwrenchSupercharged(shooter)) {
-                    mythicManager.fireSuperchargedSandstormer(shooter, hitPlayer);
+
+            // Check for BloodWrench arrow (tagged in onEntityShootBow)
+            String bloodwrenchMode = arrow.getPersistentDataContainer().get(Keys.BLOODWRENCH_MODE, PersistentDataType.STRING);
+            if (bloodwrenchMode != null) {
+                Location hitLoc = event.getHitEntity() != null
+                    ? event.getHitEntity().getLocation()
+                    : arrow.getLocation();
+
+                if ("rapid".equals(bloodwrenchMode)) {
+                    mythicManager.handleBloodwrenchRapidHit(shooter, hitLoc);
+                } else if ("supercharged".equals(bloodwrenchMode)) {
+                    mythicManager.handleBloodwrenchSuperchargedHit(shooter, hitLoc);
                 }
             }
         }

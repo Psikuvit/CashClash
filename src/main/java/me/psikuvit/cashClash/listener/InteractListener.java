@@ -304,8 +304,12 @@ public class InteractListener implements Listener {
                 return true;
             }
             case BLOODWRENCH_CROSSBOW -> {
-                mythicManager.startBloodwrenchCharge(player);
-                return true;
+                // Shift + Right-click to toggle mode
+                if (player.isSneaking()) {
+                    event.setCancelled(true);
+                    mythicManager.toggleBloodwrenchMode(player);
+                    return true;
+                }
             }
         }
         return false;
