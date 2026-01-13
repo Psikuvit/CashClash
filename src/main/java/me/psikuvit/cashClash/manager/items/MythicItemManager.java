@@ -67,7 +67,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class MythicItemManager {
 
     private static MythicItemManager instance;
-    private final ItemsConfig cfg = ItemsConfig.getInstance();
+    private final ItemsConfig cfg;
     private final CooldownManager cooldownManager;
 
     private final Map<UUID, Map<UUID, MythicItem>> playerMythics;
@@ -98,7 +98,16 @@ public class MythicItemManager {
     // Active tasks for cleanup
     private final Map<UUID, List<BukkitTask>> activeTasks;
 
+    // Warden Gloves boxing punch counter (UUID -> punch count)
+    private final Map<UUID, Integer> wardenPunchCount;
+    // Warden Gloves boxing ability active (UUID -> true if ability is active)
+    private final Set<UUID> wardenBoxingActive;
+
+    // Glacier frostbite particle tasks (UUID -> particle task)
+    private final Map<UUID, BukkitTask> glacierFrostbiteParticleTasks;
+
     private MythicItemManager() {
+        cfg = ItemsConfig.getInstance();
         cooldownManager = CooldownManager.getInstance();
         playerMythics = new HashMap<>();
         sessionPurchasedMythics = new HashMap<>();
@@ -111,6 +120,9 @@ public class MythicItemManager {
         bloodwrenchRapidShotsRemaining = new HashMap<>();
         bloodwrenchRapidFiring = new HashSet<>();
         activeTasks = new HashMap<>();
+        wardenPunchCount = new HashMap<>();
+        wardenBoxingActive = new HashSet<>();
+        glacierFrostbiteParticleTasks = new HashMap<>();
     }
 
     public static MythicItemManager getInstance() {
@@ -1508,16 +1520,139 @@ public class MythicItemManager {
         return bloodwrenchRapidFiring.contains(playerId);
     }
 
-    // ==================== WARDEN GLOVES ====================
+    // ==================== WARDEN GLOVES (BOXING GLOVES) ====================
 
     /**
-     * Warden Gloves shockwave attack.
-     * Unleashes shockwave dealing 6 hearts damage + big knockback in cone.
-     * 41 second cooldown.
+     * Warden Gloves boxing ability - Left click to punch.
+     * On every 5th punch, speed increases.
+     * Ability lasts for 20 seconds, 35 second cooldown.
+     */
+    public void useWardenPunch(Player player, Player victim) {
+        UUID uuid = player.getUniqueId();
+
+        Messages.debug(player, "WARDEN_GLOVES: Punch attack on " + victim.getName());
+
+        // Check if boxing ability is on cooldown (ability hasn't been started yet)
+        if (!wardenBoxingActive.contains(uuid) && cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_BOXING)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING);
+            Messages.send(player, "<red>Boxing gloves on cooldown! (" + remaining + "s)</red>");
+            return;
+        }
+
+        // Start boxing ability if not already active
+        if (!wardenBoxingActive.contains(uuid)) {
+            startWardenBoxingAbility(player);
+        }
+
+        // Increment punch count
+        int punchCount = wardenPunchCount.getOrDefault(uuid, 0) + 1;
+        wardenPunchCount.put(uuid, punchCount);
+
+        // Apply punch knockback
+        Vector knockback = victim.getLocation().toVector()
+                .subtract(player.getLocation().toVector())
+                .normalize()
+                .multiply(1.2)
+                .setY(0.4);
+        victim.setVelocity(knockback);
+
+        // Punch sound effect
+        SoundUtils.play(victim, Sound.ENTITY_WARDEN_ATTACK_IMPACT, 1.0f, 1.0f);
+        ParticleUtils.sweep(victim.getLocation().add(0, 1, 0));
+
+        // Every 5th punch, increase speed
+        if (punchCount % 5 == 0) {
+            int currentSpeedLevel = 0;
+            for (PotionEffect effect : player.getActivePotionEffects()) {
+                if (effect.getType() == PotionEffectType.SPEED) {
+                    currentSpeedLevel = effect.getAmplifier() + 1;
+                    break;
+                }
+            }
+
+            // Cap speed at level 3 (amplifier 2)
+            int newSpeedLevel = Math.min(currentSpeedLevel + 1, 3);
+            int remainingDuration = cfg.getWardenBoxingDuration() * 20; // Convert seconds to ticks
+
+            // Apply or increase speed
+            player.addPotionEffect(new PotionEffect(
+                    PotionEffectType.SPEED,
+                    remainingDuration,
+                    newSpeedLevel - 1, // Amplifier is 0-indexed
+                    false, true
+            ));
+
+            Messages.send(player, "<dark_aqua>Speed increased! (Level " + newSpeedLevel + ")</dark_aqua>");
+            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+            Messages.debug(player, "WARDEN_GLOVES: Speed increased to level " + newSpeedLevel + " (punch #" + punchCount + ")");
+        }
+
+        Messages.debug(player, "WARDEN_GLOVES: Punch hit! Count: " + punchCount);
+    }
+
+    /**
+     * Start the Warden boxing ability (20 second duration).
+     */
+    private void startWardenBoxingAbility(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        wardenBoxingActive.add(uuid);
+        wardenPunchCount.put(uuid, 0);
+
+        Messages.send(player, "<dark_aqua><bold>BOXING GLOVES ACTIVATED!</bold></dark_aqua>");
+        Messages.send(player, "<gray>Punch enemies to build up speed!</gray>");
+        SoundUtils.play(player, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.5f);
+
+        int durationTicks = cfg.getWardenBoxingDuration() * 20; // Convert seconds to ticks
+
+        // End the ability after duration
+        BukkitTask endTask = SchedulerUtils.runTaskLater(() -> {
+            endWardenBoxingAbility(player);
+        }, durationTicks);
+
+        activeTasks.computeIfAbsent(uuid, k -> new ArrayList<>()).add(endTask);
+
+        Messages.debug(player, "WARDEN_GLOVES: Boxing ability started - " + cfg.getWardenBoxingDuration() + "s duration");
+    }
+
+    /**
+     * End the Warden boxing ability and start cooldown.
+     */
+    private void endWardenBoxingAbility(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        if (!wardenBoxingActive.contains(uuid)) return;
+
+        wardenBoxingActive.remove(uuid);
+        int finalPunchCount = wardenPunchCount.getOrDefault(uuid, 0);
+        wardenPunchCount.remove(uuid);
+
+        // Remove speed effect
+        player.removePotionEffect(PotionEffectType.SPEED);
+
+        // Start cooldown
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING, cfg.getWardenBoxingCooldown());
+
+        Messages.send(player, "<yellow>Boxing gloves deactivated! Total punches: " + finalPunchCount + "</yellow>");
+        Messages.send(player, "<gray>Cooldown: " + cfg.getWardenBoxingCooldown() + "s</gray>");
+        SoundUtils.play(player, Sound.BLOCK_ANVIL_LAND, 0.5f, 0.8f);
+
+        Messages.debug(player, "WARDEN_GLOVES: Boxing ability ended - " + finalPunchCount + " punches, " + cfg.getWardenBoxingCooldown() + "s cooldown");
+    }
+
+    /**
+     * Check if player has boxing ability active.
+     */
+    public boolean isWardenBoxingActive(UUID playerId) {
+        return wardenBoxingActive.contains(playerId);
+    }
+
+    /**
+     * Warden Gloves shockwave attack (Right-click ability).
+     * Unleashes shockwave dealing damage + big knockback in cone.
      */
     public void useWardenShockwave(Player player) {
         UUID uuid = player.getUniqueId();
-        
 
         Messages.debug(player, "WARDEN_GLOVES: Shockwave ability triggered");
 
@@ -1571,35 +1706,6 @@ public class MythicItemManager {
         Messages.send(player, "<dark_aqua>SHOCKWAVE!</dark_aqua>");
     }
 
-    /**
-     * Warden Gloves melee attack.
-     * Deals Sharp III Netherite Axe damage + Knockback II.
-     * 22 second cooldown.
-     */
-    public void useWardenMelee(Player player, Player victim) {
-        UUID uuid = player.getUniqueId();
-        
-
-        Messages.debug(player, "WARDEN_GLOVES: Melee attack on " + victim.getName());
-
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_MELEE)) {
-            Messages.debug(player, "WARDEN_GLOVES: Melee on cooldown");
-            return;
-        }
-
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_MELEE, cfg.getWardenMeleeCooldown());
-
-        // Knockback II equivalent
-        Vector knockback = victim.getLocation().toVector()
-                .subtract(player.getLocation().toVector())
-                .normalize()
-                .multiply(1.5)
-                .setY(0.5);
-        victim.setVelocity(knockback);
-
-        Messages.debug(player, "WARDEN_GLOVES: Melee hit! Knockback applied, cooldown: " + cfg.getWardenMeleeCooldown() + "s");
-        SoundUtils.play(victim, Sound.ENTITY_WARDEN_ATTACK_IMPACT, 1.0f, 1.0f);
-    }
 
     // ==================== BLAZEBITE CROSSBOWS ====================
 
@@ -1710,6 +1816,37 @@ public class MythicItemManager {
                     int freezeTicks = 140 + frostbiteDuration;
                     victim.setFreezeTicks(freezeTicks);
 
+                    // Cancel any existing frostbite particle task
+                    BukkitTask existingTask = glacierFrostbiteParticleTasks.remove(victimId);
+                    if (existingTask != null && !existingTask.isCancelled()) {
+                        existingTask.cancel();
+                    }
+
+                    // Start continuous light blue particles above head during frostbite
+                    final UUID victimUUID = victimId;
+                    BukkitTask frostbiteParticleTask = SchedulerUtils.runTaskTimer(() -> {
+                        Player frostbittenPlayer = Bukkit.getPlayer(victimUUID);
+                        if (frostbittenPlayer == null || !frostbittenPlayer.isOnline()) return;
+
+                        // Light blue dust particles above head (lighter blue than freeze)
+                        ParticleUtils.spawnDust(frostbittenPlayer.getLocation().add(0, 2.2, 0),
+                                org.bukkit.Color.fromRGB(135, 206, 250), 1.0f, 10, 0.3, 0.2, 0.3);
+                    }, 0L, 5L); // Every 5 ticks (0.25 seconds)
+
+                    glacierFrostbiteParticleTasks.put(victimId, frostbiteParticleTask);
+
+                    // Cancel particle task after frostbite duration
+                    final BukkitTask taskToCancel = frostbiteParticleTask;
+                    SchedulerUtils.runTaskLater(() -> {
+                        if (taskToCancel != null && !taskToCancel.isCancelled()) {
+                            taskToCancel.cancel();
+                        }
+                        glacierFrostbiteParticleTasks.remove(victimUUID);
+                    }, frostbiteDuration);
+
+                    // Track task for cleanup
+                    activeTasks.computeIfAbsent(victimId, k -> new ArrayList<>()).add(frostbiteParticleTask);
+
                     // Track frozen player with expiration time (5 seconds from now)
                     long expirationTime = currentTime + (frostbiteDuration / 20 * 1000L);
                     glacierFrozenPlayers.put(victimId, expirationTime);
@@ -1755,6 +1892,14 @@ public class MythicItemManager {
         bloodwrenchRapidMode.clear();
         bloodwrenchRapidShotsRemaining.clear();
         bloodwrenchRapidFiring.clear();
+        wardenPunchCount.clear();
+        wardenBoxingActive.clear();
+
+        // Cancel and clear frostbite particle tasks
+        glacierFrostbiteParticleTasks.values().forEach(task -> {
+            if (task != null && !task.isCancelled()) task.cancel();
+        });
+        glacierFrostbiteParticleTasks.clear();
 
         activeTasks.values().forEach(tasks -> tasks.forEach(BukkitTask::cancel));
         activeTasks.clear();

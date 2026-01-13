@@ -261,8 +261,17 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.warden-gloves.shockwave.knockback-power", 2.5);
     }
 
-    public int getWardenMeleeCooldown() {
-        return config.getInt("mythic-items.warden-gloves.melee.cooldown-seconds", 22);
+    // Warden Boxing ability
+    public int getWardenBoxingDuration() {
+        return config.getInt("mythic-items.warden-gloves.boxing.duration-seconds", 20);
+    }
+
+    public int getWardenBoxingCooldown() {
+        return config.getInt("mythic-items.warden-gloves.boxing.cooldown-seconds", 35);
+    }
+
+    public int getWardenBoxingPunchesForSpeed() {
+        return config.getInt("mythic-items.warden-gloves.boxing.punches-for-speed", 5);
     }
 
     // BlazeBite

@@ -310,7 +310,7 @@ public class CooldownManager {
         public static final String BLOODWRENCH_RAPID_RELOAD = "BLOODWRENCH_RAPID_RELOAD";
         public static final String BLOODWRENCH_SUPERCHARGE_COOLDOWN = "BLOODWRENCH_SUPERCHARGE_COOLDOWN";
         public static final String WARDEN_SHOCKWAVE = "WARDEN_SHOCKWAVE";
-        public static final String WARDEN_MELEE = "WARDEN_MELEE";
+        public static final String WARDEN_BOXING = "WARDEN_BOXING";
         public static final String BLAZEBITE_RELOAD = "BLAZEBITE_RELOAD";
 
         // Timestamps

@@ -183,7 +183,7 @@ public class DamageListener implements Listener {
                         mythicManager.handleElectricEelChain(attacker, victim);
                     }
                 }
-                case WARDEN_GLOVES -> mythicManager.useWardenMelee(attacker, victim);
+                case WARDEN_GLOVES -> mythicManager.useWardenPunch(attacker, victim);
                 default -> { /* No special handling */ }
             }
         } catch (Exception e) {

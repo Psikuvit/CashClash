@@ -35,7 +35,7 @@ mythic-items:
     # Critical Hit - Hitting while falling launches enemy up
     critical-hit:
       cooldown-milliseconds: 10000
-      launch-power: 1.2
+      launch-power: 1.8
 
   # Wind Bow
   wind-bow:
@@ -99,10 +99,11 @@ mythic-items:
       damage: 12.0
       range: 8
       knockback-power: 2.5
-    melee:
-      cooldown-seconds: 22
-      knockback-level: 2
-      reach-bonus: 2
+    # Boxing Gloves ability - Left click to punch, every 5th punch increases speed
+    boxing:
+      duration-seconds: 20        # Ability lasts 20 seconds
+      cooldown-seconds: 35        # 35 second cooldown after ability ends
+      punches-for-speed: 5        # Every 5th punch increases speed
 
   # BlazeBite Crossbows
   blazebite-crossbows:
@@ -110,9 +111,8 @@ mythic-items:
     reload-cooldown-seconds: 25
     glacier:
       slowness-level: 0
-      slowness-duration-seconds: 3
-      frostbite-duration-seconds: 3
-      max-slowness-duration-seconds: 5  # Duration of max slowness when hit while already frozen
+      slowness-duration-seconds: 5  # First hit frostbite duration
+      max-slowness-duration-seconds: 3  # Duration of freeze in place when hit while frozen
     volcano:
       direct-damage: 4.0
       splash-damage: 2.0

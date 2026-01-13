@@ -42,13 +42,13 @@ public enum MythicItem implements Purchasable {
     ),
     WARDEN_GLOVES(Material.NETHERITE_SWORD, "warden-gloves",
             "Warden Gloves",
-            "Shockwave attack with big damage/knockback (41s cooldown). " +
-            "+2 block reach, Sharp III Netherite Axe damage + KB II (22s cooldown)."
+            "Boxing Gloves: Left-click to punch, every 5th punch increases speed (20s duration, 35s cooldown). " +
+            "Right-click for Shockwave attack with big damage/knockback (41s cooldown)."
     ),
     BLAZEBITE_CROSSBOWS(Material.CROSSBOW, "blazebite-crossbows",
             "BlazeBite Crossbows",
             "Dual crossbows with Piercing 3, Quick Charge 1. Toggle between modes (8 shots, 25s cooldown). " +
-            "Glacier: Slowness I + Frostbite 3s. Volcano: Explosive fire arrows (2 hearts direct, 1 splash)."
+            "Glacier: Frostbite 5s, hit again to freeze in place 3s. Volcano: Explosive fire arrows."
     );
 
     private final Material material;
