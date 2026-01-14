@@ -131,6 +131,14 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.wind-bow.arrow-push.power", 1.5);
     }
 
+    public int getWindBowShotsPerMagazine() {
+        return config.getInt("mythic-items.wind-bow.shots-per-magazine", 10);
+    }
+
+    public int getWindBowReloadCooldown() {
+        return config.getInt("mythic-items.wind-bow.reload-cooldown-seconds", 30);
+    }
+
     // Electric Eel
     public int getEelChainCooldown() {
         return config.getInt("mythic-items.electric-eel.chain-damage.cooldown-seconds", 1);

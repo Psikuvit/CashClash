@@ -39,6 +39,8 @@ mythic-items:
 
   # Wind Bow
   wind-bow:
+    shots-per-magazine: 10
+    reload-cooldown-seconds: 30
     boost:
       cooldown-seconds: 30
       power: 2.0

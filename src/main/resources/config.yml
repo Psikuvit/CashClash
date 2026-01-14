@@ -24,7 +24,7 @@ game:
 
   # Respawn settings
   respawn-delay: 5
-  respawn-protection: 15
+  respawn-protection: 5
 
   # Forfeit settings
   forfeit-enabled: true

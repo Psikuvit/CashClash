@@ -263,10 +263,10 @@ public class CustomItemManager {
 
     // ==================== TABLET OF HACKING IMPLEMENTATION ====================
 
-    public void useTabletOfHacking(Player player, ItemStack item) {
+    public void useTabletOfHacking(Player player) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null || !session.getState().isShopping()) {
-            Messages.send(player, "<red>You must be in a game and in the shopping phase!");
+        if (session == null) {
+            Messages.debug("TABLET", "Player " + player.getName() + " tried to use Tablet of Hacking outside of a game.");
             return;
         }
         Team playerTeam = session.getPlayerTeam(player);
@@ -288,8 +288,8 @@ public class CustomItemManager {
     // Called when a player selects an enemy in the PlayerSelector for Tablet of Hacking
     public void handleTabletOfHackingSelection(Player viewer, Player target) {
         GameSession session = GameManager.getInstance().getPlayerSession(viewer);
-        if (session == null || !session.getState().isShopping()) {
-            Messages.send(viewer, "<red>You must be in a game and in the shopping phase!");
+        if (session == null) {
+            Messages.debug("TABLET", "Player " + viewer.getName() + " tried to use Tablet of Hacking outside of a game.");
             return;
         }
         long cost = 2000L;

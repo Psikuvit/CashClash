@@ -197,6 +197,8 @@ public class ConfigValidator {
         validateAndSet(config, "mythic-items.carls-battleaxe.critical-hit.launch-power", 1.2, autoAdd);
 
         // Wind Bow
+        validateAndSet(config, "mythic-items.wind-bow.shots-per-magazine", 10, autoAdd);
+        validateAndSet(config, "mythic-items.wind-bow.reload-cooldown-seconds", 30, autoAdd);
         validateAndSet(config, "mythic-items.wind-bow.boost.cooldown-seconds", 30, autoAdd);
         validateAndSet(config, "mythic-items.wind-bow.boost.power", 2.0, autoAdd);
         validateAndSet(config, "mythic-items.wind-bow.arrow-push.radius", 3, autoAdd);

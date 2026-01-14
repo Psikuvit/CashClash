@@ -106,6 +106,9 @@ public class MythicItemManager {
     // Glacier frostbite particle tasks (UUID -> particle task)
     private final Map<UUID, BukkitTask> glacierFrostbiteParticleTasks;
 
+    // Wind Bow shots tracking (10 shots then reload cooldown)
+    private final Map<UUID, Integer> windBowShotsRemaining;
+
     private MythicItemManager() {
         cfg = ItemsConfig.getInstance();
         cooldownManager = CooldownManager.getInstance();
@@ -123,6 +126,7 @@ public class MythicItemManager {
         wardenPunchCount = new HashMap<>();
         wardenBoxingActive = new HashSet<>();
         glacierFrostbiteParticleTasks = new HashMap<>();
+        windBowShotsRemaining = new HashMap<>();
     }
 
     public static MythicItemManager getInstance() {
@@ -899,6 +903,51 @@ public class MythicItemManager {
     }
 
     // ==================== WIND BOW ====================
+
+    /**
+     * Handle Wind Bow shot.
+     * 10 shots per magazine, then 30 second reload cooldown.
+     * @return true if shot is allowed, false if on cooldown
+     */
+    public boolean handleWindBowShot(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        // Check if on reload cooldown
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_RELOAD)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD);
+            Messages.send(player, "<red>Wind Bow reloading! (" + remaining + "s)</red>");
+            return false;
+        }
+
+        // Get or initialize shots remaining
+        int shots = windBowShotsRemaining.getOrDefault(uuid, cfg.getWindBowShotsPerMagazine());
+
+        if (shots <= 0) {
+            // Start reload cooldown
+            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD, cfg.getWindBowReloadCooldown());
+            windBowShotsRemaining.put(uuid, cfg.getWindBowShotsPerMagazine());
+            Messages.send(player, "<yellow>Wind Bow out of shots! Reloading...</yellow>");
+            SoundUtils.play(player, Sound.ITEM_CROSSBOW_LOADING_END, 1.0f, 0.5f);
+            return false;
+        }
+
+        // Consume a shot
+        shots--;
+        windBowShotsRemaining.put(uuid, shots);
+
+        if (shots == 0) {
+            // Start reload cooldown
+            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD, cfg.getWindBowReloadCooldown());
+            windBowShotsRemaining.put(uuid, cfg.getWindBowShotsPerMagazine());
+            Messages.send(player, "<yellow>Wind Bow magazine empty! Reloading...</yellow>");
+            SoundUtils.play(player, Sound.ITEM_CROSSBOW_LOADING_END, 1.0f, 0.5f);
+        } else if (shots <= 3) {
+            Messages.send(player, "<yellow>Wind Bow: " + shots + " shots remaining</yellow>");
+        }
+
+        Messages.debug(player, "WIND_BOW: Shot fired, " + shots + " remaining");
+        return true;
+    }
 
     /**
      * Wind Bow right-click boost (while sneaking).
@@ -1894,6 +1943,7 @@ public class MythicItemManager {
         bloodwrenchRapidFiring.clear();
         wardenPunchCount.clear();
         wardenBoxingActive.clear();
+        windBowShotsRemaining.clear();
 
         // Cancel and clear frostbite particle tasks
         glacierFrostbiteParticleTasks.values().forEach(task -> {

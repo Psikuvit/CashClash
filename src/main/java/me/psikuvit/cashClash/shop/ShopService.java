@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.ItemSelectionUtils;
@@ -18,6 +19,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Service class for handling shop-related operations.
@@ -61,6 +63,9 @@ public class ShopService {
     public void processRefund(Player player, PurchaseRecord record) {
         CashClashPlayer ccp = getCashClashPlayer(player);
         if (ccp == null) return;
+
+        // Remove the purchase record
+        ccp.popLastPurchase();
 
         refund(player, record.price());
         boolean removed = ItemUtils.removeItemFromPlayer(player, record.item().name(), record.quantity());
@@ -140,6 +145,23 @@ public class ShopService {
             case CustomArmorItem customArmor -> {
                 ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, customArmor);
 
+                // For custom armor sets (Deathmauler, Dragon, Flamebringer),
+                // standard iron/diamond armor should be discarded (not returned to inventory)
+                // Only custom armor pieces (Magic Helmet, Bunny Shoes, Tax Evasion Pants) should be returned
+                if (replacedItem != null && replacedItem.getType() != Material.AIR) {
+                    if (customArmor.isPartOfSet()) {
+                        // This is a set piece (Deathmauler, Dragon, Flamebringer) - discard standard armor
+                        if (!ItemUtils.hasPurchaseTag(replacedItem) || isStandardArmor(replacedItem)) {
+                            replacedItem = null; // Discard standard armor
+                        }
+                    }
+                    // For individual custom armor (Magic Helmet, Bunny Shoes, Tax Evasion Pants),
+                    // return the replaced item to inventory so player can get it back
+                    if (replacedItem != null && isCustomArmorPiece(customArmor)) {
+                        returnReplacedItemToInventory(player, replacedItem);
+                    }
+                }
+
                 ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
 
                 ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
@@ -149,6 +171,15 @@ public class ShopService {
             case ArmorItem ignored -> {
                 ItemStack armorItem = ItemUtils.createTaggedItem(item).clone();
                 ItemStack replacedItem = ItemUtils.equipArmorOrReplace(player, armorItem);
+
+                // When upgrading from iron to diamond standard armor,
+                // return custom armor pieces (Magic Helmet, Bunny Shoes, Tax Evasion Pants) to inventory
+                if (replacedItem != null && replacedItem.getType() != Material.AIR) {
+                    if (isCustomArmorItem(replacedItem)) {
+                        returnReplacedItemToInventory(player, replacedItem);
+                    }
+                    // Standard armor (iron/diamond without special tags) is discarded
+                }
 
                 ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
                 ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
@@ -176,6 +207,57 @@ public class ShopService {
                 Messages.send(player, "<green>Purchased " + item.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
                 SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
             }
+        }
+    }
+
+    /**
+     * Check if the item is standard armor (iron/diamond without custom tags).
+     */
+    private boolean isStandardArmor(ItemStack item) {
+        if (item == null) return false;
+        String matName = item.getType().name();
+        return (matName.startsWith("IRON_") || matName.startsWith("DIAMOND_") ||
+                matName.startsWith("GOLDEN_") || matName.startsWith("LEATHER_")) &&
+               (matName.endsWith("HELMET") || matName.endsWith("CHESTPLATE") ||
+                matName.endsWith("LEGGINGS") || matName.endsWith("BOOTS"));
+    }
+
+    /**
+     * Check if the custom armor is an individual piece (not part of a full set).
+     * Magic Helmet, Bunny Shoes, Tax Evasion Pants, Guardian's Vest are individual pieces.
+     */
+    private boolean isCustomArmorPiece(CustomArmorItem armor) {
+        return armor == CustomArmorItem.MAGIC_HELMET ||
+               armor == CustomArmorItem.BUNNY_SHOES ||
+               armor == CustomArmorItem.TAX_EVASION_PANTS ||
+               armor == CustomArmorItem.GUARDIANS_VEST;
+    }
+
+    /**
+     * Check if an ItemStack is a custom armor item (has ITEM_ID tag for custom armor).
+     */
+    private boolean isCustomArmorItem(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        String itemId = item.getItemMeta().getPersistentDataContainer()
+            .get(Keys.ITEM_ID, PersistentDataType.STRING);
+        if (itemId == null) return false;
+        try {
+            CustomArmorItem armor = CustomArmorItem.valueOf(itemId);
+            return isCustomArmorPiece(armor);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Return a replaced item to player's inventory, or drop if full.
+     */
+    private void returnReplacedItemToInventory(Player player, ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) return;
+        if (player.getInventory().firstEmpty() != -1) {
+            player.getInventory().addItem(item);
+        } else {
+            player.getWorld().dropItemNaturally(player.getLocation(), item);
         }
     }
 

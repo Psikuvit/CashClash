@@ -237,6 +237,16 @@ public class GameListener implements Listener {
         }
 
         FoodItem fi = PDCDetection.getFood(consumed);
+
+        // Check if this is normal food (no special effects) and player is at full hunger
+        if (fi == null || !isSpecialConsumable(fi)) {
+            if (p.getFoodLevel() >= 20) {
+                event.setCancelled(true);
+                Messages.send(p, "<red>You cannot eat normal food while at full hunger!</red>");
+                return;
+            }
+        }
+
         if (fi == null) return;
 
         // Check if this is a special consumable (has custom effects)
@@ -383,6 +393,12 @@ public class GameListener implements Listener {
                             );
                         }
                     }
+                }
+            }
+            case WIND_BOW -> {
+                // Wind Bow uses 10 shots then reload cooldown
+                if (!mythicManager.handleWindBowShot(player)) {
+                    event.setCancelled(true);
                 }
             }
         }

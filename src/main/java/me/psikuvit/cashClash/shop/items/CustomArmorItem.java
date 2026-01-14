@@ -149,6 +149,14 @@ public enum CustomArmorItem implements Purchasable {
     }
 
     /**
+     * Checks if this armor piece is part of any armor set (not including Investor's for this purpose).
+     * Used to determine if standard armor should be discarded on upgrade.
+     */
+    public boolean isPartOfSet() {
+        return armorSet == ArmorSet.DEATHMAULER || armorSet == ArmorSet.DRAGON || armorSet == ArmorSet.FLAMEBRINGER;
+    }
+
+    /**
      * Checks if this armor piece is part of the Deathmauler set.
      */
     public boolean isDeathmaulerSet() {

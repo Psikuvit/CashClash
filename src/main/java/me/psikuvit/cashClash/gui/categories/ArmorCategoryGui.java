@@ -156,12 +156,18 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
 
         for (CustomArmorItem piece : armorSet.getPieces()) {
             ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, piece);
+            // Standard armor (iron/diamond) should NOT be returned to inventory when buying armor sets
+            // Only custom armor pieces (Magic Helmet, Bunny Shoes, etc.) should be returned
             if (replacedItem != null && replacedItem.getType() != Material.AIR) {
-                if (player.getInventory().firstEmpty() != -1) {
-                    player.getInventory().addItem(replacedItem);
-                } else {
-                    player.getWorld().dropItemNaturally(player.getLocation(), replacedItem);
+                // Check if the replaced item is a custom armor piece (not standard armor)
+                if (isCustomArmorPiece(replacedItem)) {
+                    if (player.getInventory().firstEmpty() != -1) {
+                        player.getInventory().addItem(replacedItem);
+                    } else {
+                        player.getWorld().dropItemNaturally(player.getLocation(), replacedItem);
+                    }
                 }
+                // Standard armor is discarded (not added back to inventory)
             }
             ccp.addPurchase(new PurchaseRecord(piece, 1, piece.getPrice(), replacedItem, round));
         }
@@ -172,6 +178,20 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         Messages.send(player, "<dark_gray>-$" + String.format("%,d", totalPrice) + "</dark_gray>");
         Messages.send(player, "");
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
+    }
+
+    /**
+     * Check if an ItemStack is a custom armor piece (Magic Helmet, Bunny Shoes, Tax Evasion Pants, Guardian's Vest).
+     */
+    private boolean isCustomArmorPiece(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        String itemId = item.getItemMeta().getPersistentDataContainer()
+            .get(me.psikuvit.cashClash.util.Keys.ITEM_ID, org.bukkit.persistence.PersistentDataType.STRING);
+        if (itemId == null) return false;
+        return itemId.equals(CustomArmorItem.MAGIC_HELMET.name()) ||
+               itemId.equals(CustomArmorItem.BUNNY_SHOES.name()) ||
+               itemId.equals(CustomArmorItem.TAX_EVASION_PANTS.name()) ||
+               itemId.equals(CustomArmorItem.GUARDIANS_VEST.name());
     }
 
 }

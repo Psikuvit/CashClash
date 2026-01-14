@@ -198,6 +198,21 @@ public class InteractListener implements Listener {
         CustomItem type = PDCDetection.getCustomItem(item);
         if (type == null) return false;
 
+        // Tablet of Hacking is ONLY usable in shopping phase
+        if (type == CustomItem.TABLET_OF_HACKING) {
+            if (action.isRightClick()) {
+                event.setCancelled(true);
+                if (isInShoppingPhase(player)) {
+                    customItemManager.useTabletOfHacking(player);
+                } else {
+                    Messages.send(player, "<red>Tablet of Hacking can only be used during the shopping phase!</red>");
+                }
+                return true;
+            }
+            return false;
+        }
+
+        // All other custom items cannot be used during shopping
         if (isInShoppingPhase(player)) return false;
 
         switch (type) {
@@ -219,13 +234,6 @@ public class InteractListener implements Listener {
                 if (action == Action.RIGHT_CLICK_AIR) {
                     event.setCancelled(true);
                     customItemManager.useMedicPouchSelf(player, item);
-                    return true;
-                }
-            }
-            case TABLET_OF_HACKING -> {
-                if (action.isRightClick()) {
-                    event.setCancelled(true);
-                    customItemManager.useTabletOfHacking(player, item);
                     return true;
                 }
             }

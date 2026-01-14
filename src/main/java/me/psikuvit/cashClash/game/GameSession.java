@@ -39,6 +39,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Collection;
@@ -271,7 +272,24 @@ public class GameSession {
 
             int protSec = ConfigManager.getInstance().getRespawnProtection();
             ccp.setRespawnProtection(protSec * 1000L);
+
+            // Reapply kit potion effects at start of each round
+            reapplyKitPotionEffects(p, ccp.getCurrentKit());
         });
+    }
+
+    /**
+     * Reapply kit-specific potion effects at the start of each round.
+     */
+    private void reapplyKitPotionEffects(Player player, Kit kit) {
+        if (kit == null) return;
+
+        switch (kit) {
+            case BUILDER -> player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 2400, 0, false, false));
+            case GHOST -> player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 2400, 0, false, false));
+            case FIRE_FIGHTER -> player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 2400, 0, false, false));
+            default -> {} // Other kits don't have potion effects
+        }
     }
 
     private void applyKit(UUID uuid) {
