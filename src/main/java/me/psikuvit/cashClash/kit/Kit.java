@@ -12,8 +12,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
 import java.util.HashMap;
@@ -55,10 +53,8 @@ public enum Kit {
                 player.getInventory().addItem(new ItemStack(Material.BOW));
                 player.getInventory().addItem(new ItemStack(Material.ARROW, 10));
             }
-            case BUILDER -> {
-                player.getInventory().addItem(new ItemStack(Material.COBBLESTONE, 64));
-                player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 2400, 0, false, false));
-            }
+            case BUILDER ->
+                    player.getInventory().addItem(new ItemStack(Material.COBBLESTONE, 64));
             case HEALER -> {
                 ItemStack splash = new ItemStack(Material.SPLASH_POTION);
                 PotionMeta meta = (PotionMeta) splash.getItemMeta();
@@ -122,7 +118,9 @@ public enum Kit {
                 player.getInventory().addItem(new ItemStack(Material.LAVA_BUCKET));
                 player.getInventory().addItem(new ItemStack(Material.FIRE_CHARGE, 2));
             }
-            case GHOST -> player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 2400, 0, false, false));
+            case GHOST -> {
+                // Speed effect applied at start of each round via reapplyKitPotionEffects()
+            }
             case FIGHTER -> {
                 int swordSlot = getSwordSlot(player);
                 ItemStack sword = null;
@@ -142,7 +140,9 @@ public enum Kit {
                     sword.setItemMeta(meta);
                 }
             }
-            case FIRE_FIGHTER -> player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 2400, 0, false, false));
+            case FIRE_FIGHTER -> {
+                // Fire Resistance effect applied at start of each round via reapplyKitPotionEffects()
+            }
             case SPIDER -> player.getInventory().addItem(new ItemStack(Material.COBWEB, 2));
             case BOMBER -> {
                 // Give 2 actual grenades with proper custom item tags
@@ -202,7 +202,7 @@ public enum Kit {
         player.getInventory().addItem(bread);
 
         // Shield
-        player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
+        //player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
         player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
     }
 
@@ -336,7 +336,7 @@ public enum Kit {
         player.getInventory().setChestplate(new ItemStack(Material.GOLDEN_CHESTPLATE));
         player.getInventory().setLeggings(new ItemStack(Material.GOLDEN_LEGGINGS));
         player.getInventory().setBoots(new ItemStack(Material.GOLDEN_BOOTS));
-        player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
+        //player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
 
         // Build a map of item identifier -> ItemStack for all kit items
         Map<String, ItemStack> itemMap = new HashMap<>();
@@ -373,10 +373,8 @@ public enum Kit {
                 ItemStack arrows = new ItemStack(Material.ARROW, 10);
                 itemMap.put("MATERIAL:ARROW", arrows);
             }
-            case BUILDER -> {
-                itemMap.put("MATERIAL:COBBLESTONE", new ItemStack(Material.COBBLESTONE, 64));
-                player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 2400, 0, false, false));
-            }
+            case BUILDER ->
+                    itemMap.put("MATERIAL:COBBLESTONE", new ItemStack(Material.COBBLESTONE, 64));
             case HEALER -> {
                 ItemStack splash = new ItemStack(Material.SPLASH_POTION);
                 PotionMeta meta = (PotionMeta) splash.getItemMeta();
@@ -405,11 +403,15 @@ public enum Kit {
                 itemMap.put("MATERIAL:LAVA_BUCKET", new ItemStack(Material.LAVA_BUCKET));
                 itemMap.put("MATERIAL:FIRE_CHARGE", new ItemStack(Material.FIRE_CHARGE, 2));
             }
-            case GHOST -> player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 2400, 0, false, false));
+            case GHOST -> {
+                // Speed effect applied at start of each round via reapplyKitPotionEffects()
+            }
             case FIGHTER -> {
                 // Sharpness on sword - applied after placement
             }
-            case FIRE_FIGHTER -> player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 2400, 0, false, false));
+            case FIRE_FIGHTER -> {
+                // Fire Resistance effect applied at start of each round via reapplyKitPotionEffects()
+            }
             case SPIDER -> itemMap.put("MATERIAL:COBWEB", new ItemStack(Material.COBWEB, 2));
             case BOMBER -> {
                 // Grenades need to be created with player UUID

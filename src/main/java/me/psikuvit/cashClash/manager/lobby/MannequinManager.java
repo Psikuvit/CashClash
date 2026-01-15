@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -128,7 +129,7 @@ public class MannequinManager {
         // Also remove any orphaned mannequins with our key
         for (World world : Bukkit.getWorlds()) {
             for (Mannequin mannequin : world.getEntitiesByClass(Mannequin.class)) {
-                if (mannequin.getPersistentDataContainer().has(Keys.ARENA_NPC_KEY, PersistentDataType.BYTE)) {
+                if (PDCDetection.isArenaNPC(mannequin)) {
                     mannequin.remove();
                 }
             }

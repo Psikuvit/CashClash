@@ -2,14 +2,13 @@ package me.psikuvit.cashClash.listener.lobby;
 
 import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.util.Keys;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Listener for handling arena NPC (mannequin) interactions.
@@ -22,7 +21,7 @@ public class ArenaNPCListener implements Listener {
         if (!(event.getRightClicked() instanceof Mannequin mannequin)) return;
 
         // Check if this is an arena NPC
-        if (!mannequin.getPersistentDataContainer().has(Keys.ARENA_NPC_KEY, PersistentDataType.BYTE)) {
+        if (!PDCDetection.isArenaNPC(mannequin)) {
             return;
         }
 

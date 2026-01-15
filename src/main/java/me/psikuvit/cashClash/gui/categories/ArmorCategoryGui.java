@@ -15,6 +15,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.GuiItemUtils;
 import me.psikuvit.cashClash.util.items.ItemUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -169,9 +170,17 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
             ArmorSlot slot = getArmorSlot(piece.getMaterial());
             ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
 
-            // Only track if it was a purchased item (has ITEM_ID tag)
-            if (currentArmor != null && currentArmor.getType() != Material.AIR && ItemUtils.hasPurchaseTag(currentArmor)) {
-                replacedSetItems.put(slot, currentArmor.clone());
+            if (currentArmor != null && currentArmor.getType() != Material.AIR) {
+                // Check if it's custom armor (purchased item with CustomArmorItem tag)
+                if (PDCDetection.isCustomArmorItem(currentArmor)) {
+                    // Custom armor goes to inventory
+                    replacedSetItems.put(slot, currentArmor.clone());
+                    returnReplacedItemToInventory(player, currentArmor.clone());
+                } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
+                    // Purchased vanilla armor (iron/diamond) - track but don't return to inventory
+                    replacedSetItems.put(slot, currentArmor.clone());
+                }
+                // Starter armor (no purchase tag) just disappears - don't track
             }
 
             // Equip the set piece
@@ -213,6 +222,18 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
             case LEGGINGS -> inv.getLeggings();
             case BOOTS -> inv.getBoots();
         };
+    }
+
+    /**
+     * Return a replaced item to player's inventory, or drop if full.
+     */
+    private void returnReplacedItemToInventory(Player player, ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) return;
+        if (player.getInventory().firstEmpty() != -1) {
+            player.getInventory().addItem(item);
+        } else {
+            player.getWorld().dropItemNaturally(player.getLocation(), item);
+        }
     }
 
 }

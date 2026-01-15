@@ -342,27 +342,6 @@ public class MythicItemManager {
         return item;
     }
 
-    /**
-     * Check if an item is a BlazeBite crossbow and return its mode.
-     * @return "glacier", "volcano", or null if not a BlazeBite item
-     */
-    public String getBlazebiteMode(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return null;
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return null;
-
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        if (!pdc.has(Keys.BLAZEBITE_MODE, PersistentDataType.STRING)) return null;
-        return pdc.get(Keys.BLAZEBITE_MODE, PersistentDataType.STRING);
-    }
-
-    /**
-     * Check if a BlazeBite crossbow is in Glacier mode.
-     */
-    public boolean isGlacierMode(ItemStack item) {
-        return "glacier".equals(getBlazebiteMode(item));
-    }
-
     private void applyMythicAttributes(MythicItem mythic, ItemMeta meta) {
         switch (mythic) {
             case GOBLIN_SPEAR -> {
@@ -725,7 +704,7 @@ public class MythicItemManager {
                 }
 
                 // Update axe display position - spin around player and bob up/down
-                if (axeDisplay != null && axeDisplay.isValid()) {
+                if (axeDisplay.isValid()) {
                     angle += Math.PI / 8; // Spin speed
 
                     // Bob up and down
@@ -1655,9 +1634,7 @@ public class MythicItemManager {
         int durationTicks = cfg.getWardenBoxingDuration() * 20; // Convert seconds to ticks
 
         // End the ability after duration
-        BukkitTask endTask = SchedulerUtils.runTaskLater(() -> {
-            endWardenBoxingAbility(player);
-        }, durationTicks);
+        BukkitTask endTask = SchedulerUtils.runTaskLater(() -> endWardenBoxingAbility(player), durationTicks);
 
         activeTasks.computeIfAbsent(uuid, k -> new ArrayList<>()).add(endTask);
 
@@ -1766,7 +1743,7 @@ public class MythicItemManager {
     public boolean handleBlazebiteShot(Player player, ItemStack crossbow) {
         UUID uuid = player.getUniqueId();
         
-        String mode = getBlazebiteMode(crossbow);
+        String mode = PDCDetection.getBlazebiteMode(crossbow);
         boolean isGlacier = "glacier".equals(mode);
 
         Messages.debug(player, "BLAZEBITE: Shot triggered (" + (isGlacier ? "Glacier" : "Volcano") + " mode)");

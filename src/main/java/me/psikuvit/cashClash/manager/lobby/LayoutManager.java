@@ -3,13 +3,11 @@ package me.psikuvit.cashClash.manager.lobby;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.storage.PlayerData;
-import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -123,10 +121,10 @@ public class LayoutManager {
     private String getItemIdentifier(ItemStack item) {
         if (item == null) return null;
 
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null && meta.getPersistentDataContainer().has(Keys.ITEM_ID, PersistentDataType.STRING)) {
+        String shopTag = PDCDetection.getAnyShopTag(item);
+        if (shopTag != null) {
             // Custom item - use ITEM_ID
-            return "CUSTOM:" + meta.getPersistentDataContainer().get(Keys.ITEM_ID, PersistentDataType.STRING);
+            return "CUSTOM:" + shopTag;
         }
 
         // Standard item - use material name

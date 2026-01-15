@@ -9,7 +9,6 @@ import me.psikuvit.cashClash.manager.items.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
-import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -28,8 +27,6 @@ import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Consolidated listener for all PlayerInteractEvent handling.
@@ -170,13 +167,7 @@ public class InteractListener implements Listener {
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return false;
         if (item.getType() != Material.EMERALD) return false;
 
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return false;
-
-        var pdc = meta.getPersistentDataContainer();
-        if (!pdc.has(Keys.SUPPLY_DROP_AMOUNT, PersistentDataType.INTEGER)) return false;
-
-        Integer amount = pdc.get(Keys.SUPPLY_DROP_AMOUNT, PersistentDataType.INTEGER);
+        Integer amount = PDCDetection.getSupplyDropAmount(item);
         if (amount == null) return false;
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);

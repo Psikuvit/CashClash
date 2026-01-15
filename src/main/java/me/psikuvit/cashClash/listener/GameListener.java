@@ -54,11 +54,12 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
+
+import java.util.Objects;
 
 /**
  * General game listener for events that are only tracked once.
@@ -384,7 +385,7 @@ public class GameListener implements Listener {
                 } else {
                     // Tag the arrow with the BlazeBite mode for hit detection
                     if (event.getProjectile() instanceof Arrow arrow) {
-                        String mode = mythicManager.getBlazebiteMode(bow);
+                        String mode = PDCDetection.getBlazebiteMode(bow);
                         if (mode != null) {
                             arrow.getPersistentDataContainer().set(
                                 Keys.BLAZEBITE_MODE,
@@ -415,7 +416,7 @@ public class GameListener implements Listener {
             if (!(arrow.getShooter() instanceof Player shooter)) return;
 
             // Check for BlazeBite arrow (tagged in onEntityShootBow)
-            String blazebiteMode = arrow.getPersistentDataContainer().get(Keys.BLAZEBITE_MODE, PersistentDataType.STRING);
+            String blazebiteMode = PDCDetection.getArrowBlazebiteMode(arrow);
             if (blazebiteMode != null) {
                 Location hitLoc = event.getHitEntity() != null
                     ? event.getHitEntity().getLocation()
@@ -432,7 +433,7 @@ public class GameListener implements Listener {
             }
 
             // Check for BloodWrench arrow (tagged in onEntityShootBow)
-            String bloodwrenchMode = arrow.getPersistentDataContainer().get(Keys.BLOODWRENCH_MODE, PersistentDataType.STRING);
+            String bloodwrenchMode = PDCDetection.getArrowBloodwrenchMode(arrow);
             if (bloodwrenchMode != null) {
                 Location hitLoc = event.getHitEntity() != null
                     ? event.getHitEntity().getLocation()
@@ -489,7 +490,7 @@ public class GameListener implements Listener {
         var e = event.getRightClicked();
         if (e.getType() != EntityType.VILLAGER) return;
 
-        if (!e.getPersistentDataContainer().has(Keys.SHOP_NPC_KEY, PersistentDataType.BYTE)) return;
+        if (!PDCDetection.isShopNPC(e)) return;
 
         event.setCancelled(true);
         ShopManager.getInstance().onPlayerInteractShop(event.getPlayer(), e);
@@ -533,13 +534,7 @@ public class GameListener implements Listener {
         ItemStack current = event.getCurrentItem();
         if (current == null || current.getType() != Material.EMERALD) return;
 
-        ItemMeta meta = current.getItemMeta();
-        if (meta == null) return;
-
-        var pdc = meta.getPersistentDataContainer();
-        if (!pdc.has(Keys.SUPPLY_DROP_AMOUNT, PersistentDataType.INTEGER)) return;
-
-        Integer amount = pdc.get(Keys.SUPPLY_DROP_AMOUNT, PersistentDataType.INTEGER);
+        Integer amount = PDCDetection.getSupplyDropAmount(current);
         if (amount == null) return;
 
         GameSession session = GameManager.getInstance().getPlayerSession(p);
@@ -570,7 +565,7 @@ public class GameListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null && session.getState().isShopping()) {
             Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-                player.setHealth(player.getAttribute(Attribute.MAX_HEALTH).getBaseValue());
+                player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
                 player.setFoodLevel(20);
             }, 2L);
         }

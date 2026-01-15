@@ -78,19 +78,10 @@ public final class ItemUtils {
         }
         newArmor.setItemMeta(toMeta);
 
-        if (!hasPurchaseTag(old)) {
+        if (PDCDetection.getAnyShopTag(old) != null) {
             return null;
         }
         return old;
-    }
-
-    /**
-     * Check if an item has a purchase tag (ITEM_ID), indicating it was bought from shop.
-     */
-    public static boolean hasPurchaseTag(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return false;
-        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
-        return pdc.has(Keys.ITEM_ID, PersistentDataType.STRING);
     }
 
 
@@ -315,12 +306,7 @@ public final class ItemUtils {
         boolean armorModified = false;
         for (int i = 0; i < armor.length && remaining > 0; i++) {
             ItemStack is = armor[i];
-            if (is == null || !is.hasItemMeta()) continue;
-
-            ItemMeta meta = is.getItemMeta();
-            PersistentDataContainer pdc = meta.getPersistentDataContainer();
-
-            String val = pdc.get(Keys.ITEM_ID, PersistentDataType.STRING);
+            String val = PDCDetection.getAnyShopTag(is);
 
             if (val != null && val.equals(itemTag)) {
                 armor[i] = null;
@@ -335,12 +321,7 @@ public final class ItemUtils {
         // Check main inventory
         for (int i = 0; i < player.getInventory().getSize() && remaining > 0; i++) {
             ItemStack is = player.getInventory().getItem(i);
-            if (is == null || !is.hasItemMeta()) continue;
-
-            ItemMeta meta = is.getItemMeta();
-            PersistentDataContainer pdc = meta.getPersistentDataContainer();
-
-            String val = pdc.get(Keys.ITEM_ID, PersistentDataType.STRING);
+            String val = PDCDetection.getAnyShopTag(is);
 
             if (val != null && val.equals(itemTag)) {
                 int amt = is.getAmount();
@@ -358,22 +339,17 @@ public final class ItemUtils {
         // Check off-hand
         if (remaining > 0) {
             ItemStack off = player.getInventory().getItemInOffHand();
-            if (off.getType() != Material.AIR && off.hasItemMeta()) {
-                ItemMeta meta = off.getItemMeta();
-                PersistentDataContainer pdc = meta.getPersistentDataContainer();
+            String val = PDCDetection.getAnyShopTag(off);
 
-                String val = pdc.get(Keys.ITEM_ID, PersistentDataType.STRING);
-
-                if (val != null && val.equals(itemTag)) {
-                    int amt = off.getAmount();
-                    if (amt > remaining) {
-                        off.setAmount(amt - remaining);
-                        player.getInventory().setItemInOffHand(off);
-                        remaining = 0;
-                    } else {
-                        player.getInventory().setItemInOffHand(null);
-                        remaining -= amt;
-                    }
+            if (val != null && val.equals(itemTag)) {
+                int amt = off.getAmount();
+                if (amt > remaining) {
+                    off.setAmount(amt - remaining);
+                    player.getInventory().setItemInOffHand(off);
+                    remaining = 0;
+                } else {
+                    player.getInventory().setItemInOffHand(null);
+                    remaining -= amt;
                 }
             }
         }
@@ -425,9 +401,7 @@ public final class ItemUtils {
         }
         return Stream.concat(Arrays.stream(player.getInventory().getContents()), Arrays.stream(player.getInventory().getArmorContents()))
                 .filter(Objects::nonNull)
-                .filter(ItemStack::hasItemMeta)
-                .map(is -> is.getItemMeta().getPersistentDataContainer()
-                        .get(Keys.ITEM_ID, PersistentDataType.STRING))
+                .map(PDCDetection::getAnyShopTag)
                 .anyMatch(shopItem.name()::equals);
     }
 
