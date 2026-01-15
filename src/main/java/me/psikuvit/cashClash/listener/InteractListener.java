@@ -71,6 +71,17 @@ public class InteractListener implements Listener {
         // Handle Trident (Goblin Spear) shot system
         if (event.getEntity() instanceof Trident trident) {
             if (trident.getShooter() instanceof Player player) {
+                GameSession session = GameManager.getInstance().getPlayerSession(player);
+                if (session == null) return;
+
+                // Check respawn protection
+                CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
+                if (ccp != null && ccp.isRespawnProtected()) {
+                    event.setCancelled(true);
+                    Messages.send(player, "<red>You cannot throw weapons during respawn protection!</red>");
+                    return;
+                }
+
                 ItemStack mainHand = player.getInventory().getItemInMainHand();
                 MythicItem mythic = PDCDetection.getMythic(mainHand);
 
@@ -215,6 +226,13 @@ public class InteractListener implements Listener {
         // All other custom items cannot be used during shopping
         if (isInShoppingPhase(player)) return false;
 
+        // Check respawn protection for combat items
+        if (isRespawnProtected(player)) {
+            event.setCancelled(true);
+            Messages.send(player, "<red>You cannot use items during respawn protection!</red>");
+            return true;
+        }
+
         switch (type) {
             case GRENADE -> {
                 if (action.isRightClick()) {
@@ -276,6 +294,13 @@ public class InteractListener implements Listener {
             return true;
         }
 
+        // Check respawn protection for mythic abilities
+        if (isRespawnProtected(player)) {
+            event.setCancelled(true);
+            Messages.send(player, "<red>You cannot use mythic abilities during respawn protection!</red>");
+            return true;
+        }
+
         switch (mythic) {
             case COIN_CLEAVER -> {
                 event.setCancelled(true);
@@ -333,6 +358,12 @@ public class InteractListener implements Listener {
 
         if (isInShoppingPhase(player)) return;
 
+        // Check respawn protection for armor abilities
+        if (isRespawnProtected(player)) {
+            Messages.send(player, "<red>You cannot use armor abilities during respawn protection!</red>");
+            return;
+        }
+
         armorManager.onMagicHelmetRightClick(player);
     }
 
@@ -341,6 +372,13 @@ public class InteractListener implements Listener {
     private boolean isInShoppingPhase(Player player) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         return session != null && session.getState().isShopping();
+    }
+
+    private boolean isRespawnProtected(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) return false;
+        CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
+        return ccp != null && ccp.isRespawnProtected();
     }
 }
 
