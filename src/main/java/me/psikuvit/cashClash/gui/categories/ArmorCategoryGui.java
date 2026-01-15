@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
+import me.psikuvit.cashClash.player.PurchaseRecord.ArmorSlot;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.shop.items.ArmorItem;
@@ -18,6 +19,11 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Shop category GUI for armor.
@@ -154,23 +160,26 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         ShopService.getInstance().deductCoins(player, totalPrice);
         int round = session.getCurrentRound();
 
-        for (CustomArmorItem piece : armorSet.getPieces()) {
-            ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, piece);
-            // Standard armor (iron/diamond) should NOT be returned to inventory when buying armor sets
-            // Only custom armor pieces (Magic Helmet, Bunny Shoes, etc.) should be returned
-            if (replacedItem != null && replacedItem.getType() != Material.AIR) {
-                // Check if the replaced item is a custom armor piece (not standard armor)
-                if (isCustomArmorPiece(replacedItem)) {
-                    if (player.getInventory().firstEmpty() != -1) {
-                        player.getInventory().addItem(replacedItem);
-                    } else {
-                        player.getWorld().dropItemNaturally(player.getLocation(), replacedItem);
-                    }
-                }
-                // Standard armor is discarded (not added back to inventory)
+        // Track all replaced items for set refund
+        List<CustomArmorItem> setPieces = armorSet.getPieces();
+        Map<ArmorSlot, ItemStack> replacedSetItems = new EnumMap<>(ArmorSlot.class);
+
+        for (CustomArmorItem piece : setPieces) {
+            // Get current armor before replacing
+            ArmorSlot slot = getArmorSlot(piece.getMaterial());
+            ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
+
+            // Only track if it was a purchased item (has ITEM_ID tag)
+            if (currentArmor != null && currentArmor.getType() != Material.AIR && ItemUtils.hasPurchaseTag(currentArmor)) {
+                replacedSetItems.put(slot, currentArmor.clone());
             }
-            ccp.addPurchase(new PurchaseRecord(piece, 1, piece.getPrice(), replacedItem, round));
+
+            // Equip the set piece
+            ItemUtils.giveCustomArmorSet(player, piece);
         }
+
+        // Create a single set purchase record with all replaced items
+        ccp.addPurchase(new PurchaseRecord(totalPrice, round, replacedSetItems, setPieces));
 
         Messages.send(player, "");
         Messages.send(player, "<green><bold>✓ SET PURCHASED</bold></green>");
@@ -181,17 +190,29 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     }
 
     /**
-     * Check if an ItemStack is a custom armor piece (Magic Helmet, Bunny Shoes, Tax Evasion Pants, Guardian's Vest).
+     * Get the armor slot for a given material.
      */
-    private boolean isCustomArmorPiece(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return false;
-        String itemId = item.getItemMeta().getPersistentDataContainer()
-            .get(me.psikuvit.cashClash.util.Keys.ITEM_ID, org.bukkit.persistence.PersistentDataType.STRING);
-        if (itemId == null) return false;
-        return itemId.equals(CustomArmorItem.MAGIC_HELMET.name()) ||
-               itemId.equals(CustomArmorItem.BUNNY_SHOES.name()) ||
-               itemId.equals(CustomArmorItem.TAX_EVASION_PANTS.name()) ||
-               itemId.equals(CustomArmorItem.GUARDIANS_VEST.name());
+    private ArmorSlot getArmorSlot(Material material) {
+        String matName = material.name();
+        if (matName.endsWith("HELMET")) return ArmorSlot.HELMET;
+        if (matName.endsWith("CHESTPLATE")) return ArmorSlot.CHESTPLATE;
+        if (matName.endsWith("LEGGINGS")) return ArmorSlot.LEGGINGS;
+        if (matName.endsWith("BOOTS")) return ArmorSlot.BOOTS;
+        return null;
+    }
+
+    /**
+     * Get the current armor in a specific slot.
+     */
+    private ItemStack getCurrentArmorInSlot(Player player, ArmorSlot slot) {
+        if (slot == null) return null;
+        PlayerInventory inv = player.getInventory();
+        return switch (slot) {
+            case HELMET -> inv.getHelmet();
+            case CHESTPLATE -> inv.getChestplate();
+            case LEGGINGS -> inv.getLeggings();
+            case BOOTS -> inv.getBoots();
+        };
     }
 
 }

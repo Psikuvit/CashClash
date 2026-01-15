@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
+import me.psikuvit.cashClash.player.PurchaseRecord.ArmorSlot;
 import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
@@ -20,6 +21,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Service class for handling shop-related operations.
@@ -68,20 +73,49 @@ public class ShopService {
         ccp.popLastPurchase();
 
         refund(player, record.price());
-        boolean removed = ItemUtils.removeItemFromPlayer(player, record.item().name(), record.quantity());
 
-        if (record.replacedItem() != null) {
-            // Restore the previous purchased item
-            restoreReplacedItem(player, record);
-            Messages.send(player, "<green>Purchase undone. Refunded $" + String.format("%,d", record.price()) + " and restored your previous item.</green>");
+        // Handle set purchase refunds
+        if (record.isSetPurchase()) {
+            // Remove all set items from player
+            for (CustomArmorItem piece : record.getSetItemsSafe()) {
+                ItemUtils.removeItemFromPlayer(player, piece.name(), 1);
+            }
+
+            // Restore all replaced set items
+            restoreReplacedSetItems(player, record.getReplacedSetItemsSafe());
+            Messages.send(player, "<green>Set purchase undone. Refunded $" + String.format("%,d", record.price()) + " and restored your previous armor.</green>");
         } else {
-            // No purchased item to restore - restore round 1 starter gear if applicable
-            restoreStarterGear(player, record.item());
-            Messages.send(player, "<green>Purchase undone. Refunded $" + String.format("%,d", record.price()) +
-                    (removed ? "" : " (could not find item(s) to remove)") + "</green>");
+            boolean removed = ItemUtils.removeItemFromPlayer(player, record.item().name(), record.quantity());
+
+            if (record.replacedItem() != null) {
+                // Restore the previous purchased item
+                restoreReplacedItem(player, record);
+                Messages.send(player, "<green>Purchase undone. Refunded $" + String.format("%,d", record.price()) + " and restored your previous item.</green>");
+            } else {
+                // No purchased item to restore - restore round 1 starter gear if applicable
+                restoreStarterGear(player, record.item());
+                Messages.send(player, "<green>Purchase undone. Refunded $" + String.format("%,d", record.price()) +
+                        (removed ? "" : " (could not find item(s) to remove)") + "</green>");
+            }
         }
 
         SoundUtils.play(player, Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.5f);
+    }
+
+    private void restoreReplacedSetItems(Player player, Map<ArmorSlot, ItemStack> replacedItems) {
+        PlayerInventory inv = player.getInventory();
+
+        for (Map.Entry<ArmorSlot, ItemStack> entry : replacedItems.entrySet()) {
+            ItemStack item = entry.getValue();
+            if (item == null || item.getType() == Material.AIR) continue;
+
+            switch (entry.getKey()) {
+                case HELMET -> inv.setHelmet(item);
+                case CHESTPLATE -> inv.setChestplate(item);
+                case LEGGINGS -> inv.setLeggings(item);
+                case BOOTS -> inv.setBoots(item);
+            }
+        }
     }
 
     private void restoreReplacedItem(Player player, PurchaseRecord record) {
@@ -143,43 +177,85 @@ public class ShopService {
 
         switch (item) {
             case CustomArmorItem customArmor -> {
-                ItemStack replacedItem = ItemUtils.giveCustomArmorSet(player, customArmor);
+                // Check if this is part of a set (Deathmauler, Dragon, Flamebringer)
+                if (customArmor.isPartOfSet() && customArmor.getArmorSet() != null) {
+                    // Handle full set purchase - track all replaced items
+                    List<CustomArmorItem> setPieces = customArmor.getArmorSet().getPieces();
+                    Map<ArmorSlot, ItemStack> replacedSetItems = new EnumMap<>(ArmorSlot.class);
 
-                // For custom armor sets (Deathmauler, Dragon, Flamebringer),
-                // standard iron/diamond armor should be discarded (not returned to inventory)
-                // Only custom armor pieces (Magic Helmet, Bunny Shoes, Tax Evasion Pants) should be returned
-                if (replacedItem != null && replacedItem.getType() != Material.AIR) {
-                    if (customArmor.isPartOfSet()) {
-                        // This is a set piece (Deathmauler, Dragon, Flamebringer) - discard standard armor
-                        if (!ItemUtils.hasPurchaseTag(replacedItem) || isStandardArmor(replacedItem)) {
-                            replacedItem = null; // Discard standard armor
+                    for (CustomArmorItem piece : setPieces) {
+                        // Get replaced item before equipping
+                        ArmorSlot slot = getArmorSlot(piece.getMaterial());
+                        ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
+
+                        // Only track if it was a purchased item (has ITEM_ID tag)
+                        if (currentArmor != null && currentArmor.getType() != Material.AIR && ItemUtils.hasPurchaseTag(currentArmor)) {
+                            replacedSetItems.put(slot, currentArmor.clone());
                         }
+
+                        // Equip the set piece
+                        ItemUtils.giveCustomArmorSet(player, piece);
                     }
-                    // For individual custom armor (Magic Helmet, Bunny Shoes, Tax Evasion Pants),
-                    // return the replaced item to inventory so player can get it back
-                    if (replacedItem != null && isCustomArmorPiece(customArmor)) {
+
+                    // Create set purchase record with all replaced items
+                    long setPrice = customArmor.getArmorSet().getTotalPrice();
+                    ccp.addPurchase(new PurchaseRecord(setPrice, round, replacedSetItems, setPieces));
+
+                    // Apply enchants to all pieces
+                    for (CustomArmorItem piece : setPieces) {
+                        ItemUtils.applyOwnedEnchantsAfterPurchase(player, piece);
+                    }
+
+                    Messages.send(player, "<green>Purchased " + customArmor.getArmorSet().getDisplayName() + " for $" + String.format("%,d", setPrice) + "</green>");
+                    SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+                } else {
+                    // Individual custom armor piece (Magic Helmet, Bunny Shoes, Tax Evasion Pants, Guardian's Vest)
+                    // Get the currently equipped armor before replacing
+                    ArmorSlot slot = getArmorSlot(customArmor.getMaterial());
+                    ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
+                    ItemStack replacedItem = null;
+
+                    // Track replaced item if it was a purchased item
+                    if (currentArmor != null && currentArmor.getType() != Material.AIR && ItemUtils.hasPurchaseTag(currentArmor)) {
+                        replacedItem = currentArmor.clone();
+                    }
+
+                    // Equip the custom armor
+                    ItemUtils.giveCustomArmorSet(player, customArmor);
+
+                    // For individual pieces, return the replaced item to inventory
+                    if (replacedItem != null) {
                         returnReplacedItemToInventory(player, replacedItem);
                     }
+
+                    ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
+                    ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
+
+                    Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
+                    SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
                 }
-
-                ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
-
-                ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
-                Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
-                SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
             }
             case ArmorItem ignored -> {
+                // Normal/upgradable armor (Iron, Diamond)
                 ItemStack armorItem = ItemUtils.createTaggedItem(item).clone();
-                ItemStack replacedItem = ItemUtils.equipArmorOrReplace(player, armorItem);
 
-                // When upgrading from iron to diamond standard armor,
-                // return custom armor pieces (Magic Helmet, Bunny Shoes, Tax Evasion Pants) to inventory
-                if (replacedItem != null && replacedItem.getType() != Material.AIR) {
-                    if (isCustomArmorItem(replacedItem)) {
+                // Get current armor before replacing
+                ArmorSlot slot = getArmorSlot(armorItem.getType());
+                ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
+                ItemStack replacedItem = null;
+
+                // Track replaced item if it was a purchased item
+                if (currentArmor != null && currentArmor.getType() != Material.AIR && ItemUtils.hasPurchaseTag(currentArmor)) {
+                    replacedItem = currentArmor.clone();
+
+                    // If replacing custom armor piece with normal armor, return it to inventory
+                    if (isCustomArmorItem(currentArmor)) {
                         returnReplacedItemToInventory(player, replacedItem);
                     }
-                    // Standard armor (iron/diamond without special tags) is discarded
                 }
+
+                // Equip the armor
+                ItemUtils.equipArmorOrReplace(player, armorItem);
 
                 ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
                 ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
@@ -211,30 +287,8 @@ public class ShopService {
     }
 
     /**
-     * Check if the item is standard armor (iron/diamond without custom tags).
-     */
-    private boolean isStandardArmor(ItemStack item) {
-        if (item == null) return false;
-        String matName = item.getType().name();
-        return (matName.startsWith("IRON_") || matName.startsWith("DIAMOND_") ||
-                matName.startsWith("GOLDEN_") || matName.startsWith("LEATHER_")) &&
-               (matName.endsWith("HELMET") || matName.endsWith("CHESTPLATE") ||
-                matName.endsWith("LEGGINGS") || matName.endsWith("BOOTS"));
-    }
-
-    /**
-     * Check if the custom armor is an individual piece (not part of a full set).
+     * Check if an ItemStack is a custom armor item (individual piece, not part of a set).
      * Magic Helmet, Bunny Shoes, Tax Evasion Pants, Guardian's Vest are individual pieces.
-     */
-    private boolean isCustomArmorPiece(CustomArmorItem armor) {
-        return armor == CustomArmorItem.MAGIC_HELMET ||
-               armor == CustomArmorItem.BUNNY_SHOES ||
-               armor == CustomArmorItem.TAX_EVASION_PANTS ||
-               armor == CustomArmorItem.GUARDIANS_VEST;
-    }
-
-    /**
-     * Check if an ItemStack is a custom armor item (has ITEM_ID tag for custom armor).
      */
     private boolean isCustomArmorItem(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
@@ -243,7 +297,11 @@ public class ShopService {
         if (itemId == null) return false;
         try {
             CustomArmorItem armor = CustomArmorItem.valueOf(itemId);
-            return isCustomArmorPiece(armor);
+            // Check if it's an individual piece (not part of a set)
+            return armor == CustomArmorItem.MAGIC_HELMET ||
+                   armor == CustomArmorItem.BUNNY_SHOES ||
+                   armor == CustomArmorItem.TAX_EVASION_PANTS ||
+                   armor == CustomArmorItem.GUARDIANS_VEST;
         } catch (IllegalArgumentException e) {
             return false;
         }
@@ -292,10 +350,7 @@ public class ShopService {
                     newWeapon.setItemMeta(newMeta);
                 }
 
-                // Replace the weapon (old one is discarded)
                 inv.setItem(bestSlot, newWeapon);
-
-                // Return old item for PurchaseRecord (needed for undo)
                 return oldItem;
             }
         }
@@ -303,6 +358,32 @@ public class ShopService {
         // No matching weapon found, just add to inventory
         inv.addItem(newWeapon);
         return null;
+    }
+
+    /**
+     * Get the armor slot for a given material.
+     */
+    private ArmorSlot getArmorSlot(Material material) {
+        String matName = material.name();
+        if (matName.endsWith("HELMET")) return ArmorSlot.HELMET;
+        if (matName.endsWith("CHESTPLATE")) return ArmorSlot.CHESTPLATE;
+        if (matName.endsWith("LEGGINGS")) return ArmorSlot.LEGGINGS;
+        if (matName.endsWith("BOOTS")) return ArmorSlot.BOOTS;
+        return null;
+    }
+
+    /**
+     * Get the current armor in a specific slot.
+     */
+    private ItemStack getCurrentArmorInSlot(Player player, ArmorSlot slot) {
+        if (slot == null) return null;
+        PlayerInventory inv = player.getInventory();
+        return switch (slot) {
+            case HELMET -> inv.getHelmet();
+            case CHESTPLATE -> inv.getChestplate();
+            case LEGGINGS -> inv.getLeggings();
+            case BOOTS -> inv.getBoots();
+        };
     }
 
 
