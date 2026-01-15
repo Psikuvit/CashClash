@@ -1,12 +1,12 @@
 package me.psikuvit.cashClash.listener;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.TransferGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
@@ -104,8 +104,7 @@ public class TransferInputListener implements Listener {
         // Clean up the sign block
         Block signBlock = signBlocks.remove(playerId);
         if (signBlock != null) {
-            Bukkit.getScheduler().runTask(CashClashPlugin.getInstance(),
-                    () -> signBlock.setType(Material.AIR));
+            SchedulerUtils.runTask(() -> signBlock.setType(Material.AIR));
         }
 
         // Process the input
@@ -114,8 +113,7 @@ public class TransferInputListener implements Listener {
 
         if (amountStr.isEmpty() || amountStr.equalsIgnoreCase("cancel")) {
             Messages.send(player, "<red>Transfer cancelled.</red>");
-            Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(),
-                    () -> TransferGUI.open(player), 5L);
+            SchedulerUtils.runTaskLater(() -> TransferGUI.open(player), 5L);
             return;
         }
 
@@ -124,8 +122,7 @@ public class TransferInputListener implements Listener {
 
             if (amount <= 0) {
                 Messages.send(player, "<red>Please enter a valid amount greater than 0.</red>");
-                Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(),
-                        () -> TransferGUI.open(player), 20L);
+                SchedulerUtils.runTaskLater(() -> TransferGUI.open(player), 20L);
                 return;
             }
 
@@ -133,8 +130,7 @@ public class TransferInputListener implements Listener {
 
         } catch (NumberFormatException e) {
             Messages.send(player, "<red>Invalid amount. Please enter a number.</red>");
-            Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(),
-                    () -> TransferGUI.open(player), 20L);
+            SchedulerUtils.runTaskLater(() -> TransferGUI.open(player), 20L);
         }
     }
 
@@ -152,8 +148,7 @@ public class TransferInputListener implements Listener {
         Player receiver = Bukkit.getPlayer(pending.receiverId());
         if (receiver == null || !receiver.isOnline()) {
             Messages.send(sender, "<red>Transfer failed: Player is no longer online.</red>");
-            Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(),
-                    () -> TransferGUI.open(sender), 20L);
+            SchedulerUtils.runTaskLater(() -> TransferGUI.open(sender), 20L);
             return;
         }
 
@@ -162,16 +157,14 @@ public class TransferInputListener implements Listener {
 
         if (senderCcp == null || receiverCcp == null) {
             Messages.send(sender, "<red>Transfer failed: Player not found in game.</red>");
-            Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(),
-                    () -> TransferGUI.open(sender), 20L);
+            SchedulerUtils.runTaskLater(() -> TransferGUI.open(sender), 20L);
             return;
         }
 
         if (!senderCcp.canAfford(amount)) {
             Messages.send(sender, "<red>You don't have enough coins!</red>");
             Messages.send(sender, "<gray>Your balance: <gold>$" + String.format("%,d", senderCcp.getCoins()) + "</gold></gray>");
-            Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(),
-                    () -> TransferGUI.open(sender), 20L);
+            SchedulerUtils.runTaskLater(() -> TransferGUI.open(sender), 20L);
             return;
         }
 
@@ -190,8 +183,7 @@ public class TransferInputListener implements Listener {
                 "</gold> from " + sender.getName() + "!</green>");
 
         // Reopen shop after a short delay
-        Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(),
-                () -> ShopGUI.openMain(sender), 20L);
+        SchedulerUtils.runTaskLater(() -> ShopGUI.openMain(sender), 20L);
     }
 
     /**

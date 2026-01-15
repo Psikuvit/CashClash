@@ -164,7 +164,7 @@ public class RoundManager {
         if (session.getCurrentRound() >= 5) {
             session.end();
         } else {
-            SchedulerUtils.runTaskLater(session::nextRound, 100L);
+            SchedulerUtils.runTaskLater(session::nextRound, 20L);
         }
     }
 
