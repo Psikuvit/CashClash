@@ -59,6 +59,26 @@ public class DamageListener implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.LOW)
+    public void onDamageRespawnProtection(EntityDamageByEntityEvent event) {
+        if (event.isCancelled()) return;
+        if (!(event.getEntity() instanceof Player victim)) return;
+        if (!(event.getDamager() instanceof Player)) return;
+
+        try {
+            GameSession session = GameManager.getInstance().getPlayerSession(victim);
+            if (session == null) return;
+
+            CashClashPlayer ccp = session.getCashClashPlayer(victim.getUniqueId());
+            if (ccp != null && ccp.isRespawnProtected()) {
+                event.setCancelled(true);
+                Messages.debug(victim, "GAME", "Damage cancelled due to respawn protection");
+            }
+        } catch (Exception e) {
+            logError("onDamageRespawnProtection", e);
+        }
+    }
+
     @EventHandler(priority = EventPriority.NORMAL)
     public void onDamageGamePhase(EntityDamageEvent event) {
         if (event.isCancelled()) return;
