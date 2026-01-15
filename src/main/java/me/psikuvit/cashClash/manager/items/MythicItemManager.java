@@ -754,17 +754,14 @@ public class MythicItemManager {
 
                         // Visual feedback
                         SoundUtils.playAt(victim.getLocation(), Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
-                        ParticleUtils.crit(victim.getLocation().add(0, 1, 0), 15, 0.3);
+                        ParticleUtils.hitFeedback(victim.getLocation(), 15, 0.3);
                         Messages.debug(attacker, "CARLS_BATTLEAXE: Spin hit " + victim.getName() + " for " + damage + " damage");
                     }
                 }
 
                 // Spinning particles around player
                 if (ticks % 2 == 0) {
-                    double particleAngle = angle + Math.PI;
-                    double px = Math.cos(particleAngle) * radius;
-                    double pz = Math.sin(particleAngle) * radius;
-                    ParticleUtils.sweep(attacker.getLocation().add(px, 1, pz));
+                    ParticleUtils.spinSweep(attacker.getLocation(), angle, radius);
                 }
 
                 // Sound every 10 ticks
@@ -1414,13 +1411,12 @@ public class MythicItemManager {
         Messages.debug(shooter, "BLOODWRENCH: Rapid hit - creating blood sphere at " + hitLocation);
 
         // Visual blood sphere
-        ParticleUtils.spawnDust(hitLocation, org.bukkit.Color.fromRGB(139, 0, 0), 2.0f, 50,
-            cfg.getBloodwrenchSphereRadius());
+        double radius = cfg.getBloodwrenchSphereRadius();
+        ParticleUtils.bloodSphere(hitLocation, radius, 50);
         SoundUtils.playAt(hitLocation, Sound.BLOCK_SLIME_BLOCK_BREAK, 1.0f, 0.5f);
 
         // Create blood sphere effect that lingers
         int durationTicks = cfg.getBloodwrenchSphereDuration();
-        double radius = cfg.getBloodwrenchSphereRadius();
         double damage = cfg.getBloodwrenchSphereDamage();
 
         // Initial burst damage (nerfed grenade - smaller radius, less damage)
@@ -1440,12 +1436,13 @@ public class MythicItemManager {
         }
 
         // Lingering sphere effect
+        final double sphereRadius = radius;
         BukkitTask sphereTask = SchedulerUtils.runTaskTimer(() -> {
             // Particle effect
-            ParticleUtils.spawnDust(hitLocation, org.bukkit.Color.fromRGB(139, 0, 0), 1.5f, 20, radius * 0.8);
+            ParticleUtils.bloodSphereLingering(hitLocation, sphereRadius);
 
             // Apply slowness to enemies inside
-            for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius, radius)) {
+            for (Entity entity : world.getNearbyEntities(hitLocation, sphereRadius, sphereRadius, sphereRadius)) {
                 if (!(entity instanceof Player target)) continue;
                 if (target.equals(shooter)) continue;
 
@@ -1495,19 +1492,8 @@ public class MythicItemManager {
         BukkitTask vortexTask = SchedulerUtils.runTaskTimer(() -> {
             tick[0]++;
 
-            // Spiraling red particles
-            double angle = tick[0] * 0.3;
-            for (int i = 0; i < 3; i++) {
-                double offsetAngle = angle + (i * (Math.PI * 2 / 3));
-                double x = Math.cos(offsetAngle) * radius * 0.8;
-                double z = Math.sin(offsetAngle) * radius * 0.8;
-                double y = (tick[0] % 20) * 0.15; // Spiral up
-
-                ParticleUtils.spawnDust(hitLocation.clone().add(x, y, z), org.bukkit.Color.fromRGB(180, 0, 0), 2.0f, 5, 0.1);
-            }
-
-            // Central column of particles
-            ParticleUtils.spawnDust(hitLocation.clone().add(0, 1.5, 0), org.bukkit.Color.fromRGB(100, 0, 0), 1.5f, 15, 0.3, 1.5, 0.3);
+            // Spiraling red particles using helper method
+            ParticleUtils.bloodVortexSpiral(hitLocation, radius, tick[0]);
 
             // Apply effects every 10 ticks (0.5 seconds)
             if (tick[0] % 10 == 0) {
@@ -1534,7 +1520,7 @@ public class MythicItemManager {
             Objects.requireNonNull(vortexTask).cancel();
             Messages.debug(shooter, "BLOODWRENCH: Blood vortex expired");
             // Final burst effect
-            ParticleUtils.spawnDust(hitLocation.clone().add(0, 1, 0), org.bukkit.Color.fromRGB(139, 0, 0), 3.0f, 80, radius, 2, radius);
+            ParticleUtils.bloodVortexExplosion(hitLocation, radius);
             SoundUtils.playAt(hitLocation, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.5f);
         }, durationTicks);
 
@@ -1794,27 +1780,24 @@ public class MythicItemManager {
 
                 if (alreadyFrozen) {
                     // FREEZE IN PLACE - Apply max slowness (level 255 = completely frozen) for 3 seconds
-                    int freezeInPlaceDuration = cfg.getBlazebiteMaxSlownessDuration(); // 3 seconds = 60 ticks
+                    int freezeInPlaceDuration = cfg.getBlazebiteMaxSlownessDuration();
                     victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, freezeInPlaceDuration, 255, false, true));
-                    victim.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, freezeInPlaceDuration, 128, false, true)); // Prevent jumping
+                    victim.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, freezeInPlaceDuration, 128, false, true));
 
                     Messages.debug(shooter, "BLAZEBITE: Glacier DOUBLE HIT on " + victim.getName() + " - FROZEN IN PLACE for " + (freezeInPlaceDuration / 20) + "s");
                     Messages.send(shooter, "<aqua>Target frozen solid!</aqua>");
                     Messages.send(victim, "<aqua>You are frozen in place!</aqua>");
 
-                    // Intense freeze sound
                     SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
                     SoundUtils.play(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);
 
-                    // Continuous light blue particles above head while frozen in place
+                    // Continuous freeze particles above head
                     final UUID victimUUID = victimId;
                     BukkitTask particleTask = SchedulerUtils.runTaskTimer(() -> {
                         Player frozenPlayer = Bukkit.getPlayer(victimUUID);
                         if (frozenPlayer == null || !frozenPlayer.isOnline()) return;
-
-                        // Light blue snowflake particles above head
-                        ParticleUtils.snowflake(frozenPlayer.getLocation().add(0, 2.2, 0), 15, 0.3, 0.2, 0.3, 0.05);
-                    }, 0L, 5L); // Every 5 ticks (0.25 seconds)
+                        ParticleUtils.freezeParticles(frozenPlayer.getLocation());
+                    }, 0L, 5L);
 
                     // Cancel particle task after freeze duration
                     final BukkitTask taskToCancel = particleTask;
@@ -1824,21 +1807,17 @@ public class MythicItemManager {
                         }
                     }, freezeInPlaceDuration);
 
-                    // Track task for cleanup
                     activeTasks.computeIfAbsent(victimId, k -> new ArrayList<>()).add(particleTask);
-
-                    // Clear frozen state so they can be frozen again after this wears off
                     glacierFrozenPlayers.remove(victimId);
                 } else {
                     // FIRST HIT - Apply frostbite for 5 seconds
-                    int frostbiteDuration = cfg.getBlazebiteFreezeDuration(); // 5 seconds = 100 ticks
+                    int frostbiteDuration = cfg.getBlazebiteFreezeDuration();
                     victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, frostbiteDuration, 0, false, true));
 
                     Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - Frostbite for " + (frostbiteDuration / 20) + "s");
-                    ParticleUtils.snowflake(victim.getLocation().add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
+                    ParticleUtils.glacierFrost(victim.getLocation());
                     SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
 
-                    // Apply frostbite visual effect (freeze ticks)
                     int freezeTicks = 140 + frostbiteDuration;
                     victim.setFreezeTicks(freezeTicks);
 
@@ -1848,20 +1827,16 @@ public class MythicItemManager {
                         existingTask.cancel();
                     }
 
-                    // Start continuous light blue particles above head during frostbite
+                    // Frostbite particles during initial freeze
                     final UUID victimUUID = victimId;
                     BukkitTask frostbiteParticleTask = SchedulerUtils.runTaskTimer(() -> {
                         Player frostbittenPlayer = Bukkit.getPlayer(victimUUID);
                         if (frostbittenPlayer == null || !frostbittenPlayer.isOnline()) return;
-
-                        // Light blue dust particles above head (lighter blue than freeze)
-                        ParticleUtils.spawnDust(frostbittenPlayer.getLocation().add(0, 2.2, 0),
-                                org.bukkit.Color.fromRGB(135, 206, 250), 1.0f, 10, 0.3, 0.2, 0.3);
-                    }, 0L, 5L); // Every 5 ticks (0.25 seconds)
+                        ParticleUtils.frostbiteParticles(frostbittenPlayer.getLocation());
+                    }, 0L, 5L);
 
                     glacierFrostbiteParticleTasks.put(victimId, frostbiteParticleTask);
 
-                    // Cancel particle task after frostbite duration
                     final BukkitTask taskToCancel = frostbiteParticleTask;
                     SchedulerUtils.runTaskLater(() -> {
                         if (taskToCancel != null && !taskToCancel.isCancelled()) {
@@ -1870,17 +1845,15 @@ public class MythicItemManager {
                         glacierFrostbiteParticleTasks.remove(victimUUID);
                     }, frostbiteDuration);
 
-                    // Track task for cleanup
                     activeTasks.computeIfAbsent(victimId, k -> new ArrayList<>()).add(frostbiteParticleTask);
 
-                    // Track frozen player with expiration time (5 seconds from now)
                     long expirationTime = currentTime + (frostbiteDuration / 20 * 1000L);
                     glacierFrozenPlayers.put(victimId, expirationTime);
                 }
             }
         } else {
-            ParticleUtils.flame(hitLoc, 50, 1);
-            ParticleUtils.explosion(hitLoc);
+            // Volcano mode
+            ParticleUtils.volcanoExplosion(hitLoc);
             SoundUtils.playAt(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
             GameSession session = GameManager.getInstance().getPlayerSession(shooter);
@@ -1898,10 +1871,9 @@ public class MythicItemManager {
                         targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
                 }
 
-                // Direct hit = 2 hearts, splash = 1 heart
                 double damage = entity.equals(hitEntity) ? cfg.getBlazebiteVolcanoDirectDamage() : cfg.getBlazebiteVolcanoSplashDamage();
                 target.damage(damage, shooter);
-                target.setFireTicks(4 * 20); // Set on fire
+                target.setFireTicks(4 * 20);
                 hitCount++;
             }
             Messages.debug(shooter, "BLAZEBITE: Volcano explosion hit " + hitCount + " enemies, radius: " + radius);

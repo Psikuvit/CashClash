@@ -214,4 +214,95 @@ public final class ParticleUtils {
             center.getWorld().spawnParticle(particle, center, 0, v.getX(), v.getY(), v.getZ(), extra);
         }
     }
+
+    // ==================== MYTHIC ITEM EFFECTS ====================
+
+    /**
+     * Spawn blood sphere particles (for BloodWrench Rapid Fire).
+     */
+    public static void bloodSphere(Location location, double radius, int count) {
+        spawnDust(location, Color.fromRGB(139, 0, 0), 2.0f, count, radius);
+    }
+
+    /**
+     * Spawn lingering blood sphere particles.
+     */
+    public static void bloodSphereLingering(Location location, double radius) {
+        spawnDust(location, Color.fromRGB(139, 0, 0), 1.5f, 20, radius * 0.8);
+    }
+
+    /**
+     * Spawn spiraling blood vortex particles (for BloodWrench Supercharged).
+     * @param location Center location
+     * @param radius Vortex radius
+     * @param tick Current animation tick
+     */
+    public static void bloodVortexSpiral(Location location, double radius, int tick) {
+        if (location == null || location.getWorld() == null) return;
+
+        double angle = tick * 0.3;
+        for (int i = 0; i < 3; i++) {
+            double offsetAngle = angle + (i * (Math.PI * 2 / 3));
+            double x = Math.cos(offsetAngle) * radius * 0.8;
+            double z = Math.sin(offsetAngle) * radius * 0.8;
+            double y = (tick % 20) * 0.15; // Spiral up
+
+            spawnDust(location.clone().add(x, y, z), Color.fromRGB(180, 0, 0), 2.0f, 5, 0.1);
+        }
+
+        // Central column of particles
+        spawnDust(location.clone().add(0, 1.5, 0), Color.fromRGB(100, 0, 0), 1.5f, 15, 0.3, 1.5, 0.3);
+    }
+
+    /**
+     * Spawn blood vortex explosion effect at the end.
+     */
+    public static void bloodVortexExplosion(Location location, double radius) {
+        spawnDust(location.clone().add(0, 1, 0), Color.fromRGB(139, 0, 0), 3.0f, 80, radius, 2, radius);
+    }
+
+    /**
+     * Spawn glacier frost particles (for BlazeBite Glacier).
+     */
+    public static void glacierFrost(Location location) {
+        snowflake(location.add(0, 1, 0), 30, 0.5, 1, 0.5, 0.1);
+    }
+
+    /**
+     * Spawn freeze-in-place particles above player head.
+     */
+    public static void freezeParticles(Location headLocation) {
+        snowflake(headLocation.add(0, 2.2, 0), 15, 0.3, 0.2, 0.3, 0.05);
+    }
+
+    /**
+     * Spawn frostbite particles (lighter blue, during initial freeze).
+     */
+    public static void frostbiteParticles(Location headLocation) {
+        spawnDust(headLocation.add(0, 2.2, 0), Color.fromRGB(135, 206, 250), 1.0f, 10, 0.3, 0.2, 0.3);
+    }
+
+    /**
+     * Spawn volcano explosion effect (for BlazeBite Volcano).
+     */
+    public static void volcanoExplosion(Location location) {
+        flame(location, 50, 1);
+        explosion(location);
+    }
+
+    /**
+     * Spawn hit feedback particles (crit at target location).
+     */
+    public static void hitFeedback(Location targetLocation, int count, double offset) {
+        crit(targetLocation.add(0, 1, 0), count, offset);
+    }
+
+    /**
+     * Spawn spin attack sweep particles at location.
+     */
+    public static void spinSweep(Location attackerLocation, double angle, double radius) {
+        double px = Math.cos(angle + Math.PI) * radius;
+        double pz = Math.sin(angle + Math.PI) * radius;
+        sweep(attackerLocation.add(px, 1, pz));
+    }
 }
