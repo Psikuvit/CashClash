@@ -352,6 +352,7 @@ public class GameSession {
 
         // Reset Coin Cleaver charge tracking for new round
         MythicItemManager.getInstance().resetCoinCleaverTrackingForSession(this);
+        BlockListener.cleanupRound(sessionId);
 
         switch (currentRound) {
             case 2 -> state = GameState.ROUND_2_SHOPPING;

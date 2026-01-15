@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.listener;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -106,6 +107,14 @@ public class BlockListener implements Listener {
      */
     public static void cleanupSession(UUID sessionId) {
         placedBlocks.remove(sessionId);
+    }
+
+    public static void cleanupRound(UUID sessionId) {
+        Set<Location> blocks = placedBlocks.get(sessionId);
+        for (Location loc : blocks) {
+            loc.getBlock().setType(Material.AIR);
+        }
+        blocks.clear();
     }
 
     /**
