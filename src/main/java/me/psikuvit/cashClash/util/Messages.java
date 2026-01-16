@@ -10,6 +10,8 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,6 +27,18 @@ public final class Messages {
 
     private static final MiniMessage MINI = MiniMessage.miniMessage();
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
+    private static final int DEFAULT_WRAP_WIDTH = 40;
+
+    /**
+     * Log a debug message to the console if debug mode is enabled.
+     *
+     * @param category The debug category (type-safe enum)
+     * @param message The debug message
+     */
+    public static void debug(@NotNull DebugCategory category, @NotNull String message) {
+        if (!isDebugEnabled()) return;
+        CashClashPlugin.getInstance().getLogger().info("[DEBUG:" + category.name() + "] " + message);
+    }
 
     private Messages() {
         throw new AssertionError("Nope.");
@@ -42,10 +56,10 @@ public final class Messages {
     /**
      * Log a debug message to the console if debug mode is enabled.
      *
-     * @param category The debug category (e.g., "MYTHIC", "SHOP", "GAME")
+     * @param category The debug category (string for backwards compatibility)
      * @param message The debug message
      */
-    public static void debug(String category, String message) {
+    public static void debug(@NotNull String category, @NotNull String message) {
         if (!isDebugEnabled()) return;
         CashClashPlugin.getInstance().getLogger().info("[DEBUG:" + category + "] " + message);
     }
@@ -56,9 +70,22 @@ public final class Messages {
      *
      * @param message The debug message
      */
-    public static void debug(String message) {
+    public static void debug(@NotNull String message) {
         if (!isDebugEnabled()) return;
         CashClashPlugin.getInstance().getLogger().info("[DEBUG] " + message);
+    }
+
+    /**
+     * Log a debug message with player context to the console if debug mode is enabled.
+     *
+     * @param player The player related to this debug message
+     * @param category The debug category (type-safe enum)
+     * @param message The debug message
+     */
+    public static void debug(@Nullable Player player, @NotNull DebugCategory category, @NotNull String message) {
+        if (!isDebugEnabled()) return;
+        String playerName = player != null ? player.getName() : "null";
+        CashClashPlugin.getInstance().getLogger().info("[DEBUG:" + category.name() + "] [" + playerName + "] " + message);
     }
 
     /**
@@ -68,7 +95,7 @@ public final class Messages {
      * @param category The debug category
      * @param message The debug message
      */
-    public static void debug(Player player, String category, String message) {
+    public static void debug(@Nullable Player player, @NotNull String category, @NotNull String message) {
         if (!isDebugEnabled()) return;
         String playerName = player != null ? player.getName() : "null";
         CashClashPlugin.getInstance().getLogger().info("[DEBUG:" + category + "] [" + playerName + "] " + message);
@@ -81,35 +108,49 @@ public final class Messages {
      * @param player The player related to this debug message
      * @param message The debug message
      */
-    public static void debug(Player player, String message) {
+    public static void debug(@Nullable Player player, @NotNull String message) {
         if (!isDebugEnabled()) return;
         String playerName = player != null ? player.getName() : "null";
         CashClashPlugin.getInstance().getLogger().info("[DEBUG] [" + playerName + "] " + message);
     }
 
-    // ==================== PARSING ====================
-
     /**
      * Parse a MiniMessage or legacy string into a Component and disable italics on the root.
+     *
+     * @param miniMsg The message to parse (can be null or empty)
+     * @return The parsed component, never null
      */
-    public static Component parse(String miniMsg) {
-        final Component comp;
-        if (miniMsg != null && miniMsg.contains("§")) {
-            comp = LEGACY.deserialize(miniMsg);
-        } else {
-            comp = MINI.deserialize(miniMsg == null ? "" : miniMsg);
+    @NotNull
+    public static Component parse(@Nullable String miniMsg) {
+        if (miniMsg == null || miniMsg.isEmpty()) {
+            return Component.empty();
         }
+        final Component comp = miniMsg.contains("§")
+                ? LEGACY.deserialize(miniMsg)
+                : MINI.deserialize(miniMsg);
         return comp.decoration(TextDecoration.ITALIC, false);
     }
 
-    public static String parseToLegacy(Component comp) {
-        return LEGACY.serialize(comp);
+    // ==================== PARSING ====================
+
+    /**
+     * Serialize a Component to legacy format string.
+     *
+     * @param comp The component to serialize (can be null)
+     * @return The legacy string, empty string if comp is null
+     */
+    @NotNull
+    public static String parseToLegacy(@Nullable Component comp) {
+        return comp == null ? "" : LEGACY.serialize(comp);
     }
 
     /**
      * Send a MiniMessage/legacy string to a player (parses then sends).
+     *
+     * @param player The player to send to (can be null)
+     * @param miniMsg The message to send
      */
-    public static void send(Player player, String miniMsg) {
+    public static void send(@Nullable Player player, @Nullable String miniMsg) {
         if (player != null && player.isOnline()) {
             player.sendMessage(parse(miniMsg));
         }
@@ -117,8 +158,11 @@ public final class Messages {
 
     /**
      * Send a MiniMessage/legacy string to any CommandSender (player/console).
+     *
+     * @param sender The sender to send to (can be null)
+     * @param miniMsg The message to send
      */
-    public static void send(CommandSender sender, String miniMsg) {
+    public static void send(@Nullable CommandSender sender, @Nullable String miniMsg) {
         if (sender != null) {
             sender.sendMessage(parse(miniMsg));
         }
@@ -126,20 +170,40 @@ public final class Messages {
 
     /**
      * Send an already-built component to a player, ensuring italics disabled on the root.
+     *
+     * @param player The player to send to (can be null)
+     * @param component The component to send
      */
-    public static void send(Player player, Component component) {
-        if (player != null && player.isOnline()) {
+    public static void send(@Nullable Player player, @Nullable Component component) {
+        if (player != null && player.isOnline() && component != null) {
             player.sendMessage(component.decoration(TextDecoration.ITALIC, false));
         }
     }
 
     /**
      * Send an already-built component to a CommandSender, ensuring italics disabled on the root.
+     *
+     * @param sender The sender to send to (can be null)
+     * @param component The component to send
      */
-    public static void send(CommandSender sender, Component component) {
-        if (sender != null) {
+    public static void send(@Nullable CommandSender sender, @Nullable Component component) {
+        if (sender != null && component != null) {
             sender.sendMessage(component.decoration(TextDecoration.ITALIC, false));
         }
+    }
+
+    /**
+     * Wrap a (mostly single-tagged) mini-message into multiple component lines suitable for item lore.
+     * This handles simple cases like "<gray>Long description here...</gray>" by splitting words
+     * and re-applying the same outer tag per resulting line. If no outer tag is present the method
+     * will still wrap plain text.
+     *
+     * @param miniMsg the input mini-message / legacy string
+     * @return list of Components (one per lore line), never null
+     */
+    @NotNull
+    public static List<Component> wrapLines(@Nullable String miniMsg) {
+        return wrapLines(miniMsg, DEFAULT_WRAP_WIDTH);
     }
 
     /**
@@ -195,20 +259,22 @@ public final class Messages {
     }
 
     /**
-     * Wrap a (mostly single-tagged) mini-message into multiple component lines suitable for item lore.
-     * This handles simple cases like "<gray>Long description here...</gray>" by splitting words
-     * and re-applying the same outer tag per resulting line. If no outer tag is present the method
-     * will still wrap plain text.
+     * Wrap a mini-message into multiple component lines with custom width.
      *
      * @param miniMsg the input mini-message / legacy string
-     * @return list of Components (one per lore line)
+     * @param maxChars maximum characters per line (uses default if <= 0)
+     * @return list of Components (one per lore line), never null
      */
-    public static List<Component> wrapLines(String miniMsg) {
-        return wrapLines(miniMsg, 40);
-    }
+    @NotNull
+    public static List<Component> wrapLines(@Nullable String miniMsg, int maxChars) {
+        if (miniMsg == null || miniMsg.isBlank()) {
+            return Collections.emptyList();
+        }
 
-    public static List<Component> wrapLines(String miniMsg, int maxChars) {
-        if (miniMsg == null) return Collections.emptyList();
+        // Use default if invalid
+        if (maxChars <= 0) {
+            maxChars = DEFAULT_WRAP_WIDTH;
+        }
 
         String trimmed = miniMsg.trim();
         String prefixTag = null;
@@ -260,5 +326,12 @@ public final class Messages {
         }
 
         return lines;
+    }
+
+    /**
+     * Debug categories for type-safe debug logging.
+     */
+    public enum DebugCategory {
+        MYTHIC, SHOP, GAME, ARENA, PLAYER, CONFIG, PARTY, ECONOMY, KIT, LOBBY
     }
 }

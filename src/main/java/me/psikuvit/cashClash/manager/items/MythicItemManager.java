@@ -50,13 +50,13 @@ import org.joml.Vector3f;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -109,24 +109,39 @@ public class MythicItemManager {
     // Wind Bow shots tracking (10 shots then reload cooldown)
     private final Map<UUID, Integer> windBowShotsRemaining;
 
+    private static final int COIN_CLEAVER_MAX_USES_PER_ROUND = 3;
+    // Carl's spinning players
+    private final Set<UUID> spinningPlayers;
+    // Coin Cleaver charge tracking
+    private final Map<UUID, Integer> coinCleaverChargedHits;
+    private final Map<UUID, Integer> coinCleaverNoKBUsesRemaining;
+    private final Map<UUID, Long> coinCleaverNoKBActiveUntil;
+
     private MythicItemManager() {
         cfg = ItemsConfig.getInstance();
         cooldownManager = CooldownManager.getInstance();
-        playerMythics = new HashMap<>();
-        sessionPurchasedMythics = new HashMap<>();
-        sessionAvailableMythics = new HashMap<>();
-        blazebiteShotsRemaining = new HashMap<>();
-        glacierFrozenPlayers = new HashMap<>();
-        goblinSpearShotsRemaining = new HashMap<>();
-        goblinSpearCharging = new HashMap<>();
-        bloodwrenchRapidMode = new HashMap<>();
-        bloodwrenchRapidShotsRemaining = new HashMap<>();
-        bloodwrenchRapidFiring = new HashSet<>();
-        activeTasks = new HashMap<>();
-        wardenPunchCount = new HashMap<>();
-        wardenBoxingActive = new HashSet<>();
-        glacierFrostbiteParticleTasks = new HashMap<>();
-        windBowShotsRemaining = new HashMap<>();
+
+        // Use ConcurrentHashMap for thread safety
+        playerMythics = new ConcurrentHashMap<>();
+        sessionPurchasedMythics = new ConcurrentHashMap<>();
+        sessionAvailableMythics = new ConcurrentHashMap<>();
+        blazebiteShotsRemaining = new ConcurrentHashMap<>();
+        glacierFrozenPlayers = new ConcurrentHashMap<>();
+        goblinSpearShotsRemaining = new ConcurrentHashMap<>();
+        goblinSpearCharging = new ConcurrentHashMap<>();
+        bloodwrenchRapidMode = new ConcurrentHashMap<>();
+        bloodwrenchRapidShotsRemaining = new ConcurrentHashMap<>();
+        bloodwrenchRapidFiring = ConcurrentHashMap.newKeySet();
+        activeTasks = new ConcurrentHashMap<>();
+        wardenPunchCount = new ConcurrentHashMap<>();
+        wardenBoxingActive = ConcurrentHashMap.newKeySet();
+        glacierFrostbiteParticleTasks = new ConcurrentHashMap<>();
+        windBowShotsRemaining = new ConcurrentHashMap<>();
+        spinningPlayers = ConcurrentHashMap.newKeySet();
+        coinCleaverChargedHits = new ConcurrentHashMap<>();
+        coinCleaverNoKBUsesRemaining = new ConcurrentHashMap<>();
+        coinCleaverNoKBActiveUntil = new ConcurrentHashMap<>();
+
     }
 
     public static MythicItemManager getInstance() {
@@ -135,7 +150,6 @@ public class MythicItemManager {
         }
         return instance;
     }
-
 
     // ==================== PURCHASE & OWNERSHIP ====================
 
@@ -187,9 +201,9 @@ public class MythicItemManager {
     public void registerMythicPurchase(GameSession session, UUID playerUuid, MythicItem mythic) {
         if (session == null || playerUuid == null || mythic == null) return;
         UUID sessionId = session.getSessionId();
-        playerMythics.computeIfAbsent(sessionId, k -> new HashMap<>())
+        playerMythics.computeIfAbsent(sessionId, k -> new ConcurrentHashMap<>())
                    .put(playerUuid, mythic);
-        sessionPurchasedMythics.computeIfAbsent(sessionId, k -> new HashSet<>())
+        sessionPurchasedMythics.computeIfAbsent(sessionId, k -> ConcurrentHashMap.newKeySet())
                                .add(mythic);
     }
 
@@ -386,15 +400,6 @@ public class MythicItemManager {
 
     // ==================== COIN CLEAVER ====================
     private static final int COIN_CLEAVER_NO_KB_DURATION_SECONDS = 15;
-    private static final int COIN_CLEAVER_MAX_USES_PER_ROUND = 3;
-    // Track charged hits for No KB ability (UUID -> hit count)
-    private final Map<UUID, Integer> coinCleaverChargedHits = new HashMap<>();
-    // Track No KB uses this round (UUID -> uses remaining, max 3)
-    private final Map<UUID, Integer> coinCleaverNoKBUsesRemaining = new HashMap<>();
-    // Track players currently with active No KB buff
-    private final Map<UUID, Long> coinCleaverNoKBActiveUntil = new HashMap<>();
-    // Track players currently in spin attack
-    private final Set<UUID> spinningPlayers = new HashSet<>();
 
     /**
      * Check if a specific mythic is available in this session.
@@ -1882,7 +1887,19 @@ public class MythicItemManager {
 
     // ==================== CLEANUP ====================
 
+    /**
+     * Clean up all state on plugin shutdown.
+     */
     public void cleanup() {
+        CashClashPlugin.getInstance().getLogger().info("[MythicItemManager] Cleaning up all mythic data...");
+
+
+        // Clear session data
+        playerMythics.clear();
+        sessionPurchasedMythics.clear();
+        sessionAvailableMythics.clear();
+
+        // Clear shot tracking
         blazebiteShotsRemaining.clear();
         glacierFrozenPlayers.clear();
         goblinSpearShotsRemaining.clear();
@@ -1893,6 +1910,10 @@ public class MythicItemManager {
         wardenPunchCount.clear();
         wardenBoxingActive.clear();
         windBowShotsRemaining.clear();
+        spinningPlayers.clear();
+        coinCleaverChargedHits.clear();
+        coinCleaverNoKBUsesRemaining.clear();
+        coinCleaverNoKBActiveUntil.clear();
 
         // Cancel and clear frostbite particle tasks
         glacierFrostbiteParticleTasks.values().forEach(task -> {
@@ -1900,10 +1921,13 @@ public class MythicItemManager {
         });
         glacierFrostbiteParticleTasks.clear();
 
-        activeTasks.values().forEach(tasks -> tasks.forEach(BukkitTask::cancel));
+        // Cancel all active tasks
+        activeTasks.values().forEach(tasks -> tasks.forEach(task -> {
+            if (task != null && !task.isCancelled()) task.cancel();
+        }));
         activeTasks.clear();
 
-        // Note: cooldowns are managed by CooldownManager and will be cleared when players are cleared
+        CashClashPlugin.getInstance().getLogger().info("[MythicItemManager] Cleanup complete");
     }
 }
 

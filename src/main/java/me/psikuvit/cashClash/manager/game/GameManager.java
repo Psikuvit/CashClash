@@ -5,9 +5,9 @@ import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.entity.Player;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages all active game sessions
@@ -20,9 +20,9 @@ public class GameManager {
     private final Map<Integer, GameSession> arenaToSession;
 
     private GameManager() {
-        this.activeSessions = new HashMap<>();
-        this.playerToSession = new HashMap<>();
-        this.arenaToSession = new HashMap<>();
+        this.activeSessions = new ConcurrentHashMap<>();
+        this.playerToSession = new ConcurrentHashMap<>();
+        this.arenaToSession = new ConcurrentHashMap<>();
     }
 
     public static GameManager getInstance() {
@@ -73,8 +73,19 @@ public class GameManager {
         return activeSessions.values();
     }
 
+    /**
+     * Shutdown all game sessions and clear all data.
+     * Called on plugin disable.
+     */
     public void shutdown() {
-        activeSessions.values().forEach(GameSession::end);
+        // End all active sessions
+        for (GameSession session : activeSessions.values()) {
+            try {
+                session.end();
+            } catch (Exception e) {
+                Messages.debug(Messages.DebugCategory.GAME, "Error ending session " + session.getSessionId() + ": " + e.getMessage());
+            }
+        }
 
         try {
             Thread.sleep(100);
@@ -84,5 +95,8 @@ public class GameManager {
 
         activeSessions.clear();
         playerToSession.clear();
+        arenaToSession.clear();
+
+        Messages.debug(Messages.DebugCategory.GAME, "GameManager shutdown complete");
     }
 }
