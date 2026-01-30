@@ -1,46 +1,23 @@
 package me.psikuvit.cashClash.game;
 
+import me.psikuvit.cashClash.util.enums.TeamColor;
+
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a team in Cash Clash (4 players max)
  */
 public class Team {
 
-    /**
-     * Team color identifiers
-     */
-    public enum TeamColor {
-        RED("Red", "<red>"),
-        BLUE("Blue", "<blue>");
-
-        private final String displayName;
-        private final String miniMessageColor;
-
-        TeamColor(String displayName, String miniMessageColor) {
-            this.displayName = displayName;
-            this.miniMessageColor = miniMessageColor;
-        }
-
-        public String getDisplayName() {
-            return displayName;
-        }
-
-        public String getMiniMessageColor() {
-            return miniMessageColor;
-        }
-
-        public String getColoredName() {
-            return miniMessageColor + displayName + "</" + displayName.toLowerCase() + ">";
-        }
-    }
-
     private final int teamNumber;
     private final TeamColor color;
     private final Set<UUID> players;
     private final Set<UUID> forfeitVotes;
+    private final Map<UUID, Boolean> readyStatus;
     private final boolean enderPearlsDisabled;
     // Forfeit timing: when the 2nd teammate died (ms), used to enforce delay before allowing forfeit
     private long forfeitStartTime;
@@ -50,6 +27,7 @@ public class Team {
         this.color = teamNumber == 1 ? TeamColor.RED : TeamColor.BLUE;
         this.players = new HashSet<>();
         this.forfeitVotes = new HashSet<>();
+        this.readyStatus = new ConcurrentHashMap<>();
         this.enderPearlsDisabled = false;
         this.forfeitStartTime = 0L;
     }
@@ -57,12 +35,14 @@ public class Team {
     public void addPlayer(UUID uuid) {
         if (players.size() < 4) {
             players.add(uuid);
+            readyStatus.put(uuid, false);
         }
     }
 
     public void removePlayer(UUID uuid) {
         players.remove(uuid);
         forfeitVotes.remove(uuid);
+        readyStatus.remove(uuid);
     }
 
     public boolean hasPlayer(UUID uuid) {
@@ -79,6 +59,12 @@ public class Team {
 
     public void resetForfeitVotes() {
         forfeitVotes.clear();
+    }
+
+    public void toggleReadyStatus(UUID uuid) {
+        if (readyStatus.containsKey(uuid)) {
+            readyStatus.put(uuid, !readyStatus.get(uuid));
+        }
     }
 
     // Getters and setters
@@ -126,6 +112,19 @@ public class Team {
 
     public long getForfeitStartTime() {
         return this.forfeitStartTime;
+    }
+
+    public boolean isTeamReady() {
+        for (boolean status : readyStatus.values()) {
+            if (!status) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isPlayerReady(UUID uuid) {
+        return readyStatus.getOrDefault(uuid, false);
     }
 
 }

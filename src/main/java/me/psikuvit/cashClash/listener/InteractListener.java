@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
@@ -14,6 +15,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Player;
@@ -107,21 +109,36 @@ public class InteractListener implements Listener {
 
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
+        Block block = event.getClickedBlock();
         Action action = event.getAction();
 
-        if (item == null) return;
+        if (item != null) {
+            // Check various item types and delegate
+            if (handleEnderPearl(event, player, item)) return;
+            if (handleFireCharge(event, player, item)) return;
+            if (handleSupplyDrop(event, player, item, action)) return;
+            if (handleCustomItem(event, player, item, action)) return;
+            if (handleMythicItem(event, player, item, action)) return;
+            handleCustomArmor(player, action);
+        } else if (block != null) handleReadyUp(event, player, block);
+    }
 
-        // Check various item types and delegate
-        if (handleEnderPearl(event, player, item)) return;
-        if (handleFireCharge(event, player, item)) return;
-        if (handleSupplyDrop(event, player, item, action)) return;
-        if (handleCustomItem(event, player, item, action)) return;
-        if (handleMythicItem(event, player, item, action)) return;
-        handleCustomArmor(player, action);
+    private void handleReadyUp(PlayerInteractEvent event, Player player, Block block) {
+        if (!block.getType().name().contains("SIGN")) return;
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) return;
+
+        Team team = session.getPlayerTeam(player);
+        if (team == null) return;
+
+        team.toggleReadyStatus(player.getUniqueId());
+        Messages.send(player, "<gold>You are now " + (team.isPlayerReady(player.getUniqueId()) ? "<green>READY" : "<red>NOT READY") + "<gold>!</gold>");
+        Messages.debug(Messages.DebugCategory.GAME, "Player " + player.getName() + " toggled ready status to " + team.isPlayerReady(player.getUniqueId()));
+        event.setCancelled(true);
+
     }
 
     // ==================== ENDER PEARL ====================
-
     private boolean handleEnderPearl(PlayerInteractEvent event, Player player, ItemStack item) {
         if (item.getType() != Material.ENDER_PEARL) return false;
 

@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
@@ -47,6 +48,9 @@ public class RoundManager {
         Messages.broadcastWithPrefix(session.getPlayers(), "<yellow><bold>Round " + roundNumber + " - Shopping Phase!</bold></yellow>");
         Messages.broadcastWithPrefix(session.getPlayers(), "<gray>You have <yellow>" + timeRemaining + " seconds </yellow><gray>to shop!</gray>");
 
+        Team team1 = session.getTeam1();
+        Team team2 = session.getTeam2();
+
         Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
         if (arena != null && session.getGameWorld() != null) {
             TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
@@ -59,7 +63,7 @@ public class RoundManager {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p == null || !p.isOnline()) continue;
 
-                int teamNum = session.getTeam1().hasPlayer(uuid) ? 1 : (session.getTeam2().hasPlayer(uuid) ? 2 : 0);
+                int teamNum = team1.hasPlayer(uuid) ? 1 : (team2.hasPlayer(uuid) ? 2 : 0);
                 Location destTemplate = null;
 
                 if (teamNum == 1 && team1ShopTpl != null) {
@@ -86,6 +90,11 @@ public class RoundManager {
 
         // Start countdown
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
+            if (team1.isTeamReady() && team2.isTeamReady()) {
+                Messages.broadcastWithPrefix(session.getPlayers(), "<green>Both teams are ready! Ending shopping phase early.</green>");
+                endShoppingPhase();
+                return;
+            }
             timeRemaining--;
 
             if (timeRemaining <= 3 && timeRemaining > 0) {
