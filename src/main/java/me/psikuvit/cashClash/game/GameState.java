@@ -5,25 +5,9 @@ package me.psikuvit.cashClash.game;
  */
 public enum GameState {
     WAITING,
-    ROUND_1_SHOPPING,
-    ROUND_1_COMBAT,
-    ROUND_2_SHOPPING,
-    ROUND_2_COMBAT,
-    ROUND_3_SHOPPING,
-    ROUND_3_COMBAT,
-    ROUND_4_SHOPPING,
-    ROUND_4_COMBAT,
-    ROUND_5_SHOPPING,
-    ROUND_5_COMBAT,
+    SHOPPING,
+    COMBAT,
     ENDING;
-
-    public boolean isCombat() {
-        return this.name().contains("COMBAT");
-    }
-
-    public boolean isShopping() {
-        return this.name().contains("SHOPPING");
-    }
 
     public int getRound() {
         if (this == WAITING || this == ENDING) return 0;

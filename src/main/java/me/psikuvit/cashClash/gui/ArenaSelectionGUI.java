@@ -91,10 +91,8 @@ public class ArenaSelectionGUI extends AbstractGui {
 
         String stateDisplay = switch (state) {
             case WAITING -> "<gray>Status: <green>Waiting</green>";
-            case ROUND_1_SHOPPING, ROUND_2_SHOPPING, ROUND_3_SHOPPING,
-                 ROUND_4_SHOPPING, ROUND_5_SHOPPING -> "<gray>Status: <yellow>Shopping</yellow>";
-            case ROUND_1_COMBAT, ROUND_2_COMBAT, ROUND_3_COMBAT,
-                 ROUND_4_COMBAT, ROUND_5_COMBAT -> "<gray>Status: <red>In Combat</red>";
+            case SHOPPING -> "<gray>Status: <yellow>Shopping</yellow>";
+            case COMBAT -> "<gray>Status: <red>In Combat</red>";
             case ENDING -> "<gray>Status: <gold>Ending</gold>";
         };
 

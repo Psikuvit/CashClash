@@ -160,9 +160,9 @@ public class GameSession {
         // Play game start sound (warden sonic boom)
         SoundUtils.playTo(players.keySet(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.0f);
 
-        state = GameState.ROUND_1_SHOPPING;
+        state = GameState.SHOPPING;
 
-        ArenaManager.getInstance().setArenaState(arenaNumber, GameState.ROUND_1_SHOPPING);
+        ArenaManager.getInstance().setArenaState(arenaNumber, GameState.SHOPPING);
 
         currentRoundData = new RoundData(currentRound, players.keySet());
         players.values().forEach(CashClashPlayer::initializeRound1);
@@ -205,11 +205,10 @@ public class GameSession {
                  return;
              }
 
-             if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10) Messages.broadcast(players.keySet(), "<yellow>Game starting in <gold>" + countdownSecondsRemaining + "s</gold>...</yellow>");
-
-             if (countdownSecondsRemaining <= 5 && countdownSecondsRemaining > 0) {
+             if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10)
+                 Messages.broadcast(players.keySet(), "<yellow>Game starting in <gold>" + countdownSecondsRemaining + "s</gold>...</yellow>");
+             if (countdownSecondsRemaining <= 5 && countdownSecondsRemaining > 0)
                  SoundUtils.playTo(players.keySet(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
-             }
 
              if (countdownSecondsRemaining <= 0) {
                  Messages.broadcast(players.keySet(), "<green>Starting game now!</green>");
@@ -251,13 +250,7 @@ public class GameSession {
     }
 
     public void startCombatPhase() {
-        switch (currentRound) {
-            case 1 -> state = GameState.ROUND_1_COMBAT;
-            case 2 -> state = GameState.ROUND_2_COMBAT;
-            case 3 -> state = GameState.ROUND_3_COMBAT;
-            case 4 -> state = GameState.ROUND_4_COMBAT;
-            case 5 -> state = GameState.ROUND_5_COMBAT;
-        }
+        state = GameState.COMBAT;
 
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
         if (cashQuakeManager != null) cashQuakeManager.startEventScheduler();
@@ -285,9 +278,8 @@ public class GameSession {
         if (kit == null) return;
 
         switch (kit) {
-            case BUILDER -> player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 2400, 0, false, false));
-            case GHOST -> player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 2400, 0, false, false));
-            case FIRE_FIGHTER -> player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 2400, 0, false, false));
+            case GHOST -> player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 60 * 20, 0, false, false));
+            case PYROMANIAC -> player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 60 * 20, 0, false, false));
             default -> {} // Other kits don't have potion effects
         }
     }
@@ -336,7 +328,7 @@ public class GameSession {
 
     public void nextRound() {
         currentRound++;
-        if (currentRound > 5) {
+        if (currentRound > ConfigManager.getInstance().getTotalRounds()) {
             end();
             return;
         } else if (currentRound == 2) {
@@ -354,12 +346,7 @@ public class GameSession {
         MythicItemManager.getInstance().resetCoinCleaverTrackingForSession(this);
         BlockListener.cleanupRound(sessionId);
 
-        switch (currentRound) {
-            case 2 -> state = GameState.ROUND_2_SHOPPING;
-            case 3 -> state = GameState.ROUND_3_SHOPPING;
-            case 4 -> state = GameState.ROUND_4_SHOPPING;
-            case 5 -> state = GameState.ROUND_5_SHOPPING;
-        }
+        state = GameState.SHOPPING;
 
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
         if (roundManager != null) roundManager.startShoppingPhase(currentRound);

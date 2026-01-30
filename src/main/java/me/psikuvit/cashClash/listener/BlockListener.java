@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -29,21 +30,13 @@ public class BlockListener implements Listener {
 
     // ==================== BLOCK PLACE ====================
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBlockPlaceTrack(BlockPlaceEvent event) {
-        Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-        event.setCancelled(true);
-
-        if (session == null || !session.getState().isCombat()) return;
-
-        // Track this block as player-placed
-        UUID sessionId = session.getSessionId();
-        Block block = event.getBlock();
-        Location loc = block.getLocation();
-
-        placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
-        event.setCancelled(false);
+    public static void cleanupRound(UUID sessionId) {
+        Set<Location> blocks = placedBlocks.get(sessionId);
+        for (Location loc : blocks) {
+            if (loc == null) continue;
+            loc.getBlock().setType(Material.AIR);
+        }
+        blocks.clear();
     }
 
     // ==================== BLOCK BREAK ====================
@@ -63,16 +56,21 @@ public class BlockListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.NORMAL)
-    public void onBlockBreakShopPhase(BlockBreakEvent event) {
-        if (event.isCancelled()) return;
-
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockPlaceTrack(BlockPlaceEvent event) {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
+        event.setCancelled(true);
 
-        if (session != null && session.getState().isShopping()) {
-            event.setCancelled(true);
-        }
+        if (session == null || session.getState() != GameState.COMBAT) return;
+
+        // Track this block as player-placed
+        UUID sessionId = session.getSessionId();
+        Block block = event.getBlock();
+        Location loc = block.getLocation();
+
+        placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
+        event.setCancelled(false);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -109,12 +107,16 @@ public class BlockListener implements Listener {
         placedBlocks.remove(sessionId);
     }
 
-    public static void cleanupRound(UUID sessionId) {
-        Set<Location> blocks = placedBlocks.get(sessionId);
-        for (Location loc : blocks) {
-            loc.getBlock().setType(Material.AIR);
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onBlockBreakShopPhase(BlockBreakEvent event) {
+        if (event.isCancelled()) return;
+
+        Player player = event.getPlayer();
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+
+        if (session != null && session.getState() == GameState.SHOPPING) {
+            event.setCancelled(true);
         }
-        blocks.clear();
     }
 
     /**

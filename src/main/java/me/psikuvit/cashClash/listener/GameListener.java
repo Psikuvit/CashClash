@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.CashQuakeManager;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -228,7 +229,7 @@ public class GameListener implements Listener {
         if (consumed.getType().isAir()) return;
 
         GameSession session = GameManager.getInstance().getPlayerSession(p);
-        if (session != null && session.getState().isShopping()) {
+        if (session != null && session.getState() == GameState.SHOPPING) {
             FoodItem fi = PDCDetection.getFood(consumed);
             if (fi != null && !fi.getDescription().isEmpty()) {
                 event.setCancelled(true);
@@ -238,15 +239,6 @@ public class GameListener implements Listener {
         }
 
         FoodItem fi = PDCDetection.getFood(consumed);
-
-        // Check if this is normal food (no special effects) and player is at full hunger
-        if (fi == null || !isSpecialConsumable(fi)) {
-            if (p.getFoodLevel() >= 20) {
-                event.setCancelled(true);
-                Messages.send(p, "<red>You cannot eat normal food while at full hunger!</red>");
-                return;
-            }
-        }
 
         if (fi == null) return;
 
@@ -329,7 +321,7 @@ public class GameListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(p);
         if (session == null) return;
 
-        if (session.getState().isShopping()) return;
+        if (session.getState() == GameState.SHOPPING) return;
 
         armorManager.onPlayerToggleSneak(p, event.isSneaking());
     }
@@ -342,7 +334,7 @@ public class GameListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(p);
         if (session == null) return;
 
-        if (session.getState().isShopping()) return;
+        if (session.getState() == GameState.SHOPPING) return;
 
         if (event.isFlying() && armorManager.tryDragonDoubleJump(p)) {
             event.setCancelled(true);
@@ -469,7 +461,7 @@ public class GameListener implements Listener {
             if (!item.hasItemMeta()) return;
 
             GameSession session = GameManager.getInstance().getPlayerSession(attacker);
-            if (session != null && session.getState().isShopping()) {
+            if (session != null && session.getState() == GameState.SHOPPING) {
                 event.setCancelled(true);
                 return;
             }
@@ -510,7 +502,7 @@ public class GameListener implements Listener {
         if (!(event.getRightClicked() instanceof Player target)) return;
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session != null && session.getState().isShopping()) return;
+        if (session != null && session.getState() == GameState.SHOPPING) return;
 
         switch (type) {
             case MEDIC_POUCH -> {
@@ -563,7 +555,7 @@ public class GameListener implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session != null && session.getState().isShopping()) {
+        if (session != null && session.getState() == GameState.SHOPPING) {
             Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
                 player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
                 player.setFoodLevel(20);
