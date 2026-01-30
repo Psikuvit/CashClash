@@ -161,7 +161,7 @@ public class DamageListener implements Listener {
         if (session == null) return false;
 
         GameState state = session.getState();
-        if (state == GameState.WAITING || state.isShopping()) {
+        if (state == GameState.WAITING || state == GameState.SHOPPING) {
             event.setCancelled(true);
             Messages.debug(player, "GAME", "Damage cancelled due to state: " + state);
             return true;

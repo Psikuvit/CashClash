@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
@@ -29,7 +30,7 @@ public class MoveListener implements Listener {
         if (session == null) return;
 
         // Skip if in shopping phase
-        if (session.getState().isShopping()) return;
+        if (session.getState() == GameState.SHOPPING) return;
 
         // Check block player is standing on for bounce pads
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();

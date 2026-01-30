@@ -33,6 +33,45 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
 
     private static final String GUI_ID = "shop_armor";
 
+    // Standard armor column slots
+    private static final int STANDARD_ARMOR_HELMET_SLOT = 10;
+    private static final int STANDARD_ARMOR_CHESTPLATE_SLOT = 19;
+    private static final int STANDARD_ARMOR_LEGGINGS_SLOT = 28;
+    private static final int STANDARD_ARMOR_BOOTS_SLOT = 37;
+
+    // Investor's set column slots
+    private static final int INVESTORS_HELMET_SLOT = 11;
+    private static final int INVESTORS_CHESTPLATE_SLOT = 20;
+    private static final int INVESTORS_LEGGINGS_SLOT = 29;
+    private static final int INVESTORS_BOOTS_SLOT = 38;
+
+    // Separator column base slot
+    private static final int SEPARATOR_COLUMN_BASE_SLOT = 12;
+
+    // Deathmauler set slots
+    private static final int DEATHMAULER_BARRIER_LEFT_SLOT = 13;
+    private static final int DEATHMAULER_PIECE_1_SLOT = 14;
+    private static final int DEATHMAULER_PIECE_2_SLOT = 15;
+    private static final int DEATHMAULER_BARRIER_RIGHT_SLOT = 16;
+
+    // Dragon set slots
+    private static final int DRAGON_PIECE_1_SLOT = 22;
+    private static final int DRAGON_PIECE_2_SLOT = 23;
+    private static final int DRAGON_BARRIER_SLOT = 24;
+    private static final int DRAGON_PIECE_3_SLOT = 25;
+
+    // Flamebringer set slots
+    private static final int FLAMEBRINGER_BARRIER_LEFT_SLOT = 31;
+    private static final int FLAMEBRINGER_PIECE_1_SLOT = 33;
+    private static final int FLAMEBRINGER_PIECE_2_SLOT = 34;
+    private static final int FLAMEBRINGER_BARRIER_RIGHT_SLOT = 32;
+
+    // Individual custom armor slots
+    private static final int MAGIC_HELMET_SLOT = 40;
+    private static final int GUARDIANS_VEST_SLOT = 41;
+    private static final int TAX_EVASION_PANTS_SLOT = 42;
+    private static final int BUNNY_SHOES_SLOT = 43;
+
     public ArmorCategoryGui(Player viewer) {
         super(GUI_ID, viewer, ShopCategory.ARMOR);
     }
@@ -41,86 +80,85 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     protected void populateItems() {
         GameSession session = getSession();
         int currentRound = session != null ? session.getCurrentRound() : 1;
+        int diamondPiecesOwned = countDiamondPieces();
+        boolean canBuyDiamond = canBuyDiamondPiece(currentRound, diamondPiecesOwned);
 
-        // Count diamond armor pieces
-        int diamondCount = 0;
-        if (hasItem(Material.DIAMOND_HELMET)) diamondCount++;
-        if (hasItem(Material.DIAMOND_CHESTPLATE)) diamondCount++;
-        if (hasItem(Material.DIAMOND_LEGGINGS)) diamondCount++;
-        if (hasItem(Material.DIAMOND_BOOTS)) diamondCount++;
-
-        ConfigManager cfg = ConfigManager.getInstance();
-        boolean diamondLimitReached = currentRound < cfg.getDiamondUnlockRound()
-                && diamondCount >= cfg.getMaxDiamondPiecesEarly();
-
-        // Standard armor column
-        placeArmorButton(10, ArmorItem.IRON_HELMET, ArmorItem.DIAMOND_HELMET, diamondLimitReached, currentRound);
-        placeArmorButton(19, ArmorItem.IRON_CHESTPLATE, ArmorItem.DIAMOND_CHESTPLATE, diamondLimitReached, currentRound);
-        placeArmorButton(28, ArmorItem.IRON_LEGGINGS, ArmorItem.DIAMOND_LEGGINGS, diamondLimitReached, currentRound);
-        placeArmorButton(37, ArmorItem.IRON_BOOTS, ArmorItem.DIAMOND_BOOTS, diamondLimitReached, currentRound);
-
-        // Investor's set column
-        setButton(11, createCustomArmorButton(CustomArmorItem.INVESTORS_HELMET));
-        setButton(20, createCustomArmorButton(CustomArmorItem.INVESTORS_CHESTPLATE));
-        setButton(29, createCustomArmorButton(CustomArmorItem.INVESTORS_LEGGINGS));
-        setButton(38, createCustomArmorButton(CustomArmorItem.INVESTORS_BOOTS));
-
-        // Separator column
-        for (int i = 0; i < 4; i++) {
-            setItem(12 + i * 9, createPane(Material.LIGHT_BLUE_STAINED_GLASS_PANE));
-        }
-
-        // Deathmauler set
-        ItemStack[] deathmaulerPieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.DEATHMAULER, viewer);
-        setItem(13, ItemStack.of(Material.BARRIER));
-        if (deathmaulerPieces.length > 0) {
-            setButton(14, createArmorSetButton(deathmaulerPieces[0], CustomArmorItem.ArmorSet.DEATHMAULER));
-        }
-        if (deathmaulerPieces.length > 1) {
-            setButton(15, createArmorSetButton(deathmaulerPieces[1], CustomArmorItem.ArmorSet.DEATHMAULER));
-        }
-        setItem(16, ItemStack.of(Material.BARRIER));
-
-        // Dragon set
-        ItemStack[] dragonPieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.DRAGON, viewer);
-        if (dragonPieces.length > 0) {
-            setButton(22, createArmorSetButton(dragonPieces[0], CustomArmorItem.ArmorSet.DRAGON));
-        }
-        if (dragonPieces.length > 1) {
-            setButton(23, createArmorSetButton(dragonPieces[1], CustomArmorItem.ArmorSet.DRAGON));
-        }
-        setItem(24, ItemStack.of(Material.BARRIER));
-        if (dragonPieces.length > 2) {
-            setButton(25, createArmorSetButton(dragonPieces[2], CustomArmorItem.ArmorSet.DRAGON));
-        }
-
-        // Flamebringer set
-        ItemStack[] flamebringerPieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.FLAMEBRINGER, viewer);
-        setItem(31, ItemStack.of(Material.BARRIER));
-        if (flamebringerPieces.length > 0) {
-            setButton(33, createArmorSetButton(flamebringerPieces[0], CustomArmorItem.ArmorSet.FLAMEBRINGER));
-        }
-        if (flamebringerPieces.length > 1) {
-            setButton(34, createArmorSetButton(flamebringerPieces[1], CustomArmorItem.ArmorSet.FLAMEBRINGER));
-        }
-        setItem(32, ItemStack.of(Material.BARRIER));
-
-        // Individual custom armor pieces
-        setButton(40, createCustomArmorButton(CustomArmorItem.MAGIC_HELMET));
-        setButton(43, createCustomArmorButton(CustomArmorItem.BUNNY_SHOES));
-        setButton(41, createCustomArmorButton(CustomArmorItem.GUARDIANS_VEST));
-        setButton(42, createCustomArmorButton(CustomArmorItem.TAX_EVASION_PANTS));
+        populateStandardArmorColumn(canBuyDiamond, currentRound);
+        populateInvestorsColumn();
+        populateSeparatorColumn();
+        populateDeathmaulerSet();
+        populateDragonSet();
+        populateFlamebringerSet();
+        populateIndividualCustomArmor();
     }
 
-    private void placeArmorButton(int slot, ArmorItem ironItem, ArmorItem diamondItem,
-                                   boolean diamondLimitReached, int currentRound) {
+    // ==================== DIAMOND LIMIT LOGIC ====================
+
+    /**
+     * Counts the number of diamond armor pieces the player currently owns.
+     * Checks both inventory and equipped armor.
+     *
+     * @return The count of diamond armor pieces (0-4)
+     */
+    private int countDiamondPieces() {
+        int count = 0;
+        if (hasItem(Material.DIAMOND_HELMET)) count++;
+        if (hasItem(Material.DIAMOND_CHESTPLATE)) count++;
+        if (hasItem(Material.DIAMOND_LEGGINGS)) count++;
+        if (hasItem(Material.DIAMOND_BOOTS)) count++;
+        return count;
+    }
+
+    /**
+     * Determines if the player can purchase a diamond armor piece this round.
+     * Diamond armor is limited in early rounds to prevent overpowered early-game builds.
+     *
+     * @param currentRound      The current game round
+     * @param diamondPiecesOwned The number of diamond pieces the player already owns
+     * @return true if diamond armor can be purchased, false if the limit is reached
+     */
+    private boolean canBuyDiamondPiece(int currentRound, int diamondPiecesOwned) {
+        ConfigManager cfg = ConfigManager.getInstance();
+        return !(currentRound < cfg.getDiamondUnlockRound()
+                && diamondPiecesOwned >= cfg.getMaxDiamondPiecesEarly());
+    }
+
+    // ==================== STANDARD ARMOR COLUMN ====================
+
+    /**
+     * Populates the standard armor column (iron → diamond progression).
+     * Each slot shows the appropriate upgrade state based on what the player owns.
+     */
+    private void populateStandardArmorColumn(boolean canBuyDiamond, int currentRound) {
+        placeProgressiveArmorButton(STANDARD_ARMOR_HELMET_SLOT,
+                ArmorItem.IRON_HELMET, ArmorItem.DIAMOND_HELMET, canBuyDiamond, currentRound);
+        placeProgressiveArmorButton(STANDARD_ARMOR_CHESTPLATE_SLOT,
+                ArmorItem.IRON_CHESTPLATE, ArmorItem.DIAMOND_CHESTPLATE, canBuyDiamond, currentRound);
+        placeProgressiveArmorButton(STANDARD_ARMOR_LEGGINGS_SLOT,
+                ArmorItem.IRON_LEGGINGS, ArmorItem.DIAMOND_LEGGINGS, canBuyDiamond, currentRound);
+        placeProgressiveArmorButton(STANDARD_ARMOR_BOOTS_SLOT,
+                ArmorItem.IRON_BOOTS, ArmorItem.DIAMOND_BOOTS, canBuyDiamond, currentRound);
+    }
+
+    /**
+     * Places a progressive armor button that handles iron → diamond upgrades.
+     * Shows locked state if diamond limit is reached, or upgrade button if available.
+     *
+     * @param slot                The GUI slot to place the button
+     * @param ironItem            The iron tier armor item
+     * @param diamondItem         The diamond tier armor item
+     * @param canBuyDiamond       Whether diamond can be purchased (not limited)
+     * @param currentRound        The current game round (for locked item display)
+     */
+    private void placeProgressiveArmorButton(int slot, ArmorItem ironItem, ArmorItem diamondItem,
+                                             boolean canBuyDiamond, int currentRound) {
         boolean hasIron = hasItem(ironItem.getMaterial());
         boolean hasDiamond = hasItem(diamondItem.getMaterial());
 
         if (hasDiamond) {
             setButton(slot, createPurchasableButtonMaxed(diamondItem, true));
         } else if (hasIron) {
-            if (diamondLimitReached) {
+            if (!canBuyDiamond) {
                 ItemStack locked = GuiItemUtils.createLockedDiamondItem(diamondItem, currentRound);
                 setButton(slot, GuiButton.of(locked));
             } else {
@@ -131,64 +169,249 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         }
     }
 
+    // ==================== INVESTOR'S SET COLUMN ====================
+
+    /**
+     * Populates the Investor's set column with individual purchasable pieces.
+     */
+    private void populateInvestorsColumn() {
+        setButton(INVESTORS_HELMET_SLOT, createCustomArmorButton(CustomArmorItem.INVESTORS_HELMET));
+        setButton(INVESTORS_CHESTPLATE_SLOT, createCustomArmorButton(CustomArmorItem.INVESTORS_CHESTPLATE));
+        setButton(INVESTORS_LEGGINGS_SLOT, createCustomArmorButton(CustomArmorItem.INVESTORS_LEGGINGS));
+        setButton(INVESTORS_BOOTS_SLOT, createCustomArmorButton(CustomArmorItem.INVESTORS_BOOTS));
+    }
+
+    // ==================== SEPARATOR COLUMN ====================
+
+    /**
+     * Populates the separator column with light blue glass panes.
+     */
+    private void populateSeparatorColumn() {
+        for (int i = 0; i < 4; i++) {
+            setItem(SEPARATOR_COLUMN_BASE_SLOT + i * 9, createPane(Material.LIGHT_BLUE_STAINED_GLASS_PANE));
+        }
+    }
+
+    // ==================== ARMOR SET PLACEMENT ====================
+
+    /**
+     * Populates the Deathmauler set section.
+     * Deathmauler set consists of 2 pieces (chestplate + leggings).
+     */
+    private void populateDeathmaulerSet() {
+        ItemStack[] pieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.DEATHMAULER, viewer);
+        int[] pieceSlots = {DEATHMAULER_PIECE_1_SLOT, DEATHMAULER_PIECE_2_SLOT};
+        int[] barrierSlots = {DEATHMAULER_BARRIER_LEFT_SLOT, DEATHMAULER_BARRIER_RIGHT_SLOT};
+
+        placeArmorSetPiecesWithBarriers(CustomArmorItem.ArmorSet.DEATHMAULER, pieces, pieceSlots, barrierSlots);
+    }
+
+    /**
+     * Populates the Dragon set section.
+     * Dragon set consists of 3 pieces (helmet + chestplate + boots).
+     */
+    private void populateDragonSet() {
+        ItemStack[] pieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.DRAGON, viewer);
+        int[] pieceSlots = {DRAGON_PIECE_1_SLOT, DRAGON_PIECE_2_SLOT, DRAGON_PIECE_3_SLOT};
+        int[] barrierSlots = {DRAGON_BARRIER_SLOT};
+
+        placeArmorSetPiecesWithBarriers(CustomArmorItem.ArmorSet.DRAGON, pieces, pieceSlots, barrierSlots);
+    }
+
+    /**
+     * Populates the Flamebringer set section.
+     * Flamebringer set consists of 2 pieces (leggings + boots).
+     */
+    private void populateFlamebringerSet() {
+        ItemStack[] pieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.FLAMEBRINGER, viewer);
+        int[] pieceSlots = {FLAMEBRINGER_PIECE_1_SLOT, FLAMEBRINGER_PIECE_2_SLOT};
+        int[] barrierSlots = {FLAMEBRINGER_BARRIER_LEFT_SLOT, FLAMEBRINGER_BARRIER_RIGHT_SLOT};
+
+        placeArmorSetPiecesWithBarriers(CustomArmorItem.ArmorSet.FLAMEBRINGER, pieces, pieceSlots, barrierSlots);
+    }
+
+    /**
+     * Places armor set pieces with barriers in empty slots.
+     * For each piece slot: if a piece exists, place a button; otherwise, place a barrier.
+     * All barrier slots are always filled with barriers.
+     *
+     * @param armorSet    The armor set being placed
+     * @param pieces      Array of ItemStacks for the set pieces (may be shorter than pieceSlots)
+     * @param pieceSlots  Array of slot indices where pieces should be placed
+     * @param barrierSlots Array of slot indices where barriers should be placed
+     */
+    private void placeArmorSetPiecesWithBarriers(CustomArmorItem.ArmorSet armorSet, ItemStack[] pieces,
+                                                  int[] pieceSlots, int[] barrierSlots) {
+        // Place barriers in all barrier slots
+        for (int barrierSlot : barrierSlots) {
+            setItem(barrierSlot, ItemStack.of(Material.BARRIER));
+        }
+
+        // Place pieces or barriers in piece slots
+        for (int i = 0; i < pieceSlots.length; i++) {
+            if (i < pieces.length) {
+                setButton(pieceSlots[i], createArmorSetButton(pieces[i], armorSet));
+            } else {
+                setItem(pieceSlots[i], ItemStack.of(Material.BARRIER));
+            }
+        }
+    }
+
+    // ==================== INDIVIDUAL CUSTOM ARMOR ====================
+
+    /**
+     * Populates individual custom armor pieces that can be purchased separately.
+     */
+    private void populateIndividualCustomArmor() {
+        setButton(MAGIC_HELMET_SLOT, createCustomArmorButton(CustomArmorItem.MAGIC_HELMET));
+        setButton(GUARDIANS_VEST_SLOT, createCustomArmorButton(CustomArmorItem.GUARDIANS_VEST));
+        setButton(TAX_EVASION_PANTS_SLOT, createCustomArmorButton(CustomArmorItem.TAX_EVASION_PANTS));
+        setButton(BUNNY_SHOES_SLOT, createCustomArmorButton(CustomArmorItem.BUNNY_SHOES));
+    }
+
+    // ==================== BUTTON CREATION ====================
+
+    /**
+     * Creates a button for a custom armor item that can be purchased individually.
+     */
     private GuiButton createCustomArmorButton(CustomArmorItem item) {
         ItemStack itemStack = GuiItemUtils.createShopItem(viewer, item);
         return GuiButton.of(itemStack).onClick((p, clickType) -> handlePurchasableClick(item, clickType));
     }
 
+    /**
+     * Creates a button for an armor set piece that triggers set purchase.
+     */
     private GuiButton createArmorSetButton(ItemStack itemStack, CustomArmorItem.ArmorSet set) {
         return GuiButton.of(itemStack).onClick(p -> handleArmorSetPurchase(p, set));
     }
 
+    // ==================== ARMOR SET PURCHASE HANDLING ====================
+
+    /**
+     * Handles the purchase of a complete armor set.
+     * Validates game state, affordability, replaces existing armor, and creates purchase record.
+     *
+     * @param player   The player purchasing the set
+     * @param armorSet The armor set to purchase
+     */
     public void handleArmorSetPurchase(Player player, CustomArmorItem.ArmorSet armorSet) {
         CashClashPlayer ccp = getCashClashPlayer();
         if (ccp == null) return;
 
+        GameSession session = ensureInGame(player);
+        if (session == null) return;
+
+        long totalPrice = armorSet.getTotalPrice();
+        if (!ensureCanAffordSet(player, totalPrice)) return;
+
+        applySetPurchase(player, session, armorSet, totalPrice, ccp);
+    }
+
+    /**
+     * Ensures the player is in a game session.
+     * Sends error message and closes inventory if not in game.
+     *
+     * @param player The player to check
+     * @return The game session if valid, null otherwise
+     */
+    private GameSession ensureInGame(Player player) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) {
             Messages.send(player, "<red>You must be in a game to shop.</red>");
             player.closeInventory();
-            return;
         }
+        return session;
+    }
 
-        long totalPrice = armorSet.getTotalPrice();
-        if (!ShopService.getInstance().canAfford(player, totalPrice)) {
-            Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", totalPrice) + ")</red>");
-            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            return;
+    /**
+     * Ensures the player can afford the armor set.
+     * Sends error message and plays sound if not affordable.
+     *
+     * @param player     The player to check
+     * @param totalPrice The total price of the set
+     * @return true if affordable, false otherwise
+     */
+    private boolean ensureCanAffordSet(Player player, long totalPrice) {
+        if (ShopService.getInstance().canAfford(player, totalPrice)) {
+            return true;
         }
+        Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", totalPrice) + ")</red>");
+        SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+        return false;
+    }
 
+    /**
+     * Applies the armor set purchase: deducts coins, replaces armor, creates purchase record, and sends success message.
+     *
+     * @param player     The player making the purchase
+     * @param session    The game session
+     * @param armorSet   The armor set being purchased
+     * @param totalPrice The total price of the set
+     * @param ccp        The CashClashPlayer instance
+     */
+    private void applySetPurchase(Player player, GameSession session, CustomArmorItem.ArmorSet armorSet,
+                                   long totalPrice, CashClashPlayer ccp) {
         ShopService.getInstance().deductCoins(player, totalPrice);
         int round = session.getCurrentRound();
 
-        // Track all replaced items for set refund
         List<CustomArmorItem> setPieces = armorSet.getPieces();
-        Map<ArmorSlot, ItemStack> replacedSetItems = new EnumMap<>(ArmorSlot.class);
-
-        for (CustomArmorItem piece : setPieces) {
-            // Get current armor before replacing
-            ArmorSlot slot = getArmorSlot(piece.getMaterial());
-            ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
-
-            if (currentArmor != null && currentArmor.getType() != Material.AIR) {
-                // Check if it's custom armor (purchased item with CustomArmorItem tag)
-                if (PDCDetection.isCustomArmorItem(currentArmor)) {
-                    // Custom armor goes to inventory
-                    replacedSetItems.put(slot, currentArmor.clone());
-                    returnReplacedItemToInventory(player, currentArmor.clone());
-                } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
-                    // Purchased vanilla armor (iron/diamond) - track but don't return to inventory
-                    replacedSetItems.put(slot, currentArmor.clone());
-                }
-            }
-
-            // Equip the set piece
-            ItemUtils.giveCustomArmorSet(player, piece);
-        }
+        Map<ArmorSlot, ItemStack> replacedSetItems = collectAndReplaceSetPieces(player, setPieces);
 
         // Create a single set purchase record with all replaced items
         ccp.addPurchase(new PurchaseRecord(setPieces.getFirst(), totalPrice, round, replacedSetItems, setPieces));
 
+        sendSetPurchaseSuccessMessage(player, armorSet, totalPrice);
+    }
+
+    /**
+     * Collects and replaces armor pieces for the set purchase.
+     * Handles refund logic: custom armor goes to inventory, purchased vanilla armor is tracked but not returned.
+     *
+     * @param player    The player whose armor is being replaced
+     * @param setPieces The list of armor pieces in the set
+     * @return A map of replaced armor slots to their original items (for refund tracking)
+     */
+    private Map<ArmorSlot, ItemStack> collectAndReplaceSetPieces(Player player, List<CustomArmorItem> setPieces) {
+        Map<ArmorSlot, ItemStack> replacedSetItems = new EnumMap<>(ArmorSlot.class);
+
+        for (CustomArmorItem piece : setPieces) {
+            ArmorSlot slot = getArmorSlot(piece.getMaterial());
+            if (slot == null) continue; // Skip if slot cannot be determined
+            
+            ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
+
+            if (currentArmor != null && currentArmor.getType() != Material.AIR) {
+                // Create a deep clone for tracking (preserves all metadata, enchantments, etc.)
+                ItemStack clonedArmor = currentArmor.clone();
+                
+                // Check if it's custom armor (purchased item with CustomArmorItem tag)
+                if (PDCDetection.isCustomArmorItem(currentArmor)) {
+                    // Custom armor: store clone for refund tracking, return original to inventory
+                    replacedSetItems.put(slot, clonedArmor);
+                    returnReplacedItemToInventory(player, currentArmor.clone());
+                } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
+                    // Purchased vanilla armor (iron/diamond): track for refund but don't return to inventory
+                    // The refund system will directly equip this from the map
+                    replacedSetItems.put(slot, clonedArmor);
+                }
+            }
+
+            // Equip the set piece (this replaces whatever was in the slot)
+            ItemUtils.giveCustomArmorSet(player, piece);
+        }
+
+        return replacedSetItems;
+    }
+
+    /**
+     * Sends the success message and plays sound for a successful armor set purchase.
+     *
+     * @param player     The player who made the purchase
+     * @param armorSet   The armor set that was purchased
+     * @param totalPrice The total price paid
+     */
+    private void sendSetPurchaseSuccessMessage(Player player, CustomArmorItem.ArmorSet armorSet, long totalPrice) {
         Messages.send(player, "");
         Messages.send(player, "<green><bold>✓ SET PURCHASED</bold></green>");
         Messages.send(player, "<yellow>" + armorSet.getDisplayName() + "</yellow>");
@@ -197,10 +420,17 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
     }
 
+    // ==================== ARMOR SLOT UTILITIES ====================
+
     /**
-     * Get the armor slot for a given material.
+     * Gets the armor slot enum for a given material.
+     * Returns null if the material is not an armor piece.
+     *
+     * @param material The material to check
+     * @return The corresponding ArmorSlot, or null if not armor
      */
     private ArmorSlot getArmorSlot(Material material) {
+        if (material == null) return null;
         String matName = material.name();
         if (matName.endsWith("HELMET")) return ArmorSlot.HELMET;
         if (matName.endsWith("CHESTPLATE")) return ArmorSlot.CHESTPLATE;
@@ -210,7 +440,12 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     }
 
     /**
-     * Get the current armor in a specific slot.
+     * Gets the current armor item in a specific slot.
+     * Returns null if the slot is null or if no armor is equipped in that slot.
+     *
+     * @param player The player whose armor to check
+     * @param slot   The armor slot to check (may be null)
+     * @return The ItemStack in that slot, or null if empty/invalid
      */
     private ItemStack getCurrentArmorInSlot(Player player, ArmorSlot slot) {
         if (slot == null) return null;
@@ -224,7 +459,10 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     }
 
     /**
-     * Return a replaced item to player's inventory, or drop if full.
+     * Returns a replaced item to the player's inventory, or drops it if inventory is full.
+     *
+     * @param player The player receiving the item
+     * @param item   The item to return (may be null or air)
      */
     private void returnReplacedItemToInventory(Player player, ItemStack item) {
         if (item == null || item.getType() == Material.AIR) return;

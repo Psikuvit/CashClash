@@ -164,7 +164,7 @@ public class GameSession {
 
         ArenaManager.getInstance().setArenaState(arenaNumber, GameState.SHOPPING);
 
-        currentRoundData = new RoundData(currentRound, players.keySet());
+        currentRoundData = new RoundData(players.keySet());
         players.values().forEach(CashClashPlayer::initializeRound1);
 
         roundManager = new RoundManager(this);
@@ -335,7 +335,7 @@ public class GameSession {
             MythicItemManager.getInstance().selectLegendariesForSession(this);
         }
 
-        currentRoundData = new RoundData(currentRound, players.keySet());
+        currentRoundData = new RoundData(players.keySet());
         players.values().forEach(p -> p.initializeRound(currentRound));
 
         if (cashQuakeManager != null) cashQuakeManager.resetRoundEvents();

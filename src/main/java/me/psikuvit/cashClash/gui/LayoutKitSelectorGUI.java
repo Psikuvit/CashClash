@@ -83,7 +83,6 @@ public class LayoutKitSelectorGUI extends AbstractGui {
     private Material getKitMaterial(Kit kit) {
         return switch (kit) {
             case ARCHER -> Material.BOW;
-            case BUILDER -> Material.COBBLESTONE;
             case HEALER -> Material.SPLASH_POTION;
             case TANK -> Material.IRON_CHESTPLATE;
             case SCOUT -> Material.CROSSBOW;
@@ -91,7 +90,6 @@ public class LayoutKitSelectorGUI extends AbstractGui {
             case PYROMANIAC -> Material.LAVA_BUCKET;
             case GHOST -> Material.FEATHER;
             case FIGHTER -> Material.IRON_SWORD;
-            case FIRE_FIGHTER -> Material.WATER_BUCKET;
             case SPIDER -> Material.COBWEB;
             case BOMBER -> Material.TNT;
         };

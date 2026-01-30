@@ -4,14 +4,13 @@ public class PlayerRoundStats {
 
     private int kills;
     private double damageDealt;
-    private int lives;
+    private int deaths;
     private long lastDamageTime;
     private boolean survivor;
 
-    public PlayerRoundStats(int lives) {
+    public PlayerRoundStats() {
         this.kills = 0;
         this.damageDealt = 0.0;
-        this.lives = lives;
         this.lastDamageTime = 0L;
         this.survivor = false;
     }
@@ -32,14 +31,12 @@ public class PlayerRoundStats {
         damageDealt += damage;
     }
 
-    public int getLives() {
-        return lives;
+    public int getDeaths() {
+        return deaths;
     }
 
-    public void decrementLives() {
-        if (lives > 0) {
-            lives--;
-        }
+    public void incrementDeaths() {
+        deaths++;
     }
 
     public long getLastDamageTime() {
@@ -56,9 +53,5 @@ public class PlayerRoundStats {
 
     public void markSurvivor() {
         this.survivor = true;
-    }
-
-    public boolean isAlive() {
-        return lives > 0;
     }
 }

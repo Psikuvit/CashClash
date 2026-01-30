@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.CashQuakeEvent;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
@@ -103,7 +104,7 @@ public class CashQuakeManager {
 
         // Schedule checks for additional events during the round
         eventTask = SchedulerUtils.runTaskTimer(() -> {
-            if (!session.getState().isCombat()) return;
+            if (session.getState() != GameState.COMBAT) return;
 
             // Skip events in Round 1
             if (session.getCurrentRound() == cfg.getFirstRound()) return;
@@ -610,7 +611,7 @@ public class CashQuakeManager {
 
         // Prefer reading the PDC amount stored on the emerald
         Integer pdcAmount = meta.getPersistentDataContainer().get(me.psikuvit.cashClash.util.Keys.SUPPLY_DROP_AMOUNT, org.bukkit.persistence.PersistentDataType.INTEGER);
-        int amount = -1;
+        int amount;
         if (pdcAmount != null) {
             amount = pdcAmount;
         } else {

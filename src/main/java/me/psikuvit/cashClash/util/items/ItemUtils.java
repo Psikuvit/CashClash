@@ -44,11 +44,9 @@ public final class ItemUtils {
      * Equip armor or replace existing armor piece.
      * If there was an old armor piece that was purchased (has ITEM_ID), it will be returned.
      * Starter armor (without ITEM_ID) is discarded on upgrade.
-     *
-     * @return The old armor piece that was replaced (null if slot was empty or was starter armor)
      */
-    public static ItemStack equipArmorOrReplace(Player player, ItemStack newArmor) {
-        if (player == null || newArmor == null) return null;
+    public static void equipArmorOrReplace(Player player, ItemStack newArmor) {
+        if (player == null || newArmor == null) return;
         PlayerInventory inv = player.getInventory();
         Material m = newArmor.getType();
 
@@ -69,7 +67,7 @@ public final class ItemUtils {
             inv.addItem(newArmor);
         }
 
-        if (old == null) return null;
+        if (old == null) return;
         ItemMeta fromMeta = old.getItemMeta();
         ItemMeta toMeta = newArmor.getItemMeta();
 
@@ -77,11 +75,6 @@ public final class ItemUtils {
             toMeta.addEnchant(e.getKey(), e.getValue(), true);
         }
         newArmor.setItemMeta(toMeta);
-
-        if (PDCDetection.getAnyShopTag(old) != null) {
-            return null;
-        }
-        return old;
     }
 
 

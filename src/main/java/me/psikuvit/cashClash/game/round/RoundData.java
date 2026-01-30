@@ -19,12 +19,11 @@ public class RoundData {
      * Avoids object creation overhead from immutable record pattern.
      */
 
-    public RoundData(int roundNumber, Collection<UUID> players) {
+    public RoundData(Collection<UUID> players) {
         this.stats = new HashMap<>(players.size());
 
-        int startingLives = roundNumber <= 3 ? 3 : 1;
         for (UUID uuid : players) {
-            stats.put(uuid, new PlayerRoundStats(startingLives));
+            stats.put(uuid, new PlayerRoundStats());
         }
     }
 
@@ -49,7 +48,7 @@ public class RoundData {
     public void removeLife(UUID player) {
         PlayerRoundStats s = getStats(player);
         if (s != null) {
-            s.decrementLives();
+            s.incrementKills();
         }
     }
 
@@ -60,11 +59,6 @@ public class RoundData {
         }
     }
 
-    public boolean isAlive(UUID player) {
-        PlayerRoundStats s = getStats(player);
-        return s != null && s.isAlive();
-    }
-
     public int getKills(UUID player) {
         PlayerRoundStats s = getStats(player);
         return s == null ? 0 : s.getKills();
@@ -73,6 +67,11 @@ public class RoundData {
     public double getDamage(UUID player) {
         PlayerRoundStats s = getStats(player);
         return s == null ? 0.0 : s.getDamageDealt();
+    }
+
+    public boolean isAlive(UUID player) {
+        PlayerRoundStats s = getStats(player);
+        return s != null && s.getDeaths() == 0;
     }
 
     public long getLastDamageTime(UUID player) {

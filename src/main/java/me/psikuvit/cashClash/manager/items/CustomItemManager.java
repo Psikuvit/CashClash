@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.manager.items;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gui.PlayerSelectorGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -467,7 +468,7 @@ public class CustomItemManager {
         Team team = session.getPlayerTeam(player);
         if (team == null) return;
 
-        if (session.getState().isShopping()) {
+        if (session.getState() == GameState.SHOPPING) {
             Messages.send(player, "<red>You can't place this item during shopping!</red>");
             return;
         }
@@ -532,7 +533,7 @@ public class CustomItemManager {
         Location placeLoc = clickedBlock.getRelative(BlockFace.UP).getLocation();
         Block placeBlock = placeLoc.getBlock();
 
-        if (GameManager.getInstance().getPlayerSession(player).getState().isShopping()) {
+        if (GameManager.getInstance().getPlayerSession(player).getState() == GameState.SHOPPING) {
             Messages.send(player, "<red>You can't place this item during shopping!</red>");
             return;
         }
