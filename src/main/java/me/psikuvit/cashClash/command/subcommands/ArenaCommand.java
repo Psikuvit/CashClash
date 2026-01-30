@@ -43,6 +43,7 @@ public class ArenaCommand extends AbstractArgCommand {
         switch (action) {
             case "tp" -> arenaTp(player, args);
             case "assign" -> arenaAssign(player, args);
+            case "name" -> arenaName(player, args);
             default -> Messages.send(player, "<red>Unknown arena action. Use tp or assign.</red>");
         }
         return true;
@@ -55,7 +56,7 @@ public class ArenaCommand extends AbstractArgCommand {
         String last = args[args.length - 1].toLowerCase(Locale.ROOT);
 
         if (args.length == 1) {
-            for (String act : List.of("tp", "assign")) if (act.startsWith(last)) out.add(act);
+            for (String act : List.of("tp", "assign", "name")) if (act.startsWith(last)) out.add(act);
             return out;
         }
 
@@ -76,6 +77,19 @@ public class ArenaCommand extends AbstractArgCommand {
         return out;
     }
 
+    private void arenaName(Player player, String[] args) {
+        if (args.length < 3) {
+            return;
+        }
+        String id = args[1];
+        String newName = args[2];
+        Arena arena = ArenaManager.getInstance().getArena(id);
+        if (arena == null) {
+            Messages.send(player, "<red>Arena not found: " + id + "</red>");
+            return;
+        }
+        arena.setName(newName);
+    }
 
     private void arenaTp(Player player, String[] args) {
         if (args.length < 2) {

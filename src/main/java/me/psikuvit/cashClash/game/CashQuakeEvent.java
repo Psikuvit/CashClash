@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.game;
 /**
  * Types of Cash Quake events that can occur during rounds
  */
+@Deprecated
 public enum CashQuakeEvent {
     // Cash Quakes
     LOTTERY,

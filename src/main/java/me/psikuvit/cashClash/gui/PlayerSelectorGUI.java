@@ -3,7 +3,7 @@ package me.psikuvit.cashClash.gui;
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
-import me.psikuvit.cashClash.util.items.GuiItemUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -55,7 +55,7 @@ public class PlayerSelectorGUI extends AbstractGui {
      * Create a clickable player head button that shows enemy inventory.
      */
     private GuiButton createPlayerHeadButton(Player target) {
-        ItemStack skull = GuiItemUtils.createPlayerHead(target,
+        ItemStack skull = ItemFactory.getInstance().getGuiFactory().createPlayerHead(target,
                 "<yellow>" + target.getName() + "</yellow>",
                 List.of(
                         "<gray>Click to view inventory</gray>",

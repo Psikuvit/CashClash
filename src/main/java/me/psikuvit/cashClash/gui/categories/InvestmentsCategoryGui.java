@@ -10,7 +10,7 @@ import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.InvestmentType;
-import me.psikuvit.cashClash.util.items.GuiItemUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -34,7 +34,7 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
     }
 
     private GuiButton createInvestmentButton(InvestmentType type) {
-        ItemStack itemStack = GuiItemUtils.createInvestmentIcon(type);
+        ItemStack itemStack = ItemFactory.getInstance().getGuiFactory().createInvestmentIcon(type);
         return GuiButton.of(itemStack).onClick(p -> handleInvestmentPurchase(type));
     }
 

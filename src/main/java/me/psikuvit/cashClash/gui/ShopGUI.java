@@ -18,7 +18,7 @@ import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Messages;
-import me.psikuvit.cashClash.util.items.GuiItemUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -62,7 +62,7 @@ public class ShopGUI extends AbstractGui {
 
         // Balance display
         long coins = getPlayerCoins();
-        setButton(53, GuiButton.of(GuiItemUtils.createCoinDisplay(coins)));
+        setButton(53, GuiButton.of(ItemFactory.getInstance().getGuiFactory().createCoinDisplay(coins)));
 
         // Transfer money button (next to balance)
         setButton(52, createTransferButton());
@@ -72,7 +72,7 @@ public class ShopGUI extends AbstractGui {
     }
 
     private GuiButton createCategoryButton(ShopCategory category, Material icon) {
-        ItemStack item = GuiItemUtils.createCategoryIcon(icon, category);
+        ItemStack item = ItemFactory.getInstance().getGuiFactory().createCategoryIcon(icon, category);
         return GuiButton.of(item).onClick(p -> openCategory(category));
     }
 
@@ -116,7 +116,7 @@ public class ShopGUI extends AbstractGui {
             boolean mythicTaken = MythicItemManager.getInstance().isUnavailable(session, mythic);
             UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(session, mythic);
 
-            ItemStack mythicItem = GuiItemUtils.createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
+            ItemStack mythicItem = ItemFactory.getInstance().getGuiFactory().createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
             setButton(legendSlots[i], GuiButton.of(mythicItem)
                     .onClick(p -> MythicCategoryGui.handleMythicPurchase(p, mythic, this)));
 

@@ -8,7 +8,7 @@ import me.psikuvit.cashClash.listener.TransferInputListener;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
-import me.psikuvit.cashClash.util.items.GuiItemUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -76,7 +76,7 @@ public class TransferGUI extends AbstractGui {
         // Balance display
         CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
         long coins = ccp != null ? ccp.getCoins() : 0;
-        setItem(22, GuiItemUtils.createCoinDisplay(coins));
+        setItem(22, ItemFactory.getInstance().getGuiFactory().createCoinDisplay(coins));
 
         // Teammate slots: 11, 12, 13, 14 (4 players max per team)
         int[] slots = {11, 12, 13, 14};
@@ -103,7 +103,7 @@ public class TransferGUI extends AbstractGui {
         CashClashPlayer teammateCcp = session.getCashClashPlayer(teammate.getUniqueId());
         long teammateCoins = teammateCcp != null ? teammateCcp.getCoins() : 0;
 
-        ItemStack skull = GuiItemUtils.createPlayerHead(teammate,
+        ItemStack skull = ItemFactory.getInstance().getGuiFactory().createPlayerHead(teammate,
                 "<yellow>" + teammate.getName() + "</yellow>",
                 List.of(
                         "<gray>Balance: <gold>$" + String.format("%,d", teammateCoins) + "</gold></gray>",

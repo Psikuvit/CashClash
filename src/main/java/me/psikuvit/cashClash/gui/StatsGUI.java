@@ -5,7 +5,7 @@ import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.util.Messages;
-import me.psikuvit.cashClash.util.items.GuiItemUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -73,7 +73,7 @@ public class StatsGUI extends AbstractGui {
     }
 
     private GuiButton createOverviewButton() {
-        ItemStack skull = GuiItemUtils.createPlayerHead(target,
+        ItemStack skull = ItemFactory.getInstance().getGuiFactory().createPlayerHead(target,
                 "<gold><bold>" + target.getName() + "'s Stats</bold></gold>",
                 List.of(
                         "<gray>Total Games: <white>" + (data.getWins() + data.getLosses()) + "</white></gray>",

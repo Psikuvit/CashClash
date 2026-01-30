@@ -19,39 +19,33 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Utility class for creating GUI items in the shop system.
- * Provides factory methods for various item types with consistent styling.
+ * Factory for creating GUI display items (shop items, buttons, etc.).
+ * These items are used for display purposes only and are not meant to be used in-game.
  */
-public final class GuiItemUtils {
-
-    private GuiItemUtils() {
-        throw new AssertionError("Cannot instantiate utility class");
-    }
-
-    // ==================== SHOP ITEMS ====================
-
+public final class GuiItemFactory {
+    
     /**
      * Creates a shop item display with quantity 1.
-     *
+     * 
      * @param player The player viewing the shop
-     * @param item   The purchasable item
+     * @param item The purchasable item
      * @return The configured ItemStack for display
      */
-    public static ItemStack createShopItem(Player player, Purchasable item) {
+    public ItemStack createShopItem(Player player, Purchasable item) {
         return createShopItem(player, item, 1);
     }
-
+    
     /**
      * Creates a shop item display with specified quantity.
-     *
-     * @param player   The player viewing the shop
-     * @param item     The purchasable item
+     * 
+     * @param player The player viewing the shop
+     * @param item The purchasable item
      * @param quantity The display quantity
      * @return The configured ItemStack for display
      */
-    public static ItemStack createShopItem(Player player, Purchasable item, int quantity) {
+    public ItemStack createShopItem(Player player, Purchasable item, int quantity) {
         boolean owned = ItemUtils.isItemOwned(player, item);
-
+        
         if (owned) {
             return ShopItemBuilder.of(item.getMaterial(), quantity)
                     .name("<green>" + item.getDisplayName() + " <gray>(Owned)</gray></green>")
@@ -59,31 +53,29 @@ public final class GuiItemUtils {
                     .itemId(item.name())
                     .build();
         }
-
+        
         ShopItemBuilder builder = ShopItemBuilder.of(item.getMaterial(), quantity)
                 .name("<yellow>" + item.getDisplayName() + "</yellow>")
                 .price(item.getPrice());
-
+        
         String desc = item.getDescription();
         if (desc != null && !desc.isEmpty()) {
             builder.description(desc);
         }
-
+        
         return builder.purchasePrompt()
                 .itemId(item.name())
                 .build();
     }
-
-    // ==================== UPGRADABLE ITEMS ====================
-
+    
     /**
      * Creates an upgradable item (armor/weapons) display.
-     *
-     * @param item  The purchasable item
+     * 
+     * @param item The purchasable item
      * @param maxed Whether the item is at max tier
      * @return The configured ItemStack for display
      */
-    public static ItemStack createUpgradableItem(Purchasable item, boolean maxed) {
+    public ItemStack createUpgradableItem(Purchasable item, boolean maxed) {
         if (maxed) {
             return ShopItemBuilder.of(item.getMaterial())
                     .name("<green>" + item.getDisplayName() + " <gray>(Max)</gray></green>")
@@ -91,11 +83,11 @@ public final class GuiItemUtils {
                     .itemId(item.name())
                     .build();
         }
-
+        
         ShopItemBuilder builder = ShopItemBuilder.of(item.getMaterial())
                 .name("<yellow>" + item.getDisplayName() + "</yellow>")
                 .price(item.getPrice());
-
+        
         // Show upgrade path based on material tier
         String materialName = item.getMaterial().name();
         if (materialName.contains("IRON")) {
@@ -103,20 +95,20 @@ public final class GuiItemUtils {
         } else if (materialName.contains("DIAMOND")) {
             builder.finalTier();
         }
-
+        
         return builder.purchasePrompt()
                 .itemId(item.name())
                 .build();
     }
-
+    
     /**
      * Creates a locked diamond item display (for pre-round-4 restrictions).
-     *
-     * @param item         The diamond armor item
+     * 
+     * @param item The diamond armor item
      * @param currentRound The current game round
      * @return The configured ItemStack for display
      */
-    public static ItemStack createLockedDiamondItem(Purchasable item, int currentRound) {
+    public ItemStack createLockedDiamondItem(Purchasable item, int currentRound) {
         ConfigManager cfg = ConfigManager.getInstance();
         return ShopItemBuilder.of(item.getMaterial())
                 .name("<red>" + item.getDisplayName() + " <gray>(Locked)</gray></red>")
@@ -129,18 +121,16 @@ public final class GuiItemUtils {
                 .itemId(item.name())
                 .build();
     }
-
-    // ==================== ENCHANT ITEMS ====================
-
+    
     /**
      * Creates an enchant book item display.
-     *
+     * 
      * @param enchant The enchantment entry
-     * @param level   The next level to purchase
-     * @param price   The price for this level
+     * @param level The next level to purchase
+     * @param price The price for this level
      * @return The configured ItemStack for display
      */
-    public static ItemStack createEnchantItem(EnchantEntry enchant, int level, long price) {
+    public ItemStack createEnchantItem(EnchantEntry enchant, int level, long price) {
         return ShopItemBuilder.of(Material.ENCHANTED_BOOK)
                 .name("<yellow>" + enchant.getDisplayName() + " " + level + "</yellow>")
                 .price(price)
@@ -149,64 +139,61 @@ public final class GuiItemUtils {
                 .itemId(enchant.name())
                 .build();
     }
-
+    
     /**
      * Creates a maxed enchant book display.
-     *
+     * 
      * @param enchant The enchantment entry
      * @return The configured ItemStack for display
      */
-    public static ItemStack createMaxedEnchant(EnchantEntry enchant) {
+    public ItemStack createMaxedEnchant(EnchantEntry enchant) {
         return ShopItemBuilder.of(Material.ENCHANTED_BOOK)
                 .name("<green>" + enchant.getDisplayName() + " <gray>(Max)</gray></green>")
                 .maxed("<gray>Maximum level reached!</gray>")
                 .itemId(enchant.name())
                 .build();
     }
-
-    // ==================== CUSTOM ITEMS ====================
-
+    
     /**
      * Creates a custom item icon for the shop display.
-     *
+     * 
      * @param type The custom item type
      * @return The configured ItemStack for display
      */
-    public static ItemStack createCustomItemIcon(CustomItem type) {
+    public ItemStack createCustomItemIcon(CustomItem type) {
         ShopItemBuilder builder = ShopItemBuilder.of(type.getMaterial())
                 .name("<yellow>" + type.getDisplayName() + "</yellow>")
                 .lore("<gold>Price: $" + String.format("%,d", type.getPrice()) + "</gold>")
                 .emptyLine()
                 .description(type.getDescription());
-
+        
         if (type.hasLimit()) {
             builder.purchaseLimit(type.getMaxPurchase());
         }
-
+        
         return builder.purchasePrompt()
                 .itemId(type.name())
                 .build();
     }
-
-    // ==================== ARMOR SET ITEMS ====================
+    
     /**
      * Creates individual armor set piece items for display in a row.
      * Each piece when clicked will purchase the entire set.
-     *
-     * @param set    The armor set
+     * 
+     * @param set The armor set
      * @param player The player viewing the shop
      * @return Array of ItemStacks for each piece in the set
      */
-    public static ItemStack[] createArmorSetPieces(CustomArmorItem.ArmorSet set, Player player) {
+    public ItemStack[] createArmorSetPieces(CustomArmorItem.ArmorSet set, Player player) {
         List<CustomArmorItem> pieces = set.getPieces();
         ItemStack[] items = new ItemStack[pieces.size()];
-
+        
         boolean ownsSet = ItemUtils.playerOwnsArmorSet(player, set);
         long totalPrice = set.getTotalPrice();
-
+        
         for (int i = 0; i < pieces.size(); i++) {
             CustomArmorItem piece = pieces.get(i);
-
+            
             if (ownsSet) {
                 items[i] = ShopItemBuilder.of(piece.getMaterial())
                         .name("<green>" + piece.getDisplayName() + " <gray>(Owned)</gray></green>")
@@ -234,22 +221,19 @@ public final class GuiItemUtils {
                         .build();
             }
         }
-
+        
         return items;
     }
-
-    // ==================== INVESTMENT ITEMS ====================
-
+    
     /**
      * Creates an investment item display.
-     *
+     * 
      * @param type The investment type
      * @return The configured ItemStack for display
      */
-    public static ItemStack createInvestmentIcon(InvestmentType type) {
-        // Use the material from InvestmentType (matches resource pack base items)
+    public ItemStack createInvestmentIcon(InvestmentType type) {
         Material iconMaterial = type.getMaterial();
-
+        
         ItemStack item = ShopItemBuilder.of(iconMaterial)
                 .name("<yellow>" + type.name().replace("_", " ") + "</yellow>")
                 .lore("<gray>Invest: <gold>$" + String.format("%,d", type.getCost()) + "</gold></gray>")
@@ -257,32 +241,30 @@ public final class GuiItemUtils {
                 .lore("<red>Negative: $" + String.format("%,d", type.getNegativeReturn()) + "</red>")
                 .itemId(type.name())
                 .build();
-
+        
         // Apply custom model data for investment items
         CustomModelDataMapper.applyCustomModel(item, type);
-
+        
         return item;
     }
-
-    // ==================== GUI CONTROL ITEMS ====================
-
+    
     /**
      * Creates a shop category icon.
-     *
+     * 
      * @param material The icon material
      * @param category The shop category
      * @return The category icon ItemStack
      */
-    public static ItemStack createCategoryIcon(Material material, ShopCategory category) {
+    public ItemStack createCategoryIcon(Material material, ShopCategory category) {
         return ShopItemBuilder.of(material)
                 .name("<yellow>" + category.getDisplayName() + "</yellow>")
                 .lore("<gray>Click to browse items</gray>")
                 .build();
     }
-
+    
     /**
      * Creates a mythic/legendary item shop display.
-     *
+     * 
      * @param mythic The mythic item
      * @param playerHasMythic Whether player already owns a mythic
      * @param ownedMythic The mythic the player owns (can be null)
@@ -290,18 +272,18 @@ public final class GuiItemUtils {
      * @param ownerUuid The UUID of the owner (if taken)
      * @return The configured mythic shop item
      */
-    public static ItemStack createMythicShopItem(MythicItem mythic,
-                                                 boolean playerHasMythic,
-                                                 MythicItem ownedMythic,
-                                                 boolean mythicTaken,
-                                                 UUID ownerUuid) {
+    public ItemStack createMythicShopItem(MythicItem mythic,
+                                         boolean playerHasMythic,
+                                         MythicItem ownedMythic,
+                                         boolean mythicTaken,
+                                         UUID ownerUuid) {
         boolean isOwned = ownedMythic != null && ownedMythic == mythic;
-
+        
         ShopItemBuilder builder = ShopItemBuilder.of(Material.BARRIER)
                 .hideAttributes()
                 .hideEnchants()
                 .itemId(mythic.name());
-
+        
         if (isOwned) {
             // Player owns this mythic
             return builder
@@ -350,64 +332,66 @@ public final class GuiItemUtils {
                     .build();
         }
     }
-
+    
     /**
      * Creates a cancel/back button.
-     *
+     * 
      * @return The cancel button ItemStack
      */
-    public static ItemStack createCancelButton() {
+    public ItemStack createCancelButton() {
         return ShopItemBuilder.of(Material.BARRIER)
                 .name("<red>Cancel</red>")
                 .lore("<gray>Close shop menu</gray>")
                 .build();
     }
-
+    
     /**
      * Creates an undo purchase button.
-     *
+     * 
      * @return The undo button ItemStack
      */
-    public static ItemStack createUndoButton() {
+    public ItemStack createUndoButton() {
         return ShopItemBuilder.of(Material.ARROW)
                 .name("<yellow>Undo Purchase</yellow>")
                 .lore("<gray>Undo last purchase and receive a refund</gray>")
                 .build();
     }
-
+    
     /**
      * Creates a coin balance display.
-     *
+     * 
      * @param coins The player's coin balance
      * @return The coin display ItemStack
      */
-    public static ItemStack createCoinDisplay(long coins) {
+    public ItemStack createCoinDisplay(long coins) {
         String formatted = String.format("%,d", coins);
         ItemStack item = ShopItemBuilder.of(Material.SUNFLOWER)
                 .name("<gold>Your Coins</gold>")
                 .lore("<yellow>$" + formatted + "</yellow>")
                 .build();
-
+        
         // Apply custom model data for cash coins texture
         CustomModelDataMapper.applyStringModelData(item, CustomModelDataMapper.CASH_COINS_KEY);
-
+        
         return item;
     }
-
+    
     /**
      * Creates a player head item representing the target player.
-     *
+     * 
      * @param target The target player
+     * @param displayName The display name for the head
+     * @param lore The lore lines for the head
      * @return The player head ItemStack
      */
-    public static ItemStack createPlayerHead(Player target, String displayName, List<String> lore) {
+    public ItemStack createPlayerHead(Player target, String displayName, List<String> lore) {
         ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) skull.getItemMeta();
-
+        
         meta.setPlayerProfile(target.getPlayerProfile());
         meta.displayName(Messages.parse(displayName));
         meta.lore(lore.stream().map(Messages::parse).toList());
-
+        
         skull.setItemMeta(meta);
         return skull;
     }

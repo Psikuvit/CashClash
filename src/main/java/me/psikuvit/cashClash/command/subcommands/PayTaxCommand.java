@@ -2,7 +2,6 @@ package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.manager.game.CashQuakeManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.CommandSender;
@@ -15,6 +14,7 @@ import java.util.List;
  * Command for players to pay the Weight of Wealth tax during Cash Quake event.
  * Usage: /cc paytax
  */
+@Deprecated(forRemoval = true)
 public class PayTaxCommand extends AbstractArgCommand {
 
     public PayTaxCommand() {
@@ -34,13 +34,13 @@ public class PayTaxCommand extends AbstractArgCommand {
             return true;
         }
 
-        CashQuakeManager cqm = session.getCashQuakeManager();
+        /**CashQuakeManager cqm = session.getCashQuakeManager();
         if (cqm == null) {
             Messages.send(player, "<red>Cash Quake events are not available.</red>");
             return true;
         }
 
-        cqm.payWeightOfWealthTax(player);
+        cqm.payWeightOfWealthTax(player);*/
         return true;
     }
 }

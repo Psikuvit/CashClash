@@ -38,6 +38,7 @@ import java.util.UUID;
  * Events happen guaranteed twice per game and up to 10 times per game.
  * Max 2 events per round. 50% chance for supply drop, 50% for normal cash quake.
  */
+@Deprecated(since = "2024-06", forRemoval = true)
 public class CashQuakeManager {
 
     private final GameSession session;

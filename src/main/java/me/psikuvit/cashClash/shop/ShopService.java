@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.ItemSelectionUtils;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -255,7 +256,7 @@ public class ShopService {
                         }
 
                         // Equip the set piece
-                        ItemUtils.giveCustomArmorSet(player, piece);
+                        ItemFactory.getInstance().createAndEquipCustomArmor(player, piece);
                     }
 
                     // Create set purchase record with all replaced items
@@ -289,7 +290,7 @@ public class ShopService {
                     }
 
                     // Equip the custom armor
-                    ItemUtils.giveCustomArmorSet(player, customArmor);
+                    ItemFactory.getInstance().createAndEquipCustomArmor(player, customArmor);
 
 
                     ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
@@ -301,7 +302,7 @@ public class ShopService {
             }
             case ArmorItem ignored -> {
                 // Normal/upgradable armor (Iron, Diamond)
-                ItemStack armorItem = ItemUtils.createTaggedItem(item).clone();
+                ItemStack armorItem = ItemFactory.getInstance().createGameplayItem(item);
 
                 // Get current armor before replacing
                 ArmorSlot slot = getArmorSlot(armorItem.getType());
@@ -329,7 +330,7 @@ public class ShopService {
                 SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
             }
             case WeaponItem ignored -> {
-                ItemStack weaponItem = ItemUtils.createTaggedItem(item).clone();
+                ItemStack weaponItem = ItemFactory.getInstance().createGameplayItem(item);
                 ItemStack replacedItem = replaceWeaponInInventory(player, weaponItem);
 
                 ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
@@ -340,7 +341,7 @@ public class ShopService {
             }
             default -> {
                 // Other items - just add to inventory
-                ItemStack stack = ItemUtils.createTaggedItem(item).clone();
+                ItemStack stack = ItemFactory.getInstance().createGameplayItem(item);
                 stack.setAmount(giveQty);
                 player.getInventory().addItem(stack);
                 ccp.addPurchase(new PurchaseRecord(item, giveQty, totalPrice, round));

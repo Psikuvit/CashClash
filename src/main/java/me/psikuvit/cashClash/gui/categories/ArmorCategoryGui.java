@@ -13,8 +13,7 @@ import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.items.GuiItemUtils;
-import me.psikuvit.cashClash.util.items.ItemUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -159,7 +158,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
             setButton(slot, createPurchasableButtonMaxed(diamondItem, true));
         } else if (hasIron) {
             if (!canBuyDiamond) {
-                ItemStack locked = GuiItemUtils.createLockedDiamondItem(diamondItem, currentRound);
+                ItemStack locked = ItemFactory.getInstance().createLockedDiamondGuiItem(diamondItem, currentRound);
                 setButton(slot, GuiButton.of(locked));
             } else {
                 setButton(slot, createPurchasableButtonMaxed(diamondItem, false));
@@ -199,7 +198,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Deathmauler set consists of 2 pieces (chestplate + leggings).
      */
     private void populateDeathmaulerSet() {
-        ItemStack[] pieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.DEATHMAULER, viewer);
+        ItemStack[] pieces = ItemFactory.getInstance().createArmorSetGuiItems(CustomArmorItem.ArmorSet.DEATHMAULER, viewer);
         int[] pieceSlots = {DEATHMAULER_PIECE_1_SLOT, DEATHMAULER_PIECE_2_SLOT};
         int[] barrierSlots = {DEATHMAULER_BARRIER_LEFT_SLOT, DEATHMAULER_BARRIER_RIGHT_SLOT};
 
@@ -211,7 +210,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Dragon set consists of 3 pieces (helmet + chestplate + boots).
      */
     private void populateDragonSet() {
-        ItemStack[] pieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.DRAGON, viewer);
+        ItemStack[] pieces = ItemFactory.getInstance().createArmorSetGuiItems(CustomArmorItem.ArmorSet.DRAGON, viewer);
         int[] pieceSlots = {DRAGON_PIECE_1_SLOT, DRAGON_PIECE_2_SLOT, DRAGON_PIECE_3_SLOT};
         int[] barrierSlots = {DRAGON_BARRIER_SLOT};
 
@@ -223,7 +222,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Flamebringer set consists of 2 pieces (leggings + boots).
      */
     private void populateFlamebringerSet() {
-        ItemStack[] pieces = GuiItemUtils.createArmorSetPieces(CustomArmorItem.ArmorSet.FLAMEBRINGER, viewer);
+        ItemStack[] pieces = ItemFactory.getInstance().createArmorSetGuiItems(CustomArmorItem.ArmorSet.FLAMEBRINGER, viewer);
         int[] pieceSlots = {FLAMEBRINGER_PIECE_1_SLOT, FLAMEBRINGER_PIECE_2_SLOT};
         int[] barrierSlots = {FLAMEBRINGER_BARRIER_LEFT_SLOT, FLAMEBRINGER_BARRIER_RIGHT_SLOT};
 
@@ -249,7 +248,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
 
         // Place pieces or barriers in piece slots
         for (int i = 0; i < pieceSlots.length; i++) {
-            if (i < pieces.length) {
+            if (i < pieces.length && pieces[i] != null) {
                 setButton(pieceSlots[i], createArmorSetButton(pieces[i], armorSet));
             } else {
                 setItem(pieceSlots[i], ItemStack.of(Material.BARRIER));
@@ -275,7 +274,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Creates a button for a custom armor item that can be purchased individually.
      */
     private GuiButton createCustomArmorButton(CustomArmorItem item) {
-        ItemStack itemStack = GuiItemUtils.createShopItem(viewer, item);
+        ItemStack itemStack = ItemFactory.getInstance().createGuiItem(viewer, item);
         return GuiButton.of(itemStack).onClick((p, clickType) -> handlePurchasableClick(item, clickType));
     }
 
@@ -398,7 +397,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
             }
 
             // Equip the set piece (this replaces whatever was in the slot)
-            ItemUtils.giveCustomArmorSet(player, piece);
+            ItemFactory.getInstance().createAndEquipCustomArmor(player, piece);
         }
 
         return replacedSetItems;

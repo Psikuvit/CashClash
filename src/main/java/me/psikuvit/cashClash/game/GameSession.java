@@ -7,7 +7,6 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.listener.BlockListener;
-import me.psikuvit.cashClash.manager.game.CashQuakeManager;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.RejoinData;
@@ -67,7 +66,7 @@ public class GameSession {
     private RoundData currentRoundData;
 
     private RoundManager roundManager;
-    private CashQuakeManager cashQuakeManager;
+    //private CashQuakeManager cashQuakeManager;
     private BonusManager bonusManager;
 
     // Countdown/start preparation
@@ -149,9 +148,9 @@ public class GameSession {
         return bonusManager;
     }
 
-    public CashQuakeManager getCashQuakeManager() {
+    /**public CashQuakeManager getCashQuakeManager() {
         return cashQuakeManager;
-    }
+    }*/
 
     public void start() {
         if (state != GameState.WAITING) return;
@@ -168,7 +167,7 @@ public class GameSession {
         players.values().forEach(CashClashPlayer::initializeRound1);
 
         roundManager = new RoundManager(this);
-        cashQuakeManager = new CashQuakeManager(this);
+        //cashQuakeManager = new CashQuakeManager(this);
         bonusManager = new BonusManager(this);
 
         roundManager.startShoppingPhase(currentRound);
@@ -253,7 +252,7 @@ public class GameSession {
         state = GameState.COMBAT;
 
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
-        if (cashQuakeManager != null) cashQuakeManager.startEventScheduler();
+        //if (cashQuakeManager != null) cashQuakeManager.startEventScheduler();
 
         players.keySet().forEach(uuid -> {
             CashClashPlayer ccp = players.get(uuid);
@@ -338,7 +337,7 @@ public class GameSession {
         currentRoundData = new RoundData(players.keySet());
         players.values().forEach(p -> p.initializeRound(currentRound));
 
-        if (cashQuakeManager != null) cashQuakeManager.resetRoundEvents();
+        //if (cashQuakeManager != null) cashQuakeManager.resetRoundEvents();
         team1.resetForfeitVotes();
         team2.resetForfeitVotes();
 
@@ -369,7 +368,7 @@ public class GameSession {
 
         cancelStartCountdown();
         if (roundManager != null) roundManager.cleanup();
-        if (cashQuakeManager != null) cashQuakeManager.cleanup();
+        //if (cashQuakeManager != null) cashQuakeManager.cleanup();
         if (bonusManager != null) bonusManager.cleanup();
 
         // Clean up tracked player-placed blocks

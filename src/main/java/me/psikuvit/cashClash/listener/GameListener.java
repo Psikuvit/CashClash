@@ -8,7 +8,6 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
-import me.psikuvit.cashClash.manager.game.CashQuakeManager;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
@@ -145,10 +144,10 @@ public class GameListener implements Listener {
 
         armorManager.onPlayerKill(killer);
 
-        CashQuakeManager cashQuakeManager = session.getCashQuakeManager();
+        /**CashQuakeManager cashQuakeManager = session.getCashQuakeManager();
         if (cashQuakeManager != null && cashQuakeManager.isLifeStealActive()) {
             cashQuakeManager.onLifeStealKill(killer);
-        }
+        }*/
     }
 
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {

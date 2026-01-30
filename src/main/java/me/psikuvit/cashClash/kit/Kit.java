@@ -2,16 +2,15 @@ package me.psikuvit.cashClash.kit;
 
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
-import me.psikuvit.cashClash.util.Keys;
+import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.util.Messages;
-import me.psikuvit.cashClash.util.items.ItemUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionType;
 
 import java.util.HashMap;
@@ -46,10 +45,14 @@ public enum Kit {
         giveBaseItems(player);
 
         // Kit-specific items
+        ItemFactory factory = ItemFactory.getInstance();
         switch (this) {
             case ARCHER -> {
-                player.getInventory().addItem(new ItemStack(Material.BOW));
-                player.getInventory().addItem(new ItemStack(Material.ARROW, 10));
+                ItemStack arrows = factory.createGameplayItem(UtilityItem.ARROWS);
+                arrows.setAmount(10);
+                ItemStack bow = factory.createGameplayItem(UtilityItem.BOW);
+                player.getInventory().addItem(bow);
+                player.getInventory().addItem(arrows);
             }
             case HEALER -> {
                 ItemStack splash = new ItemStack(Material.SPLASH_POTION);
@@ -125,19 +128,15 @@ public enum Kit {
                     sword.setItemMeta(meta);
                 }
             }
-            case SPIDER -> player.getInventory().addItem(new ItemStack(Material.COBWEB, 2));
+            case SPIDER -> {
+                ItemStack cobwebs = factory.createGameplayItem(UtilityItem.COBWEB);
+                cobwebs.setAmount(2);
+                player.getInventory().addItem(cobwebs);
+            }
             case BOMBER -> {
                 // Give 2 actual grenades with proper custom item tags
                 for (int i = 0; i < 2; i++) {
-                    ItemStack grenade = new ItemStack(CustomItem.GRENADE.getMaterial());
-                    ItemMeta gm = grenade.getItemMeta();
-                    if (gm != null) {
-                        gm.displayName(Messages.parse("<yellow>Throwable Grenade</yellow>"));
-                        gm.lore(Messages.wrapLines(CustomItem.GRENADE.getDescription()));
-                        gm.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.GRENADE.name());
-                        gm.getPersistentDataContainer().set(Keys.ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
-                        grenade.setItemMeta(gm);
-                    }
+                    ItemStack grenade = factory.createCustomItem(CustomItem.GRENADE, player);
                     player.getInventory().addItem(grenade);
                 }
             }
@@ -175,11 +174,12 @@ public enum Kit {
         player.getInventory().addItem(new ItemStack(Material.SHEARS));
 
         // Food (with ITEM_ID for refund tracking)
-        ItemStack steak = ItemUtils.createTaggedItem(FoodItem.STEAK);
+        ItemFactory factory = ItemFactory.getInstance();
+        ItemStack steak = factory.createGameplayItem(FoodItem.STEAK);
         steak.setAmount(8);
         player.getInventory().addItem(steak);
 
-        ItemStack bread = ItemUtils.createTaggedItem(FoodItem.BREAD);
+        ItemStack bread = factory.createGameplayItem(FoodItem.BREAD);
         bread.setAmount(16);
         player.getInventory().addItem(bread);
 
@@ -236,11 +236,12 @@ public enum Kit {
         player.getInventory().addItem(new ItemStack(Material.SHEARS));
 
         // Food (with ITEM_ID for refund tracking)
-        ItemStack steak = ItemUtils.createTaggedItem(FoodItem.STEAK);
+        ItemFactory factory = ItemFactory.getInstance();
+        ItemStack steak = factory.createGameplayItem(FoodItem.STEAK);
         steak.setAmount(8);
         player.getInventory().addItem(steak);
 
-        ItemStack bread = ItemUtils.createTaggedItem(FoodItem.BREAD);
+        ItemStack bread = factory.createGameplayItem(FoodItem.BREAD);
         bread.setAmount(16);
         player.getInventory().addItem(bread);
 
@@ -278,15 +279,7 @@ public enum Kit {
             case SPIDER -> player.getInventory().addItem(new ItemStack(Material.COBWEB, 2));
             case BOMBER -> {
                 for (int i = 0; i < 2; i++) {
-                    ItemStack grenade = new ItemStack(CustomItem.GRENADE.getMaterial());
-                    ItemMeta gm = grenade.getItemMeta();
-                    if (gm != null) {
-                        gm.displayName(Messages.parse("<yellow>Throwable Grenade</yellow>"));
-                        gm.lore(Messages.wrapLines(CustomItem.GRENADE.getDescription()));
-                        gm.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.GRENADE.name());
-                        gm.getPersistentDataContainer().set(Keys.ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
-                        grenade.setItemMeta(gm);
-                    }
+                    ItemStack grenade = factory.createCustomItem(CustomItem.GRENADE, player);
                     player.getInventory().addItem(grenade);
                 }
             }
@@ -335,12 +328,12 @@ public enum Kit {
         itemMap.put("MATERIAL:DIAMOND_PICKAXE", pickaxe);
         itemMap.put("MATERIAL:SHEARS", new ItemStack(Material.SHEARS));
 
-        ItemStack steak = ItemUtils.createTaggedItem(FoodItem.STEAK);
+        ItemStack steak = ItemFactory.getInstance().createGameplayItem(FoodItem.STEAK);
         steak.setAmount(8);
         itemMap.put("CUSTOM:STEAK", steak);
         itemMap.put("MATERIAL:COOKED_BEEF", steak); // Fallback
 
-        ItemStack bread = ItemUtils.createTaggedItem(FoodItem.BREAD);
+        ItemStack bread = ItemFactory.getInstance().createGameplayItem(FoodItem.BREAD);
         bread.setAmount(16);
         itemMap.put("CUSTOM:BREAD", bread);
         itemMap.put("MATERIAL:BREAD", bread); // Fallback
@@ -392,15 +385,7 @@ public enum Kit {
             case BOMBER -> {
                 // Grenades need to be created with player UUID
                 for (int i = 0; i < 2; i++) {
-                    ItemStack grenade = new ItemStack(CustomItem.GRENADE.getMaterial());
-                    ItemMeta gm = grenade.getItemMeta();
-                    if (gm != null) {
-                        gm.displayName(Messages.parse("<yellow>Throwable Grenade</yellow>"));
-                        gm.lore(Messages.wrapLines(CustomItem.GRENADE.getDescription()));
-                        gm.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.GRENADE.name());
-                        gm.getPersistentDataContainer().set(Keys.ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
-                        grenade.setItemMeta(gm);
-                    }
+                    ItemStack grenade = ItemFactory.getInstance().createCustomItem(CustomItem.GRENADE, player);
                     // Add grenades as GRENADE_1 and GRENADE_2
                     itemMap.put("CUSTOM:GRENADE_" + i, grenade);
                     itemMap.put("CUSTOM:GRENADE", grenade); // Also map without number

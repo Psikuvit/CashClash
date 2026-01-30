@@ -12,7 +12,7 @@ import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.items.GuiItemUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -55,12 +55,12 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         setBackButton(45, p -> new ShopGUI(p).open());
 
         // Undo button
-        setButton(49, GuiButton.of(GuiItemUtils.createUndoButton())
+        setButton(49, GuiButton.of(ItemFactory.getInstance().getGuiFactory().createUndoButton())
                 .onClick(p -> handleUndoPurchase()));
 
         // Coins display
         long coins = getPlayerCoins();
-        setButton(53, GuiButton.of(GuiItemUtils.createCoinDisplay(coins)));
+        setButton(53, GuiButton.of(ItemFactory.getInstance().getGuiFactory().createCoinDisplay(coins)));
     }
 
     /**
@@ -186,7 +186,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Create a purchasable button with click handler.
      */
     protected GuiButton createPurchasableButtonMaxed(Purchasable item, boolean maxed) {
-        ItemStack itemStack = GuiItemUtils.createUpgradableItem(item, maxed);
+        ItemStack itemStack = ItemFactory.getInstance().createUpgradableGuiItem(item, maxed);
         return GuiButton.of(itemStack).onClick((p, clickType) -> {
             if (maxed) {
                 Messages.send(p, "<yellow>You already have the maximum tier of this item!</yellow>");
@@ -201,7 +201,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Create a shop item button with click handler.
      */
     protected GuiButton createPurchasableButton(Purchasable item, int quantity) {
-        ItemStack itemStack = GuiItemUtils.createShopItem(viewer, item, quantity);
+        ItemStack itemStack = ItemFactory.getInstance().createGuiItem(viewer, item, quantity);
         return GuiButton.of(itemStack).onClick((p, clickType) -> handlePurchasableClick(item, clickType));
     }
 }

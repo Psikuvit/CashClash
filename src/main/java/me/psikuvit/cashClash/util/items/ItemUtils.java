@@ -1,32 +1,19 @@
 package me.psikuvit.cashClash.util.items;
 
-import io.papermc.paper.datacomponent.DataComponentTypes;
-import io.papermc.paper.datacomponent.item.FoodProperties;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
-import me.psikuvit.cashClash.shop.items.CustomItem;
-import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
-import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -110,117 +97,6 @@ public final class ItemUtils {
     }
 
 
-    public static ItemStack createTaggedItem(Purchasable si) {
-        if (si == null) return null;
-        ItemStack it = new ItemStack(si.getMaterial(), 1);
-        var meta = it.getItemMeta();
-
-        if (meta != null) {
-            meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, si.name());
-            if (!si.getDescription().isEmpty()) {
-                meta.displayName(Messages.parse("<yellow>" + si.getDisplayName() + "</yellow>"));
-                meta.lore(Messages.wrapLines(si.getDescription()));
-            }
-            it.setItemMeta(meta);
-
-            if (si instanceof FoodItem food) {
-                if (it.getType() == Material.BREAD || it.getType() == Material.COOKED_BEEF) return it;
-                FoodProperties existing = it.getData(DataComponentTypes.FOOD);
-                Messages.debug(String.valueOf(existing));
-                if (existing != null) {
-                    FoodProperties.Builder builder = existing.toBuilder();
-                    builder.canAlwaysEat(true);
-                    it.setData(DataComponentTypes.FOOD, builder.build());
-                    Messages.debug("Updated existing food component for " + si.getDisplayName());
-                } else {
-                    // Item doesn't have food component by default, create one
-                    it.setData(DataComponentTypes.FOOD, FoodProperties.food()
-                            .canAlwaysEat(true)
-                            .nutrition(4)
-                            .saturation(2.0f)
-                            .build());
-                    Messages.debug("Created new food component for " + si.getDisplayName());
-                }
-                Messages.debug(String.valueOf(it.getData(DataComponentTypes.FOOD)));
-
-                // Apply custom model data for food items with custom textures
-                CustomModelDataMapper.applyCustomModel(it, food);
-            } else {
-                String matName = it.getType().name();
-                if (matName.endsWith("HELMET") || matName.endsWith("CHESTPLATE") || matName.endsWith("LEGGINGS") || matName.endsWith("BOOTS")) {
-                    meta.setUnbreakable(true);
-                    meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
-                }
-                it.setItemMeta(meta);
-            }
-        }
-        return it;
-    }
-
-    public static ItemStack createCustomItem(CustomItem type, Player owner) {
-        ItemStack item = new ItemStack(type.getMaterial());
-        ItemMeta meta = item.getItemMeta();
-
-        meta.displayName(Messages.parse("<yellow>" + type.getDisplayName() + "</yellow>"));
-
-        List<Component> lore = new ArrayList<>(Messages.wrapLines(type.getDescription()));
-        meta.lore(lore);
-
-        // Add PDC tags
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, type.name());
-        pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
-
-        // Special handling for specific items
-        switch (type) {
-            case BAG_OF_POTATOES -> {
-                if (meta instanceof Damageable damageable) {
-                    damageable.setDamage(item.getType().getMaxDurability() - 3);
-                }
-                meta.addEnchant(Enchantment.KNOCKBACK, 3, true);
-            }
-            case CASH_BLASTER -> meta.addEnchant(Enchantment.MULTISHOT, 1, true);
-            case INVIS_CLOAK -> pdc.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);
-        }
-
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-        item.setItemMeta(meta);
-
-        // Apply custom model data using string key for resource pack
-        CustomModelDataMapper.applyCustomModel(item, type);
-
-        return item;
-    }
-
-    public static void giveCustomArmorSet(Player player, CustomArmorItem armor) {
-        if (player == null || armor == null) return;
-
-        ItemStack item = new ItemStack(armor.getMaterial());
-        ItemMeta meta = item.getItemMeta();
-
-        if (meta != null) {
-            meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, armor.name());
-            meta.displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
-
-            List<Component> wrappedLore = Messages.wrapLines("<gray>" + armor.getLore() + "</gray>");
-            wrappedLore.add(Component.empty());
-            wrappedLore.add(Messages.parse("<yellow>Special Armor</yellow>"));
-
-            meta.lore(wrappedLore);
-            meta.setUnbreakable(true);
-            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
-            
-            item.setItemMeta(meta);
-
-            // Apply custom model data using string key for resource pack
-            String modelKey = CustomModelDataMapper.getItemKey(armor);
-            if (modelKey != null) {
-                CustomModelDataMapper.applyStringModelData(item, modelKey);
-            }
-        }
-
-        equipArmorOrReplace(player, item);
-    }
 
     public static boolean applyEnchant(Player player, EnchantEntry ee, int lvl) {
         if (player == null || ee == null) return false;

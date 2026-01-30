@@ -114,6 +114,10 @@ public class InteractListener implements Listener {
 
         if (item != null) {
             // Check various item types and delegate
+            if (item.getType() == Material.WIND_CHARGE) {
+                Messages.debug("Wind Charge item interaction blocked.");
+                return;
+            }
             if (handleEnderPearl(event, player, item)) return;
             if (handleFireCharge(event, player, item)) return;
             if (handleSupplyDrop(event, player, item, action)) return;
@@ -212,8 +216,6 @@ public class InteractListener implements Listener {
     // ==================== CUSTOM ITEMS ====================
 
     private boolean handleCustomItem(PlayerInteractEvent event, Player player, ItemStack item, Action action) {
-        if (!item.hasItemMeta()) return false;
-
         CustomItem type = PDCDetection.getCustomItem(item);
         if (type == null) return false;
 

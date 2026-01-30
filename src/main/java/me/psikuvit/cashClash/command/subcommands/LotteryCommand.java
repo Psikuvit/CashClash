@@ -2,7 +2,6 @@ package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.manager.game.CashQuakeManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.CommandSender;
@@ -15,6 +14,7 @@ import java.util.Collections;
  * Command for players to enter the lottery Cash Quake event.
  * Usage: /cc lottery
  */
+@Deprecated(forRemoval = true)
 public class LotteryCommand extends AbstractArgCommand {
 
     public LotteryCommand() {
@@ -34,13 +34,13 @@ public class LotteryCommand extends AbstractArgCommand {
             return true;
         }
 
-        CashQuakeManager cqm = session.getCashQuakeManager();
+        /**CashQuakeManager cqm = session.getCashQuakeManager();
         if (cqm == null) {
             Messages.send(player, "<red>Cash Quake events are not available.</red>");
             return true;
         }
 
-        cqm.enterLottery(player);
+        cqm.enterLottery(player);*/
         return true;
     }
 }

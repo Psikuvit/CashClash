@@ -8,7 +8,7 @@ import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.items.GuiItemUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -44,10 +44,10 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             final int level = nextLevel;
 
             if (nextLevel > ee.getMaxLevel()) {
-                setButton(slot, GuiButton.of(GuiItemUtils.createMaxedEnchant(ee)));
+                setButton(slot, GuiButton.of(ItemFactory.getInstance().getGuiFactory().createMaxedEnchant(ee)));
             } else {
                 long price = ee.getPriceForLevel(nextLevel);
-                ItemStack enchantItem = GuiItemUtils.createEnchantItem(ee, nextLevel, price);
+                ItemStack enchantItem = ItemFactory.getInstance().getGuiFactory().createEnchantItem(ee, nextLevel, price);
                 setButton(slot, GuiButton.of(enchantItem).onClick(p -> handleEnchantPurchase(ee, level)));
             }
         }

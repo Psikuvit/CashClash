@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  */
 public class Arena {
 
-    private final String name;
+    private String name;
     private String templateId;
 
     // Track recently-deleted worlds to avoid reattempt storms (worldName -> skipUntilEpochMs)
@@ -431,6 +431,10 @@ public class Arena {
     // Getters and setters
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getTemplateId() {

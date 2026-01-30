@@ -9,8 +9,7 @@ import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.items.GuiItemUtils;
-import me.psikuvit.cashClash.util.items.ItemUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -44,7 +43,7 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
     }
 
     private GuiButton createCustomItemButton(CustomItem item) {
-        ItemStack itemStack = GuiItemUtils.createCustomItemIcon(item);
+        ItemStack itemStack = ItemFactory.getInstance().getGuiFactory().createCustomItemIcon(item);
         return GuiButton.of(itemStack).onClick(p -> handleCustomItemPurchase(item));
     }
 
@@ -66,7 +65,7 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
-        ItemStack customItem = ItemUtils.createCustomItem(type, viewer);
+        ItemStack customItem = ItemFactory.getInstance().createCustomItem(type, viewer);
         ccp.addPurchase(new PurchaseRecord(type, 1, price, sess.getCurrentRound()));
 
         ShopService.getInstance().deductCoins(viewer, price);
