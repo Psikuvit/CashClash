@@ -293,11 +293,14 @@ public class GameScoreboardManager {
                 result = result.replace("{your_team}", String.valueOf(playerTeam.getTeamNumber()));
                 long teamCoins = playerTeam.getTeamNumber() == 1 ? session.getTeam1Coins() : session.getTeam2Coins();
                 result = result.replace("{your_team_coins}", formatCoins(teamCoins));
+                result = result.replace("{team_ready}", playerTeam.isTeamReady() ? "Yes" : "No");
 
                 Team enemyTeam = session.getOpposingTeam(playerTeam);
                 result = result.replace("{enemy_team}", String.valueOf(enemyTeam.getTeamNumber()));
                 long enemyCoins = enemyTeam.getTeamNumber() == 1 ? session.getTeam1Coins() : session.getTeam2Coins();
                 result = result.replace("{enemy_team_coins}", formatCoins(enemyCoins));
+                result = result.replace("{enemy_team_ready}", enemyTeam.isTeamReady() ? "Yes" : "No");
+
             } else {
                 result = result.replace("{your_team}", "?");
                 result = result.replace("{your_team_coins}", "0");

@@ -24,7 +24,6 @@ import java.util.Set;
  */
 public enum Kit {
     ARCHER("Archer"),
-    BUILDER("Builder"),
     HEALER("Healer"),
     TANK("Tank"),
     SCOUT("Scout"),
@@ -32,7 +31,6 @@ public enum Kit {
     PYROMANIAC("Pyromaniac"),
     GHOST("Ghost"),
     FIGHTER("Fighter"),
-    FIRE_FIGHTER("Fire Fighter"),
     SPIDER("Spider"),
     BOMBER("Bomber");
 
@@ -53,8 +51,6 @@ public enum Kit {
                 player.getInventory().addItem(new ItemStack(Material.BOW));
                 player.getInventory().addItem(new ItemStack(Material.ARROW, 10));
             }
-            case BUILDER ->
-                    player.getInventory().addItem(new ItemStack(Material.COBBLESTONE, 64));
             case HEALER -> {
                 ItemStack splash = new ItemStack(Material.SPLASH_POTION);
                 PotionMeta meta = (PotionMeta) splash.getItemMeta();
@@ -67,33 +63,22 @@ public enum Kit {
                 player.getInventory().addItem(splash);
             }
             case TANK -> {
-                ItemStack chest = player.getInventory().getChestplate();
-                ItemStack legs = player.getInventory().getLeggings();
+                ItemStack[] armor = player.getInventory().getArmorContents();
 
-                if (chest != null) {
-                    ItemMeta m = chest.getItemMeta();
-                    if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
+                for (ItemStack piece : armor) {
+                    if (piece != null) {
+                        ItemMeta m = piece.getItemMeta();
+                        if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
 
-                    chest.setItemMeta(m);
-                    player.getInventory().setChestplate(chest);
-                }
-                if (legs != null) {
-                    ItemMeta m = legs.getItemMeta();
-                    if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
-
-                    legs.setItemMeta(m);
-                    player.getInventory().setLeggings(legs);
+                        piece.setItemMeta(m);
+                    }
                 }
             }
             case SCOUT -> {
                 ItemStack crossbow = new ItemStack(Material.CROSSBOW);
-                ItemMeta meta = crossbow.getItemMeta();
 
-                if (meta != null) meta.addEnchant(Enchantment.QUICK_CHARGE, 1, true);
-
-                crossbow.setItemMeta(meta);
                 player.getInventory().addItem(crossbow);
-                player.getInventory().addItem(new ItemStack(Material.ARROW, 10));
+                player.getInventory().addItem(ItemStack.of(Material.ARROW, 3));
             }
             case LUMBERJACK -> {
                 int slot = getAxeSlot(player);
@@ -139,9 +124,6 @@ public enum Kit {
                     if (meta != null) meta.addEnchant(Enchantment.SHARPNESS, 1, true);
                     sword.setItemMeta(meta);
                 }
-            }
-            case FIRE_FIGHTER -> {
-                // Fire Resistance effect applied at start of each round via reapplyKitPotionEffects()
             }
             case SPIDER -> player.getInventory().addItem(new ItemStack(Material.COBWEB, 2));
             case BOMBER -> {
@@ -269,9 +251,8 @@ public enum Kit {
         switch (this) {
             case ARCHER -> {
                 player.getInventory().addItem(new ItemStack(Material.BOW));
-                player.getInventory().addItem(new ItemStack(Material.ARROW, 10));
+                player.getInventory().addItem(new ItemStack(Material.ARROW, 5));
             }
-            case BUILDER -> player.getInventory().addItem(new ItemStack(Material.COBBLESTONE, 64));
             case HEALER -> {
                 ItemStack splash = new ItemStack(Material.SPLASH_POTION);
                 PotionMeta meta = (PotionMeta) splash.getItemMeta();
@@ -373,8 +354,6 @@ public enum Kit {
                 ItemStack arrows = new ItemStack(Material.ARROW, 10);
                 itemMap.put("MATERIAL:ARROW", arrows);
             }
-            case BUILDER ->
-                    itemMap.put("MATERIAL:COBBLESTONE", new ItemStack(Material.COBBLESTONE, 64));
             case HEALER -> {
                 ItemStack splash = new ItemStack(Material.SPLASH_POTION);
                 PotionMeta meta = (PotionMeta) splash.getItemMeta();
@@ -408,9 +387,6 @@ public enum Kit {
             }
             case FIGHTER -> {
                 // Sharpness on sword - applied after placement
-            }
-            case FIRE_FIGHTER -> {
-                // Fire Resistance effect applied at start of each round via reapplyKitPotionEffects()
             }
             case SPIDER -> itemMap.put("MATERIAL:COBWEB", new ItemStack(Material.COBWEB, 2));
             case BOMBER -> {

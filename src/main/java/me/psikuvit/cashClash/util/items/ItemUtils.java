@@ -131,6 +131,7 @@ public final class ItemUtils {
             it.setItemMeta(meta);
 
             if (si instanceof FoodItem food) {
+                if (it.getType() == Material.BREAD || it.getType() == Material.COOKED_BEEF) return it;
                 FoodProperties existing = it.getData(DataComponentTypes.FOOD);
                 Messages.debug(String.valueOf(existing));
                 if (existing != null) {
@@ -198,8 +199,8 @@ public final class ItemUtils {
         return item;
     }
 
-    public static ItemStack giveCustomArmorSet(Player player, CustomArmorItem armor) {
-        if (player == null || armor == null) return null;
+    public static void giveCustomArmorSet(Player player, CustomArmorItem armor) {
+        if (player == null || armor == null) return;
 
         ItemStack item = new ItemStack(armor.getMaterial());
         ItemMeta meta = item.getItemMeta();
@@ -225,7 +226,7 @@ public final class ItemUtils {
             }
         }
 
-        return equipArmorOrReplace(player, item);
+        equipArmorOrReplace(player, item);
     }
 
     public static boolean applyEnchant(Player player, EnchantEntry ee, int lvl) {

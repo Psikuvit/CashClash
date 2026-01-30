@@ -14,7 +14,7 @@ game:
   max-players: 8
 
   # Round configuration
-  total-rounds: 5
+  total-rounds: 7
   first-round: 1
 
   # Phase durations (seconds)

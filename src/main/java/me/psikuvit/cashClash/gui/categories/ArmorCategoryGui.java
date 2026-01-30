@@ -180,7 +180,6 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
                     // Purchased vanilla armor (iron/diamond) - track but don't return to inventory
                     replacedSetItems.put(slot, currentArmor.clone());
                 }
-                // Starter armor (no purchase tag) just disappears - don't track
             }
 
             // Equip the set piece
@@ -188,7 +187,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         }
 
         // Create a single set purchase record with all replaced items
-        ccp.addPurchase(new PurchaseRecord(totalPrice, round, replacedSetItems, setPieces));
+        ccp.addPurchase(new PurchaseRecord(setPieces.getFirst(), totalPrice, round, replacedSetItems, setPieces));
 
         Messages.send(player, "");
         Messages.send(player, "<green><bold>✓ SET PURCHASED</bold></green>");

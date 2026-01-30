@@ -260,7 +260,7 @@ public class ShopService {
 
                     // Create set purchase record with all replaced items
                     long setPrice = customArmor.getArmorSet().getTotalPrice();
-                    ccp.addPurchase(new PurchaseRecord(setPrice, round, replacedSetItems, setPieces));
+                    ccp.addPurchase(new PurchaseRecord(setPieces.getFirst(), setPrice, round, replacedSetItems, setPieces));
 
                     // Apply enchants to all pieces
                     for (CustomArmorItem piece : setPieces) {

@@ -388,6 +388,8 @@ public class MythicItemManager {
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
+
+                meta.removeAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE);
                 meta.addAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, reachMod);
             }
             case BLOODWRENCH_CROSSBOW -> {

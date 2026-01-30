@@ -45,8 +45,8 @@ public record PurchaseRecord(
     /**
      * Constructor for armor set purchases.
      */
-    public PurchaseRecord(long price, int round, Map<ArmorSlot, ItemStack> replacedSetItems, List<CustomArmorItem> setItems) {
-        this(null, 1, price, null, round, replacedSetItems, setItems);
+    public PurchaseRecord(Purchasable item, long price, int round, Map<ArmorSlot, ItemStack> replacedSetItems, List<CustomArmorItem> setItems) {
+        this(item, 1, price, null, round, replacedSetItems, setItems);
     }
 
     /**
