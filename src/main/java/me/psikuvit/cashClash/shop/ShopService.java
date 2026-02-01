@@ -340,6 +340,12 @@ public class ShopService {
                 SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
             }
             default -> {
+                // Skip mythic items - they are handled by MythicCategoryGui
+                if (item instanceof me.psikuvit.cashClash.shop.items.MythicItem) {
+                    ccp.addPurchase(new PurchaseRecord(item, giveQty, totalPrice, round));
+                    return; // MythicCategoryGui will handle giving the actual item
+                }
+                
                 // Other items - just add to inventory
                 ItemStack stack = ItemFactory.getInstance().createGameplayItem(item);
                 stack.setAmount(giveQty);

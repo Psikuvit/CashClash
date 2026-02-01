@@ -55,8 +55,16 @@ public final class GuiItemFactory {
         }
         
         ShopItemBuilder builder = ShopItemBuilder.of(item.getMaterial(), quantity)
-                .name("<yellow>" + item.getDisplayName() + "</yellow>")
-                .price(item.getPrice());
+                .name("<yellow>" + item.getDisplayName() + "</yellow>");
+        
+        // Display total price for stack items (quantity > 1)
+        if (quantity > 1) {
+            long totalPrice = item.getPrice() * quantity;
+            builder.price(totalPrice);
+            builder.lore("<gray>Price per item: $" + String.format("%,d", item.getPrice()) + "</gray>");
+        } else {
+            builder.price(item.getPrice());
+        }
         
         String desc = item.getDescription();
         if (desc != null && !desc.isEmpty()) {

@@ -359,10 +359,22 @@ public class MythicItemManager {
     private void applyMythicAttributes(MythicItem mythic, ItemMeta meta) {
         switch (mythic) {
             case GOBLIN_SPEAR -> {
+                // Netherite sword stats: 8 attack damage, 1.6 attack speed
+                // Trident base: 9 damage, 1.1 speed
+                // Need to adjust to match netherite sword
+                NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_damage");
+                AttributeModifier damageMod = new AttributeModifier(
+                        damageKey,
+                        -1.0, // Reduce from 9 to 8 (netherite sword damage)
+                        AttributeModifier.Operation.ADD_NUMBER,
+                        EquipmentSlotGroup.MAINHAND
+                );
+                meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, damageMod);
+                
                 NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_speed");
                 AttributeModifier speedMod = new AttributeModifier(
                         speedKey,
-                        0.8, // Much faster attack speed
+                        0.5, // Increase from 1.1 to 1.6 (netherite sword speed)
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
@@ -380,6 +392,27 @@ public class MythicItemManager {
                 meta.addEnchant(Enchantment.LOYALTY, 3, true);
             }
             case WARDEN_GLOVES -> {
+                // Netherite axe stats: 10 attack damage, 1.0 attack speed
+                // Netherite sword base: 8 damage, 1.6 speed
+                // Need to adjust to match netherite axe
+                NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "warden_damage");
+                AttributeModifier damageMod = new AttributeModifier(
+                        damageKey,
+                        2.0, // Increase from 8 to 10 (netherite axe damage)
+                        AttributeModifier.Operation.ADD_NUMBER,
+                        EquipmentSlotGroup.MAINHAND
+                );
+                meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, damageMod);
+                
+                NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "warden_speed");
+                AttributeModifier speedMod = new AttributeModifier(
+                        speedKey,
+                        -0.6, // Reduce from 1.6 to 1.0 (netherite axe speed)
+                        AttributeModifier.Operation.ADD_NUMBER,
+                        EquipmentSlotGroup.MAINHAND
+                );
+                meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedMod);
+                
                 // +2 block reach for both hands (takes up main and off hand conceptually)
                 NamespacedKey reachKey = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach");
                 AttributeModifier reachMod = new AttributeModifier(
@@ -394,6 +427,13 @@ public class MythicItemManager {
             }
             case BLOODWRENCH_CROSSBOW -> {
                 // No enchantments - mode system handles functionality
+            }
+            case WIND_BOW -> {
+                // Legendary bow gets Power 3
+                meta.addEnchant(Enchantment.POWER, 3, true);
+            }
+            case BLAZEBITE_CROSSBOWS -> {
+                // Legendary crossbow - damage boost handled in hit handler
             }
             default -> {
             }
@@ -1437,9 +1477,10 @@ public class MythicItemManager {
                     targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
             }
 
-            // Burst damage
-            target.damage(damage, shooter);
-            Messages.debug(shooter, "BLOODWRENCH: Blood sphere damaged " + target.getName() + " for " + damage);
+            // Burst damage (30% boost for legendary crossbow)
+            double boostedDamage = damage * 1.3;
+            target.damage(boostedDamage, shooter);
+            Messages.debug(shooter, "BLOODWRENCH: Blood sphere damaged " + target.getName() + " for " + boostedDamage + " (base: " + damage + ")");
         }
 
         // Lingering sphere effect
@@ -1514,10 +1555,11 @@ public class MythicItemManager {
                             targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
                     }
 
-                    // Levitation and damage while inside vortex
+                    // Levitation and damage while inside vortex (30% boost for legendary crossbow)
                     target.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 30, cfg.getBloodwrenchVortexLevitationLevel() - 1, false, false));
-                    target.damage(damagePerTick, shooter);
-                    Messages.debug(shooter, "BLOODWRENCH: Vortex affecting " + target.getName());
+                    double boostedDamage = damagePerTick * 1.3;
+                    target.damage(boostedDamage, shooter);
+                    Messages.debug(shooter, "BLOODWRENCH: Vortex affecting " + target.getName() + " for " + boostedDamage + " damage");
                 }
             }
         }, 0L, 2L);
@@ -1879,7 +1921,9 @@ public class MythicItemManager {
                 }
 
                 double damage = entity.equals(hitEntity) ? cfg.getBlazebiteVolcanoDirectDamage() : cfg.getBlazebiteVolcanoSplashDamage();
-                target.damage(damage, shooter);
+                // 30% boost for legendary crossbow
+                double boostedDamage = damage * 1.3;
+                target.damage(boostedDamage, shooter);
                 target.setFireTicks(4 * 20);
                 hitCount++;
             }

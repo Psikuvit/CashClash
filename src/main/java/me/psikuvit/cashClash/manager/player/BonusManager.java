@@ -352,17 +352,30 @@ public class BonusManager {
             return;
         }
 
-        Messages.debug("GAME", "Awarding bonus " + bonusType.name() + " to " + playerUuid + " (+$" + bonusType.getReward() + ")");
-
-        // Use the existing earnBonus method
-        ccp.earnBonus(bonusType);
-
+        long baseReward = bonusType.getReward();
+        
+        // Apply investor set bonus (12.5% per piece)
         Player player = Bukkit.getPlayer(playerUuid);
+        double investorMultiplier = 1.0;
+        if (player != null) {
+            investorMultiplier = me.psikuvit.cashClash.manager.items.CustomArmorManager.getInstance().getInvestorMultiplier(player);
+        }
+        long finalReward = (long) (baseReward * investorMultiplier);
+
+        Messages.debug("GAME", "Awarding bonus " + bonusType.name() + " to " + playerUuid + " (+$" + baseReward + " base, +$" + finalReward + " with investor bonus)");
+
+        // Add coins directly with investor bonus applied
+        ccp.addCoins(finalReward);
+        ccp.getBonusesEarned().put(bonusType, ccp.getBonusesEarned().getOrDefault(bonusType, 0) + 1);
+
         if (player != null && player.isOnline()) {
             String bonusName = formatBonusName(bonusType);
             Messages.send(player, "");
             Messages.send(player, "<dark_purple><bold>⭐ BONUS!</bold></dark_purple> <light_purple>" + bonusName + "</light_purple>");
-            Messages.send(player, "<gray>+$" + formatCoins(bonusType.getReward()) + " coins</gray>");
+            Messages.send(player, "<gray>+$" + formatCoins(finalReward) + " coins</gray>");
+            if (investorMultiplier > 1.0) {
+                Messages.send(player, "<gray>Investor's Set: +" + String.format("%.1f", (investorMultiplier - 1.0) * 100) + "% bonus</gray>");
+            }
             Messages.send(player, "");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         }

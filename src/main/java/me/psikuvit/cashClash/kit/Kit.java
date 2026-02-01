@@ -40,9 +40,13 @@ public enum Kit {
     }
 
     public void apply(Player player) {
+        apply(player, 1, true); // Default to round 1, shields enabled for backwards compatibility
+    }
+    
+    public void apply(Player player, int round, boolean rounds1to3HaveShields) {
         player.getInventory().clear();
 
-        giveBaseItems(player);
+        giveBaseItems(player, round, rounds1to3HaveShields);
 
         // Kit-specific items
         ItemFactory factory = ItemFactory.getInstance();
@@ -144,6 +148,10 @@ public enum Kit {
     }
 
     private void giveBaseItems(Player player) {
+        giveBaseItems(player, 1, true); // Default to round 1, shields enabled for backwards compatibility
+    }
+    
+    private void giveBaseItems(Player player, int round, boolean rounds1to3HaveShields) {
         // Leather helmet (unbreakable)
         ItemStack leatherHelmet = new ItemStack(Material.LEATHER_HELMET);
         ItemMeta helmetMeta = leatherHelmet.getItemMeta();
@@ -183,9 +191,31 @@ public enum Kit {
         bread.setAmount(16);
         player.getInventory().addItem(bread);
 
-        // Shield
-        //player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
+        // Shield logic: rounds 1-3 are either shield or shieldless, rounds 4-6 is the other one
+        // In overtime (round 7+), there's a 50/50 for shield vs shieldless
+        boolean shouldGiveShield = shouldGiveShield(round, rounds1to3HaveShields);
+        if (shouldGiveShield) {
+            player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
+        }
+        
         player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
+    }
+    
+    /**
+     * Determine if player should get a shield based on round number.
+     * Rounds 1-3: shield or shieldless (determined by rounds1to3HaveShields)
+     * Rounds 4-6: opposite of rounds 1-3
+     * Round 7+: 50/50 chance
+     */
+    private boolean shouldGiveShield(int round, boolean rounds1to3HaveShields) {
+        if (round <= 3) {
+            return rounds1to3HaveShields;
+        } else if (round <= 6) {
+            return !rounds1to3HaveShields;
+        } else {
+            // Round 7+ (overtime): 50/50 chance
+            return Math.random() < 0.5;
+        }
     }
 
     private int getSwordSlot(Player player) {
@@ -297,6 +327,19 @@ public enum Kit {
      * @param layout Map of slot -> item identifier
      */
     public void applyWithLayout(Player player, Map<Integer, String> layout) {
+        applyWithLayout(player, layout, 1, true); // Default to round 1, shields enabled for backwards compatibility
+    }
+    
+    /**
+     * Apply kit with a custom layout and round number.
+     * Items are placed according to the slot -> item identifier mapping.
+     *
+     * @param player The player to give the kit to
+     * @param layout Map of slot -> item identifier
+     * @param round The current round number
+     * @param rounds1to3HaveShields Whether rounds 1-3 have shields (rounds 4-6 will be opposite)
+     */
+    public void applyWithLayout(Player player, Map<Integer, String> layout, int round, boolean rounds1to3HaveShields) {
         player.getInventory().clear();
 
         // Apply armor
@@ -310,7 +353,13 @@ public enum Kit {
         player.getInventory().setChestplate(new ItemStack(Material.GOLDEN_CHESTPLATE));
         player.getInventory().setLeggings(new ItemStack(Material.GOLDEN_LEGGINGS));
         player.getInventory().setBoots(new ItemStack(Material.GOLDEN_BOOTS));
-        //player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
+        
+        // Shield logic: rounds 1-3 are either shield or shieldless, rounds 4-6 is the other one
+        // In overtime (round 7+), there's a 50/50 for shield vs shieldless
+        boolean shouldGiveShield = shouldGiveShield(round, rounds1to3HaveShields);
+        if (shouldGiveShield) {
+            player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
+        }
 
         // Build a map of item identifier -> ItemStack for all kit items
         Map<String, ItemStack> itemMap = new HashMap<>();

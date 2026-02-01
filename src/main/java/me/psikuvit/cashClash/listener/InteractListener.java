@@ -374,7 +374,7 @@ public class InteractListener implements Listener {
             return;
         }
 
-        armorManager.onMagicHelmetRightClick(player);
+        // Magic Helmet now activates on melee damage, not right-click
     }
 
     // ==================== UTILITIES ====================

@@ -140,7 +140,16 @@ public class GameListener implements Listener {
         }
 
         long killReward = EconomyManager.getKillReward(session, killerCCP);
-        killerCCP.addCoins(killReward);
+        
+        // Apply investor set bonus (12.5% per piece)
+        double investorMultiplier = armorManager.getInvestorMultiplier(killer);
+        long finalReward = (long) (killReward * investorMultiplier);
+        
+        killerCCP.addCoins(finalReward);
+        
+        if (investorMultiplier > 1.0) {
+            Messages.send(killer, "<gray>Investor's Set: +" + String.format("%.1f", (investorMultiplier - 1.0) * 100) + "% bonus coins</gray>");
+        }
 
         armorManager.onPlayerKill(killer);
 
@@ -263,7 +272,11 @@ public class GameListener implements Listener {
                 applyConsumable(p, new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 30 * 20, 0), "<aqua>Fire Resistance activated!</aqua>");
                 SchedulerUtils.runTaskLater(() -> removeEmptyBottle(p), 1L);
             }
-            case CAN_OF_SPINACH -> applyConsumable(p, new PotionEffect(PotionEffectType.STRENGTH, 15 * 20, 0), "<gold>Spinach Strength activated!</gold>");
+            case CAN_OF_SPINACH -> {
+                applyConsumable(p, new PotionEffect(PotionEffectType.STRENGTH, 15 * 20, 0), "<gold>Spinach Strength activated!</gold>");
+                // Remove any poison effect that might have been applied
+                p.removePotionEffect(org.bukkit.potion.PotionEffectType.POISON);
+            }
         }
     }
 

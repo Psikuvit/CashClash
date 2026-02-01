@@ -187,24 +187,28 @@ public class MannequinManager {
         loc.setPitch(0);
 
         loc.getWorld().spawn(loc, Mannequin.class, mannequin -> {
-            mannequin.customName(Messages.parse(config.getArenaNPCDisplayName()));
-            mannequin.setCustomNameVisible(true);
+            // Remove display name (no "arenanpc" above them)
+            mannequin.setCustomNameVisible(false);
             mannequin.setImmovable(true);
             mannequin.getPersistentDataContainer().set(Keys.ARENA_NPC_KEY, PersistentDataType.BYTE, (byte) 1);
 
-            // Apply skin if URL is configured
-            if (skinUrl != null && !skinUrl.isEmpty()) {
-                Messages.debug(skinUrl);
-                try {
-                    PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID(), "ArenaNPC");
-                    PlayerTextures playerTextures = profile.getTextures();
+            // Apply villager skin (use default villager skin if no URL configured)
+            try {
+                PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID(), "Villager");
+                PlayerTextures playerTextures = profile.getTextures();
+                
+                // Use villager skin URL if configured, otherwise use default villager texture
+                if (skinUrl != null && !skinUrl.isEmpty()) {
                     playerTextures.setSkin(URI.create(skinUrl).toURL());
-                    profile.setTextures(playerTextures);
-                    mannequin.setProfile(ResolvableProfile.resolvableProfile(profile));
-                    Messages.debug("[MannequinManager] Applied skin to mannequin " + id);
-                } catch (MalformedURLException e) {
-                    plugin.getLogger().warning("[MannequinManager] Failed to apply skin for mannequin " + id + ": " + e.getMessage());
+                } else {
+                    // Default villager skin texture
+                    playerTextures.setSkin(URI.create("http://textures.minecraft.net/texture/42291d82db22fb42e785f86d3f44a3268e4e75b429ace4e4c8c5a95e8e4eb66b").toURL());
                 }
+                profile.setTextures(playerTextures);
+                mannequin.setProfile(ResolvableProfile.resolvableProfile(profile));
+                Messages.debug("[MannequinManager] Applied villager skin to mannequin " + id);
+            } catch (MalformedURLException e) {
+                plugin.getLogger().warning("[MannequinManager] Failed to apply skin for mannequin " + id + ": " + e.getMessage());
             }
 
             spawnedMannequins.add(mannequin);

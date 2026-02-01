@@ -193,6 +193,12 @@ public class DamageListener implements Listener {
 
         // Deathmauler: track damage for absorption
         armorManager.onDeathmaulerDamageTaken(player);
+        
+        // Magic Helmet: activate on first melee damage
+        if (event instanceof EntityDamageByEntityEvent damageByEntity && 
+            damageByEntity.getDamager() instanceof Player) {
+            armorManager.onMagicHelmetMeleeDamage(player);
+        }
     }
 
     /**
@@ -243,6 +249,18 @@ public class DamageListener implements Listener {
 
         // Check mythic items
         MythicItem mythic = PDCDetection.getMythic(item);
+        
+        // Handle legendary crossbow damage boost (30% more damage)
+        if (mythic == MythicItem.BLOODWRENCH_CROSSBOW || mythic == MythicItem.BLAZEBITE_CROSSBOWS) {
+            // Check if damage is from a projectile (crossbow bolt)
+            if (event.getDamager() instanceof org.bukkit.entity.Projectile) {
+                double currentDamage = event.getDamage();
+                double boostedDamage = currentDamage * 1.3; // 30% more damage
+                event.setDamage(boostedDamage);
+                Messages.debug(attacker, "LEGENDARY_CROSSBOW: Damage boosted from " + currentDamage + " to " + boostedDamage);
+            }
+        }
+        
         if (mythic == null) return;
 
         switch (mythic) {
@@ -262,6 +280,59 @@ public class DamageListener implements Listener {
             }
             case WARDEN_GLOVES -> mythicManager.useWardenPunch(attacker, victim);
             default -> { /* No special handling */ }
+        }
+        
+        // Nerf strength potion by 50%
+        if (attacker.hasPotionEffect(org.bukkit.potion.PotionEffectType.STRENGTH)) {
+            org.bukkit.potion.PotionEffect strength = attacker.getPotionEffect(org.bukkit.potion.PotionEffectType.STRENGTH);
+            if (strength != null && strength.getAmplifier() >= 0) {
+                // Strength adds (level + 1) * 3 damage, we want to reduce by 50%
+                // So we reduce the effective level by applying a damage reduction
+                double currentDamage = event.getDamage();
+                double strengthBonus = (strength.getAmplifier() + 1) * 3.0;
+                double nerfedStrengthBonus = strengthBonus * 0.5; // 50% nerf
+                double damageReduction = strengthBonus - nerfedStrengthBonus;
+                double newDamage = Math.max(0, currentDamage - damageReduction);
+                event.setDamage(newDamage);
+                Messages.debug(attacker, "STRENGTH_NERF: Reduced damage from " + currentDamage + " to " + newDamage + " (strength level " + (strength.getAmplifier() + 1) + ")");
+            }
+        }
+        
+        // Nerf power enchantment by 50% and cap at 2 for regular bows (legendary exception)
+        if (item.getType() == org.bukkit.Material.BOW || item.getType() == org.bukkit.Material.CROSSBOW) {
+            org.bukkit.enchantments.Enchantment powerEnchant = org.bukkit.enchantments.Enchantment.POWER;
+            if (item.containsEnchantment(powerEnchant)) {
+                int powerLevel = item.getEnchantmentLevel(powerEnchant);
+                
+                // Check if it's a legendary bow (Wind Bow has Power 3, so it's the exception)
+                boolean isLegendary = mythic == MythicItem.WIND_BOW;
+                
+                // Cap power at 2 for regular bows (legendary exception)
+                if (!isLegendary && powerLevel > 2) {
+                    // Reduce damage to what it would be with power 2
+                    double currentDamage = event.getDamage();
+                    // Power formula: damage = base * (1 + level * 0.5)
+                    // Calculate base damage from current damage with original power level
+                    double originalMultiplier = 1.0 + (powerLevel * 0.5);
+                    double baseDamage = currentDamage / originalMultiplier;
+                    // Apply power 2 multiplier
+                    double cappedMultiplier = 1.0 + (2.0 * 0.5);
+                    double cappedDamage = baseDamage * cappedMultiplier;
+                    event.setDamage(cappedDamage);
+                    Messages.debug(attacker, "POWER_CAP: Reduced from power " + powerLevel + " to power 2 (damage " + currentDamage + " -> " + cappedDamage + ")");
+                } else if (powerLevel > 0) {
+                    // Nerf power by 50%: reduce the power bonus multiplier by half
+                    // Power formula: damage = base * (1 + level * 0.5)
+                    // Nerfed: damage = base * (1 + level * 0.25)
+                    double currentDamage = event.getDamage();
+                    double originalMultiplier = 1.0 + (powerLevel * 0.5);
+                    double baseDamage = currentDamage / originalMultiplier;
+                    double nerfedMultiplier = 1.0 + (powerLevel * 0.25); // 50% of the power bonus
+                    double nerfedDamage = baseDamage * nerfedMultiplier;
+                    event.setDamage(nerfedDamage);
+                    Messages.debug(attacker, "POWER_NERF: Reduced damage from " + currentDamage + " to " + nerfedDamage + " (power level " + powerLevel + ", legendary: " + isLegendary + ")");
+                }
+            }
         }
     }
 

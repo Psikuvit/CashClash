@@ -46,8 +46,8 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
-        if (sess.getCurrentRound() >= 5) {
-            Messages.send(viewer, "<red>Investments cannot be purchased in Round 5!</red>");
+        if (sess.getCurrentRound() >= 6) {
+            Messages.send(viewer, "<red>Investments cannot be purchased in Round 6 or later!</red>");
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }

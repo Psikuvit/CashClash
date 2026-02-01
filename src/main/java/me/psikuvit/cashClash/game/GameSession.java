@@ -73,6 +73,10 @@ public class GameSession {
     private BukkitTask startCountdownTask;
     private boolean startingCountdown;
     private int countdownSecondsRemaining;
+    
+    // Shield logic: rounds 1-3 are either shield or shieldless, rounds 4-6 is the other one
+    // Determined at game start, consistent for the entire game
+    private boolean rounds1to3HaveShields;
 
     public GameSession(int arenaNumber) {
         this.sessionId = UUID.randomUUID();
@@ -84,6 +88,11 @@ public class GameSession {
         this.players = new HashMap<>();
 
         this.startingCountdown = false;
+        
+        // Determine shield preference for this game (50/50 chance)
+        // If true, rounds 1-3 have shields, rounds 4-6 don't
+        // If false, rounds 1-3 don't have shields, rounds 4-6 do
+        this.rounds1to3HaveShields = new Random().nextBoolean();
 
         // Get the fixed arena
         Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
@@ -296,9 +305,9 @@ public class GameSession {
         PlayerData playerData = PlayerDataManager.getInstance().getData(uuid);
         if (playerData.hasKitLayout(randomKit.name())) {
             Map<Integer, String> layout = playerData.getKitLayout(randomKit.name());
-            randomKit.applyWithLayout(p, layout);
+            randomKit.applyWithLayout(p, layout, currentRound, rounds1to3HaveShields);
         } else {
-            randomKit.apply(p);
+            randomKit.apply(p, currentRound, rounds1to3HaveShields);
         }
 
         Messages.send(p, "<green>You have been assigned kit: <yellow>" + randomKit + "</yellow></green>");
@@ -343,6 +352,9 @@ public class GameSession {
 
         // Reset Coin Cleaver charge tracking for new round
         MythicItemManager.getInstance().resetCoinCleaverTrackingForSession(this);
+        
+        // Reset custom armor round tracking
+        CustomArmorManager.getInstance().resetRoundTracking();
         BlockListener.cleanupRound(sessionId);
 
         state = GameState.SHOPPING;

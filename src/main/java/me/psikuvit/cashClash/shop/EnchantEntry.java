@@ -22,7 +22,7 @@ public enum EnchantEntry {
     FIRE_ASPECT(Enchantment.FIRE_ASPECT, "fire-aspect", "Fire Aspect", 2,
             Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
-    POWER(Enchantment.POWER, "power", "Power", 5,
+    POWER(Enchantment.POWER, "power", "Power", 2, // Max power 2 (legendary bows are exception)
             Material.BOW
     ),
     FLAME(Enchantment.FLAME, "flame", "Flame", 1,

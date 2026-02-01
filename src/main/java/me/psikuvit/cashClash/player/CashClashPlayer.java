@@ -275,4 +275,8 @@ public class CashClashPlayer {
     public void setFirstDeathRound(UUID round) {
         this.firstDeathRound = round;
     }
+    
+    public Map<BonusType, Integer> getBonusesEarned() {
+        return bonusesEarned;
+    }
 }

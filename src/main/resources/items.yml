@@ -243,7 +243,7 @@ custom-items:
 
   # Cash Blaster
   cash-blaster:
-    coins-per-hit: 500
+    coins-per-hit: 200
 
   # Respawn Anchor
   respawn-anchor:

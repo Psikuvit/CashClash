@@ -88,6 +88,16 @@ public class ArenaSelectionGUI extends AbstractGui {
 
         List<Component> lore = new ArrayList<>();
         lore.add(Component.empty());
+        
+        // Add map name (template ID or world name)
+        TemplateWorld template = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        if (template != null) {
+            String mapName = template.getId();
+            if (template.getWorld() != null) {
+                mapName = template.getWorld().getName();
+            }
+            lore.add(Messages.parse("<gray>Map: <white>" + mapName + "</white></gray>"));
+        }
 
         String stateDisplay = switch (state) {
             case WAITING -> "<gray>Status: <green>Waiting</green>";

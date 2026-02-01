@@ -129,7 +129,7 @@ public enum CustomArmorItem implements Purchasable {
             case DEATHMAULER_CHESTPLATE, DEATHMAULER_LEGGINGS ->
                     "<gray>Chest + Leggings: Kills heal you and can grant absorption.</gray>";
             case DRAGON_BOOTS, DRAGON_CHESTPLATE, DRAGON_HELMET ->
-                    "<gray>Full Dragon set: regen on hit, speed boosts and double-jump ability. Immune to knife damage/explosives.</gray>";
+                    "<gray>Full Dragon set: regen on hit, speed boosts and double-jump ability. Immune to explosives.</gray>";
         };
     }
 
