@@ -55,7 +55,11 @@ public final class GameplayItemFactory {
         
         // Handle special item types
         if (purchasable instanceof FoodItem foodItem) {
+            // Apply armor properties is not needed for food
+            // Set meta first, then apply food properties (which use DataComponentTypes directly on item)
+            item.setItemMeta(meta);
             applyFoodProperties(item, foodItem);
+            return item;
         } else {
             // Apply armor properties (unbreakable, hide flags)
             applyArmorProperties(meta, item.getType());
@@ -152,18 +156,20 @@ public final class GameplayItemFactory {
     private void applyFoodProperties(ItemStack item, FoodItem foodItem) {
         Material material = item.getType();
         
-        // Skip special handling for bread and cooked beef
+        // Skip special handling for bread and cooked beef (they already have good food properties)
         if (material == Material.BREAD || material == Material.COOKED_BEEF) {
             return;
         }
         
+        // Special consumables need food properties applied (e.g., spider eye, carrot, etc.)
+        // Always set food properties for custom food items to ensure they are consumable
         FoodProperties existing = item.getData(DataComponentTypes.FOOD);
         if (existing != null) {
             FoodProperties.Builder builder = existing.toBuilder();
             builder.canAlwaysEat(true);
             item.setData(DataComponentTypes.FOOD, builder.build());
         } else {
-            // Create new food component
+            // Create new food component for items that don't have one by default (e.g., SPIDER_EYE for Can of Spinach)
             item.setData(DataComponentTypes.FOOD, FoodProperties.food()
                     .canAlwaysEat(true)
                     .nutrition(4)

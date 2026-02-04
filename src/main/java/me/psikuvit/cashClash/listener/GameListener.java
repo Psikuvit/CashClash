@@ -89,6 +89,9 @@ public class GameListener implements Listener {
         event.setKeepLevel(true);
         event.setDroppedExp(0);
 
+        // Clear invisibility cloak state on death (armor is preserved by keepInventory)
+        customItemManager.clearInvisCloakOnDeath(player);
+
         PlayerDataManager.getInstance().incDeaths(player.getUniqueId());
 
         victim.handleDeath();

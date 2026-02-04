@@ -358,6 +358,19 @@ public class MythicItemManager {
 
     private void applyMythicAttributes(MythicItem mythic, ItemMeta meta) {
         switch (mythic) {
+            case COIN_CLEAVER -> {
+                // Diamond axe base attack speed: 1.0
+                // Diamond sword attack speed: 1.6
+                // Need to add 0.6 to make it feel like a sword
+                NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "coin_cleaver_speed");
+                AttributeModifier speedMod = new AttributeModifier(
+                        speedKey,
+                        0.6, // Increase from 1.0 to 1.6 (sword attack speed)
+                        AttributeModifier.Operation.ADD_NUMBER,
+                        EquipmentSlotGroup.MAINHAND
+                );
+                meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedMod);
+            }
             case GOBLIN_SPEAR -> {
                 // Netherite sword stats: 8 attack damage, 1.6 attack speed
                 // Trident base: 9 damage, 1.1 speed

@@ -70,6 +70,20 @@ public class DamageListener implements Listener {
             // Respawn protection - cancel damage to respawn-protected players
             if (handleRespawnProtection(event)) return;
 
+            // Handle invis cloak removal on damage dealt or received
+            if (event.getDamager() instanceof Player attacker && event.getEntity() instanceof Player victim) {
+                // Remove invis from attacker when they deal damage
+                if (customItemManager.isInvisActive(attacker.getUniqueId())) {
+                    customItemManager.toggleInvisCloak(attacker, false);
+                    Messages.send(attacker, "<red>Invisibility lost - you dealt damage!</red>");
+                }
+                // Remove invis from victim when they take damage
+                if (customItemManager.isInvisActive(victim.getUniqueId())) {
+                    customItemManager.toggleInvisCloak(victim, false);
+                    Messages.send(victim, "<red>Invisibility lost - you took damage!</red>");
+                }
+            }
+
             // Handle attacker-side effects (mythic items, custom items)
             if (event.getDamager() instanceof Player attacker && event.getEntity() instanceof Player) {
                 handleAttackerEffects(event, attacker);

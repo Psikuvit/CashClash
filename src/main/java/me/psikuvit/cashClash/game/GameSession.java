@@ -157,6 +157,14 @@ public class GameSession {
         return bonusManager;
     }
 
+    /**
+     * Returns whether rounds 1-3 have shields in this game session.
+     * Rounds 4-6 will have the opposite setting.
+     */
+    public boolean hasShieldsInRounds1to3() {
+        return rounds1to3HaveShields;
+    }
+
     /**public CashQuakeManager getCashQuakeManager() {
         return cashQuakeManager;
     }*/
