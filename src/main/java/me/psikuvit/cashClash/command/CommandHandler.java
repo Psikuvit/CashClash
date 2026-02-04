@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.command.subcommands.ArenasCommand;
 import me.psikuvit.cashClash.command.subcommands.ChatCommand;
 import me.psikuvit.cashClash.command.subcommands.CoinsCommand;
 import me.psikuvit.cashClash.command.subcommands.DebugCommand;
+import me.psikuvit.cashClash.command.subcommands.ForceNextRoundCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceStartCommand;
 import me.psikuvit.cashClash.command.subcommands.ForfeitCommand;
 import me.psikuvit.cashClash.command.subcommands.JoinCommand;
@@ -12,6 +13,7 @@ import me.psikuvit.cashClash.command.subcommands.LayoutCommand;
 import me.psikuvit.cashClash.command.subcommands.LeaveCommand;
 import me.psikuvit.cashClash.command.subcommands.MythicsCommand;
 import me.psikuvit.cashClash.command.subcommands.ReloadCommand;
+import me.psikuvit.cashClash.command.subcommands.SelectKitCommand;
 import me.psikuvit.cashClash.command.subcommands.SetLobbyCommand;
 import me.psikuvit.cashClash.command.subcommands.ShopCommand;
 import me.psikuvit.cashClash.command.subcommands.SpawnNPCCommand;
@@ -66,6 +68,8 @@ public class CommandHandler extends Command {
         // Admin / control commands
         registerSubcommand(new StopCommand());
         registerSubcommand(new ForceStartCommand());
+        registerSubcommand(new ForceNextRoundCommand());
+        registerSubcommand(new SelectKitCommand());
         registerSubcommand(new SetLobbyCommand());
         registerSubcommand(new ReloadCommand());
         registerSubcommand(new DebugCommand());
