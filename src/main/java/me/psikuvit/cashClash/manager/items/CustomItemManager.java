@@ -369,22 +369,18 @@ public class CustomItemManager {
 
             // Restore armor
             List<ItemStack> storedArmor = invisCloakStoredArmor.remove(uuid);
-            if (storedArmor != null) {
-                storedArmor.forEach(item -> {
-                    if (item != null && item.getType() == Material.SHIELD) {
-                        player.getInventory().setItemInOffHand(item);
-                    } else {
-                        ItemStack[] armorContents = player.getInventory().getArmorContents();
-                        for (int i = 0; i < 4; i++) {
-                            if (armorContents[i] == null) {
-                                armorContents[i] = item;
-                                break;
-                            }
-                        }
-                        player.getInventory().setArmorContents(armorContents);
-                    }
-                });
+            if (storedArmor != null && storedArmor.size() >= 4) {
+                // Restore armor contents (first 4 items are helmet, chestplate, leggings, boots)
+                ItemStack[] armorContents = new ItemStack[4];
+                for (int i = 0; i < 4 && i < storedArmor.size(); i++) {
+                    armorContents[i] = storedArmor.get(i);
+                }
+                player.getInventory().setArmorContents(armorContents);
 
+                // Check if there's a 5th item (shield in offhand)
+                if (storedArmor.size() > 4 && storedArmor.get(4) != null) {
+                    player.getInventory().setItemInOffHand(storedArmor.get(4));
+                }
             }
 
             BukkitTask task = invisCloakTasks.remove(uuid);
@@ -415,6 +411,31 @@ public class CustomItemManager {
 
     public boolean isInvisActive(UUID uuid) {
         return invisCloakActive.contains(uuid);
+    }
+
+    /**
+     * Clears invisibility cloak state on death without restoring armor.
+     * Since keepInventory is enabled, armor is already preserved in the player's inventory.
+     * We only need to clean up our tracking state and remove the invisibility effect.
+     */
+    public void clearInvisCloakOnDeath(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        if (!invisCloakActive.contains(uuid)) return;
+
+        invisCloakActive.remove(uuid);
+        player.removePotionEffect(PotionEffectType.INVISIBILITY);
+
+        // Don't restore armor - keepInventory handles that
+        // Just clear our stored armor reference
+        invisCloakStoredArmor.remove(uuid);
+
+        // Cancel the drain task
+        BukkitTask task = invisCloakTasks.remove(uuid);
+        if (task != null) task.cancel();
+
+        // Reset cooldown
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK, ItemsConfig.getInstance().getInvisCloakCooldown());
     }
 
     // ==================== BAG OF POTATOES IMPLEMENTATION ====================
