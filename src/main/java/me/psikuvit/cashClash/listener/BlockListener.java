@@ -61,7 +61,7 @@ public class BlockListener implements Listener {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
-        if (session == null || player.getWorld().equals(session.getGameWorld())) return;
+        if (session == null || !player.getWorld().equals(session.getGameWorld())) return;
         if (session.getState() != GameState.COMBAT) return;
 
         // Track this block as player-placed
