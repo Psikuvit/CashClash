@@ -70,14 +70,17 @@ public enum Kit {
                 player.getInventory().addItem(splash);
             }
             case TANK -> {
-                ItemStack[] armor = player.getInventory().getArmorContents();
+                // Protection 1 only on round 1, removed after round 1
+                if (round == 1) {
+                    ItemStack[] armor = player.getInventory().getArmorContents();
 
-                for (ItemStack piece : armor) {
-                    if (piece != null) {
-                        ItemMeta m = piece.getItemMeta();
-                        if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
+                    for (ItemStack piece : armor) {
+                        if (piece != null) {
+                            ItemMeta m = piece.getItemMeta();
+                            if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
 
-                        piece.setItemMeta(m);
+                            piece.setItemMeta(m);
+                        }
                     }
                 }
             }
@@ -472,19 +475,22 @@ public enum Kit {
         // Apply kit-specific enchants to existing items
         switch (this) {
             case TANK -> {
-                ItemStack chest = player.getInventory().getChestplate();
-                ItemStack legs = player.getInventory().getLeggings();
-                if (chest != null) {
-                    ItemMeta m = chest.getItemMeta();
-                    if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
-                    chest.setItemMeta(m);
-                    player.getInventory().setChestplate(chest);
-                }
-                if (legs != null) {
-                    ItemMeta m = legs.getItemMeta();
-                    if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
-                    legs.setItemMeta(m);
-                    player.getInventory().setLeggings(legs);
+                // Protection 1 only on round 1, removed after round 1
+                if (round == 1) {
+                    ItemStack chest = player.getInventory().getChestplate();
+                    ItemStack legs = player.getInventory().getLeggings();
+                    if (chest != null) {
+                        ItemMeta m = chest.getItemMeta();
+                        if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
+                        chest.setItemMeta(m);
+                        player.getInventory().setChestplate(chest);
+                    }
+                    if (legs != null) {
+                        ItemMeta m = legs.getItemMeta();
+                        if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
+                        legs.setItemMeta(m);
+                        player.getInventory().setLeggings(legs);
+                    }
                 }
             }
             case LUMBERJACK -> {
