@@ -73,8 +73,10 @@ public class GameListener implements Listener {
 
     // ==================== PLAYER DEATH ====================
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerDeath(PlayerDeathEvent event) {
+        if (event.isCancelled()) return;
+
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
@@ -232,8 +234,10 @@ public class GameListener implements Listener {
 
     // ==================== ITEM CONSUME ====================
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerConsume(PlayerItemConsumeEvent event) {
+        if (event.isCancelled()) return;
+
         Player p = event.getPlayer();
         ItemStack consumed = event.getItem();
 
@@ -277,8 +281,6 @@ public class GameListener implements Listener {
             }
             case CAN_OF_SPINACH -> {
                 applyConsumable(p, new PotionEffect(PotionEffectType.STRENGTH, 15 * 20, 0), "<gold>Spinach Strength activated!</gold>");
-                // Remove any poison effect that might have been applied
-                p.removePotionEffect(org.bukkit.potion.PotionEffectType.POISON);
             }
         }
     }
@@ -343,10 +345,13 @@ public class GameListener implements Listener {
 
     // ==================== FLIGHT TOGGLE ====================
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
+        if (event.isCancelled()) return;
+
         Player p = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(p);
+
         if (session == null) return;
 
         if (session.getState() == GameState.SHOPPING) return;
@@ -566,7 +571,7 @@ public class GameListener implements Listener {
 
     // ==================== PLAYER RESPAWN ====================
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);

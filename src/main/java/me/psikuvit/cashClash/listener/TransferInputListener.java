@@ -214,7 +214,7 @@ public class TransferInputListener implements Listener {
         pendingTransfers.remove(playerId);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
         pendingTransfers.remove(playerId);

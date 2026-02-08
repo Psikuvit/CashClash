@@ -14,6 +14,7 @@ import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -24,7 +25,7 @@ import org.bukkit.potion.PotionEffect;
  */
 public class PlayerConnectionListener implements Listener {
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
@@ -89,7 +90,7 @@ public class PlayerConnectionListener implements Listener {
         Messages.send(player, "<gray>Use <yellow>/cc help <gray>for more commands.");
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
 

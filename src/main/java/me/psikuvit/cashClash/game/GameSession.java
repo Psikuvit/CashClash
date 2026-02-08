@@ -76,7 +76,7 @@ public class GameSession {
     
     // Shield logic: rounds 1-3 are either shield or shieldless, rounds 4-6 is the other one
     // Determined at game start, consistent for the entire game
-    private boolean rounds1to3HaveShields;
+    private  boolean rounds1to3HaveShields;
 
     public GameSession(int arenaNumber) {
         this.sessionId = UUID.randomUUID();
@@ -349,6 +349,8 @@ public class GameSession {
             return;
         } else if (currentRound == 2) {
             MythicItemManager.getInstance().selectLegendariesForSession(this);
+        } else if (currentRound == 4) {
+            rounds1to3HaveShields = !rounds1to3HaveShields;
         }
 
         currentRoundData = new RoundData(players.keySet());

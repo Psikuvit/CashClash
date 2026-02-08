@@ -89,6 +89,7 @@ public class LobbyListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
+        if (event.isCancelled()) return;
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
         // Only protect if player is NOT in a game
@@ -108,6 +109,7 @@ public class LobbyListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerDropItem(PlayerDropItemEvent event) {
+        if (event.isCancelled()) return;
         Player player = event.getPlayer();
 
         // Only protect if player is NOT in a game
@@ -122,6 +124,7 @@ public class LobbyListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onSwapHandItems(PlayerSwapHandItemsEvent event) {
+        if (event.isCancelled()) return;
         Player player = event.getPlayer();
 
         // Only protect if player is NOT in a game
