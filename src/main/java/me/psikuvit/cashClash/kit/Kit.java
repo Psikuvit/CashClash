@@ -82,6 +82,8 @@ public enum Kit {
                             piece.setItemMeta(m);
                         }
                     }
+                    // Set the armor contents back to apply the enchantments
+                    player.getInventory().setArmorContents(armor);
                 }
             }
             case SCOUT -> {
@@ -477,8 +479,16 @@ public enum Kit {
             case TANK -> {
                 // Protection 1 only on round 1, removed after round 1
                 if (round == 1) {
+                    ItemStack helmet = player.getInventory().getHelmet();
                     ItemStack chest = player.getInventory().getChestplate();
                     ItemStack legs = player.getInventory().getLeggings();
+                    ItemStack boots = player.getInventory().getBoots();
+                    if (helmet != null) {
+                        ItemMeta m = helmet.getItemMeta();
+                        if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
+                        helmet.setItemMeta(m);
+                        player.getInventory().setHelmet(helmet);
+                    }
                     if (chest != null) {
                         ItemMeta m = chest.getItemMeta();
                         if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
@@ -490,6 +500,12 @@ public enum Kit {
                         if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
                         legs.setItemMeta(m);
                         player.getInventory().setLeggings(legs);
+                    }
+                    if (boots != null) {
+                        ItemMeta m = boots.getItemMeta();
+                        if (m != null) m.addEnchant(Enchantment.PROTECTION, 1, true);
+                        boots.setItemMeta(m);
+                        player.getInventory().setBoots(boots);
                     }
                 }
             }
