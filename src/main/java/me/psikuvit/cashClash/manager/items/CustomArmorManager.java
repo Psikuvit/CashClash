@@ -180,16 +180,16 @@ public class CustomArmorManager {
         
         // Play effects sequentially
         // 1. Resistance I (4s)
-        p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 4 * 20, 0, false, true, true));
-        Messages.send(p, "<aqua>Magic Helmet: Resistance I activated! (4s)</aqua>");
-        SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 4 * 20, 0, false, true, true));
+        Messages.send(p, "<gold>Magic Helmet: Absorption I activated! (4s)</gold>");
+        SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.4f);
         
         // 2. Absorption I after 4 seconds
         SchedulerUtils.runTaskLater(() -> {
             if (p.isOnline() && hasMagicHelmet(p)) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 4 * 20, 0, false, true, true));
-                Messages.send(p, "<gold>Magic Helmet: Absorption I activated! (4s)</gold>");
-                SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.4f);
+                p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 4 * 20, 0, false, true, true));
+                Messages.send(p, "<aqua>Magic Helmet: Resistance I activated! (4s)</aqua>");
+                SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
             }
         }, 4 * 20L);
         
