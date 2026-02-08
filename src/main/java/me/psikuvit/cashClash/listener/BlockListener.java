@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.listener;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -32,6 +33,10 @@ public class BlockListener implements Listener {
 
     public static void cleanupRound(UUID sessionId) {
         Set<Location> blocks = placedBlocks.get(sessionId);
+        if (blocks == null) {
+            Messages.debug("No blocks to clean up for session " + sessionId);
+            return;
+        }
         for (Location loc : blocks) {
             if (loc == null) continue;
             loc.getBlock().setType(Material.AIR);
@@ -56,46 +61,45 @@ public class BlockListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onBlockPlaceTrack(BlockPlaceEvent event) {
-        Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-
-        if (session == null || !player.getWorld().equals(session.getGameWorld())) return;
-        if (session.getState() != GameState.COMBAT) return;
-
-        // Track this block as player-placed
-        UUID sessionId = session.getSessionId();
-        Block block = event.getBlock();
-        Location loc = block.getLocation();
-
-        placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
-        event.setCancelled(false);
+    /**
+     * Check if a block was placed by a player in the given session.
+     */
+    public static boolean isPlayerPlaced(UUID sessionId, Location location) {
+        Set<Location> blocks = placedBlocks.get(sessionId);
+        return blocks != null && blocks.contains(location.toBlockLocation());
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void onBlockBreakMapProtection(BlockBreakEvent event) {
+    public void onBlockPlaceGame(BlockPlaceEvent event) {
         if (event.isCancelled()) return;
 
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
+        // Only handle players in a game session
         if (session == null) return;
 
-        UUID sessionId = session.getSessionId();
-        Block block = event.getBlock();
-        Location loc = block.getLocation();
-
-        Set<Location> sessionPlacedBlocks = placedBlocks.get(sessionId);
-
-        // If the block was NOT placed by a player, cancel the break
-        if (sessionPlacedBlocks == null || !sessionPlacedBlocks.contains(loc)) {
+        // Check if in correct world
+        if (!player.getWorld().equals(session.getGameWorld())) {
+            Messages.debug("World mismatch for player " + player.getName() + " in BlockPlaceEvent");
             event.setCancelled(true);
             return;
         }
 
-        // Block was player-placed, allow breaking and remove from tracking
-        sessionPlacedBlocks.remove(loc);
+        // Only allow placing during combat
+        if (session.getState() != GameState.COMBAT) {
+            Messages.debug("Session state is not COMBAT for player " + player.getName() + " in BlockPlaceEvent");
+            event.setCancelled(true);
+            return;
+        }
+
+        // Track this block as player-placed (allow the placement)
+        UUID sessionId = session.getSessionId();
+        Block block = event.getBlock();
+
+        Location loc = block.getLocation().toBlockLocation();
+
+        placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
     }
 
     // ==================== STATIC UTILITIES ====================
@@ -119,12 +123,30 @@ public class BlockListener implements Listener {
         }
     }
 
-    /**
-     * Check if a block was placed by a player in the given session.
-     */
-    public static boolean isPlayerPlaced(UUID sessionId, Location location) {
-        Set<Location> blocks = placedBlocks.get(sessionId);
-        return blocks != null && blocks.contains(location);
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onBlockBreakMapProtection(BlockBreakEvent event) {
+        if (event.isCancelled()) return;
+
+        Player player = event.getPlayer();
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+
+        if (session == null) return;
+
+        UUID sessionId = session.getSessionId();
+        Block block = event.getBlock();
+        // Use block location (integer coordinates) for consistent comparison
+        Location loc = block.getLocation().toBlockLocation();
+
+        Set<Location> sessionPlacedBlocks = placedBlocks.get(sessionId);
+
+        // If the block was NOT placed by a player, cancel the break
+        if (sessionPlacedBlocks == null || !sessionPlacedBlocks.contains(loc)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // Block was player-placed, allow breaking and remove from tracking
+        sessionPlacedBlocks.remove(loc);
     }
 }
 
