@@ -58,8 +58,10 @@ public final class ItemUtils {
         ItemMeta fromMeta = old.getItemMeta();
         ItemMeta toMeta = newArmor.getItemMeta();
 
-        for (var e : fromMeta.getEnchants().entrySet()) {
-            toMeta.addEnchant(e.getKey(), e.getValue(), true);
+        if (fromMeta != null) {
+            for (var e : fromMeta.getEnchants().entrySet()) {
+                toMeta.addEnchant(e.getKey(), e.getValue(), true);
+            }
         }
         newArmor.setItemMeta(toMeta);
     }
@@ -95,8 +97,6 @@ public final class ItemUtils {
             inv.addItem(newItem);
         }
     }
-
-
 
     public static boolean applyEnchant(Player player, EnchantEntry ee, int lvl) {
         if (player == null || ee == null) return false;
