@@ -155,28 +155,22 @@ public final class GameplayItemFactory {
      */
     private void applyFoodProperties(ItemStack item, FoodItem foodItem) {
         Material material = item.getType();
-        
+
         // Skip special handling for bread and cooked beef (they already have good food properties)
         if (material == Material.BREAD || material == Material.COOKED_BEEF) {
             return;
         }
-        
-        // Special consumables need food properties applied (e.g., spider eye, carrot, etc.)
-        // Always set food properties for custom food items to ensure they are consumable
-        FoodProperties existing = item.getData(DataComponentTypes.FOOD);
-        if (existing != null) {
-            FoodProperties.Builder builder = existing.toBuilder();
-            builder.canAlwaysEat(true);
-            item.setData(DataComponentTypes.FOOD, builder.build());
-        } else {
-            // Create new food component for items that don't have one by default (e.g., SPIDER_EYE for Can of Spinach)
-            item.setData(DataComponentTypes.FOOD, FoodProperties.food()
-                    .canAlwaysEat(true)
-                    .nutrition(4)
-                    .saturation(2.0f)
-                    .build());
-        }
-        
+
+
+        // Create new food component for items that don't have one by default
+        item.setData(DataComponentTypes.FOOD, FoodProperties.food()
+                .canAlwaysEat(true)
+                .nutrition(4)
+                .saturation(2.0f)
+                .build());
+        item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
+
+
         // Apply custom model data for food items with custom textures
         CustomModelDataMapper.applyCustomModel(item, foodItem);
     }
