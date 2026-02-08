@@ -1,7 +1,5 @@
 package me.psikuvit.cashClash.manager.lobby;
 
-import com.destroystokyo.paper.profile.PlayerProfile;
-import io.papermc.paper.datacomponent.item.ResolvableProfile;
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.util.Keys;
@@ -12,15 +10,12 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.profile.PlayerTextures;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -36,7 +31,7 @@ public class MannequinManager {
 
     private final CashClashPlugin plugin;
     private final File dataFile;
-    private final List<Mannequin> spawnedMannequins = new ArrayList<>();
+    private final List<Villager> spawnedMannequins = new ArrayList<>();
     private YamlConfiguration data;
 
     private MannequinManager() {
@@ -119,7 +114,7 @@ public class MannequinManager {
      * Remove all spawned mannequins from the world.
      */
     public void removeAllSpawned() {
-        for (Mannequin mannequin : new ArrayList<>(spawnedMannequins)) {
+        for (Villager mannequin : spawnedMannequins) {
             if (mannequin != null && !mannequin.isDead()) {
                 mannequin.remove();
             }
@@ -128,7 +123,7 @@ public class MannequinManager {
 
         // Also remove any orphaned mannequins with our key
         for (World world : Bukkit.getWorlds()) {
-            for (Mannequin mannequin : world.getEntitiesByClass(Mannequin.class)) {
+            for (Villager mannequin : world.getEntitiesByClass(Villager.class)) {
                 if (PDCDetection.isArenaNPC(mannequin)) {
                     mannequin.remove();
                 }
@@ -186,30 +181,31 @@ public class MannequinManager {
         loc.setYaw(90);
         loc.setPitch(0);
 
-        loc.getWorld().spawn(loc, Mannequin.class, mannequin -> {
+        loc.getWorld().spawn(loc, Villager.class, mannequin -> {
             // Remove display name (no "arenanpc" above them)
             mannequin.setCustomNameVisible(false);
-            mannequin.setImmovable(true);
+            mannequin.setAI(false);
+            mannequin.setSilent(true);
             mannequin.getPersistentDataContainer().set(Keys.ARENA_NPC_KEY, PersistentDataType.BYTE, (byte) 1);
 
             // Apply villager skin (use default villager skin if no URL configured)
-            try {
-                PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID(), "Villager");
-                PlayerTextures playerTextures = profile.getTextures();
-                
-                // Use villager skin URL if configured, otherwise use default villager texture
-                if (skinUrl != null && !skinUrl.isEmpty()) {
-                    playerTextures.setSkin(URI.create(skinUrl).toURL());
-                } else {
-                    // Default villager skin texture
-                    playerTextures.setSkin(URI.create("http://textures.minecraft.net/texture/42291d82db22fb42e785f86d3f44a3268e4e75b429ace4e4c8c5a95e8e4eb66b").toURL());
-                }
-                profile.setTextures(playerTextures);
-                mannequin.setProfile(ResolvableProfile.resolvableProfile(profile));
-                Messages.debug("[MannequinManager] Applied villager skin to mannequin " + id);
-            } catch (MalformedURLException e) {
-                plugin.getLogger().warning("[MannequinManager] Failed to apply skin for mannequin " + id + ": " + e.getMessage());
-            }
+//            try {
+//                PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID(), "Villager");
+//                PlayerTextures playerTextures = profile.getTextures();
+//
+//                // Use villager skin URL if configured, otherwise use default villager texture
+//                if (skinUrl != null && !skinUrl.isEmpty()) {
+//                    playerTextures.setSkin(URI.create(skinUrl).toURL());
+//                } else {
+//                    // Default villager skin texture
+//                    playerTextures.setSkin(URI.create("http://textures.minecraft.net/texture/42291d82db22fb42e785f86d3f44a3268e4e75b429ace4e4c8c5a95e8e4eb66b").toURL());
+//                }
+//                profile.setTextures(playerTextures);
+//                mannequin.setProfile(ResolvableProfile.resolvableProfile(profile));
+//                Messages.debug("[MannequinManager] Applied villager skin to mannequin " + id);
+//            } catch (MalformedURLException e) {
+//                plugin.getLogger().warning("[MannequinManager] Failed to apply skin for mannequin " + id + ": " + e.getMessage());
+//            }
 
             spawnedMannequins.add(mannequin);
         });

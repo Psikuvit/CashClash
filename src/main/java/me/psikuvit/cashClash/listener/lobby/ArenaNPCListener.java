@@ -3,8 +3,8 @@ package me.psikuvit.cashClash.listener.lobby;
 import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.items.PDCDetection;
-import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,21 +18,18 @@ public class ArenaNPCListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
-        if (!(event.getRightClicked() instanceof Mannequin mannequin)) return;
+        if (event.isCancelled()) return;
+        if (!(event.getRightClicked() instanceof Villager mannequin)) return;
 
         // Check if this is an arena NPC
-        if (!PDCDetection.isArenaNPC(mannequin)) {
-            return;
-        }
+        if (!PDCDetection.isArenaNPC(mannequin)) return;
+
 
         event.setCancelled(true);
-
         Player player = event.getPlayer();
 
         // Don't open GUI if player is already in a game
-        if (GameManager.getInstance().getPlayerSession(player) != null) {
-            return;
-        }
+        if (GameManager.getInstance().getPlayerSession(player) != null) return;
 
         // Open the arena selection GUI
         ArenaSelectionGUI.openArenaGUI(player);
