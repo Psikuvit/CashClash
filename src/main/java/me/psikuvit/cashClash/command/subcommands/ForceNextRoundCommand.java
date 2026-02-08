@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -46,7 +47,7 @@ public class ForceNextRoundCommand extends AbstractArgCommand {
         }
 
         int currentRound = session.getCurrentRound();
-        int totalRounds = 5; // From ConfigManager
+        int totalRounds = ConfigManager.getInstance().getTotalRounds();
 
         if (currentRound >= totalRounds) {
             Messages.send(sender, "<yellow>This is the final round. Ending game instead.</yellow>");
