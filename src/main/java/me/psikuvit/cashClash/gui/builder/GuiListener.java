@@ -16,6 +16,7 @@ public class GuiListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
+        if (event.isCancelled()) return;
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
@@ -53,6 +54,7 @@ public class GuiListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryDrag(InventoryDragEvent event) {
+        if (event.isCancelled()) return;
         if (!(event.getWhoClicked() instanceof Player)) {
             return;
         }
