@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.manager.lobby;
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.util.Keys;
+import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
@@ -99,7 +100,7 @@ public class MannequinManager {
                 continue;
             }
 
-            Location loc = new Location(world, x, y, z);
+            Location loc = LocationUtils.adjustLocationToWorld(new Location(world, x, y, z), world);
 
             if ("arena".equals(type)) {
                 spawnArenaMannequin(loc, id);

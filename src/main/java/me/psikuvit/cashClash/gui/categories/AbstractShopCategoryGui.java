@@ -121,8 +121,10 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         if (ccp == null) return;
 
         int qty = item.getInitialAmount();
-        if (clickType.isShiftClick()) {
-            qty = 10;
+        if (item.getCategory() == ShopCategory.UTILITY || item.getCategory() == ShopCategory.FOOD) {
+            if (clickType.isShiftClick()) {
+                qty = 10;
+            }
         }
 
         long totalPrice = ShopService.getInstance().calculateTotalPrice(item, qty);
@@ -156,7 +158,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
             Messages.send(viewer, "<red>No purchase to undo.</red>");
             return;
         }
-
+        Messages.debug(rec.toString());
         if (rec.item().getCategory() != category) {
             Messages.send(viewer, "<red>No purchase to undo in this category.</red>");
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);

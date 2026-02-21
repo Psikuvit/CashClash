@@ -216,14 +216,10 @@ public final class CustomModelDataMapper {
      * @param key The string key (e.g., "grenade", "speedcarrot")
      */
     public static void applyStringModelData(ItemStack item, String key) {
-        if (item == null || key == null) {
-            return;
-        }
+        if (item == null || key == null) return;
 
         ItemMeta meta = item.getItemMeta();
-        if (meta == null) {
-            return;
-        }
+        if (meta == null) return;
 
         // Use Paper's CustomModelDataComponent with strings list
         CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
@@ -247,8 +243,8 @@ public final class CustomModelDataMapper {
         CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
         List<String> strings = cmd.getStrings();
 
-        if (strings != null && !strings.isEmpty()) {
-            return strings.get(0);
+        if (!strings.isEmpty()) {
+            return strings.getFirst();
         }
         return null;
     }
