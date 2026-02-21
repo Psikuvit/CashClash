@@ -271,18 +271,7 @@ public class GameListener implements Listener {
             cooldownManager.setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE, cooldownSeconds);
         }
 
-        switch (fi) {
-            case SPEED_CARROT -> applyConsumable(p, new PotionEffect(PotionEffectType.SPEED, 20 * 20, 0), "<green>Speed I activated!</green>");
-            case GOLDEN_CHICKEN -> applyAbsorption(p);
-            case COOKIE_OF_LIFE -> applyConsumable(p, new PotionEffect(PotionEffectType.REGENERATION, 14 * 20, 0), "<dark_green>Regeneration I activated!</dark_green>");
-            case SUNSCREEN -> {
-                applyConsumable(p, new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 30 * 20, 0), "<aqua>Fire Resistance activated!</aqua>");
-                SchedulerUtils.runTaskLater(() -> removeEmptyBottle(p), 1L);
-            }
-            case CAN_OF_SPINACH -> {
-                applyConsumable(p, new PotionEffect(PotionEffectType.STRENGTH, 15 * 20, 0), "<gold>Spinach Strength activated!</gold>");
-            }
-        }
+        if (fi == FoodItem.SUNSCREEN) SchedulerUtils.runTaskLater(() -> removeEmptyBottle(p), 1L);
     }
 
     /**

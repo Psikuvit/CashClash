@@ -1,7 +1,10 @@
 package me.psikuvit.cashClash.util.items;
 
 import io.papermc.paper.datacomponent.DataComponentTypes;
+import io.papermc.paper.datacomponent.item.Consumable;
 import io.papermc.paper.datacomponent.item.FoodProperties;
+import io.papermc.paper.datacomponent.item.consumable.ConsumeEffect;
+import io.papermc.paper.datacomponent.item.consumable.ItemUseAnimation;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
@@ -18,6 +21,8 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -161,7 +166,6 @@ public final class GameplayItemFactory {
             return;
         }
 
-
         // Create new food component for items that don't have one by default
         item.setData(DataComponentTypes.FOOD, FoodProperties.food()
                 .canAlwaysEat(true)
@@ -170,11 +174,26 @@ public final class GameplayItemFactory {
                 .build());
         item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
 
+        PotionEffect potionEffect;
+        switch (foodItem) {
+            case SPEED_CARROT -> potionEffect = new PotionEffect(PotionEffectType.SPEED, 20 * 20, 0);
+            case GOLDEN_CHICKEN -> potionEffect = new PotionEffect(PotionEffectType.ABSORPTION, 20 * 20, 1);
+            case COOKIE_OF_LIFE -> potionEffect = new PotionEffect(PotionEffectType.REGENERATION, 14 * 20, 0);
+            case SUNSCREEN -> potionEffect = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 30 * 20, 0);
+            case CAN_OF_SPINACH -> potionEffect = new PotionEffect(PotionEffectType.STRENGTH, 15 * 20, 0);
+            default -> throw new IllegalArgumentException("Invalid food item: " + foodItem);
+        }
+        item.setData(DataComponentTypes.CONSUMABLE, Consumable.consumable()
+                .animation(ItemUseAnimation.EAT)
+                .addEffect(ConsumeEffect.applyStatusEffects(List.of(potionEffect), 1))
+                .build()
+        );
+
 
         // Apply custom model data for food items with custom textures
         CustomModelDataMapper.applyCustomModel(item, foodItem);
     }
-    
+
     /**
      * Applies armor properties (unbreakable, hide flags) to armor items.
      */
