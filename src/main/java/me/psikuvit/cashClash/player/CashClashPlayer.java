@@ -71,7 +71,7 @@ public class CashClashPlayer {
     public void initializeRound(int roundNumber) {
         switch (roundNumber) {
             case 2, 3, 4 -> this.coins += 30000;
-            case 5 -> {
+            case 5, 6, 7 -> {
                 if (this.coins < 20000) {
                     this.coins += 10000;
                 }

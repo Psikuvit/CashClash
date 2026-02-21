@@ -170,7 +170,7 @@ public class RoundManager {
         session.resolveRoundInvestments();
 
         // Move to next round or end game
-        if (session.getCurrentRound() >= 5) {
+        if (session.getCurrentRound() >= ConfigManager.getInstance().getTotalRounds()) {
             session.end();
         } else {
             SchedulerUtils.runTaskLater(session::nextRound, 20L);

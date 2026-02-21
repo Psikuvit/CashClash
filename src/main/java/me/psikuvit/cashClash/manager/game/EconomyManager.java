@@ -41,6 +41,7 @@ public class EconomyManager {
             case 1 -> cfg.getRound1TransferFee();
             case 2, 3 -> cfg.getRound23TransferFee();
             case 4, 5 -> cfg.getRound45TransferFee();
+            case 6, 7 -> cfg.getLateRoundStealPercentage();
             default -> 0.0;
         };
     }
