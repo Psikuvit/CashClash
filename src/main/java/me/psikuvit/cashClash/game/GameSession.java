@@ -305,20 +305,32 @@ public class GameSession {
         Player p = Bukkit.getPlayer(uuid);
         if (p == null || !p.isOnline() || ccp == null) return;
 
-        Kit randomKit = getRandomKit();
+        // Determine the kit to use
+        Kit kitToApply;
+        if (currentRound == 1) {
+            // Round 1: Assign a random kit
+            kitToApply = getRandomKit();
+            ccp.setCurrentKit(kitToApply);
 
-        ccp.setCurrentKit(randomKit);
+            PlayerData playerData = PlayerDataManager.getInstance().getData(uuid);
+            if (playerData.hasKitLayout(kitToApply.name())) {
+                Map<Integer, String> layout = playerData.getKitLayout(kitToApply.name());
+                kitToApply.applyWithLayout(p, layout, currentRound, rounds1to3HaveShields);
+            } else {
+                kitToApply.apply(p, currentRound, rounds1to3HaveShields);
+            }
 
-        // Check for custom layout
-        PlayerData playerData = PlayerDataManager.getInstance().getData(uuid);
-        if (playerData.hasKitLayout(randomKit.name())) {
-            Map<Integer, String> layout = playerData.getKitLayout(randomKit.name());
-            randomKit.applyWithLayout(p, layout, currentRound, rounds1to3HaveShields);
+            Messages.send(p, "<green>You have been assigned kit: <yellow>" + kitToApply + "</yellow></green>");
         } else {
-            randomKit.apply(p, currentRound, rounds1to3HaveShields);
+            // Round 2+: Use the existing kit
+            kitToApply = ccp.getCurrentKit();
+            if (kitToApply == null) {
+                // Fallback if no kit is set (shouldn't happen)
+                kitToApply = getRandomKit();
+                ccp.setCurrentKit(kitToApply);
+            }
+            kitToApply.apply(p, currentRound, rounds1to3HaveShields);
         }
-
-        Messages.send(p, "<green>You have been assigned kit: <yellow>" + randomKit + "</yellow></green>");
     }
 
     /**
@@ -370,6 +382,10 @@ public class GameSession {
         state = GameState.SHOPPING;
 
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
+
+        // Reapply kits for round 2+ (removes kit items, keeps base items, toggles shield)
+        SchedulerUtils.runTask(() -> players.keySet().forEach(this::applyKit));
+
         if (roundManager != null) roundManager.startShoppingPhase(currentRound);
     }
 
