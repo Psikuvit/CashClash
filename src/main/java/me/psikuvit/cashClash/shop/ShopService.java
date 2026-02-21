@@ -137,6 +137,8 @@ public class ShopService {
                 // Find and remove from inventory
                 for (int i = 0; i < inv.getSize(); i++) {
                     ItemStack invItem = inv.getItem(i);
+                    if (invItem == null || invItem.getType().isAir()) continue;
+
                     String invItemId = PDCDetection.getAnyShopTag(invItem);
                     if (itemId != null && itemId.equals(invItemId)) {
                         inv.setItem(i, null);
@@ -168,6 +170,8 @@ public class ShopService {
                 // Find and remove from inventory
                 for (int i = 0; i < inv.getSize(); i++) {
                     ItemStack invItem = inv.getItem(i);
+                    if (invItem == null || invItem.getType().isAir()) continue;
+
                     String invItemId = PDCDetection.getAnyShopTag(invItem);
                     if (itemId != null && itemId.equals(invItemId)) {
                         inv.setItem(i, null);
@@ -229,11 +233,12 @@ public class ShopService {
 
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         int round = sess != null ? sess.getCurrentRound() : 1;
+        Messages.debug("Bought item: " + item);
 
         switch (item) {
             case CustomArmorItem customArmor -> {
                 // Check if this is part of a set (Deathmauler, Dragon, Flamebringer, Investor)
-                if (customArmor.isPartOfSet() && customArmor.getArmorSet() != null) {
+                if (customArmor.isPartOfSet()) {
                     // Handle full set purchase - track all replaced items
                     List<CustomArmorItem> setPieces = customArmor.getArmorSet().getPieces();
                     Map<ArmorSlot, ItemStack> replacedSetItems = new EnumMap<>(ArmorSlot.class);
@@ -272,26 +277,26 @@ public class ShopService {
                     SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
                 } else {
                     // Individual custom armor piece (Magic Helmet, Bunny Shoes, Tax Evasion Pants, Guardian's Vest)
-                    // Get the currently equipped armor before replacing
                     ArmorSlot slot = getArmorSlot(customArmor.getMaterial());
                     ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
+                    Messages.debug("Current armor in slot " + slot + ": " + currentArmor);
                     ItemStack replacedItem = null;
 
                     if (currentArmor != null && currentArmor.getType() != Material.AIR) {
                         // Check if it's custom armor - return to inventory
                         if (PDCDetection.isCustomArmorItem(currentArmor)) {
-                            replacedItem = currentArmor.clone();
+                            Messages.debug("Replacing custom armor in slot " + slot + ": " + currentArmor);
+                            replacedItem = currentArmor;
                             returnReplacedItemToInventory(player, currentArmor.clone());
                         } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
                             // Purchased vanilla armor - track but don't return (disappears)
-                            replacedItem = currentArmor.clone();
+                            Messages.debug("Replacing vanilla armor in slot " + slot + ": " + currentArmor);
+                            replacedItem = currentArmor;
                         }
-                        // Starter armor (no tag) just disappears
                     }
 
                     // Equip the custom armor
                     ItemFactory.getInstance().createAndEquipCustomArmor(player, customArmor);
-
 
                     ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
                     ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);

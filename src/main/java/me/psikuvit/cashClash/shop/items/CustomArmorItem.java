@@ -57,7 +57,7 @@ public enum CustomArmorItem implements Purchasable {
 
     @Override
     public ShopCategory getCategory() {
-        return ShopCategory.CUSTOM_ARMOR;
+        return ShopCategory.ARMOR;
     }
 
     @Override
@@ -153,7 +153,7 @@ public enum CustomArmorItem implements Purchasable {
      * Used to determine if standard armor should be discarded on upgrade.
      */
     public boolean isPartOfSet() {
-        return armorSet == ArmorSet.DEATHMAULER || armorSet == ArmorSet.DRAGON || armorSet == ArmorSet.FLAMEBRINGER;
+        return armorSet != null;
     }
 
     /**

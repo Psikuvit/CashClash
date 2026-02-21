@@ -265,8 +265,7 @@ public final class ItemUtils {
         // Only check ownership for categories where duplicates aren't allowed
         ShopCategory category = shopItem.getCategory();
         if (category != ShopCategory.ARMOR &&
-                category != ShopCategory.WEAPONS &&
-                category != ShopCategory.CUSTOM_ARMOR) {
+                category != ShopCategory.WEAPONS) {
             return false;
         }
         return Stream.concat(Arrays.stream(player.getInventory().getContents()), Arrays.stream(player.getInventory().getArmorContents()))

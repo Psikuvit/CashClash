@@ -1,7 +1,5 @@
 package me.psikuvit.cashClash.shop;
 
-import org.bukkit.Material;
-
 /**
  * Shop categories and items
  */
@@ -12,7 +10,6 @@ public enum ShopCategory {
     UTILITY,
     ENCHANTS,
     CUSTOM_ITEMS,
-    CUSTOM_ARMOR,
     LEGENDARIES,
     INVESTMENTS;
 
