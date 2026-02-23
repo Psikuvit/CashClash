@@ -5,10 +5,13 @@ import io.papermc.paper.datacomponent.item.Consumable;
 import io.papermc.paper.datacomponent.item.FoodProperties;
 import io.papermc.paper.datacomponent.item.consumable.ConsumeEffect;
 import io.papermc.paper.datacomponent.item.consumable.ItemUseAnimation;
+import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
+import me.psikuvit.cashClash.shop.items.UtilityItem;
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
@@ -33,6 +36,12 @@ import java.util.List;
  */
 public final class GameplayItemFactory {
     
+    private final ConfigurableItemLoreProvider loreProvider;
+
+    GameplayItemFactory() {
+        this.loreProvider = ConfigurableItemLoreProvider.getInstance();
+    }
+
     /**
      * Creates a tagged item from a Purchasable.
      * The item will have proper PDC tags for tracking and refund purposes.
@@ -52,10 +61,18 @@ public final class GameplayItemFactory {
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, purchasable.name());
         
-        // Set display name and lore if description exists
-        if (!purchasable.getDescription().isEmpty()) {
-            meta.displayName(Messages.parse("<yellow>" + purchasable.getDisplayName() + "</yellow>"));
-            meta.lore(Messages.wrapLines(purchasable.getDescription()));
+        // Set display name
+        meta.displayName(Messages.parse("<yellow>" + purchasable.getDisplayName() + "</yellow>"));
+
+        // Try to get lore from configuration based on item category
+        List<Component> lore = getConfiguredLore(purchasable);
+
+        if (lore.isEmpty() && !purchasable.getDescription().isEmpty()) {
+            lore = Messages.wrapLines(purchasable.getDescription());
+        }
+
+        if (!lore.isEmpty()) {
+            meta.lore(lore);
         }
         
         // Handle special item types
@@ -89,11 +106,21 @@ public final class GameplayItemFactory {
         
         if (meta == null) return item;
         
-        // Set display name and lore
+        // Set display name
         meta.displayName(Messages.parse("<yellow>" + customItem.getDisplayName() + "</yellow>"));
-        List<Component> lore = new ArrayList<>(Messages.wrapLines(customItem.getDescription()));
-        meta.lore(lore);
-        
+
+        // Try to get lore from configuration first
+        List<Component> lore = loreProvider.getLore("custom-items", customItem.name());
+
+        // Fallback to description-based lore if no configuration exists
+        if (lore.isEmpty() && !customItem.getDescription().isEmpty()) {
+            lore = new ArrayList<>(Messages.wrapLines(customItem.getDescription()));
+        }
+
+        if (!lore.isEmpty()) {
+            meta.lore(lore);
+        }
+
         // Add PDC tags
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, customItem.name());
@@ -101,10 +128,10 @@ public final class GameplayItemFactory {
         
         // Apply special properties based on item type
         applyCustomItemProperties(meta, customItem, item);
-        
+
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
         item.setItemMeta(meta);
-        
+
         // Apply custom model data
         CustomModelDataMapper.applyCustomModel(item, customItem);
         
@@ -129,14 +156,25 @@ public final class GameplayItemFactory {
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, armor.name());
         
-        // Set display name and lore
+        // Set display name
         meta.displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
         
-        List<Component> wrappedLore = Messages.wrapLines("<gray>" + armor.getLore() + "</gray>");
-        wrappedLore.add(Component.empty());
-        wrappedLore.add(Messages.parse("<yellow>Special Armor</yellow>"));
-        meta.lore(wrappedLore);
-        
+        // Try to get lore from configuration first
+        List<Component> lore = loreProvider.getLore("custom-armor", armor.name());
+
+        // Fallback to armor.getLore() if no configuration exists
+        if (lore.isEmpty() && armor.getLore() != null && !armor.getLore().isEmpty()) {
+            lore = Messages.wrapLines("<gray>" + armor.getLore() + "</gray>");
+        }
+
+        // Add empty line and special armor note if we have lore
+        if (!lore.isEmpty()) {
+            lore = new ArrayList<>(lore);
+            lore.add(Component.empty());
+            lore.add(Messages.parse("<yellow>Special Armor</yellow>"));
+            meta.lore(lore);
+        }
+
         // Make unbreakable and hide flags
         meta.setUnbreakable(true);
         meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
@@ -228,5 +266,47 @@ public final class GameplayItemFactory {
                 // No special properties
             }
         }
+    }
+
+    // ==================== LORE CONFIGURATION HELPERS ====================
+
+    /**
+     * Get configured lore for a purchasable item.
+     * Uses ItemsConfig to fetch lore based on item category.
+     *
+     * @param purchasable The item to get lore for
+     * @return List of lore components from config, or empty list if none configured
+     */
+    private List<Component> getConfiguredLore(Purchasable purchasable) {
+        String category = getCategoryKey(purchasable);
+        if (category == null) {
+            return List.of();
+        }
+
+        return loreProvider.getLore(category, purchasable.name());
+    }
+
+    /**
+     * Get the configuration category key for a purchasable item.
+     * Maps item types to their config categories.
+     *
+     * @param purchasable The item
+     * @return Category key for config lookup, or null if item type not supported
+     */
+    private String getCategoryKey(Purchasable purchasable) {
+        if (purchasable instanceof WeaponItem) {
+            return "weapons";
+        } else if (purchasable instanceof ArmorItem) {
+            return "armor";
+        } else if (purchasable instanceof FoodItem) {
+            return "food";
+        } else if (purchasable instanceof UtilityItem) {
+            return "utility";
+        } else if (purchasable instanceof CustomItem) {
+            return "custom-items";
+        } else if (purchasable instanceof CustomArmorItem) {
+            return "custom-armor";
+        }
+        return null;
     }
 }

@@ -307,3 +307,287 @@ lobby-items:
     slot: 8
 
 
+# ============================================
+# ITEM LORE CONFIGURATION
+# ============================================
+# Configure lore for all purchasable items
+# Format: item-lore.{category}.{item-key}.lore: [lore lines]
+# Optional: item-lore.{category}.{item-key}.description: "single line description"
+#
+# Categories: weapons, armor, food, utility, custom-items, custom-armor, mythic-items
+#
+item-lore:
+  # ==================== WEAPONS ====================
+  weapons:
+    iron-sword:
+      lore:
+        - "<gray>A basic iron blade</gray>"
+        - "<yellow>Early game weapon</yellow>"
+    iron-axe:
+      lore:
+        - "<gray>A basic iron axe</gray>"
+        - "<yellow>Early game weapon</yellow>"
+    diamond-sword:
+      lore:
+        - "<gray>A sharp diamond blade</gray>"
+        - "<yellow>Mid game weapon</yellow>"
+    diamond-axe:
+      lore:
+        - "<gray>A sharp diamond axe</gray>"
+        - "<yellow>Mid game weapon</yellow>"
+    netherite-sword:
+      lore:
+        - "<gray>A legendary netherite blade</gray>"
+        - "<yellow>Late game weapon</yellow>"
+    netherite-axe:
+      lore:
+        - "<gray>A legendary netherite axe</gray>"
+        - "<yellow>Late game weapon</yellow>"
+
+  # ==================== ARMOR ====================
+  armor:
+    iron-helmet:
+      lore:
+        - "<gray>Iron protection</gray>"
+        - "<yellow>Early game armor</yellow>"
+    iron-chestplate:
+      lore:
+        - "<gray>Iron protection</gray>"
+        - "<yellow>Early game armor</yellow>"
+    iron-leggings:
+      lore:
+        - "<gray>Iron protection</gray>"
+        - "<yellow>Early game armor</yellow>"
+    iron-boots:
+      lore:
+        - "<gray>Iron protection</gray>"
+        - "<yellow>Early game armor</yellow>"
+    diamond-helmet:
+      lore:
+        - "<gray>Diamond protection</gray>"
+        - "<yellow>Mid game armor</yellow>"
+    diamond-chestplate:
+      lore:
+        - "<gray>Diamond protection</gray>"
+        - "<yellow>Mid game armor</yellow>"
+    diamond-leggings:
+      lore:
+        - "<gray>Diamond protection</gray>"
+        - "<yellow>Mid game armor</yellow>"
+    diamond-boots:
+      lore:
+        - "<gray>Diamond protection</gray>"
+        - "<yellow>Mid game armor</yellow>"
+    netherite-helmet:
+      lore:
+        - "<gray>Legendary netherite protection</gray>"
+        - "<yellow>Late game armor</yellow>"
+    netherite-chestplate:
+      lore:
+        - "<gray>Legendary netherite protection</gray>"
+        - "<yellow>Late game armor</yellow>"
+    netherite-leggings:
+      lore:
+        - "<gray>Legendary netherite protection</gray>"
+        - "<yellow>Late game armor</yellow>"
+    netherite-boots:
+      lore:
+        - "<gray>Legendary netherite protection</gray>"
+        - "<yellow>Late game armor</yellow>"
+
+  # ==================== FOOD ====================
+  food:
+    bread:
+      lore:
+        - "<gray>Basic food item</gray>"
+        - "<yellow>Restores 2 hunger bars</yellow>"
+    cooked-mutton:
+      lore:
+        - "<gray>Cooked mutton</gray>"
+        - "<yellow>Restores 2 hunger bars</yellow>"
+    steak:
+      lore:
+        - "<gray>Cooked beef</gray>"
+        - "<yellow>Restores 2 hunger bars</yellow>"
+    porkchop:
+      lore:
+        - "<gray>Cooked porkchop</gray>"
+        - "<yellow>Restores 2 hunger bars</yellow>"
+    golden-carrot:
+      lore:
+        - "<gray>A golden carrot</gray>"
+        - "<yellow>Restores 2 hunger bars</yellow>"
+    golden-apple:
+      lore:
+        - "<gray>A golden apple</gray>"
+        - "<yellow>Restores 1 hunger bar</yellow>"
+    enchanted-golden-apple:
+      lore:
+        - "<gray>An enchanted golden apple</gray>"
+        - "<yellow>Restores 1 hunger bar</yellow>"
+    speed-carrot:
+      lore:
+        - "<gray>Grants temporary speed boost</gray>"
+        - "<yellow>Speed I for 20 seconds</yellow>"
+    golden-chicken:
+      lore:
+        - "<gray>A golden chicken</gray>"
+        - "<yellow>Grants 4 absorption hearts</yellow>"
+    cookie-of-life:
+      lore:
+        - "<gray>A magical cookie</gray>"
+        - "<yellow>Grants Regeneration I for 14 seconds</yellow>"
+    sunscreen:
+      lore:
+        - "<gray>Protects you from fire</gray>"
+        - "<yellow>Fire Resistance for 30 seconds</yellow>"
+    can-of-spinach:
+      lore:
+        - "<gray>Canned spinach</gray>"
+        - "<yellow>Grants Strength I for 15 seconds</yellow>"
+
+  # ==================== UTILITY ====================
+  utility:
+    bow:
+      lore:
+        - "<gray>A basic bow</gray>"
+        - "<yellow>Use with arrows</yellow>"
+    arrows:
+      lore:
+        - "<gray>Basic arrows</gray>"
+        - "<yellow>Ammunition for bows</yellow>"
+    cobweb:
+      lore:
+        - "<gray>Sticky cobweb</gray>"
+        - "<yellow>Slows enemies</yellow>"
+
+  # ==================== CUSTOM ITEMS ====================
+  custom-items:
+    grenade:
+      lore:
+        - "<gray>Explosive device</gray>"
+        - "<yellow>3 second fuse</yellow>"
+    smoke-grenade:
+      lore:
+        - "<gray>Creates smoke cloud</gray>"
+        - "<yellow>Blinds enemies</yellow>"
+    bounce-pad:
+      lore:
+        - "<gray>Launches you upward</gray>"
+        - "<yellow>Escape tool</yellow>"
+    medic-pouch:
+      lore:
+        - "<gray>Heals allies</gray>"
+        - "<yellow>Cooldown: 10 seconds</yellow>"
+    tablet-of-hacking:
+      lore:
+        - "<gray>Hacks nearby containers</gray>"
+        - "<yellow>Instant use</yellow>"
+    bag-of-potatoes:
+      lore:
+        - "<gray>Heavy bag of potatoes</gray>"
+        - "<yellow>Knockback on hit</yellow>"
+    boombox:
+      lore:
+        - "<gray>Makes loud noise</gray>"
+        - "<yellow>Pushes nearby enemies</yellow>"
+    invis-cloak:
+      lore:
+        - "<gray>Grants invisibility</gray>"
+        - "<yellow>Costs coins per second</yellow>"
+    cash-blaster:
+      lore:
+        - "<gray>Shoots coins</gray>"
+        - "<yellow>Deals damage</yellow>"
+    respawn-anchor:
+      lore:
+        - "<gray>Revives fallen allies</gray>"
+        - "<yellow>Limited uses</yellow>"
+
+  # ==================== CUSTOM ARMOR ====================
+  custom-armor:
+    magic-helmet:
+      lore:
+        - "<gray>Grants invisibility</gray>"
+        - "<yellow>When standing still</yellow>"
+    bunny-shoes:
+      lore:
+        - "<gray>Increases speed</gray>"
+        - "<yellow>And jump height</yellow>"
+    guardians-vest:
+      lore:
+        - "<gray>Protective vest</gray>"
+        - "<yellow>Grants resistance</yellow>"
+    deathmauler:
+      lore:
+        - "<gray>Powerful armor</gray>"
+        - "<yellow>Heals on kills</yellow>"
+    dragon:
+      lore:
+        - "<gray>Dragon-themed armor</gray>"
+        - "<yellow>Double jump ability</yellow>"
+    flamebringer:
+      lore:
+        - "<gray>Sets enemies on fire</gray>"
+        - "<yellow>Ignite on hit</yellow>"
+    tax-evasion:
+      lore:
+        - "<gray>Evades taxes</gray>"
+        - "<yellow>Bonus on survival</yellow>"
+    investors:
+      lore:
+        - "<gray>Investor's armor</gray>"
+        - "<yellow>Money bonus</yellow>"
+
+  # ==================== MYTHIC ITEMS ====================
+  mythic-items:
+    coin-cleaver:
+      lore:
+        - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
+        - "<dark_purple>A cleaver that showers coins</dark_purple>"
+        - "<yellow>Damage Bonus: +25%</yellow>"
+        - "<yellow>Grenade Ability: Throw coins</yellow>"
+    carls-battleaxe:
+      lore:
+        - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
+        - "<dark_purple>A legendary battleaxe</dark_purple>"
+        - "<yellow>Spin Attack ability</yellow>"
+        - "<yellow>Critical Hit launches enemies</yellow>"
+    wind-bow:
+      lore:
+        - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
+        - "<dark_purple>A bow of the winds</dark_purple>"
+        - "<yellow>Push enemies with arrows</yellow>"
+        - "<yellow>Speed boost ability</yellow>"
+    electric-eel:
+      lore:
+        - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
+        - "<dark_purple>A sword crackling with energy</dark_purple>"
+        - "<yellow>Chain damage to nearby enemies</yellow>"
+        - "<yellow>Teleport ability</yellow>"
+    goblin-spear:
+      lore:
+        - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
+        - "<dark_purple>A spear of poison</dark_purple>"
+        - "<yellow>Throwable projectiles</yellow>"
+        - "<yellow>Charge forward ability</yellow>"
+    bloodwrench:
+      lore:
+        - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
+        - "<dark_purple>A dual-mode crossbow</dark_purple>"
+        - "<yellow>Rapid fire mode</yellow>"
+        - "<yellow>Supercharge vortex mode</yellow>"
+    warden-gloves:
+      lore:
+        - "<light_purple>✦ MYTHIC ARMOR ✦</light_purple>"
+        - "<dark_purple>Powerful protective gloves</dark_purple>"
+        - "<yellow>Shockwave ability</yellow>"
+        - "<yellow>Boxing punches for speed</yellow>"
+    blazebite-crossbows:
+      lore:
+        - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
+        - "<dark_purple>Dual-mode crossbows</dark_purple>"
+        - "<yellow>Glacier mode: Freeze enemies</yellow>"
+        - "<yellow>Volcano mode: Ignite enemies</yellow>"
+
+

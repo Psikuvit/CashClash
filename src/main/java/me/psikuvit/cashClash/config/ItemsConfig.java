@@ -6,6 +6,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Manages items.yml configuration for all item-related constants.
@@ -475,6 +477,50 @@ public class ItemsConfig {
 
     public int getLobbyLayoutConfiguratorSlot() {
         return config.getInt("lobby-items.layout-configurator.slot", 8);
+    }
+
+    // ==================== ITEM LORE CONFIGURATION ====================
+
+    /**
+     * Get lore lines for an item by category and key.
+     * Returns empty list if not configured.
+     *
+     * @param category The item category (e.g., "weapons", "armor", "food", etc.)
+     * @param itemKey The item key (enum name or config key)
+     * @return List of lore lines as strings, or empty list if none configured
+     */
+    public List<String> getItemLore(String category, String itemKey) {
+        if (category == null || itemKey == null) {
+            return Collections.emptyList();
+        }
+
+        String path = "item-lore." + category + "." + itemKey + ".lore";
+        List<String> lore = config.getStringList(path);
+
+        // Fallback to simple array if not nested under "lore" key
+        if (lore.isEmpty()) {
+            path = "item-lore." + category + "." + itemKey;
+            lore = config.getStringList(path);
+        }
+
+        return lore;
+    }
+
+    /**
+     * Get description for an item by category and key.
+     * Returns null or empty string if not configured.
+     *
+     * @param category The item category
+     * @param itemKey The item key
+     * @return Description string, or empty string if none configured
+     */
+    public String getItemDescription(String category, String itemKey) {
+        if (category == null || itemKey == null) {
+            return "";
+        }
+
+        String path = "item-lore." + category + "." + itemKey + ".description";
+        return config.getString(path, "");
     }
 }
 
