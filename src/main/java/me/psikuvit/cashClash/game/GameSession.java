@@ -361,8 +361,6 @@ public class GameSession {
             return;
         } else if (currentRound == 2) {
             MythicItemManager.getInstance().selectLegendariesForSession(this);
-        } else if (currentRound == 4) {
-            rounds1to3HaveShields = !rounds1to3HaveShields;
         }
 
         currentRoundData = new RoundData(players.keySet());
