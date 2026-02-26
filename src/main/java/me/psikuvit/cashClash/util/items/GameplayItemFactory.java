@@ -110,7 +110,7 @@ public final class GameplayItemFactory {
         meta.displayName(Messages.parse("<yellow>" + customItem.getDisplayName() + "</yellow>"));
 
         // Try to get lore from configuration first
-        List<Component> lore = loreProvider.getLore("custom-items", customItem.name());
+        List<Component> lore = getConfiguredLore(customItem);
 
         // Fallback to description-based lore if no configuration exists
         if (lore.isEmpty() && !customItem.getDescription().isEmpty()) {
@@ -160,7 +160,7 @@ public final class GameplayItemFactory {
         meta.displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
         
         // Try to get lore from configuration first
-        List<Component> lore = loreProvider.getLore("custom-armor", armor.name());
+        List<Component> lore = getConfiguredLore(armor);
 
         // Fallback to armor.getLore() if no configuration exists
         if (lore.isEmpty() && armor.getLore() != null && !armor.getLore().isEmpty()) {
