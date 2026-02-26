@@ -35,11 +35,13 @@ public class ShopItemBuilder {
     private final ItemStack item;
     private final ItemMeta meta;
     private final List<Component> lore;
+    private final List<Component> priceLore;
 
     private ShopItemBuilder(Material material, int amount) {
         this.item = new ItemStack(material, amount);
         this.meta = item.getItemMeta();
         this.lore = new ArrayList<>();
+        this.priceLore = new ArrayList<>();
     }
 
     /**
@@ -94,7 +96,18 @@ public class ShopItemBuilder {
      * @return This builder for chaining
      */
     public ShopItemBuilder price(long price) {
-        lore.add(Messages.parse("<gray>Price: <gold>$" + String.format("%,d", price) + "</gold></gray>"));
+        priceLore.add(Messages.parse("<gray>Price: <gold>$" + String.format("%,d", price) + "</gold></gray>"));
+        return this;
+    }
+
+    /**
+     * Adds a price detail line that should appear at the bottom of the lore.
+     *
+     * @param miniMessage The price detail text in MiniMessage format
+     * @return This builder for chaining
+     */
+    public ShopItemBuilder priceDetail(String miniMessage) {
+        priceLore.addAll(Messages.wrapLines(miniMessage));
         return this;
     }
 
@@ -209,6 +222,7 @@ public class ShopItemBuilder {
      */
     public ShopItemBuilder owned() {
         lore.clear();
+        priceLore.clear();
         lore.addAll(Messages.wrapLines("<gray>You already own this item</gray>"));
         meta.getPersistentDataContainer().set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         return this;
@@ -222,6 +236,7 @@ public class ShopItemBuilder {
      */
     public ShopItemBuilder maxed(String message) {
         lore.clear();
+        priceLore.clear();
         lore.addAll(Messages.wrapLines(message));
         meta.getPersistentDataContainer().set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         return this;
@@ -312,12 +327,16 @@ public class ShopItemBuilder {
      * @return The constructed ItemStack
      */
     public ItemStack build() {
-        if (!lore.isEmpty()) {
-            meta.lore(lore);
+        List<Component> finalLore = new ArrayList<>(lore);
+        if (!priceLore.isEmpty()) {
+            finalLore.addAll(priceLore);
         }
+        if (!finalLore.isEmpty()) {
+            meta.lore(finalLore);
+        }
+        Messages.debug(Messages.DebugCategory.LORE, "Shop lore built: material=" + item.getType() + ", lines=" + finalLore.size() + ", priceLines=" + priceLore.size());
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
     }
 }
-
