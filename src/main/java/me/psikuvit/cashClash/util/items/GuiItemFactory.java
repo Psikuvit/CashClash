@@ -45,7 +45,7 @@ public final class GuiItemFactory {
      */
     public ItemStack createShopItem(Player player, Purchasable item, int quantity) {
         boolean owned = ItemUtils.isItemOwned(player, item);
-        
+
         if (owned) {
             return ShopItemBuilder.of(item.getMaterial(), quantity)
                     .name("<green>" + item.getDisplayName() + " <gray>(Owned)</gray></green>")
@@ -53,24 +53,24 @@ public final class GuiItemFactory {
                     .itemId(item.name())
                     .build();
         }
-        
+
         ShopItemBuilder builder = ShopItemBuilder.of(item.getMaterial(), quantity)
                 .name("<yellow>" + item.getDisplayName() + "</yellow>");
-        
+
         // Display total price for stack items (quantity > 1)
         if (quantity > 1) {
             long totalPrice = item.getPrice() * quantity;
             builder.price(totalPrice);
-            builder.lore("<gray>Price per item: $" + String.format("%,d", item.getPrice()) + "</gray>");
+            builder.priceDetail("<gray>Price per item: $" + String.format("%,d", item.getPrice()) + "</gray>");
         } else {
             builder.price(item.getPrice());
         }
-        
+
         String desc = item.getDescription();
         if (desc != null && !desc.isEmpty()) {
             builder.description(desc);
         }
-        
+
         return builder.purchasePrompt()
                 .itemId(item.name())
                 .build();
@@ -171,14 +171,14 @@ public final class GuiItemFactory {
     public ItemStack createCustomItemIcon(CustomItem type) {
         ShopItemBuilder builder = ShopItemBuilder.of(type.getMaterial())
                 .name("<yellow>" + type.getDisplayName() + "</yellow>")
-                .lore("<gold>Price: $" + String.format("%,d", type.getPrice()) + "</gold>")
+                .price(type.getPrice())
                 .emptyLine()
                 .description(type.getDescription());
-        
+
         if (type.hasLimit()) {
             builder.purchaseLimit(type.getMaxPurchase());
         }
-        
+
         return builder.purchasePrompt()
                 .itemId(type.name())
                 .build();
@@ -195,13 +195,13 @@ public final class GuiItemFactory {
     public ItemStack[] createArmorSetPieces(CustomArmorItem.ArmorSet set, Player player) {
         List<CustomArmorItem> pieces = set.getPieces();
         ItemStack[] items = new ItemStack[pieces.size()];
-        
+
         boolean ownsSet = ItemUtils.playerOwnsArmorSet(player, set);
         long totalPrice = set.getTotalPrice();
-        
+
         for (int i = 0; i < pieces.size(); i++) {
             CustomArmorItem piece = pieces.get(i);
-            
+
             if (ownsSet) {
                 items[i] = ShopItemBuilder.of(piece.getMaterial())
                         .name("<green>" + piece.getDisplayName() + " <gray>(Owned)</gray></green>")
@@ -217,19 +217,18 @@ public final class GuiItemFactory {
                         .name("<yellow>" + piece.getDisplayName() + "</yellow>")
                         .lore("<dark_purple>" + set.getDisplayName() + " Set</dark_purple>")
                         .emptyLine()
-                        .lore("<dark_gray>Piece Price:</dark_gray> <gray>$" + String.format("%,d", piece.getPrice()) + "</gray>")
-                        .lore("<dark_gray>Set Total:</dark_gray> <gold>$" + String.format("%,d", totalPrice) + "</gold>")
-                        .emptyLine()
                         .description(piece.getDescription())
                         .emptyLine()
                         .lore("<red>⚠ Must buy complete set!</red>")
                         .emptyLine()
                         .lore("<yellow>Click to purchase entire set</yellow>")
+                        .priceDetail("<dark_gray>Piece Price:</dark_gray> <gray>$" + String.format("%,d", piece.getPrice()) + "</gray>")
+                        .priceDetail("<dark_gray>Set Total:</dark_gray> <gold>$" + String.format("%,d", totalPrice) + "</gold>")
                         .itemId("SET_" + set.name())
                         .build();
             }
         }
-        
+
         return items;
     }
     
@@ -332,11 +331,10 @@ public final class GuiItemFactory {
                     .name("<light_purple><bold>" + mythic.getDisplayName() + "</bold></light_purple>")
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
                     .emptyLine()
-                    .lore("<dark_gray>Price:</dark_gray> <gold>$" + String.format("%,d", mythic.getPrice()) + "</gold>")
-                    .emptyLine()
-                    .lore("<gray>" + mythic.getDescription() + "</gray>")
+                    .lore("<dark_gray>" + mythic.getDescription() + "</dark_gray>")
                     .emptyLine()
                     .lore("<yellow>Click to purchase</yellow>")
+                    .price(mythic.getPrice())
                     .build();
         }
     }
