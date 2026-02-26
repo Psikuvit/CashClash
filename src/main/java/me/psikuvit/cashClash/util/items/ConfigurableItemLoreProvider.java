@@ -10,7 +10,7 @@ import java.util.List;
  * Configuration-based implementation of ItemLoreProvider.
  * Loads lore from items.yml and applies MiniMessage formatting.
  */
-public class ConfigurableItemLoreProvider implements ItemLoreProvider {
+public class ConfigurableItemLoreProvider {
 
     private static ConfigurableItemLoreProvider instance;
     private final ItemsConfig config;
@@ -26,7 +26,6 @@ public class ConfigurableItemLoreProvider implements ItemLoreProvider {
         return instance;
     }
 
-    @Override
     public List<Component> getLore(String category, String itemKey) {
         List<String> loreLinesRaw = config.getItemLore(category, itemKey);
 
@@ -40,7 +39,6 @@ public class ConfigurableItemLoreProvider implements ItemLoreProvider {
                 .toList();
     }
 
-    @Override
     public Component getDescription(String category, String itemKey) {
         String descriptionRaw = config.getItemDescription(category, itemKey);
 
