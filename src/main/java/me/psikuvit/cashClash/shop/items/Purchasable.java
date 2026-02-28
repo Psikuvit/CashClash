@@ -52,6 +52,14 @@ public interface Purchasable {
     String getDescription();
 
     /**
+     * Gets the configuration key for this item.
+     * Used to look up lore and other config-based properties.
+     *
+     * @return The config key (e.g., "iron-sword", "diamond-boots")
+     */
+    String getConfigKey();
+
+    /**
      * Gets the name of this item (enum constant name).
      * This method is provided by all enum implementations.
      *

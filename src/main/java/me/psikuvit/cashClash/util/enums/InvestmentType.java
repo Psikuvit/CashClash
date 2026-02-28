@@ -65,5 +65,10 @@ public enum InvestmentType implements Purchasable {
     public String getDescription() {
         return "Bonus: $" + String.format("%,d", bonusReturn) + " | Loss: $" + String.format("%,d", negativeReturn);
     }
+
+    @Override
+    public String getConfigKey() {
+        return "";
+    }
 }
 

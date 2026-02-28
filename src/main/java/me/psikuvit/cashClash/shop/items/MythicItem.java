@@ -79,6 +79,11 @@ public enum MythicItem implements Purchasable {
     }
 
     @Override
+    public String getConfigKey() {
+        return configKey;
+    }
+
+    @Override
     public int getInitialAmount() {
         return 1;
     }

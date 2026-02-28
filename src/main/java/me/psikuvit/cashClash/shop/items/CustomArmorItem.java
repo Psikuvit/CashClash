@@ -84,6 +84,14 @@ public enum CustomArmorItem implements Purchasable {
     }
 
     /**
+     * Gets the configuration key for this armor piece.
+     */
+    @Override
+    public String getConfigKey() {
+        return configKey;
+    }
+
+    /**
      * Gets the short lore/flavor text for this armor piece.
      */
     public String getLore() {

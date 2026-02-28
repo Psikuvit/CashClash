@@ -42,6 +42,11 @@ public enum ArmorItem implements Purchasable {
     }
 
     @Override
+    public String getConfigKey() {
+        return configKey;
+    }
+
+    @Override
     public int getInitialAmount() {
         return 1;
     }
