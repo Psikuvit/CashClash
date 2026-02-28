@@ -205,6 +205,23 @@ public class ShopItemBuilder {
     }
 
     /**
+     * Adds lore lines from configuration (as raw strings from items.yml).
+     * Each string is treated as a complete lore line (no wrapping).
+     *
+     * @param configLoreLines The lore lines from config (MiniMessage format strings)
+     * @return This builder for chaining
+     */
+    public ShopItemBuilder configLore(List<String> configLoreLines) {
+        Messages.debug(Messages.DebugCategory.LORE, "[ShopItemBuilder.configLore] Adding " + configLoreLines.size() + " config lore lines");
+        for (String line : configLoreLines) {
+            Component parsedLine = Messages.parse(line);
+            lore.add(parsedLine);
+            Messages.debug(Messages.DebugCategory.LORE, "[ShopItemBuilder.configLore] Added line: " + line);
+        }
+        return this;
+    }
+
+    /**
      * Adds the standard "Click to purchase!" prompt.
      *
      * @return This builder for chaining

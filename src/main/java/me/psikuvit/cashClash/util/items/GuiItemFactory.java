@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.util.items;
 
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
@@ -66,9 +67,27 @@ public final class GuiItemFactory {
             builder.price(item.getPrice());
         }
 
-        String desc = item.getDescription();
-        if (desc != null && !desc.isEmpty()) {
-            builder.description(desc);
+        // Use ItemsConfig to get lore based on category and configKey
+        String category = getCategoryForLore(item);
+        String configKey = item.getConfigKey();
+        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
+
+        Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Creating shop item: " + item.getDisplayName() +
+                " | category=" + category + " | configKey=" + configKey + " | configLoreLines=" + loreLinesFromConfig.size());
+
+        if (!loreLinesFromConfig.isEmpty()) {
+            // Add lore from config (as individual lines, no wrapping)
+            builder.configLore(loreLinesFromConfig);
+            Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
+        } else {
+            // Fallback to getDescription() if config has no lore
+            String desc = item.getDescription();
+            if (desc != null && !desc.isEmpty()) {
+                builder.description(desc);
+                Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Using fallback description (no config lore found)");
+            } else {
+                Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] No lore or description available");
+            }
         }
 
         return builder.purchasePrompt()
@@ -76,6 +95,35 @@ public final class GuiItemFactory {
                 .build();
     }
     
+    /**
+     * Gets the lore category key for an item based on its type.
+     * This maps Purchasable types to configuration category names.
+     *
+     * @param item The purchasable item
+     * @return The category key for lore configuration (e.g., "weapons", "armor")
+     */
+    private String getCategoryForLore(Purchasable item) {
+        if (item instanceof CustomArmorItem) {
+            return "custom-armor";
+        } else if (item instanceof CustomItem) {
+            return "custom-items";
+        } else if (item instanceof MythicItem) {
+            return "mythic";
+        } else {
+            // Use the ShopCategory for standard items
+            ShopCategory cat = item.getCategory();
+            return switch (cat) {
+                case WEAPONS -> "weapons";
+                case ARMOR -> "armor";
+                case FOOD -> "food";
+                case UTILITY -> "utility";
+                case CUSTOM_ITEMS -> "custom-items";
+                case LEGENDARIES -> "mythic";
+                default -> "";
+            };
+        }
+    }
+
     /**
      * Creates an upgradable item (armor/weapons) display.
      * 

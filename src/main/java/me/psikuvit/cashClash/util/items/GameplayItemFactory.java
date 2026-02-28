@@ -5,6 +5,7 @@ import io.papermc.paper.datacomponent.item.Consumable;
 import io.papermc.paper.datacomponent.item.FoodProperties;
 import io.papermc.paper.datacomponent.item.consumable.ConsumeEffect;
 import io.papermc.paper.datacomponent.item.consumable.ItemUseAnimation;
+import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -35,11 +36,8 @@ import java.util.List;
  * Handles creation of tagged items, custom items, and custom armor.
  */
 public final class GameplayItemFactory {
-    
-    private final ConfigurableItemLoreProvider loreProvider;
 
     GameplayItemFactory() {
-        this.loreProvider = ConfigurableItemLoreProvider.getInstance();
     }
 
     /**
@@ -272,18 +270,29 @@ public final class GameplayItemFactory {
 
     /**
      * Get configured lore for a purchasable item.
-     * Uses ItemsConfig to fetch lore based on item category.
+     * Uses ItemsConfig to fetch lore based on item category and configKey.
      *
      * @param purchasable The item to get lore for
      * @return List of lore components from config, or empty list if none configured
      */
     private List<Component> getConfiguredLore(Purchasable purchasable) {
         String category = getCategoryKey(purchasable);
-        if (category == null) {
+        String configKey = purchasable.getConfigKey();
+
+        if (category == null || configKey == null) {
             return List.of();
         }
 
-        return loreProvider.getLore(category, purchasable.name());
+        List<String> loreLinesRaw = ItemsConfig.getInstance().getItemLore(category, configKey);
+
+        if (loreLinesRaw.isEmpty()) {
+            return List.of();
+        }
+
+        // Parse each line with MiniMessage formatting
+        return loreLinesRaw.stream()
+                .map(Messages::parse)
+                .toList();
     }
 
     /**
@@ -294,7 +303,11 @@ public final class GameplayItemFactory {
      * @return Category key for config lookup, or null if item type not supported
      */
     private String getCategoryKey(Purchasable purchasable) {
-        if (purchasable instanceof WeaponItem) {
+        if (purchasable instanceof CustomArmorItem) {
+            return "custom-armor";
+        } else if (purchasable instanceof CustomItem) {
+            return "custom-items";
+        } else if (purchasable instanceof WeaponItem) {
             return "weapons";
         } else if (purchasable instanceof ArmorItem) {
             return "armor";
@@ -302,10 +315,6 @@ public final class GameplayItemFactory {
             return "food";
         } else if (purchasable instanceof UtilityItem) {
             return "utility";
-        } else if (purchasable instanceof CustomItem) {
-            return "custom-items";
-        } else if (purchasable instanceof CustomArmorItem) {
-            return "custom-armor";
         }
         return null;
     }
