@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Sound;
@@ -15,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -46,7 +48,13 @@ public class CustomArmorManager {
     private final Map<UUID, Integer> deathmaulerExtraHearts;
 
     // Dragon Set tracking
-    private final Set<UUID> dragonCanDoubleJump;
+    private final Map<UUID, UUID> dragonMarkedTargets; // Attacker -> Marked Target
+    private final Map<UUID, BukkitTask> dragonMarkTasks; // Marked player -> particle task
+    private final Map<UUID, Double> dragonDamageBoost; // Attacker -> damage boost for next hit
+
+    // Flamebringer Set tracking
+    private final Map<UUID, Integer> flamebringerKills; // Player -> kill count this round
+    private final Map<UUID, BukkitTask> flamebringerFireTask; // Player -> fire effect task
 
     private final Random random;
 
@@ -60,8 +68,12 @@ public class CustomArmorManager {
 
         this.deathmaulerExtraHearts = new ConcurrentHashMap<>();
 
-        this.dragonCanDoubleJump = ConcurrentHashMap.newKeySet();
+        this.dragonMarkedTargets = new ConcurrentHashMap<>();
+        this.dragonMarkTasks = new ConcurrentHashMap<>();
+        this.dragonDamageBoost = new ConcurrentHashMap<>();
 
+        this.flamebringerKills = new ConcurrentHashMap<>();
+        this.flamebringerFireTask = new ConcurrentHashMap<>();
 
         this.random = new Random();
     }
@@ -220,20 +232,172 @@ public class CustomArmorManager {
     }
 
     public void onPlayerAttack(Player attacker, Player target) {
-
-        // Flamebringer Set: 30% chance to ignite enemy (requires full set: boots + leggings)
-        if (hasFlamebringerSet(attacker)) {
-            if (random.nextDouble() < 0.30) {
-                target.setFireTicks(8 * 20);
-                Messages.send(attacker, "<red>🔥 Blue flames ignited your enemy!</red>");
-            }
-        }
-
-        // Dragon Set: regen and speed on hit (requires full set: helmet + chestplate + boots)
+        // Dragon Set: Mark target on first hit
         if (hasDragonSet(attacker)) {
-            attacker.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 3 * 20, 0));
-            attacker.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 3 * 20, 0));
+            handleDragonMarkOnHit(attacker, target);
         }
+    }
+
+    // ==================== DRAGON SET ====================
+
+    /**
+     * Dragon Set: Mark target for 4 seconds on hit.
+     * Allows dash to marked target within 5 blocks.
+     * Next hit on marked target deals 25% more damage.
+     */
+    private void handleDragonMarkOnHit(Player attacker, Player target) {
+        UUID attackerId = attacker.getUniqueId();
+        UUID targetId = target.getUniqueId();
+        ItemsConfig cfg = ItemsConfig.getInstance();
+
+        // Check if on cooldown
+        if (cooldownManager.isOnCooldown(attackerId, CooldownManager.Keys.DRAGON_DASH)) {
+            return;
+        }
+
+        // Mark the target
+        dragonMarkedTargets.put(attackerId, targetId);
+
+        // Cancel any existing mark particle task for this target
+        BukkitTask existingTask = dragonMarkTasks.remove(targetId);
+        if (existingTask != null) {
+            existingTask.cancel();
+        }
+
+        // Show particles above marked target
+        BukkitTask markTask = SchedulerUtils.runTaskTimer(() -> {
+            Player markedPlayer = org.bukkit.Bukkit.getPlayer(targetId);
+            if (markedPlayer != null && markedPlayer.isOnline()) {
+                ParticleUtils.dragonMark(markedPlayer.getLocation());
+            }
+        }, 0L, 10L); // Every 0.5 seconds
+
+        dragonMarkTasks.put(targetId, markTask);
+
+        // Set mark expiration
+        int markDuration = cfg.getDragonMarkDuration();
+        cooldownManager.setCooldownSeconds(attackerId, CooldownManager.Keys.DRAGON_MARK_EXPIRE, markDuration);
+
+        Messages.send(attacker, "<light_purple>🐉 Target marked! Right-click to dash within 5 blocks!</light_purple>");
+        SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.5f);
+
+        // Clear mark after duration
+        SchedulerUtils.runTaskLater(() -> {
+            if (dragonMarkedTargets.get(attackerId) != null && dragonMarkedTargets.get(attackerId).equals(targetId)) {
+                dragonMarkedTargets.remove(attackerId);
+                BukkitTask task = dragonMarkTasks.remove(targetId);
+                if (task != null) {
+                    task.cancel();
+                }
+                if (attacker.isOnline()) {
+                    Messages.send(attacker, "<gray>Dragon mark expired.</gray>");
+                }
+            }
+        }, markDuration * 20L);
+    }
+
+    /**
+     * Try to dash to marked target (triggered by right-click).
+     */
+    public boolean tryDragonDash(Player attacker) {
+        if (!hasDragonSet(attacker)) return false;
+
+        UUID attackerId = attacker.getUniqueId();
+        UUID targetId = dragonMarkedTargets.get(attackerId);
+
+        if (targetId == null) {
+            Messages.send(attacker, "<red>No marked target!</red>");
+            return false;
+        }
+
+        // Check if mark expired
+        if (!cooldownManager.isOnCooldown(attackerId, CooldownManager.Keys.DRAGON_MARK_EXPIRE)) {
+            dragonMarkedTargets.remove(attackerId);
+            BukkitTask task = dragonMarkTasks.remove(targetId);
+            if (task != null) {
+                task.cancel();
+            }
+            Messages.send(attacker, "<red>Mark has expired!</red>");
+            return false;
+        }
+
+        Player target = org.bukkit.Bukkit.getPlayer(targetId);
+        if (target == null || !target.isOnline()) {
+            Messages.send(attacker, "<red>Target is not online!</red>");
+            dragonMarkedTargets.remove(attackerId);
+            BukkitTask task = dragonMarkTasks.remove(targetId);
+            if (task != null) {
+                task.cancel();
+            }
+            return false;
+        }
+
+        // Check distance
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        double dashRange = cfg.getDragonDashRange();
+        double distance = attacker.getLocation().distance(target.getLocation());
+
+        if (distance > dashRange) {
+            Messages.send(attacker, "<red>Target is too far! (" + String.format("%.1f", distance) + " > " + dashRange + " blocks)</red>");
+            return false;
+        }
+
+        // Perform dash
+        Vector direction = target.getLocation().toVector().subtract(attacker.getLocation().toVector()).normalize();
+        attacker.setVelocity(direction.multiply(1.5).setY(0.3));
+
+        // Store damage boost for next hit
+        dragonDamageBoost.put(attackerId, cfg.getDragonDamageBoost());
+
+        // Remove mark and start cooldown
+        dragonMarkedTargets.remove(attackerId);
+        BukkitTask task = dragonMarkTasks.remove(targetId);
+        if (task != null) {
+            task.cancel();
+        }
+
+        cooldownManager.setCooldownSeconds(attackerId, CooldownManager.Keys.DRAGON_DASH, cfg.getDragonCooldown());
+
+        // Effects
+        ParticleUtils.dragonDashTrail(attacker.getLocation());
+        Messages.send(attacker, "<light_purple>🐉 Dragon Dash! Next hit deals +25% damage!</light_purple>");
+        SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.2f);
+
+        return true;
+    }
+
+    /**
+     * Get and consume the dragon damage boost for an attacker.
+     */
+    public double getDragonDamageBoost(Player attacker) {
+        Double boost = dragonDamageBoost.remove(attacker.getUniqueId());
+        return boost != null ? boost : 0.0;
+    }
+
+    /**
+     * Handle dragon set kill effect: Strength I for 4 seconds + orange glow for 1 second.
+     */
+    public void onDragonKill(Player killer) {
+        if (!hasDragonSet(killer)) return;
+
+        ItemsConfig cfg = ItemsConfig.getInstance();
+
+        // Grant Strength I
+        killer.addPotionEffect(new PotionEffect(
+            PotionEffectType.STRENGTH,
+            cfg.getDragonKillStrengthDuration() * 20,
+            cfg.getDragonKillStrengthLevel()
+        ));
+
+        // Grant Glowing (orange)
+        killer.addPotionEffect(new PotionEffect(
+            PotionEffectType.GLOWING,
+            cfg.getDragonKillGlowDuration() * 20,
+            0
+        ));
+
+        Messages.send(killer, "<light_purple>🐉 Dragon power surges! Strength I (4s)</light_purple>");
+        SoundUtils.play(killer, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.8f);
     }
 
     // ==================== BUNNY SHOES ====================
@@ -309,13 +473,31 @@ public class CustomArmorManager {
 
         Messages.send(killer, "<dark_red>Deathmauler healed you +4 hearts!</dark_red>");
 
+        // Show small healing particle effect on normal kills
+        ParticleUtils.deathmaulerHeal(killer.getLocation());
+        SoundUtils.play(killer, Sound.ENTITY_ZOMBIE_VILLAGER_CURE, 0.5f, 1.5f);
+
         // 30% chance for extra heart this round
         if (random.nextDouble() < 0.30) {
             if (attr != null) {
                 int extraHearts = deathmaulerExtraHearts.getOrDefault(id, 0);
                 attr.setBaseValue(attr.getBaseValue() + 2.0);
                 deathmaulerExtraHearts.put(id, extraHearts + 1);
-                Messages.send(killer, "<dark_red>+1 extra heart for this round!</dark_red>");
+                Messages.send(killer, "<dark_red>💀 +1 permanent heart for this round!</dark_red>");
+
+                // Show figure 8 skull particle effect for permanent heart
+                ParticleUtils.deathmaulerPermanentHeart(killer.getLocation());
+                SoundUtils.play(killer, Sound.ENTITY_WITHER_SPAWN, 0.3f, 2.0f);
+
+                // Animate the figure 8 pattern over time
+                for (int i = 0; i < 40; i++) {
+                    final int tick = i;
+                    SchedulerUtils.runTaskLater(() -> {
+                        if (killer.isOnline()) {
+                            ParticleUtils.deathmaulerPermanentHeart(killer.getLocation());
+                        }
+                    }, i * 2L);
+                }
             }
         }
     }
@@ -337,41 +519,105 @@ public class CustomArmorManager {
         }, delaySeconds * 20L);
     }
 
-    // ==================== DRAGON SET ====================
+    // ==================== FLAMEBRINGER SET ====================
 
-    public void onDragonJump(Player p) {
-        if (!hasDragonSet(p)) return;
+    /**
+     * Flamebringer Furnace Blood: If player is on fire, take no fire tick KB and gain Speed I.
+     */
+    public void onFlamebringerFireTick(Player p) {
+        if (!hasFlamebringerSet(p)) return;
+
         UUID id = p.getUniqueId();
 
-        // Enable double jump on first jump
-        if (!dragonCanDoubleJump.contains(id)) {
-            if (!cooldownManager.isOnCooldown(id, CooldownManager.Keys.DRAGON_DOUBLE_JUMP)) {
-                dragonCanDoubleJump.add(id);
+        if (p.getFireTicks() > 0) {
+            // Grant Speed I while on fire
+            if (!cooldownManager.isOnCooldown(id, CooldownManager.Keys.FLAMEBRINGER_ON_FIRE)) {
+                ItemsConfig cfg = ItemsConfig.getInstance();
+                p.addPotionEffect(new PotionEffect(
+                    PotionEffectType.SPEED,
+                    cfg.getFlamebringerSpeedDuration() * 20,
+                    cfg.getFlamebringerSpeedLevel(),
+                    false,
+                    false,
+                    true
+                ));
+                cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_ON_FIRE, 1);
             }
         }
     }
 
-    public boolean tryDragonDoubleJump(Player p) {
-        if (!hasDragonSet(p)) return false;
-        UUID id = p.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
-
-        if (!dragonCanDoubleJump.remove(id)) return false;
-
-        // Launch player ~5 blocks forward, 3 blocks up
-        Vector direction = p.getLocation().getDirection().normalize();
-        Vector velocity = direction.multiply(1.2).setY(0.8);
-        p.setVelocity(velocity);
-
-        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.DRAGON_DOUBLE_JUMP, cfg.getDragonDoubleJumpCooldown());
-
-        Messages.send(p, "<light_purple>Dragon Double Jump!</light_purple>");
-        SoundUtils.play(p, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.5f);
-        return true;
+    /**
+     * Check if player should have fire tick knockback negation.
+     */
+    public boolean hasFlamebringerNoFireKb(Player p) {
+        if (!hasFlamebringerSet(p)) return false;
+        return p.getFireTicks() > 0 && ItemsConfig.getInstance().getFlamebringerNoFireKb();
     }
 
-    public void onPlayerLand(Player p) {
-        dragonCanDoubleJump.remove(p.getUniqueId());
+    /**
+     * Handle Flamebringer kill tracking and gravitational pull on 2nd kill.
+     */
+    public void onFlamebringerKill(Player killer) {
+        if (!hasFlamebringerSet(killer)) return;
+
+        UUID id = killer.getUniqueId();
+        int kills = flamebringerKills.getOrDefault(id, 0) + 1;
+        flamebringerKills.put(id, kills);
+
+        ItemsConfig cfg = ItemsConfig.getInstance();
+
+        if (kills >= cfg.getFlamebringerKillsForPull()) {
+            // Reset kill counter
+            flamebringerKills.put(id, 0);
+
+            // Activate gravitational pull
+            Messages.send(killer, "<gold>🔥 Flamebringer Pull Activated!</gold>");
+            SoundUtils.play(killer, Sound.ENTITY_BLAZE_SHOOT, 1.0f, 0.8f);
+
+            double radius = cfg.getFlamebringerPullRadius();
+            double duration = cfg.getFlamebringerPullDuration();
+            double pullStrength = cfg.getFlamebringerPullStrength();
+
+            // Get session for team checking
+            me.psikuvit.cashClash.manager.game.GameManager gameManager = me.psikuvit.cashClash.manager.game.GameManager.getInstance();
+            me.psikuvit.cashClash.game.GameSession session = gameManager.getPlayerSession(killer);
+            me.psikuvit.cashClash.game.Team killerTeam = session != null ? session.getPlayerTeam(killer) : null;
+
+            org.bukkit.Location killerLoc = killer.getLocation();
+
+            // Create pull effect over duration
+            int durationTicks = (int) (duration * 20);
+            BukkitTask pullTask = SchedulerUtils.runTaskTimer(() -> {
+                if (!killer.isOnline()) return;
+
+                // Spawn particles
+                ParticleUtils.flamebringerPull(killerLoc, radius);
+
+                // Pull nearby enemies
+                for (org.bukkit.entity.Entity entity : killer.getWorld().getNearbyEntities(killerLoc, radius, radius, radius)) {
+                    if (!(entity instanceof Player target)) continue;
+                    if (target.equals(killer)) continue;
+
+                    // Check if enemy
+                    if (session != null && killerTeam != null) {
+                        me.psikuvit.cashClash.game.Team targetTeam = session.getPlayerTeam(target);
+                        if (targetTeam == killerTeam) continue;
+                    }
+
+                    // Pull towards killer
+                    Vector direction = killerLoc.toVector().subtract(target.getLocation().toVector()).normalize();
+                    target.setVelocity(direction.multiply(pullStrength));
+                }
+            }, 0L, 2L); // Every 0.1 seconds
+
+            // Stop after duration
+            SchedulerUtils.runTaskLater(() -> {
+                pullTask.cancel();
+                if (killer.isOnline()) {
+                    Messages.send(killer, "<gray>Flamebringer pull ended.</gray>");
+                }
+            }, durationTicks);
+        }
     }
 
     // ==================== TAX EVASION PANTS ====================
@@ -439,7 +685,16 @@ public class CustomArmorManager {
 
         deathmaulerExtraHearts.clear();
 
-        dragonCanDoubleJump.clear();
+        // Cancel all dragon mark tasks
+        dragonMarkTasks.values().forEach(BukkitTask::cancel);
+        dragonMarkTasks.clear();
+        dragonMarkedTargets.clear();
+        dragonDamageBoost.clear();
+
+        // Cancel all flamebringer tasks
+        flamebringerFireTask.values().forEach(BukkitTask::cancel);
+        flamebringerFireTask.clear();
+        flamebringerKills.clear();
 
         // Note: cooldowns are managed by CooldownManager and will be cleared when players are cleared
     }
@@ -451,7 +706,15 @@ public class CustomArmorManager {
         magicHelmetActivated.clear();
         guardianUsesThisRound.clear();
         deathmaulerExtraHearts.clear();
-        dragonCanDoubleJump.clear();
+
+        // Cancel all dragon mark tasks and clear dragon tracking
+        dragonMarkTasks.values().forEach(BukkitTask::cancel);
+        dragonMarkTasks.clear();
+        dragonMarkedTargets.clear();
+        dragonDamageBoost.clear();
+
+        // Reset flamebringer kill counters
+        flamebringerKills.clear();
     }
 }
 
