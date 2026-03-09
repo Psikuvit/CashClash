@@ -361,7 +361,7 @@ public class InteractListener implements Listener {
     // ==================== CUSTOM ARMOR (Magic Helmet) ====================
 
     private void handleCustomArmor(Player player, Action action) {
-        if (!action.isRightClick() || !player.isSneaking()) return;
+        if (!action.isRightClick()) return;
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
@@ -374,7 +374,10 @@ public class InteractListener implements Listener {
             return;
         }
 
-        // Magic Helmet now activates on melee damage, not right-click
+        // Dragon Set: Dash to marked target (right-click, no sneak required)
+        if (armorManager.hasDragonSet(player)) {
+            armorManager.tryDragonDash(player);
+        }
     }
 
     // ==================== UTILITIES ====================
