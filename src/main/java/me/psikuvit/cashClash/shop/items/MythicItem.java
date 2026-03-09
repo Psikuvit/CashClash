@@ -9,58 +9,23 @@ import org.bukkit.Material;
  * These are powerful unique weapons with special abilities.
  */
 public enum MythicItem implements Purchasable {
-    COIN_CLEAVER(Material.DIAMOND_AXE, "coin-cleaver",
-            "Coin Cleaver",
-            "Diamond axe that deals +25% damage to players with more coins. " +
-            "No knockback when held. Right-click for instant grenade (2 hearts, 5 blocks, costs $2000, 3s cooldown)."
-    ),
-    CARLS_BATTLEAXE(Material.NETHERITE_AXE, "carls-battleaxe",
-            "Carl's Battleaxe",
-            "Fully charged hit grants Speed III + Strength I for 25s (45s cooldown). " +
-            "Critical hits launch enemies into the air (10s cooldown)."
-    ),
-    WIND_BOW(Material.BOW, "wind-bow",
-            "Wind Bow",
-            "Shift + Right-click to boost forward (30s cooldown). " +
-            "Arrow hits propel target and nearby players (3 block radius) backwards."
-    ),
-    ELECTRIC_EEL_SWORD(Material.DIAMOND_SWORD, "electric-eel-sword",
-            "Electric Eel Sword",
-            "Fully charged hits chain damage to nearby enemies (0.5 hearts, 5 blocks, 1s cooldown). " +
-            "Right-click to teleport 4 blocks forward (15s cooldown)."
-    ),
-    GOBLIN_SPEAR(Material.TRIDENT, "goblin-spear",
-            "Goblin Spear",
-            "Throwable spear with Power 4 damage + Poison III for 2s. Goes through shields (15s cooldown). " +
-            "Fast attack speed, +1 block range."
-    ),
-    BLOODWRENCH_CROSSBOW(Material.CROSSBOW, "bloodwrench-crossbow",
-            "BloodWrench Crossbow",
-            "Shift+Right-click to toggle modes (1s cooldown). " +
-            "Rapid Fire: 3 blood shots creating slowness spheres with burst damage. " +
-            "Supercharged: Single powerful shot creating a blood vortex with levitation and damage."
-    ),
-    WARDEN_GLOVES(Material.NETHERITE_SWORD, "warden-gloves",
-            "Warden Gloves",
-            "Boxing Gloves: Left-click to punch, every 5th punch increases speed (20s duration, 35s cooldown). " +
-            "Right-click for Shockwave attack with big damage/knockback (41s cooldown)."
-    ),
-    BLAZEBITE_CROSSBOWS(Material.CROSSBOW, "blazebite-crossbows",
-            "BlazeBite Crossbows",
-            "Dual crossbows with Piercing 3, Quick Charge 1. Toggle between modes (8 shots, 25s cooldown). " +
-            "Glacier: Frostbite 5s, hit again to freeze in place 3s. Volcano: Explosive fire arrows."
-    );
+    COIN_CLEAVER(Material.DIAMOND_AXE, "coin-cleaver", "Coin Cleaver"),
+    CARLS_BATTLEAXE(Material.NETHERITE_AXE, "carls-battleaxe", "Carl's Battleaxe"),
+    WIND_BOW(Material.BOW, "wind-bow", "Wind Bow"),
+    ELECTRIC_EEL_SWORD(Material.DIAMOND_SWORD, "electric-eel-sword", "Electric Eel Sword"),
+    GOBLIN_SPEAR(Material.TRIDENT, "goblin-spear", "Goblin Spear"),
+    BLOODWRENCH_CROSSBOW(Material.CROSSBOW, "bloodwrench-crossbow", "BloodWrench Crossbow"),
+    WARDEN_GLOVES(Material.NETHERITE_SWORD, "warden-gloves", "Warden Gloves"),
+    BLAZEBITE_CROSSBOWS(Material.CROSSBOW, "blazebite-crossbows", "BlazeBite Crossbows");
 
     private final Material material;
     private final String configKey;
     private final String displayName;
-    private final String description;
 
-    MythicItem(Material material, String configKey, String displayName, String description) {
+    MythicItem(Material material, String configKey, String displayName) {
         this.material = material;
         this.configKey = configKey;
         this.displayName = displayName;
-        this.description = description;
     }
 
     @Override
@@ -91,11 +56,6 @@ public enum MythicItem implements Purchasable {
     @Override
     public String getDisplayName() {
         return displayName;
-    }
-
-    @Override
-    public String getDescription() {
-        return "<gold>" + description + "</gold>";
     }
 
     /**

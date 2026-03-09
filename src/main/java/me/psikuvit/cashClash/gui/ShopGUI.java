@@ -24,7 +24,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.List;
@@ -77,14 +76,8 @@ public class ShopGUI extends AbstractGui {
     }
 
     private GuiButton createInvestmentCategoryButton() {
-        ItemStack bundle = new ItemStack(Material.RED_BUNDLE);
-        BundleMeta bundleMeta = (BundleMeta) bundle.getItemMeta();
-        bundleMeta.displayName(Messages.parse("<yellow>" + ShopCategory.INVESTMENTS.getDisplayName() + "</yellow>"));
-        bundleMeta.lore(Messages.wrapLines("<gray>Click to browse investments</gray>"));
-        bundleMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        bundle.setItemMeta(bundleMeta);
-
-        return GuiButton.of(bundle).onClick(p -> openCategory(ShopCategory.INVESTMENTS));
+        ItemStack icon = ItemFactory.getInstance().getGuiFactory().createCategoryIcon(Material.RED_BUNDLE, ShopCategory.INVESTMENTS);
+        return GuiButton.of(icon).onClick(p -> openCategory(ShopCategory.INVESTMENTS));
     }
 
     private void addMythicItems() {

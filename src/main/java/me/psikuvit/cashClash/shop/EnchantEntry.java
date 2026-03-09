@@ -81,4 +81,8 @@ public enum EnchantEntry {
     public int getMaxLevel() {
         return maxLevel;
     }
+
+    public String getConfigKey() {
+        return configKey;
+    }
 }

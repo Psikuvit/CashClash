@@ -65,10 +65,6 @@ public final class GameplayItemFactory {
         // Try to get lore from configuration based on item category
         List<Component> lore = getConfiguredLore(purchasable);
 
-        if (lore.isEmpty() && !purchasable.getDescription().isEmpty()) {
-            lore = Messages.wrapLines(purchasable.getDescription());
-        }
-
         if (!lore.isEmpty()) {
             meta.lore(lore);
         }
@@ -109,11 +105,6 @@ public final class GameplayItemFactory {
 
         // Try to get lore from configuration first
         List<Component> lore = getConfiguredLore(customItem);
-
-        // Fallback to description-based lore if no configuration exists
-        if (lore.isEmpty() && !customItem.getDescription().isEmpty()) {
-            lore = new ArrayList<>(Messages.wrapLines(customItem.getDescription()));
-        }
 
         if (!lore.isEmpty()) {
             meta.lore(lore);
@@ -159,11 +150,6 @@ public final class GameplayItemFactory {
         
         // Try to get lore from configuration first
         List<Component> lore = getConfiguredLore(armor);
-
-        // Fallback to armor.getLore() if no configuration exists
-        if (lore.isEmpty() && armor.getLore() != null && !armor.getLore().isEmpty()) {
-            lore = Messages.wrapLines("<gray>" + armor.getLore() + "</gray>");
-        }
 
         // Add empty line and special armor note if we have lore
         if (!lore.isEmpty()) {
@@ -275,14 +261,13 @@ public final class GameplayItemFactory {
      * @param purchasable The item to get lore for
      * @return List of lore components from config, or empty list if none configured
      */
-    private List<Component> getConfiguredLore(Purchasable purchasable) {
+    public List<Component> getConfiguredLore(Purchasable purchasable) {
         String category = getCategoryKey(purchasable);
         String configKey = purchasable.getConfigKey();
 
         if (category == null || configKey == null) {
             return List.of();
         }
-
         List<String> loreLinesRaw = ItemsConfig.getInstance().getItemLore(category, configKey);
 
         if (loreLinesRaw.isEmpty()) {

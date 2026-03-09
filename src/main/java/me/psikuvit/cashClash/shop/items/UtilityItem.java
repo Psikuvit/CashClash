@@ -58,10 +58,5 @@ public enum UtilityItem implements Purchasable {
     public String getDisplayName() {
         return name().substring(0, 1).toUpperCase() + name().substring(1).toLowerCase().replace("_", " ");
     }
-
-    @Override
-    public String getDescription() {
-        return "";
-    }
 }
 

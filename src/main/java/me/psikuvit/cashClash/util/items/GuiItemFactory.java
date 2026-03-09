@@ -79,15 +79,6 @@ public final class GuiItemFactory {
             // Add lore from config (as individual lines, no wrapping)
             builder.configLore(loreLinesFromConfig);
             Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
-        } else {
-            // Fallback to getDescription() if config has no lore
-            String desc = item.getDescription();
-            if (desc != null && !desc.isEmpty()) {
-                builder.description(desc);
-                Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Using fallback description (no config lore found)");
-            } else {
-                Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] No lore or description available");
-            }
         }
 
         return builder.purchasePrompt()
@@ -103,24 +94,31 @@ public final class GuiItemFactory {
      * @return The category key for lore configuration (e.g., "weapons", "armor")
      */
     private String getCategoryForLore(Purchasable item) {
-        if (item instanceof CustomArmorItem) {
-            return "custom-armor";
-        } else if (item instanceof CustomItem) {
-            return "custom-items";
-        } else if (item instanceof MythicItem) {
-            return "mythic";
-        } else {
-            // Use the ShopCategory for standard items
-            ShopCategory cat = item.getCategory();
-            return switch (cat) {
-                case WEAPONS -> "weapons";
-                case ARMOR -> "armor";
-                case FOOD -> "food";
-                case UTILITY -> "utility";
-                case CUSTOM_ITEMS -> "custom-items";
-                case LEGENDARIES -> "mythic";
-                default -> "";
-            };
+        switch (item) {
+            case CustomArmorItem ignored -> {
+                return "custom-armor";
+            }
+            case CustomItem ignored -> {
+                return "custom-items";
+            }
+            case MythicItem ignored -> {
+                return "mythic-items";
+            }
+            default -> {
+                // Use the ShopCategory for standard items
+                ShopCategory cat = item.getCategory();
+                return switch (cat) {
+                    case WEAPONS -> "weapons";
+                    case ARMOR -> "armor";
+                    case FOOD -> "food";
+                    case UTILITY -> "utility";
+                    case ENCHANTS -> "enchants";
+                    case INVESTMENTS -> "investments";
+                    case CUSTOM_ITEMS -> "custom-items";
+                    case LEGENDARIES -> "mythic-items";
+                    default -> "";
+                };
+            }
         }
     }
 
@@ -139,11 +137,17 @@ public final class GuiItemFactory {
                     .itemId(item.name())
                     .build();
         }
-        
+
         ShopItemBuilder builder = ShopItemBuilder.of(item.getMaterial())
                 .name("<yellow>" + item.getDisplayName() + "</yellow>")
                 .price(item.getPrice());
-        
+
+        String category = getCategoryForLore(item);
+        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, item.getConfigKey());
+        if (!loreLinesFromConfig.isEmpty()) {
+            builder.configLore(loreLinesFromConfig);
+        }
+
         // Show upgrade path based on material tier
         String materialName = item.getMaterial().name();
         if (materialName.contains("IRON")) {
@@ -151,7 +155,7 @@ public final class GuiItemFactory {
         } else if (materialName.contains("DIAMOND")) {
             builder.finalTier();
         }
-        
+
         return builder.purchasePrompt()
                 .itemId(item.name())
                 .build();
@@ -187,11 +191,17 @@ public final class GuiItemFactory {
      * @return The configured ItemStack for display
      */
     public ItemStack createEnchantItem(EnchantEntry enchant, int level, long price) {
-        return ShopItemBuilder.of(Material.ENCHANTED_BOOK)
+        ShopItemBuilder builder = ShopItemBuilder.of(Material.ENCHANTED_BOOK)
                 .name("<yellow>" + enchant.getDisplayName() + " " + level + "</yellow>")
                 .price(price)
-                .maxLevel(enchant.getMaxLevel())
-                .purchasePrompt()
+                .maxLevel(enchant.getMaxLevel());
+
+        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore("enchants", enchant.getConfigKey());
+        if (!loreLinesFromConfig.isEmpty()) {
+            builder.configLore(loreLinesFromConfig);
+        }
+
+        return builder.purchasePrompt()
                 .itemId(enchant.name())
                 .build();
     }
@@ -217,11 +227,23 @@ public final class GuiItemFactory {
      * @return The configured ItemStack for display
      */
     public ItemStack createCustomItemIcon(CustomItem type) {
+        String category = getCategoryForLore(type);
+        String configKey = type.getConfigKey();
+        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
+
+        Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Creating shop item: " + type.getDisplayName() +
+                " | category=" + category + " | configKey=" + configKey + " | configLoreLines=" + loreLinesFromConfig.size());
+
         ShopItemBuilder builder = ShopItemBuilder.of(type.getMaterial())
                 .name("<yellow>" + type.getDisplayName() + "</yellow>")
                 .price(type.getPrice())
-                .emptyLine()
-                .description(type.getDescription());
+                .emptyLine();
+
+        if (!loreLinesFromConfig.isEmpty()) {
+            // Add lore from config (as individual lines, no wrapping)
+            builder.configLore(loreLinesFromConfig);
+            Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
+        }
 
         if (type.hasLimit()) {
             builder.purchaseLimit(type.getMaxPurchase());
@@ -250,22 +272,42 @@ public final class GuiItemFactory {
         for (int i = 0; i < pieces.size(); i++) {
             CustomArmorItem piece = pieces.get(i);
 
+            // Get lore from config
+            String category = getCategoryForLore(piece);
+            String configKey = piece.getConfigKey();
+            List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
+
+            Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Creating armor set piece: " + piece.getDisplayName() +
+                    " | category=" + category + " | configKey=" + configKey + " | configLoreLines=" + loreLinesFromConfig.size());
+
             if (ownsSet) {
-                items[i] = ShopItemBuilder.of(piece.getMaterial())
+                ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
                         .name("<green>" + piece.getDisplayName() + " <gray>(Owned)</gray></green>")
                         .lore("<dark_purple>" + set.getDisplayName() + " Set</dark_purple>")
-                        .emptyLine()
-                        .description(piece.getDescription())
+                        .emptyLine();
+
+                if (!loreLinesFromConfig.isEmpty()) {
+                    builder.configLore(loreLinesFromConfig);
+                    Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
+                }
+
+                items[i] = builder
                         .emptyLine()
                         .lore("<green>✓ Set owned</green>")
                         .itemId("SET_" + set.name())
                         .build();
             } else {
-                items[i] = ShopItemBuilder.of(piece.getMaterial())
+                ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
                         .name("<yellow>" + piece.getDisplayName() + "</yellow>")
                         .lore("<dark_purple>" + set.getDisplayName() + " Set</dark_purple>")
-                        .emptyLine()
-                        .description(piece.getDescription())
+                        .emptyLine();
+
+                if (!loreLinesFromConfig.isEmpty()) {
+                    builder.configLore(loreLinesFromConfig);
+                    Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
+                }
+
+                items[i] = builder
                         .emptyLine()
                         .lore("<red>⚠ Must buy complete set!</red>")
                         .emptyLine()
@@ -287,19 +329,25 @@ public final class GuiItemFactory {
      * @return The configured ItemStack for display
      */
     public ItemStack createInvestmentIcon(InvestmentType type) {
-        Material iconMaterial = type.getMaterial();
-        
-        ItemStack item = ShopItemBuilder.of(iconMaterial)
+        ShopItemBuilder builder = ShopItemBuilder.of(type.getMaterial())
                 .name("<yellow>" + type.name().replace("_", " ") + "</yellow>")
-                .lore("<gray>Invest: <gold>$" + String.format("%,d", type.getCost()) + "</gold></gray>")
-                .lore("<green>Bonus: $" + String.format("%,d", type.getBonusReturn()) + "</green>")
-                .lore("<red>Negative: $" + String.format("%,d", type.getNegativeReturn()) + "</red>")
+                .price(type.getCost());
+
+        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore("investments", type.getConfigKey());
+        if (!loreLinesFromConfig.isEmpty()) {
+            builder.configLore(loreLinesFromConfig);
+        }
+
+        builder.priceDetail("<green>Bonus: $" + String.format("%,d", type.getBonusReturn()) + "</green>")
+                .priceDetail("<red>Negative: $" + String.format("%,d", type.getNegativeReturn()) + "</red>");
+
+        ItemStack item = builder
                 .itemId(type.name())
                 .build();
-        
+
         // Apply custom model data for investment items
         CustomModelDataMapper.applyCustomModel(item, type);
-        
+
         return item;
     }
     
@@ -311,10 +359,21 @@ public final class GuiItemFactory {
      * @return The category icon ItemStack
      */
     public ItemStack createCategoryIcon(Material material, ShopCategory category) {
-        return ShopItemBuilder.of(material)
-                .name("<yellow>" + category.getDisplayName() + "</yellow>")
-                .lore("<gray>Click to browse items</gray>")
-                .build();
+        String categoryKey = category.name().toLowerCase().replace("_", "-");
+        String defaultName = "<yellow>" + category.getDisplayName() + "</yellow>";
+        String configuredName = ItemsConfig.getInstance().getCategoryName(categoryKey, defaultName);
+        List<String> configuredLore = ItemsConfig.getInstance().getCategoryLore(categoryKey);
+
+        ShopItemBuilder builder = ShopItemBuilder.of(material)
+                .name(configuredName);
+
+        if (!configuredLore.isEmpty()) {
+            builder.configLore(configuredLore);
+        } else {
+            builder.lore("<gray>Click to browse items</gray>");
+        }
+
+        return builder.build();
     }
     
     /**
@@ -334,6 +393,14 @@ public final class GuiItemFactory {
                                          UUID ownerUuid) {
         boolean isOwned = ownedMythic != null && ownedMythic == mythic;
         
+        // Get lore from config
+        String category = getCategoryForLore(mythic);
+        String configKey = mythic.getConfigKey();
+        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
+
+        Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Creating mythic item: " + mythic.getDisplayName() +
+                " | category=" + category + " | configKey=" + configKey + " | configLoreLines=" + loreLinesFromConfig.size());
+
         ShopItemBuilder builder = ShopItemBuilder.of(Material.BARRIER)
                 .hideAttributes()
                 .hideEnchants()
@@ -341,32 +408,47 @@ public final class GuiItemFactory {
         
         if (isOwned) {
             // Player owns this mythic
-            return builder
-                    .name("<green><bold>" + mythic.getDisplayName() + "</bold></green>")
+            builder.name("<green><bold>" + mythic.getDisplayName() + "</bold></green>")
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
-                    .emptyLine()
-                    .lore("<dark_gray>" + mythic.getDescription() + "</dark_gray>")
+                    .emptyLine();
+
+            if (!loreLinesFromConfig.isEmpty()) {
+                builder.configLore(loreLinesFromConfig);
+                Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
+            }
+
+            return builder
                     .emptyLine()
                     .lore("<green>✓ You own this mythic</green>")
                     .build();
         } else if (mythicTaken) {
             // Another player owns this mythic
             String ownerName = ownerUuid != null ? Bukkit.getOfflinePlayer(ownerUuid).getName() : "Someone";
-            return builder
-                    .name("<dark_red><bold>" + mythic.getDisplayName() + "</bold> <dark_gray>(Taken)</dark_gray></dark_red>")
+            builder.name("<dark_red><bold>" + mythic.getDisplayName() + "</bold> <dark_gray>(Taken)</dark_gray></dark_red>")
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
-                    .emptyLine()
-                    .lore("<dark_gray>" + mythic.getDescription() + "</dark_gray>")
+                    .emptyLine();
+
+            if (!loreLinesFromConfig.isEmpty()) {
+                builder.configLore(loreLinesFromConfig);
+                Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
+            }
+
+            return builder
                     .emptyLine()
                     .lore("<red>✗ Owned by " + ownerName + "</red>")
                     .build();
         } else if (playerHasMythic) {
             // Player already has a different mythic
-            return builder
-                    .name("<gray><bold>" + mythic.getDisplayName() + "</bold> <dark_gray>(Locked)</dark_gray></gray>")
+            builder.name("<gray><bold>" + mythic.getDisplayName() + "</bold> <dark_gray>(Locked)</dark_gray></gray>")
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
-                    .emptyLine()
-                    .lore("<dark_gray>" + mythic.getDescription() + "</dark_gray>")
+                    .emptyLine();
+
+            if (!loreLinesFromConfig.isEmpty()) {
+                builder.configLore(loreLinesFromConfig);
+                Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
+            }
+
+            return builder
                     .emptyLine()
                     .lore("<red>✗ You already own a mythic</red>")
                     .build();
@@ -379,7 +461,7 @@ public final class GuiItemFactory {
                     .name("<light_purple><bold>" + mythic.getDisplayName() + "</bold></light_purple>")
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
                     .emptyLine()
-                    .lore("<dark_gray>" + mythic.getDescription() + "</dark_gray>")
+                    .configLore(loreLinesFromConfig)
                     .emptyLine()
                     .lore("<yellow>Click to purchase</yellow>")
                     .price(mythic.getPrice())

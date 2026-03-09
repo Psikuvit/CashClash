@@ -494,16 +494,84 @@ public class ItemsConfig {
             return Collections.emptyList();
         }
 
-        String path = "item-lore." + category + "." + itemKey + ".lore";
-        List<String> lore = config.getStringList(path);
+        for (String resolvedCategory : resolveLoreCategories(category)) {
+            for (String resolvedKey : resolveLoreKeys(itemKey)) {
+                String path = "item-lore." + resolvedCategory + "." + resolvedKey + ".lore";
+                List<String> lore = config.getStringList(path);
+                if (!lore.isEmpty()) {
+                    return lore;
+                }
 
-        // Fallback to simple array if not nested under "lore" key
-        if (lore.isEmpty()) {
-            path = "item-lore." + category + "." + itemKey;
-            lore = config.getStringList(path);
+                // Backward compatibility: allow direct list under item key.
+                path = "item-lore." + resolvedCategory + "." + resolvedKey;
+                lore = config.getStringList(path);
+                if (!lore.isEmpty()) {
+                    return lore;
+                }
+            }
         }
 
-        return lore;
+        return Collections.emptyList();
+    }
+
+    /**
+     * Get configurable hover lore for main shop category icons.
+     */
+    public List<String> getCategoryLore(String categoryKey) {
+        if (categoryKey == null || categoryKey.isBlank()) {
+            return Collections.emptyList();
+        }
+        return config.getStringList("item-lore.categories." + categoryKey.toLowerCase(Locale.ROOT) + ".lore");
+    }
+
+    /**
+     * Get optional configurable display name for a main shop category icon.
+     */
+    public String getCategoryName(String categoryKey, String fallback) {
+        if (categoryKey == null || categoryKey.isBlank()) {
+            return fallback;
+        }
+        return config.getString("item-lore.categories." + categoryKey.toLowerCase(Locale.ROOT) + ".name", fallback);
+    }
+
+    private List<String> resolveLoreCategories(String category) {
+        String normalized = category.toLowerCase(Locale.ROOT);
+        Set<String> values = new LinkedHashSet<>();
+        values.add(normalized);
+
+        if (normalized.equals("mythic")) {
+            values.add("mythic-items");
+        }
+        if (normalized.equals("legendaries")) {
+            values.add("mythic-items");
+        }
+        if (normalized.equals("mythic-items")) {
+            values.add("mythic");
+        }
+
+        return new ArrayList<>(values);
+    }
+
+    private List<String> resolveLoreKeys(String itemKey) {
+        String normalized = itemKey.toLowerCase(Locale.ROOT);
+        Set<String> values = new LinkedHashSet<>();
+        values.add(normalized);
+        values.add(normalized.replace("_", "-"));
+
+        if (normalized.equals("arrow")) values.add("arrows");
+        if (normalized.equals("arrows")) values.add("arrow");
+
+        if (normalized.equals("tax-evasion-pants")) values.add("tax-evasion");
+        if (normalized.equals("electric-eel-sword")) values.add("electric-eel");
+        if (normalized.equals("bloodwrench-crossbow")) values.add("bloodwrench");
+
+        if (normalized.startsWith("investors-")) values.add("investors");
+        if (normalized.startsWith("deathmauler-")) values.add("deathmauler");
+        if (normalized.startsWith("flamebringer-")) values.add("flamebringer");
+        if (normalized.startsWith("dragon-")) values.add("dragon");
+        if (normalized.equals("dragon-head")) values.add("dragon");
+
+        return new ArrayList<>(values);
     }
 
     /**

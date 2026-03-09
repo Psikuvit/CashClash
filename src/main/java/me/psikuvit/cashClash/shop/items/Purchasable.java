@@ -45,13 +45,6 @@ public interface Purchasable {
     String getDisplayName();
 
     /**
-     * Gets the description of this item.
-     *
-     * @return The item description, or empty string if none
-     */
-    String getDescription();
-
-    /**
      * Gets the configuration key for this item.
      * Used to look up lore and other config-based properties.
      *

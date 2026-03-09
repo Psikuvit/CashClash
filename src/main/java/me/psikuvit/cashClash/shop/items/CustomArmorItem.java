@@ -16,37 +16,35 @@ import java.util.stream.Collectors;
  * INDIVIDUAL ITEMS: Tax Evasion Pants, Magic Helmet, Bunny Shoes, Guardian's Vest can be bought separately.
  */
 public enum CustomArmorItem implements Purchasable {
-    INVESTORS_HELMET(Material.IRON_HELMET, "investors-helmet", "Investor's Helmet", "Rich in luck, poor in power.", null),
-    INVESTORS_CHESTPLATE(Material.IRON_CHESTPLATE, "investors-chestplate", "Investor's Chestplate", "Rich in luck, poor in power.", null),
-    INVESTORS_LEGGINGS(Material.IRON_LEGGINGS, "investors-leggings", "Investor's Leggings", "Rich in luck, poor in power.", null),
-    INVESTORS_BOOTS(Material.IRON_BOOTS, "investors-boots", "Investor's Boots", "Rich in luck, poor in power.", null),
+    INVESTORS_HELMET(Material.IRON_HELMET, "investors-helmet", "Investor's Helmet", null),
+    INVESTORS_CHESTPLATE(Material.IRON_CHESTPLATE, "investors-chestplate", "Investor's Chestplate", null),
+    INVESTORS_LEGGINGS(Material.IRON_LEGGINGS, "investors-leggings", "Investor's Leggings", null),
+    INVESTORS_BOOTS(Material.IRON_BOOTS, "investors-boots", "Investor's Boots", null),
 
-    MAGIC_HELMET(Material.IRON_HELMET, "magic-helmet", "Magic Helmet", "Hide in plain profit.", null),
-    GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, "guardians-vest", "Guardian's Vest", "A second chance, bought and paid for.", null),
-    TAX_EVASION_PANTS(Material.GOLDEN_LEGGINGS, "tax-evasion-pants", "Tax Evasion Pants", "Not even the economy can catch you.", null),
-    BUNNY_SHOES(Material.LEATHER_BOOTS, "bunny-shoes", "Bunny Shoes", "Agility is the best currency.", null),
+    MAGIC_HELMET(Material.IRON_HELMET, "magic-helmet", "Magic Helmet", null),
+    GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, "guardians-vest", "Guardian's Vest", null),
+    TAX_EVASION_PANTS(Material.GOLDEN_LEGGINGS, "tax-evasion-pants", "Tax Evasion Pants", null),
+    BUNNY_SHOES(Material.LEATHER_BOOTS, "bunny-shoes", "Bunny Shoes", null),
 
-    FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, "flamebringer-leggings", "Flamebringer's Leggings", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
-    FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, "flamebringer-boots", "Flamebringer's Boots", "Forged from the scales of a mighty dragon.", ArmorSet.FLAMEBRINGER),
+    FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, "flamebringer-leggings", "Flamebringer's Leggings", ArmorSet.FLAMEBRINGER),
+    FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, "flamebringer-boots", "Flamebringer's Boots", ArmorSet.FLAMEBRINGER),
 
-    DEATHMAULER_CHESTPLATE(Material.NETHERITE_CHESTPLATE, "deathmauler-chestplate", "Deathmauler's Chestplate", "No one waits for death to have a choice in where you may lie.", ArmorSet.DEATHMAULER),
-    DEATHMAULER_LEGGINGS(Material.NETHERITE_LEGGINGS, "deathmauler-leggings", "Deathmauler's Leggings", "No one waits for death to have a choice in where you may lie.", ArmorSet.DEATHMAULER),
+    DEATHMAULER_CHESTPLATE(Material.NETHERITE_CHESTPLATE, "deathmauler-chestplate", "Deathmauler's Chestplate", ArmorSet.DEATHMAULER),
+    DEATHMAULER_LEGGINGS(Material.NETHERITE_LEGGINGS, "deathmauler-leggings", "Deathmauler's Leggings", ArmorSet.DEATHMAULER),
 
-    DRAGON_HELMET(Material.DIAMOND_HELMET, "dragon-head", "Dragon Helmet", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
-    DRAGON_CHESTPLATE(Material.DIAMOND_CHESTPLATE, "dragon-chestplate", "Dragon Chestplate", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON),
-    DRAGON_BOOTS(Material.DIAMOND_BOOTS, "dragon-boots", "Dragon Boots", "The power of ancient dragons flows through this armor.", ArmorSet.DRAGON);
+    DRAGON_HELMET(Material.DIAMOND_HELMET, "dragon-head", "Dragon Helmet", ArmorSet.DRAGON),
+    DRAGON_CHESTPLATE(Material.DIAMOND_CHESTPLATE, "dragon-chestplate", "Dragon Chestplate", ArmorSet.DRAGON),
+    DRAGON_BOOTS(Material.DIAMOND_BOOTS, "dragon-boots", "Dragon Boots", ArmorSet.DRAGON);
 
     private final Material material;
     private final String configKey;
     private final String displayName;
-    private final String lore;
     private final ArmorSet armorSet;
 
-    CustomArmorItem(Material material, String configKey, String displayName, String lore, ArmorSet armorSet) {
+    CustomArmorItem(Material material, String configKey, String displayName , ArmorSet armorSet) {
         this.material = material;
         this.configKey = configKey;
         this.displayName = displayName;
-        this.lore = lore;
         this.armorSet = armorSet;
     }
 
@@ -92,13 +90,6 @@ public enum CustomArmorItem implements Purchasable {
     }
 
     /**
-     * Gets the short lore/flavor text for this armor piece.
-     */
-    public String getLore() {
-        return lore;
-    }
-
-    /**
      * Gets the armor set this piece belongs to, or null if it's an individual piece.
      */
     public ArmorSet getArmorSet() {
@@ -117,28 +108,6 @@ public enum CustomArmorItem implements Purchasable {
      */
     public boolean isIndividualPiece() {
         return armorSet == null;
-    }
-
-    @Override
-    public String getDescription() {
-        return switch (this) {
-            case INVESTORS_BOOTS, INVESTORS_HELMET, INVESTORS_LEGGINGS, INVESTORS_CHESTPLATE ->
-                    "<gray>Part of the Investor's set. Each piece increases money bonuses.</gray>";
-            case TAX_EVASION_PANTS ->
-                    "<gray>Reduces death penalty and grants a small timeout bonus for staying alive.</gray>";
-            case MAGIC_HELMET ->
-                    "<gray>Right-click to cycle effects: Resistance I → Absorption I → Speed I. Each lasts 4s.</gray>";
-            case BUNNY_SHOES ->
-                    "<gray>Crouch to activate Speed II + Jump Boost I for 15s. 25s cooldown.</gray>";
-            case GUARDIANS_VEST ->
-                    "<gray>Provides Resistance II when low on health (limited uses per round).</gray>";
-            case FLAMEBRINGER_BOOTS, FLAMEBRINGER_LEGGINGS ->
-                    "<gray>Part of the Flamebringer set: grants blue-fire effects on hit and permanent fire-resistance for boots.</gray>";
-            case DEATHMAULER_CHESTPLATE, DEATHMAULER_LEGGINGS ->
-                    "<gray>Chest + Leggings: Kills heal you and can grant absorption.</gray>";
-            case DRAGON_BOOTS, DRAGON_CHESTPLATE, DRAGON_HELMET ->
-                    "<gray>Full Dragon set: regen on hit, speed boosts and double-jump ability. Immune to explosives.</gray>";
-        };
     }
 
 
