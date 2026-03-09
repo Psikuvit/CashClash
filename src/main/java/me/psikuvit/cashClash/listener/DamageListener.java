@@ -510,6 +510,13 @@ public class DamageListener implements Listener {
             }
             case WARDEN_GLOVES -> mythicManager.useWardenPunch(attacker, victim);
 
+            case GOBLIN_SPEAR -> {
+                // Goblin Spear melee attack - apply poison
+                if (event.getDamager() instanceof Player) {
+                    mythicManager.handleGoblinSpearHit(attacker, victim);
+                }
+            }
+
             case BLOODWRENCH_CROSSBOW, BLAZEBITE_CROSSBOWS -> {
                 // Legendary crossbows: +30% damage boost
                 if (event.getDamager() instanceof Projectile) {
