@@ -91,7 +91,7 @@ public class InteractListener implements Listener {
                         return;
                     }
 
-                    // Check shot system
+                    // Check shot system - if out of shots or reloading, cancel the throw
                     if (!mythicManager.handleGoblinSpearThrow(player)) {
                         event.setCancelled(true);
                     }
@@ -112,6 +112,11 @@ public class InteractListener implements Listener {
         Block block = event.getClickedBlock();
         Action action = event.getAction();
 
+        // Check for ready-up sign clicks FIRST, before item checks
+        if (block != null && action.name().contains("RIGHT_CLICK")) {
+            handleReadyUp(event, player, block);
+        }
+
         if (item != null) {
             // Check various item types and delegate
             if (item.getType() == Material.WIND_CHARGE) {
@@ -124,7 +129,7 @@ public class InteractListener implements Listener {
             if (handleCustomItem(event, player, item, action)) return;
             if (handleMythicItem(event, player, item, action)) return;
             handleCustomArmor(player, action);
-        } else if (block != null) handleReadyUp(event, player, block);
+        }
     }
 
     private void handleReadyUp(PlayerInteractEvent event, Player player, Block block) {
