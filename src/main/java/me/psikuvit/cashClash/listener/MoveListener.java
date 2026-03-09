@@ -39,29 +39,6 @@ public class MoveListener implements Listener {
                 customItemManager.handleBouncePad(player, blockBelow);
             }
         }
-
-        // Only trigger if player actually moved position (not just head rotation)
-        if (event.getFrom().getBlockX() == event.getTo().getBlockX() &&
-            event.getFrom().getBlockY() == event.getTo().getBlockY() &&
-            event.getFrom().getBlockZ() == event.getTo().getBlockZ()) {
-            return;
-        }
-
-        // Custom armor landing detection
-        if (player.isOnGround() && !player.isFlying()) {
-            armorManager.onPlayerLand(player);
-        }
-
-        // Dragon Set: detect jump and enable double jump
-        if (event.getFrom().getY() < event.getTo().getY() &&
-            player.getLocation().subtract(0, 0.1, 0).getBlock().getType().isSolid()) {
-
-            armorManager.onDragonJump(player);
-
-            if (armorManager.hasDragonSet(player)) {
-                player.setAllowFlight(true);
-            }
-        }
     }
 }
 

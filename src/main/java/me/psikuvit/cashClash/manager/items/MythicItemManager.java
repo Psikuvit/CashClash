@@ -14,6 +14,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -274,13 +275,10 @@ public class MythicItemManager {
         meta.displayName(Messages.parse("<light_purple><bold>" + mythic.getDisplayName() + "</bold></light_purple>"));
 
         // Lore
-        List<Component> lore = new ArrayList<>();
-        lore.add(Messages.parse("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>"));
-        lore.add(Component.empty());
-        lore.addAll(Messages.wrapLines(mythic.getDescription()));
-        lore.add(Component.empty());
-        lore.add(Messages.parse("<gray>Owner: " + owner.getName() + "</gray>"));
-        meta.lore(lore);
+        List<Component> lore = ItemFactory.getInstance().getGameplayFactory().getConfiguredLore(mythic);
+        if (!lore.isEmpty()) {
+            meta.lore(lore);
+        }
 
         // PDC tags
         PersistentDataContainer pdc = meta.getPersistentDataContainer();

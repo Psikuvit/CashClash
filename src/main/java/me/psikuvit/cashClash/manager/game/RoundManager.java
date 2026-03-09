@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
@@ -145,6 +146,14 @@ public class RoundManager {
                 endCombatPhase();
             } else if (timeRemaining <= 10 || timeRemaining % 60 == 0) {
                 Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>" + timeRemaining + " seconds remaining!</yellow>");
+            }
+
+            // Check Flamebringer fire effects for all players
+            for (UUID uuid : session.getPlayers()) {
+                Player p = Bukkit.getPlayer(uuid);
+                if (p != null && p.isOnline()) {
+                    CustomArmorManager.getInstance().onFlamebringerFireTick(p);
+                }
             }
 
             // Check win conditions
