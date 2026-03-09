@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.listener.ChatListener;
 import me.psikuvit.cashClash.listener.DamageListener;
 import me.psikuvit.cashClash.listener.GameListener;
+import me.psikuvit.cashClash.listener.HungerListener;
 import me.psikuvit.cashClash.listener.InteractListener;
 import me.psikuvit.cashClash.listener.MoveListener;
 import me.psikuvit.cashClash.listener.PlayerConnectionListener;
@@ -179,6 +180,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new InteractListener(),
                 new MoveListener(),
                 new GameListener(),
+                new HungerListener(),
                 new PlayerConnectionListener(),
                 new LobbyListener(),
                 new ArenaNPCListener(),
