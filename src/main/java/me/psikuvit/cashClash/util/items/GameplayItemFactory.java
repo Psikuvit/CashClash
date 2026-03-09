@@ -181,21 +181,8 @@ public final class GameplayItemFactory {
      * Applies food properties to a food item.
      */
     private void applyFoodProperties(ItemStack item, FoodItem foodItem) {
-        Material material = item.getType();
-
-        // Skip special handling for bread and cooked beef (they already have good food properties)
-        if (material == Material.BREAD || material == Material.COOKED_BEEF) {
-            return;
-        }
-
-        // Create new food component for items that don't have one by default
-        item.setData(DataComponentTypes.FOOD, FoodProperties.food()
-                .canAlwaysEat(true)
-                .nutrition(4)
-                .saturation(2.0f)
-                .build());
-        item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
-
+        // Only apply custom properties to special consumables
+        // Vanilla food items should keep their Minecraft default food properties
         PotionEffect potionEffect;
         switch (foodItem) {
             case SPEED_CARROT -> potionEffect = new PotionEffect(PotionEffectType.SPEED, 20 * 20, 0);
@@ -203,8 +190,20 @@ public final class GameplayItemFactory {
             case COOKIE_OF_LIFE -> potionEffect = new PotionEffect(PotionEffectType.REGENERATION, 14 * 20, 0);
             case SUNSCREEN -> potionEffect = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 30 * 20, 0);
             case CAN_OF_SPINACH -> potionEffect = new PotionEffect(PotionEffectType.STRENGTH, 15 * 20, 0);
-            default -> throw new IllegalArgumentException("Invalid food item: " + foodItem);
+            default -> {
+                // No custom food properties needed - they have Minecraft defaults
+                return;
+            }
         }
+
+        // Create new food component for custom consumable items
+        item.setData(DataComponentTypes.FOOD, FoodProperties.food()
+                .canAlwaysEat(true)
+                .nutrition(4)
+                .saturation(2.0f)
+                .build());
+        item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
+
         item.setData(DataComponentTypes.CONSUMABLE, Consumable.consumable()
                 .animation(ItemUseAnimation.EAT)
                 .addEffect(ConsumeEffect.applyStatusEffects(List.of(potionEffect), 1))
