@@ -175,6 +175,31 @@ public class DamageListener implements Listener {
         }
     }
 
+    /**
+     * Handle post-damage effects with MONITOR priority (after all damage modifications).
+     * Processes: Flamebringer fire KB immunity.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPostDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+
+        // Flamebringer: Negate knockback from fire damage
+        if ((event.getCause() == EntityDamageEvent.DamageCause.FIRE ||
+             event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK ||
+             event.getCause() == EntityDamageEvent.DamageCause.LAVA) &&
+            armorManager.hasFlamebringerNoFireKb(player)) {
+
+            // Schedule to reset velocity after knockback is applied
+            SchedulerUtils.runTask(() -> {
+                if (player.isOnline()) {
+                    player.setVelocity(player.getVelocity().multiply(0));
+                }
+            });
+        }
+    }
+
     // ==================== HEALTH REGAIN ====================
 
     /**
@@ -299,8 +324,16 @@ public class DamageListener implements Listener {
             return;
         }
 
-        // Handle all attack-based armor effects
+        // Handle all attack-based armor effects (marks targets for Dragon set)
         armorManager.onPlayerAttack(attacker, victim);
+
+        // Dragon Set: Apply damage boost from dash
+        double dragonBoost = armorManager.getDragonDamageBoost(attacker);
+        if (dragonBoost > 0) {
+            double newDamage = event.getDamage() * (1.0 + dragonBoost);
+            event.setDamage(newDamage);
+            Messages.send(attacker, "<light_purple>+25% damage boost applied!</light_purple>");
+        }
 
         // Investor's Set: bonus damage in rounds 4/5
         double damageMultiplier = armorManager.getInvestorMeleeDamageMultiplier(attacker, session.getCurrentRound());
