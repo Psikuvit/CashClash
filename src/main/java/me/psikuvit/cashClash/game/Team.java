@@ -67,6 +67,10 @@ public class Team {
         }
     }
 
+    public void resetReadyStatus() {
+        readyStatus.replaceAll((u, v) -> false);
+    }
+
     // Getters and setters
     public int getTeamNumber() {
         return teamNumber;

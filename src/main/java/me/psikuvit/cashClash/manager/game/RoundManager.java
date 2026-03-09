@@ -116,6 +116,20 @@ public class RoundManager {
             phaseTask = null;
         }
 
+        // Unready all players when combat phase starts
+        Team team1 = session.getTeam1();
+        Team team2 = session.getTeam2();
+        team1.resetReadyStatus();
+        team2.resetReadyStatus();
+
+        // Close all player inventories/shops when combat starts
+        for (UUID uuid : session.getPlayers()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) {
+                p.closeInventory();
+            }
+        }
+
         Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Combat Phase Starting!</bold></red>");
         session.startCombatPhase();
         startCombatPhase();
