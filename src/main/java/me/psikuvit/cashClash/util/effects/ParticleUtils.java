@@ -305,4 +305,55 @@ public final class ParticleUtils {
         double pz = Math.sin(angle + Math.PI) * radius;
         sweep(attackerLocation.add(px, 1, pz));
     }
+
+    // ==================== CUSTOM ARMOR EFFECTS ====================
+
+    /**
+     * Spawn dragon mark particles above marked player.
+     */
+    public static void dragonMark(Location location) {
+        spawnDust(location.clone().add(0, 2.5, 0), Color.fromRGB(138, 43, 226), 2.0f, 15, 0.3, 0.2, 0.3);
+    }
+
+    /**
+     * Spawn dragon dash trail particles.
+     */
+    public static void dragonDashTrail(Location location) {
+        spawnDust(location, Color.fromRGB(138, 43, 226), 1.5f, 20, 0.5);
+        spawn(Particle.DRAGON_BREATH, location, 5, 0.5);
+    }
+
+    /**
+     * Spawn fiery gravitational pull particles (Flamebringer).
+     */
+    public static void flamebringerPull(Location center, double radius) {
+        // Red, orange, yellow particles in a spiral
+        spawnDust(center, Color.fromRGB(255, 0, 0), 1.5f, 30, radius);
+        spawnDust(center, Color.fromRGB(255, 165, 0), 1.5f, 30, radius);
+        spawnDust(center, Color.fromRGB(255, 255, 0), 1.5f, 30, radius);
+    }
+
+    /**
+     * Spawn permanent heart particle effect (figure 8 with skulls) for Deathmauler.
+     */
+    public static void deathmaulerPermanentHeart(Location location) {
+        // Black particles in figure 8 pattern around player
+        Location center = location.clone().add(0, 1, 0);
+        for (int i = 0; i < 20; i++) {
+            double t = (i / 20.0) * Math.PI * 2;
+            double x = Math.sin(t) * 0.8;
+            double y = Math.sin(2 * t) * 0.4;
+            double z = Math.cos(t) * 0.8;
+            Location particleLoc = center.clone().add(x, y, z);
+            spawnDust(particleLoc, Color.BLACK, 1.5f, 2, 0.1);
+        }
+    }
+
+    /**
+     * Spawn small healing particles for normal Deathmauler kills.
+     */
+    public static void deathmaulerHeal(Location location) {
+        spawnDust(location.clone().add(0, 1, 0), Color.BLACK, 1.0f, 20, 0.5);
+        spawn(Particle.HEART, location.clone().add(0, 1, 0), 5, 0.5);
+    }
 }
