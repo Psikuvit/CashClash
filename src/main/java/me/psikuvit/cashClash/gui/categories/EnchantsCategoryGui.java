@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.gui.categories;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
+import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
@@ -83,6 +84,22 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
+        // Deathmauler restriction: Cannot buy both protection types
+        CustomArmorManager armorManager = CustomArmorManager.getInstance();
+        if (armorManager.hasDeathmaulerSet(viewer)) {
+            if (ee == EnchantEntry.PROTECTION && ccp.getOwnedEnchantLevel(EnchantEntry.PROJECTILE_PROTECTION) > 0) {
+                Messages.send(viewer, "<red>Deathmauler set restriction: You already have Projectile Protection!</red>");
+                Messages.send(viewer, "<red>You must choose either Protection OR Projectile Protection.</red>");
+                SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                return;
+            }
+            if (ee == EnchantEntry.PROJECTILE_PROTECTION && ccp.getOwnedEnchantLevel(EnchantEntry.PROTECTION) > 0) {
+                Messages.send(viewer, "<red>Deathmauler set restriction: You already have Protection!</red>");
+                Messages.send(viewer, "<red>You must choose either Protection OR Projectile Protection.</red>");
+                SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                return;
+            }
+        }
 
         if (ItemUtils.applyEnchant(viewer, ee, nextLevel)) {
             ShopService.getInstance().deductCoins(viewer, price);
