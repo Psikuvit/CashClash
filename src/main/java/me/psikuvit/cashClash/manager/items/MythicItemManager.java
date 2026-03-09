@@ -1673,18 +1673,25 @@ public class MythicItemManager {
         wardenBoxingActive.add(uuid);
         wardenPunchCount.put(uuid, 0);
 
-        Messages.send(player, "<dark_aqua><bold>BOXING GLOVES ACTIVATED!</bold></dark_aqua>");
-        Messages.send(player, "<gray>Punch enemies to build up speed!</gray>");
-        SoundUtils.play(player, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.5f);
+        // Start with Speed I immediately
+        int durationTicks = cfg.getWardenBoxingDuration() * 20;
+        player.addPotionEffect(new PotionEffect(
+                PotionEffectType.SPEED,
+                durationTicks,
+                0, // Speed I (amplifier 0)
+                false, true
+        ));
 
-        int durationTicks = cfg.getWardenBoxingDuration() * 20; // Convert seconds to ticks
+        Messages.send(player, "<dark_aqua><bold>BOXING GLOVES ACTIVATED!</bold></dark_aqua>");
+        Messages.send(player, "<gray>Punch enemies to build up speed! Starting with Speed I</gray>");
+        SoundUtils.play(player, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.5f);
 
         // End the ability after duration
         BukkitTask endTask = SchedulerUtils.runTaskLater(() -> endWardenBoxingAbility(player), durationTicks);
 
         activeTasks.computeIfAbsent(uuid, k -> new ArrayList<>()).add(endTask);
 
-        Messages.debug(player, "WARDEN_GLOVES: Boxing ability started - " + cfg.getWardenBoxingDuration() + "s duration");
+        Messages.debug(player, "WARDEN_GLOVES: Boxing ability started with Speed I - " + cfg.getWardenBoxingDuration() + "s duration");
     }
 
     /**
