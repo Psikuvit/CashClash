@@ -17,6 +17,8 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -64,6 +66,14 @@ public class RoundManager {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p == null || !p.isOnline()) continue;
 
+                // Full heal health and hunger at start of shopping phase
+                AttributeInstance maxHealthAttr = p.getAttribute(Attribute.MAX_HEALTH);
+                if (maxHealthAttr != null) {
+                    p.setHealth(maxHealthAttr.getValue());
+                }
+                p.setFoodLevel(20);
+                p.setSaturation(20.0f);
+
                 int teamNum = team1.hasPlayer(uuid) ? 1 : (team2.hasPlayer(uuid) ? 2 : 0);
                 Location destTemplate = null;
 
@@ -84,6 +94,8 @@ public class RoundManager {
                     Location dest = LocationUtils.adjustLocationToWorld(destTemplate, copiedWorld);
                     p.setGameMode(GameMode.SURVIVAL);
                     p.teleport(dest);
+                    // Close inventory/shop when teleporting to shopping phase
+                    p.closeInventory();
                     Messages.send(p, "<yellow>Teleported to your team's shopping area.</yellow>");
                 }
             }
