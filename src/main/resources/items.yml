@@ -157,19 +157,23 @@ custom-armor:
 
   # Dragon Set
   dragon:
-    hit-regeneration-level: 0
-    hit-regeneration-duration-seconds: 3
-    hit-speed-level: 0
-    hit-speed-duration-seconds: 3
-    double-jump:
-      cooldown-seconds: 10
-      forward-velocity: 1.2
-      upward-velocity: 0.8
+    mark-duration-seconds: 4
+    dash-range: 5
+    damage-boost-percentage: 0.25
+    cooldown-seconds: 40
+    kill-strength-level: 0
+    kill-strength-duration-seconds: 4
+    kill-glow-duration-seconds: 1
 
   # Flamebringer Set
   flamebringer:
-    ignite-chance: 0.30
-    fire-duration-seconds: 8
+    no-fire-kb: true
+    speed-level: 0
+    speed-duration-seconds: 999999
+    pull-radius: 6
+    pull-duration-seconds: 1.5
+    pull-strength: 0.4
+    kills-for-pull: 2
 
   # Tax Evasion Pants
   tax-evasion:
@@ -448,11 +452,43 @@ item-lore:
 
   # ==================== UTILITY ====================
   utility:
+    lava-bucket:
+      lore:
+        - "<gray>Place lava to control space</gray>"
+        - "<yellow>Strong area denial</yellow>"
+    water-bucket:
+      lore:
+        - "<gray>Counter fire and lava</gray>"
+        - "<yellow>Great defensive utility</yellow>"
+    fishing-rod:
+      lore:
+        - "<gray>Hook and disrupt movement</gray>"
+        - "<yellow>Strong for close fights</yellow>"
+    crossbow:
+      lore:
+        - "<gray>High burst ranged weapon</gray>"
+        - "<yellow>Use with arrows</yellow>"
+    wind-charge:
+      lore:
+        - "<gray>Knock enemies around</gray>"
+        - "<yellow>Great for disengage</yellow>"
+    leaves:
+      lore:
+        - "<gray>Cheap building blocks</gray>"
+        - "<yellow>Use for quick cover</yellow>"
+    soul-sand:
+      lore:
+        - "<gray>Slows movement on contact</gray>"
+        - "<yellow>Trap or zone enemies</yellow>"
     bow:
       lore:
         - "<gray>A basic bow</gray>"
         - "<yellow>Use with arrows</yellow>"
     arrows:
+      lore:
+        - "<gray>Basic arrows</gray>"
+        - "<yellow>Ammunition for bows</yellow>"
+    arrow:
       lore:
         - "<gray>Basic arrows</gray>"
         - "<yellow>Ammunition for bows</yellow>"
@@ -522,7 +558,27 @@ item-lore:
       lore:
         - "<gray>Powerful armor</gray>"
         - "<yellow>Heals on kills</yellow>"
+    deathmauler-chestplate:
+      lore:
+        - "<gray>Powerful armor</gray>"
+        - "<yellow>Heals on kills</yellow>"
+    deathmauler-leggings:
+      lore:
+        - "<gray>Powerful armor</gray>"
+        - "<yellow>Heals on kills</yellow>"
     dragon:
+      lore:
+        - "<gray>Dragon-themed armor</gray>"
+        - "<yellow>Double jump ability</yellow>"
+    dragon-head:
+      lore:
+        - "<gray>Dragon-themed armor</gray>"
+        - "<yellow>Double jump ability</yellow>"
+    dragon-chestplate:
+      lore:
+        - "<gray>Dragon-themed armor</gray>"
+        - "<yellow>Double jump ability</yellow>"
+    dragon-boots:
       lore:
         - "<gray>Dragon-themed armor</gray>"
         - "<yellow>Double jump ability</yellow>"
@@ -530,11 +586,39 @@ item-lore:
       lore:
         - "<gray>Sets enemies on fire</gray>"
         - "<yellow>Ignite on hit</yellow>"
+    flamebringer-leggings:
+      lore:
+        - "<gray>Sets enemies on fire</gray>"
+        - "<yellow>Ignite on hit</yellow>"
+    flamebringer-boots:
+      lore:
+        - "<gray>Sets enemies on fire</gray>"
+        - "<yellow>Ignite on hit</yellow>"
     tax-evasion:
       lore:
         - "<gray>Evades taxes</gray>"
         - "<yellow>Bonus on survival</yellow>"
+    tax-evasion-pants:
+      lore:
+        - "<gray>Evades taxes</gray>"
+        - "<yellow>Bonus on survival</yellow>"
     investors:
+      lore:
+        - "<gray>Investor's armor</gray>"
+        - "<yellow>Money bonus</yellow>"
+    investors-helmet:
+      lore:
+        - "<gray>Investor's armor</gray>"
+        - "<yellow>Money bonus</yellow>"
+    investors-chestplate:
+      lore:
+        - "<gray>Investor's armor</gray>"
+        - "<yellow>Money bonus</yellow>"
+    investors-leggings:
+      lore:
+        - "<gray>Investor's armor</gray>"
+        - "<yellow>Money bonus</yellow>"
+    investors-boots:
       lore:
         - "<gray>Investor's armor</gray>"
         - "<yellow>Money bonus</yellow>"
@@ -565,6 +649,12 @@ item-lore:
         - "<dark_purple>A sword crackling with energy</dark_purple>"
         - "<yellow>Chain damage to nearby enemies</yellow>"
         - "<yellow>Teleport ability</yellow>"
+    electric-eel-sword:
+      lore:
+        - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
+        - "<dark_purple>A sword crackling with energy</dark_purple>"
+        - "<yellow>Chain damage to nearby enemies</yellow>"
+        - "<yellow>Teleport ability</yellow>"
     goblin-spear:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
@@ -572,6 +662,12 @@ item-lore:
         - "<yellow>Throwable projectiles</yellow>"
         - "<yellow>Charge forward ability</yellow>"
     bloodwrench:
+      lore:
+        - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
+        - "<dark_purple>A dual-mode crossbow</dark_purple>"
+        - "<yellow>Rapid fire mode</yellow>"
+        - "<yellow>Supercharge vortex mode</yellow>"
+    bloodwrench-crossbow:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>A dual-mode crossbow</dark_purple>"
@@ -590,4 +686,81 @@ item-lore:
         - "<yellow>Glacier mode: Freeze enemies</yellow>"
         - "<yellow>Volcano mode: Ignite enemies</yellow>"
 
+  # ==================== ENCHANTS ====================
+  enchants:
+    sharpness:
+      lore:
+        - "<gray>Increase sword damage</gray>"
+    protection:
+      lore:
+        - "<gray>Reduce incoming damage</gray>"
+    knockback:
+      lore:
+        - "<gray>Push enemies farther away</gray>"
+    fire-aspect:
+      lore:
+        - "<gray>Ignite targets on hit</gray>"
+    power:
+      lore:
+        - "<gray>Increase bow damage</gray>"
+    flame:
+      lore:
+        - "<gray>Arrows set targets on fire</gray>"
+    punch:
+      lore:
+        - "<gray>Increase bow knockback</gray>"
+    projectile-protection:
+      lore:
+        - "<gray>Reduce projectile damage</gray>"
+    soul-speed:
+      lore:
+        - "<gray>Move faster on soul sand</gray>"
+    piercing:
+      lore:
+        - "<gray>Crossbow bolts pierce targets</gray>"
 
+  # ==================== INVESTMENTS ====================
+  investments:
+    wallet:
+      lore:
+        - "<gray>Low risk investment</gray>"
+        - "<yellow>Good early round option</yellow>"
+    purse:
+      lore:
+        - "<gray>Balanced risk/reward investment</gray>"
+        - "<yellow>Strong mid round option</yellow>"
+    ender-bag:
+      lore:
+        - "<gray>High risk high reward investment</gray>"
+        - "<yellow>Best upside if you survive</yellow>"
+
+  # ==================== CATEGORY ICONS ====================
+  categories:
+    weapons:
+      name: "<yellow>Weapons</yellow>"
+      lore:
+        - "<gray>Click to browse weapons</gray>"
+    armor:
+      name: "<yellow>Armor</yellow>"
+      lore:
+        - "<gray>Click to browse armor</gray>"
+    food:
+      name: "<yellow>Food</yellow>"
+      lore:
+        - "<gray>Click to browse food</gray>"
+    enchants:
+      name: "<yellow>Enchants</yellow>"
+      lore:
+        - "<gray>Click to browse enchants</gray>"
+    utility:
+      name: "<yellow>Utility</yellow>"
+      lore:
+        - "<gray>Click to browse utility items</gray>"
+    custom-items:
+      name: "<yellow>Custom Items</yellow>"
+      lore:
+        - "<gray>Click to browse custom items</gray>"
+    investments:
+      name: "<yellow>Investments</yellow>"
+      lore:
+        - "<gray>Click to browse investments</gray>"

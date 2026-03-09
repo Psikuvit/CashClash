@@ -6,8 +6,12 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Manages items.yml configuration for all item-related constants.
@@ -412,8 +416,61 @@ public class ItemsConfig {
     }
 
     // Dragon Set
-    public int getDragonDoubleJumpCooldown() {
-        return config.getInt("custom-armor.dragon.double-jump.cooldown-seconds", 10);
+    public int getDragonMarkDuration() {
+        return config.getInt("custom-armor.dragon.mark-duration-seconds", 4);
+    }
+
+    public int getDragonDashRange() {
+        return config.getInt("custom-armor.dragon.dash-range", 5);
+    }
+
+    public double getDragonDamageBoost() {
+        return config.getDouble("custom-armor.dragon.damage-boost-percentage", 0.25);
+    }
+
+    public int getDragonCooldown() {
+        return config.getInt("custom-armor.dragon.cooldown-seconds", 40);
+    }
+
+    public int getDragonKillStrengthLevel() {
+        return config.getInt("custom-armor.dragon.kill-strength-level", 0);
+    }
+
+    public int getDragonKillStrengthDuration() {
+        return config.getInt("custom-armor.dragon.kill-strength-duration-seconds", 4);
+    }
+
+    public int getDragonKillGlowDuration() {
+        return config.getInt("custom-armor.dragon.kill-glow-duration-seconds", 1);
+    }
+
+    // Flamebringer Set
+    public boolean getFlamebringerNoFireKb() {
+        return config.getBoolean("custom-armor.flamebringer.no-fire-kb", true);
+    }
+
+    public int getFlamebringerSpeedLevel() {
+        return config.getInt("custom-armor.flamebringer.speed-level", 0);
+    }
+
+    public int getFlamebringerSpeedDuration() {
+        return config.getInt("custom-armor.flamebringer.speed-duration-seconds", 999999);
+    }
+
+    public double getFlamebringerPullRadius() {
+        return config.getDouble("custom-armor.flamebringer.pull-radius", 6.0);
+    }
+
+    public double getFlamebringerPullDuration() {
+        return config.getDouble("custom-armor.flamebringer.pull-duration-seconds", 1.5);
+    }
+
+    public double getFlamebringerPullStrength() {
+        return config.getDouble("custom-armor.flamebringer.pull-strength", 0.4);
+    }
+
+    public int getFlamebringerKillsForPull() {
+        return config.getInt("custom-armor.flamebringer.kills-for-pull", 2);
     }
 
     // ==================== CONSUMABLES ====================
