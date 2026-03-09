@@ -287,7 +287,9 @@ public class CooldownManager {
         public static final String MAGIC_HELMET = "MAGIC_HELMET";
         public static final String BUNNY_SHOES = "BUNNY_SHOES";
         public static final String GUARDIAN_VEST = "GUARDIAN_VEST";
-        public static final String DRAGON_DOUBLE_JUMP = "DRAGON_DOUBLE_JUMP";
+        public static final String DRAGON_DASH = "DRAGON_DASH";
+        public static final String DRAGON_MARK_EXPIRE = "DRAGON_MARK_EXPIRE";
+        public static final String FLAMEBRINGER_ON_FIRE = "FLAMEBRINGER_ON_FIRE";
 
         // Custom Items
         public static final String MEDIC_POUCH = "MEDIC_POUCH";
@@ -324,7 +326,9 @@ public class CooldownManager {
         public static final String SANDSTORMER_CHARGE = "SANDSTORMER_CHARGE";
         public static final String LAST_MOVE = "LAST_MOVE";
 
-        private Keys() {} // Prevent instantiation
+        private Keys() {
+            throw new AssertionError("Nope.");
+        } // Prevent instantiation
     }
 }
 
