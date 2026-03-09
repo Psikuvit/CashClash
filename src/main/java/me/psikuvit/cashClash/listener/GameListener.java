@@ -51,7 +51,6 @@ import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -156,7 +155,10 @@ public class GameListener implements Listener {
             Messages.send(killer, "<gray>Investor's Set: +" + String.format("%.1f", (investorMultiplier - 1.0) * 100) + "% bonus coins</gray>");
         }
 
+        // Handle armor set kill effects
         armorManager.onPlayerKill(killer);
+        armorManager.onDragonKill(killer);
+        armorManager.onFlamebringerKill(killer);
 
         /**CashQuakeManager cashQuakeManager = session.getCashQuakeManager();
         if (cashQuakeManager != null && cashQuakeManager.isLifeStealActive()) {
@@ -246,7 +248,7 @@ public class GameListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(p);
         if (session != null && session.getState() == GameState.SHOPPING) {
             FoodItem fi = PDCDetection.getFood(consumed);
-            if (fi != null && !fi.getDescription().isEmpty()) {
+            if (fi != null) {
                 event.setCancelled(true);
                 Messages.send(p, "<red>You cannot use special consumables during the shopping phase!</red>");
                 return;
@@ -332,24 +334,6 @@ public class GameListener implements Listener {
         armorManager.onPlayerToggleSneak(p, event.isSneaking());
     }
 
-    // ==================== FLIGHT TOGGLE ====================
-
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
-        if (event.isCancelled()) return;
-
-        Player p = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(p);
-
-        if (session == null) return;
-
-        if (session.getState() == GameState.SHOPPING) return;
-
-        if (event.isFlying() && armorManager.tryDragonDoubleJump(p)) {
-            event.setCancelled(true);
-            p.setAllowFlight(false);
-        }
-    }
 
     // ==================== BOW SHOOT ====================
 
