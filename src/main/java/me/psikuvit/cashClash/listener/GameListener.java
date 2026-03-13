@@ -54,8 +54,6 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.Objects;
@@ -236,10 +234,8 @@ public class GameListener implements Listener {
 
     // ==================== ITEM CONSUME ====================
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerConsume(PlayerItemConsumeEvent event) {
-        if (event.isCancelled()) return;
-
         Player p = event.getPlayer();
         ItemStack consumed = event.getItem();
 
@@ -259,7 +255,7 @@ public class GameListener implements Listener {
 
         if (fi == null) return;
 
-        // Check if this is a special consumable (has custom effects)
+        // Data components already handle applying effects; we only gate cooldown + empty bottle cleanup
         if (isSpecialConsumable(fi)) {
             CooldownManager cooldownManager = CooldownManager.getInstance();
             if (cooldownManager.isOnCooldown(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE)) {
@@ -268,7 +264,6 @@ public class GameListener implements Listener {
                 Messages.send(p, "<red>Consumable on cooldown! (" + remaining + "s)</red>");
                 return;
             }
-            // Set cooldown
             int cooldownSeconds = ItemsConfig.getInstance().getConsumableCooldown();
             cooldownManager.setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE, cooldownSeconds);
         }
@@ -287,35 +282,21 @@ public class GameListener implements Listener {
                fi == FoodItem.CAN_OF_SPINACH;
     }
 
-    private void applyConsumable(Player p, PotionEffect effect, String msg) {
-        p.removePotionEffect(effect.getType());
-        p.addPotionEffect(effect);
-        Messages.send(p, msg);
-        SoundUtils.play(p, Sound.ENTITY_PLAYER_BURP, 1.0f, 1.0f);
-    }
-
-    private void applyAbsorption(Player p) {
-        p.removePotionEffect(PotionEffectType.ABSORPTION);
-        p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 2 * 60 * 20, 1, false, true, true));
-        Messages.send(p, "<gold>+4 Absorption Hearts!</gold>");
-        SoundUtils.play(p, Sound.ENTITY_PLAYER_BURP, 1.0f, 1.0f);
-    }
-
     private void removeEmptyBottle(Player p) {
         ItemStack mainHand = p.getInventory().getItemInMainHand();
         if (mainHand.getType() == Material.GLASS_BOTTLE) {
-            mainHand.setAmount(mainHand.getAmount() - 1);
+            mainHand.setAmount(Math.max(0, mainHand.getAmount() - 1));
             return;
         }
         ItemStack offHand = p.getInventory().getItemInOffHand();
         if (offHand.getType() == Material.GLASS_BOTTLE) {
-            offHand.setAmount(offHand.getAmount() - 1);
+            offHand.setAmount(Math.max(0, offHand.getAmount() - 1));
             return;
         }
         for (int i = 0; i < p.getInventory().getSize(); i++) {
             ItemStack item = p.getInventory().getItem(i);
             if (item != null && item.getType() == Material.GLASS_BOTTLE) {
-                item.setAmount(item.getAmount() - 1);
+                item.setAmount(Math.max(0, item.getAmount() - 1));
                 return;
             }
         }
@@ -436,8 +417,11 @@ public class GameListener implements Listener {
         if (event.getEntity() instanceof Trident trident) {
             if (!(trident.getShooter() instanceof Player shooter)) return;
 
-            ItemStack mainHand = shooter.getInventory().getItemInMainHand();
-            MythicItem mythic = PDCDetection.getMythic(mainHand);
+            MythicItem mythic = PDCDetection.getMythic(trident);
+            if (mythic == null) {
+                ItemStack mainHand = shooter.getInventory().getItemInMainHand();
+                mythic = PDCDetection.getMythic(mainHand);
+            }
 
             if (mythic == MythicItem.GOBLIN_SPEAR && event.getHitEntity() instanceof LivingEntity target) {
                 mythicManager.handleGoblinSpearHit(shooter, target);

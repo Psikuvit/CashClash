@@ -290,6 +290,8 @@ public class CooldownManager {
         public static final String DRAGON_DASH = "DRAGON_DASH";
         public static final String DRAGON_MARK_EXPIRE = "DRAGON_MARK_EXPIRE";
         public static final String FLAMEBRINGER_ON_FIRE = "FLAMEBRINGER_ON_FIRE";
+        public static final String FLAMEBRINGER_LAVA_COOLDOWN = "FLAMEBRINGER_LAVA_COOLDOWN";
+        public static final String DEATHMAULER_SOUL_BURST = "DEATHMAULER_SOUL_BURST";
 
         // Custom Items
         public static final String MEDIC_POUCH = "MEDIC_POUCH";
