@@ -2,6 +2,8 @@ package me.psikuvit.cashClash.manager.items;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -10,6 +12,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -55,6 +58,7 @@ public class CustomArmorManager {
     // Flamebringer Set tracking
     private final Map<UUID, Integer> flamebringerKills; // Player -> kill count this round
     private final Map<UUID, BukkitTask> flamebringerFireTask; // Player -> fire effect task
+    private final Map<UUID, Integer> flamebringerLavaUses; // Player -> lava speed procs this game
 
     private final Random random;
 
@@ -74,6 +78,7 @@ public class CustomArmorManager {
 
         this.flamebringerKills = new ConcurrentHashMap<>();
         this.flamebringerFireTask = new ConcurrentHashMap<>();
+        this.flamebringerLavaUses = new ConcurrentHashMap<>();
 
         this.random = new Random();
     }
@@ -250,6 +255,11 @@ public class CustomArmorManager {
         UUID targetId = target.getUniqueId();
         ItemsConfig cfg = ItemsConfig.getInstance();
 
+        // If already have an active mark, do not re-mark
+        if (dragonMarkedTargets.containsKey(attackerId) && cooldownManager.isOnCooldown(attackerId, CooldownManager.Keys.DRAGON_MARK_EXPIRE)) {
+            return;
+        }
+
         // Check if on cooldown
         if (cooldownManager.isOnCooldown(attackerId, CooldownManager.Keys.DRAGON_DASH)) {
             return;
@@ -344,7 +354,11 @@ public class CustomArmorManager {
 
         // Perform dash
         Vector direction = target.getLocation().toVector().subtract(attacker.getLocation().toVector()).normalize();
-        attacker.setVelocity(direction.multiply(1.5).setY(0.3));
+        org.bukkit.Location targetLoc = target.getLocation().clone().add(direction.multiply(-0.5));
+        targetLoc.setYaw(target.getLocation().getYaw());
+        targetLoc.setPitch(target.getLocation().getPitch());
+        attacker.teleport(targetLoc);
+        attacker.setVelocity(new Vector(0, 0.2, 0));
 
         // Store damage boost for next hit
         dragonDamageBoost.put(attackerId, cfg.getDragonDamageBoost());
@@ -476,30 +490,6 @@ public class CustomArmorManager {
         // Show small healing particle effect on normal kills
         ParticleUtils.deathmaulerHeal(killer.getLocation());
         SoundUtils.play(killer, Sound.ENTITY_ZOMBIE_VILLAGER_CURE, 0.5f, 1.5f);
-
-        // 30% chance for extra heart this round
-        if (random.nextDouble() < 0.30) {
-            if (attr != null) {
-                int extraHearts = deathmaulerExtraHearts.getOrDefault(id, 0);
-                attr.setBaseValue(attr.getBaseValue() + 2.0);
-                deathmaulerExtraHearts.put(id, extraHearts + 1);
-                Messages.send(killer, "<dark_red>💀 +1 permanent heart for this round!</dark_red>");
-
-                // Show figure 8 skull particle effect for permanent heart
-                ParticleUtils.deathmaulerPermanentHeart(killer.getLocation());
-                SoundUtils.play(killer, Sound.ENTITY_WITHER_SPAWN, 0.3f, 2.0f);
-
-                // Animate the figure 8 pattern over time
-                for (int i = 0; i < 40; i++) {
-                    final int tick = i;
-                    SchedulerUtils.runTaskLater(() -> {
-                        if (killer.isOnline()) {
-                            ParticleUtils.deathmaulerPermanentHeart(killer.getLocation());
-                        }
-                    }, i * 2L);
-                }
-            }
-        }
     }
 
     public void onDeathmaulerDamageTaken(Player p) {
@@ -517,6 +507,59 @@ public class CustomArmorManager {
             p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
             Messages.send(p, "<dark_red>Deathmauler granted 2 absorption hearts!</dark_red>");
         }, delaySeconds * 20L);
+    }
+
+    // ==================== DEATHMAULER SOUL BURST ====================
+
+    public void tryDeathmaulerSoulBurst(Player attacker, Player victim, GameSession session) {
+        if (!hasDeathmaulerSet(attacker) || victim == null) return;
+        UUID id = attacker.getUniqueId();
+
+        var attr = attacker.getAttribute(Attribute.MAX_HEALTH);
+        double max = attr != null ? attr.getValue() : 20.0;
+        if (attacker.getHealth() > max * 0.5) return;
+
+        if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST)) return;
+
+        if (!isFullyChargedMelee(attacker)) return;
+
+        double damage = 3.0; // 1.5 hearts
+        double radius = 7.0;
+        double totalDealt = 0.0;
+
+        for (org.bukkit.entity.Entity entity : attacker.getWorld().getNearbyEntities(attacker.getLocation(), radius, radius, radius)) {
+            if (!(entity instanceof Player target)) continue;
+            if (target.equals(attacker)) continue;
+
+            if (session != null) {
+                Team aTeam = session.getPlayerTeam(attacker);
+                Team tTeam = session.getPlayerTeam(target);
+                if (tTeam != null && aTeam == tTeam) continue;
+            }
+
+            double newHealth = Math.max(0.0, target.getHealth() - damage);
+            target.setHealth(newHealth);
+            totalDealt += damage;
+            ParticleUtils.hitFeedback(target.getLocation(), 10, 0.2);
+        }
+
+        if (totalDealt > 0) {
+            double newHealth = Math.min(attacker.getHealth() + totalDealt, max);
+            attacker.setHealth(newHealth);
+        }
+
+        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST, 35);
+        Messages.send(attacker, "<dark_red>Soul Burst unleashed!</dark_red>");
+        SoundUtils.play(attacker, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.8f);
+    }
+
+    private boolean isFullyChargedMelee(Player attacker) {
+        // Bukkit exposes attack cooldown directly
+        try {
+            return attacker.getAttackCooldown() >= 0.99f;
+        } catch (NoSuchMethodError ignored) {
+            return true;
+        }
     }
 
     // ==================== FLAMEBRINGER SET ====================
@@ -547,6 +590,27 @@ public class CustomArmorManager {
     }
 
     /**
+     * Triggered when lava damages the player: grant Speed I for 6s, max 3 per game, 2s cooldown between procs.
+     */
+    public void onFlamebringerLavaDamage(Player p) {
+        if (!hasFlamebringerSet(p)) return;
+        UUID id = p.getUniqueId();
+
+        int used = flamebringerLavaUses.getOrDefault(id, 0);
+        if (used >= 3) return;
+
+        if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN)) {
+            return;
+        }
+
+        p.removePotionEffect(PotionEffectType.SPEED);
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 6 * 20, 0, false, false, true));
+        flamebringerLavaUses.put(id, used + 1);
+        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, 2);
+        Messages.send(p, "<gold>Flamebringer: Speed I from lava (" + (3 - (used + 1)) + " left)!</gold>");
+    }
+
+    /**
      * Check if player should have fire tick knockback negation.
      */
     public boolean hasFlamebringerNoFireKb(Player p) {
@@ -567,10 +631,8 @@ public class CustomArmorManager {
         ItemsConfig cfg = ItemsConfig.getInstance();
 
         if (kills >= cfg.getFlamebringerKillsForPull()) {
-            // Reset kill counter
             flamebringerKills.put(id, 0);
 
-            // Activate gravitational pull
             Messages.send(killer, "<gold>🔥 Flamebringer Pull Activated!</gold>");
             SoundUtils.play(killer, Sound.ENTITY_BLAZE_SHOOT, 1.0f, 0.8f);
 
@@ -578,41 +640,36 @@ public class CustomArmorManager {
             double duration = cfg.getFlamebringerPullDuration();
             double pullStrength = cfg.getFlamebringerPullStrength();
 
-            // Get session for team checking
-            me.psikuvit.cashClash.manager.game.GameManager gameManager = me.psikuvit.cashClash.manager.game.GameManager.getInstance();
-            me.psikuvit.cashClash.game.GameSession session = gameManager.getPlayerSession(killer);
-            me.psikuvit.cashClash.game.Team killerTeam = session != null ? session.getPlayerTeam(killer) : null;
+            GameManager gameManager = GameManager.getInstance();
+            GameSession session = gameManager.getPlayerSession(killer);
+            Team killerTeam = session != null ? session.getPlayerTeam(killer) : null;
 
-            org.bukkit.Location killerLoc = killer.getLocation();
+            Location killerLoc = killer.getLocation();
 
-            // Create pull effect over duration
             int durationTicks = (int) (duration * 20);
             BukkitTask pullTask = SchedulerUtils.runTaskTimer(() -> {
                 if (!killer.isOnline()) return;
 
-                // Spawn particles
                 ParticleUtils.flamebringerPull(killerLoc, radius);
 
-                // Pull nearby enemies
                 for (org.bukkit.entity.Entity entity : killer.getWorld().getNearbyEntities(killerLoc, radius, radius, radius)) {
                     if (!(entity instanceof Player target)) continue;
                     if (target.equals(killer)) continue;
 
-                    // Check if enemy
                     if (session != null && killerTeam != null) {
-                        me.psikuvit.cashClash.game.Team targetTeam = session.getPlayerTeam(target);
+                        Team targetTeam = session.getPlayerTeam(target);
                         if (targetTeam == killerTeam) continue;
                     }
 
-                    // Pull towards killer
                     Vector direction = killerLoc.toVector().subtract(target.getLocation().toVector()).normalize();
                     target.setVelocity(direction.multiply(pullStrength));
                 }
-            }, 0L, 2L); // Every 0.1 seconds
+            }, 0L, 2L);
 
-            // Stop after duration
             SchedulerUtils.runTaskLater(() -> {
-                pullTask.cancel();
+                if (pullTask != null) {
+                    pullTask.cancel();
+                }
                 if (killer.isOnline()) {
                     Messages.send(killer, "<gray>Flamebringer pull ended.</gray>");
                 }
@@ -695,6 +752,7 @@ public class CustomArmorManager {
         flamebringerFireTask.values().forEach(BukkitTask::cancel);
         flamebringerFireTask.clear();
         flamebringerKills.clear();
+        flamebringerLavaUses.clear();
 
         // Note: cooldowns are managed by CooldownManager and will be cleared when players are cleared
     }

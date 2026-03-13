@@ -313,6 +313,11 @@ public class DamageListener implements Listener {
         if (isMeleeDamage(event)) {
             armorManager.onMagicHelmetMeleeDamage(player);
         }
+
+        // Flamebringer: lava trigger speed
+        if (cause == EntityDamageEvent.DamageCause.LAVA) {
+            armorManager.onFlamebringerLavaDamage(player);
+        }
     }
 
     /**
@@ -340,6 +345,9 @@ public class DamageListener implements Listener {
         if (damageMultiplier > 1.0) {
             event.setDamage(event.getDamage() * damageMultiplier);
         }
+
+        // Deathmauler: Soul Burst
+        armorManager.tryDeathmaulerSoulBurst(attacker, victim, session);
     }
 
     /**
