@@ -1618,7 +1618,7 @@ public class MythicItemManager {
             startWardenBoxingAbility(player);
         }
 
-        // Increment punch count
+        // Increment punch count (kept for analytics/debug)
         int punchCount = wardenPunchCount.getOrDefault(uuid, 0) + 1;
         wardenPunchCount.put(uuid, punchCount);
 
@@ -1630,36 +1630,19 @@ public class MythicItemManager {
                 .setY(0.4);
         victim.setVelocity(knockback);
 
+        // Maintain Speed I every punch to avoid ramping
+        int durationTicks = cfg.getWardenBoxingDuration() * 20;
+        player.addPotionEffect(new PotionEffect(
+                PotionEffectType.SPEED,
+                durationTicks,
+                0,
+                false,
+                true
+        ));
+
         // Punch sound effect
         SoundUtils.play(victim, Sound.ENTITY_WARDEN_ATTACK_IMPACT, 1.0f, 1.0f);
         ParticleUtils.sweep(victim.getLocation().add(0, 1, 0));
-
-        // Every 5th punch, increase speed
-        if (punchCount % 5 == 0) {
-            int currentSpeedLevel = 0;
-            for (PotionEffect effect : player.getActivePotionEffects()) {
-                if (effect.getType() == PotionEffectType.SPEED) {
-                    currentSpeedLevel = effect.getAmplifier() + 1;
-                    break;
-                }
-            }
-
-            // Cap speed at level 3 (amplifier 2)
-            int newSpeedLevel = Math.min(currentSpeedLevel + 1, 3);
-            int remainingDuration = cfg.getWardenBoxingDuration() * 20; // Convert seconds to ticks
-
-            // Apply or increase speed
-            player.addPotionEffect(new PotionEffect(
-                    PotionEffectType.SPEED,
-                    remainingDuration,
-                    newSpeedLevel - 1, // Amplifier is 0-indexed
-                    false, true
-            ));
-
-            Messages.send(player, "<dark_aqua>Speed increased! (Level " + newSpeedLevel + ")</dark_aqua>");
-            SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
-            Messages.debug(player, "WARDEN_GLOVES: Speed increased to level " + newSpeedLevel + " (punch #" + punchCount + ")");
-        }
 
         Messages.debug(player, "WARDEN_GLOVES: Punch hit! Count: " + punchCount);
     }
@@ -1673,17 +1656,18 @@ public class MythicItemManager {
         wardenBoxingActive.add(uuid);
         wardenPunchCount.put(uuid, 0);
 
-        // Start with Speed I immediately
+        // Start with Speed I immediately and keep it at Speed I
         int durationTicks = cfg.getWardenBoxingDuration() * 20;
         player.addPotionEffect(new PotionEffect(
                 PotionEffectType.SPEED,
                 durationTicks,
-                0, // Speed I (amplifier 0)
-                false, true
+                0,
+                false,
+                true
         ));
 
         Messages.send(player, "<dark_aqua><bold>BOXING GLOVES ACTIVATED!</bold></dark_aqua>");
-        Messages.send(player, "<gray>Punch enemies to build up speed! Starting with Speed I</gray>");
+        Messages.send(player, "<gray>Punch enemies to brawl! Speed locked at I.</gray>");
         SoundUtils.play(player, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.5f);
 
         // End the ability after duration
@@ -1703,7 +1687,6 @@ public class MythicItemManager {
         if (!wardenBoxingActive.contains(uuid)) return;
 
         wardenBoxingActive.remove(uuid);
-        int finalPunchCount = wardenPunchCount.getOrDefault(uuid, 0);
         wardenPunchCount.remove(uuid);
 
         // Remove speed effect
@@ -1711,12 +1694,8 @@ public class MythicItemManager {
 
         // Start cooldown
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING, cfg.getWardenBoxingCooldown());
-
-        Messages.send(player, "<yellow>Boxing gloves deactivated! Total punches: " + finalPunchCount + "</yellow>");
-        Messages.send(player, "<gray>Cooldown: " + cfg.getWardenBoxingCooldown() + "s</gray>");
-        SoundUtils.play(player, Sound.BLOCK_ANVIL_LAND, 0.5f, 0.8f);
-
-        Messages.debug(player, "WARDEN_GLOVES: Boxing ability ended - " + finalPunchCount + " punches, " + cfg.getWardenBoxingCooldown() + "s cooldown");
+        Messages.send(player, "<gray>Boxing gloves cooling down..." + cfg.getWardenBoxingCooldown() + "s</gray>");
+        Messages.debug(player, "WARDEN_GLOVES: Boxing ability ended - cooldown " + cfg.getWardenBoxingCooldown() + "s");
     }
 
     /**
