@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.manager.items.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -29,6 +30,7 @@ import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Consolidated listener for all PlayerInteractEvent handling.
@@ -94,7 +96,11 @@ public class InteractListener implements Listener {
                     // Check shot system - if out of shots or reloading, cancel the throw
                     if (!mythicManager.handleGoblinSpearThrow(player)) {
                         event.setCancelled(true);
+                        return;
                     }
+
+                    // Tag the projectile with mythic id so hit detection works even when hand is empty
+                    trident.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, mythic.getConfigKey());
                 }
             }
         }
