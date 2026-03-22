@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -47,6 +48,11 @@ public class RoundManager {
 
         ConfigManager config = ConfigManager.getInstance();
         timeRemaining = config.getShoppingPhaseDuration();
+
+        // Apply loss streak bonuses at start of shopping phase (round 2+)
+        if (roundNumber > 1) {
+            applyLossStreakBonuses();
+        }
 
         Messages.broadcastWithPrefix(session.getPlayers(), "<yellow><bold>Round " + roundNumber + " - Shopping Phase!</bold></yellow>");
         Messages.broadcastWithPrefix(session.getPlayers(), "<gray>You have <yellow>" + timeRemaining + " seconds </yellow><gray>to shop!</gray>");
@@ -225,11 +231,60 @@ public class RoundManager {
         if (team1Alive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team 2 wins the round!</bold></red>");
+            session.getTeam2().resetLossStreak();
+            session.getTeam1().incrementLossStreak();
             endCombatPhase();
         } else if (team2Alive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team 1 wins the round!</bold></red>");
+            session.getTeam1().resetLossStreak();
+            session.getTeam2().incrementLossStreak();
             endCombatPhase();
+        }
+    }
+
+    /**
+     * Apply loss streak bonuses to team that lost.
+     * Winners get no bonus.
+     * Only applied at round 2+.
+     */
+    private void applyLossStreakBonuses() {
+        ConfigManager config = ConfigManager.getInstance();
+        Team losingTeam;
+        
+        // Determine which team lost based on their loss streak
+        int team1Streak = session.getTeam1().getLossStreak();
+        int team2Streak = session.getTeam2().getLossStreak();
+        
+        if (team1Streak > 0 && team2Streak == 0) {
+            losingTeam = session.getTeam1();
+        } else if (team2Streak > 0 && team1Streak == 0) {
+            losingTeam = session.getTeam2();
+        } else {
+            // Both teams have the same streak (shouldn't happen, but handle gracefully)
+            return;
+        }
+        
+        long bonus = 0;
+        int streak = Math.max(team1Streak, team2Streak);
+        
+        switch (streak) {
+            case 1 -> bonus = config.getLossStreak1Bonus();
+            case 2 -> bonus = config.getLossStreak2Bonus();
+            case 3, 4, 5, 6, 7 -> bonus = config.getLossStreak3Bonus();
+        }
+        
+        if (bonus > 0) {
+            for (UUID uuid : losingTeam.getPlayers()) {
+                CashClashPlayer player = session.getCashClashPlayer(uuid);
+                if (player != null) {
+                    player.addCoins(bonus);
+                    Player bukkit = Bukkit.getPlayer(uuid);
+                    if (bukkit != null && bukkit.isOnline()) {
+                        Messages.send(bukkit, "<gold>Loss Streak Bonus: +$" + String.format("%,d", bonus) + "</gold>");
+                    }
+                }
+            }
         }
     }
 
