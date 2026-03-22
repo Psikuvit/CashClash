@@ -128,6 +128,22 @@ public class ConfigManager {
         return config.getLong("rounds.forfeit-bonus", 10000);
     }
 
+    public long getLossStreak1Bonus() {
+        return config.getLong("rounds.loss-streak-1-bonus", 5000);
+    }
+
+    public long getLossStreak2Bonus() {
+        return config.getLong("rounds.loss-streak-2-bonus", 7500);
+    }
+
+    public long getLossStreak3Bonus() {
+        return config.getLong("rounds.loss-streak-3-bonus", 10000);
+    }
+
+    public long getKillTeamSplitBonus() {
+        return config.getLong("rounds.kill-team-split-bonus", 7500);
+    }
+
     // ==================== ARMOR RESTRICTIONS ====================
 
     public int getDiamondUnlockRound() {

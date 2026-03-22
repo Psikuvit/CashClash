@@ -169,7 +169,7 @@ custom-armor:
   flamebringer:
     no-fire-kb: true
     speed-level: 0
-    speed-duration-seconds: 999999
+    speed-duration-seconds: 12
     pull-radius: 6
     pull-duration-seconds: 1.5
     pull-strength: 0.4
