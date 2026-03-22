@@ -7,8 +7,9 @@ import org.bukkit.enchantments.Enchantment;
 import java.util.List;
 
 public enum EnchantEntry {
-    SHARPNESS(Enchantment.SHARPNESS, "sharpness", "Sharpness", 5,
-            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
+    SHARPNESS(Enchantment.SHARPNESS, "sharpness", "Sharpness", 3,
+            Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD,
+            Material.WOODEN_AXE, Material.STONE_AXE, Material.IRON_AXE, Material.DIAMOND_AXE, Material.NETHERITE_AXE
     ),
     PROTECTION(Enchantment.PROTECTION, "protection", "Protection", 3,
             Material.LEATHER_BOOTS,
@@ -20,7 +21,7 @@ public enum EnchantEntry {
     KNOCKBACK(Enchantment.KNOCKBACK, "knockback", "Knockback", 2,
             Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
-    FIRE_ASPECT(Enchantment.FIRE_ASPECT, "fire-aspect", "Fire Aspect", 2,
+    FIRE_ASPECT(Enchantment.FIRE_ASPECT, "fire-aspect", "Fire Aspect", 1,
             Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
     POWER(Enchantment.POWER, "power", "Power", 2, // Max power 2 (legendary bows are exception)
@@ -41,7 +42,7 @@ public enum EnchantEntry {
     SOUL_SPEED(Enchantment.SOUL_SPEED, "soul-speed", "Soul Speed", 3,
             Material.LEATHER_BOOTS, Material.GOLDEN_BOOTS, Material.IRON_BOOTS, Material.DIAMOND_BOOTS, Material.NETHERITE_BOOTS
     ),
-    PIERCING(Enchantment.PIERCING, "piercing", "Piercing", 4,
+    PIERCING(Enchantment.PIERCING, "piercing", "Piercing", 3,
             Material.CROSSBOW
     );
 
