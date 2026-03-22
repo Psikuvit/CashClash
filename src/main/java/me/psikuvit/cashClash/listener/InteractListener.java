@@ -346,8 +346,9 @@ public class InteractListener implements Listener {
                 return true;
             }
             case GOBLIN_SPEAR -> {
-                event.setCancelled(true);
+                // Allow normal throws; only cancel when activating charge (sneaking)
                 if (player.isSneaking()) {
+                    event.setCancelled(true);
                     mythicManager.startGoblinSpearCharge(player);
                     return true;
                 }

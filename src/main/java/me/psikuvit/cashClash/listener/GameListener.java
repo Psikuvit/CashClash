@@ -8,6 +8,8 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
+import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
@@ -57,6 +59,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * General game listener for events that are only tracked once.
@@ -153,6 +156,9 @@ public class GameListener implements Listener {
             Messages.send(killer, "<gray>Investor's Set: +" + String.format("%.1f", (investorMultiplier - 1.0) * 100) + "% bonus coins</gray>");
         }
 
+        // Apply kill team split bonus to entire team
+        applyKillTeamSplitBonus(session, killer);
+
         // Handle armor set kill effects
         armorManager.onPlayerKill(killer);
         armorManager.onDragonKill(killer);
@@ -247,6 +253,16 @@ public class GameListener implements Listener {
             if (fi != null) {
                 event.setCancelled(true);
                 Messages.send(p, "<red>You cannot use special consumables during the shopping phase!</red>");
+                return;
+            }
+        }
+
+        // Prevent dead players from using consumables
+        if (session != null && session.getState() == GameState.COMBAT) {
+            RoundData roundData = session.getCurrentRoundData();
+            if (roundData != null && !roundData.isAlive(p.getUniqueId())) {
+                event.setCancelled(true);
+                Messages.send(p, "<red>You cannot use consumables while dead!</red>");
                 return;
             }
         }
@@ -539,5 +555,34 @@ public class GameListener implements Listener {
             }, 2L);
         }
     }
+
+    /**
+     * Distribute the kill team split bonus to the entire team of the killer.
+     * Total bonus is split evenly among all team members.
+     */
+    private void applyKillTeamSplitBonus(GameSession session, Player killer) {
+        Team killerTeam = session.getTeam1().hasPlayer(killer.getUniqueId()) ? session.getTeam1() : session.getTeam2();
+        if (killerTeam == null) return;
+
+        long totalBonus = ConfigManager.getInstance().getKillTeamSplitBonus();
+        if (totalBonus <= 0) return;
+
+        int teamSize = killerTeam.getPlayers().size();
+        if (teamSize == 0) return;
+
+        long bonusPerPlayer = totalBonus / teamSize;
+
+        for (UUID uuid : killerTeam.getPlayers()) {
+            CashClashPlayer player = session.getCashClashPlayer(uuid);
+            if (player != null) {
+                player.addCoins(bonusPerPlayer);
+                Player bukkitPlayer = Bukkit.getPlayer(uuid);
+                if (bukkitPlayer != null && bukkitPlayer.isOnline()) {
+                    Messages.send(bukkitPlayer, "<aqua>Team Kill Bonus: +$" + String.format("%,d", bonusPerPlayer) + "</aqua>");
+                }
+            }
+        }
+    }
 }
+
 
