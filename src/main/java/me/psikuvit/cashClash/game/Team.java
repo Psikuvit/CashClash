@@ -21,6 +21,8 @@ public class Team {
     private final boolean enderPearlsDisabled;
     // Forfeit timing: when the 2nd teammate died (ms), used to enforce delay before allowing forfeit
     private long forfeitStartTime;
+    // Loss streak tracking
+    private int lossStreak;
 
     public Team(int teamNumber) {
         this.teamNumber = teamNumber;
@@ -30,6 +32,7 @@ public class Team {
         this.readyStatus = new ConcurrentHashMap<>();
         this.enderPearlsDisabled = false;
         this.forfeitStartTime = 0L;
+        this.lossStreak = 0;
     }
 
     public void addPlayer(UUID uuid) {
@@ -129,6 +132,22 @@ public class Team {
 
     public boolean isPlayerReady(UUID uuid) {
         return readyStatus.getOrDefault(uuid, false);
+    }
+
+    public int getLossStreak() {
+        return lossStreak;
+    }
+
+    public void setLossStreak(int streak) {
+        this.lossStreak = streak;
+    }
+
+    public void incrementLossStreak() {
+        this.lossStreak++;
+    }
+
+    public void resetLossStreak() {
+        this.lossStreak = 0;
     }
 
 }
