@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.listener;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
@@ -247,6 +248,13 @@ public class InteractListener implements Listener {
         // All other custom items cannot be used during shopping
         if (isInShoppingPhase(player)) return false;
 
+        // Prevent dead players from using items
+        if (isPlayerDead(player)) {
+            event.setCancelled(true);
+            Messages.send(player, "<red>You cannot use items while dead!</red>");
+            return true;
+        }
+
         // Check respawn protection for combat items
         if (isRespawnProtected(player)) {
             event.setCancelled(true);
@@ -315,6 +323,13 @@ public class InteractListener implements Listener {
             return true;
         }
 
+        // Prevent dead players from using mythic abilities
+        if (isPlayerDead(player)) {
+            event.setCancelled(true);
+            Messages.send(player, "<red>You cannot use abilities while dead!</red>");
+            return true;
+        }
+
         // Check respawn protection for mythic abilities
         if (isRespawnProtected(player)) {
             event.setCancelled(true);
@@ -380,6 +395,12 @@ public class InteractListener implements Listener {
 
         if (isInShoppingPhase(player)) return;
 
+        // Prevent dead players from using armor abilities
+        if (isPlayerDead(player)) {
+            Messages.send(player, "<red>You cannot use armor abilities while dead!</red>");
+            return;
+        }
+
         // Check respawn protection for armor abilities
         if (isRespawnProtected(player)) {
             Messages.send(player, "<red>You cannot use armor abilities during respawn protection!</red>");
@@ -404,6 +425,14 @@ public class InteractListener implements Listener {
         if (session == null) return false;
         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
         return ccp != null && ccp.isRespawnProtected();
+    }
+
+    private boolean isPlayerDead(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) return false;
+        if (session.getState() != GameState.COMBAT) return false;
+        RoundData roundData = session.getCurrentRoundData();
+        return roundData != null && !roundData.isAlive(player.getUniqueId());
     }
 }
 
