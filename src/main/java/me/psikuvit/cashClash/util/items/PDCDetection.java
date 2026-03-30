@@ -316,5 +316,19 @@ public final class PDCDetection {
         if (arrow == null) return null;
         return arrow.getPersistentDataContainer().get(Keys.BLOODWRENCH_MODE, PersistentDataType.STRING);
     }
-}
 
+    /**
+     * Get mythic item tag stored on an entity (e.g., projectile).
+     */
+    public static MythicItem getMythic(Entity entity) {
+        if (entity == null) return null;
+        String id = entity.getPersistentDataContainer().get(Keys.ITEM_ID, PersistentDataType.STRING);
+        if (id == null) return null;
+        for (MythicItem mi : MythicItem.values()) {
+            if (mi.getConfigKey().equalsIgnoreCase(id)) {
+                return mi;
+            }
+        }
+        return null;
+    }
+}
