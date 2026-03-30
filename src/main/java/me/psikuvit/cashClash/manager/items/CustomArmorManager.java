@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.manager.items;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -59,6 +60,7 @@ public class CustomArmorManager {
     private final Map<UUID, Integer> flamebringerKills; // Player -> kill count this round
     private final Map<UUID, BukkitTask> flamebringerFireTask; // Player -> fire effect task
     private final Map<UUID, Integer> flamebringerLavaUses; // Player -> lava speed procs this game
+    private final Map<UUID, Long> flamebringerSpeedEndTime; // Player -> time when speed effect should end
 
     private final Random random;
 
@@ -79,6 +81,7 @@ public class CustomArmorManager {
         this.flamebringerKills = new ConcurrentHashMap<>();
         this.flamebringerFireTask = new ConcurrentHashMap<>();
         this.flamebringerLavaUses = new ConcurrentHashMap<>();
+        this.flamebringerSpeedEndTime = new ConcurrentHashMap<>();
 
         this.random = new Random();
     }
@@ -299,9 +302,6 @@ public class CustomArmorManager {
                 if (task != null) {
                     task.cancel();
                 }
-                if (attacker.isOnline()) {
-                    Messages.send(attacker, "<gray>Dragon mark expired.</gray>");
-                }
             }
         }, markDuration * 20L);
     }
@@ -316,7 +316,7 @@ public class CustomArmorManager {
         UUID targetId = dragonMarkedTargets.get(attackerId);
 
         if (targetId == null) {
-            Messages.send(attacker, "<red>No marked target!</red>");
+            // No marked target - silently fail
             return false;
         }
 
@@ -327,13 +327,13 @@ public class CustomArmorManager {
             if (task != null) {
                 task.cancel();
             }
-            Messages.send(attacker, "<red>Mark has expired!</red>");
+            // Silently fail - no message
             return false;
         }
 
         Player target = org.bukkit.Bukkit.getPlayer(targetId);
         if (target == null || !target.isOnline()) {
-            Messages.send(attacker, "<red>Target is not online!</red>");
+            // Silently fail - no message
             dragonMarkedTargets.remove(attackerId);
             BukkitTask task = dragonMarkTasks.remove(targetId);
             if (task != null) {
@@ -348,7 +348,7 @@ public class CustomArmorManager {
         double distance = attacker.getLocation().distance(target.getLocation());
 
         if (distance > dashRange) {
-            Messages.send(attacker, "<red>Target is too far! (" + String.format("%.1f", distance) + " > " + dashRange + " blocks)</red>");
+            // Silently fail - no message
             return false;
         }
 
@@ -372,9 +372,8 @@ public class CustomArmorManager {
 
         cooldownManager.setCooldownSeconds(attackerId, CooldownManager.Keys.DRAGON_DASH, cfg.getDragonCooldown());
 
-        // Effects
+        // Effects only - no chat messages
         ParticleUtils.dragonDashTrail(attacker.getLocation());
-        Messages.send(attacker, "<light_purple>🐉 Dragon Dash! Next hit deals +25% damage!</light_purple>");
         SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.2f);
 
         return true;
@@ -565,27 +564,40 @@ public class CustomArmorManager {
     // ==================== FLAMEBRINGER SET ====================
 
     /**
-     * Flamebringer Furnace Blood: If player is on fire, take no fire tick KB and gain Speed I.
+     * Flamebringer Furnace Blood: If player is on fire, take no fire tick KB and gain Speed I for 12s.
      */
     public void onFlamebringerFireTick(Player p) {
         if (!hasFlamebringerSet(p)) return;
+        if (p.isDead()) return; // Don't apply effects to dead players
 
         UUID id = p.getUniqueId();
+        long currentTime = System.currentTimeMillis();
 
         if (p.getFireTicks() > 0) {
-            // Grant Speed I while on fire
-            if (!cooldownManager.isOnCooldown(id, CooldownManager.Keys.FLAMEBRINGER_ON_FIRE)) {
-                ItemsConfig cfg = ItemsConfig.getInstance();
-                p.addPotionEffect(new PotionEffect(
-                    PotionEffectType.SPEED,
-                    cfg.getFlamebringerSpeedDuration() * 20,
-                    cfg.getFlamebringerSpeedLevel(),
-                    false,
-                    false,
-                    true
-                ));
-                cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_ON_FIRE, 1);
+            // Check if speed was already applied and is still active
+            Long endTime = flamebringerSpeedEndTime.get(id);
+            if (endTime != null && currentTime < endTime) {
+                // Speed effect is still active, don't reapply
+                return;
             }
+
+            // Apply speed for 12 seconds
+            ItemsConfig cfg = ItemsConfig.getInstance();
+            p.removePotionEffect(PotionEffectType.SPEED);
+            p.addPotionEffect(new PotionEffect(
+                PotionEffectType.SPEED,
+                cfg.getFlamebringerSpeedDuration() * 20,
+                cfg.getFlamebringerSpeedLevel(),
+                false,
+                false,
+                true
+            ));
+            // Track when this speed effect should end
+            flamebringerSpeedEndTime.put(id, currentTime + (cfg.getFlamebringerSpeedDuration() * 1000L));
+        } else {
+            // Player is no longer on fire, clear the speed
+            p.removePotionEffect(PotionEffectType.SPEED);
+            flamebringerSpeedEndTime.remove(id);
         }
     }
 
@@ -681,6 +693,12 @@ public class CustomArmorManager {
 
     public void onTaxEvasionTick(Player p, GameSession session) {
         if (!hasTaxEvasion(p)) return;
+        if (p.isDead()) return; // Don't award coins to dead players
+        if (session == null) return;
+        
+        // Only trigger during combat phase
+        if (session.getState() != GameState.COMBAT) return;
+        
         UUID id = p.getUniqueId();
 
         long lastCheck = cooldownManager.getTimestamp(id, CooldownManager.Keys.TAX_EVASION_MINUTE);
@@ -753,6 +771,7 @@ public class CustomArmorManager {
         flamebringerFireTask.clear();
         flamebringerKills.clear();
         flamebringerLavaUses.clear();
+        flamebringerSpeedEndTime.clear();
 
         // Note: cooldowns are managed by CooldownManager and will be cleared when players are cleared
     }
@@ -773,6 +792,7 @@ public class CustomArmorManager {
 
         // Reset flamebringer kill counters
         flamebringerKills.clear();
+        flamebringerSpeedEndTime.clear();
     }
 }
 

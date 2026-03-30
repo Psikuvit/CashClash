@@ -71,6 +71,9 @@ public class CustomItemManager {
     private final Map<UUID, Integer> respawnAnchorsUsedThisRound;
     private final Set<UUID> playersRevivedThisRound;
 
+    // Cash Blaster earnings tracking per round
+    private final Map<UUID, Long> cashBlasterEarningsThisRound;
+
     private CustomItemManager() {
         this.cooldownManager = CooldownManager.getInstance();
         this.invisCloakUsesRemaining = new HashMap<>();
@@ -84,6 +87,7 @@ public class CustomItemManager {
         this.respawnAnchorTasks = new HashMap<>();
         this.respawnAnchorsUsedThisRound = new HashMap<>();
         this.playersRevivedThisRound = new HashSet<>();
+        this.cashBlasterEarningsThisRound = new HashMap<>();
     }
 
     public static CustomItemManager getInstance() {
@@ -484,8 +488,28 @@ public class CustomItemManager {
 
         CashClashPlayer ccp = session.getCashClashPlayer(attacker.getUniqueId());
         if (ccp != null) {
+            UUID attackerId = attacker.getUniqueId();
+            long currentEarnings = cashBlasterEarningsThisRound.getOrDefault(attackerId, 0L);
+            long MAX_EARNINGS_PER_ROUND = 10000;
+
             int coinsPerHit = cfg.getCashBlasterCoinsPerHit();
+
+            // Check if adding this hit would exceed the limit
+            if (currentEarnings + coinsPerHit > MAX_EARNINGS_PER_ROUND) {
+                long remaining = MAX_EARNINGS_PER_ROUND - currentEarnings;
+                if (remaining > 0) {
+                    ccp.addCoins(remaining);
+                    cashBlasterEarningsThisRound.put(attackerId, MAX_EARNINGS_PER_ROUND);
+                    Messages.send(attacker, "<green>+$" + remaining + " from Cash Blaster hit! (Reached max: $" + MAX_EARNINGS_PER_ROUND + ")</green>");
+                } else {
+                    Messages.send(attacker, "<red>Cash Blaster limit of $" + MAX_EARNINGS_PER_ROUND + " reached this round!</red>");
+                }
+                SoundUtils.play(attacker, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
+                return;
+            }
+
             ccp.addCoins(coinsPerHit);
+            cashBlasterEarningsThisRound.put(attackerId, currentEarnings + coinsPerHit);
             Messages.send(attacker, "<green>+$" + coinsPerHit + " from Cash Blaster hit!</green>");
             SoundUtils.play(attacker, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
         }
@@ -838,6 +862,8 @@ public class CustomItemManager {
         respawnAnchorTargets.clear();
         respawnAnchorsUsedThisRound.clear();
         playersRevivedThisRound.clear();
+
+        cashBlasterEarningsThisRound.clear();
     }
 }
 
