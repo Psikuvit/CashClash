@@ -454,7 +454,8 @@ public class ItemsConfig {
     }
 
     public int getFlamebringerSpeedDuration() {
-        return config.getInt("custom-armor.flamebringer.speed-duration-seconds", 999999);
+        // Flamebringer speed effect lasts 12 seconds by default
+        return config.getInt("custom-armor.flamebringer.speed-duration-seconds", 12);
     }
 
     public double getFlamebringerPullRadius() {

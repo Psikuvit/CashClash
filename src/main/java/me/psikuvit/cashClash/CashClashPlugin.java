@@ -20,6 +20,7 @@ import me.psikuvit.cashClash.listener.TransferInputListener;
 import me.psikuvit.cashClash.listener.lobby.ArenaNPCListener;
 import me.psikuvit.cashClash.listener.lobby.LobbyListener;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
 import me.psikuvit.cashClash.manager.lobby.MannequinManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
@@ -110,6 +111,16 @@ public final class CashClashPlugin extends JavaPlugin {
             }
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "Error shutting down RejoinManager", e);
+        }
+
+        try {
+            // Step 1.6: Shutdown gamemode manager
+            if (GamemodeManager.getInstance() != null) {
+                GamemodeManager.getInstance().shutdown();
+                getLogger().info("Gamemode manager shut down");
+            }
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error shutting down GamemodeManager", e);
         }
 
         try {
