@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
+import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
@@ -109,6 +110,12 @@ public class GameListener implements Listener {
             handleKillerRewards(session, killer);
         }
 
+        // Notify gamemode of death
+        Gamemode gamemode = session.getGamemode();
+        if (gamemode != null) {
+            gamemode.onPlayerDeath(player, killer);
+        }
+
         Location spectatorLocation = getSpectatorLocation(session);
 
         if (victim.getLives() <= 0) {
@@ -197,6 +204,12 @@ public class GameListener implements Listener {
     private void respawnPlayer(Player player, int respawnProtectionSec) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
+
+        // If round ended (moved to shopping phase), don't respawn into combat
+        if (session.getState() != GameState.COMBAT) {
+            Messages.send(player, "<red>The round ended. You cannot respawn.</red>");
+            return;
+        }
 
         Location spawnLocation = session.getSpawnForPlayer(player.getUniqueId());
         if (spawnLocation != null) {
