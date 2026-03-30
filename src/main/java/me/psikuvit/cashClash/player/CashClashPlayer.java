@@ -64,7 +64,7 @@ public class CashClashPlayer {
 
     public void initializeRound1() {
         this.coins = 10000;
-        this.lives = 3;
+        this.lives = 99999; // Infinite lives
         this.deathsThisRound = 0;
     }
 
@@ -79,7 +79,7 @@ public class CashClashPlayer {
         }
 
         // Reset round-specific stats
-        this.lives = roundNumber <= 3 ? 3 : 1;
+        this.lives = 99999; // Infinite lives
         this.deathsThisRound = 0;
         this.killStreak = 0;
         this.hasFirstBlood = false;
