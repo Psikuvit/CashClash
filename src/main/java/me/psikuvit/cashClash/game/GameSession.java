@@ -5,10 +5,12 @@ import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.round.RoundData;
+import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinData;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
 import me.psikuvit.cashClash.manager.game.RoundManager;
@@ -68,15 +70,15 @@ public class GameSession {
     private RoundManager roundManager;
     //private CashQuakeManager cashQuakeManager;
     private BonusManager bonusManager;
+    // Shield logic: rounds 1-3 are either shield or shieldless, rounds 4-6 is the other one
+    // Determined at game start, consistent for the entire game
+    private final boolean rounds1to3HaveShields;
 
     // Countdown/start preparation
     private BukkitTask startCountdownTask;
     private boolean startingCountdown;
     private int countdownSecondsRemaining;
-    
-    // Shield logic: rounds 1-3 are either shield or shieldless, rounds 4-6 is the other one
-    // Determined at game start, consistent for the entire game
-    private  boolean rounds1to3HaveShields;
+    private Gamemode gamemode;
 
     public GameSession(int arenaNumber) {
         this.sessionId = UUID.randomUUID();
@@ -157,6 +159,10 @@ public class GameSession {
         return bonusManager;
     }
 
+    public Gamemode getGamemode() {
+        return gamemode;
+    }
+
     /**
      * Returns whether rounds 1-3 have shields in this game session.
      * Rounds 4-6 will have the opposite setting.
@@ -186,6 +192,10 @@ public class GameSession {
         roundManager = new RoundManager(this);
         //cashQuakeManager = new CashQuakeManager(this);
         bonusManager = new BonusManager(this);
+        
+        // Select a random gamemode for this session
+        gamemode = GamemodeManager.getInstance().selectGamemode(this);
+        gamemode.onGameStart();
 
         roundManager.startShoppingPhase(currentRound);
         players.keySet().forEach(this::applyKit);
@@ -270,6 +280,11 @@ public class GameSession {
 
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
         //if (cashQuakeManager != null) cashQuakeManager.startEventScheduler();
+
+        // Call gamemode combat phase callback
+        if (gamemode != null) {
+            gamemode.onCombatPhaseStart();
+        }
 
         players.keySet().forEach(uuid -> {
             CashClashPlayer ccp = players.get(uuid);
@@ -406,6 +421,10 @@ public class GameSession {
         if (roundManager != null) roundManager.cleanup();
         //if (cashQuakeManager != null) cashQuakeManager.cleanup();
         if (bonusManager != null) bonusManager.cleanup();
+        if (gamemode != null) {
+            GamemodeManager.getInstance().removeGamemode(sessionId);
+            gamemode = null;
+        }
 
         // Clean up tracked player-placed blocks
         BlockListener.cleanupSession(sessionId);
