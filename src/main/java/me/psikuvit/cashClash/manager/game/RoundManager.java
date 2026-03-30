@@ -16,11 +16,13 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.UUID;
@@ -79,6 +81,9 @@ public class RoundManager {
                 }
                 p.setFoodLevel(20);
                 p.setSaturation(20.0f);
+
+                // Refill water buckets during shopping phase
+                refillWaterBuckets(p);
 
                 int teamNum = team1.hasPlayer(uuid) ? 1 : (team2.hasPlayer(uuid) ? 2 : 0);
                 Location destTemplate = null;
@@ -180,11 +185,12 @@ public class RoundManager {
                 Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>" + timeRemaining + " seconds remaining!</yellow>");
             }
 
-            // Check Flamebringer fire effects for all players
+            // Check armor effects for all players (Flamebringer fire, Tax Evasion tick)
             for (UUID uuid : session.getPlayers()) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null && p.isOnline()) {
                     CustomArmorManager.getInstance().onFlamebringerFireTick(p);
+                    CustomArmorManager.getInstance().onTaxEvasionTick(p, session);
                 }
             }
 
@@ -219,6 +225,19 @@ public class RoundManager {
     }
 
     private void checkWinCondition() {
+        // First check gamemode-specific win conditions
+        if (session.getGamemode() != null && session.getGamemode().checkGameWinner()) {
+            int winnerTeam = session.getGamemode().getWinningTeam();
+            if (winnerTeam > 0) {
+                String winnerName = winnerTeam == 1 ? session.getTeam1().getName() : session.getTeam2().getName();
+                SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
+                Messages.broadcastWithPrefix(session.getPlayers(), 
+                    "<gold><bold>GAME OVER! " + winnerName + " Team Wins!</bold></gold>");
+                session.end();
+                return;
+            }
+        }
+
         // Check if one team is eliminated
         int team1Alive = (int) session.getTeam1().getPlayers().stream()
             .filter(uuid -> session.getCurrentRoundData().isAlive(uuid))
@@ -298,5 +317,30 @@ public class RoundManager {
 
     public int getTimeRemaining() {
         return timeRemaining;
+    }
+
+    /**
+     * Refill all water buckets in a player's inventory during shopping phase.
+     */
+    private void refillWaterBuckets(Player player) {
+        int refilled = 0;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.getType() == Material.WATER_BUCKET && item.getAmount() == 0) {
+                item.setAmount(1);
+                refilled++;
+            }
+        }
+
+        // Also check armor contents
+        for (ItemStack item : player.getInventory().getArmorContents()) {
+            if (item != null && item.getType() == Material.WATER_BUCKET && item.getAmount() == 0) {
+                item.setAmount(1);
+                refilled++;
+            }
+        }
+
+        if (refilled > 0) {
+            Messages.send(player, "<aqua>Water buckets refilled for shopping phase!</aqua>");
+        }
     }
 }
