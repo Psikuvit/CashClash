@@ -297,12 +297,8 @@ public class DamageListener implements Listener {
         double healthAfter = Math.max(0, player.getHealth() - event.getFinalDamage());
         EntityDamageEvent.DamageCause cause = event.getCause();
 
-        // Dragon Set: immune to explosions
-        if (isExplosionDamage(cause) && armorManager.hasDragonSet(player)) {
-            event.setCancelled(true);
-            return;
-        }
-
+        // Dragon Set: no explosion immunity
+        
         // Guardian's Vest: resistance when low health
         armorManager.onPlayerDamaged(player, healthAfter);
 
@@ -337,7 +333,7 @@ public class DamageListener implements Listener {
         if (dragonBoost > 0) {
             double newDamage = event.getDamage() * (1.0 + dragonBoost);
             event.setDamage(newDamage);
-            Messages.send(attacker, "<light_purple>+25% damage boost applied!</light_purple>");
+            // No message - only show on initial mark
         }
 
         // Investor's Set: bonus damage in rounds 4/5
