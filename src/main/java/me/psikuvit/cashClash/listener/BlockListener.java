@@ -41,8 +41,14 @@ public class BlockListener implements Listener {
     // Map of session UUID to map of player UUID to leaf block count
     private static final Map<UUID, Map<UUID, Integer>> playerLeafBlockCount = new ConcurrentHashMap<>();
 
+    // Map of session UUID to map of player UUID to web block count
+    private static final Map<UUID, Map<UUID, Integer>> playerWebBlockCount = new ConcurrentHashMap<>();
+
     // Map of web location to despawn task for web blocks
     private static final Map<Location, BukkitTask> webDespawnTasks = new ConcurrentHashMap<>();
+
+    // Map of player UUID to water bucket refill task
+    private static final Map<UUID, BukkitTask> waterBucketRefillTasks = new ConcurrentHashMap<>();
 
     // Toggle for water/lava flow behavior (can be toggled with /flow command)
     private static volatile boolean flowEnabled = false;
@@ -70,28 +76,15 @@ public class BlockListener implements Listener {
         return blocks != null && blocks.contains(location.toBlockLocation());
     }
 
+    // Flow command is disabled - water/lava spread is always restricted
     public static void toggleFlow() {
-        flowEnabled = !flowEnabled;
+        // Flow toggling is disabled
     }
 
     public static boolean isFlowEnabled() {
-        return flowEnabled;
+        return false; // Always disabled
     }
 
-    @EventHandler(priority = EventPriority.LOW)
-    public void onBlockBreakLobby(BlockBreakEvent event) {
-        if (event.isCancelled()) return;
-
-        Player player = event.getPlayer();
-
-        // Skip if player is in a game session
-        if (GameManager.getInstance().getPlayerSession(player) != null) return;
-
-        // Cancel for non-admins in lobby
-        if (!player.hasPermission("cashclash.admin")) {
-            event.setCancelled(true);
-        }
-    }
 
     /**
      * Clean up tracked blocks when a session ends.
@@ -100,6 +93,35 @@ public class BlockListener implements Listener {
         placedBlocks.remove(sessionId);
         waterLavaSourceCount.remove(sessionId);
         playerLeafBlockCount.remove(sessionId);
+        playerWebBlockCount.remove(sessionId);
+        // Note: waterBucketRefillTasks are per-player and handled separately
+    }
+
+    /**
+     * Schedule water bucket refill after 10 seconds of use.
+     * Only applies to water buckets, not lava.
+     */
+    private static void scheduleWaterBucketRefill(Player player) {
+        UUID playerId = player.getUniqueId();
+
+        // Cancel any existing refill task
+        BukkitTask existing = waterBucketRefillTasks.get(playerId);
+        if (existing != null) {
+            existing.cancel();
+        }
+
+        // Schedule new refill task
+        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
+            if (player.isOnline()) {
+                // Add water bucket to inventory
+                org.bukkit.inventory.ItemStack waterBucket = new org.bukkit.inventory.ItemStack(Material.WATER_BUCKET);
+                player.getInventory().addItem(waterBucket);
+                Messages.send(player, "<aqua>Water bucket refilled!</aqua>");
+            }
+            waterBucketRefillTasks.remove(playerId);
+        }, 200); // 200 ticks = 10 seconds
+
+        waterBucketRefillTasks.put(playerId, task);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -109,7 +131,6 @@ public class BlockListener implements Listener {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
-        // Only handle players in a game session
         if (session == null) return;
 
         // Check if in correct world
@@ -134,7 +155,18 @@ public class BlockListener implements Listener {
 
         // Handle web placement limits (max 4 per player)
         if (blockType == Material.COBWEB) {
-            // Note: Shops will sell 1 web at a time, but we still validate
+            int currentCount = playerWebBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>())
+                .getOrDefault(playerId, 0);
+
+            if (currentCount >= 4) {
+                event.setCancelled(true);
+                Messages.send(player, "<red>You have reached the maximum of 4 webs!</red>");
+                return;
+            }
+
+            // Increment web count
+            playerWebBlockCount.get(sessionId).put(playerId, currentCount + 1);
+
             Location loc = block.getLocation().toBlockLocation();
             placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
 
@@ -154,6 +186,20 @@ public class BlockListener implements Listener {
                 return;
             }
 
+            // Check stacking height (max 3 leaf blocks vertically)
+            int stackHeight = 1;
+            Block below = block.getRelative(0, -1, 0);
+            while (isLeafBlock(below.getType()) && stackHeight < 3) {
+                stackHeight++;
+                below = below.getRelative(0, -1, 0);
+            }
+
+            if (stackHeight >= 3) {
+                event.setCancelled(true);
+                Messages.send(player, "<red>You cannot stack more than 3 leaf blocks vertically!</red>");
+                return;
+            }
+
             playerLeafBlockCount.get(sessionId).put(playerId, currentCount + 1);
             Location loc = block.getLocation().toBlockLocation();
             placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
@@ -163,7 +209,6 @@ public class BlockListener implements Listener {
             return;
         }
 
-        // Handle water/lava placement restrictions
         if (blockType == Material.WATER || blockType == Material.LAVA) {
             int teamNum = team.getTeamNumber();
             int currentCount = waterLavaSourceCount.computeIfAbsent(sessionId, k -> new HashMap<>())
@@ -178,6 +223,11 @@ public class BlockListener implements Listener {
             waterLavaSourceCount.get(sessionId).put(teamNum, currentCount + 1);
             Location loc = block.getLocation().toBlockLocation();
             placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
+
+            // If water bucket is used, schedule refill after 10 seconds (only for water, not lava)
+            if (blockType == Material.WATER) {
+                scheduleWaterBucketRefill(player);
+            }
             return;
         }
 
@@ -202,30 +252,10 @@ public class BlockListener implements Listener {
             return;
         }
 
-        // If flow is disabled, prevent all spreading
-        if (!flowEnabled) {
-            event.setCancelled(true);
-            return;
-        }
-
-        // If flowing is enabled, allow spreading only to webs or fire
         Material spreadType = spread.getType();
+        // Allow spreading to webs and fire, cancel all other spreading
         if (spreadType != Material.COBWEB && !spreadType.name().contains("FIRE")) {
             event.setCancelled(true);
-        }
-    }
-
-    /**
-     * Handle web block breaks - don't drop items.
-     */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onWebBreak(BlockBreakEvent event) {
-        if (event.isCancelled()) return;
-
-        Block block = event.getBlock();
-        if (block.getType() == Material.COBWEB) {
-            event.setDropItems(false);
-            cancelWebDespawnTask(block.getLocation());
         }
     }
 
@@ -334,6 +364,33 @@ public class BlockListener implements Listener {
         BukkitTask task = webDespawnTasks.remove(loc);
         if (task != null) {
             task.cancel();
+        }
+    }
+
+    /**
+     * Handle web block breaks - don't drop items.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onWebBreak(BlockBreakEvent event) {
+        if (event.isCancelled()) return;
+
+        Block block = event.getBlock();
+        if (block.getType() == Material.COBWEB) {
+            event.setDropItems(false);
+            cancelWebDespawnTask(block.getLocation());
+
+            // Decrement player's web count
+            Player player = event.getPlayer();
+            GameSession session = GameManager.getInstance().getPlayerSession(player);
+            if (session != null) {
+                Map<UUID, Integer> counts = playerWebBlockCount.get(session.getSessionId());
+                if (counts != null) {
+                    int current = counts.getOrDefault(player.getUniqueId(), 0);
+                    if (current > 0) {
+                        counts.put(player.getUniqueId(), current - 1);
+                    }
+                }
+            }
         }
     }
 
