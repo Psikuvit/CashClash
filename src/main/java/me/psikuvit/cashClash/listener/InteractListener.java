@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
+import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
@@ -410,6 +411,36 @@ public class InteractListener implements Listener {
         // Dragon Set: Dash to marked target (right-click, no sneak required)
         if (armorManager.hasDragonSet(player)) {
             armorManager.tryDragonDash(player);
+        }
+    }
+
+    // ==================== GAMEMODE SPECIFIC HANDLERS ====================
+
+    /**
+     * Handle Protect the President buff selection
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPresidentBuffSelection(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        
+        if (session == null || session.getGamemode() == null) return;
+        if (!(session.getGamemode() instanceof ProtectThePresidentGamemode gamemode)) return;
+        
+        // Check if this is a right-click and main hand
+        if (event.getAction().name().contains("LEFT")) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (item.getType() == Material.AIR) return;
+
+        int slot = player.getInventory().getHeldItemSlot();
+        
+        // Only handle slots 1, 3, 5, 7 (buff selection slots)
+        if (slot != 1 && slot != 3 && slot != 5 && slot != 7) return;
+        
+        if (gamemode.handlePresidentBuffSelection(player, slot)) {
+            event.setCancelled(true);
         }
     }
 
