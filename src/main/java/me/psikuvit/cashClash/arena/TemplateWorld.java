@@ -26,13 +26,18 @@ public class TemplateWorld {
     private Location team2ShopSpawn;
     private final List<Location> villagersSpawnPoint;
 
+    // CTF Capture plate locations
+    private Location ctfCaptureTeam1Plate;
+    private Location ctfCaptureTeam2Plate;
+
     public TemplateWorld(String id, World world) {
         this.id = id;
         this.world = world;
         this.team1Spawns = new ArrayList<>();
         this.team2Spawns = new ArrayList<>();
         this.villagersSpawnPoint = new ArrayList<>();
-
+        this.ctfCaptureTeam1Plate = null;
+        this.ctfCaptureTeam2Plate = null;
     }
 
     public String getId() {
@@ -108,6 +113,23 @@ public class TemplateWorld {
 
     public void addVillagerSpawnPoint(Location loc) {
         villagersSpawnPoint.add(loc);
+    }
+
+    // CTF Capture plate getters/setters
+    public Location getCTFCaptureTeam1Plate() {
+        return ctfCaptureTeam1Plate;
+    }
+
+    public void setCTFCaptureTeam1Plate(Location loc) {
+        this.ctfCaptureTeam1Plate = loc;
+    }
+
+    public Location getCTFCaptureTeam2Plate() {
+        return ctfCaptureTeam2Plate;
+    }
+
+    public void setCTFCaptureTeam2Plate(Location loc) {
+        this.ctfCaptureTeam2Plate = loc;
     }
 
     public boolean isConfigured() {
