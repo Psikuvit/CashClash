@@ -164,6 +164,15 @@ public class GameSession {
     }
 
     /**
+     * Get the arena template for this session
+     */
+    public TemplateWorld getArenaTemplate() {
+        Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
+        if (arena == null) return null;
+        return ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+    }
+
+    /**
      * Returns whether rounds 1-3 have shields in this game session.
      * Rounds 4-6 will have the opposite setting.
      */
