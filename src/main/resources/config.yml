@@ -130,6 +130,22 @@ player:
   max-health-cap: 40.0
 
 # ============================================
+# GAMEMODE SETTINGS
+# ============================================
+gamemodes:
+  # Capture the Flag settings
+  capture-the-flag:
+    # Time required to stand on capture plate (milliseconds)
+    plate-activation-time-ms: 3000
+    # Win conditions
+    normal-captures-to-win: 2
+    sudden-death-captures-to-win: 4
+    # Capture bonus (awarded at 45 seconds)
+    capture-bonus-coins: 15000
+    # Bonus timer (milliseconds)
+    capture-bonus-timer-ms: 45000
+
+# ============================================
 # MESSAGES (MiniMessage format)
 # ============================================
 messages:

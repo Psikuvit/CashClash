@@ -8,8 +8,10 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -30,17 +32,22 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private static final int SUDDEN_DEATH_CONDITION = 4;
     private static final int GLOW_INTERVAL_TICKS = 100; // 5 seconds
     private static final long CAPTURE_BONUS = 15000;
+    private static final long PLATE_ACTIVATION_MS = 3000; // 3 seconds to capture on plate
     private final Map<Integer, Integer> flagCaptures;
     private final Map<UUID, Long> carryStartTime;
+    private final Map<UUID, Long> platePressStartTime; // Track when player starts standing on plate
     private UUID team1FlagHolder;
     private UUID team2FlagHolder;
     private long team1FlagCaptureTime;
     private long team2FlagCaptureTime;
     private Location team1FlagBase;
     private Location team2FlagBase;
+    private Location team1CapturePlate;
+    private Location team2CapturePlate;
     private boolean inSuddenDeath;
     private BukkitTask carrierGlowTask;
     private BukkitTask captureTimerTask;
+    private BukkitTask plateCheckTask;
 
     public CaptureTheFlagGamemode(GameSession session) {
         super(session, GamemodeType.CAPTURE_THE_FLAG);
@@ -48,15 +55,19 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Initialize all data structures
         this.flagCaptures = new HashMap<>(2);
         this.carryStartTime = new HashMap<>();
+        this.platePressStartTime = new HashMap<>();
         this.team1FlagHolder = null;
         this.team2FlagHolder = null;
         this.team1FlagCaptureTime = 0;
         this.team2FlagCaptureTime = 0;
         this.team1FlagBase = null;
         this.team2FlagBase = null;
+        this.team1CapturePlate = null;
+        this.team2CapturePlate = null;
         this.inSuddenDeath = false;
         this.carrierGlowTask = null;
         this.captureTimerTask = null;
+        this.plateCheckTask = null;
         
         // Pre-populate capture map
         flagCaptures.put(1, 0);
@@ -75,6 +86,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Flag bases will be at arena spawn points
         // This is a simplified version - you may need to adjust based on your arena system
         initializeFlagLocations();
+        
+        // Place pressure plates for capture zones
+        placePressurePlates();
     }
 
     @Override
@@ -85,12 +99,16 @@ public class CaptureTheFlagGamemode extends Gamemode {
         team1FlagCaptureTime = 0;
         team2FlagCaptureTime = 0;
         carryStartTime.clear();
+        platePressStartTime.clear();
 
         // Start carrier glow effect task
         startCarrierGlowEffect();
 
         // Start capture timer task
         startCaptureTimerTask();
+        
+        // Start pressure plate check task
+        startPlateCheckTask();
     }
 
     @Override
@@ -155,9 +173,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void cleanup() {
         cancelTask(carrierGlowTask);
         cancelTask(captureTimerTask);
+        cancelTask(plateCheckTask);
         team1FlagHolder = null;
         team2FlagHolder = null;
         carryStartTime.clear();
+        platePressStartTime.clear();
         flagCaptures.clear();
     }
 
@@ -190,6 +210,115 @@ public class CaptureTheFlagGamemode extends Gamemode {
             team1FlagBase = world.getSpawnLocation().clone().add(0, 1, 0);
             team2FlagBase = world.getSpawnLocation().clone().add(50, 1, 0);
         }
+    }
+
+    /**
+     * Place pressure plates from template config at their capture locations
+     */
+    private void placePressurePlates() {
+        var template = session.getArenaTemplate();
+        if (template == null) {
+            Messages.debug("GAMEMODE_CTF", "Template not found for CTF pressure plates");
+            return;
+        }
+
+        World world = session.getGameWorld();
+        if (world == null) return;
+
+        // Place Team 1's capture plate (from template)
+        Location team1PlateLocation = template.getCTFCaptureTeam1Plate();
+        if (team1PlateLocation != null) {
+            // Convert template location to world copy location
+            Location copiedLoc = team1PlateLocation.clone();
+            copiedLoc.setWorld(world);
+            Block block = world.getBlockAt(copiedLoc);
+            block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
+            team1CapturePlate = copiedLoc;
+            Messages.debug("GAMEMODE_CTF", "Placed Team 1 capture plate at " + copiedLoc);
+        }
+
+        // Place Team 2's capture plate (from template)
+        Location team2PlateLocation = template.getCTFCaptureTeam2Plate();
+        if (team2PlateLocation != null) {
+            // Convert template location to world copy location
+            Location copiedLoc = team2PlateLocation.clone();
+            copiedLoc.setWorld(world);
+            Block block = world.getBlockAt(copiedLoc);
+            block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
+            team2CapturePlate = copiedLoc;
+            Messages.debug("GAMEMODE_CTF", "Placed Team 2 capture plate at " + copiedLoc);
+        }
+    }
+
+    /**
+     * Start task to check if flag carriers are standing on capture plates
+     */
+    private void startPlateCheckTask() {
+        plateCheckTask = SchedulerUtils.runTaskTimer(this::checkPlateCaptures, 0, 10);
+    }
+
+    /**
+     * Check if flag carriers standing on plates have been there long enough to capture
+     */
+    private void checkPlateCaptures() {
+        long now = System.currentTimeMillis();
+
+        // Check Team 1's flag holder on Team 2's capture plate
+        if (team2FlagHolder != null && team2CapturePlate != null) {
+            Player carrier = Bukkit.getPlayer(team2FlagHolder);
+            if (carrier != null && carrier.isOnline() && isPlayerOnBlock(carrier, team2CapturePlate)) {
+                // Player is on the capture plate
+                if (!platePressStartTime.containsKey(team2FlagHolder)) {
+                    // First time on plate, start timer
+                    platePressStartTime.put(team2FlagHolder, now);
+                } else {
+                    long pressedTime = now - platePressStartTime.get(team2FlagHolder);
+                    if (pressedTime >= PLATE_ACTIVATION_MS) {
+                        // Capture completed!
+                        flagCapture(carrier, 2);
+                        platePressStartTime.remove(team2FlagHolder);
+                    }
+                }
+            } else {
+                // Player left the plate or is offline
+                platePressStartTime.remove(team2FlagHolder);
+            }
+        }
+
+        // Check Team 2's flag holder on Team 1's capture plate
+        if (team1FlagHolder != null && team1CapturePlate != null) {
+            Player carrier = Bukkit.getPlayer(team1FlagHolder);
+            if (carrier != null && carrier.isOnline() && isPlayerOnBlock(carrier, team1CapturePlate)) {
+                // Player is on the capture plate
+                if (!platePressStartTime.containsKey(team1FlagHolder)) {
+                    // First time on plate, start timer
+                    platePressStartTime.put(team1FlagHolder, now);
+                } else {
+                    long pressedTime = now - platePressStartTime.get(team1FlagHolder);
+                    if (pressedTime >= PLATE_ACTIVATION_MS) {
+                        // Capture completed!
+                        flagCapture(carrier, 1);
+                        platePressStartTime.remove(team1FlagHolder);
+                    }
+                }
+            } else {
+                // Player left the plate or is offline
+                platePressStartTime.remove(team1FlagHolder);
+            }
+        }
+    }
+
+    /**
+     * Check if a player is standing on a block
+     */
+    private boolean isPlayerOnBlock(Player player, Location blockLoc) {
+        if (blockLoc == null) return false;
+        
+        Location playerLoc = player.getLocation();
+        // Check if player is within 0.5 blocks of the block's center
+        return Math.abs(playerLoc.getX() - blockLoc.getX() - 0.5) <= 0.5 &&
+               Math.abs(playerLoc.getY() - blockLoc.getY() - 1) <= 1.0 &&
+               Math.abs(playerLoc.getZ() - blockLoc.getZ() - 0.5) <= 0.5;
     }
 
     /**
