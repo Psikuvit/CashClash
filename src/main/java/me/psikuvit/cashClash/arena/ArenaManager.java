@@ -173,10 +173,14 @@ public class ArenaManager {
 
             // Load CTF capture plate locations
             if (cfg.contains("ctf.capture-team1")) {
-                tpl.setCTFCaptureTeam1Plate(LocationUtils.deserializeLocation(cfg.getConfigurationSection("ctf.capture-team1")));
+                tpl.setCTFCaptureTeam1Plate(
+                        LocationUtils.deserializeLocation(cfg.getConfigurationSection("ctf.capture-team1"))
+                );
             }
             if (cfg.contains("ctf.capture-team2")) {
-                tpl.setCTFCaptureTeam2Plate(LocationUtils.deserializeLocation(cfg.getConfigurationSection("ctf.capture-team2")));
+                tpl.setCTFCaptureTeam2Plate(LocationUtils.deserializeLocation(
+                        cfg.getConfigurationSection("ctf.capture-team2"))
+                );
             }
 
             templates.put(id, tpl);
