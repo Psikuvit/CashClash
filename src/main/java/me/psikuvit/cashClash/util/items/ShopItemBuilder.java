@@ -212,11 +212,9 @@ public class ShopItemBuilder {
      * @return This builder for chaining
      */
     public ShopItemBuilder configLore(List<String> configLoreLines) {
-        Messages.debug(Messages.DebugCategory.LORE, "[ShopItemBuilder.configLore] Adding " + configLoreLines.size() + " config lore lines");
         for (String line : configLoreLines) {
             Component parsedLine = Messages.parse(line);
             lore.add(parsedLine);
-            Messages.debug(Messages.DebugCategory.LORE, "[ShopItemBuilder.configLore] Added line: " + line);
         }
         return this;
     }
@@ -351,7 +349,6 @@ public class ShopItemBuilder {
         if (!finalLore.isEmpty()) {
             meta.lore(finalLore);
         }
-        Messages.debug(Messages.DebugCategory.LORE, "Shop lore built: material=" + item.getType() + ", lines=" + finalLore.size() + ", priceLines=" + priceLore.size());
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;

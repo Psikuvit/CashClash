@@ -268,7 +268,6 @@ public final class Messages {
     @NotNull
     public static List<Component> wrapLines(@Nullable String miniMsg, int maxChars) {
         if (miniMsg == null || miniMsg.isBlank()) {
-            debug(DebugCategory.LORE, "wrapLines skipped: empty input");
             return Collections.emptyList();
         }
 
@@ -298,7 +297,6 @@ public final class Messages {
         }
 
         if (inner.isEmpty()) {
-            debug(DebugCategory.LORE, "wrapLines single-line: input='" + trimmed + "'");
             return List.of(parse(trimmed));
         }
 
@@ -327,7 +325,6 @@ public final class Messages {
             lines.add(parse(toParse));
         }
 
-        debug(DebugCategory.LORE, "wrapLines done: input='" + trimmed + "' lines=" + lines.size() + " width=" + maxChars);
         return lines;
     }
 

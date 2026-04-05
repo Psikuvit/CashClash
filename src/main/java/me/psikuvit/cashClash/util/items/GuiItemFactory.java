@@ -78,7 +78,6 @@ public final class GuiItemFactory {
         if (!loreLinesFromConfig.isEmpty()) {
             // Add lore from config (as individual lines, no wrapping)
             builder.configLore(loreLinesFromConfig);
-            Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
         }
 
         return builder.purchasePrompt()
@@ -242,7 +241,6 @@ public final class GuiItemFactory {
         if (!loreLinesFromConfig.isEmpty()) {
             // Add lore from config (as individual lines, no wrapping)
             builder.configLore(loreLinesFromConfig);
-            Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
         }
 
         if (type.hasLimit()) {
@@ -288,7 +286,6 @@ public final class GuiItemFactory {
 
                 if (!loreLinesFromConfig.isEmpty()) {
                     builder.configLore(loreLinesFromConfig);
-                    Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
                 }
 
                 items[i] = builder
@@ -304,7 +301,6 @@ public final class GuiItemFactory {
 
                 if (!loreLinesFromConfig.isEmpty()) {
                     builder.configLore(loreLinesFromConfig);
-                    Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
                 }
 
                 items[i] = builder
@@ -414,7 +410,6 @@ public final class GuiItemFactory {
 
             if (!loreLinesFromConfig.isEmpty()) {
                 builder.configLore(loreLinesFromConfig);
-                Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
             }
 
             return builder
@@ -430,7 +425,6 @@ public final class GuiItemFactory {
 
             if (!loreLinesFromConfig.isEmpty()) {
                 builder.configLore(loreLinesFromConfig);
-                Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
             }
 
             return builder
@@ -445,7 +439,6 @@ public final class GuiItemFactory {
 
             if (!loreLinesFromConfig.isEmpty()) {
                 builder.configLore(loreLinesFromConfig);
-                Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Applied " + loreLinesFromConfig.size() + " lore lines from config");
             }
 
             return builder

@@ -65,18 +65,18 @@ public class GuiBuilder {
     }
 
     /**
-     * Set the number of rows (1-6).
+     * Helper to create a simple pane button with no action.
      */
-    public GuiBuilder rows(int rows) {
-        this.rows = Math.max(1, Math.min(6, rows));
-        return this;
+    public static GuiButton pane(Material material) {
+        ItemStack item = AbstractGui.createPane(material);
+        return GuiButton.of(item);
     }
 
     /**
-     * Set the size by slot count (must be multiple of 9).
+     * Set the number of rows (1-6).
      */
-    public GuiBuilder size(int size) {
-        this.rows = Math.max(1, Math.min(6, size / 9));
+    public GuiBuilder rows(int rows) {
+        this.rows = Math.clamp(rows, 1, 6);
         return this;
     }
 
@@ -151,19 +151,6 @@ public class GuiBuilder {
      */
     public GuiBuilder allowPlayerInventory(boolean allow) {
         this.allowPlayerInventoryClick = allow;
-        return this;
-    }
-
-    /**
-     * Add a close button at the specified slot.
-     */
-    public GuiBuilder closeButton(int slot) {
-        ItemStack item = new ItemStack(Material.BARRIER);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(Messages.parse("<red>Close</red>"));
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        item.setItemMeta(meta);
-        buttons.put(slot, GuiButton.of(item).onClick(p -> p.closeInventory()));
         return this;
     }
 
@@ -245,13 +232,12 @@ public class GuiBuilder {
         return new BuiltGui(inventory, holder);
     }
 
-    private ItemStack createFillItem(Material material) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.empty());
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        item.setItemMeta(meta);
-        return item;
+    /**
+     * Set the size by slot count (must be multiple of 9).
+     */
+    public GuiBuilder size(int size) {
+        this.rows = Math.clamp(size / 9, 1, 6);
+        return this;
     }
 
     private void applyBorder(Inventory inventory, ItemStack borderItem, int size) {
@@ -274,16 +260,8 @@ public class GuiBuilder {
         }
     }
 
-    /**
-     * Helper to create a simple pane button with no action.
-     */
-    public static GuiButton pane(Material material) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.empty());
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        item.setItemMeta(meta);
-        return GuiButton.of(item);
+    private ItemStack createFillItem(Material material) {
+        return AbstractGui.createPane(material);
     }
 
     /**
