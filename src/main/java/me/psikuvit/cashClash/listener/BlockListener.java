@@ -232,17 +232,10 @@ public class BlockListener implements Listener {
         if (event.isCancelled()) return;
 
         Block source = event.getSource();
-        Block spread = event.getBlock();
         Material sourceType = source.getType();
 
         // Only handle water and lava spreading
-        if (sourceType != Material.WATER && sourceType != Material.LAVA) {
-            return;
-        }
-
-        Material spreadType = spread.getType();
-        // Allow spreading to webs and fire, cancel all other spreading
-        if (spreadType != Material.COBWEB && !spreadType.name().contains("FIRE")) {
+        if (sourceType == Material.WATER || sourceType == Material.LAVA) {
             event.setCancelled(true);
         }
     }
