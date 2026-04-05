@@ -5,7 +5,6 @@ import me.psikuvit.cashClash.command.subcommands.ArenasCommand;
 import me.psikuvit.cashClash.command.subcommands.ChatCommand;
 import me.psikuvit.cashClash.command.subcommands.CoinsCommand;
 import me.psikuvit.cashClash.command.subcommands.DebugCommand;
-import me.psikuvit.cashClash.command.subcommands.FlowCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceNextRoundCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceStartCommand;
 import me.psikuvit.cashClash.command.subcommands.ForfeitCommand;
@@ -75,7 +74,6 @@ public class CommandHandler extends Command {
         registerSubcommand(new ReloadCommand());
         registerSubcommand(new DebugCommand());
         registerSubcommand(new SpawnNPCCommand());
-        registerSubcommand(new FlowCommand());
 
         // Arena/template admin commands
         registerSubcommand(new ArenasCommand());

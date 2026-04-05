@@ -50,9 +50,6 @@ public class BlockListener implements Listener {
     // Map of player UUID to water bucket refill task
     private static final Map<UUID, BukkitTask> waterBucketRefillTasks = new ConcurrentHashMap<>();
 
-    // Toggle for water/lava flow behavior (can be toggled with /flow command)
-    private static volatile boolean flowEnabled = false;
-
     // ==================== BLOCK PLACE ====================
 
     public static void cleanupRound(UUID sessionId) {
@@ -74,15 +71,6 @@ public class BlockListener implements Listener {
     public static boolean isPlayerPlaced(UUID sessionId, Location location) {
         Set<Location> blocks = placedBlocks.get(sessionId);
         return blocks != null && blocks.contains(location.toBlockLocation());
-    }
-
-    // Flow command is disabled - water/lava spread is always restricted
-    public static void toggleFlow() {
-        // Flow toggling is disabled
-    }
-
-    public static boolean isFlowEnabled() {
-        return false; // Always disabled
     }
 
 
@@ -171,7 +159,7 @@ public class BlockListener implements Listener {
             placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
 
             // Schedule despawn after 5 seconds of no touch
-            scheduleWebDespawn(block, 100); // 100 ticks = 5 seconds
+            scheduleWebDespawn(block); // 100 ticks = 5 seconds
             return;
         }
 
@@ -205,7 +193,7 @@ public class BlockListener implements Listener {
             placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
 
             // Schedule leaf decay after 6 seconds
-            scheduleLeafDecay(block, 120); // 120 ticks = 6 seconds
+            scheduleLeafDecay(block); // 120 ticks = 6 seconds
             return;
         }
 
@@ -275,15 +263,19 @@ public class BlockListener implements Listener {
             event.setDropItems(false);
 
             // Decrement player's leaf count
-            Player player = event.getPlayer();
-            GameSession session = GameManager.getInstance().getPlayerSession(player);
-            if (session != null) {
-                Map<UUID, Integer> counts = playerLeafBlockCount.get(session.getSessionId());
-                if (counts != null) {
-                    int current = counts.getOrDefault(player.getUniqueId(), 0);
-                    if (current > 0) {
-                        counts.put(player.getUniqueId(), current - 1);
-                    }
+            decrementPlayerLeaf(event, playerLeafBlockCount);
+        }
+    }
+
+    private void decrementPlayerLeaf(BlockBreakEvent event, Map<UUID, Map<UUID, Integer>> playerLeafBlockCount) {
+        Player player = event.getPlayer();
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session != null) {
+            Map<UUID, Integer> counts = playerLeafBlockCount.get(session.getSessionId());
+            if (counts != null) {
+                int current = counts.getOrDefault(player.getUniqueId(), 0);
+                if (current > 0) {
+                    counts.put(player.getUniqueId(), current - 1);
                 }
             }
         }
@@ -345,14 +337,14 @@ public class BlockListener implements Listener {
     /**
      * Schedule web block to despawn after 5 seconds of no touch.
      */
-    private void scheduleWebDespawn(Block block, int ticks) {
+    private void scheduleWebDespawn(Block block) {
         Location loc = block.getLocation().toBlockLocation();
         BukkitTask task = SchedulerUtils.runTaskLater(() -> {
             if (block.getType() == Material.COBWEB) {
                 block.setType(Material.AIR);
             }
             webDespawnTasks.remove(loc);
-        }, ticks);
+        }, 100);
         
         webDespawnTasks.put(loc, task);
     }
@@ -380,29 +372,19 @@ public class BlockListener implements Listener {
             cancelWebDespawnTask(block.getLocation());
 
             // Decrement player's web count
-            Player player = event.getPlayer();
-            GameSession session = GameManager.getInstance().getPlayerSession(player);
-            if (session != null) {
-                Map<UUID, Integer> counts = playerWebBlockCount.get(session.getSessionId());
-                if (counts != null) {
-                    int current = counts.getOrDefault(player.getUniqueId(), 0);
-                    if (current > 0) {
-                        counts.put(player.getUniqueId(), current - 1);
-                    }
-                }
-            }
+            decrementPlayerLeaf(event, playerWebBlockCount);
         }
     }
 
     /**
      * Schedule leaf block to decay after 6 seconds.
      */
-    private void scheduleLeafDecay(Block block, int ticks) {
+    private void scheduleLeafDecay(Block block) {
         SchedulerUtils.runTaskLater(() -> {
             if (isLeafBlock(block.getType())) {
                 block.setType(Material.AIR);
             }
-        }, ticks);
+        }, 120);
     }
 
     /**
