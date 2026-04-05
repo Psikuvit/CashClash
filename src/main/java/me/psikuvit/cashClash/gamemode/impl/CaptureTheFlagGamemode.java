@@ -76,6 +76,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public void onGameStart() {
+        Messages.debug("[CTF] Gamemode started");
         Messages.broadcastWithPrefix(session.getPlayers(),
                 "<gold>Capture the Flag has been selected as the gamemode!</gold>");
         Messages.broadcastWithPrefix(session.getPlayers(),
@@ -93,6 +94,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public void onCombatPhaseStart() {
+        Messages.debug("[CTF] Combat phase started");
+
         // Reset flag state each round
         team1FlagHolder = null;
         team2FlagHolder = null;
@@ -122,11 +125,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         // Check if victim was carrying a flag
         if (victimUuid.equals(team1FlagHolder)) {
+            Messages.debug("[CTF] Team Red flag holder eliminated: " + victim.getName());
             Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team Red's flag holder was eliminated!</bold></red>");
             team1FlagHolder = null;
             carryStartTime.remove(victimUuid);
             SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
         } else if (victimUuid.equals(team2FlagHolder)) {
+            Messages.debug("[CTF] Team Blue flag holder eliminated: " + victim.getName());
             Messages.broadcastWithPrefix(session.getPlayers(), "<blue><bold>Team Blue's flag holder was eliminated!</bold></blue>");
             team2FlagHolder = null;
             carryStartTime.remove(victimUuid);
@@ -146,6 +151,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         int captures2 = flagCaptures.get(2);
 
         if (captures1 >= targetCaptures || captures2 >= targetCaptures) {
+            Messages.debug("[CTF] Game winner found - Team " + (captures1 >= targetCaptures ? 1 : 2) + " with " + Math.max(captures1, captures2) + " captures");
             return true;
         }
 
@@ -218,12 +224,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private void placePressurePlates() {
         var template = session.getArenaTemplate();
         if (template == null) {
-            Messages.debug("GAMEMODE_CTF", "Template not found for CTF pressure plates");
+            Messages.debug("[CTF] Template not found for CTF pressure plates");
             return;
         }
 
         World world = session.getGameWorld();
-        if (world == null) return;
+        if (world == null) {
+            Messages.debug("[CTF] Game world is null, cannot place pressure plates");
+            return;
+        }
 
         // Place Team 1's capture plate (from template)
         Location team1PlateLocation = template.getCTFCaptureTeam1Plate();
@@ -234,7 +243,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Block block = world.getBlockAt(copiedLoc);
             block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
             team1CapturePlate = copiedLoc;
-            Messages.debug("GAMEMODE_CTF", "Placed Team 1 capture plate at " + copiedLoc);
+            Messages.debug("[CTF] Placed Team 1 capture plate at " + copiedLoc);
+        } else {
+            Messages.debug("[CTF] Team 1 capture plate location not found in template");
         }
 
         // Place Team 2's capture plate (from template)
@@ -246,7 +257,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Block block = world.getBlockAt(copiedLoc);
             block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
             team2CapturePlate = copiedLoc;
-            Messages.debug("GAMEMODE_CTF", "Placed Team 2 capture plate at " + copiedLoc);
+            Messages.debug("[CTF] Placed Team 2 capture plate at " + copiedLoc);
+        } else {
+            Messages.debug("[CTF] Team 2 capture plate location not found in template");
         }
     }
 
@@ -271,10 +284,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 if (!platePressStartTime.containsKey(team2FlagHolder)) {
                     // First time on plate, start timer
                     platePressStartTime.put(team2FlagHolder, now);
+                    Messages.debug("[CTF] " + carrier.getName() + " standing on Team 2 capture plate");
                 } else {
                     long pressedTime = now - platePressStartTime.get(team2FlagHolder);
                     if (pressedTime >= PLATE_ACTIVATION_MS) {
                         // Capture completed!
+                        Messages.debug("[CTF] " + carrier.getName() + " captured Team 2's flag!");
                         flagCapture(carrier, 2);
                         platePressStartTime.remove(team2FlagHolder);
                     }
@@ -293,10 +308,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 if (!platePressStartTime.containsKey(team1FlagHolder)) {
                     // First time on plate, start timer
                     platePressStartTime.put(team1FlagHolder, now);
+                    Messages.debug("[CTF] " + carrier.getName() + " standing on Team 1 capture plate");
                 } else {
                     long pressedTime = now - platePressStartTime.get(team1FlagHolder);
                     if (pressedTime >= PLATE_ACTIVATION_MS) {
                         // Capture completed!
+                        Messages.debug("[CTF] " + carrier.getName() + " captured Team 1's flag!");
                         flagCapture(carrier, 1);
                         platePressStartTime.remove(team1FlagHolder);
                     }
@@ -374,12 +391,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
             team1FlagHolder = playerUuid;
             team1FlagCaptureTime = now;
             carryStartTime.put(playerUuid, now);
+            Messages.debug("[CTF] " + player.getName() + " picked up Team Red's flag");
             Messages.broadcastWithPrefix(session.getPlayers(),
                     "<blue>" + player.getName() + " has stolen Team Red's flag!</blue>");
         } else {
             team2FlagHolder = playerUuid;
             team2FlagCaptureTime = now;
             carryStartTime.put(playerUuid, now);
+            Messages.debug("[CTF] " + player.getName() + " picked up Team Blue's flag");
             Messages.broadcastWithPrefix(session.getPlayers(),
                     "<red>" + player.getName() + " has stolen Team Blue's flag!</red>");
         }
@@ -395,6 +414,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         int captures = flagCaptures.get(teamNumber);
         int targetCaptures = inSuddenDeath ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
 
+        Messages.debug("[CTF] Team " + teamNumber + " captured a flag! Total captures: " + captures + "/" + targetCaptures);
         Messages.broadcastWithPrefix(session.getPlayers(),
                 "<gold><bold>" + player.getName() + " has captured the flag! " +
                 captures + "/" + targetCaptures + "</bold></gold>");
@@ -418,6 +438,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         long bonusPerPlayer = CAPTURE_BONUS / 4;
         var teamObj = team == 1 ? session.getTeam1() : session.getTeam2();
         
+        Messages.debug("[CTF] Awarding 45-second capture bonus to Team " + team + ": " + bonusPerPlayer + " per player");
+
         for (UUID uuid : teamObj.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null) {
@@ -436,6 +458,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      */
     private void enterSuddenDeath() {
         inSuddenDeath = true;
+        Messages.debug("[CTF] Entering sudden death mode - both teams at 3-3 captures");
         Messages.broadcastWithPrefix(session.getPlayers(),
                 "<red><bold>SUDDEN DEATH! Both teams must now capture 4 flags to win!</bold></red>");
     }
