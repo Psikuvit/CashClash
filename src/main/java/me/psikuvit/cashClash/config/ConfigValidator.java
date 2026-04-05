@@ -398,6 +398,13 @@ public class ConfigValidator {
         validateAndSet(config, "player.default-health", 20.0, autoAdd);
         validateAndSet(config, "player.max-health-cap", 40.0, autoAdd);
 
+        // Gamemode settings - Capture the Flag
+        validateAndSet(config, "gamemodes.capture-the-flag.plate-activation-time-ms", 3000, autoAdd);
+        validateAndSet(config, "gamemodes.capture-the-flag.normal-captures-to-win", 2, autoAdd);
+        validateAndSet(config, "gamemodes.capture-the-flag.sudden-death-captures-to-win", 4, autoAdd);
+        validateAndSet(config, "gamemodes.capture-the-flag.capture-bonus-coins", 15000, autoAdd);
+        validateAndSet(config, "gamemodes.capture-the-flag.capture-bonus-timer-ms", 45000, autoAdd);
+
         // Messages
         validateAndSet(config, "messages.prefix", "<gold><bold>[Cash Clash]</bold></gold>", autoAdd);
         validateAndSet(config, "messages.game-starting", "<green>Game starting in {time} seconds!</green>", autoAdd);
