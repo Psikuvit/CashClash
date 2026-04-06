@@ -12,10 +12,13 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Transformation;
+import org.joml.Quaternionf;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,10 +47,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private Location team2FlagBase;
     private Location team1CapturePlate;
     private Location team2CapturePlate;
+    private BlockDisplay team1BannerDisplay;
+    private BlockDisplay team2BannerDisplay;
     private boolean inSuddenDeath;
     private BukkitTask carrierGlowTask;
     private BukkitTask captureTimerTask;
     private BukkitTask plateCheckTask;
+    private BukkitTask bannerRotationTask;
 
     public CaptureTheFlagGamemode(GameSession session) {
         super(session, GamemodeType.CAPTURE_THE_FLAG);
@@ -64,11 +70,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.team2FlagBase = null;
         this.team1CapturePlate = null;
         this.team2CapturePlate = null;
+        this.team1BannerDisplay = null;
+        this.team2BannerDisplay = null;
         this.inSuddenDeath = false;
         this.carrierGlowTask = null;
         this.captureTimerTask = null;
         this.plateCheckTask = null;
-        
+        this.bannerRotationTask = null;
+
         // Pre-populate capture map
         flagCaptures.put(1, 0);
         flagCaptures.put(2, 0);
@@ -112,6 +121,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         
         // Start pressure plate check task
         startPlateCheckTask();
+
+        // Start banner rotation task
+        startBannerRotationTask();
     }
 
     @Override
@@ -129,12 +141,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team Red's flag holder was eliminated!</bold></red>");
             team1FlagHolder = null;
             carryStartTime.remove(victimUuid);
+            moveBannerToLocation(team1BannerDisplay, team1CapturePlate);
             SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
         } else if (victimUuid.equals(team2FlagHolder)) {
             Messages.debug("[CTF] Team Blue flag holder eliminated: " + victim.getName());
             Messages.broadcastWithPrefix(session.getPlayers(), "<blue><bold>Team Blue's flag holder was eliminated!</bold></blue>");
             team2FlagHolder = null;
             carryStartTime.remove(victimUuid);
+            moveBannerToLocation(team2BannerDisplay, team2CapturePlate);
             SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
         }
     }
@@ -180,11 +194,20 @@ public class CaptureTheFlagGamemode extends Gamemode {
         cancelTask(carrierGlowTask);
         cancelTask(captureTimerTask);
         cancelTask(plateCheckTask);
+        cancelTask(bannerRotationTask);
         team1FlagHolder = null;
         team2FlagHolder = null;
         carryStartTime.clear();
         platePressStartTime.clear();
         flagCaptures.clear();
+
+        // Remove banner entities
+        if (team1BannerDisplay != null && !team1BannerDisplay.isDead()) {
+            team1BannerDisplay.remove();
+        }
+        if (team2BannerDisplay != null && !team2BannerDisplay.isDead()) {
+            team2BannerDisplay.remove();
+        }
     }
 
     private void cancelTask(BukkitTask task) {
@@ -244,6 +267,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
             block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
             team1CapturePlate = copiedLoc;
             Messages.debug("[CTF] Placed Team 1 capture plate at " + copiedLoc);
+
+            // Create banner for Team 1 plate
+            team1BannerDisplay = createBannerDisplay(copiedLoc, Material.RED_BANNER);
         } else {
             Messages.debug("[CTF] Team 1 capture plate location not found in template");
         }
@@ -258,6 +284,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
             block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
             team2CapturePlate = copiedLoc;
             Messages.debug("[CTF] Placed Team 2 capture plate at " + copiedLoc);
+
+            // Create banner for Team 2 plate
+            team2BannerDisplay = createBannerDisplay(copiedLoc, Material.BLUE_BANNER);
         } else {
             Messages.debug("[CTF] Team 2 capture plate location not found in template");
         }
@@ -394,6 +423,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Messages.debug("[CTF] " + player.getName() + " picked up Team Red's flag");
             Messages.broadcastWithPrefix(session.getPlayers(),
                     "<blue>" + player.getName() + " has stolen Team Red's flag!</blue>");
+
+            // Move banner to player head
+            moveBannerToPlayer(team1BannerDisplay, player);
         } else {
             team2FlagHolder = playerUuid;
             team2FlagCaptureTime = now;
@@ -401,6 +433,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Messages.debug("[CTF] " + player.getName() + " picked up Team Blue's flag");
             Messages.broadcastWithPrefix(session.getPlayers(),
                     "<red>" + player.getName() + " has stolen Team Blue's flag!</red>");
+
+            // Move banner to player head
+            moveBannerToPlayer(team2BannerDisplay, player);
         }
 
         SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, 1.5f);
@@ -421,13 +456,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
-        // Reset flag holders
+        // Reset flag holders and move banners back to plates
         if (teamNumber == 1) {
             team2FlagHolder = null;
             team2FlagCaptureTime = 0;
+            moveBannerToLocation(team2BannerDisplay, team2CapturePlate);
         } else {
             team1FlagHolder = null;
             team1FlagCaptureTime = 0;
+            moveBannerToLocation(team1BannerDisplay, team1CapturePlate);
         }
     }
 
@@ -463,7 +500,96 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 "<red><bold>SUDDEN DEATH! Both teams must now capture 4 flags to win!</bold></red>");
     }
 
-    // Getters
+    /**
+     * Create a BlockDisplay banner entity at the given location
+     */
+    private BlockDisplay createBannerDisplay(Location location, Material bannerType) {
+        World world = location.getWorld();
+        if (world == null) {
+            return null;
+        }
+
+        // Spawn banner display above the pressure plate
+        Location displayLoc = location.clone().add(0.5, 1.5, 0.5);
+        BlockDisplay banner = world.spawn(displayLoc, BlockDisplay.class);
+        banner.setBlock(Bukkit.createBlockData(bannerType));
+        banner.setTeleportDuration(0);
+        banner.setInterpolationDuration(0);
+
+        Messages.debug("[CTF] Created banner display at " + displayLoc);
+        return banner;
+    }
+
+    /**
+     * Move banner to float above player's head
+     */
+    private void moveBannerToPlayer(BlockDisplay banner, Player player) {
+        if (banner == null || banner.isDead() || !player.isOnline()) {
+            return;
+        }
+
+        Location headLoc = player.getEyeLocation().add(0, 1, 0);
+        banner.teleport(headLoc);
+        Messages.debug("[CTF] Moved banner to " + player.getName() + "'s head");
+    }
+
+    /**
+     * Move banner to float above a location (plate)
+     */
+    private void moveBannerToLocation(BlockDisplay banner, Location location) {
+        if (banner == null || banner.isDead() || location == null) {
+            return;
+        }
+
+        Location displayLoc = location.clone().add(0.5, 1.5, 0.5);
+        banner.teleport(displayLoc);
+        Messages.debug("[CTF] Moved banner back to plate at " + displayLoc);
+    }
+
+    /**
+     * Start task to rotate banners
+     */
+    private void startBannerRotationTask() {
+        bannerRotationTask = SchedulerUtils.runTaskTimer(this::rotateBanners, 0, 1);
+    }
+
+    /**
+     * Rotate banners continuously
+     */
+    private void rotateBanners() {
+        rotateBanner(team1BannerDisplay);
+        rotateBanner(team2BannerDisplay);
+    }
+
+    /**
+     * Rotate a single banner
+     */
+    private void rotateBanner(BlockDisplay banner) {
+        if (banner == null || banner.isDead()) {
+            return;
+        }
+
+        // Get current transformation
+        Transformation current = banner.getTransformation();
+
+        // Rotate around Y axis (vertical rotation) - 2 degrees per tick = 1 full rotation every 180 ticks (9 seconds)
+        Quaternionf rotation = new Quaternionf();
+        float angle = (float) Math.toRadians(2); // 2 degrees per tick
+        rotation.rotateY(angle);
+
+        // Apply the rotation to the existing rotation
+        Quaternionf newRotation = new Quaternionf(current.getLeftRotation()).mul(rotation);
+
+        Transformation newTransform = new Transformation(
+                current.getTranslation(),
+                newRotation,
+                current.getScale(),
+                current.getRightRotation()
+        );
+
+        banner.setTransformation(newTransform);
+    }
+
     public boolean isFlagHeld(int teamNumber) {
         return teamNumber == 1 ? team1FlagHolder != null : team2FlagHolder != null;
     }
