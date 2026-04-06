@@ -72,9 +72,6 @@ public final class GuiItemFactory {
         String configKey = item.getConfigKey();
         List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
 
-        Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Creating shop item: " + item.getDisplayName() +
-                " | category=" + category + " | configKey=" + configKey + " | configLoreLines=" + loreLinesFromConfig.size());
-
         if (!loreLinesFromConfig.isEmpty()) {
             // Add lore from config (as individual lines, no wrapping)
             builder.configLore(loreLinesFromConfig);
@@ -230,9 +227,6 @@ public final class GuiItemFactory {
         String configKey = type.getConfigKey();
         List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
 
-        Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Creating shop item: " + type.getDisplayName() +
-                " | category=" + category + " | configKey=" + configKey + " | configLoreLines=" + loreLinesFromConfig.size());
-
         ShopItemBuilder builder = ShopItemBuilder.of(type.getMaterial())
                 .name("<yellow>" + type.getDisplayName() + "</yellow>")
                 .price(type.getPrice())
@@ -274,9 +268,6 @@ public final class GuiItemFactory {
             String category = getCategoryForLore(piece);
             String configKey = piece.getConfigKey();
             List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
-
-            Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Creating armor set piece: " + piece.getDisplayName() +
-                    " | category=" + category + " | configKey=" + configKey + " | configLoreLines=" + loreLinesFromConfig.size());
 
             if (ownsSet) {
                 ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
@@ -393,9 +384,6 @@ public final class GuiItemFactory {
         String category = getCategoryForLore(mythic);
         String configKey = mythic.getConfigKey();
         List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
-
-        Messages.debug(Messages.DebugCategory.LORE, "[GuiItemFactory] Creating mythic item: " + mythic.getDisplayName() +
-                " | category=" + category + " | configKey=" + configKey + " | configLoreLines=" + loreLinesFromConfig.size());
 
         ShopItemBuilder builder = ShopItemBuilder.of(Material.BARRIER)
                 .hideAttributes()
