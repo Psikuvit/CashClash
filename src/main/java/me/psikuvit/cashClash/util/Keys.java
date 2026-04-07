@@ -56,6 +56,12 @@ public class Keys {
      */
     public static final NamespacedKey ARENA_NPC_KEY;
 
+    /**
+     * Flag to mark a potion as a buff selection item (undrinkable).
+     * Used in Protect the President gamemode.
+     */
+    public static final NamespacedKey BUFF_SELECTION_POTION;
+
 
     static {
         ITEM_ID = new NamespacedKey(CashClashPlugin.getInstance(), "item_id");
@@ -67,6 +73,7 @@ public class Keys {
         BLAZEBITE_MODE = new NamespacedKey(CashClashPlugin.getInstance(), "blazebite_mode");
         BLOODWRENCH_MODE = new NamespacedKey(CashClashPlugin.getInstance(), "bloodwrench_mode");
         ARENA_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "arena_npc");
+        BUFF_SELECTION_POTION = new NamespacedKey(CashClashPlugin.getInstance(), "buff_selection_potion");
     }
 
     private Keys() {

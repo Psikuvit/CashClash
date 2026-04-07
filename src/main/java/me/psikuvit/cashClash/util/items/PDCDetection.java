@@ -201,6 +201,18 @@ public final class PDCDetection {
         return getSupplyDropAmount(stack) != null;
     }
 
+    // ==================== BUFF SELECTION ====================
+
+    /**
+     * Check if an item is a Protect the President buff selection potion (undrinkable).
+     * @return true if item is a buff selection potion
+     */
+    public static boolean isBuffSelectionPotion(ItemStack stack) {
+        if (stack == null || !stack.hasItemMeta()) return false;
+        return stack.getItemMeta().getPersistentDataContainer()
+                .has(Keys.BUFF_SELECTION_POTION, PersistentDataType.BYTE);
+    }
+
     // ==================== MYTHIC WEAPON MODES ====================
 
     /**
