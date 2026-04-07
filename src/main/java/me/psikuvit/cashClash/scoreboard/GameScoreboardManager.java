@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
+import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.player.TabListManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -359,6 +360,25 @@ public class GameScoreboardManager {
 
         result = result.replace("{players}", String.valueOf(session.getPlayers().size()));
 
+        // CTF capture counters and circles
+        if (session.getGamemode() instanceof CaptureTheFlagGamemode ctf) {
+            int team1Captures = ctf.getFlagCaptures(1);
+            int team2Captures = ctf.getFlagCaptures(2);
+            result = result.replace("{team1_captures}", String.valueOf(team1Captures));
+            result = result.replace("{team2_captures}", String.valueOf(team2Captures));
+
+            // Create filled circles for captures (◐ = partial, ◑ = filled)
+            String team1Circle = getFlagCaptureCircles(team1Captures);
+            String team2Circle = getFlagCaptureCircles(team2Captures);
+            result = result.replace("{team1_capture_circles}", team1Circle);
+            result = result.replace("{team2_capture_circles}", team2Circle);
+        } else {
+            result = result.replace("{team1_captures}", "0");
+            result = result.replace("{team2_captures}", "0");
+            result = result.replace("{team1_capture_circles}", "");
+            result = result.replace("{team2_capture_circles}", "");
+        }
+
         return result;
     }
 
@@ -398,6 +418,26 @@ public class GameScoreboardManager {
      */
     private String formatCoins(long coins) {
         return String.format("%,d", coins);
+    }
+
+    /**
+     * Get filled circles for flag captures in CTF.
+     * Uses ● for filled, ○ for empty
+     */
+    private String getFlagCaptureCircles(int captures) {
+        StringBuilder sb = new StringBuilder();
+        int maxCaptures = 2; // Normal mode needs 2 captures
+        for (int i = 0; i < maxCaptures; i++) {
+            if (i < captures) {
+                sb.append("●"); // Filled circle
+            } else {
+                sb.append("○"); // Empty circle
+            }
+            if (i < maxCaptures - 1) {
+                sb.append(" ");
+            }
+        }
+        return sb.toString();
     }
 
     /**
