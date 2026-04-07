@@ -232,8 +232,16 @@ public class RoundManager {
                 String winnerName = winnerTeam == 1 ? session.getTeam1().getName() : session.getTeam2().getName();
                 SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
                 Messages.broadcastWithPrefix(session.getPlayers(), 
-                    "<gold><bold>GAME OVER! " + winnerName + " Team Wins!</bold></gold>");
-                session.end();
+                    "<gold><bold>" + winnerName + " Team Wins the Round!</bold></gold>");
+                // Update loss streaks for this round
+                if (winnerTeam == 1) {
+                    session.getTeam1().resetLossStreak();
+                    session.getTeam2().incrementLossStreak();
+                } else {
+                    session.getTeam2().resetLossStreak();
+                    session.getTeam1().incrementLossStreak();
+                }
+                endCombatPhase();
                 return;
             }
         }
