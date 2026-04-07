@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
+import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
@@ -263,6 +264,13 @@ public class InteractListener implements Listener {
             return true;
         }
 
+        // Check if player is silenced (carrying CTF flag)
+        if (isSilenced(player)) {
+            event.setCancelled(true);
+            Messages.send(player, "<red>You cannot use items while carrying the enemy's flag!</red>");
+            return true;
+        }
+
         switch (type) {
             case GRENADE -> {
                 if (action.isRightClick()) {
@@ -335,6 +343,13 @@ public class InteractListener implements Listener {
         if (isRespawnProtected(player)) {
             event.setCancelled(true);
             Messages.send(player, "<red>You cannot use mythic abilities during respawn protection!</red>");
+            return true;
+        }
+
+        // Check if player is silenced (carrying CTF flag)
+        if (isSilenced(player)) {
+            event.setCancelled(true);
+            Messages.send(player, "<red>You cannot use abilities while carrying the enemy's flag!</red>");
             return true;
         }
 
@@ -464,6 +479,13 @@ public class InteractListener implements Listener {
         if (session.getState() != GameState.COMBAT) return false;
         RoundData roundData = session.getCurrentRoundData();
         return roundData != null && !roundData.isAlive(player.getUniqueId());
+    }
+
+    private boolean isSilenced(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null || session.getGamemode() == null) return false;
+        if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return false;
+        return gamemode.isSilenced(player.getUniqueId());
     }
 }
 
