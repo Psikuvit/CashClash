@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import net.kyori.adventure.text.Component;
@@ -14,6 +15,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -128,9 +130,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public void onRoundEnd() {
-        // Reset kill tracking
+        // Reset kill tracking and presidential deaths for next round
         teamKillCount.put(1, 0);
         teamKillCount.put(2, 0);
+        presidentialDeaths.put(1, 0);
+        presidentialDeaths.put(2, 0);
     }
 
     @Override
@@ -367,6 +371,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
                     Messages.parse("<gray>Right-click to select</gray>"),
                     Messages.parse("<gray>or deselect</gray>")
             ));
+            // Mark as buff selection potion (undrinkable)
+            meta.getPersistentDataContainer().set(Keys.BUFF_SELECTION_POTION, PersistentDataType.BYTE, (byte) 1);
             item.setItemMeta(meta);
             Messages.debug("[PTP] Created buff selection item: " + name + " for buff: " + buff.getName());
         } else {
