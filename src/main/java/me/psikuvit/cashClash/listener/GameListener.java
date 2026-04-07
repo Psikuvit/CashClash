@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
+import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
@@ -53,6 +54,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
@@ -596,6 +598,39 @@ public class GameListener implements Listener {
             }
         }
     }
+
+    // ==================== CTF FLAG PICKUP ====================
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+
+        if (session == null || session.getState() != GameState.COMBAT) return;
+        if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return;
+
+        // Check if player walked over enemy flag base
+        Team playerTeam = session.getPlayerTeam(player);
+        if (playerTeam == null) return;
+
+        // Determine enemy team number
+        int enemyTeamNumber = playerTeam.getTeamNumber() == 1 ? 2 : 1;
+
+        // Check if flag is not already held
+        if (gamemode.isFlagHeld(enemyTeamNumber)) return;
+
+        // Get flag base location
+        Location flagBase = gamemode.getFlagBase(enemyTeamNumber);
+        if (flagBase == null) return;
+
+        // Check if player is within 1 block of flag base
+        Location playerLoc = player.getLocation();
+        if (playerLoc.distance(flagBase) <= 1.0) {
+            // Flag picked up!
+            gamemode.flagPickup(player, enemyTeamNumber);
+        }
+    }
 }
+
 
 
