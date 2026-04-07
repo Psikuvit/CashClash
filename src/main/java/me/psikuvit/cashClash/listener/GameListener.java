@@ -262,6 +262,13 @@ public class GameListener implements Listener {
 
         if (consumed.getType().isAir()) return;
 
+        // Check if this is a Protect the President buff selection potion (undrinkable)
+        if (PDCDetection.isBuffSelectionPotion(consumed)) {
+            event.setCancelled(true);
+            Messages.send(p, "<red>You cannot drink this potion! Right-click it to select your buff.</red>");
+            return;
+        }
+
         GameSession session = GameManager.getInstance().getPlayerSession(p);
         if (session != null && session.getState() == GameState.SHOPPING) {
             FoodItem fi = PDCDetection.getFood(consumed);
