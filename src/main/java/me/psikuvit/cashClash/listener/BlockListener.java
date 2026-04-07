@@ -139,7 +139,7 @@ public class BlockListener implements Listener {
         Material blockType = block.getType();
         UUID sessionId = session.getSessionId();
         UUID playerId = player.getUniqueId();
-        Team team = session.getTeam1().hasPlayer(playerId) ? session.getTeam1() : session.getTeam2();
+        Team team = session.getTeamRed().hasPlayer(playerId) ? session.getTeamRed() : session.getTeamBlue();
 
         // Handle web placement limits (max 4 per player)
         if (blockType == Material.COBWEB) {
@@ -313,7 +313,7 @@ public class BlockListener implements Listener {
         // Update water/lava source count if applicable
         Material blockType = block.getType();
         if (blockType == Material.WATER || blockType == Material.LAVA) {
-            Team playerTeam = session.getTeam1().hasPlayer(player.getUniqueId()) ? session.getTeam1() : session.getTeam2();
+            Team playerTeam = session.getTeamRed().hasPlayer(player.getUniqueId()) ? session.getTeamRed() : session.getTeamBlue();
             if (playerTeam != null) {
                 int teamNum = playerTeam.getTeamNumber();
                 Map<Integer, Integer> counts = waterLavaSourceCount.get(sessionId);

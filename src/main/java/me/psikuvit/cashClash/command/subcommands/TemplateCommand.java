@@ -76,17 +76,17 @@ public class TemplateCommand extends AbstractArgCommand {
             if (action.equals("register")) {
                 out.addAll(Bukkit.getWorlds().stream().map(World::getName).filter(n -> n.toLowerCase(Locale.ROOT).startsWith(last)).toList());
             } else if (action.equals("set")) {
-                for (String t : List.of("spectator", "team1", "team2", "shop", "villager")) if (t.startsWith(last)) out.add(t);
+                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager")) if (t.startsWith(last)) out.add(t);
             }
             return out;
         }
 
         if (args.length == 4 && action.equals("set")) {
             String type = args[2].toLowerCase(Locale.ROOT);
-            if ("team1".equals(type) || "team2".equals(type)) {
+            if ("teamred".equals(type) || "teamblue".equals(type)) {
                 for (String idx : List.of("1","2","3","4")) if (idx.startsWith(last)) out.add(idx);
             } else if ("shop".equals(type)) {
-                for (String t : List.of("team1","team2")) if (t.startsWith(last)) out.add(t);
+                for (String t : List.of("teamred","teamblue")) if (t.startsWith(last)) out.add(t);
             }
             return out;
         }
@@ -211,12 +211,12 @@ public class TemplateCommand extends AbstractArgCommand {
         Messages.send(player, "<yellow>Shops: </yellow><gray>" + (tpl.getVillagersSpawnPoint().size() + "</gray>") );
 
         for (int i = 0; i < 3; i++) {
-            Messages.send(player, "<yellow>Team1 spawn #" + (i+1) + ": </yellow>" + (tpl.getTeam1Spawn(i) == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeam1Spawn(i)) + "</gray>"));
-            Messages.send(player, "<yellow>Team2 spawn #" + (i+1) + ": </yellow>" + (tpl.getTeam2Spawn(i) == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeam2Spawn(i)) + "</gray>"));
+            Messages.send(player, "<yellow>teamRed spawn #" + (i+1) + ": </yellow>" + (tpl.getTeamRedSpawn(i) == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeamRedSpawn(i)) + "</gray>"));
+            Messages.send(player, "<yellow>teamBlue spawn #" + (i+1) + ": </yellow>" + (tpl.getTeamBlueSpawn(i) == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeamBlueSpawn(i)) + "</gray>"));
         }
 
-        Messages.send(player, "<yellow>Shop Team1: </yellow>" + (tpl.getTeam1ShopSpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeam1ShopSpawn()) + "</gray>"));
-        Messages.send(player, "<yellow>Shop Team2: </yellow>" + (tpl.getTeam2ShopSpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeam2ShopSpawn()) + "</gray>"));
+        Messages.send(player, "<yellow>Shop teamRed: </yellow>" + (tpl.getTeamRedShopSpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeamRedShopSpawn()) + "</gray>"));
+        Messages.send(player, "<yellow>Shop teamBlue: </yellow>" + (tpl.getTeamBlueShopSpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeamBlueShopSpawn()) + "</gray>"));
     }
 
     private void templateSet(CommandSender sender, String[] args) {
@@ -226,7 +226,7 @@ public class TemplateCommand extends AbstractArgCommand {
         }
 
         if (args.length < 3) {
-            Messages.send(player, "<red>Usage: /cc template set <templateId> <spectator|team1|team2|shop|villager> [index/team]</red>");
+            Messages.send(player, "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager> [index/team]</red>");
             return;
         }
 
@@ -254,23 +254,23 @@ public class TemplateCommand extends AbstractArgCommand {
             }
             case "shop" -> {
                 if (args.length < 4) {
-                    Messages.send(player, "<red>Usage: /cc template set <templateId> shop <team1|team2></red>");
+                    Messages.send(player, "<red>Usage: /cc template set <templateId> shop <teamRed|teamBlue></red>");
                     return;
                 }
                 String team = args[3].toLowerCase(Locale.ROOT);
 
-                if ("team1".equals(team)) {
-                    tpl.setTeam1ShopSpawn(stored);
-                    Messages.send(player, "<green>Set shop spawn for team1 on template '" + templateId + "'</green>");
-                } else if ("team2".equals(team)) {
-                    tpl.setTeam2ShopSpawn(stored);
-                    Messages.send(player, "<green>Set shop spawn for team2 on template '" + templateId + "'</green>");
+                if ("teamred".equals(team)) {
+                    tpl.setTeamRedShopSpawn(stored);
+                    Messages.send(player, "<green>Set shop spawn for team Red on template '" + templateId + "'</green>");
+                } else if ("teamblue".equals(team)) {
+                    tpl.setTeamBlueShopSpawn(stored);
+                    Messages.send(player, "<green>Set shop spawn for team Blue on template '" + templateId + "'</green>");
                 } else {
-                    Messages.send(player, "<red>Invalid shop team. Use team1 or team2.</red>");
+                    Messages.send(player, "<red>Invalid shop team. Use teamRed or teamBlue.</red>");
                     return;
                 }
             }
-            case "team1", "team2" -> {
+            case "teamred", "teamblue" -> {
                 if (args.length < 4) { Messages.send(player, "<red>Usage: /cc template set <templateId> " + type + " <1|2|3></red>"); return; }
                 int idx;
                 try {
@@ -284,7 +284,8 @@ public class TemplateCommand extends AbstractArgCommand {
                     Messages.send(player, "<red>Index must be 1,2,3 or 4</red>");
                     return;
                 }
-                if ("team1".equals(type)) tpl.setTeam1Spawn(idx - 1, stored); else tpl.setTeam2Spawn(idx - 1, stored);
+                if ("teamred".equals(type)) tpl.setTeamRedSpawn(idx - 1, stored);
+                else tpl.setTeamBlueSpawn(idx - 1, stored);
                 Messages.send(player, "<green>Set " + type + " spawn #" + idx + " for template '" + templateId + "'</green>");
             }
             case "villager" -> {

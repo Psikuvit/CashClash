@@ -61,8 +61,8 @@ public class GameSession {
     private GameState state;
     private int currentRound;
 
-    private final Team team1;
-    private final Team team2;
+    private final Team teamRed;
+    private final Team teamBlue;
     private final Map<UUID, CashClashPlayer> players;
 
     private RoundData currentRoundData;
@@ -85,8 +85,8 @@ public class GameSession {
         this.arenaNumber = arenaNumber;
         this.state = GameState.WAITING;
         this.currentRound = 1;
-        this.team1 = new Team(1);
-        this.team2 = new Team(2);
+        this.teamRed = new Team(1);
+        this.teamBlue = new Team(2);
         this.players = new HashMap<>();
 
         this.startingCountdown = false;
@@ -135,12 +135,12 @@ public class GameSession {
         return currentRound;
     }
 
-    public Team getTeam1() {
-        return team1;
+    public Team getTeamRed() {
+        return teamRed;
     }
 
-    public Team getTeam2() {
-        return team2;
+    public Team getTeamBlue() {
+        return teamBlue;
     }
 
     public Collection<UUID> getPlayers() {
@@ -248,14 +248,14 @@ public class GameSession {
              if (countdownSecondsRemaining <= 0) {
                  Messages.broadcast(players.keySet(), "<green>Starting game now!</green>");
 
-                 players.keySet()
-                         .stream()
-                         .map(Bukkit::getPlayer)
-                         .filter(Objects::nonNull)
-                         .forEach(player -> {
-                             Team team = team1.hasPlayer(player.getUniqueId()) ? team1 : team2;
-                             Messages.send(player, "<yellow>You have been assigned to Team " + team.getColoredName() + "</yellow>");
-                         });
+                  players.keySet()
+                          .stream()
+                          .map(Bukkit::getPlayer)
+                          .filter(Objects::nonNull)
+                          .forEach(player -> {
+                              Team team = teamRed.hasPlayer(player.getUniqueId()) ? teamRed : teamBlue;
+                              Messages.send(player, "<yellow>You have been assigned to Team " + team.getColoredName() + "</yellow>");
+                          });
                  cancelStartCountdown();
                  start();
                  return;
@@ -361,7 +361,7 @@ public class GameSession {
      * Get a spawn location for a player (based on their team and available template spawns), adjusted for the session world.
      */
     public Location getSpawnForPlayer(UUID playerUuid) {
-        Team team = team1.hasPlayer(playerUuid) ? team1 : (team2.hasPlayer(playerUuid) ? team2 : null);
+        Team team = teamRed.hasPlayer(playerUuid) ? teamRed : (teamBlue.hasPlayer(playerUuid) ? teamBlue : null);
         if (team == null) return null;
 
         Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
@@ -372,7 +372,7 @@ public class GameSession {
 
         int idx = (int) (new Random().nextDouble() * 3);
 
-        Location templateLoc = team == team1 ? tpl.getTeam1Spawn(idx) : tpl.getTeam2Spawn(idx);
+        Location templateLoc = team == teamRed ? tpl.getTeamRedSpawn(idx) : tpl.getTeamBlueSpawn(idx);
         if (templateLoc == null) return gameWorld != null ? gameWorld.getSpawnLocation() : null;
 
         return LocationUtils.adjustLocationToWorld(templateLoc, gameWorld);
@@ -391,8 +391,8 @@ public class GameSession {
         players.values().forEach(p -> p.initializeRound(currentRound));
 
         //if (cashQuakeManager != null) cashQuakeManager.resetRoundEvents();
-        team1.resetForfeitVotes();
-        team2.resetForfeitVotes();
+        teamRed.resetForfeitVotes();
+        teamBlue.resetForfeitVotes();
 
         // Reset Coin Cleaver charge tracking for new round
         MythicItemManager.getInstance().resetCoinCleaverTrackingForSession(this);
@@ -468,10 +468,10 @@ public class GameSession {
             PlayerDataManager.getInstance().incWins(u);
         }
 
-        for (UUID u : team1.getPlayers()) team1.removePlayer(u);
-        for (UUID u : team2.getPlayers()) team2.removePlayer(u);
-        team1.resetForfeitVotes();
-        team2.resetForfeitVotes();
+        for (UUID u : teamRed.getPlayers()) teamRed.removePlayer(u);
+        for (UUID u : teamBlue.getPlayers()) teamBlue.removePlayer(u);
+        teamRed.resetForfeitVotes();
+        teamBlue.resetForfeitVotes();
         players.clear();
 
         Messages.debug("GAME", "Arena " + arenaNumber + " reset to WAITING state after game ended");
@@ -554,15 +554,15 @@ public class GameSession {
     }
 
     private Team calculateWinner() {
-        return getTeam1Coins() > getTeam2Coins() ? team1 : team2;
+        return getTeamRedCoins() > getTeamBlueCoins() ? teamRed : teamBlue;
     }
 
-    public long getTeam1Coins() {
-        return team1.getPlayers().stream().mapToLong(p -> players.get(p).getCoins()).sum();
+    public long getTeamRedCoins() {
+        return teamRed.getPlayers().stream().mapToLong(p -> players.get(p).getCoins()).sum();
     }
 
-    public long getTeam2Coins() {
-        return team2.getPlayers().stream().mapToLong(p -> players.get(p).getCoins()).sum();
+    public long getTeamBlueCoins() {
+        return teamBlue.getPlayers().stream().mapToLong(p -> players.get(p).getCoins()).sum();
     }
 
     public void addPlayer(Player player, int teamNumber) {
@@ -572,8 +572,8 @@ public class GameSession {
         CashClashPlayer ccPlayer = new CashClashPlayer(player);
         players.put(player.getUniqueId(), ccPlayer);
 
-        if (teamNumber == 1) team1.addPlayer(player.getUniqueId());
-        else team2.addPlayer(player.getUniqueId());
+        if (teamNumber == 1) teamRed.addPlayer(player.getUniqueId());
+        else teamBlue.addPlayer(player.getUniqueId());
         ArenaManager.getInstance().incrementPlayerCount(arenaNumber);
     }
 
@@ -584,24 +584,24 @@ public class GameSession {
         clearPlayerKit(player);
 
         players.remove(player.getUniqueId());
-        team1.removePlayer(player.getUniqueId());
-        team2.removePlayer(player.getUniqueId());
+        teamRed.removePlayer(player.getUniqueId());
+        teamBlue.removePlayer(player.getUniqueId());
         ArenaManager.getInstance().decrementPlayerCount(arenaNumber);
     }
 
     public Team getPlayerTeam(Player player) {
         UUID uuid = player.getUniqueId();
-        if (team1.hasPlayer(uuid)) return team1;
-        if (team2.hasPlayer(uuid)) return team2;
+        if (teamRed.hasPlayer(uuid)) return teamRed;
+        if (teamBlue.hasPlayer(uuid)) return teamBlue;
         return null;
     }
 
     public Team getOpposingTeam(Player player) {
-        return getPlayerTeam(player) == team1 ? team2 : team1;
+        return getPlayerTeam(player) == teamRed ? teamBlue : teamRed;
     }
 
     public Team getOpposingTeam(Team team) {
-        return team == team1 ? team2 : team1;
+        return team == teamRed ? teamBlue : teamRed;
     }
 
     public void requestForfeit(Player requester) {
@@ -681,7 +681,7 @@ public class GameSession {
     }
 
     private void notifyGameEnd(Team winner, Location finalSpawn) {
-        Team loser = (winner == team1) ? team2 : team1;
+        Team loser = (winner == teamRed) ? teamBlue : teamRed;
         String winnerList = winner.getPlayers().stream()
                 .map(uuid -> {
                     Player p = Bukkit.getPlayer(uuid);
@@ -756,8 +756,8 @@ public class GameSession {
     public void handleRejoinTimeout(UUID playerUuid) {
         CashClashPlayer ccp = players.remove(playerUuid);
         if (ccp != null) {
-            team1.removePlayer(playerUuid);
-            team2.removePlayer(playerUuid);
+            teamRed.removePlayer(playerUuid);
+            teamBlue.removePlayer(playerUuid);
             ArenaManager.getInstance().decrementPlayerCount(arenaNumber);
             Messages.debug("REJOIN", "Player " + playerUuid + " removed due to rejoin timeout");
         }
@@ -786,9 +786,9 @@ public class GameSession {
             players.put(uuid, newCcp);
 
             if (data.teamNumber() == 1) {
-                team1.addPlayer(uuid);
+                teamRed.addPlayer(uuid);
             } else {
-                team2.addPlayer(uuid);
+                teamBlue.addPlayer(uuid);
             }
 
             existingCcp = newCcp;
@@ -886,7 +886,7 @@ public class GameSession {
      */
     private void checkForceEndGame() {
         // If both teams have no players, end the game
-        if (team1.getPlayers().isEmpty() && team2.getPlayers().isEmpty()) {
+        if (teamRed.getPlayers().isEmpty() && teamBlue.getPlayers().isEmpty()) {
             Messages.debug("GAME", "Force ending game - no players remain");
             end();
             return;
@@ -894,7 +894,7 @@ public class GameSession {
 
         // If one team has no players and the game is active
         if (state != GameState.WAITING && state != GameState.ENDING) {
-            if (team1.getPlayers().isEmpty() || team2.getPlayers().isEmpty()) {
+            if (teamRed.getPlayers().isEmpty() || teamBlue.getPlayers().isEmpty()) {
                 Messages.broadcast(players.keySet(), "<yellow>Game ending - one team has no remaining players.</yellow>");
                 end();
             }

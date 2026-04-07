@@ -109,7 +109,7 @@ public class RejoinManager {
 
         // Determine team number
         Team playerTeam = session.getPlayerTeam(player);
-        int teamNumber = playerTeam == session.getTeam1() ? 1 : 2;
+        int teamNumber = playerTeam == session.getTeamRed() ? 1 : 2;
 
         // Clone inventory contents
         ItemStack[] inventoryContents = cloneItemArray(player.getInventory().getContents());

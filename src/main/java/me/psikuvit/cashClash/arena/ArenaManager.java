@@ -143,19 +143,19 @@ public class ArenaManager {
             // Load team spawns (up to 4 per team)
             for (int i = 0; i < 4; i++) {
                 if (cfg.contains("team1." + i)) {
-                    tpl.setTeam1Spawn(i, LocationUtils.deserializeLocation(cfg.getConfigurationSection("team1." + i)));
+                    tpl.setTeamRedSpawn(i, LocationUtils.deserializeLocation(cfg.getConfigurationSection("team1." + i)));
                 }
                 if (cfg.contains("team2." + i)) {
-                    tpl.setTeam2Spawn(i, LocationUtils.deserializeLocation(cfg.getConfigurationSection("team2." + i)));
+                    tpl.setTeamBlueSpawn(i, LocationUtils.deserializeLocation(cfg.getConfigurationSection("team2." + i)));
                 }
             }
 
             // Load shop spawns
             if (cfg.contains("shop.team1")) {
-                tpl.setTeam1ShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("shop.team1")));
+                tpl.setTeamRedShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("shop.team1")));
             }
-            if (cfg.contains("shop.team2")) {
-                tpl.setTeam2ShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("shop.team2")));
+            if (cfg.contains("shop.teamBlue")) {
+                tpl.setTeamBlueShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("shop.team2")));
             }
 
             // Load villager spawn points
@@ -173,12 +173,12 @@ public class ArenaManager {
 
             // Load CTF capture plate locations
             if (cfg.contains("ctf.capture-team1")) {
-                tpl.setCTFCaptureTeam1Plate(
+                tpl.setCTFCaptureTeamRedPlate(
                         LocationUtils.deserializeLocation(cfg.getConfigurationSection("ctf.capture-team1"))
                 );
             }
             if (cfg.contains("ctf.capture-team2")) {
-                tpl.setCTFCaptureTeam2Plate(LocationUtils.deserializeLocation(
+                tpl.setCTFCaptureTeamBluePlate(LocationUtils.deserializeLocation(
                         cfg.getConfigurationSection("ctf.capture-team2"))
                 );
             }
@@ -217,23 +217,23 @@ public class ArenaManager {
         }
 
         for (int i = 0; i < 4; i++) {
-            Location t1 = tpl.getTeam1Spawn(i);
+            Location t1 = tpl.getTeamRedSpawn(i);
             if (t1 != null) {
                 LocationUtils.serializeLocation(cfg, "team1." + i, t1);
             }
 
-            Location t2 = tpl.getTeam2Spawn(i);
+            Location t2 = tpl.getTeamBlueSpawn(i);
             if (t2 != null) {
                 LocationUtils.serializeLocation(cfg, "team2." + i, t2);
             }
         }
 
-        if (tpl.getTeam1ShopSpawn() != null) {
-            LocationUtils.serializeLocation(cfg, "shop.team1", tpl.getTeam1ShopSpawn());
+        if (tpl.getTeamRedShopSpawn() != null) {
+            LocationUtils.serializeLocation(cfg, "shop.team1", tpl.getTeamRedShopSpawn());
         }
 
-        if (tpl.getTeam2ShopSpawn() != null) {
-            LocationUtils.serializeLocation(cfg, "shop.team2", tpl.getTeam2ShopSpawn());
+        if (tpl.getTeamBlueShopSpawn() != null) {
+            LocationUtils.serializeLocation(cfg, "shop.team2", tpl.getTeamBlueShopSpawn());
         }
 
         // Save villager spawn points
@@ -246,11 +246,11 @@ public class ArenaManager {
         }
 
         // Save CTF capture plate locations
-        if (tpl.getCTFCaptureTeam1Plate() != null) {
-            LocationUtils.serializeLocation(cfg, "ctf.capture-team1", tpl.getCTFCaptureTeam1Plate());
+        if (tpl.getCTFCaptureTeamRedPlate() != null) {
+            LocationUtils.serializeLocation(cfg, "ctf.capture-teamRed", tpl.getCTFCaptureTeamRedPlate());
         }
-        if (tpl.getCTFCaptureTeam2Plate() != null) {
-            LocationUtils.serializeLocation(cfg, "ctf.capture-team2", tpl.getCTFCaptureTeam2Plate());
+        if (tpl.getCTFCaptureTeamBluePlate() != null) {
+            LocationUtils.serializeLocation(cfg, "ctf.capture-teamBlue", tpl.getCTFCaptureTeamBluePlate());
         }
 
         try {

@@ -46,8 +46,8 @@ public final class TabListManager {
         if (player == null || session == null || !player.isOnline()) return;
 
         int teamNumber = 0;
-        if (session.getTeam1().hasPlayer(player.getUniqueId())) teamNumber = 1;
-        else if (session.getTeam2().hasPlayer(player.getUniqueId())) teamNumber = 2;
+        if (session.getTeamRed().hasPlayer(player.getUniqueId())) teamNumber = 1;
+        else if (session.getTeamBlue().hasPlayer(player.getUniqueId())) teamNumber = 2;
 
         String prefix = teamNumber == 1 ? "<red>[R] </red>" : teamNumber == 2 ? "<blue>[B] </blue>" : "<gray>[?] </gray>";
         Component comp = Messages.parse(prefix + player.getName());

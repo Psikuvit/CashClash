@@ -583,7 +583,7 @@ public class GameListener implements Listener {
      * Total bonus is split evenly among all team members.
      */
     private void applyKillTeamSplitBonus(GameSession session, Player killer) {
-        Team killerTeam = session.getTeam1().hasPlayer(killer.getUniqueId()) ? session.getTeam1() : session.getTeam2();
+        Team killerTeam = session.getTeamRed().hasPlayer(killer.getUniqueId()) ? session.getTeamRed() : session.getTeamBlue();
         if (killerTeam == null) return;
 
         long totalBonus = ConfigManager.getInstance().getKillTeamSplitBonus();

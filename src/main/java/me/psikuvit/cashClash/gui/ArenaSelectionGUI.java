@@ -236,8 +236,8 @@ public class ArenaSelectionGUI extends AbstractGui {
         }
 
         // Determine the best team for the party
-        int t1size = session.getTeam1().getSize();
-        int t2size = session.getTeam2().getSize();
+        int t1size = session.getTeamRed().getSize();
+        int t2size = session.getTeamBlue().getSize();
         int t1available = capacityPerTeam - t1size;
         int t2available = capacityPerTeam - t2size;
 
@@ -333,8 +333,8 @@ public class ArenaSelectionGUI extends AbstractGui {
         GameManager gameManager = GameManager.getInstance();
 
         // Determine team - balanced assignment
-        int t1size = session.getTeam1().getSize();
-        int t2size = session.getTeam2().getSize();
+        int t1size = session.getTeamRed().getSize();
+        int t2size = session.getTeamBlue().getSize();
 
         int teamNumber;
         if (t1size > t2size && t2size < capacityPerTeam) {

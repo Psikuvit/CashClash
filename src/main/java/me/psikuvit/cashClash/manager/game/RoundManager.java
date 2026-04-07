@@ -84,16 +84,13 @@ public class RoundManager {
                 p.setFoodLevel(20);
                 p.setSaturation(20.0f);
 
-                // Refill water buckets during shopping phase
-                refillWaterBuckets(p);
-
-                int teamNum = team1.hasPlayer(uuid) ? 1 : (team2.hasPlayer(uuid) ? 2 : 0);
+                int teamNum = teamRed.hasPlayer(uuid) ? 1 : (teamBlue.hasPlayer(uuid) ? 2 : 0);
                 Location destTemplate = null;
 
-                if (teamNum == 1 && team1ShopTpl != null) {
-                    destTemplate = team1ShopTpl;
-                } else if (teamNum == 2 && team2ShopTpl != null) {
-                    destTemplate = team2ShopTpl;
+                if (teamNum == 1 && teamRedShopTpl != null) {
+                    destTemplate = teamRedShopTpl;
+                } else if (teamNum == 2 && teamBlueShopTpl != null) {
+                    destTemplate = teamBlueShopTpl;
                 }
 
                 // fallback to spectator spawn
@@ -323,17 +320,17 @@ public class RoundManager {
         if (session.getGamemode() != null && session.getGamemode().checkGameWinner()) {
             int winnerTeam = session.getGamemode().getWinningTeam();
             if (winnerTeam > 0) {
-                String winnerName = winnerTeam == 1 ? session.getTeam1().getName() : session.getTeam2().getName();
+                String winnerName = winnerTeam == 1 ? session.getTeamRed().getName() : session.getTeamBlue().getName();
                 SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
                 Messages.broadcastWithPrefix(session.getPlayers(), 
                     "<gold><bold>" + winnerName + " Team Wins the Round!</bold></gold>");
                 // Update loss streaks for this round
                 if (winnerTeam == 1) {
-                    session.getTeam1().resetLossStreak();
-                    session.getTeam2().incrementLossStreak();
+                    session.getTeamRed().resetLossStreak();
+                    session.getTeamBlue().incrementLossStreak();
                 } else {
-                    session.getTeam2().resetLossStreak();
-                    session.getTeam1().incrementLossStreak();
+                    session.getTeamBlue().resetLossStreak();
+                    session.getTeamRed().incrementLossStreak();
                 }
                 endCombatPhase();
                 return;
@@ -341,25 +338,25 @@ public class RoundManager {
         }
 
         // Check if one team is eliminated
-        int team1Alive = (int) session.getTeam1().getPlayers().stream()
+        int teamRedAlive = (int) session.getTeamRed().getPlayers().stream()
             .filter(uuid -> session.getCurrentRoundData().isAlive(uuid))
             .count();
 
-        int team2Alive = (int) session.getTeam2().getPlayers().stream()
+        int teamBlueAlive = (int) session.getTeamBlue().getPlayers().stream()
             .filter(uuid -> session.getCurrentRoundData().isAlive(uuid))
             .count();
 
-        if (team1Alive == 0) {
+        if (teamRedAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
-            Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team 2 wins the round!</bold></red>");
-            session.getTeam2().resetLossStreak();
-            session.getTeam1().incrementLossStreak();
+            Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Blue Team wins the round!</bold></red>");
+            session.getTeamBlue().resetLossStreak();
+            session.getTeamRed().incrementLossStreak();
             endCombatPhase();
-        } else if (team2Alive == 0) {
+        } else if (teamBlueAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
-            Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team 1 wins the round!</bold></red>");
-            session.getTeam1().resetLossStreak();
-            session.getTeam2().incrementLossStreak();
+            Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Red Team wins the round!</bold></red>");
+            session.getTeamRed().resetLossStreak();
+            session.getTeamBlue().incrementLossStreak();
             endCombatPhase();
         }
     }
@@ -376,18 +373,20 @@ public class RoundManager {
         // Determine which team lost based on their loss streak
         int team1Streak = session.getTeam1().getLossStreak();
         int team2Streak = session.getTeam2().getLossStreak();
+        int teamRedStreak = session.getTeamRed().getLossStreak();
+        int teamBlueStreak = session.getTeamBlue().getLossStreak();
         
-        if (team1Streak > 0 && team2Streak == 0) {
-            losingTeam = session.getTeam1();
-        } else if (team2Streak > 0 && team1Streak == 0) {
-            losingTeam = session.getTeam2();
+        if (teamRedStreak > 0 && teamBlueStreak == 0) {
+            losingTeam = session.getTeamRed();
+        } else if (teamBlueStreak > 0 && teamRedStreak == 0) {
+            losingTeam = session.getTeamBlue();
         } else {
             // Both teams have the same streak (shouldn't happen, but handle gracefully)
             return;
         }
         
         long bonus = 0;
-        int streak = Math.max(team1Streak, team2Streak);
+        int streak = Math.max(teamRedStreak, teamBlueStreak);
         
         switch (streak) {
             case 1 -> bonus = config.getLossStreak1Bonus();

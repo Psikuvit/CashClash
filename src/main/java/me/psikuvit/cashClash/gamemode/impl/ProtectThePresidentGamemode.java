@@ -262,10 +262,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * Select random presidents for each team
      */
     private void selectPresidents() {
-        presidents.put(1, session.getTeam1().getPlayers().stream().findAny().orElse(null));
+        presidents.put(1, session.getTeamRed().getPlayers().stream().findAny().orElse(null));
         Messages.debug("[PTP] Team 1 President UUID: " + presidents.get(1));
 
-        presidents.put(2, session.getTeam2().getPlayers().stream().findAny().orElse(null));
+        presidents.put(2, session.getTeamBlue().getPlayers().stream().findAny().orElse(null));
         Messages.debug("[PTP] Team 2 President UUID: " + presidents.get(2));
 
         Player pres1 = Bukkit.getPlayer(presidents.get(1));
@@ -446,7 +446,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Every 2 kills grant bonus split among team
         if (killCount % KILL_BONUS_THRESHOLD == 0) {
             long bonusPerPlayer = KILL_BONUS_AMOUNT / 4;
-            Team teamObj = team == 1 ? session.getTeam1() : session.getTeam2();
+            Team teamObj = team == 1 ? session.getTeamRed() : session.getTeamBlue();
 
             Messages.debug("[PTP] Team " + team + " reached " + killCount + " kills - Awarding bonus: " + bonusPerPlayer + " per player");
 

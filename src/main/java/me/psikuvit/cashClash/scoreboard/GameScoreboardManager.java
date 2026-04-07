@@ -284,21 +284,21 @@ public class GameScoreboardManager {
         result = result.replace("{time}", formatTime(timeRemaining));
         result = result.replace("{time_seconds}", String.valueOf(timeRemaining));
 
-        result = result.replace("{team1_coins}", formatCoins(session.getTeam1Coins()));
-        result = result.replace("{team2_coins}", formatCoins(session.getTeam2Coins()));
+        result = result.replace("{teamRed_coins}", formatCoins(session.getTeamRedCoins()));
+        result = result.replace("{teamBlue_coins}", formatCoins(session.getTeamBlueCoins()));
 
         Player viewer = Bukkit.getPlayer(viewerUuid);
         if (viewer != null) {
             Team playerTeam = session.getPlayerTeam(viewer);
             if (playerTeam != null) {
                 result = result.replace("{your_team}", String.valueOf(playerTeam.getTeamNumber()));
-                long teamCoins = playerTeam.getTeamNumber() == 1 ? session.getTeam1Coins() : session.getTeam2Coins();
+                long teamCoins = playerTeam.getTeamNumber() == 1 ? session.getTeamRedCoins() : session.getTeamBlueCoins();
                 result = result.replace("{your_team_coins}", formatCoins(teamCoins));
                 result = result.replace("{team_ready}", playerTeam.isTeamReady() ? "Yes" : "No");
 
                 Team enemyTeam = session.getOpposingTeam(playerTeam);
                 result = result.replace("{enemy_team}", String.valueOf(enemyTeam.getTeamNumber()));
-                long enemyCoins = enemyTeam.getTeamNumber() == 1 ? session.getTeam1Coins() : session.getTeam2Coins();
+                long enemyCoins = enemyTeam.getTeamNumber() == 1 ? session.getTeamRedCoins() : session.getTeamBlueCoins();
                 result = result.replace("{enemy_team_coins}", formatCoins(enemyCoins));
                 result = result.replace("{enemy_team_ready}", enemyTeam.isTeamReady() ? "Yes" : "No");
 
@@ -330,12 +330,12 @@ public class GameScoreboardManager {
             result = result.replace("{round_kills}", String.valueOf(roundData.getKills(viewerUuid)));
 
             // Team alive counts
-            Team team1 = session.getTeam1();
-            Team team2 = session.getTeam2();
-            long team1Alive = team1.getPlayers().stream().filter(roundData::isAlive).count();
-            long team2Alive = team2.getPlayers().stream().filter(roundData::isAlive).count();
-            result = result.replace("{team1_alive}", String.valueOf(team1Alive));
-            result = result.replace("{team2_alive}", String.valueOf(team2Alive));
+            Team teamRed = session.getTeamRed();
+            Team teamBlue = session.getTeamBlue();
+            long teamRedAlive = teamRed.getPlayers().stream().filter(roundData::isAlive).count();
+            long teamBlueAlive = teamBlue.getPlayers().stream().filter(roundData::isAlive).count();
+            result = result.replace("{teamRed_alive}", String.valueOf(teamRedAlive));
+            result = result.replace("{teamBlue_alive}", String.valueOf(teamBlueAlive));
 
             // Player's team alive count
             if (viewer != null) {
@@ -352,8 +352,8 @@ public class GameScoreboardManager {
             }
         } else {
             result = result.replace("{round_kills}", "0");
-            result = result.replace("{team1_alive}", "0");
-            result = result.replace("{team2_alive}", "0");
+            result = result.replace("{teamRed_alive}", "0");
+            result = result.replace("{teamBlue_alive}", "0");
             result = result.replace("{your_team_alive}", "0");
             result = result.replace("{enemy_team_alive}", "0");
         }
@@ -362,21 +362,15 @@ public class GameScoreboardManager {
 
         // CTF capture counters and circles
         if (session.getGamemode() instanceof CaptureTheFlagGamemode ctf) {
-            int team1Captures = ctf.getFlagCaptures(1);
-            int team2Captures = ctf.getFlagCaptures(2);
-            result = result.replace("{team1_captures}", String.valueOf(team1Captures));
-            result = result.replace("{team2_captures}", String.valueOf(team2Captures));
+            int teamRedCaptures = ctf.getFlagCaptures(1);
+            int teamBlueCaptures = ctf.getFlagCaptures(2);
+            result = result.replace("{teamRed_captures}", String.valueOf(teamRedCaptures));
+            result = result.replace("{teamBlue_captures}", String.valueOf(teamBlueCaptures));
 
-            // Create filled circles for captures (◐ = partial, ◑ = filled)
-            String team1Circle = getFlagCaptureCircles(team1Captures);
-            String team2Circle = getFlagCaptureCircles(team2Captures);
-            result = result.replace("{team1_capture_circles}", team1Circle);
-            result = result.replace("{team2_capture_circles}", team2Circle);
-        } else {
-            result = result.replace("{team1_captures}", "0");
-            result = result.replace("{team2_captures}", "0");
-            result = result.replace("{team1_capture_circles}", "");
-            result = result.replace("{team2_capture_circles}", "");
+            String teamRedCircle = getFlagCaptureCircles(teamRedCaptures);
+            String teamBlueCircle = getFlagCaptureCircles(teamBlueCaptures);
+            result = result.replace("{teamRed_capture_circles}", teamRedCircle);
+            result = result.replace("{teamBlue_capture_circles}", teamBlueCircle);
         }
 
         return result;

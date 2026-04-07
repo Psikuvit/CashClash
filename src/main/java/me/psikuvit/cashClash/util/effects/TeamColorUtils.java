@@ -15,8 +15,8 @@ import java.util.UUID;
  */
 public final class TeamColorUtils {
 
-    private static final String TEAM1_NAME = "cc_team1";
-    private static final String TEAM2_NAME = "cc_team2";
+    private static final String TEAM_RED_NAME = "cc_team_red";
+    private static final String TEAM_BLUE_NAME = "cc_team_blue";
 
     private TeamColorUtils() {
         throw new AssertionError("Nope.");
@@ -28,19 +28,19 @@ public final class TeamColorUtils {
      * @param board   the scoreboard to setup teams on
      */
     private static void setupTeams(Scoreboard board) {
-        Team existing1 = board.getTeam(TEAM1_NAME);
-        if (existing1 != null) existing1.unregister();
+        Team existingRed = board.getTeam(TEAM_RED_NAME);
+        if (existingRed != null) existingRed.unregister();
 
-        Team existing2 = board.getTeam(TEAM2_NAME);
-        if (existing2 != null) existing2.unregister();
+        Team existingBlue = board.getTeam(TEAM_BLUE_NAME);
+        if (existingBlue != null) existingBlue.unregister();
 
-        Team team1 = board.registerNewTeam(TEAM1_NAME);
-        team1.color(NamedTextColor.RED);
-        team1.prefix(Component.empty());
+        Team teamRed = board.registerNewTeam(TEAM_RED_NAME);
+        teamRed.color(NamedTextColor.RED);
+        teamRed.prefix(Component.empty());
 
-        Team team2 = board.registerNewTeam(TEAM2_NAME);
-        team2.color(NamedTextColor.BLUE);
-        team2.prefix(Component.empty());
+        Team teamBlue = board.registerNewTeam(TEAM_BLUE_NAME);
+        teamBlue.color(NamedTextColor.BLUE);
+        teamBlue.prefix(Component.empty());
     }
 
     /**
@@ -53,10 +53,10 @@ public final class TeamColorUtils {
         if (board == null || session == null) return;
         setupTeams(board);
 
-        Team t1 = board.getTeam(TEAM1_NAME);
-        Team t2 = board.getTeam(TEAM2_NAME);
+        Team tRed = board.getTeam(TEAM_RED_NAME);
+        Team tBlue = board.getTeam(TEAM_BLUE_NAME);
 
-        if (t1 == null || t2 == null) {
+        if (tRed == null || tBlue == null) {
             return;
         }
 
@@ -66,13 +66,13 @@ public final class TeamColorUtils {
 
             String entry = p.getName();
 
-            t1.removeEntry(entry);
-            t2.removeEntry(entry);
+            tRed.removeEntry(entry);
+            tBlue.removeEntry(entry);
 
-            if (session.getTeam1().hasPlayer(uuid)) {
-                t1.addEntry(entry);
-            } else if (session.getTeam2().hasPlayer(uuid)) {
-                t2.addEntry(entry);
+            if (session.getTeamRed().hasPlayer(uuid)) {
+                tRed.addEntry(entry);
+            } else if (session.getTeamBlue().hasPlayer(uuid)) {
+                tBlue.addEntry(entry);
             }
         }
     }
