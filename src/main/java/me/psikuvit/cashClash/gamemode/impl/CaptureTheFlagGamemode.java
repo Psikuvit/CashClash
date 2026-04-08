@@ -5,8 +5,10 @@ import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -19,10 +21,12 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
 import org.joml.Quaternionf;
+import org.jspecify.annotations.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Capture the Flag Gamemode
@@ -36,9 +40,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private static final int GLOW_INTERVAL_TICKS = 100; // 5 seconds
     private static final long CAPTURE_BONUS = 15000;
     private static final long PLATE_ACTIVATION_MS = 3000; // 3 seconds to capture on plate
+    private static final double BANNER_ORBIT_RADIUS = 0.7; // Distance from plate center
+    private static final double BANNER_ROTATION_SPEED = 4.0; // Degrees per tick
     private final Map<Integer, Integer> flagCaptures;
     private final Map<UUID, Long> carryStartTime;
     private final Map<UUID, Long> platePressStartTime; // Track when player starts standing on plate
+    private final Map<String, Double> bannerAngles; // Track rotation angle for each banner
     private UUID teamRedFlagHolder;
     private UUID teamBlueFlagHolder;
     private long teamRedFlagCaptureTime;
@@ -62,6 +69,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.flagCaptures = new HashMap<>(2);
         this.carryStartTime = new HashMap<>();
         this.platePressStartTime = new HashMap<>();
+        this.bannerAngles = new ConcurrentHashMap<>();
         this.teamRedFlagHolder = null;
         this.teamBlueFlagHolder = null;
         this.teamRedFlagCaptureTime = 0;
@@ -81,6 +89,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Pre-populate capture map
         flagCaptures.put(1, 0);
         flagCaptures.put(2, 0);
+
+        // Initialize banner angles
+        bannerAngles.put("red", 0.0);
+        bannerAngles.put("blue", 0.0);
     }
 
     @Override
@@ -355,16 +367,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Check if a player is standing on a block
+     * Check if a player is standing on a specific block by checking distance to the block location
      */
-    private boolean isPlayerOnBlock(Player player, Location blockLoc) {
-        if (blockLoc == null) return false;
-        
-        Location playerLoc = player.getLocation();
-        // Check if player is within 0.5 blocks of the block's center
-        return Math.abs(playerLoc.getX() - blockLoc.getX() - 0.5) <= 0.5 &&
-               Math.abs(playerLoc.getY() - blockLoc.getY() - 1) <= 1.0 &&
-               Math.abs(playerLoc.getZ() - blockLoc.getZ() - 0.5) <= 0.5;
+    private boolean isPlayerOnPlate(Player player, Location blockLoc) {
+        if (blockLoc == null || player.getWorld() != blockLoc.getWorld()) return false;
+
+        // Check if player is within 1 block horizontally of the plate center
+        return player.getLocation().distance(blockLoc.clone().add(0.5, 0, 0.5)) <= 0.7;
     }
 
     /**
@@ -427,8 +436,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
             // Move banner to player head
             moveBannerToPlayer(teamRedBannerDisplay, player);
         } else {
-            team2FlagHolder = playerUuid;
-            team2FlagCaptureTime = now;
             teamBlueFlagHolder = playerUuid;
             teamBlueFlagCaptureTime = now;
             carryStartTime.put(playerUuid, now);
@@ -512,7 +519,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         // Spawn banner display above the pressure plate
-        Location displayLoc = location.clone().add(0.5, 1.5, 0.5);
+        Location displayLoc = location.clone().add(0, 1.5, 0);
         BlockDisplay banner = world.spawn(displayLoc, BlockDisplay.class);
         banner.setBlock(Bukkit.createBlockData(bannerType));
         banner.setTeleportDuration(0);
@@ -523,7 +530,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Move banner to float above player's head
+     * Move banner to float above player's head and add as passenger
      */
     private void moveBannerToPlayer(BlockDisplay banner, Player player) {
         if (banner == null || banner.isDead() || !player.isOnline()) {
@@ -532,16 +539,22 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         Location headLoc = player.getEyeLocation().add(0, 1, 0);
         banner.teleport(headLoc);
-        Messages.debug("[CTF] Moved banner to " + player.getName() + "'s head");
+
+        // Add banner as passenger to the player
+        player.addPassenger(banner);
+        Messages.debug("[CTF] Moved banner to " + player.getName() + "'s head and added as passenger");
     }
 
     /**
-     * Move banner to float above a location (plate)
+     * Move banner to float above a location (plate) and remove from passengers
      */
     private void moveBannerToLocation(BlockDisplay banner, Location location) {
         if (banner == null || banner.isDead() || location == null) {
             return;
         }
+
+        // Remove from any passengers
+        banner.getPassengers().forEach(banner::removePassenger);
 
         Location displayLoc = location.clone().add(0.5, 1.5, 0.5);
         banner.teleport(displayLoc);
@@ -564,32 +577,62 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Rotate a single banner
+     * Rotate a single banner in a perfect circle around the plate
+     * Banner faces the direction it's moving (tangent to the circle)
      */
-    private void rotateBanner(BlockDisplay banner) {
-        if (banner == null || banner.isDead()) {
-            return;
+    private void rotateBanner(BlockDisplay banner, Location plateLocation, boolean isTeamRed) {
+        if (banner == null || banner.isDead() || plateLocation == null) return;
+        // Skip rotation if banner is being carried
+        if (isTeamRed && teamRedFlagHolder != null) return;
+        if (!isTeamRed && teamBlueFlagHolder != null) return;
+
+        String bannerKey = isTeamRed ? "red" : "blue";
+        double currentAngle = bannerAngles.getOrDefault(bannerKey, 0.0);
+
+        // Increment angle for rotation
+        double newAngleDegrees = currentAngle + BANNER_ROTATION_SPEED;
+        if (newAngleDegrees >= 360) {
+            newAngleDegrees -= 360;
         }
+        bannerAngles.put(bannerKey, newAngleDegrees);
 
-        // Get current transformation
-        Transformation current = banner.getTransformation();
+        // Convert to radians for trigonometry
+        double angleInRadians = Math.toRadians(newAngleDegrees);
 
-        // Rotate around Y axis (vertical rotation) - 2 degrees per tick = 1 full rotation every 180 ticks (9 seconds)
+        // Calculate position on circle around the plate
+        double offsetX = BANNER_ORBIT_RADIUS * Math.cos(angleInRadians);
+        double offsetZ = BANNER_ORBIT_RADIUS * Math.sin(angleInRadians);
+
+        Location bannerPos = plateLocation.clone().add(offsetX, 1.5, offsetZ);
+        banner.teleport(bannerPos);
+
+        Transformation transform = getTransformation(banner, angleInRadians);
+
+        banner.setTransformation(transform);
+
+        // Spawn team-colored particles around the orbit path
+        Color teamColor = isTeamRed ? Color.RED : Color.BLUE;
+        for (int i = 0; i < 8; i++) {
+            double particleAngle = Math.PI * 2 * i / 8;
+            double particleX = BANNER_ORBIT_RADIUS * Math.cos(particleAngle);
+            double particleZ = BANNER_ORBIT_RADIUS * Math.sin(particleAngle);
+            ParticleUtils.spawnDust(plateLocation.clone().add(particleX, 0.1, particleZ), teamColor, 1, 1, 0);
+        }
+    }
+
+    private @NonNull Transformation getTransformation(BlockDisplay banner, double angleInRadians) {
+        double facingAngleRadians = angleInRadians + Math.PI / 2;
+
+        // Create rotation quaternion to face the movement direction
         Quaternionf rotation = new Quaternionf();
-        float angle = (float) Math.toRadians(2); // 2 degrees per tick
-        rotation.rotateY(angle);
+        rotation.rotateY((float) facingAngleRadians);
 
-        // Apply the rotation to the existing rotation
-        Quaternionf newRotation = new Quaternionf(current.getLeftRotation()).mul(rotation);
-
-        Transformation newTransform = new Transformation(
-                current.getTranslation(),
-                newRotation,
-                current.getScale(),
-                current.getRightRotation()
+        return new Transformation(
+                banner.getTransformation().getTranslation(),
+                rotation,
+                banner.getTransformation().getScale(),
+                banner.getTransformation().getRightRotation()
         );
-
-        banner.setTransformation(newTransform);
     }
 
     public boolean isFlagHeld(int teamNumber) {
