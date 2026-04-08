@@ -46,6 +46,7 @@ import org.bukkit.entity.Trident;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -53,8 +54,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
@@ -606,15 +607,19 @@ public class GameListener implements Listener {
         }
     }
 
-    // ==================== CTF FLAG PICKUP ====================
+    // ==================== CTF FLAG PICKUP (Pressure Plate) ====================
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void onPlayerMove(PlayerMoveEvent event) {
+    public void onPlayerInteractPressurePlate(PlayerInteractEvent event) {
+        if (event.getAction() != Action.PHYSICAL) return;
+
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
+        Messages.debug("Started plate check");
         if (session == null || session.getState() != GameState.COMBAT) return;
         if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return;
+        Messages.debug("Gamemode is Capture The Flag, checking flag pickup for " + player.getName());
 
         // Check if player walked over enemy flag base
         Team playerTeam = session.getPlayerTeam(player);
@@ -625,17 +630,15 @@ public class GameListener implements Listener {
 
         // Check if flag is not already held
         if (gamemode.isFlagHeld(enemyTeamNumber)) return;
+        Messages.debug("Flag not held, checking for pickup");
 
         // Get flag base location
         Location flagBase = gamemode.getFlagBase(enemyTeamNumber);
         if (flagBase == null) return;
 
-        // Check if player is within 1 block of flag base
-        Location playerLoc = player.getLocation();
-        if (playerLoc.distance(flagBase) <= 1.0) {
-            // Flag picked up!
-            gamemode.flagPickup(player, enemyTeamNumber);
-        }
+        // Flag picked up!
+        gamemode.flagPickup(player, enemyTeamNumber);
+        Messages.debug("Flag picked up!");
     }
 }
 
