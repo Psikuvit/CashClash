@@ -5,6 +5,7 @@ package me.psikuvit.cashClash.game;
  */
 public enum GameState {
     WAITING,
+    BUFF_SELECTION,
     SHOPPING,
     COMBAT,
     ENDING;
