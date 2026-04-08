@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
@@ -44,45 +45,75 @@ public class RoundManager {
     public void startShoppingPhase(int roundNumber) {
         Messages.debug("GAME", "Starting shopping phase for round " + roundNumber + " in session " + session.getSessionId());
 
-        // For Protect the President, run buff selection phase first (round 1 only during onGameStart, but also after each round)
+        // For Protect the President, run buff selection phase first
         if (session.getGamemode() instanceof ProtectThePresidentGamemode) {
-            startBuffSelectionPhase(roundNumber);
+            startPhase(roundNumber, GameState.BUFF_SELECTION);
             return;
         }
 
-        ConfigManager config = ConfigManager.getInstance();
-        timeRemaining = config.getShoppingPhaseDuration();
+        // Run shopping phase directly
+        startPhase(roundNumber, GameState.SHOPPING);
+    }
 
-        // Apply loss streak bonuses at start of shopping phase (round 2+)
-        if (roundNumber > 1) {
-            applyLossStreakBonuses();
+    /**
+     * Common phase startup logic.
+     * Handles setup for both buff selection and shopping phases.
+     * Teleports players, sets up the environment, and starts the appropriate timer.
+     */
+    private void startPhase(int roundNumber, GameState phaseType) {
+        if (phaseTask != null) {
+            phaseTask.cancel();
+            phaseTask = null;
         }
 
-        Messages.broadcastWithPrefix(session.getPlayers(), "<yellow><bold>Round " + roundNumber + " - Shopping Phase!</bold></yellow>");
-        Messages.broadcastWithPrefix(session.getPlayers(), "<gray>You have <yellow>" + timeRemaining + " seconds </yellow><gray>to shop!</gray>");
+        // Set duration based on phase type
+        if (phaseType == GameState.BUFF_SELECTION) {
+            timeRemaining = 15; // 15 seconds for buff selection
+        } else {
+            ConfigManager config = ConfigManager.getInstance();
+            timeRemaining = config.getShoppingPhaseDuration();
+        }
 
-        Team team1 = session.getTeam1();
-        Team team2 = session.getTeam2();
+        // Broadcast phase messages
+        if (phaseType == GameState.BUFF_SELECTION) {
+            Messages.broadcastWithPrefix(session.getPlayers(), "<yellow><bold>Round " + roundNumber + " - Buff Selection Phase!</bold></yellow>");
+            Messages.broadcastWithPrefix(session.getPlayers(), "<gold>Presidents: Right-click an item to select your buff!</gold>");
+            Messages.broadcastWithPrefix(session.getPlayers(), "<gray>You have <yellow>15 seconds </yellow><gray>to select!</gray>");
+        } else {
+            // Apply loss streak bonuses at start of shopping phase (round 2+)
+            if (roundNumber > 1) {
+                applyLossStreakBonuses();
+            }
+            Messages.broadcastWithPrefix(session.getPlayers(), "<yellow><bold>Round " + roundNumber + " - Shopping Phase!</bold></yellow>");
+            Messages.broadcastWithPrefix(session.getPlayers(), "<gray>You have <yellow>" + timeRemaining + " seconds </yellow><gray>to shop!</gray>");
+        }
+
+        // Teleport all players to their team's shop area
+        Team teamRed = session.getTeamRed();
+        Team teamBlue = session.getTeamBlue();
 
         Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
         if (arena != null && session.getGameWorld() != null) {
             TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
             World copiedWorld = session.getGameWorld();
 
-            Location team1ShopTpl = tpl.getTeam1ShopSpawn();
-            Location team2ShopTpl = tpl.getTeam2ShopSpawn();
+            Location teamRedShopTpl = tpl.getTeamRedShopSpawn();
+            Location teamBlueShopTpl = tpl.getTeamBlueShopSpawn();
 
             for (UUID uuid : session.getPlayers()) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p == null || !p.isOnline()) continue;
 
-                // Full heal health and hunger at start of shopping phase
-                AttributeInstance maxHealthAttr = p.getAttribute(Attribute.MAX_HEALTH);
-                if (maxHealthAttr != null) {
-                    p.setHealth(maxHealthAttr.getValue());
+                // For shopping phase: heal and refill
+                if (phaseType == GameState.SHOPPING) {
+                    AttributeInstance maxHealthAttr = p.getAttribute(Attribute.MAX_HEALTH);
+                    if (maxHealthAttr != null) {
+                        p.setHealth(maxHealthAttr.getValue());
+                    }
+                    p.setFoodLevel(20);
+                    p.setSaturation(20.0f);
+                    refillWaterBuckets(p);
                 }
-                p.setFoodLevel(20);
-                p.setSaturation(20.0f);
 
                 int teamNum = teamRed.hasPlayer(uuid) ? 1 : (teamBlue.hasPlayer(uuid) ? 2 : 0);
                 Location destTemplate = null;
@@ -93,101 +124,35 @@ public class RoundManager {
                     destTemplate = teamBlueShopTpl;
                 }
 
-                // fallback to spectator spawn
                 if (destTemplate == null) {
                     Messages.send(p, "<red>Your team's shopping area is not set. Teleporting to spectator area.</red>");
                     destTemplate = tpl.getSpectatorSpawn();
                 }
 
-                // Adjust the location to the copied world
                 if (destTemplate != null) {
                     Location dest = LocationUtils.adjustLocationToWorld(destTemplate, copiedWorld);
                     p.setGameMode(GameMode.SURVIVAL);
                     p.teleport(dest);
-                    // Close inventory/shop when teleporting to shopping phase
                     p.closeInventory();
-                    Messages.send(p, "<yellow>Teleported to your team's shopping area.</yellow>");
+                    if (phaseType == GameState.SHOPPING) {
+                        Messages.send(p, "<yellow>Teleported to your team's shopping area.</yellow>");
+                    }
                 }
             }
         }
 
-        // Start countdown
-        phaseTask = SchedulerUtils.runTaskTimer(() -> {
-            if (team1.isTeamReady() && team2.isTeamReady()) {
-                Messages.broadcastWithPrefix(session.getPlayers(), "<green>Both teams are ready! Ending shopping phase early.</green>");
-                endShoppingPhase();
-                return;
-            }
-            timeRemaining--;
-
-            if (timeRemaining <= 3 && timeRemaining > 0) {
-                SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
-            }
-
-            if (timeRemaining <= 0) {
-                endShoppingPhase();
-            } else if (timeRemaining <= 10 || timeRemaining % 30 == 0) {
-                Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>" + timeRemaining + " seconds remaining!</yellow>");
-            }
-        }, 0, 20L); // Run every second
+        // Start the appropriate phase timer
+        if (phaseType == GameState.BUFF_SELECTION) {
+            startBuffSelectionTimer(roundNumber);
+        } else {
+            startShoppingTimer(roundNumber, teamRed, teamBlue);
+        }
     }
 
     /**
-     * 15-second buff selection phase for Protect the President gamemode.
-     * During this phase, presidents select their buffs but players cannot buy items.
+     * Timer logic for buff selection phase
      */
-    private void startBuffSelectionPhase(int roundNumber) {
-        Messages.debug("GAME", "Starting buff selection phase for round " + roundNumber);
-
-        if (phaseTask != null) {
-            phaseTask.cancel();
-            phaseTask = null;
-        }
-
-        timeRemaining = 15; // 15 seconds for buff selection
-
-        Messages.broadcastWithPrefix(session.getPlayers(), "<yellow><bold>Round " + roundNumber + " - Buff Selection Phase!</bold></yellow>");
-        Messages.broadcastWithPrefix(session.getPlayers(), "<gold>Presidents: Right-click an item to select your buff!</gold>");
-        Messages.broadcastWithPrefix(session.getPlayers(), "<gray>You have <yellow>15 seconds </yellow><gray>to select!</gray>");
-
-        Team team1 = session.getTeam1();
-        Team team2 = session.getTeam2();
-
-        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
-        if (arena != null && session.getGameWorld() != null) {
-            TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
-            World copiedWorld = session.getGameWorld();
-
-            Location team1ShopTpl = tpl.getTeam1ShopSpawn();
-            Location team2ShopTpl = tpl.getTeam2ShopSpawn();
-
-            for (UUID uuid : session.getPlayers()) {
-                Player p = Bukkit.getPlayer(uuid);
-                if (p == null || !p.isOnline()) continue;
-
-                int teamNum = team1.hasPlayer(uuid) ? 1 : (team2.hasPlayer(uuid) ? 2 : 0);
-                Location destTemplate = null;
-
-                if (teamNum == 1 && team1ShopTpl != null) {
-                    destTemplate = team1ShopTpl;
-                } else if (teamNum == 2 && team2ShopTpl != null) {
-                    destTemplate = team2ShopTpl;
-                }
-
-                if (destTemplate == null) {
-                    destTemplate = tpl.getSpectatorSpawn();
-                }
-
-                if (destTemplate != null) {
-                    Location dest = LocationUtils.adjustLocationToWorld(destTemplate, copiedWorld);
-                    p.setGameMode(GameMode.SURVIVAL);
-                    p.teleport(dest);
-                    p.closeInventory();
-                }
-            }
-        }
-
-        // Start countdown for buff selection
+    private void startBuffSelectionTimer(int roundNumber) {
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
             timeRemaining--;
 
@@ -203,6 +168,34 @@ public class RoundManager {
         }, 0, 20L);
     }
 
+    /**
+     * Timer logic for shopping phase
+     */
+    private void startShoppingTimer(int roundNumber, Team teamRed, Team teamBlue) {
+        phaseTask = SchedulerUtils.runTaskTimer(() -> {
+            if (teamRed.isTeamReady() && teamBlue.isTeamReady()) {
+                Messages.broadcastWithPrefix(session.getPlayers(), "<green>Both teams are ready! Ending shopping phase early.</green>");
+                endShoppingPhase();
+                return;
+            }
+            timeRemaining--;
+
+            if (timeRemaining <= 3 && timeRemaining > 0) {
+                SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
+            }
+
+            if (timeRemaining <= 0) {
+                endShoppingPhase();
+            } else if (timeRemaining <= 10 || timeRemaining % 30 == 0) {
+                Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>" + timeRemaining + " seconds remaining!</yellow>");
+            }
+        }, 0, 20L);
+    }
+
+    /**
+     * Called when buff selection phase ends.
+     * Transitions to shopping phase.
+     */
     private void endBuffSelectionPhase(int roundNumber) {
         if (phaseTask != null) {
             phaseTask.cancel();
@@ -211,18 +204,10 @@ public class RoundManager {
 
         Messages.broadcastWithPrefix(session.getPlayers(), "<gold>Buff selection complete! Starting shopping phase...</gold>");
 
-        // Now start the actual shopping phase
-        startShoppingPhaseActual(roundNumber);
+        // Start the shopping phase
+        startPhase(roundNumber, GameState.SHOPPING);
     }
 
-    private void startShoppingPhaseActual(int roundNumber) {
-        Messages.debug("GAME", "Starting actual shopping phase for round " + roundNumber + " in session " + session.getSessionId());
-        // ensure previous task is cancelled to avoid double timers
-        if (phaseTask != null) {
-            phaseTask.cancel();
-            phaseTask = null;
-        }
-    }
 
     public void endShoppingPhase() {
         if (phaseTask != null) {
@@ -231,10 +216,10 @@ public class RoundManager {
         }
 
         // Unready all players when combat phase starts
-        Team team1 = session.getTeam1();
-        Team team2 = session.getTeam2();
-        team1.resetReadyStatus();
-        team2.resetReadyStatus();
+        Team teamRed = session.getTeamRed();
+        Team teamBlue = session.getTeamBlue();
+        teamRed.resetReadyStatus();
+        teamBlue.resetReadyStatus();
 
         // Close all player inventories/shops when combat starts
         for (UUID uuid : session.getPlayers()) {
@@ -371,8 +356,6 @@ public class RoundManager {
         Team losingTeam;
         
         // Determine which team lost based on their loss streak
-        int team1Streak = session.getTeam1().getLossStreak();
-        int team2Streak = session.getTeam2().getLossStreak();
         int teamRedStreak = session.getTeamRed().getLossStreak();
         int teamBlueStreak = session.getTeamBlue().getLossStreak();
         
