@@ -625,16 +625,39 @@ public class GameListener implements Listener {
         Team playerTeam = session.getPlayerTeam(player);
         if (playerTeam == null) return;
 
-        // Determine enemy team number
-        int enemyTeamNumber = playerTeam.getTeamNumber() == 1 ? 2 : 1;
+        // Determine which team this player is on
+        int playerTeamNumber = playerTeam.getTeamNumber();
+
+        // Get flag base locations
+        Location redFlagBase = gamemode.getFlagBase(1);
+        Location blueFlagBase = gamemode.getFlagBase(2);
+        if (redFlagBase == null || blueFlagBase == null) return;
+
+        // Check which plate player is standing on
+        Location playerLoc = player.getLocation();
+        boolean onRedPlate = playerLoc.distance(redFlagBase) <= 2.0;
+        boolean onBluePlate = playerLoc.distance(blueFlagBase) <= 2.0;
+
+        // Player should only be able to pick up ENEMY flag
+        // If on red plate and on red team, don't pickup (prevent own flag pickup)
+        if (onRedPlate && playerTeamNumber == 1) return;
+        // If on blue plate and on blue team, don't pickup (prevent own flag pickup)
+        if (onBluePlate && playerTeamNumber == 2) return;
+
+        // Determine which enemy flag to pickup
+        int enemyTeamNumber;
+        if (onRedPlate && playerTeamNumber == 2) {
+            enemyTeamNumber = 1; // Blue team on red plate = pick up red flag
+        } else if (onBluePlate && playerTeamNumber == 1) {
+            enemyTeamNumber = 2; // Red team on blue plate = pick up blue flag
+        } else {
+            return; // Not on a valid enemy flag plate
+        }
 
         // Check if flag is not already held
         if (gamemode.isFlagHeld(enemyTeamNumber)) return;
         Messages.debug("Flag not held, checking for pickup");
 
-        // Get flag base location
-        Location flagBase = gamemode.getFlagBase(enemyTeamNumber);
-        if (flagBase == null) return;
 
         // Flag picked up!
         gamemode.flagPickup(player, enemyTeamNumber);
