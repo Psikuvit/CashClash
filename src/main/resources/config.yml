@@ -160,8 +160,57 @@ messages:
 # ============================================
 # SCOREBOARD CONFIGURATION
 # ============================================
+# Available placeholders for all scoreboards:
+# - {round} = Current round number
+# - {state} / {phase} = Current game phase (Shopping, Combat, Waiting, Ending)
+# - {phase_number} = Phase number
+# - {time} = Time remaining (MM:SS format)
+# - {time_seconds} = Time remaining in seconds
+# - {teamRed_coins} = Team Red total coins
+# - {teamBlue_coins} = Team Blue total coins
+# - {your_team} = Your team number
+# - {your_team_coins} = Your team's coins
+# - {team_ready} = Is your team ready? (Yes/No)
+# - {enemy_team} = Enemy team number
+# - {enemy_team_coins} = Enemy team's coins
+# - {enemy_team_ready} = Is enemy team ready? (Yes/No)
+# - {player_coins} = Your coins
+# - {player_kills} = Your total kills
+# - {player_lives} = Your remaining lives
+# - {player_deaths} = Your deaths this round
+# - {kill_streak} = Your current kill streak
+# - {round_kills} = Your kills this round
+# - {teamRed_alive} = Team Red alive count
+# - {teamBlue_alive} = Team Blue alive count
+# - {your_team_alive} = Your team's alive count
+# - {enemy_team_alive} = Enemy team's alive count
+# - {players} = Total players in game
+# - {player} = Your player name
+# - {online} = Online players (lobby only)
+# - {max_online} = Max players (lobby only)
+# - {wins} = Your wins (lobby only)
+# - {losses} = Your losses (lobby only)
+# - {kdr} = Your K/D ratio (lobby only)
+# - {kills} = Your total kills (lobby only)
+# - {deaths} = Your total deaths (lobby only)
+# - {win_rate} = Your win rate % (lobby only)
+#
+# CTF-specific placeholders:
+# - {teamRed_captures} = Team Red flag captures
+# - {teamBlue_captures} = Team Blue flag captures
+# - {teamRed_capture_circles} = Visual progress circles for Red team
+# - {teamBlue_capture_circles} = Visual progress circles for Blue team
+# - {red_flag_holder} = Name of Red team flag holder
+# - {blue_flag_holder} = Name of Blue team flag holder
+#
+# PTP-specific placeholders:
+# - {red_president} = Name of Red team president
+# - {blue_president} = Name of Blue team president
+# - {red_assassinations} = Red president assassination count
+# - {blue_assassinations} = Blue president assassination count
+#
 scoreboard:
-  # Lobby/Hub scoreboard
+  # Lobby/Hub scoreboard (shown when not in a game)
   lobby:
     enabled: true
     title: "<gold><bold>Cash Clash</bold></gold>"
@@ -181,7 +230,7 @@ scoreboard:
       - ""
       - "<yellow>play.cashclash.net</yellow>"
 
-  # Game scoreboard
+  # Default game scoreboard (standard matches)
   game:
     enabled: true
     title: "<gold><bold>Round {round} - {phase}</bold></gold>"
@@ -204,6 +253,46 @@ scoreboard:
       - "<gray>Kills:</gray> <white>{player_kills}"
       - ""
       - "<yellow>play.cashclash.net</yellow>"
+
+  # Capture the Flag gamemode scoreboard
+  capture-the-flag:
+    enabled: true
+    title: "<gold><bold>Capture the Flag</bold></gold>"
+    lines:
+      - ""
+      - "<red>Team Red</red>"
+      - "Captures: {teamRed_captures}/2"
+      - "Progress: {teamRed_capture_circles}"
+      - "Coins: {teamRed_coins}"
+      - ""
+      - "<blue>Team Blue</blue>"
+      - "Captures: {teamBlue_captures}/2"
+      - "Progress: {teamBlue_capture_circles}"
+      - "Coins: {teamBlue_coins}"
+      - ""
+      - "<yellow>Phase</yellow>: {phase}"
+      - "Time: {time}"
+      - ""
+
+  # Protect the President gamemode scoreboard
+  protect-the-president:
+    enabled: true
+    title: "<gold><bold>Protect the President</bold></gold>"
+    lines:
+      - ""
+      - "<red>Team Red</red>"
+      - "President: {red_president}"
+      - "Assassinations: {red_assassinations}/4"
+      - "Coins: {teamRed_coins}"
+      - ""
+      - "<blue>Team Blue</blue>"
+      - "President: {blue_president}"
+      - "Assassinations: {blue_assassinations}/4"
+      - "Coins: {teamBlue_coins}"
+      - ""
+      - "<yellow>Phase</yellow>: {phase}"
+      - "Time: {time}"
+      - ""
 
 # ============================================
 # NPC CONFIGURATION
