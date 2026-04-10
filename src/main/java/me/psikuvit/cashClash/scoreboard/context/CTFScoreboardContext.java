@@ -1,11 +1,13 @@
 package me.psikuvit.cashClash.scoreboard.context;
 
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
+import me.psikuvit.cashClash.util.Messages;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,24 +18,14 @@ import java.util.UUID;
 public class CTFScoreboardContext extends GameScoreboardContext {
 
     @Override
+    public Component getTitle(Player player, GameSession session) {
+        String titleRaw = ConfigManager.getInstance().getCTFScoreboardTitle();
+        return Messages.parse(fillPlaceholders(titleRaw, player, session));
+    }
+
+    @Override
     public List<String> getLines(Player player, GameSession session) {
-        return Arrays.asList(
-                "<gold><bold>Capture the Flag</bold></gold>",
-                "",
-                "<red>Team Red</red>",
-                "Captures: {teamRed_captures}/2",
-                "Progress: {teamRed_capture_circles}",
-                "Coins: {teamRed_coins}",
-                "",
-                "<blue>Team Blue</blue>",
-                "Captures: {teamBlue_captures}/2",
-                "Progress: {teamBlue_capture_circles}",
-                "Coins: {teamBlue_coins}",
-                "",
-                "<yellow>Phase</yellow>: {phase}",
-                "Time: {time}",
-                ""
-        );
+        return ConfigManager.getInstance().getCTFScoreboardLines();
     }
 
     @Override
