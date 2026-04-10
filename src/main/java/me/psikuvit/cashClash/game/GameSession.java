@@ -806,7 +806,7 @@ public class GameSession {
         existingCcp.setRespawnProtection(protSec * 1000L);
 
         // Set up scoreboard
-        ScoreboardManager.getInstance().createBoardForSession(this);
+        ScoreboardManager.getInstance().setScoreboard(player);
 
         Messages.send(player, "<green>You have successfully rejoined the game!</green>");
         Messages.send(player, "<yellow>Round: <gold>" + currentRound + "</gold> | Lives: <gold>" + existingCcp.getLives() + "</gold></yellow>");
