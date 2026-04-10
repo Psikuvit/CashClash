@@ -458,6 +458,46 @@ public class ConfigValidator {
                 "<yellow>play.cashclash.net</yellow>"
         ), autoAdd);
 
+        // Scoreboard - Capture the Flag
+        validateAndSet(config, "scoreboard.capture-the-flag.enabled", true, autoAdd);
+        validateAndSet(config, "scoreboard.capture-the-flag.title", "<gold><bold>Capture the Flag</bold></gold>", autoAdd);
+        validateAndSetList(config, "scoreboard.capture-the-flag.lines", List.of(
+                "",
+                "<red>Team Red</red>",
+                "Captures: {teamRed_captures}/2",
+                "Progress: {teamRed_capture_circles}",
+                "Coins: {teamRed_coins}",
+                "",
+                "<blue>Team Blue</blue>",
+                "Captures: {teamBlue_captures}/2",
+                "Progress: {teamBlue_capture_circles}",
+                "Coins: {teamBlue_coins}",
+                "",
+                "<yellow>Phase</yellow>: {phase}",
+                "Time: {time}",
+                ""
+        ), autoAdd);
+
+        // Scoreboard - Protect the President
+        validateAndSet(config, "scoreboard.protect-the-president.enabled", true, autoAdd);
+        validateAndSet(config, "scoreboard.protect-the-president.title", "<gold><bold>Protect the President</bold></gold>", autoAdd);
+        validateAndSetList(config, "scoreboard.protect-the-president.lines", List.of(
+                "",
+                "<red>Team Red</red>",
+                "President: {red_president}",
+                "Assassinations: {red_assassinations}/4",
+                "Coins: {teamRed_coins}",
+                "",
+                "<blue>Team Blue</blue>",
+                "President: {blue_president}",
+                "Assassinations: {blue_assassinations}/4",
+                "Coins: {teamBlue_coins}",
+                "",
+                "<yellow>Phase</yellow>: {phase}",
+                "Time: {time}",
+                ""
+        ), autoAdd);
+
         // NPC settings
         validateAndSet(config, "npc.arena.display-name", "<gold><bold>Arena Selector</bold></gold>", autoAdd);
         validateAndSet(config, "npc.arena.skin-url", "https://textures.minecraft.net/texture/c2e93825cdc4c7ec014143f170ff05ef7ca5f3606716eb5429eb427bb05b7e17", autoAdd);

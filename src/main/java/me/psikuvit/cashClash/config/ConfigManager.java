@@ -249,11 +249,27 @@ public class ConfigManager {
     }
 
     public String getGameScoreboardTitle() {
-        return config.getString("scoreboard.game.title", "<gold><bold>Cash Clash</bold></gold>");
+        return config.getString("scoreboard.game.title", "<gold><bold>Round {round} - {phase}</bold></gold>");
     }
 
     public List<String> getGameScoreboardLines() {
         return config.getStringList("scoreboard.game.lines");
+    }
+
+    public String getCTFScoreboardTitle() {
+        return config.getString("scoreboard.capture-the-flag.title", "<gold><bold>Capture the Flag</bold></gold>");
+    }
+
+    public List<String> getCTFScoreboardLines() {
+        return config.getStringList("scoreboard.capture-the-flag.lines");
+    }
+
+    public String getPTPScoreboardTitle() {
+        return config.getString("scoreboard.protect-the-president.title", "<gold><bold>Protect the President</bold></gold>");
+    }
+
+    public List<String> getPTPScoreboardLines() {
+        return config.getStringList("scoreboard.protect-the-president.lines");
     }
 
     // ==================== NPC SETTINGS ====================
