@@ -465,6 +465,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
+        awardCaptureBonus(teamNumber);
+
         // Reset flag holders and move banners back to plates
         if (teamNumber == 1) {
             teamBlueFlagHolder = null;
