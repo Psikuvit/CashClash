@@ -80,7 +80,7 @@ public class PlayerConnectionListener implements Listener {
         LobbyManager.getInstance().giveLobbyItems(player);
 
         // Set lobby scoreboard
-        ScoreboardManager.getInstance().setLobbyScoreboard(player);
+        ScoreboardManager.getInstance().setScoreboard(player);
 
         // Set lobby tab appearance
         TabListManager.getInstance().setPlayerToLobby(player);
@@ -98,7 +98,7 @@ public class PlayerConnectionListener implements Listener {
         LayoutManager.getInstance().handleDisconnect(player.getUniqueId());
 
         // Remove lobby scoreboard
-        ScoreboardManager.getInstance().removeLobbyScoreboard(player);
+        ScoreboardManager.getInstance().setScoreboard(player);
 
         // Reset tab list
         TabListManager.getInstance().resetPlayer(player);
