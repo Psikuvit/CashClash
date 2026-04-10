@@ -20,7 +20,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
+import org.bukkit.util.Vector;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.jspecify.annotations.NonNull;
 
 import java.util.HashMap;
@@ -539,8 +541,23 @@ public class CaptureTheFlagGamemode extends Gamemode {
             return;
         }
 
-        Location headLoc = player.getEyeLocation().add(0, 1, 0);
+        // Position banner straight up above player's head
+        Location headLoc = player.getEyeLocation().add(0, 1.2, 0);
         banner.teleport(headLoc);
+
+        // Face banner toward player's looking direction
+        Vector playerDirection = player.getLocation().getDirection();
+        float yaw = (float) Math.toDegrees(Math.atan2(-playerDirection.getX(), playerDirection.getZ()));
+        Quaternionf rotation = new Quaternionf();
+        rotation.rotateY((float) Math.toRadians(yaw));
+
+        // Reset transformation - no rotation, just identity
+        banner.setTransformation(new Transformation(
+                new Vector3f(0, 0, 0),
+                rotation,
+                new Vector3f(1, 1, 1),
+                new Quaternionf(0, 0, 0, 1)
+        ));
 
         // Add banner as passenger to the player
         player.addPassenger(banner);
@@ -623,17 +640,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     private @NonNull Transformation getTransformation(BlockDisplay banner, double angleInRadians) {
-        double facingAngleRadians = angleInRadians + Math.PI / 2;
-
-        // Create rotation quaternion to face the movement direction
-        Quaternionf rotation = new Quaternionf();
-        rotation.rotateY((float) facingAngleRadians);
-
+        // Use identity transformation for normal standing orientation
         return new Transformation(
-                banner.getTransformation().getTranslation(),
-                rotation,
-                banner.getTransformation().getScale(),
-                banner.getTransformation().getRightRotation()
+                new Vector3f(0, 0, 0),  // No translation
+                new Quaternionf(0, 0, 0, 1),  // No rotation - identity quaternion
+                new Vector3f(1, 1, 1),  // No scaling
+                new Quaternionf(0, 0, 0, 1)  // No right rotation
         );
     }
 
