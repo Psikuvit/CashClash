@@ -546,7 +546,7 @@ public class GameSession {
 
             var attr = player.getAttribute(Attribute.MAX_HEALTH);
             double maxHealth = attr != null ? attr.getValue() : 20.0;
-            player.setHealth(Math.max(1.0, Math.min(maxHealth, player.getHealth())));
+            player.setHealth(Math.clamp(maxHealth, 1.0, player.getHealth()));
 
         } catch (Exception t) {
             Messages.debug("GAME", "Failed to clear kit for player " + player.getName() + ": " + t.getMessage());
@@ -594,10 +594,6 @@ public class GameSession {
         if (teamRed.hasPlayer(uuid)) return teamRed;
         if (teamBlue.hasPlayer(uuid)) return teamBlue;
         return null;
-    }
-
-    public Team getOpposingTeam(Player player) {
-        return getPlayerTeam(player) == teamRed ? teamBlue : teamRed;
     }
 
     public Team getOpposingTeam(Team team) {

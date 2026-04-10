@@ -536,8 +536,8 @@ public class CashQuakeManager {
                 double sumX = 0, sumZ = 0;
                 int count = 0;
                 for (int i = 0; i < 4; i++) {
-                    var t1 = tpl.getTeam1Spawn(i);
-                    var t2 = tpl.getTeam2Spawn(i);
+                    var t1 = tpl.getTeamRedSpawn(i);
+                    var t2 = tpl.getTeamBlueSpawn(i);
                     if (t1 != null) {
                         sumX += t1.getX();
                         sumZ += t1.getZ();

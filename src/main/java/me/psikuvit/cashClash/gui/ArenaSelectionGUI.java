@@ -63,144 +63,6 @@ public class ArenaSelectionGUI extends AbstractGui {
         setCloseButton(22);
     }
 
-    private GuiButton createArenaButton(int arenaNumber, Arena arena) {
-        ArenaManager manager = ArenaManager.getInstance();
-        GameState state = manager.getArenaState(arenaNumber);
-        int playerCount = manager.getArenaPlayerCount(arenaNumber);
-        boolean isJoinable = manager.isArenaJoinable(arenaNumber);
-        int maxPlayers = ConfigManager.getInstance().getMaxPlayers();
-
-        // Determine material based on state
-        Material material;
-        if (!arena.isReady()) {
-            material = Material.RED_WOOL;
-        } else if (state == GameState.WAITING && playerCount < maxPlayers) {
-            material = Material.GREEN_WOOL;
-        } else if (state == GameState.WAITING && playerCount == maxPlayers) {
-            material = Material.YELLOW_WOOL;
-        } else {
-            material = Material.ORANGE_WOOL;
-        }
-
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(Messages.parse("<yellow><bold>" + arena.getName() + "</bold></yellow>"));
-
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.empty());
-        
-        // Add map name (template ID or world name)
-        TemplateWorld template = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
-        if (template != null) {
-            String mapName = template.getId();
-            if (template.getWorld() != null) {
-                mapName = template.getWorld().getName();
-            }
-            lore.add(Messages.parse("<gray>Map: <white>" + mapName + "</white></gray>"));
-        }
-
-        String stateDisplay = switch (state) {
-            case WAITING -> "<gray>Status: <green>Waiting</green>";
-            case SHOPPING -> "<gray>Status: <yellow>Shopping</yellow>";
-            case COMBAT -> "<gray>Status: <red>In Combat</red>";
-            case ENDING -> "<gray>Status: <gold>Ending</gold>";
-        };
-
-        lore.add(Messages.parse(stateDisplay));
-        lore.add(Messages.parse("<gray>Players: <white>" + playerCount + "/" + maxPlayers + "</white>"));
-
-        if (!arena.isReady()) {
-            lore.add(Messages.parse("<red>Not configured!</red>"));
-        }
-
-        lore.add(Component.empty());
-
-        // Join status
-        if (isJoinable) {
-            lore.add(Messages.parse("<green><bold>✔ Click to join!</bold></green>"));
-        } else if (!arena.isReady()) {
-            lore.add(Messages.parse("<red><bold>✗ Arena not ready</bold></red>"));
-        } else if (playerCount >= maxPlayers) {
-            lore.add(Messages.parse("<red><bold>✗ Arena is full</bold></red>"));
-        } else if (state != GameState.WAITING) {
-            lore.add(Messages.parse("<red><bold>✗ Game in progress</bold></red>"));
-        } else {
-            lore.add(Messages.parse("<red><bold>✗ Cannot join</bold></red>"));
-        }
-
-        meta.lore(lore);
-        item.setItemMeta(meta);
-
-        return GuiButton.of(item).onClick(player -> handleArenaClick(player, arenaNumber));
-    }
-
-    /**
-     * Handle click on arena item.
-     */
-    public static void handleArenaClick(Player player, int arenaNumber) {
-        ArenaManager arenaManager = ArenaManager.getInstance();
-        GameManager gameManager = GameManager.getInstance();
-        PartyManager partyManager = PartyManager.getInstance();
-
-        // Prevent joining while editing a layout
-        if (LayoutManager.getInstance().isEditing(player)) {
-            Messages.send(player, "<red>You cannot join a game while editing a layout!</red>");
-            Messages.send(player, "<gray>Use <yellow>/cc layout confirm</yellow> or <yellow>/cc layout cancel</yellow> first.</gray>");
-            player.closeInventory();
-            return;
-        }
-
-        if (gameManager.getPlayerSession(player) != null) {
-            Messages.send(player, "<red>You're already in a game!</red>");
-            player.closeInventory();
-            return;
-        }
-
-        if (!arenaManager.isArenaJoinable(arenaNumber)) {
-            Messages.send(player, "<red>This arena cannot be joined right now!</red>");
-            player.closeInventory();
-            return;
-        }
-
-        Arena arena = arenaManager.getArena(arenaNumber);
-        if (arena == null) {
-            Messages.send(player, "<red>Arena not found!</red>");
-            player.closeInventory();
-            return;
-        }
-
-        // Check if player is in a party and is the owner
-        Party party = partyManager.getPlayerParty(player);
-        boolean isPartyOwner = party != null && party.isOwner(player.getUniqueId());
-
-        // If player is in a party but not the owner, they can't join on their own
-        if (party != null && !isPartyOwner) {
-            Messages.send(player, "<red>Only the party owner can join games for the party!</red>");
-            Messages.send(player, "<gray>Ask <yellow>" + getOwnerName(party) + "</yellow> to join a game.</gray>");
-            player.closeInventory();
-            return;
-        }
-
-        player.closeInventory();
-
-        GameSession session = gameManager.getSessionForArena(arenaNumber);
-
-        if (session == null) {
-            session = gameManager.createSession(arenaNumber);
-        }
-
-        int maxPlayers = ConfigManager.getInstance().getMaxPlayers();
-        int capacityPerTeam = Math.max(1, maxPlayers / 2);
-
-        if (isPartyOwner) {
-            // Handle party join
-            handlePartyJoin(player, party, session, arena, arenaNumber, capacityPerTeam, maxPlayers);
-        } else {
-            // Solo player join
-            handleSoloJoin(player, session, arena, arenaNumber, capacityPerTeam, maxPlayers);
-        }
-    }
-
     /**
      * Handle a party joining together.
      * Party members are placed on the same team, with overflow going to the other team.
@@ -325,6 +187,73 @@ public class ArenaSelectionGUI extends AbstractGui {
     }
 
     /**
+     * Handle click on arena item.
+     */
+    public static void handleArenaClick(Player player, int arenaNumber) {
+        ArenaManager arenaManager = ArenaManager.getInstance();
+        GameManager gameManager = GameManager.getInstance();
+        PartyManager partyManager = PartyManager.getInstance();
+
+        // Prevent joining while editing a layout
+        if (LayoutManager.getInstance().isEditing(player)) {
+            Messages.send(player, "<red>You cannot join a game while editing a layout!</red>");
+            Messages.send(player, "<gray>Use <yellow>/cc layout confirm</yellow> or <yellow>/cc layout cancel</yellow> first.</gray>");
+            player.closeInventory();
+            return;
+        }
+
+        if (gameManager.getPlayerSession(player) != null) {
+            Messages.send(player, "<red>You're already in a game!</red>");
+            player.closeInventory();
+            return;
+        }
+
+        if (!arenaManager.isArenaJoinable(arenaNumber)) {
+            Messages.send(player, "<red>This arena cannot be joined right now!</red>");
+            player.closeInventory();
+            return;
+        }
+
+        Arena arena = arenaManager.getArena(arenaNumber);
+        if (arena == null) {
+            Messages.send(player, "<red>Arena not found!</red>");
+            player.closeInventory();
+            return;
+        }
+
+        // Check if player is in a party and is the owner
+        Party party = partyManager.getPlayerParty(player);
+        boolean isPartyOwner = party != null && party.isOwner(player.getUniqueId());
+
+        // If player is in a party but not the owner, they can't join on their own
+        if (party != null && !isPartyOwner) {
+            Messages.send(player, "<red>Only the party owner can join games for the party!</red>");
+            Messages.send(player, "<gray>Ask <yellow>" + getOwnerName(party) + "</yellow> to join a game.</gray>");
+            player.closeInventory();
+            return;
+        }
+
+        player.closeInventory();
+
+        GameSession session = gameManager.getSessionForArena(arenaNumber);
+
+        if (session == null) {
+            session = gameManager.createSession(arenaNumber);
+        }
+
+        int maxPlayers = ConfigManager.getInstance().getMaxPlayers();
+        int capacityPerTeam = Math.max(1, maxPlayers / 2);
+
+        if (isPartyOwner) {
+            // Handle party join
+            handlePartyJoin(player, party, session, arena, arenaNumber, capacityPerTeam, maxPlayers);
+        } else {
+            // Solo player join
+            handleSoloJoin(player, session, arena, arenaNumber, capacityPerTeam, maxPlayers);
+        }
+    }
+
+    /**
      * Handle a solo player joining.
      */
     private static void handleSoloJoin(Player player, GameSession session, Arena arena,
@@ -369,6 +298,78 @@ public class ArenaSelectionGUI extends AbstractGui {
 
         // Check for countdown start
         checkAndStartCountdown(session, newPlayerCount);
+    }
+
+    private GuiButton createArenaButton(int arenaNumber, Arena arena) {
+        ArenaManager manager = ArenaManager.getInstance();
+        GameState state = manager.getArenaState(arenaNumber);
+        int playerCount = manager.getArenaPlayerCount(arenaNumber);
+        boolean isJoinable = manager.isArenaJoinable(arenaNumber);
+        int maxPlayers = ConfigManager.getInstance().getMaxPlayers();
+
+        // Determine material based on state
+        Material material;
+        if (!arena.isReady()) {
+            material = Material.RED_WOOL;
+        } else if (state == GameState.WAITING && playerCount < maxPlayers) {
+            material = Material.GREEN_WOOL;
+        } else if (state == GameState.WAITING && playerCount == maxPlayers) {
+            material = Material.YELLOW_WOOL;
+        } else {
+            material = Material.ORANGE_WOOL;
+        }
+
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(Messages.parse("<yellow><bold>" + arena.getName() + "</bold></yellow>"));
+
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.empty());
+
+        // Add map name (template ID or world name)
+        TemplateWorld template = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        if (template != null) {
+            String mapName = template.getId();
+            if (template.getWorld() != null) {
+                mapName = template.getWorld().getName();
+            }
+            lore.add(Messages.parse("<gray>Map: <white>" + mapName + "</white></gray>"));
+        }
+
+        String stateDisplay = switch (state) {
+            case WAITING -> "<gray>Status: <green>Waiting</green>";
+            case BUFF_SELECTION -> "<gray>Status: <yellow>Buff Selection</yellow>";
+            case SHOPPING -> "<gray>Status: <yellow>Shopping</yellow>";
+            case COMBAT -> "<gray>Status: <red>In Combat</red>";
+            case ENDING -> "<gray>Status: <gold>Ending</gold>";
+        };
+
+        lore.add(Messages.parse(stateDisplay));
+        lore.add(Messages.parse("<gray>Players: <white>" + playerCount + "/" + maxPlayers + "</white>"));
+
+        if (!arena.isReady()) {
+            lore.add(Messages.parse("<red>Not configured!</red>"));
+        }
+
+        lore.add(Component.empty());
+
+        // Join status
+        if (isJoinable) {
+            lore.add(Messages.parse("<green><bold>✔ Click to join!</bold></green>"));
+        } else if (!arena.isReady()) {
+            lore.add(Messages.parse("<red><bold>✗ Arena not ready</bold></red>"));
+        } else if (playerCount >= maxPlayers) {
+            lore.add(Messages.parse("<red><bold>✗ Arena is full</bold></red>"));
+        } else if (state != GameState.WAITING) {
+            lore.add(Messages.parse("<red><bold>✗ Game in progress</bold></red>"));
+        } else {
+            lore.add(Messages.parse("<red><bold>✗ Cannot join</bold></red>"));
+        }
+
+        meta.lore(lore);
+        item.setItemMeta(meta);
+
+        return GuiButton.of(item).onClick(player -> handleArenaClick(player, arenaNumber));
     }
 
     /**

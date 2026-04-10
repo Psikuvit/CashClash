@@ -43,27 +43,21 @@ public class TemplateWorld {
     public String getId() {
         return id;
     }
-
     public World getWorld() {
         return world;
     }
-
     public void setWorld(World world) {
         this.world = world;
     }
-
     public Location getLobbySpawn() {
         return lobbySpawn;
     }
-
     public void setSpawn(Location lobbySpawn) {
         this.lobbySpawn = lobbySpawn;
     }
-
     public Location getSpectatorSpawn() {
         return spectatorSpawn;
     }
-
     public void setSpectatorSpawn(Location loc) {
         this.spectatorSpawn = loc;
     }
@@ -95,39 +89,30 @@ public class TemplateWorld {
     public Location getTeamRedShopSpawn() {
         return teamRedShopSpawn;
     }
-
     public void setTeamRedShopSpawn(Location teamRedShopSpawn) {
         this.teamRedShopSpawn = teamRedShopSpawn;
     }
-
     public Location getTeamBlueShopSpawn() {
         return teamBlueShopSpawn;
     }
     public void setTeamBlueShopSpawn(Location teamBlueShopSpawn) {
         this.teamBlueShopSpawn = teamBlueShopSpawn;
     }
-
     public List<Location> getVillagersSpawnPoint() {
         return villagersSpawnPoint;
     }
-
     public void addVillagerSpawnPoint(Location loc) {
         villagersSpawnPoint.add(loc);
     }
-
-    // CTF Capture plate getters/setters
     public Location getCTFCaptureTeamRedPlate() {
         return ctfCaptureTeamRedPlate;
     }
-
     public void setCTFCaptureTeamRedPlate(Location loc) {
-        this.ctfCaptureTeamBluePlate = loc;
+        this.ctfCaptureTeamRedPlate = loc;
     }
-
     public Location getCTFCaptureTeamBluePlate() {
         return ctfCaptureTeamBluePlate;
     }
-
     public void setCTFCaptureTeamBluePlate(Location loc) {
         this.ctfCaptureTeamBluePlate = loc;
     }

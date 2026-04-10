@@ -173,8 +173,8 @@ public class ArenaManager {
 
             // Load CTF capture plate locations
             if (cfg.contains("ctf.capture-team1")) {
-                tpl.setCTFCaptureTeamRedPlate(
-                        LocationUtils.deserializeLocation(cfg.getConfigurationSection("ctf.capture-team1"))
+                tpl.setCTFCaptureTeamRedPlate(LocationUtils.deserializeLocation(
+                        cfg.getConfigurationSection("ctf.capture-team1"))
                 );
             }
             if (cfg.contains("ctf.capture-team2")) {
@@ -247,10 +247,10 @@ public class ArenaManager {
 
         // Save CTF capture plate locations
         if (tpl.getCTFCaptureTeamRedPlate() != null) {
-            LocationUtils.serializeLocation(cfg, "ctf.capture-teamRed", tpl.getCTFCaptureTeamRedPlate());
+            LocationUtils.serializeLocation(cfg, "ctf.capture-team1", tpl.getCTFCaptureTeamRedPlate());
         }
         if (tpl.getCTFCaptureTeamBluePlate() != null) {
-            LocationUtils.serializeLocation(cfg, "ctf.capture-teamBlue", tpl.getCTFCaptureTeamBluePlate());
+            LocationUtils.serializeLocation(cfg, "ctf.capture-team2", tpl.getCTFCaptureTeamBluePlate());
         }
 
         try {
