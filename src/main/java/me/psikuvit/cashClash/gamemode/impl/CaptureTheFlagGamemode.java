@@ -20,15 +20,12 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
-import org.bukkit.util.Vector;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.jspecify.annotations.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Capture the Flag Gamemode
@@ -45,9 +42,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private static final double BANNER_ORBIT_RADIUS = 0.7; // Distance from plate center
     private static final double BANNER_ROTATION_SPEED = 4.0; // Degrees per tick
     private final Map<Integer, Integer> flagCaptures;
-    private final Map<UUID, Long> carryStartTime;
     private final Map<UUID, Long> platePressStartTime; // Track when player starts standing on plate
-    private final Map<String, Double> bannerAngles; // Track rotation angle for each banner
+    private final Map<String, Double> bannerAngles; // Track rotation angle for each banner (only for stationary banners)
     private UUID teamRedFlagHolder;
     private UUID teamBlueFlagHolder;
     private long teamRedFlagCaptureTime;
@@ -69,9 +65,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         
         // Initialize all data structures
         this.flagCaptures = new HashMap<>(2);
-        this.carryStartTime = new HashMap<>();
         this.platePressStartTime = new HashMap<>();
-        this.bannerAngles = new ConcurrentHashMap<>();
+        this.bannerAngles = new HashMap<>();
         this.teamRedFlagHolder = null;
         this.teamBlueFlagHolder = null;
         this.teamRedFlagCaptureTime = 0;
@@ -124,7 +119,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         teamBlueFlagHolder = null;
         teamRedFlagCaptureTime = 0;
         teamBlueFlagCaptureTime = 0;
-        carryStartTime.clear();
         platePressStartTime.clear();
 
         // Start carrier glow effect task
@@ -154,14 +148,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Messages.debug("[CTF] Team Red flag holder eliminated: " + victim.getName());
             Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team Red's flag holder was eliminated!</bold></red>");
             teamRedFlagHolder = null;
-            carryStartTime.remove(victimUuid);
             moveBannerToLocation(teamRedBannerDisplay, teamRedCapturePlate);
             SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
         } else if (victimUuid.equals(teamBlueFlagHolder)) {
             Messages.debug("[CTF] Team Blue flag holder eliminated: " + victim.getName());
             Messages.broadcastWithPrefix(session.getPlayers(), "<blue><bold>Team Blue's flag holder was eliminated!</bold></blue>");
             teamBlueFlagHolder = null;
-            carryStartTime.remove(victimUuid);
             moveBannerToLocation(teamBlueBannerDisplay, teamBlueCapturePlate);
             SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
         }
@@ -211,7 +203,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         cancelTask(bannerRotationTask);
         teamRedFlagHolder = null;
         teamBlueFlagHolder = null;
-        carryStartTime.clear();
         platePressStartTime.clear();
         flagCaptures.clear();
 
@@ -430,7 +421,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (enemyTeamNumber == 1) {
             teamRedFlagHolder = playerUuid;
             teamRedFlagCaptureTime = now;
-            carryStartTime.put(playerUuid, now);
             Messages.debug("[CTF] " + player.getName() + " picked up Team Red's flag");
             Messages.broadcastWithPrefix(session.getPlayers(),
                     "<blue>" + player.getName() + " has stolen Team Red's flag!</blue>");
@@ -440,7 +430,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         } else {
             teamBlueFlagHolder = playerUuid;
             teamBlueFlagCaptureTime = now;
-            carryStartTime.put(playerUuid, now);
             Messages.debug("[CTF] " + player.getName() + " picked up Team Blue's flag");
             Messages.broadcastWithPrefix(session.getPlayers(),
                     "<red>" + player.getName() + " has stolen Team Blue's flag!</red>");
@@ -545,18 +534,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Location headLoc = player.getEyeLocation().add(0, 1.2, 0);
         banner.teleport(headLoc);
 
-        // Face banner toward player's looking direction
-        Vector playerDirection = player.getLocation().getDirection();
-        float yaw = (float) Math.toDegrees(Math.atan2(-playerDirection.getX(), playerDirection.getZ()));
-        Quaternionf rotation = new Quaternionf();
-        rotation.rotateY((float) Math.toRadians(yaw));
-
-        // Reset transformation - no rotation, just identity
+        // Use default transformation (identity)
         banner.setTransformation(new Transformation(
                 new Vector3f(0, 0, 0),
-                rotation,
+                new Quaternionf(),
                 new Vector3f(1, 1, 1),
-                new Quaternionf(0, 0, 0, 1)
+                new Quaternionf()
         ));
 
         // Add banner as passenger to the player
@@ -572,8 +555,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
             return;
         }
 
-        // Remove from any passengers
-        banner.getPassengers().forEach(banner::removePassenger);
+        // Remove from any passengers (i.e., from player if being carried)
+        if (banner.getVehicle() != null) {
+            banner.getVehicle().removePassenger(banner);
+        }
 
         Location displayLoc = location.clone().add(0.5, 1.5, 0.5);
         banner.teleport(displayLoc);
@@ -597,11 +582,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     /**
      * Rotate a single banner in a perfect circle around the plate
-     * Banner faces the direction it's moving (tangent to the circle)
+     * Banner is only rotated when not being carried by a player
      */
     private void rotateBanner(BlockDisplay banner, Location plateLocation, boolean isTeamRed) {
         if (banner == null || banner.isDead() || plateLocation == null) return;
-        // Skip rotation if banner is being carried
+
+        // Skip rotation if banner is being carried (is a passenger of a player)
         if (isTeamRed && teamRedFlagHolder != null) return;
         if (!isTeamRed && teamBlueFlagHolder != null) return;
 
@@ -625,9 +611,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Location bannerPos = plateLocation.clone().add(offsetX, 1.5, offsetZ);
         banner.teleport(bannerPos);
 
-        Transformation transform = getTransformation(banner, angleInRadians);
-
-        banner.setTransformation(transform);
+        // Use identity transformation
+        banner.setTransformation(new Transformation(
+                new Vector3f(0, 0, 0),
+                new Quaternionf(),
+                new Vector3f(1, 1, 1),
+                new Quaternionf()
+        ));
 
         // Spawn team-colored particles around the orbit path
         Color teamColor = isTeamRed ? Color.RED : Color.BLUE;
@@ -639,15 +629,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
     }
 
-    private @NonNull Transformation getTransformation(BlockDisplay banner, double angleInRadians) {
-        // Use identity transformation for normal standing orientation
-        return new Transformation(
-                new Vector3f(0, 0, 0),  // No translation
-                new Quaternionf(0, 0, 0, 1),  // No rotation - identity quaternion
-                new Vector3f(1, 1, 1),  // No scaling
-                new Quaternionf(0, 0, 0, 1)  // No right rotation
-        );
-    }
 
     public boolean isFlagHeld(int teamNumber) {
         return teamNumber == 1 ? teamRedFlagHolder != null : teamBlueFlagHolder != null;
