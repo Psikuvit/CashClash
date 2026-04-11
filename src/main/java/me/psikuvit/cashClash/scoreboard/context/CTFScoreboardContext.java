@@ -49,8 +49,9 @@ public class CTFScoreboardContext extends GameScoreboardContext {
         UUID redHolder = ctf.getFlagHolder(1);
         UUID blueHolder = ctf.getFlagHolder(2);
 
-        Player redHolderPlayer = Bukkit.getPlayer(redHolder);
-        Player blueHolderPlayer = Bukkit.getPlayer(blueHolder);
+        // Safely get players from UUIDs, check for null first
+        Player redHolderPlayer = redHolder != null ? Bukkit.getPlayer(redHolder) : null;
+        Player blueHolderPlayer = blueHolder != null ? Bukkit.getPlayer(blueHolder) : null;
 
         String redHolderName = redHolderPlayer != null ? redHolderPlayer.getName() : "None";
         String blueHolderName = blueHolderPlayer != null ? blueHolderPlayer.getName() : "None";
