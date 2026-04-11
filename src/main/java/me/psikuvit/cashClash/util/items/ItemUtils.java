@@ -1,8 +1,10 @@
 package me.psikuvit.cashClash.util.items;
 
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
+import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Messages;
@@ -82,17 +84,7 @@ public final class ItemUtils {
             ItemStack best = inv.getItem(bestSlot);
             if (best == null) return;
 
-            ItemMeta oldMeta = best.getItemMeta();
-            ItemMeta newMeta = newItem.getItemMeta();
-
-            if (oldMeta != null && newMeta != null) {
-                for (var e : oldMeta.getEnchants().entrySet()) {
-                    newMeta.addEnchant(e.getKey(), e.getValue(), true);
-                }
-                newItem.setItemMeta(newMeta);
-            }
-
-            inv.setItem(bestSlot, newItem);
+            ShopService.transferEnchants(newItem, inv, bestSlot, best);
         } else {
             inv.addItem(newItem);
         }
@@ -282,5 +274,25 @@ public final class ItemUtils {
     public static void updateItemModel(ItemStack item, NamespacedKey modelKey) {
         if (item == null || modelKey == null) return;
         item.editMeta(meta -> meta.setItemModel(modelKey));
+    }
+
+    public static PurchaseRecord.ArmorSlot getArmorSlot(Material material) {
+        String matName = material.name();
+        if (matName.endsWith("HELMET")) return PurchaseRecord.ArmorSlot.HELMET;
+        if (matName.endsWith("CHESTPLATE")) return PurchaseRecord.ArmorSlot.CHESTPLATE;
+        if (matName.endsWith("LEGGINGS")) return PurchaseRecord.ArmorSlot.LEGGINGS;
+        if (matName.endsWith("BOOTS")) return PurchaseRecord.ArmorSlot.BOOTS;
+        return null;
+    }
+
+    public static ItemStack getCurrentArmorInSlot(Player player, PurchaseRecord.ArmorSlot slot) {
+        if (slot == null) return null;
+        PlayerInventory inv = player.getInventory();
+        return switch (slot) {
+            case HELMET -> inv.getHelmet();
+            case CHESTPLATE -> inv.getChestplate();
+            case LEGGINGS -> inv.getLeggings();
+            case BOOTS -> inv.getBoots();
+        };
     }
 }

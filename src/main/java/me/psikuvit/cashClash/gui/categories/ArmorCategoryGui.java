@@ -14,12 +14,12 @@ import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.ItemFactory;
+import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -375,10 +375,10 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         Map<ArmorSlot, ItemStack> replacedSetItems = new EnumMap<>(ArmorSlot.class);
 
         for (CustomArmorItem piece : setPieces) {
-            ArmorSlot slot = getArmorSlot(piece.getMaterial());
+            ArmorSlot slot = ItemUtils.getArmorSlot(piece.getMaterial());
             if (slot == null) continue; // Skip if slot cannot be determined
             
-            ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
+            ItemStack currentArmor = ItemUtils.getCurrentArmorInSlot(player, slot);
 
             if (currentArmor != null && currentArmor.getType() != Material.AIR) {
                 // Create a deep clone for tracking (preserves all metadata, enchantments, etc.)
@@ -417,44 +417,6 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         Messages.send(player, "<dark_gray>-$" + String.format("%,d", totalPrice) + "</dark_gray>");
         Messages.send(player, "");
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
-    }
-
-    // ==================== ARMOR SLOT UTILITIES ====================
-
-    /**
-     * Gets the armor slot enum for a given material.
-     * Returns null if the material is not an armor piece.
-     *
-     * @param material The material to check
-     * @return The corresponding ArmorSlot, or null if not armor
-     */
-    private ArmorSlot getArmorSlot(Material material) {
-        if (material == null) return null;
-        String matName = material.name();
-        if (matName.endsWith("HELMET")) return ArmorSlot.HELMET;
-        if (matName.endsWith("CHESTPLATE")) return ArmorSlot.CHESTPLATE;
-        if (matName.endsWith("LEGGINGS")) return ArmorSlot.LEGGINGS;
-        if (matName.endsWith("BOOTS")) return ArmorSlot.BOOTS;
-        return null;
-    }
-
-    /**
-     * Gets the current armor item in a specific slot.
-     * Returns null if the slot is null or if no armor is equipped in that slot.
-     *
-     * @param player The player whose armor to check
-     * @param slot   The armor slot to check (may be null)
-     * @return The ItemStack in that slot, or null if empty/invalid
-     */
-    private ItemStack getCurrentArmorInSlot(Player player, ArmorSlot slot) {
-        if (slot == null) return null;
-        PlayerInventory inv = player.getInventory();
-        return switch (slot) {
-            case HELMET -> inv.getHelmet();
-            case CHESTPLATE -> inv.getChestplate();
-            case LEGGINGS -> inv.getLeggings();
-            case BOOTS -> inv.getBoots();
-        };
     }
 
     /**

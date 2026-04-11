@@ -65,6 +65,19 @@ public class ShopService {
         }
     }
 
+    public static void transferEnchants(ItemStack newWeapon, PlayerInventory inv, int bestSlot, ItemStack existing) {
+        ItemMeta oldMeta = existing.getItemMeta();
+        ItemMeta newMeta = newWeapon.getItemMeta();
+        if (oldMeta != null && newMeta != null) {
+            for (var e : oldMeta.getEnchants().entrySet()) {
+                newMeta.addEnchant(e.getKey(), e.getValue(), true);
+            }
+            newWeapon.setItemMeta(newMeta);
+        }
+
+        inv.setItem(bestSlot, newWeapon);
+    }
+
     public void processRefund(Player player, PurchaseRecord record) {
         CashClashPlayer ccp = getCashClashPlayer(player);
         if (ccp == null) return;
@@ -79,7 +92,7 @@ public class ShopService {
             // Remove all set items from player (from armor slots)
             PlayerInventory inv = player.getInventory();
             for (CustomArmorItem piece : record.getSetItemsSafe()) {
-                ArmorSlot slot = getArmorSlot(piece.getMaterial());
+                ArmorSlot slot = ItemUtils.getArmorSlot(piece.getMaterial());
                 if (slot != null) {
                     // Clear the armor slot
                     switch (slot) {
@@ -135,16 +148,7 @@ public class ShopService {
                 String itemId = PDCDetection.getAnyShopTag(item);
 
                 // Find and remove from inventory
-                for (int i = 0; i < inv.getSize(); i++) {
-                    ItemStack invItem = inv.getItem(i);
-                    if (invItem == null || invItem.getType().isAir()) continue;
-
-                    String invItemId = PDCDetection.getAnyShopTag(invItem);
-                    if (itemId != null && itemId.equals(invItemId)) {
-                        inv.setItem(i, null);
-                        break;
-                    }
-                }
+                findAndRemove(inv, itemId);
             }
 
             // Equip the armor (either custom from inventory or vanilla)
@@ -157,34 +161,16 @@ public class ShopService {
         }
     }
 
-    private void restoreReplacedItem(Player player, PurchaseRecord record) {
-        Purchasable item = record.item();
-        ItemStack replacedItem = record.replacedItem();
+    private void findAndRemove(PlayerInventory inv, String itemId) {
+        for (int i = 0; i < inv.getSize(); i++) {
+            ItemStack invItem = inv.getItem(i);
+            if (invItem == null || invItem.getType().isAir()) continue;
 
-        if (item instanceof ArmorItem || item instanceof CustomArmorItem) {
-            // If the replaced item was custom armor, it's in inventory - find and remove it first
-            if (PDCDetection.isCustomArmorItem(replacedItem)) {
-                String itemId = PDCDetection.getAnyShopTag(replacedItem);
-                PlayerInventory inv = player.getInventory();
-
-                // Find and remove from inventory
-                for (int i = 0; i < inv.getSize(); i++) {
-                    ItemStack invItem = inv.getItem(i);
-                    if (invItem == null || invItem.getType().isAir()) continue;
-
-                    String invItemId = PDCDetection.getAnyShopTag(invItem);
-                    if (itemId != null && itemId.equals(invItemId)) {
-                        inv.setItem(i, null);
-                        break;
-                    }
-                }
+            String invItemId = PDCDetection.getAnyShopTag(invItem);
+            if (itemId != null && itemId.equals(invItemId)) {
+                inv.setItem(i, null);
+                break;
             }
-            // Now equip the replaced item
-            ItemUtils.equipArmorOrReplace(player, replacedItem);
-        } else if (item.getCategory() == ShopCategory.WEAPONS) {
-            ItemUtils.replaceBestMatchingTool(player, record.replacedItem());
-        } else {
-            player.getInventory().addItem(record.replacedItem());
         }
     }
 
@@ -228,6 +214,28 @@ public class ShopService {
         return ccp != null && ccp.getCoins() >= cost;
     }
 
+    private void restoreReplacedItem(Player player, PurchaseRecord record) {
+        Purchasable item = record.item();
+        ItemStack replacedItem = record.replacedItem();
+
+        if (item instanceof ArmorItem || item instanceof CustomArmorItem) {
+            // If the replaced item was custom armor, it's in inventory - find and remove it first
+            if (PDCDetection.isCustomArmorItem(replacedItem)) {
+                String itemId = PDCDetection.getAnyShopTag(replacedItem);
+                PlayerInventory inv = player.getInventory();
+
+                // Find and remove from inventory
+                findAndRemove(inv, itemId);
+            }
+            // Now equip the replaced item
+            ItemUtils.equipArmorOrReplace(player, replacedItem);
+        } else if (item.getCategory() == ShopCategory.WEAPONS) {
+            ItemUtils.replaceBestMatchingTool(player, record.replacedItem());
+        } else {
+            player.getInventory().addItem(record.replacedItem());
+        }
+    }
+
     private void giveItemToPlayer(Player player, CashClashPlayer ccp, Purchasable item, int quantity, long totalPrice) {
         int giveQty = Math.max(1, quantity);
 
@@ -245,8 +253,8 @@ public class ShopService {
 
                     for (CustomArmorItem piece : setPieces) {
                         // Get replaced item before equipping
-                        ArmorSlot slot = getArmorSlot(piece.getMaterial());
-                        ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
+                        ArmorSlot slot = ItemUtils.getArmorSlot(piece.getMaterial());
+                        ItemStack currentArmor = ItemUtils.getCurrentArmorInSlot(player, slot);
 
                         if (currentArmor != null && currentArmor.getType() != Material.AIR) {
                             // Check if it's custom armor (purchased item with custom armor tag)
@@ -277,8 +285,8 @@ public class ShopService {
                     SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
                 } else {
                     // Individual custom armor piece (Magic Helmet, Bunny Shoes, Tax Evasion Pants, Guardian's Vest)
-                    ArmorSlot slot = getArmorSlot(customArmor.getMaterial());
-                    ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
+                    ArmorSlot slot = ItemUtils.getArmorSlot(customArmor.getMaterial());
+                    ItemStack currentArmor = ItemUtils.getCurrentArmorInSlot(player, slot);
                     Messages.debug("Current armor in slot " + slot + ": " + currentArmor);
                     ItemStack replacedItem = null;
 
@@ -298,11 +306,7 @@ public class ShopService {
                     // Equip the custom armor
                     ItemFactory.getInstance().createAndEquipCustomArmor(player, customArmor);
 
-                    ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
-                    ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
-
-                    Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
-                    SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+                    cachePurchase(player, ccp, item, round, replacedItem);
                 }
             }
             case ArmorItem ignored -> {
@@ -310,8 +314,8 @@ public class ShopService {
                 ItemStack armorItem = ItemFactory.getInstance().createGameplayItem(item);
 
                 // Get current armor before replacing
-                ArmorSlot slot = getArmorSlot(armorItem.getType());
-                ItemStack currentArmor = getCurrentArmorInSlot(player, slot);
+                ArmorSlot slot = ItemUtils.getArmorSlot(armorItem.getType());
+                ItemStack currentArmor = ItemUtils.getCurrentArmorInSlot(player, slot);
                 ItemStack replacedItem = null;
 
                 // Track replaced item if it was a purchased item
@@ -328,21 +332,13 @@ public class ShopService {
                 // Equip the armor
                 ItemUtils.equipArmorOrReplace(player, armorItem);
 
-                ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
-                ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
-
-                Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
-                SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+                cachePurchase(player, ccp, item, round, replacedItem);
             }
             case WeaponItem ignored -> {
                 ItemStack weaponItem = ItemFactory.getInstance().createGameplayItem(item);
                 ItemStack replacedItem = replaceWeaponInInventory(player, weaponItem);
 
-                ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
-                ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
-
-                Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
-                SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+                cachePurchase(player, ccp, item, round, replacedItem);
             }
             default -> {
                 // Skip mythic items - they are handled by MythicCategoryGui
@@ -350,7 +346,7 @@ public class ShopService {
                     ccp.addPurchase(new PurchaseRecord(item, giveQty, totalPrice, round));
                     return; // MythicCategoryGui will handle giving the actual item
                 }
-                
+
                 // Other items - just add to inventory
                 ItemStack stack = ItemFactory.getInstance().createGameplayItem(item);
                 stack.setAmount(giveQty);
@@ -375,6 +371,14 @@ public class ShopService {
         }
     }
 
+    private void cachePurchase(Player player, CashClashPlayer ccp, Purchasable item, int round, ItemStack replacedItem) {
+        ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
+        ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
+
+        Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
+        SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+    }
+
     /**
      * Replace a weapon in the player's inventory with a new one.
      * Finds the matching weapon category (sword/axe) and replaces it.
@@ -397,16 +401,7 @@ public class ShopService {
                 ItemStack oldItem = existing.clone();
 
                 // Transfer enchantments from old to new
-                ItemMeta oldMeta = existing.getItemMeta();
-                ItemMeta newMeta = newWeapon.getItemMeta();
-                if (oldMeta != null && newMeta != null) {
-                    for (var e : oldMeta.getEnchants().entrySet()) {
-                        newMeta.addEnchant(e.getKey(), e.getValue(), true);
-                    }
-                    newWeapon.setItemMeta(newMeta);
-                }
-
-                inv.setItem(bestSlot, newWeapon);
+                transferEnchants(newWeapon, inv, bestSlot, existing);
                 return oldItem;
             }
         }
@@ -414,32 +409,6 @@ public class ShopService {
         // No matching weapon found, just add to inventory
         inv.addItem(newWeapon);
         return null;
-    }
-
-    /**
-     * Get the armor slot for a given material.
-     */
-    private ArmorSlot getArmorSlot(Material material) {
-        String matName = material.name();
-        if (matName.endsWith("HELMET")) return ArmorSlot.HELMET;
-        if (matName.endsWith("CHESTPLATE")) return ArmorSlot.CHESTPLATE;
-        if (matName.endsWith("LEGGINGS")) return ArmorSlot.LEGGINGS;
-        if (matName.endsWith("BOOTS")) return ArmorSlot.BOOTS;
-        return null;
-    }
-
-    /**
-     * Get the current armor in a specific slot.
-     */
-    private ItemStack getCurrentArmorInSlot(Player player, ArmorSlot slot) {
-        if (slot == null) return null;
-        PlayerInventory inv = player.getInventory();
-        return switch (slot) {
-            case HELMET -> inv.getHelmet();
-            case CHESTPLATE -> inv.getChestplate();
-            case LEGGINGS -> inv.getLeggings();
-            case BOOTS -> inv.getBoots();
-        };
     }
 
 
