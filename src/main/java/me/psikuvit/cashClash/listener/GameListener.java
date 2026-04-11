@@ -173,11 +173,6 @@ public class GameListener implements Listener {
         armorManager.onPlayerKill(killer);
         armorManager.onDragonKill(killer);
         armorManager.onFlamebringerKill(killer);
-
-        /**CashQuakeManager cashQuakeManager = session.getCashQuakeManager();
-        if (cashQuakeManager != null && cashQuakeManager.isLifeStealActive()) {
-            cashQuakeManager.onLifeStealKill(killer);
-        }*/
     }
 
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {
@@ -607,7 +602,7 @@ public class GameListener implements Listener {
         }
     }
 
-    // ==================== CTF FLAG PICKUP (Pressure Plate) ====================
+    // ==================== CTF FLAG PICKUP/SCORE (Pressure Plate) ====================
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteractPressurePlate(PlayerInteractEvent event) {
@@ -616,52 +611,11 @@ public class GameListener implements Listener {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
-        Messages.debug("Started plate check");
         if (session == null || session.getState() != GameState.COMBAT) return;
         if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return;
-        Messages.debug("Gamemode is Capture The Flag, checking flag pickup for " + player.getName());
 
-        // Check if player walked over enemy flag base
-        Team playerTeam = session.getPlayerTeam(player);
-        if (playerTeam == null) return;
-
-        // Determine which team this player is on
-        int playerTeamNumber = playerTeam.getTeamNumber();
-
-        // Get flag base locations
-        Location redFlagBase = gamemode.getFlagBase(1);
-        Location blueFlagBase = gamemode.getFlagBase(2);
-        if (redFlagBase == null || blueFlagBase == null) return;
-
-        // Check which plate player is standing on
-        Location playerLoc = player.getLocation();
-        boolean onRedPlate = playerLoc.distance(redFlagBase) <= 2.0;
-        boolean onBluePlate = playerLoc.distance(blueFlagBase) <= 2.0;
-
-        // Player should only be able to pick up ENEMY flag
-        // If on red plate and on red team, don't pickup (prevent own flag pickup)
-        if (onRedPlate && playerTeamNumber == 1) return;
-        // If on blue plate and on blue team, don't pickup (prevent own flag pickup)
-        if (onBluePlate && playerTeamNumber == 2) return;
-
-        // Determine which enemy flag to pickup
-        int enemyTeamNumber;
-        if (onRedPlate && playerTeamNumber == 2) {
-            enemyTeamNumber = 1; // Blue team on red plate = pick up red flag
-        } else if (onBluePlate && playerTeamNumber == 1) {
-            enemyTeamNumber = 2; // Red team on blue plate = pick up blue flag
-        } else {
-            return; // Not on a valid enemy flag plate
-        }
-
-        // Check if flag is not already held
-        if (gamemode.isFlagHeld(enemyTeamNumber)) return;
-        Messages.debug("Flag not held, checking for pickup");
-
-
-        // Flag picked up!
-        gamemode.flagPickup(player, enemyTeamNumber);
-        Messages.debug("Flag picked up!");
+        // Let the gamemode handle all plate logic (pickup + scoring)
+        gamemode.checkPlateCapture(player);
     }
 }
 

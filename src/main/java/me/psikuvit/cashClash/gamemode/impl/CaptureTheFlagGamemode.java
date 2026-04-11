@@ -49,7 +49,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private boolean inSuddenDeath;
     private BukkitTask carrierGlowTask;
     private BukkitTask captureTimerTask;
-    private BukkitTask plateCheckTask;
     private BukkitTask bannerRotationTask;
 
     public CaptureTheFlagGamemode(GameSession session) {
@@ -62,7 +61,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.inSuddenDeath = false;
         this.carrierGlowTask = null;
         this.captureTimerTask = null;
-        this.plateCheckTask = null;
         this.bannerRotationTask = null;
 
         // Pre-populate flag states and capture map
@@ -82,10 +80,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Messages.broadcastWithPrefix(session.getPlayers(),
                 "<yellow>Capturing the flag 45 seconds after stealing it grants your team a split 15k bonus!</yellow>");
 
-        // Flag bases will be at arena spawn points
-        // This is a simplified version - you may need to adjust based on your arena system
-        initializeFlagLocations();
-        
         // Place pressure plates for capture zones
         placePressurePlates();
     }
@@ -105,8 +99,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Start capture timer task
         startCaptureTimerTask();
         
-        // Start pressure plate check task
-        startPlateCheckTask();
 
         // Start banner rotation task
         startBannerRotationTask();
@@ -180,7 +172,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void cleanup() {
         cancelTask(carrierGlowTask);
         cancelTask(captureTimerTask);
-        cancelTask(plateCheckTask);
         cancelTask(bannerRotationTask);
         flagStates.clear();
         platePressStartTime.clear();
@@ -211,25 +202,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return "<yellow>Capture the enemy's flag! First team to " + targetCaptures + " captures wins!</yellow>";
     }
 
-    /**
-     * Initialize flag locations based on arena spawns
-     */
-    private void initializeFlagLocations() {
-        // This is simplified - you should use arena-specific spawn points
-        // For now, using general arena locations
-        World world = session.getGameWorld();
-        if (world != null) {
-            // These would normally be read from arena config
-            Location redBase = world.getSpawnLocation().clone().add(0, 1, 0);
-            Location blueBase = world.getSpawnLocation().clone().add(50, 1, 0);
-
-            FlagState redFlag = flagStates.get(1).withBase(redBase);
-            FlagState blueFlag = flagStates.get(2).withBase(blueBase);
-
-            flagStates.put(1, redFlag);
-            flagStates.put(2, blueFlag);
-        }
-    }
 
     /**
      * Place pressure plates from template config at their capture locations
@@ -289,81 +261,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Start task to check if flag carriers are standing on capture plates
-     */
-    private void startPlateCheckTask() {
-        plateCheckTask = SchedulerUtils.runTaskTimer(this::checkPlateCaptures, 0, 10);
-    }
-
-    /**
-     * Check if flag carriers standing on plates have been there long enough to capture
-     */
-    private void checkPlateCaptures() {
-        long now = System.currentTimeMillis();
-
-        FlagState blueFlag = flagStates.get(2);
-        FlagState redFlag = flagStates.get(1);
-
-        // Check Team 1's flag holder on Team 2's capture plate
-        if (blueFlag != null && blueFlag.isHeld() && blueFlag.capturePlate() != null) {
-            Player carrier = Bukkit.getPlayer(blueFlag.holder());
-            if (carrier != null && carrier.isOnline() && isPlayerOnPlate(carrier, blueFlag.capturePlate())) {
-                // Player is on the capture plate
-                if (!platePressStartTime.containsKey(blueFlag.holder())) {
-                    // First time on plate, start timer
-                    platePressStartTime.put(blueFlag.holder(), now);
-                    Messages.debug("[CTF] " + carrier.getName() + " standing on Team 2 capture plate");
-                } else {
-                    long pressedTime = now - platePressStartTime.get(blueFlag.holder());
-                    if (pressedTime >= PLATE_ACTIVATION_MS) {
-                        // Capture completed!
-                        Messages.debug("[CTF] " + carrier.getName() + " captured Team 2's flag!");
-                        flagCapture(carrier, 2);
-                        platePressStartTime.remove(blueFlag.holder());
-                    }
-                }
-            } else {
-                // Player left the plate or is offline
-                platePressStartTime.remove(blueFlag.holder());
-            }
-        }
-
-        // Check Team 2's flag holder on Team 1's capture plate
-        if (redFlag != null && redFlag.isHeld() && redFlag.capturePlate() != null) {
-            Player carrier = Bukkit.getPlayer(redFlag.holder());
-            if (carrier != null && carrier.isOnline() && isPlayerOnPlate(carrier, redFlag.capturePlate())) {
-                // Player is on the capture plate
-                if (!platePressStartTime.containsKey(redFlag.holder())) {
-                    // First time on plate, start timer
-                    platePressStartTime.put(redFlag.holder(), now);
-                    Messages.debug("[CTF] " + carrier.getName() + " standing on Team 1 capture plate");
-                } else {
-                    long pressedTime = now - platePressStartTime.get(redFlag.holder());
-                    if (pressedTime >= PLATE_ACTIVATION_MS) {
-                        // Capture completed!
-                        Messages.debug("[CTF] " + carrier.getName() + " captured Team 1's flag!");
-                        flagCapture(carrier, 1);
-                        platePressStartTime.remove(redFlag.holder());
-                    }
-                }
-            } else {
-                // Player left the plate or is offline
-                platePressStartTime.remove(redFlag.holder());
-            }
-        }
-    }
-
-    /**
-     * Check if a player is standing on a specific block by checking distance to the block location
-     */
-    private boolean isPlayerOnPlate(Player player, Location blockLoc) {
-        if (blockLoc == null || player.getWorld() != blockLoc.getWorld()) return false;
-
-        // Check if player is within 1 block horizontally of the plate center
-        return player.getLocation().distance(blockLoc.clone().add(0.5, 0, 0.5)) <= 0.7;
-    }
-
-    /**
      * Start task to show glowing effect on flag carriers every 5 seconds
      */
     private void startCarrierGlowEffect() {
@@ -412,6 +309,102 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
+     * Check if player is pressing a plate and handle flag pickup/scoring
+     * This should be called from PlayerMoveEvent when a player is on a pressure plate
+     * <p>
+     * Logic:
+     * 1. If player presses ENEMY plate without flag for 3 seconds -> pickup flag (banner to head)
+     * 2. If player presses OWN plate while carrying ENEMY flag for 3 seconds -> score
+     */
+    public void checkPlateCapture(Player player) {
+        long now = System.currentTimeMillis();
+        UUID playerUuid = player.getUniqueId();
+
+        FlagState blueFlag = flagStates.get(2);
+        FlagState redFlag = flagStates.get(1);
+
+        // Check if player is on Team 1 (Red) plate
+        if (redFlag != null && redFlag.capturePlate() != null && isPlayerOnPlate(player, redFlag.capturePlate())) {
+            // Carrying Blue flag and on Red plate = SCORE
+            if (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid)) {
+                if (!platePressStartTime.containsKey(playerUuid)) {
+                    platePressStartTime.put(playerUuid, now);
+                    Messages.debug("[CTF] " + player.getName() + " on Team Red plate with Blue flag (scoring)");
+                } else {
+                    long pressedTime = now - platePressStartTime.get(playerUuid);
+                    if (pressedTime >= PLATE_ACTIVATION_MS) {
+                        Messages.debug("[CTF] " + player.getName() + " scored with Blue flag!");
+                        flagCapture(player, 1);
+                        platePressStartTime.remove(playerUuid);
+                    }
+                }
+            }
+            // Red flag available and not held = PICKUP
+            else if (!redFlag.isHeld() && (blueFlag == null || !blueFlag.isHeld())) {
+                if (!platePressStartTime.containsKey(playerUuid)) {
+                    platePressStartTime.put(playerUuid, now);
+                    Messages.debug("[CTF] " + player.getName() + " on Team Red plate (attempting pickup)");
+                } else {
+                    long pressedTime = now - platePressStartTime.get(playerUuid);
+                    if (pressedTime >= PLATE_ACTIVATION_MS) {
+                        Messages.debug("[CTF] " + player.getName() + " picked up Red flag!");
+                        flagPickup(player, 1);
+                        platePressStartTime.remove(playerUuid);
+                    }
+                }
+            } else {
+                platePressStartTime.remove(playerUuid);
+            }
+        }
+        // Check if player is on Team 2 (Blue) plate
+        else if (blueFlag != null && blueFlag.capturePlate() != null && isPlayerOnPlate(player, blueFlag.capturePlate())) {
+            // Carrying Red flag and on Blue plate = SCORE
+            if (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid)) {
+                if (!platePressStartTime.containsKey(playerUuid)) {
+                    platePressStartTime.put(playerUuid, now);
+                    Messages.debug("[CTF] " + player.getName() + " on Team Blue plate with Red flag (scoring)");
+                } else {
+                    long pressedTime = now - platePressStartTime.get(playerUuid);
+                    if (pressedTime >= PLATE_ACTIVATION_MS) {
+                        Messages.debug("[CTF] " + player.getName() + " scored with Red flag!");
+                        flagCapture(player, 2);
+                        platePressStartTime.remove(playerUuid);
+                    }
+                }
+            }
+            // Blue flag available and not held = PICKUP
+            else if (!blueFlag.isHeld() && (redFlag == null || !redFlag.isHeld())) {
+                if (!platePressStartTime.containsKey(playerUuid)) {
+                    platePressStartTime.put(playerUuid, now);
+                    Messages.debug("[CTF] " + player.getName() + " on Team Blue plate (attempting pickup)");
+                } else {
+                    long pressedTime = now - platePressStartTime.get(playerUuid);
+                    if (pressedTime >= PLATE_ACTIVATION_MS) {
+                        Messages.debug("[CTF] " + player.getName() + " picked up Blue flag!");
+                        flagPickup(player, 2);
+                        platePressStartTime.remove(playerUuid);
+                    }
+                }
+            } else {
+                platePressStartTime.remove(playerUuid);
+            }
+        } else {
+            // Player left all plates
+            platePressStartTime.remove(playerUuid);
+        }
+    }
+
+    /**
+     * Check if a player is standing on a specific block by checking distance to the block location
+     */
+    private boolean isPlayerOnPlate(Player player, Location blockLoc) {
+        if (blockLoc == null || player.getWorld() != blockLoc.getWorld()) return false;
+
+        // Check if player is within 1 block horizontally of the plate center
+        return player.getLocation().distance(blockLoc.clone().add(0.5, 0, 0.5)) <= 0.7;
+    }
+
+    /**
      * Handle flag pickup
      */
     public void flagPickup(Player player, int enemyTeamNumber) {
@@ -421,25 +414,23 @@ public class CaptureTheFlagGamemode extends Gamemode {
         FlagState flag = flagStates.get(enemyTeamNumber);
         if (flag == null) return;
 
+        FlagState updatedFlag = flag.withHolder(playerUuid, now);
         if (enemyTeamNumber == 1) {
-            FlagState updatedFlag = flag.withHolder(playerUuid, now);
             flagStates.put(1, updatedFlag);
             Messages.debug("[CTF] " + player.getName() + " picked up Team Red's flag");
             Messages.broadcastWithPrefix(session.getPlayers(),
                     "<blue>" + player.getName() + " has stolen Team Red's flag!</blue>");
 
             // Move banner to player head
-            moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
         } else {
-            FlagState updatedFlag = flag.withHolder(playerUuid, now);
             flagStates.put(2, updatedFlag);
             Messages.debug("[CTF] " + player.getName() + " picked up Team Blue's flag");
             Messages.broadcastWithPrefix(session.getPlayers(),
                     "<red>" + player.getName() + " has stolen Team Blue's flag!</red>");
 
             // Move banner to player head
-            moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
         }
+        moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
 
         SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, 1.5f);
     }
@@ -654,7 +645,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     public Location getFlagBase(int teamNumber) {
         FlagState flag = flagStates.get(teamNumber);
-        return flag != null ? flag.flagBase() : null;
+        return flag != null ? flag.getFlagBase() : null;
     }
 
     public int getFlagCaptures(int teamNumber) {
