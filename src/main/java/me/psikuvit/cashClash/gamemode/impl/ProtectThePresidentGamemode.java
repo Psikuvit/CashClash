@@ -435,6 +435,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             // Mark as buff selection potion (undrinkable)
             meta.getPersistentDataContainer().set(Keys.BUFF_SELECTION_POTION, PersistentDataType.BYTE, (byte) 1);
             item.setItemMeta(meta);
+            item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
             Messages.debug("[PTP] Created buff selection item: " + name + " for buff: " + buff.getName());
         } else {
             Messages.debug("[PTP] WARNING: Could not get ItemMeta for POTION");
