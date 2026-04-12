@@ -46,6 +46,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     private final boolean inSuddenDeath;
     private boolean selectionPhaseActive;
+    private boolean buffSelectionFinalized;
     private final BukkitTask extraHeartTask;
     private BukkitTask selectionTask;
     private int selectionTimeRemaining;
@@ -60,6 +61,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.savedInventories = new HashMap<>();
         this.inSuddenDeath = false;
         this.selectionPhaseActive = false;
+        this.buffSelectionFinalized = false;
         this.extraHeartTask = null;
         this.selectionTask = null;
         this.selectionTimeRemaining = SELECTION_TIME;
@@ -353,6 +355,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
      */
     private void startPresidentSelectionPhase() {
         selectionPhaseActive = true;
+        buffSelectionFinalized = false;
         selectionTimeRemaining = SELECTION_TIME;
 
         Messages.debug("[PTP] Starting president buff selection phase (15 seconds)");
@@ -662,6 +665,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public int getAssassinationCount(int teamNumber) {
         President pres = presidents.get(teamNumber);
         return pres != null ? pres.deaths() : 0;
+    }
+
+    /**
+     * Check if buff selection phase is active (shop should be locked)
+     */
+    public boolean isBuffSelectionActive() {
+        return selectionPhaseActive;
     }
 
     /**

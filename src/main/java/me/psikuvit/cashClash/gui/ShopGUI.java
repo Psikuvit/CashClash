@@ -176,6 +176,16 @@ public class ShopGUI extends AbstractGui {
      * Static convenience method to open the main shop GUI.
      */
     public static void openMain(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+
+        // Check if player is in buff selection phase (PTP gamemode)
+        if (session != null && session.getGamemode() instanceof me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode ptp) {
+            if (ptp.isBuffSelectionActive()) {
+                Messages.send(player, "<red>Shop is locked during buff selection phase!</red>");
+                return;
+            }
+        }
+
         new ShopGUI(player).open();
     }
 
