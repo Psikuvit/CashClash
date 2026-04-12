@@ -106,7 +106,18 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public void onRoundEnd() {
-        // Reset for next round if continuing
+        // Remove all banners from players and reset positions
+        removeBannersFromPlayers();
+
+        this.inSuddenDeath = false;
+        this.carrierGlowTask = null;
+        this.captureTimerTask = null;
+        this.bannerRotationTask = null;
+
+        flagCaptures.put(1, 0);
+        flagCaptures.put(2, 0);
+        flagStates.put(1, FlagState.create());
+        flagStates.put(2, FlagState.create());
     }
 
     @Override
