@@ -154,7 +154,7 @@ public class ArenaManager {
             if (cfg.contains("shop.team1")) {
                 tpl.setTeamRedShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("shop.team1")));
             }
-            if (cfg.contains("shop.teamBlue")) {
+            if (cfg.contains("shop.team2")) {
                 tpl.setTeamBlueShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("shop.team2")));
             }
 
