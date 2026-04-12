@@ -132,7 +132,7 @@ public class RoundManager {
                 }
 
                 if (destTemplate != null) {
-                    Location dest = LocationUtils.adjustLocationToWorld(destTemplate, copiedWorld);
+                    Location dest = LocationUtils.copyToWorld(destTemplate, copiedWorld);
                     p.setGameMode(GameMode.SURVIVAL);
                     p.teleport(dest);
                     p.closeInventory();

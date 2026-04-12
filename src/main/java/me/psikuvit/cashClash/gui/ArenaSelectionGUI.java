@@ -136,7 +136,7 @@ public class ArenaSelectionGUI extends AbstractGui {
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
         Location lobbySpawn = null;
         if (tpl != null && tpl.isConfigured() && tpl.getLobbySpawn() != null && session.getGameWorld() != null) {
-            lobbySpawn = LocationUtils.adjustLocationToWorld(tpl.getLobbySpawn(), session.getGameWorld());
+            lobbySpawn = LocationUtils.copyToWorld(tpl.getLobbySpawn(), session.getGameWorld());
         }
 
         // Add primary team members
@@ -280,7 +280,7 @@ public class ArenaSelectionGUI extends AbstractGui {
         // Teleport player to the copied world's lobby spawn
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
         if (tpl != null && tpl.isConfigured() && tpl.getLobbySpawn() != null && session.getGameWorld() != null) {
-            Location lobbyInCopiedWorld = LocationUtils.adjustLocationToWorld(tpl.getLobbySpawn(), session.getGameWorld());
+            Location lobbyInCopiedWorld = LocationUtils.copyToWorld(tpl.getLobbySpawn(), session.getGameWorld());
             player.teleport(lobbyInCopiedWorld);
         }
 

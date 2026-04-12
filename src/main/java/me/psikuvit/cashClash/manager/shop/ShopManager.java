@@ -88,7 +88,7 @@ public class ShopManager {
 
         for (Location templateLoc : villagerSpawns) {
             // Adjust location to the copied world
-            Location spawnLoc = LocationUtils.adjustLocationToWorld(templateLoc, world);
+            Location spawnLoc = LocationUtils.copyToWorld(templateLoc, world);
 
             Villager villager = world.spawn(spawnLoc, Villager.class);
 

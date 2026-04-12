@@ -375,7 +375,7 @@ public class GameSession {
         Location templateLoc = team == teamRed ? tpl.getTeamRedSpawn(idx) : tpl.getTeamBlueSpawn(idx);
         if (templateLoc == null) return gameWorld != null ? gameWorld.getSpawnLocation() : null;
 
-        return LocationUtils.adjustLocationToWorld(templateLoc, gameWorld);
+        return LocationUtils.copyToWorld(templateLoc, gameWorld);
     }
 
     public void nextRound() {

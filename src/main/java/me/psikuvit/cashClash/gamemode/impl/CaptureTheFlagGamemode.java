@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
+import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -98,7 +99,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         // Start capture timer task
         startCaptureTimerTask();
-        
 
         // Start banner rotation task
         startBannerRotationTask();
@@ -223,8 +223,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Location teamRedPlateLocation = template.getCTFCaptureTeamRedPlate();
         if (teamRedPlateLocation != null) {
             // Convert template location to world copy location
-            Location copiedLoc = teamRedPlateLocation.clone();
-            copiedLoc.setWorld(world);
+            Location copiedLoc = LocationUtils.copyToWorld(teamRedPlateLocation.clone(), world);
             Block block = world.getBlockAt(copiedLoc);
             block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
             Messages.debug("[CTF] Placed Team 1 capture plate at " + copiedLoc);
@@ -243,8 +242,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Location teamBluePlateLocation = template.getCTFCaptureTeamBluePlate();
         if (teamBluePlateLocation != null) {
             // Convert template location to world copy location
-            Location copiedLoc = teamBluePlateLocation.clone();
-            copiedLoc.setWorld(world);
+            Location copiedLoc = LocationUtils.copyToWorld(teamBluePlateLocation.clone(), world);
             Block block = world.getBlockAt(copiedLoc);
             block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
             Messages.debug("[CTF] Placed Team 2 capture plate at " + copiedLoc);

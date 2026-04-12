@@ -89,18 +89,8 @@ public class MannequinManager {
             if (section == null) continue;
 
             String type = section.getString("type", "arena");
-            String worldName = section.getString("world");
-            double x = section.getDouble("x");
-            double y = section.getDouble("y");
-            double z = section.getDouble("z");
-
-            World world = Bukkit.getWorld(worldName);
-            if (world == null) {
-                plugin.getLogger().warning("[MannequinManager] World '" + worldName + "' not found for mannequin " + id);
-                continue;
-            }
-
-            Location loc = LocationUtils.adjustLocationToWorld(new Location(world, x, y, z), world);
+            Location loc = LocationUtils.deserializeLocation(section.getConfigurationSection("loc"));
+            if (loc == null) continue;
 
             if ("arena".equals(type)) {
                 spawnArenaMannequin(loc, id);
@@ -158,10 +148,7 @@ public class MannequinManager {
         // Save to config
         String path = "mannequins." + id;
         data.set(path + ".type", "arena");
-        data.set(path + ".world", loc.getWorld().getName());
-        data.set(path + ".x", loc.getX());
-        data.set(path + ".y", loc.getY());
-        data.set(path + ".z", loc.getZ());
+        LocationUtils.serializeLocation(data, path + ".loc", loc);
         data.set(path + ".created-by", creator.getName());
         data.set(path + ".created-at", System.currentTimeMillis());
         saveData();

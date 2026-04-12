@@ -133,7 +133,7 @@ public class GameListener implements Listener {
         if (arena != null) {
             TemplateWorld template = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
             if (template != null && template.getSpectatorSpawn() != null) {
-                return LocationUtils.adjustLocationToWorld(template.getSpectatorSpawn(), session.getGameWorld());
+                return LocationUtils.copyToWorld(template.getSpectatorSpawn(), session.getGameWorld());
             }
         }
         return session.getGameWorld() != null

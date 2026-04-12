@@ -46,40 +46,48 @@ public final class LocationUtils {
         return new Location(w, x, y, z, yaw, pitch);
     }
 
+
     /**
-     * Return a new Location with the same coordinates/yaw/pitch but in the specified world.
-     * Returns null if the source or world is null.
-     * The returned Location will be positioned at the center of the corresponding block
-     * (i.e. blockX + 0.5, blockY, blockZ + 0.5) to avoid placing players on block edges.
+     * Creates a new {@link Location} by copying the given {@code source} location's
+     * coordinates, pitch, and yaw to a new location in the specified {@code world}.
+     * The source location is first normalized to align with the center of its corresponding block.
+     *
+     * @param source the {@link Location} to copy; must not be null
+     * @param world  the {@link World} to which the new location should belong; must not be null
+     * @return a new {@link Location} in the specified world, matching the normalized source location,
+     *         or null if the source location is null or the normalization process fails
      */
     public static Location copyToWorld(Location source, World world) {
-        if (source == null || world == null) return null;
-        int bx = source.getBlockX();
-        int by = source.getBlockY();
-        int bz = source.getBlockZ();
-        double cx = bx + 0.5d;
-        double cz = bz + 0.5d;
-        return new Location(
-                world,
-                cx,
-                by,
-                cz,
-                source.getYaw(),
-                source.getPitch()
-        );
+        Location loc = normalizeLocation(source);
+        loc.setWorld(world);
+        return loc;
     }
 
     /**
-     * Convenience wrapper to adjust a template/other-world Location into the provided target world.
-     * Currently this maps X/Y/Z/Yaw/Pitch directly (world coordinate mapping). If you later need
-     * more advanced mapping (e.g., offset transforms), update this method.
+     * Normalizes a given {@link Location} to align it to the center of the corresponding block.
+     * This is achieved by adjusting the X and Z coordinates to the middle of the block
+     * while keeping all other parameters unchanged. For example, X and Z are set
+     * to blockX + 0.5 and blockZ + 0.5, respectively.
      *
-     * @param source the source Location (may belong to any world)
-     * @param targetWorld the desired target World
-     * @return a new Location in targetWorld with coordinates copied from source, or null if source or targetWorld is null
+     * @param loc the {@link Location} to normalize; may be null
+     * @return a new {@link Location} object aligned to the center of the block,
+     *         or null if the input location or its world is null
      */
-    public static Location adjustLocationToWorld(Location source, World targetWorld) {
-        return copyToWorld(source, targetWorld);
+    public static Location normalizeLocation(Location loc) {
+        if (loc == null || loc.getWorld() == null) return null;
+        int bx = loc.getBlockX();
+        int by = loc.getBlockY();
+        int bz = loc.getBlockZ();
+        double cx = bx + 0.5d;
+        double cz = bz + 0.5d;
+        return new Location(
+                loc.getWorld(),
+                cx,
+                by,
+                cz,
+                loc.getYaw(),
+                loc.getPitch()
+        );
     }
 
     /**
