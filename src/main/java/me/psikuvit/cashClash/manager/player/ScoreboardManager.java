@@ -246,6 +246,8 @@ public class ScoreboardManager {
 
             if (filled.length() > 40) {
                 filled = filled.substring(0, 40);
+                // Remove incomplete color tags at the end
+                filled = filled.replaceAll("</?[a-z]*$", "");
             }
 
             if (filled.isEmpty()) {

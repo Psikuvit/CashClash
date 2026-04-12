@@ -43,13 +43,27 @@ public class CTFScoreboardContext extends GameScoreboardContext {
         String teamRedCircle = getFlagCaptureCircles(teamRedCaptures);
         String teamBlueCircle = getFlagCaptureCircles(teamBlueCaptures);
 
-        line = line.replace("{teamRed_capture_circles}", teamRedCircle);
-        line = line.replace("{teamBlue_capture_circles}", teamBlueCircle);
+        // Replace circles - check length first
+        String withRedCircles = line.replace("{teamRed_capture_circles}", teamRedCircle);
+        String withBlueCircles = line.replace("{teamBlue_capture_circles}", teamBlueCircle);
+
+        // Only use circles if they don't exceed 40 chars
+        if (withRedCircles.length() <= 40) {
+            line = withRedCircles;
+        } else {
+            line = line.replace("{teamRed_capture_circles}", "");
+        }
+
+        if (withBlueCircles.length() <= 40) {
+            line = withBlueCircles;
+        } else {
+            line = line.replace("{teamBlue_capture_circles}", "");
+        }
 
         UUID redHolder = ctf.getFlagHolder(1);
         UUID blueHolder = ctf.getFlagHolder(2);
 
-        // Safely get players from UUIDs, check for null first
+        // Safely get players from UUIDs
         Player redHolderPlayer = redHolder != null ? Bukkit.getPlayer(redHolder) : null;
         Player blueHolderPlayer = blueHolder != null ? Bukkit.getPlayer(blueHolder) : null;
 
@@ -58,6 +72,11 @@ public class CTFScoreboardContext extends GameScoreboardContext {
 
         line = line.replace("{red_flag_holder}", redHolderName);
         line = line.replace("{blue_flag_holder}", blueHolderName);
+
+        // Debug logging for Red Team data
+        if (line.contains("Red")) {
+            Messages.debug("[CTF] Red team data line: " + line + " (length: " + line.length() + ")");
+        }
 
         return line;
     }
@@ -82,4 +101,5 @@ public class CTFScoreboardContext extends GameScoreboardContext {
         return ContextType.CTF;
     }
 }
+
 
