@@ -46,7 +46,9 @@ public class RoundManager {
         Messages.debug("GAME", "Starting shopping phase for round " + roundNumber + " in session " + session.getSessionId());
 
         // For Protect the President, run buff selection phase first
-        if (session.getGamemode() instanceof ProtectThePresidentGamemode) {
+        if (session.getGamemode() instanceof ProtectThePresidentGamemode ptp) {
+            // Trigger buff selection in the gamemode
+            ptp.startRoundBuffSelection();
             startPhase(roundNumber, GameState.BUFF_SELECTION);
             return;
         }

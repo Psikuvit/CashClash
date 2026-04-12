@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
+import io.papermc.paper.datacomponent.DataComponentTypes;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -98,16 +99,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public void onCombatPhaseStart() {
         Messages.debug("[PTP] Combat phase started");
 
-        // Clear buffs from previous round
-        clearPresidentialBuffs();
-
-        // Select new presidents if not in sudden death
-        if (!inSuddenDeath) {
-            selectPresidents();
-        }
-
-        // Start buff selection phase
-        startPresidentSelectionPhase();
 
         // Reset kill count for round
         teamKillCount.put(1, 0);
@@ -121,6 +112,25 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         // Reset deaths for next round
         presidents.replaceAll((team, pres) -> pres.withResetDeaths());
+    }
+
+    /**
+     * Called when entering buff selection phase at the start of each round.
+     * This selects new presidents (except round 1) and starts the selection.
+     */
+    public void startRoundBuffSelection() {
+        Messages.debug("[PTP] Starting buff selection for round: " + session.getCurrentRound());
+
+        // Select new presidents for this round (except round 1, presidents already selected)
+        if (session.getCurrentRound() > 1) {
+            selectPresidents();
+        }
+
+        // Reset deaths for this round
+        presidents.replaceAll((team, pres) -> pres.withResetDeaths());
+
+        // Start the buff selection UI
+        startPresidentSelectionPhase();
     }
 
     /**
@@ -205,13 +215,15 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public void onPlayerSpawn(Player player) {
-        // Always reapply glowing if they're a president (survives death/respawn)
         UUID playerUuid = player.getUniqueId();
+
+        // Check if this player is a president
         for (int team = 1; team <= 2; team++) {
             President pres = presidents.get(team);
             if (pres != null && pres.uuid().equals(playerUuid)) {
+                // Always reapply glowing to presidents
                 player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 0, false, false));
-                Messages.debug("[PTP] Reapplied glowing to respawned president: " + player.getName());
+                Messages.debug("[PTP] Applied glowing to president on spawn: " + player.getName());
                 break;
             }
         }
