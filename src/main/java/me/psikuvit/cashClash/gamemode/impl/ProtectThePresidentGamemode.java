@@ -21,7 +21,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,8 +82,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         String pres1Name = pres1 != null ? pres1.getName() : "Unknown";
         String pres2Name = pres2 != null ? pres2.getName() : "Unknown";
 
-        Messages.debug("[PTP] Game started - Presidents: " + pres1Name + " (Team 1) vs " + pres2Name + " (Team 2)");
-
         // Announce presidents
         Messages.broadcastWithPrefix(session.getPlayers(),
                 "<gold>Protect the President has been selected as the gamemode!</gold>");
@@ -92,9 +89,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 "<red>" + pres1Name + " is Team Red's president and can pick a bonus effect.</red>");
         Messages.broadcastWithPrefix(session.getPlayers(),
                 "<blue>" + pres2Name + " is Team Blue's president and can pick a bonus effect.</blue>");
-
-        // Start president buff selection (15 seconds)
-        startPresidentSelectionPhase();
     }
 
     @Override
@@ -333,21 +327,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
         UUID pres1Uuid = session.getTeamRed().getPlayers().stream().findAny().orElse(null);
         President pres1 = President.create(pres1Uuid, 1);
         presidents.put(1, pres1);
-        Messages.debug("[PTP] Team 1 President UUID: " + pres1Uuid);
 
         UUID pres2Uuid = session.getTeamBlue().getPlayers().stream().findAny().orElse(null);
         President pres2 = President.create(pres2Uuid, 2);
         presidents.put(2, pres2);
-        Messages.debug("[PTP] Team 2 President UUID: " + pres2Uuid);
-
-        if (pres1Uuid != null) {
-            Player presPlayer1 = Bukkit.getPlayer(pres1Uuid);
-            Messages.debug("[PTP] Team 1 President Player: " + (presPlayer1 != null ? presPlayer1.getName() : "NULL"));
-        }
-        if (pres2Uuid != null) {
-            Player presPlayer2 = Bukkit.getPlayer(pres2Uuid);
-            Messages.debug("[PTP] Team 2 President Player: " + (presPlayer2 != null ? presPlayer2.getName() : "NULL"));
-        }
     }
 
     /**
@@ -363,14 +346,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
         President pres1 = presidents.get(1);
         President pres2 = presidents.get(2);
 
-        Messages.debug("[PTP] President 1 UUID: " + (pres1 != null ? pres1.uuid() : "NULL"));
-        Messages.debug("[PTP] President 2 UUID: " + (pres2 != null ? pres2.uuid() : "NULL"));
-
         Player presPlayer1 = pres1 != null ? Bukkit.getPlayer(pres1.uuid()) : null;
         Player presPlayer2 = pres2 != null ? Bukkit.getPlayer(pres2.uuid()) : null;
-
-        Messages.debug("[PTP] President 1 Player object: " + (presPlayer1 != null ? presPlayer1.getName() : "NULL"));
-        Messages.debug("[PTP] President 2 Player object: " + (presPlayer2 != null ? presPlayer2.getName() : "NULL"));
 
         if (presPlayer1 != null && presPlayer2 != null) {
             Messages.debug("[PTP] Both presidents found, giving buff selection items");
@@ -391,11 +368,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private void giveBuffSelectionItems(Player president) {
         UUID presUuid = president.getUniqueId();
 
+        savedInventories.put(presUuid, president.getInventory().getContents().clone());
+
         SchedulerUtils.runTask(() -> {
             Messages.debug("[PTP] Saving inventory for president: " + president.getName());
-
-            // Save the player's current inventory
-            savedInventories.put(presUuid, president.getInventory().getContents().clone());
 
             president.getInventory().clear();
             Messages.debug("[PTP] Cleared inventory for: " + president.getName());
@@ -404,29 +380,24 @@ public class ProtectThePresidentGamemode extends Gamemode {
             ItemStack strengthPotion = createBuffSelectionItem("Strength Potion",
                     PresidentialBuff.OFFENSE, "<gold>Strength I - Deal more damage</gold>");
             president.getInventory().setItem(1, strengthPotion);
-            Messages.debug("[PTP] Set strength potion at slot 1");
 
             // Slot 4 - Speed Potion
             ItemStack speedPotion = createBuffSelectionItem("Speed Potion",
                     PresidentialBuff.SPEED, "<gold>Speed I - Move faster</gold>");
             president.getInventory().setItem(3, speedPotion);
-            Messages.debug("[PTP] Set speed potion at slot 3");
 
             // Slot 6 - Resistance Potion
             ItemStack resistancePotion = createBuffSelectionItem("Resistance Potion",
                     PresidentialBuff.TANK, "<gold>Resistance I - Take less damage</gold>");
             president.getInventory().setItem(5, resistancePotion);
-            Messages.debug("[PTP] Set resistance potion at slot 5");
 
             // Slot 8 - Instant Health Potion
             ItemStack healthPotion = createBuffSelectionItem("Health Potion",
                     PresidentialBuff.HP, "<gold>Extra Hearts - Gain +3 max hearts</gold>");
             president.getInventory().setItem(7, healthPotion);
-            Messages.debug("[PTP] Set health potion at slot 7");
 
             // Update inventory on client
             president.updateInventory();
-            Messages.debug("[PTP] Updated inventory for: " + president.getName());
 
             Messages.send(president, "<gold>Right-click an item to select your buff! Right-click again to deselect.</gold>");
         });
@@ -451,7 +422,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
             meta.getPersistentDataContainer().set(Keys.BUFF_SELECTION_POTION, PersistentDataType.BYTE, (byte) 1);
             item.setItemMeta(meta);
             item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
-            Messages.debug("[PTP] Created buff selection item: " + name + " for buff: " + buff.getName());
         } else {
             Messages.debug("[PTP] WARNING: Could not get ItemMeta for POTION");
         }
@@ -468,7 +438,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
                         "<gold>Presidents must select their buff in " + selectionTimeRemaining + "s!</gold>");
             }
             selectionTimeRemaining--;
-        } else {
+        } else if (!buffSelectionFinalized) {
+            // Only execute once when timer expires
+            buffSelectionFinalized = true;
             applyDefaultBuffsToPresidents();
             if (selectionTask != null) selectionTask.cancel();
         }
@@ -500,13 +472,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
             }
         }
         
-        // Restore inventories for all presidents
-        for (President pres : presidents.values()) {
-            if (pres != null) {
-                Player presPlayer = Bukkit.getPlayer(pres.uuid());
-                if (presPlayer != null) {
-                    restoreInventory(presPlayer);
-                }
+        // Restore inventories for all presidents SYNCHRONOUSLY before combat
+        for (UUID uuid : savedInventories.keySet().stream().toList()) {
+            Player presPlayer = Bukkit.getPlayer(uuid);
+            if (presPlayer != null) {
+                restoreInventory(presPlayer);
             }
         }
 
@@ -744,9 +714,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private void restoreInventory(Player player) {
         UUID uuid = player.getUniqueId();
         if (savedInventories.containsKey(uuid)) {
-            SchedulerUtils.runTask(() -> {
-                ItemStack[] savedContents = savedInventories.get(uuid);
-                Messages.debug("[PTP] Items: " + Arrays.toString(savedContents));
+            // Restore synchronously to ensure it's done before combat starts
+            ItemStack[] savedContents = savedInventories.get(uuid);
+            player.getInventory().clear();
+            SchedulerUtils.runTaskAsync(() -> {
                 player.getInventory().setContents(savedContents);
                 Messages.debug("[PTP] Restored inventory for: " + player.getName());
                 savedInventories.remove(uuid);
