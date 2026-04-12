@@ -144,6 +144,36 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // No special spawn logic
     }
 
+    /**
+     * Handle player removal - remove any banners they were carrying
+     */
+    @Override
+    public void onPlayerRemove(Player player) {
+        UUID playerUuid = player.getUniqueId();
+
+        // Check if this player was carrying any flags and remove their banners
+        FlagState redFlag = flagStates.get(1);
+        FlagState blueFlag = flagStates.get(2);
+
+        if (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid)) {
+            Messages.debug("[CTF] Removing player " + player.getName() + " who was carrying Red flag");
+            if (redFlag.bannerDisplay() != null && !redFlag.bannerDisplay().isDead()) {
+                redFlag.bannerDisplay().getVehicle().removePassenger(redFlag.bannerDisplay());
+                moveBannerToLocation(redFlag.bannerDisplay(), redFlag.capturePlate());
+            }
+            flagStates.put(1, redFlag.withoutHolder());
+        }
+
+        if (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid)) {
+            Messages.debug("[CTF] Removing player " + player.getName() + " who was carrying Blue flag");
+            if (blueFlag.bannerDisplay() != null && !blueFlag.bannerDisplay().isDead()) {
+                blueFlag.bannerDisplay().getVehicle().removePassenger(blueFlag.bannerDisplay());
+                moveBannerToLocation(blueFlag.bannerDisplay(), blueFlag.capturePlate());
+            }
+            flagStates.put(2, blueFlag.withoutHolder());
+        }
+    }
+
     @Override
     public boolean checkGameWinner() {
         int targetCaptures = inSuddenDeath ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
@@ -177,12 +207,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public void cleanup() {
+        // Remove banners from all players first
+        removeBannersFromPlayers();
+
+        // Cancel all tasks
         cancelTask(carrierGlowTask);
         cancelTask(captureTimerTask);
         cancelTask(bannerRotationTask);
-        flagStates.clear();
-        platePressStartTime.clear();
-        flagCaptures.clear();
 
         // Remove banner entities
         for (FlagState flag : flagStates.values()) {
@@ -190,6 +221,36 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 flag.bannerDisplay().remove();
             }
         }
+
+        flagStates.clear();
+        flagCaptures.clear();
+    }
+
+    /**
+     * Remove all banners from players and move them back to their plates
+     */
+    private void removeBannersFromPlayers() {
+        for (FlagState flag : flagStates.values()) {
+            if (flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
+                // Remove from any passengers (i.e., from player if being carried)
+                if (flag.bannerDisplay().getVehicle() != null) {
+                    flag.bannerDisplay().getVehicle().removePassenger(flag.bannerDisplay());
+                }
+
+                // Move banner back to its plate
+                if (flag.capturePlate() != null) {
+                    moveBannerToLocation(flag.bannerDisplay(), flag.capturePlate());
+                }
+            }
+        }
+    }
+
+    /**
+     * Handle shopping phase start - remove banners from players
+     */
+    public void onShoppingPhaseStart() {
+        Messages.debug("[CTF] Shopping phase starting - removing banners from players");
+        removeBannersFromPlayers();
     }
 
     private void cancelTask(BukkitTask task) {
