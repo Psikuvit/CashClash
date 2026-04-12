@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.gui.categories;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
@@ -114,6 +115,13 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         if (sess == null) {
             Messages.send(viewer, "<red>You must be in a game to shop.</red>");
             viewer.closeInventory();
+            return;
+        }
+
+        // Prevent purchases during buff selection phase
+        if (sess.getState() == GameState.BUFF_SELECTION) {
+            Messages.send(viewer, "<red>You cannot purchase items during buff selection!</red>");
+            SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
