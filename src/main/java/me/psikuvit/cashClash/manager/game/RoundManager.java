@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
@@ -147,6 +148,10 @@ public class RoundManager {
         if (phaseType == GameState.BUFF_SELECTION) {
             startBuffSelectionTimer(roundNumber);
         } else {
+            // Notify gamemode when shopping phase starts (for cleanup, banner removal, etc.)
+            if (session.getGamemode() instanceof CaptureTheFlagGamemode ctf) {
+                ctf.onShoppingPhaseStart();
+            }
             startShoppingTimer(roundNumber, teamRed, teamBlue);
         }
     }
