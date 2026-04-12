@@ -566,11 +566,14 @@ public class GameListener implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session != null && session.getState() == GameState.SHOPPING) {
-            Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-                player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
-                player.setFoodLevel(20);
-            }, 2L);
+        if (session != null) {
+            session.getGamemode().onPlayerSpawn(player);
+            if (session.getState() == GameState.SHOPPING) {
+                Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
+                    player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
+                    player.setFoodLevel(20);
+                }, 2L);
+            }
         }
     }
 

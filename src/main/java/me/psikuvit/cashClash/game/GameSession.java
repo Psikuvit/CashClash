@@ -206,8 +206,8 @@ public class GameSession {
         gamemode = GamemodeManager.getInstance().selectGamemode(this);
         gamemode.onGameStart();
 
-        roundManager.startShoppingPhase(currentRound);
         players.keySet().forEach(this::applyKit);
+        roundManager.startShoppingPhase(currentRound);
         ScoreboardManager.getInstance().createBoardForSession(this);
 
 
@@ -404,6 +404,7 @@ public class GameSession {
         state = GameState.SHOPPING;
 
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
+        gamemode.onRoundEnd();
 
         // Reapply kits for round 2+ (removes kit items, keeps base items, toggles shield)
         SchedulerUtils.runTask(() -> players.keySet().forEach(this::applyKit));
@@ -582,6 +583,11 @@ public class GameSession {
 
         // Clean up kit items and effects before removing player from session
         clearPlayerKit(player);
+
+        // Notify gamemode about player removal for any special cleanup (e.g., banners in CTF)
+        if (gamemode != null) {
+            gamemode.onPlayerRemove(player);
+        }
 
         players.remove(player.getUniqueId());
         teamRed.removePlayer(player.getUniqueId());

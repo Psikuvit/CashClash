@@ -50,6 +50,14 @@ public abstract class Gamemode {
     public abstract void onPlayerSpawn(Player player);
 
     /**
+     * Called when a player is removed from the game (disconnect, leave, etc.)
+     * Used for cleanup specific to the player (e.g., removing banners)
+     */
+    public void onPlayerRemove(Player player) {
+        // Default: no special handling
+    }
+
+    /**
      * Check if the game has a winner (returns true if game should end)
      * This is called periodically during combat
      */
