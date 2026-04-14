@@ -290,25 +290,50 @@ public class GameSession {
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
         //if (cashQuakeManager != null) cashQuakeManager.startEventScheduler();
 
-        // Call gamemode combat phase callback
         if (gamemode != null) {
             gamemode.onCombatPhaseStart();
         }
 
+        // Prepare all players for combat
+        preparePlayers();
+    }
+
+    /**
+     * Prepare all players for combat phase (teleport, protection, effects)
+     */
+    private void preparePlayers() {
         players.keySet().forEach(uuid -> {
             CashClashPlayer ccp = players.get(uuid);
             Player p = ccp.getPlayer();
-            if (!p.isOnline()) return;
+            if (!isPlayerOnline(p)) return;
 
-            Location spawn = getSpawnForPlayer(uuid);
-            if (spawn != null) p.teleport(spawn);
-
-            int protSec = ConfigManager.getInstance().getRespawnProtection();
-            ccp.setRespawnProtection(protSec * 1000L);
-
-            // Reapply kit potion effects at start of each round
+            teleportPlayerToSpawn(p, uuid);
+            applyRespawnProtection(ccp);
             reapplyKitPotionEffects(p, ccp.getCurrentKit());
         });
+    }
+
+    /**
+     * Check if player is online
+     */
+    private boolean isPlayerOnline(Player player) {
+        return player != null && player.isOnline();
+    }
+
+    /**
+     * Teleport player to their team spawn
+     */
+    private void teleportPlayerToSpawn(Player player, UUID uuid) {
+        Location spawn = getSpawnForPlayer(uuid);
+        if (spawn != null) player.teleport(spawn);
+    }
+
+    /**
+     * Apply respawn protection to player
+     */
+    private void applyRespawnProtection(CashClashPlayer ccp) {
+        int protSec = ConfigManager.getInstance().getRespawnProtection();
+        ccp.setRespawnProtection(protSec * 1000L);
     }
 
     /**
@@ -329,31 +354,64 @@ public class GameSession {
         Player p = Bukkit.getPlayer(uuid);
         if (p == null || !p.isOnline() || ccp == null) return;
 
-        // Determine the kit to use
-        Kit kitToApply;
+        Kit kitToApply = determineKitForRound(ccp);
+        applyKitToPlayer(p, ccp, kitToApply);
+    }
+
+    /**
+     * Determine which kit to apply based on round
+     */
+    private Kit determineKitForRound(CashClashPlayer ccp) {
         if (currentRound == 1) {
-            // Round 1: Assign a random kit
+            return selectAndAssignRandomKit(ccp);
+        } else {
+            return getOrFallbackKit(ccp);
+        }
+    }
+
+    /**
+     * Select a random kit and assign it to player
+     */
+    private Kit selectAndAssignRandomKit(CashClashPlayer ccp) {
+        Kit kitToApply = getRandomKit();
+        ccp.setCurrentKit(kitToApply);
+        return kitToApply;
+    }
+
+    /**
+     * Get player's current kit or fallback to random
+     */
+    private Kit getOrFallbackKit(CashClashPlayer ccp) {
+        Kit kitToApply = ccp.getCurrentKit();
+        if (kitToApply == null) {
             kitToApply = getRandomKit();
             ccp.setCurrentKit(kitToApply);
+        }
+        return kitToApply;
+    }
 
-            PlayerData playerData = PlayerDataManager.getInstance().getData(uuid);
-            if (playerData.hasKitLayout(kitToApply.name())) {
-                Map<Integer, String> layout = playerData.getKitLayout(kitToApply.name());
-                kitToApply.applyWithLayout(p, layout, currentRound, rounds1to3HaveShields);
-            } else {
-                kitToApply.apply(p, currentRound, rounds1to3HaveShields);
-            }
-
+    /**
+     * Apply kit to player with layout or default
+     */
+    private void applyKitToPlayer(Player p, CashClashPlayer ccp, Kit kitToApply) {
+        if (currentRound == 1) {
+            applyKitWithLayout(p, ccp.getUuid(), kitToApply);
             Messages.send(p, "<green>You have been assigned kit: <yellow>" + kitToApply + "</yellow></green>");
         } else {
-            // Round 2+: Use the existing kit
-            kitToApply = ccp.getCurrentKit();
-            if (kitToApply == null) {
-                // Fallback if no kit is set (shouldn't happen)
-                kitToApply = getRandomKit();
-                ccp.setCurrentKit(kitToApply);
-            }
             kitToApply.apply(p, currentRound, rounds1to3HaveShields);
+        }
+    }
+
+    /**
+     * Apply kit with layout if available
+     */
+    private void applyKitWithLayout(Player p, UUID uuid, Kit kit) {
+        PlayerData playerData = PlayerDataManager.getInstance().getData(uuid);
+        if (playerData.hasKitLayout(kit.name())) {
+            Map<Integer, String> layout = playerData.getKitLayout(kit.name());
+            kit.applyWithLayout(p, layout, currentRound, rounds1to3HaveShields);
+        } else {
+            kit.apply(p, currentRound, rounds1to3HaveShields);
         }
     }
 
@@ -380,34 +438,58 @@ public class GameSession {
 
     public void nextRound() {
         currentRound++;
+        // check if the round number exceeds the rounds in the config
         if (currentRound > ConfigManager.getInstance().getTotalRounds()) {
             end();
             return;
-        } else if (currentRound == 2) {
-            MythicItemManager.getInstance().selectLegendariesForSession(this);
         }
 
+        selectLegForRoundTwo();
+        initializeRoundData();
+        resetRoundState();
+        transitionToShoppingPhase();
+    }
+
+    /**
+     * Select legendaries for round 2
+     */
+    private void selectLegForRoundTwo() {
+        if (currentRound == 2) {
+            MythicItemManager.getInstance().selectLegendariesForSession(this);
+        }
+    }
+
+    /**
+     * Initialize round data
+     */
+    private void initializeRoundData() {
         currentRoundData = new RoundData(players.keySet());
         players.values().forEach(p -> p.initializeRound(currentRound));
+    }
 
-        //if (cashQuakeManager != null) cashQuakeManager.resetRoundEvents();
+    /**
+     * Reset all round state
+     */
+    private void resetRoundState() {
         teamRed.resetForfeitVotes();
         teamBlue.resetForfeitVotes();
-
-        // Reset Coin Cleaver charge tracking for new round
         MythicItemManager.getInstance().resetCoinCleaverTrackingForSession(this);
-        
-        // Reset custom armor round tracking
         CustomArmorManager.getInstance().resetRoundTracking();
         BlockListener.cleanupRound(sessionId);
+    }
 
+    /**
+     * Transition to shopping phase
+     */
+    private void transitionToShoppingPhase() {
         state = GameState.SHOPPING;
-
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
         gamemode.onRoundEnd();
 
-        // Reapply kits for round 2+ (removes kit items, keeps base items, toggles shield)
-        SchedulerUtils.runTask(() -> players.keySet().forEach(this::applyKit));
+        SchedulerUtils.runTask(() -> {
+            players.keySet().forEach(this::applyKit);
+            healAllPlayers();
+        });
 
         if (roundManager != null) roundManager.startShoppingPhase(currentRound);
     }
@@ -422,22 +504,72 @@ public class GameSession {
         Location finalSpawn = determineFinalSpawn();
 
         notifyGameEnd(winner, finalSpawn);
+        cleanupManagers();
+        cleanupPlayers();
+        cleanupArena();
 
-        CustomArmorManager.getInstance().cleanup();
-        CustomItemManager.getInstance().cleanup();
-        MythicItemManager.getInstance().cleanup();
+        Messages.debug("GAME", "Arena " + arenaNumber + " reset to WAITING state after game ended");
+    }
 
+    /**
+     * Clean up all game managers
+     */
+    private void cleanupManagers() {
         cancelStartCountdown();
         if (roundManager != null) roundManager.cleanup();
-        //if (cashQuakeManager != null) cashQuakeManager.cleanup();
         if (bonusManager != null) bonusManager.cleanup();
         if (gamemode != null) {
             GamemodeManager.getInstance().removeGamemode(sessionId);
             gamemode = null;
         }
+        CustomArmorManager.getInstance().cleanup();
+        CustomItemManager.getInstance().cleanup();
+        MythicItemManager.getInstance().cleanup();
+    }
 
-        // Clean up tracked player-placed blocks
+    /**
+     * Clean up all players and teams
+     */
+    private void cleanupPlayers() {
+        for (UUID u : players.keySet()) {
+            Player p = Bukkit.getPlayer(u);
+            if (p != null && p.isOnline()) {
+                clearPlayerKit(p);
+                LobbyManager.getInstance().giveLobbyItems(p);
+            }
+        }
+
+        recordWins();
+        removeAllPlayersFromTeams();
+    }
+
+    /**
+     * Record wins for all players on winning team
+     */
+    private void recordWins() {
+        Team winner = calculateWinner();
+        for (UUID u : winner.getPlayers()) {
+            PlayerDataManager.getInstance().incWins(u);
+        }
+    }
+
+    /**
+     * Remove all players from teams
+     */
+    private void removeAllPlayersFromTeams() {
+        for (UUID u : teamRed.getPlayers()) teamRed.removePlayer(u);
+        for (UUID u : teamBlue.getPlayers()) teamBlue.removePlayer(u);
+        teamRed.resetForfeitVotes();
+        teamBlue.resetForfeitVotes();
+        players.clear();
+    }
+
+    /**
+     * Clean up arena and shops
+     */
+    private void cleanupArena() {
         BlockListener.cleanupSession(sessionId);
+        ScoreboardManager.getInstance().removeBoard(sessionId);
 
         if (gameWorld != null) {
             Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
@@ -447,35 +579,10 @@ public class GameSession {
             }
         }
 
-        // remove scoreboard for session
-        ScoreboardManager.getInstance().removeBoard(sessionId);
-
-        // Clear kits/effects for all players in this session before removing them
-        for (UUID u : players.keySet()) {
-            Player p = Bukkit.getPlayer(u);
-            if (p != null && p.isOnline()) {
-                clearPlayerKit(p);
-                LobbyManager.getInstance().giveLobbyItems(p);
-            }
-
-        }
-
         ArenaManager.getInstance().setArenaState(arenaNumber, GameState.WAITING);
         ArenaManager.getInstance().setArenaPlayerCount(arenaNumber, 0);
 
         GameManager.getInstance().removeSession(sessionId);
-
-        for (UUID u : winner.getPlayers()) {
-            PlayerDataManager.getInstance().incWins(u);
-        }
-
-        for (UUID u : teamRed.getPlayers()) teamRed.removePlayer(u);
-        for (UUID u : teamBlue.getPlayers()) teamBlue.removePlayer(u);
-        teamRed.resetForfeitVotes();
-        teamBlue.resetForfeitVotes();
-        players.clear();
-
-        Messages.debug("GAME", "Arena " + arenaNumber + " reset to WAITING state after game ended");
     }
 
     /**
@@ -610,27 +717,65 @@ public class GameSession {
         Team team = getPlayerTeam(requester);
         if (team == null) return;
 
-        int aliveCount = (int) team.getPlayers().stream().filter(uuid -> currentRoundData.isAlive(uuid)).count();
+        if (!validateForfeitRequest(team, requester)) return;
+
+        initiateForfeitVote(team, requester);
+    }
+
+    /**
+     * Validate if forfeit request is allowed
+     */
+    private boolean validateForfeitRequest(Team team, Player requester) {
+        int aliveCount = countAliveTeammates(team);
         if (aliveCount > 2) {
             Messages.send(requester, "<red>You can only start a forfeit when at least 2 teammates have died.</red>");
-            return;
+            return false;
         }
 
-        long now = System.currentTimeMillis();
-        int combatGrace = ConfigManager.getInstance().getForfeitCombatGrace();
-        boolean anyRecentDamage = team.getPlayers().stream().anyMatch(uuid -> currentRoundData.getLastDamageTime(uuid) + (combatGrace * 1000L) > now);
-
-        if (aliveCount > 1 && anyRecentDamage) {
-            Messages.send(requester, "<red>Can't start forfeit while any teammate has taken damage in the last " + combatGrace + " seconds.</red>");
-            return;
+        if (!checkRecentDamageGrace(team, aliveCount)) {
+            return false;
         }
 
         long deadCount = team.getPlayers().stream().filter(uuid -> !currentRoundData.isAlive(uuid)).count();
         if (deadCount < 2) {
             Messages.send(requester, "<red>At least two teammates must be dead to start a forfeit.</red>");
-            return;
+            return false;
         }
 
+        return true;
+    }
+
+    /**
+     * Count alive teammates on a team
+     */
+    private int countAliveTeammates(Team team) {
+        return (int) team.getPlayers().stream().filter(uuid -> currentRoundData.isAlive(uuid)).count();
+    }
+
+    /**
+     * Check if team has recent damage within grace period
+     */
+    private boolean checkRecentDamageGrace(Team team, int aliveCount) {
+        long now = System.currentTimeMillis();
+        int combatGrace = ConfigManager.getInstance().getForfeitCombatGrace();
+        boolean anyRecentDamage = team.getPlayers().stream()
+                .anyMatch(uuid -> currentRoundData.getLastDamageTime(uuid) + (combatGrace * 1000L) > now);
+
+        if (aliveCount > 1 && anyRecentDamage) {
+            Player requester = Bukkit.getPlayer(team.getPlayers().iterator().next());
+            if (requester != null) {
+                Messages.send(requester, "<red>Can't start forfeit while any teammate has taken damage in the last " + combatGrace + " seconds.</red>");
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Initiate forfeit vote
+     */
+    private void initiateForfeitVote(Team team, Player requester) {
+        long now = System.currentTimeMillis();
         if (team.getForfeitStartTime() == 0L) team.setForfeitStartTime(now);
         team.addForfeitVote(requester.getUniqueId());
 
@@ -655,18 +800,31 @@ public class GameSession {
         Team other = getOpposingTeam(forfeitingTeam);
         long bonus = ConfigManager.getInstance().getForfeitBonus();
 
+        applyForfeitPenalty(forfeitingTeam);
+        applyForfeitBonus(other, bonus);
+
+        Messages.broadcast(players.keySet(), "<gold>Team " + forfeitingTeam.getColoredName() + " has chosen to forfeit the round. Team " + other.getColoredName() + " earns " + bonus + " each.</gold>");
+        if (roundManager != null) roundManager.endCombatPhase();
+    }
+
+    /**
+     * Apply forfeit penalty to forfeiting team
+     */
+    private void applyForfeitPenalty(Team forfeitingTeam) {
         forfeitingTeam.getPlayers().forEach(uuid -> {
             var p = players.get(uuid);
             if (p != null) EconomyManager.applyForfeitPenalty(this, p);
         });
+    }
 
-        other.getPlayers().forEach(uuid -> {
+    /**
+     * Apply forfeit bonus to winning team
+     */
+    private void applyForfeitBonus(Team winningTeam, long bonus) {
+        winningTeam.getPlayers().forEach(uuid -> {
             var p = players.get(uuid);
             if (p != null) p.addCoins(bonus);
         });
-
-        Messages.broadcast(players.keySet(), "<gold>Team " + forfeitingTeam.getColoredName() + " has chosen to forfeit the round. Team " + other.getColoredName() + " earns " + bonus + " each.</gold>");
-        if (roundManager != null) roundManager.endCombatPhase();
     }
 
 
@@ -684,38 +842,54 @@ public class GameSession {
 
     private void notifyGameEnd(Team winner, Location finalSpawn) {
         Team loser = (winner == teamRed) ? teamBlue : teamRed;
-        String winnerList = winner.getPlayers().stream()
+        String winnerList = formatPlayerList(winner);
+        String loserList = formatPlayerList(loser);
+
+        players.keySet().forEach(uuid -> sendGameEndMessages(uuid, winner, winnerList, loserList, finalSpawn));
+    }
+
+    /**
+     * Format a player list for display
+     */
+    private String formatPlayerList(Team team) {
+        return team.getPlayers().stream()
                 .map(uuid -> {
                     Player p = Bukkit.getPlayer(uuid);
                     return p != null ? p.getName() : uuid.toString();
                 })
                 .reduce((a, b) -> a + ", " + b).orElse("");
-        String loserList = loser.getPlayers().stream()
-                .map(uuid -> {
-                    Player p = Bukkit.getPlayer(uuid);
-                    return p != null ? p.getName() : uuid.toString();
-                })
-                .reduce((a, b) -> a + ", " + b).orElse("");
-        players.keySet().forEach(uuid -> {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player == null || !player.isOnline()) return;
-            if (finalSpawn != null) player.teleport(finalSpawn);
+    }
 
-            player.setGameMode(GameMode.SURVIVAL);
-            var attr = player.getAttribute(Attribute.MAX_HEALTH);
-            double maxHealth = attr != null ? attr.getValue() : 20.0;
+    /**
+     * Send game end messages to a player
+     */
+    private void sendGameEndMessages(UUID uuid, Team winner, String winnerList, String loserList, Location finalSpawn) {
+        Player player = Bukkit.getPlayer(uuid);
+        if (!isPlayerOnline(player)) return;
 
-            player.setHealth(maxHealth);
-            player.setFoodLevel(20);
-            player.closeInventory();
+        if (finalSpawn != null) player.teleport(finalSpawn);
 
-            boolean isWinner = winner.getPlayers().contains(uuid);
-            Messages.send(player, isWinner ? "<green><bold>YOU WIN!</bold></green>" : "<red><bold>YOU LOSE</bold></red>");
-            Messages.send(player, "<yellow>Winning Team: " + winner.getColoredName() + "</yellow>");
-            Messages.send(player, "<gray>Winners: " + winnerList + "</gray>");
-            Messages.send(player, "<gray>Losers: " + loserList + "</gray>");
-            Messages.send(player, "<gray>Thanks for playing!</gray>");
-        });
+        preparePlayerForGameEnd(player);
+
+        boolean isWinner = winner.getPlayers().contains(uuid);
+        Messages.send(player, isWinner ? "<green><bold>YOU WIN!</bold></green>" : "<red><bold>YOU LOSE</bold></red>");
+        Messages.send(player, "<yellow>Winning Team: " + winner.getColoredName() + "</yellow>");
+        Messages.send(player, "<gray>Winners: " + winnerList + "</gray>");
+        Messages.send(player, "<gray>Losers: " + loserList + "</gray>");
+        Messages.send(player, "<gray>Thanks for playing!</gray>");
+    }
+
+    /**
+     * Prepare player for game end (heal, food, etc.)
+     */
+    private void preparePlayerForGameEnd(Player player) {
+        player.setGameMode(GameMode.SURVIVAL);
+        var attr = player.getAttribute(Attribute.MAX_HEALTH);
+        double maxHealth = attr != null ? attr.getValue() : 20.0;
+
+        player.setHealth(maxHealth);
+        player.setFoodLevel(20);
+        player.closeInventory();
     }
 
     public void healAllPlayers() {
