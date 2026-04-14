@@ -85,9 +85,15 @@ public class DamageListener implements Listener {
             trackDamageForBonuses(event, player);
 
         } catch (Exception e) {
-            Messages.debug("DAMAGE", "Error handling damage for " + player.getName() + ": " + e.getMessage());
-            e.printStackTrace();
+            logDamageError(player, e);
         }
+    }
+
+    /**
+     * Log damage handling error
+     */
+    private void logDamageError(Player player, Exception e) {
+        Messages.debug("DAMAGE", "Error handling damage for " + player.getName() + ": " + e.getMessage());
     }
 
     // ==================== MAIN PVP DAMAGE HANDLER (EntityDamageByEntityEvent) ====================
@@ -106,35 +112,45 @@ public class DamageListener implements Listener {
             Player attacker = resolveAttacker(event);
             Player victim = event.getEntity() instanceof Player p ? p : null;
 
-            // 1. Lobby protection - prevent PvP outside game sessions
-            if (handleLobbyProtection(event, attacker)) {
+            // Apply protection checks
+            if (applyProtectionChecks(event, attacker, victim)) {
                 return;
             }
 
-            // 2. Respawn protection - protect newly spawned players
-            if (handleRespawnProtection(event, attacker, victim)) {
-                return;
-            }
-
-            // 3. Handle invisibility cloak removal (damage dealt or taken)
+            // Process damage effects
             if (attacker != null && victim != null) {
-                handleInvisibilityRemoval(attacker, victim);
-            }
-
-            // 4. Process attacker-side effects (mythic items, custom items, combat modifiers)
-            if (attacker != null && victim != null) {
+                processVictimDamageEffects(attacker, victim);
                 handleAttackerEffects(event, attacker, victim);
-            }
-
-            // 5. Process attacker's armor-based effects
-            if (attacker != null && victim != null) {
                 handleAttackerArmorEffects(event, attacker, victim);
             }
 
         } catch (Exception e) {
-            Messages.debug("DAMAGE", "Error handling PvP damage: " + e.getMessage());
-            e.printStackTrace();
+            logPvPDamageError(e);
         }
+    }
+
+    /**
+     * Apply all protection checks (lobby, respawn)
+     */
+    private boolean applyProtectionChecks(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        if (handleLobbyProtection(event, attacker)) {
+            return true;
+        }
+        return handleRespawnProtection(event, attacker, victim);
+    }
+
+    /**
+     * Process damage effects on victim
+     */
+    private void processVictimDamageEffects(Player attacker, Player victim) {
+        handleInvisibilityRemoval(attacker, victim);
+    }
+
+    /**
+     * Log PvP damage error
+     */
+    private void logPvPDamageError(Exception e) {
+        Messages.debug("DAMAGE", "Error handling PvP damage: " + e.getMessage());
     }
 
     /**
@@ -171,7 +187,6 @@ public class DamageListener implements Listener {
             }
         } catch (Exception e) {
             Messages.debug("DAMAGE", "Error applying knockback immunity: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -215,7 +230,6 @@ public class DamageListener implements Listener {
             handleHealthRegain(event, player);
         } catch (Exception e) {
             Messages.debug("DAMAGE", "Error handling health regain: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -474,7 +488,7 @@ public class DamageListener implements Listener {
      * Handle custom item effects (e.g., Bag of Potatoes).
      */
     private void handleCustomItemEffects(Player attacker, ItemStack weapon) {
-        if (!weapon.hasItemMeta()) {
+        if (!isValidWeapon(weapon)) {
             return;
         }
 
@@ -485,10 +499,17 @@ public class DamageListener implements Listener {
     }
 
     /**
+     * Check if weapon is valid (has item meta)
+     */
+    private boolean isValidWeapon(ItemStack weapon) {
+        return weapon.hasItemMeta();
+    }
+
+    /**
      * Handle mythic item effects (legendary weapons and abilities).
      */
     private void handleMythicItemEffects(EntityDamageByEntityEvent event, Player attacker, Player victim, ItemStack weapon) {
-        if (!weapon.hasItemMeta()) {
+        if (!isValidWeapon(weapon)) {
             return;
         }
 
@@ -497,43 +518,70 @@ public class DamageListener implements Listener {
             return;
         }
 
+        processMythicDamageEffects(event, attacker, victim, mythic);
+    }
+
+    /**
+     * Process damage effects for specific mythic items
+     */
+    private void processMythicDamageEffects(EntityDamageByEntityEvent event, Player attacker, Player victim, MythicItem mythic) {
         switch (mythic) {
-            case COIN_CLEAVER -> {
-                double newDamage = mythicManager.handleCoinCleaverDamage(attacker, victim, event.getDamage(), event.isCritical());
-                event.setDamage(newDamage);
-            }
-            case CARLS_BATTLEAXE -> {
-                if (event.isCritical()) {
-                    mythicManager.handleCarlsCriticalHit(attacker, victim);
-                }
-            }
-            case ELECTRIC_EEL_SWORD -> {
-                if (event.isCritical()) {
-                    mythicManager.handleElectricEelChain(attacker, victim);
-                }
-            }
+            case COIN_CLEAVER -> applyMythicCoinCleaverEffect(event, attacker, victim);
+            case CARLS_BATTLEAXE -> applyMythicCriticalEffect(event, attacker, victim, mythicManager::handleCarlsCriticalHit);
+            case ELECTRIC_EEL_SWORD -> applyMythicCriticalEffect(event, attacker, victim, mythicManager::handleElectricEelChain);
             case WARDEN_GLOVES -> mythicManager.useWardenPunch(attacker, victim);
-
-            case GOBLIN_SPEAR -> {
-                // Goblin Spear melee attack - apply poison
-                if (event.getDamager() instanceof Player) {
-                    mythicManager.handleGoblinSpearHit(attacker, victim);
-                }
-            }
-
-            case BLOODWRENCH_CROSSBOW, BLAZEBITE_CROSSBOWS -> {
-                // Legendary crossbows: +30% damage boost
-                if (event.getDamager() instanceof Projectile) {
-                    double currentDamage = event.getDamage();
-                    double boostedDamage = currentDamage * LEGENDARY_CROSSBOW_DAMAGE_BOOST;
-                    event.setDamage(boostedDamage);
-                    Messages.debug(attacker, "LEGENDARY_CROSSBOW: Damage boosted from " + currentDamage + " to " + boostedDamage);
-                }
-            }
-
+            case GOBLIN_SPEAR -> applyGoblinSpearEffect(event, attacker, victim);
+            case BLOODWRENCH_CROSSBOW, BLAZEBITE_CROSSBOWS -> applyLegendaryCrossbowBoost(event, attacker);
             default -> { /* No special handling */ }
         }
     }
+
+    /**
+     * Apply Coin Cleaver damage effect
+     */
+    private void applyMythicCoinCleaverEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        double newDamage = mythicManager.handleCoinCleaverDamage(attacker, victim, event.getDamage(), event.isCritical());
+        event.setDamage(newDamage);
+    }
+
+    /**
+     * Apply mythic critical hit effect
+     */
+    private void applyMythicCriticalEffect(EntityDamageByEntityEvent event, Player attacker, Player victim, MythicEffectHandler handler) {
+        if (event.isCritical()) {
+            handler.apply(attacker, victim);
+        }
+    }
+
+    /**
+     * Apply Goblin Spear melee effect
+     */
+    private void applyGoblinSpearEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        if (event.getDamager() instanceof Player) {
+            mythicManager.handleGoblinSpearHit(attacker, victim);
+        }
+    }
+
+    /**
+     * Apply legendary crossbow damage boost
+     */
+    private void applyLegendaryCrossbowBoost(EntityDamageByEntityEvent event, Player attacker) {
+        if (event.getDamager() instanceof Projectile) {
+            double currentDamage = event.getDamage();
+            double boostedDamage = currentDamage * LEGENDARY_CROSSBOW_DAMAGE_BOOST;
+            event.setDamage(boostedDamage);
+            Messages.debug(attacker, "LEGENDARY_CROSSBOW: Damage boosted from " + currentDamage + " to " + boostedDamage);
+        }
+    }
+
+    /**
+     * Functional interface for mythic effect handlers
+     */
+    @FunctionalInterface
+    private interface MythicEffectHandler {
+        void apply(Player attacker, Player victim);
+    }
+
 
     /**
      * Apply combat modifiers (strength nerf, power enchantment nerf/cap).
