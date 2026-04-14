@@ -122,22 +122,27 @@ public class CaptureTheFlagGamemode extends Gamemode {
         UUID victimUuid = victim.getUniqueId();
 
         // Check if victim was carrying a flag
-        FlagState redFlag = flagStates.get(1);
-        FlagState blueFlag = flagStates.get(2);
+        handleFlagHolderDeath(1, victimUuid, victim);
+        handleFlagHolderDeath(2, victimUuid, victim);
+    }
 
-        if (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(victimUuid)) {
-            Messages.debug("[CTF] Team Red flag holder eliminated: " + victim.getName());
-            Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Team Red's flag holder was eliminated!</bold></red>");
-            flagStates.put(1, redFlag.withoutHolder());
-            moveBannerToLocation(redFlag.bannerDisplay(), redFlag.capturePlate());
-            SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
-        } else if (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(victimUuid)) {
-            Messages.debug("[CTF] Team Blue flag holder eliminated: " + victim.getName());
-            Messages.broadcastWithPrefix(session.getPlayers(), "<blue><bold>Team Blue's flag holder was eliminated!</bold></blue>");
-            flagStates.put(2, blueFlag.withoutHolder());
-            moveBannerToLocation(blueFlag.bannerDisplay(), blueFlag.capturePlate());
-            SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
+    /**
+     * Handle flag holder death for a specific team
+     */
+    private void handleFlagHolderDeath(int teamNumber, UUID victimUuid, Player victim) {
+        FlagState flag = flagStates.get(teamNumber);
+        if (flag == null || !flag.isHeld() || !flag.holder().equals(victimUuid)) {
+            return;
         }
+
+        String teamName = teamNumber == 1 ? "Red" : "Blue";
+        Messages.debug("[CTF] Team " + teamName + " flag holder eliminated: " + victim.getName());
+        Messages.broadcastWithPrefix(session.getPlayers(),
+                "<" + teamName.toLowerCase() + "><bold>Team " + teamName + "'s flag holder was eliminated!</bold></" + teamName.toLowerCase() + ">");
+
+        flagStates.put(teamNumber, flag.withoutHolder());
+        moveBannerToLocation(flag.bannerDisplay(), flag.capturePlate());
+        SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
     }
 
     @Override
@@ -153,26 +158,29 @@ public class CaptureTheFlagGamemode extends Gamemode {
         UUID playerUuid = player.getUniqueId();
 
         // Check if this player was carrying any flags and remove their banners
-        FlagState redFlag = flagStates.get(1);
-        FlagState blueFlag = flagStates.get(2);
+        removeFlagIfCarriedByPlayer(1, playerUuid, player);
+        removeFlagIfCarriedByPlayer(2, playerUuid, player);
+    }
 
-        if (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid)) {
-            Messages.debug("[CTF] Removing player " + player.getName() + " who was carrying Red flag");
-            if (redFlag.bannerDisplay() != null && !redFlag.bannerDisplay().isDead()) {
-                redFlag.bannerDisplay().getVehicle().removePassenger(redFlag.bannerDisplay());
-                moveBannerToLocation(redFlag.bannerDisplay(), redFlag.capturePlate());
-            }
-            flagStates.put(1, redFlag.withoutHolder());
+    /**
+     * Remove flag if player was carrying it
+     */
+    private void removeFlagIfCarriedByPlayer(int teamNumber, UUID playerUuid, Player player) {
+        FlagState flag = flagStates.get(teamNumber);
+        if (flag == null || !flag.isHeld() || !flag.holder().equals(playerUuid)) {
+            return;
         }
 
-        if (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid)) {
-            Messages.debug("[CTF] Removing player " + player.getName() + " who was carrying Blue flag");
-            if (blueFlag.bannerDisplay() != null && !blueFlag.bannerDisplay().isDead()) {
-                blueFlag.bannerDisplay().getVehicle().removePassenger(blueFlag.bannerDisplay());
-                moveBannerToLocation(blueFlag.bannerDisplay(), blueFlag.capturePlate());
+        String teamName = teamNumber == 1 ? "Red" : "Blue";
+        Messages.debug("[CTF] Removing player " + player.getName() + " who was carrying " + teamName + " flag");
+
+        if (flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
+            if (flag.bannerDisplay().getVehicle() != null) {
+                flag.bannerDisplay().getVehicle().removePassenger(flag.bannerDisplay());
             }
-            flagStates.put(2, blueFlag.withoutHolder());
+            moveBannerToLocation(flag.bannerDisplay(), flag.capturePlate());
         }
+        flagStates.put(teamNumber, flag.withoutHolder());
     }
 
     @Override
@@ -277,8 +285,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      */
     private void placePressurePlates() {
         var template = session.getArenaTemplate();
-        if (template == null) {
-            Messages.debug("[CTF] Template not found for CTF pressure plates");
+        if (!isTemplateValid(template)) {
             return;
         }
 
@@ -288,43 +295,45 @@ public class CaptureTheFlagGamemode extends Gamemode {
             return;
         }
 
-        // Place Team 1's capture plate (from template)
-        Location teamRedPlateLocation = template.getCTFCaptureTeamRedPlate();
-        if (teamRedPlateLocation != null) {
-            // Convert template location to world copy location
-            Location copiedLoc = LocationUtils.copyToWorld(teamRedPlateLocation.clone(), world);
-            Block block = world.getBlockAt(copiedLoc);
-            block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
-            Messages.debug("[CTF] Placed Team 1 capture plate at " + copiedLoc);
+        // Place Team 1 and Team 2 capture plates
+        placeCapturePlace(1, template.getCTFCaptureTeamRedPlate(), world, Material.RED_BANNER);
+        placeCapturePlace(2, template.getCTFCaptureTeamBluePlate(), world, Material.BLUE_BANNER);
+    }
 
-            // Create banner for Team 1 plate
-            BlockDisplay banner = createBannerDisplay(copiedLoc, Material.RED_BANNER);
-            FlagState redFlag = flagStates.get(1)
-                    .withCapturePlate(copiedLoc)
-                    .withBannerDisplay(banner);
-            flagStates.put(1, redFlag);
-        } else {
-            Messages.debug("[CTF] Team 1 capture plate location not found in template");
+    /**
+     * Validate template exists
+     */
+    private boolean isTemplateValid(Object template) {
+        if (template == null) {
+            Messages.debug("[CTF] Template not found for CTF pressure plates");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Place a capture plate at a template location
+     */
+    private void placeCapturePlace(int teamNumber, Location templateLocation, World world, Material bannerMaterial) {
+        if (templateLocation == null) {
+            String teamName = teamNumber == 1 ? "Red" : "Blue";
+            Messages.debug("[CTF] Team " + teamName + " capture plate location not found in template");
+            return;
         }
 
-        // Place Team 2's capture plate (from template)
-        Location teamBluePlateLocation = template.getCTFCaptureTeamBluePlate();
-        if (teamBluePlateLocation != null) {
-            // Convert template location to world copy location
-            Location copiedLoc = LocationUtils.copyToWorld(teamBluePlateLocation.clone(), world);
-            Block block = world.getBlockAt(copiedLoc);
-            block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
-            Messages.debug("[CTF] Placed Team 2 capture plate at " + copiedLoc);
+        Location copiedLoc = LocationUtils.copyToWorld(templateLocation.clone(), world);
+        Block block = world.getBlockAt(copiedLoc);
+        block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
 
-            // Create banner for Team 2 plate
-            BlockDisplay banner = createBannerDisplay(copiedLoc, Material.BLUE_BANNER);
-            FlagState blueFlag = flagStates.get(2)
-                    .withCapturePlate(copiedLoc)
-                    .withBannerDisplay(banner);
-            flagStates.put(2, blueFlag);
-        } else {
-            Messages.debug("[CTF] Team 2 capture plate location not found in template");
-        }
+        String teamName = teamNumber == 1 ? "Red" : "Blue";
+        Messages.debug("[CTF] Placed Team " + teamName + " capture plate at " + copiedLoc);
+
+        // Create banner for the plate
+        BlockDisplay banner = createBannerDisplay(copiedLoc, bannerMaterial);
+        FlagState flag = flagStates.get(teamNumber)
+                .withCapturePlate(copiedLoc)
+                .withBannerDisplay(banner);
+        flagStates.put(teamNumber, flag);
     }
 
     /**
@@ -480,21 +489,18 @@ public class CaptureTheFlagGamemode extends Gamemode {
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
         awardCaptureBonus(teamNumber);
+        resetFlagsAfterCapture(teamNumber);
+    }
 
-        // Reset flag holders and move banners back to plates
-        FlagState blueFlag = flagStates.get(2);
-        FlagState redFlag = flagStates.get(1);
-
-        if (teamNumber == 1) {
-            if (blueFlag != null) {
-                flagStates.put(2, blueFlag.withoutHolder());
-                moveBannerToLocation(blueFlag.bannerDisplay(), blueFlag.capturePlate());
-            }
-        } else {
-            if (redFlag != null) {
-                flagStates.put(1, redFlag.withoutHolder());
-                moveBannerToLocation(redFlag.bannerDisplay(), redFlag.capturePlate());
-            }
+    /**
+     * Reset flag holders and move banners back to plates after capture
+     */
+    private void resetFlagsAfterCapture(int teamNumber) {
+        // Reset the enemy flag that was captured
+        FlagState enemyFlag = flagStates.get(teamNumber == 1 ? 2 : 1);
+        if (enemyFlag != null) {
+            flagStates.put(teamNumber == 1 ? 2 : 1, enemyFlag.withoutHolder());
+            moveBannerToLocation(enemyFlag.bannerDisplay(), enemyFlag.capturePlate());
         }
     }
 
@@ -605,11 +611,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * Rotate banners continuously and spawn team-colored particles
      */
     private void rotateBanners() {
-        FlagState redFlag = flagStates.get(1);
-        FlagState blueFlag = flagStates.get(2);
+        rotateBannerForTeam(1);
+        rotateBannerForTeam(2);
+    }
 
-        rotateBanner(redFlag, 1);
-        rotateBanner(blueFlag, 2);
+    /**
+     * Rotate banner for a specific team
+     */
+    private void rotateBannerForTeam(int teamNumber) {
+        rotateBanner(flagStates.get(teamNumber), teamNumber);
     }
 
     /**
@@ -618,60 +628,75 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * The banner rotates in a circle and faces outward (away from center) like an arrow
      */
     private void rotateBanner(FlagState flag, int teamNumber) {
-        if (flag == null || flag.bannerDisplay() == null || flag.bannerDisplay().isDead() || flag.capturePlate() == null) return;
-
-        // Skip rotation if banner is being carried (is a passenger of a player)
-        if (flag.isHeld()) return;
+        if (!isBannerRotatable(flag)) return;
 
         Location centerPlate = flag.capturePlate();
         double centerX = centerPlate.getX();
         double centerY = centerPlate.getY();
         double centerZ = centerPlate.getZ();
 
-        // Get current angle in radians
-        double theta = flag.bannerAngle();
+        // Compute new position and rotation
+        double newTheta = calculateNextAngle(flag.bannerAngle());
+        updateBannerTransform(flag, centerX, centerY, centerZ, newTheta);
 
-        // Advance the angle by angular speed
-        double newTheta = theta + BANNER_ANGULAR_SPEED;
+        // Update angle in flag state
+        flagStates.put(teamNumber, flag.withBannerAngle(newTheta));
 
-        // Keep angle in [0, 2π] to avoid floating point drift
+        // Spawn team-colored particles
+        spawnBannerParticles(centerPlate, teamNumber);
+    }
+
+    /**
+     * Check if banner is rotatable
+     */
+    private boolean isBannerRotatable(FlagState flag) {
+        return flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead() &&
+               flag.capturePlate() != null && !flag.isHeld();
+    }
+
+    /**
+     * Calculate next banner angle
+     */
+    private double calculateNextAngle(double currentTheta) {
+        double newTheta = currentTheta + BANNER_ANGULAR_SPEED;
         if (newTheta > Math.PI * 2) {
             newTheta -= Math.PI * 2;
         }
+        return newTheta;
+    }
 
-        // 1. Compute new position on the circumference
-        double x = centerX + Math.cos(newTheta) * BANNER_ORBIT_RADIUS;
-        double z = centerZ + Math.sin(newTheta) * BANNER_ORBIT_RADIUS;
-
-        Location newLoc = new Location(centerPlate.getWorld(), x - 0.5, centerY + 1.0, z - 0.5);
+    /**
+     * Update banner transform (position and rotation)
+     */
+    private void updateBannerTransform(FlagState flag, double centerX, double centerY, double centerZ, double theta) {
+        // Compute position on circumference
+        double x = centerX + Math.cos(theta) * BANNER_ORBIT_RADIUS;
+        double z = centerZ + Math.sin(theta) * BANNER_ORBIT_RADIUS;
+        Location newLoc = new Location(flag.capturePlate().getWorld(), x - 0.5, centerY + 1.0, z - 0.5);
         flag.bannerDisplay().teleport(newLoc);
 
-
-        float cosT = (float) Math.cos(newTheta);
-        float sinT = (float) Math.sin(newTheta);
-
-        // Matrix3f is column-major: Matrix3f(right, up, forward)
+        // Compute rotation matrix for outward facing
+        float cosT = (float) Math.cos(theta);
+        float sinT = (float) Math.sin(theta);
         Matrix3f rotMat = new Matrix3f(
                 -sinT, 0f, cosT,   // right  (X column)
                 0f,    1f, 0f,     // up     (Y column)
                 cosT,  0f, sinT    // forward (Z column) ← outward direction
         );
 
-        // Convert rotation matrix → quaternion for Transformation
         Quaternionf quat = new Quaternionf().setFromNormalized(rotMat);
-
         flag.bannerDisplay().setTransformation(new Transformation(
                 new Vector3f(-0.5f, -0.5f, -0.5f), // keep block centered
-                quat,                               // left rotation = our Y rotation
+                quat,
                 new Vector3f(1f, 1f, 1f),
                 new Quaternionf()
         ));
+    }
 
-        // Update angle in flag state
-        FlagState updatedFlag = flag.withBannerAngle(newTheta);
-        flagStates.put(teamNumber, updatedFlag);
-
-        // Spawn team-colored particles around the orbit path (8 points around the circle)
+    /**
+     * Spawn team-colored particles around the banner orbit
+     */
+    private void spawnBannerParticles(Location centerPlate, int teamNumber) {
         Color teamColor = teamNumber == 1 ? Color.RED : Color.BLUE;
         for (int i = 0; i < 8; i++) {
             double particleAngle = Math.PI * 2 * i / 8;
