@@ -21,6 +21,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
+import org.joml.Matrix3f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -40,7 +41,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private static final long CAPTURE_BONUS = 15000;
     private static final long CAPTURE_TIMER_MS = 45 * 1000; // 45 seconds for bonus
     private static final double BANNER_ORBIT_RADIUS = 0.7; // Distance from plate center
-    private static final double BANNER_ROTATION_SPEED = 4.0; // Degrees per tick
+    private static final double BANNER_ANGULAR_SPEED = 0.15; // Radians per tick (higher = faster rotation)
 
     private final Map<Integer, Integer> flagCaptures;
     private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
@@ -531,6 +532,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     /**
      * Create a BlockDisplay banner entity at the given location
+     * Applies initial transformation to center the block on the display origin
      */
     private BlockDisplay createBannerDisplay(Location location, Material bannerType) {
         World world = location.getWorld();
@@ -544,6 +546,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
         banner.setBlock(Bukkit.createBlockData(bannerType));
         banner.setTeleportDuration(0);
         banner.setInterpolationDuration(0);
+
+        // Center the block on the display origin (-0.5 offset on X/Y/Z)
+        banner.setTransformation(new Transformation(
+                new Vector3f(-0.5f, -0.5f, -0.5f), // translation: center the block
+                new Quaternionf(),                   // left rotation (will be updated by rotateBanner)
+                new Vector3f(1f, 1f, 1f),            // scale
+                new Quaternionf()                    // right rotation
+        ));
 
         Messages.debug("[CTF] Created banner display at " + displayLoc);
         return banner;
@@ -560,14 +570,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Position banner straight up above player's head
         Location headLoc = player.getEyeLocation().add(0, 1.2, 0);
         banner.teleport(headLoc);
-
-        // Use default transformation (identity)
-        banner.setTransformation(new Transformation(
-                new Vector3f(0, 0, 0),
-                new Quaternionf(),
-                new Vector3f(1, 1, 1),
-                new Quaternionf()
-        ));
 
         // Add banner as passenger to the player
         player.addPassenger(banner);
@@ -613,6 +615,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     /**
      * Rotate a single banner in a perfect circle around the plate
      * Banner is only rotated when not being carried by a player
+     * The banner rotates in a circle and faces outward (away from center) like an arrow
      */
     private void rotateBanner(FlagState flag, int teamNumber) {
         if (flag == null || flag.bannerDisplay() == null || flag.bannerDisplay().isDead() || flag.capturePlate() == null) return;
@@ -620,43 +623,61 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Skip rotation if banner is being carried (is a passenger of a player)
         if (flag.isHeld()) return;
 
-        double currentAngle = flag.bannerAngle();
+        Location centerPlate = flag.capturePlate();
+        double centerX = centerPlate.getX();
+        double centerY = centerPlate.getY();
+        double centerZ = centerPlate.getZ();
 
-        // Increment angle for rotation
-        double newAngleDegrees = currentAngle + BANNER_ROTATION_SPEED;
-        if (newAngleDegrees >= 360) {
-            newAngleDegrees -= 360;
+        // Get current angle in radians
+        double theta = flag.bannerAngle();
+
+        // Advance the angle by angular speed
+        double newTheta = theta + BANNER_ANGULAR_SPEED;
+
+        // Keep angle in [0, 2π] to avoid floating point drift
+        if (newTheta > Math.PI * 2) {
+            newTheta -= Math.PI * 2;
         }
 
-        // Convert to radians for trigonometry
-        double angleInRadians = Math.toRadians(newAngleDegrees);
+        // 1. Compute new position on the circumference
+        double x = centerX + Math.cos(newTheta) * BANNER_ORBIT_RADIUS;
+        double z = centerZ + Math.sin(newTheta) * BANNER_ORBIT_RADIUS;
 
-        // Calculate position on circle around the plate
-        double offsetX = BANNER_ORBIT_RADIUS * Math.cos(angleInRadians);
-        double offsetZ = BANNER_ORBIT_RADIUS * Math.sin(angleInRadians);
+        Location newLoc = new Location(centerPlate.getWorld(), x - 0.5, centerY + 1.0, z - 0.5);
+        flag.bannerDisplay().teleport(newLoc);
 
-        Location bannerPos = flag.capturePlate().clone().add(offsetX, 1.5, offsetZ);
-        flag.bannerDisplay().teleport(bannerPos);
 
-        // Use identity transformation
+        float cosT = (float) Math.cos(newTheta);
+        float sinT = (float) Math.sin(newTheta);
+
+        // Matrix3f is column-major: Matrix3f(right, up, forward)
+        Matrix3f rotMat = new Matrix3f(
+                -sinT, 0f, cosT,   // right  (X column)
+                0f,    1f, 0f,     // up     (Y column)
+                cosT,  0f, sinT    // forward (Z column) ← outward direction
+        );
+
+        // Convert rotation matrix → quaternion for Transformation
+        Quaternionf quat = new Quaternionf().setFromNormalized(rotMat);
+
         flag.bannerDisplay().setTransformation(new Transformation(
-                new Vector3f(0, 0, 0),
-                new Quaternionf(),
-                new Vector3f(1, 1, 1),
+                new Vector3f(-0.5f, -0.5f, -0.5f), // keep block centered
+                quat,                               // left rotation = our Y rotation
+                new Vector3f(1f, 1f, 1f),
                 new Quaternionf()
         ));
 
         // Update angle in flag state
-        FlagState updatedFlag = flag.withBannerAngle(newAngleDegrees);
+        FlagState updatedFlag = flag.withBannerAngle(newTheta);
         flagStates.put(teamNumber, updatedFlag);
 
-        // Spawn team-colored particles around the orbit path
+        // Spawn team-colored particles around the orbit path (8 points around the circle)
         Color teamColor = teamNumber == 1 ? Color.RED : Color.BLUE;
         for (int i = 0; i < 8; i++) {
             double particleAngle = Math.PI * 2 * i / 8;
             double particleX = BANNER_ORBIT_RADIUS * Math.cos(particleAngle);
             double particleZ = BANNER_ORBIT_RADIUS * Math.sin(particleAngle);
-            ParticleUtils.spawnDust(flag.capturePlate().clone().add(particleX, 0.1, particleZ), teamColor, 1, 1, 0);
+            ParticleUtils.spawnDust(centerPlate.clone().add(particleX, 0.1, particleZ), teamColor, 1, 1, 0);
         }
     }
 
