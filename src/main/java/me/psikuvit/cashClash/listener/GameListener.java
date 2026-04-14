@@ -62,7 +62,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.projectiles.ProjectileSource;
 
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -204,23 +203,47 @@ public class GameListener implements Listener {
         if (session == null) return;
 
         // If round ended (moved to shopping phase), don't respawn into combat
-        if (session.getState() != GameState.COMBAT) {
+        if (!isGameInCombat(session)) {
             Messages.send(player, "<red>The round ended. You cannot respawn.</red>");
             return;
         }
 
+        teleportToSpawn(player, session);
+        restorePlayerHealth(player);
+        preparePlayerForCombat(player, session, respawnProtectionSec);
+        Messages.send(player, "<green>You have respawned.</green>");
+    }
+
+    /**
+     * Check if game is in combat phase
+     */
+    private boolean isGameInCombat(GameSession session) {
+        return session.getState() == GameState.COMBAT;
+    }
+
+    /**
+     * Teleport player to spawn location
+     */
+    private void teleportToSpawn(Player player, GameSession session) {
         Location spawnLocation = session.getSpawnForPlayer(player.getUniqueId());
         if (spawnLocation != null) {
             player.teleport(spawnLocation);
         }
+    }
 
+    /**
+     * Restore player health to max
+     */
+    private void restorePlayerHealth(Player player) {
         AttributeInstance maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
-        if (maxHealthAttr != null) {
-            player.setHealth(Math.max(1.0, maxHealthAttr.getValue()));
-        } else {
-            player.setHealth(20.0);
-        }
+        double maxHealth = maxHealthAttr != null ? maxHealthAttr.getValue() : 20.0;
+        player.setHealth(Math.max(1.0, maxHealth));
+    }
 
+    /**
+     * Prepare player for combat (food, gamemode, protection, bonus)
+     */
+    private void preparePlayerForCombat(Player player, GameSession session, int respawnProtectionSec) {
         player.setFoodLevel(20);
         player.setGameMode(GameMode.SURVIVAL);
 
@@ -233,8 +256,6 @@ public class GameListener implements Listener {
         if (bonusManager != null) {
             bonusManager.onRespawn(player.getUniqueId());
         }
-
-        Messages.send(player, "<green>You have respawned.</green>");
     }
 
     // ==================== ITEM DROP ====================
@@ -258,51 +279,95 @@ public class GameListener implements Listener {
 
         if (consumed.getType().isAir()) return;
 
+        // Check consumable restrictions
+        if (checkConsumableRestrictions(event, p, consumed)) {
+            return;
+        }
+
+        // Handle special consumables
+        handleSpecialConsumable(p, consumed);
+    }
+
+    /**
+     * Check consumable restrictions (buff potions, shopping phase, dead players)
+     * @return true if consumption should be cancelled
+     */
+    private boolean checkConsumableRestrictions(PlayerItemConsumeEvent event, Player p, ItemStack consumed) {
         // Check if this is a Protect the President buff selection potion (undrinkable)
         if (PDCDetection.isBuffSelectionPotion(consumed)) {
             event.setCancelled(true);
             Messages.send(p, "<red>You cannot drink this potion! Right-click it to select your buff.</red>");
-            return;
+            return true;
         }
 
         GameSession session = GameManager.getInstance().getPlayerSession(p);
-        if (session != null && session.getState() == GameState.SHOPPING) {
+        if (session == null) {
+            return false;
+        }
+
+        // Prevent consumption in shopping phase
+        if (session.getState() == GameState.SHOPPING) {
             FoodItem fi = PDCDetection.getFood(consumed);
             if (fi != null) {
                 event.setCancelled(true);
                 Messages.send(p, "<red>You cannot use special consumables during the shopping phase!</red>");
-                return;
+                return true;
             }
         }
 
-        // Prevent dead players from using consumables
-        if (session != null && session.getState() == GameState.COMBAT) {
+        // Prevent dead players from consuming
+        return preventDeadPlayerConsumption(event, p, session);
+    }
+
+    /**
+     * Prevent dead players from using consumables
+     * @return true if consumption should be cancelled
+     */
+    private boolean preventDeadPlayerConsumption(PlayerItemConsumeEvent event, Player p, GameSession session) {
+        if (session.getState() == GameState.COMBAT) {
             RoundData roundData = session.getCurrentRoundData();
             if (roundData != null && !roundData.isAlive(p.getUniqueId())) {
                 event.setCancelled(true);
                 Messages.send(p, "<red>You cannot use consumables while dead!</red>");
-                return;
+                return true;
             }
         }
+        return false;
+    }
 
+    /**
+     * Handle special consumables with cooldowns
+     */
+    private void handleSpecialConsumable(Player p, ItemStack consumed) {
         FoodItem fi = PDCDetection.getFood(consumed);
-
         if (fi == null) return;
 
         // Data components already handle applying effects; we only gate cooldown + empty bottle cleanup
         if (isSpecialConsumable(fi)) {
-            CooldownManager cooldownManager = CooldownManager.getInstance();
-            if (cooldownManager.isOnCooldown(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE)) {
-                long remaining = cooldownManager.getRemainingCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE);
-                event.setCancelled(true);
-                Messages.send(p, "<red>Consumable on cooldown! (" + remaining + "s)</red>");
+            if (!checkConsumableCooldown(p)) {
                 return;
             }
-            int cooldownSeconds = ItemsConfig.getInstance().getConsumableCooldown();
-            cooldownManager.setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE, cooldownSeconds);
         }
 
-        if (fi == FoodItem.SUNSCREEN) SchedulerUtils.runTaskLater(() -> removeEmptyBottle(p), 1L);
+        if (fi == FoodItem.SUNSCREEN) {
+            SchedulerUtils.runTaskLater(() -> removeEmptyBottle(p), 1L);
+        }
+    }
+
+    /**
+     * Check if consumable is on cooldown and apply it
+     * @return true if not on cooldown
+     */
+    private boolean checkConsumableCooldown(Player p) {
+        CooldownManager cooldownManager = CooldownManager.getInstance();
+        if (cooldownManager.isOnCooldown(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE);
+            Messages.send(p, "<red>Consumable on cooldown! (" + remaining + "s)</red>");
+            return false;
+        }
+        int cooldownSeconds = ItemsConfig.getInstance().getConsumableCooldown();
+        cooldownManager.setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE, cooldownSeconds);
+        return true;
     }
 
     /**
@@ -363,45 +428,53 @@ public class GameListener implements Listener {
         MythicItem mythic = PDCDetection.getMythic(bow);
         if (mythic == null) return;
 
+        handleMythicBowShot(event, player, mythic);
+    }
+
+    /**
+     * Handle mythic bow shots with mode tagging
+     */
+    private void handleMythicBowShot(EntityShootBowEvent event, Player player, MythicItem mythic) {
         switch (mythic) {
-            case BLOODWRENCH_CROSSBOW -> {
-                if (!mythicManager.handleBloodwrenchShot(player)) {
-                    event.setCancelled(true);
-                } else {
-                    // Tag the arrow with BloodWrench mode for hit detection
-                    if (event.getProjectile() instanceof Arrow arrow) {
-                        boolean isRapid = mythicManager.isBloodwrenchRapidMode(player);
-                        arrow.getPersistentDataContainer().set(
-                            Keys.BLOODWRENCH_MODE,
-                            PersistentDataType.STRING,
-                            isRapid ? "rapid" : "supercharged"
-                        );
-                    }
-                }
+            case BLOODWRENCH_CROSSBOW -> handleBloodwrenchShot(event, player);
+            case BLAZEBITE_CROSSBOWS -> handleBlazebiteShot(event, player, event.getBow());
+            case WIND_BOW -> handleWindBowShot(event, player);
+            default -> { /* No special handling */ }
+        }
+    }
+
+    /**
+     * Handle BloodWrench crossbow shot
+     */
+    private void handleBloodwrenchShot(EntityShootBowEvent event, Player player) {
+        if (!mythicManager.handleBloodwrenchShot(player)) {
+            event.setCancelled(true);
+        } else if (event.getProjectile() instanceof Arrow arrow) {
+            String mode = mythicManager.isBloodwrenchRapidMode(player) ? "rapid" : "supercharged";
+            arrow.getPersistentDataContainer().set(Keys.BLOODWRENCH_MODE, PersistentDataType.STRING, mode);
+        }
+    }
+
+    /**
+     * Handle BlazeBite crossbow shot
+     */
+    private void handleBlazebiteShot(EntityShootBowEvent event, Player player, ItemStack bow) {
+        if (!mythicManager.handleBlazebiteShot(player, bow)) {
+            event.setCancelled(true);
+        } else if (event.getProjectile() instanceof Arrow arrow) {
+            String mode = PDCDetection.getBlazebiteMode(bow);
+            if (mode != null) {
+                arrow.getPersistentDataContainer().set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, mode);
             }
-            case BLAZEBITE_CROSSBOWS -> {
-                if (!mythicManager.handleBlazebiteShot(player, bow)) {
-                    event.setCancelled(true);
-                } else {
-                    // Tag the arrow with the BlazeBite mode for hit detection
-                    if (event.getProjectile() instanceof Arrow arrow) {
-                        String mode = PDCDetection.getBlazebiteMode(bow);
-                        if (mode != null) {
-                            arrow.getPersistentDataContainer().set(
-                                Keys.BLAZEBITE_MODE,
-                                PersistentDataType.STRING,
-                                mode
-                            );
-                        }
-                    }
-                }
-            }
-            case WIND_BOW -> {
-                // Wind Bow uses 10 shots then reload cooldown
-                if (!mythicManager.handleWindBowShot(player)) {
-                    event.setCancelled(true);
-                }
-            }
+        }
+    }
+
+    /**
+     * Handle Wind Bow shot
+     */
+    private void handleWindBowShot(EntityShootBowEvent event, Player player) {
+        if (!mythicManager.handleWindBowShot(player)) {
+            event.setCancelled(true);
         }
     }
 
@@ -411,76 +484,113 @@ public class GameListener implements Listener {
     public void onProjectileHit(ProjectileHitEvent event) {
         if (event.isCancelled()) return;
 
-        // Handle arrow hits
         if (event.getEntity() instanceof Arrow arrow) {
-            if (!(arrow.getShooter() instanceof Player shooter)) return;
-
-            // Check for BlazeBite arrow (tagged in onEntityShootBow)
-            String blazebiteMode = PDCDetection.getArrowBlazebiteMode(arrow);
-            if (blazebiteMode != null) {
-                Location hitLoc = event.getHitEntity() != null
-                    ? event.getHitEntity().getLocation()
-                    : arrow.getLocation();
-                boolean isGlacier = "glacier".equals(blazebiteMode);
-                mythicManager.handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc, isGlacier);
-            }
-
-            ItemStack bow = shooter.getInventory().getItemInMainHand();
-            MythicItem mythic = PDCDetection.getMythic(bow);
-
-            if (mythic == MythicItem.WIND_BOW && event.getHitEntity() instanceof Player hitPlayer) {
-                mythicManager.handleWindBowHit(shooter, hitPlayer);
-            }
-
-            // Check for BloodWrench arrow (tagged in onEntityShootBow)
-            String bloodwrenchMode = PDCDetection.getArrowBloodwrenchMode(arrow);
-            if (bloodwrenchMode != null) {
-                Location hitLoc = event.getHitEntity() != null
-                    ? event.getHitEntity().getLocation()
-                    : arrow.getLocation();
-
-                if ("rapid".equals(bloodwrenchMode)) {
-                    mythicManager.handleBloodwrenchRapidHit(shooter, hitLoc);
-                } else if ("supercharged".equals(bloodwrenchMode)) {
-                    mythicManager.handleBloodwrenchSuperchargedHit(shooter, hitLoc);
-                }
-            }
+            handleArrowHit(arrow, event);
+        } else if (event.getEntity() instanceof Trident trident) {
+            handleTridentHit(trident, event);
         }
 
-        // Handle trident hits
-        if (event.getEntity() instanceof Trident trident) {
-            if (!(trident.getShooter() instanceof Player shooter)) return;
+        handleCustomProjectileHit(event);
+    }
 
-            MythicItem mythic = PDCDetection.getMythic(trident);
-            if (mythic == null) {
-                ItemStack mainHand = shooter.getInventory().getItemInMainHand();
-                mythic = PDCDetection.getMythic(mainHand);
-            }
+    /**
+     * Handle arrow hit with mythic effects
+     */
+    private void handleArrowHit(Arrow arrow, ProjectileHitEvent event) {
+        if (!(arrow.getShooter() instanceof Player shooter)) return;
 
-            if (mythic == MythicItem.GOBLIN_SPEAR && event.getHitEntity() instanceof LivingEntity target) {
-                mythicManager.handleGoblinSpearHit(shooter, target);
-                Messages.debug("GOBLIN_SPEAR hit handled for " + target.getName());
-            }
+        handleBlazebiteArrow(shooter, arrow, event);
+        handleWindBowArrow(shooter, event);
+        handleBloodwrenchArrow(shooter, arrow, event);
+    }
+
+    /**
+     * Handle BlazeBite arrow hit
+     */
+    private void handleBlazebiteArrow(Player shooter, Arrow arrow, ProjectileHitEvent event) {
+        String blazebiteMode = PDCDetection.getArrowBlazebiteMode(arrow);
+        if (blazebiteMode == null) return;
+
+        Location hitLoc = event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation();
+        boolean isGlacier = "glacier".equals(blazebiteMode);
+        mythicManager.handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc, isGlacier);
+    }
+
+    /**
+     * Handle Wind Bow arrow hit
+     */
+    private void handleWindBowArrow(Player shooter, ProjectileHitEvent event) {
+        ItemStack bow = shooter.getInventory().getItemInMainHand();
+        MythicItem mythic = PDCDetection.getMythic(bow);
+
+        if (mythic == MythicItem.WIND_BOW && event.getHitEntity() instanceof Player hitPlayer) {
+            mythicManager.handleWindBowHit(shooter, hitPlayer);
+        }
+    }
+
+    /**
+     * Handle BloodWrench arrow hit
+     */
+    private void handleBloodwrenchArrow(Player shooter, Arrow arrow, ProjectileHitEvent event) {
+        String bloodwrenchMode = PDCDetection.getArrowBloodwrenchMode(arrow);
+        if (bloodwrenchMode == null) return;
+
+        Location hitLoc = event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation();
+
+        if ("rapid".equals(bloodwrenchMode)) {
+            mythicManager.handleBloodwrenchRapidHit(shooter, hitLoc);
+        } else if ("supercharged".equals(bloodwrenchMode)) {
+            mythicManager.handleBloodwrenchSuperchargedHit(shooter, hitLoc);
+        }
+    }
+
+    /**
+     * Handle trident hit with mythic effects
+     */
+    private void handleTridentHit(Trident trident, ProjectileHitEvent event) {
+        if (!(trident.getShooter() instanceof Player shooter)) return;
+
+        MythicItem mythic = resolveTridentMythic(shooter, trident);
+        if (mythic == MythicItem.GOBLIN_SPEAR && event.getHitEntity() instanceof LivingEntity target) {
+            mythicManager.handleGoblinSpearHit(shooter, target);
+            Messages.debug("GOBLIN_SPEAR hit handled for " + target.getName());
+        }
+    }
+
+    /**
+     * Resolve which mythic type a trident is
+     */
+    private MythicItem resolveTridentMythic(Player shooter, Trident trident) {
+        MythicItem mythic = PDCDetection.getMythic(trident);
+        if (mythic == null) {
+            ItemStack mainHand = shooter.getInventory().getItemInMainHand();
+            mythic = PDCDetection.getMythic(mainHand);
+        }
+        return mythic;
+    }
+
+    /**
+     * Handle custom item projectile hits (Cash Blaster, etc.)
+     */
+    private void handleCustomProjectileHit(ProjectileHitEvent event) {
+        if (!(event.getHitEntity() instanceof Player)) return;
+
+        ProjectileSource projectileShooter = event.getEntity().getShooter();
+        if (!(projectileShooter instanceof Player attacker)) return;
+
+        ItemStack item = attacker.getInventory().getItemInMainHand();
+        if (!item.hasItemMeta()) return;
+
+        // Prevent custom projectiles during shopping
+        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
+        if (session != null && session.getState() == GameState.SHOPPING) {
+            event.setCancelled(true);
+            return;
         }
 
-        // Handle custom item projectile hits (Cash Blaster)
-        if (event.getHitEntity() instanceof Player) {
-            ProjectileSource projectileShooter = event.getEntity().getShooter();
-            if (!(projectileShooter instanceof Player attacker)) return;
-
-            ItemStack item = attacker.getInventory().getItemInMainHand();
-            if (!item.hasItemMeta()) return;
-
-            GameSession session = GameManager.getInstance().getPlayerSession(attacker);
-            if (session != null && session.getState() == GameState.SHOPPING) {
-                event.setCancelled(true);
-                return;
-            }
-
-            CustomItem type = PDCDetection.getCustomItem(item);
-            if (type == CustomItem.CASH_BLASTER) {
-                customItemManager.handleCashBlasterHit(attacker);
-            }
+        CustomItem type = PDCDetection.getCustomItem(item);
+        if (type == CustomItem.CASH_BLASTER) {
+            customItemManager.handleCashBlasterHit(attacker);
         }
     }
 
@@ -570,7 +680,9 @@ public class GameListener implements Listener {
             session.getGamemode().onPlayerSpawn(player);
             if (session.getState() == GameState.SHOPPING) {
                 Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-                    player.setHealth(Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getBaseValue());
+                    var attr = player.getAttribute(Attribute.MAX_HEALTH);
+                    double maxHealth = attr != null ? attr.getValue() : 20.0;
+                    player.setHealth(Math.clamp(maxHealth, 1.0, player.getHealth()));
                     player.setFoodLevel(20);
                 }, 2L);
             }
