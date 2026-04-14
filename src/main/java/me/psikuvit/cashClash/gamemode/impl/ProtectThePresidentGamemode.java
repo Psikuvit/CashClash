@@ -625,6 +625,17 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     /**
+     * Get the buff for a president's team
+     */
+    public String getPresidentBuff(int teamNumber) {
+        President pres = presidents.get(teamNumber);
+        if (pres == null || !pres.hasSelectedBuff()) {
+            return "None";
+        }
+        return pres.selectedBuff().getName();
+    }
+
+    /**
      * Check if buff selection phase is active (shop should be locked)
      */
     public boolean isBuffSelectionActive() {

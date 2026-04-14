@@ -52,6 +52,13 @@ public class PTPScoreboardContext extends GameScoreboardContext {
         line = line.replace("{red_assassinations}", String.valueOf(redAssassinations));
         line = line.replace("{blue_assassinations}", String.valueOf(blueAssassinations));
 
+        // Add president buff information
+        String redBuff = ptp.getPresidentBuff(1);
+        String blueBuff = ptp.getPresidentBuff(2);
+
+        line = line.replace("{red_buff}", redBuff);
+        line = line.replace("{blue_buff}", blueBuff);
+
         return line;
     }
 
