@@ -75,20 +75,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Select a random president for each team
         selectPresidents();
 
-        // Get president names
-        Player pres1 = Bukkit.getPlayer(presidents.get(1).uuid());
-        Player pres2 = Bukkit.getPlayer(presidents.get(2).uuid());
-
-        String pres1Name = pres1 != null ? pres1.getName() : "Unknown";
-        String pres2Name = pres2 != null ? pres2.getName() : "Unknown";
-
         // Announce presidents
         Messages.broadcastWithPrefix(session.getPlayers(),
                 "<gold>Protect the President has been selected as the gamemode!</gold>");
         Messages.broadcastWithPrefix(session.getPlayers(),
-                "<red>" + pres1Name + " is Team Red's president and can pick a bonus effect.</red>");
+                "<red>" + getPresidentName(1) + " is Team Red's president and can pick a bonus effect.</red>");
         Messages.broadcastWithPrefix(session.getPlayers(),
-                "<blue>" + pres2Name + " is Team Blue's president and can pick a bonus effect.</blue>");
+                "<blue>" + getPresidentName(2) + " is Team Blue's president and can pick a bonus effect.</blue>");
     }
 
     @Override
@@ -134,29 +127,29 @@ public class ProtectThePresidentGamemode extends Gamemode {
      */
     private void clearPresidentialBuffs() {
         for (int team = 1; team <= 2; team++) {
-            President pres = presidents.get(team);
-            if (pres != null) {
-                Player presPlayer = Bukkit.getPlayer(pres.uuid());
-                if (presPlayer != null && presPlayer.isOnline()) {
-                    // Explicitly remove all potion effects using removePotionEffect()
-                    presPlayer.removePotionEffect(PotionEffectType.GLOWING);
-                    presPlayer.removePotionEffect(PotionEffectType.STRENGTH);
-                    presPlayer.removePotionEffect(PotionEffectType.RESISTANCE);
-                    presPlayer.removePotionEffect(PotionEffectType.SPEED);
+            Player presPlayer = getPresidentPlayerByTeam(team);
+            if (presPlayer != null && presPlayer.isOnline()) {
+                // Explicitly remove all potion effects using removePotionEffect()
+                presPlayer.removePotionEffect(PotionEffectType.GLOWING);
+                presPlayer.removePotionEffect(PotionEffectType.STRENGTH);
+                presPlayer.removePotionEffect(PotionEffectType.RESISTANCE);
+                presPlayer.removePotionEffect(PotionEffectType.SPEED);
 
-                    // Reset max health if HP buff was active
-                    var maxHealthAttr = presPlayer.getAttribute(Attribute.MAX_HEALTH);
-                    if (maxHealthAttr != null) {
-                        double maxHealth = maxHealthAttr.getValue();
-                        if (maxHealth > 20.0) {
-                            maxHealthAttr.setBaseValue(20.0);
-                        }
+                // Reset max health if HP buff was active
+                var maxHealthAttr = presPlayer.getAttribute(Attribute.MAX_HEALTH);
+                if (maxHealthAttr != null) {
+                    double maxHealth = maxHealthAttr.getValue();
+                    if (maxHealth > 20.0) {
+                        maxHealthAttr.setBaseValue(20.0);
                     }
-
-                    Messages.debug("[PTP] Cleared all buffs for president: " + presPlayer.getName());
                 }
 
-                // Reset buff in president record
+                Messages.debug("[PTP] Cleared all buffs for president: " + presPlayer.getName());
+            }
+
+            // Reset buff in president record
+            President pres = presidents.get(team);
+            if (pres != null) {
                 presidents.put(team, pres.withResetBuff());
             }
         }
@@ -167,20 +160,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
         UUID victimUuid = victim.getUniqueId();
 
         // Check if victim is a president
-        Integer presidentTeam = null;
-        President deadPresident = null;
+        int presidentTeam = findPresidentTeam(victimUuid);
 
-        for (int team = 1; team <= 2; team++) {
-            President pres = presidents.get(team);
-            if (pres != null && pres.uuid().equals(victimUuid)) {
-                presidentTeam = team;
-                deadPresident = pres;
-                break;
-            }
-        }
-
-        if (presidentTeam != null) {
+        if (presidentTeam != 0) {
             // President died - update death count and notify
+            President deadPresident = presidents.get(presidentTeam);
             President updatedPresident = deadPresident.withDeath();
             presidents.put(presidentTeam, updatedPresident);
             int deaths = updatedPresident.deaths();
@@ -198,13 +182,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
             addTeamKill(killerTeam);
         } else if (killer != null) {
             // Regular player died, award killer's team if killer is a president
-            UUID killerUuid = killer.getUniqueId();
-            for (int team = 1; team <= 2; team++) {
-                President pres = presidents.get(team);
-                if (pres != null && pres.uuid().equals(killerUuid)) {
-                    addTeamKill(team);
-                    break;
-                }
+            int killerPresidentTeam = findPresidentTeam(killer.getUniqueId());
+            if (killerPresidentTeam != 0) {
+                addTeamKill(killerPresidentTeam);
             }
         }
     }
@@ -214,14 +194,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
         UUID playerUuid = player.getUniqueId();
 
         // Check if this player is a president
-        for (int team = 1; team <= 2; team++) {
-            President pres = presidents.get(team);
-            if (pres != null && pres.uuid().equals(playerUuid)) {
-                // Always reapply glowing to presidents
-                player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 0, false, false));
-                Messages.debug("[PTP] Applied glowing to president on spawn: " + player.getName());
-                break;
-            }
+        int presidentTeam = findPresidentTeam(playerUuid);
+        if (presidentTeam != 0) {
+            // Always reapply glowing to presidents
+            President pres = presidents.get(presidentTeam);
+            applyGlow(pres);
+            applyPresidentialBuff(player);
+            Messages.debug("[PTP] Applied glowing to president on spawn: " + player.getName());
         }
 
         // Apply extra heart effect if in sudden death
@@ -233,22 +212,16 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public boolean checkGameWinner() {
         // Check if a president has died 2 times in this round - if so, the round ends
-        President pres1 = presidents.get(1);
-        President pres2 = presidents.get(2);
-
-        int deaths1 = pres1 != null ? pres1.deaths() : 0;
-        int deaths2 = pres2 != null ? pres2.deaths() : 0;
+        int deaths1 = getPresidentDeaths(1);
+        int deaths2 = getPresidentDeaths(2);
 
         return deaths1 >= 2 || deaths2 >= 2; // Round ends
     }
 
     @Override
     public int getWinningTeam() {
-        President pres1 = presidents.get(1);
-        President pres2 = presidents.get(2);
-
-        int deaths1 = pres1 != null ? pres1.deaths() : 0;
-        int deaths2 = pres2 != null ? pres2.deaths() : 0;
+        int deaths1 = getPresidentDeaths(1);
+        int deaths2 = getPresidentDeaths(2);
 
         // Return the team whose president didn't die 2 times (round winner)
         if (deaths1 >= 2 && deaths2 < 2) {
@@ -343,11 +316,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         Messages.debug("[PTP] Starting president buff selection phase (15 seconds)");
 
-        President pres1 = presidents.get(1);
-        President pres2 = presidents.get(2);
-
-        Player presPlayer1 = pres1 != null ? Bukkit.getPlayer(pres1.uuid()) : null;
-        Player presPlayer2 = pres2 != null ? Bukkit.getPlayer(pres2.uuid()) : null;
+        Player presPlayer1 = getPresidentPlayerByTeam(1);
+        Player presPlayer2 = getPresidentPlayerByTeam(2);
 
         if (presPlayer1 != null && presPlayer2 != null) {
             Messages.debug("[PTP] Both presidents found, giving buff selection items");
@@ -378,22 +348,22 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
             // Slot 2 - Strength Potion
             ItemStack strengthPotion = createBuffSelectionItem("Strength Potion",
-                    PresidentialBuff.OFFENSE, "<gold>Strength I - Deal more damage</gold>");
+                    "<gold>Strength I - Deal more damage</gold>");
             president.getInventory().setItem(1, strengthPotion);
 
             // Slot 4 - Speed Potion
             ItemStack speedPotion = createBuffSelectionItem("Speed Potion",
-                    PresidentialBuff.SPEED, "<gold>Speed I - Move faster</gold>");
+                    "<gold>Speed I - Move faster</gold>");
             president.getInventory().setItem(3, speedPotion);
 
             // Slot 6 - Resistance Potion
             ItemStack resistancePotion = createBuffSelectionItem("Resistance Potion",
-                    PresidentialBuff.TANK, "<gold>Resistance I - Take less damage</gold>");
+                    "<gold>Resistance I - Take less damage</gold>");
             president.getInventory().setItem(5, resistancePotion);
 
             // Slot 8 - Instant Health Potion
             ItemStack healthPotion = createBuffSelectionItem("Health Potion",
-                    PresidentialBuff.HP, "<gold>Extra Hearts - Gain +3 max hearts</gold>");
+                    "<gold>Extra Hearts - Gain +3 max hearts</gold>");
             president.getInventory().setItem(7, healthPotion);
 
             // Update inventory on client
@@ -406,7 +376,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     /**
      * Create a buff selection item with appropriate display and effects
      */
-    private ItemStack createBuffSelectionItem(String name, PresidentialBuff buff, String benefit) {
+    private ItemStack createBuffSelectionItem(String name, String benefit) {
         ItemStack item = new ItemStack(Material.POTION);
         ItemMeta meta = item.getItemMeta();
         
@@ -462,7 +432,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 President updatedPres = pres.withBuff(randomBuff);
                 presidents.put(team, updatedPres);
 
-                Player presPlayer = Bukkit.getPlayer(pres.uuid());
+                Player presPlayer = getPresidentPlayerByTeam(team);
                 if (presPlayer != null) {
                     Messages.debug("[PTP] Team " + team + " - Applied random buff: " + randomBuff.getName());
                     Messages.send(presPlayer, "<gold>No buff selected! Random buff applied: " + randomBuff.getName() + "</gold>");
@@ -484,21 +454,18 @@ public class ProtectThePresidentGamemode extends Gamemode {
         Messages.broadcastWithPrefix(session.getPlayers(), "<green>Presidents have selected their buffs! Shop is now unlocked!</green>");
         Messages.debug("[PTP] Shop unlocked - All presidents have buffs selected");
 
-        // Now apply buffs and glowing to presidents
-        President pres1 = presidents.get(1);
-        President pres2 = presidents.get(2);
-
-        applyGlow(pres1);
-        applyGlow(pres2);
+        // Apply glowing and buffs to both presidents
+        applyGlow(presidents.get(1));
+        applyGlow(presidents.get(2));
     }
 
     private void applyGlow(President pres) {
         if (pres != null) {
-            Player presPlayer1 = Bukkit.getPlayer(pres.uuid());
-            if (presPlayer1 != null) {
-                presPlayer1.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 0, false, false));
-                Messages.debug("[PTP] Applied glowing to president: " + presPlayer1.getName());
-                applyPresidentialBuff(presPlayer1);
+            Player presPlayer = getPresidentPlayerByUUID(pres.uuid());
+            if (presPlayer != null) {
+                presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 0, false, false));
+                Messages.debug("[PTP] Applied glowing to president: " + presPlayer.getName());
+                applyPresidentialBuff(presPlayer);
             }
         }
     }
@@ -527,20 +494,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
     }
 
-    private void checkExtraHeartExpiry() {
-        long now = System.currentTimeMillis();
-        extraHeartExpiry.entrySet().removeIf(entry -> {
-            if (entry.getValue() <= now) {
-                Player p = Bukkit.getPlayer(entry.getKey());
-                if (p != null && p.isOnline()) {
-                    p.removePotionEffect(PotionEffectType.GLOWING);
-                }
-                return true;
-            }
-            return false;
-        });
-    }
-
     /**
      * Apply an extra heart to a player (45s duration)
      */
@@ -555,7 +508,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         var maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealthAttr != null) {
-            double maxHealth = maxHealthAttr.getValue();
+            double maxHealth = maxHealthAttr.getBaseValue();
             player.setHealth(Math.min(player.getHealth() + 4, maxHealth));
         }
     }
@@ -563,21 +516,15 @@ public class ProtectThePresidentGamemode extends Gamemode {
     /**
      * Apply the selected presidential buff to a president
      */
-    private void applyPresidentialBuff(Player president) {
-        UUID presUuid = president.getUniqueId();
-
-        // Find the president record
-        President pres = null;
-        for (int team = 1; team <= 2; team++) {
-            President p = presidents.get(team);
-            if (p != null && p.uuid().equals(presUuid)) {
-                pres = p;
-                break;
-            }
+    private void applyPresidentialBuff(Player presPlayer) {
+        if (isNotPresident(presPlayer.getUniqueId())) {
+            Messages.debug("[PTP] Non-president tried to get buff applied");
+            return;
         }
 
-        if (pres == null || pres.selectedBuff() == null) {
-            Messages.debug("[PTP] No buff found for president: " + president.getName());
+        President pres = getPresidentByUUID(presPlayer.getUniqueId());
+        if (pres == null || !pres.hasSelectedBuff()) {
+            Messages.debug("[PTP] No buff found for president: " + presPlayer.getName());
             return;
         }
 
@@ -586,39 +533,80 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Use INFINITE_DURATION - buffs will be explicitly removed on round end via clearPresidentialBuffs()
         switch (buff) {
             case OFFENSE -> {
-                president.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, PotionEffect.INFINITE_DURATION, 0, false, false));
-                Messages.debug("[PTP] Applied Strength buff to: " + president.getName());
+                presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, PotionEffect.INFINITE_DURATION, 0, false, false));
+                Messages.debug("[PTP] Applied Strength buff to: " + presPlayer.getName());
             }
             case TANK -> {
-                president.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, 0, false, false));
-                Messages.debug("[PTP] Applied Resistance buff to: " + president.getName());
+                presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, 0, false, false));
+                Messages.debug("[PTP] Applied Resistance buff to: " + presPlayer.getName());
             }
             case SPEED -> {
-                president.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION, 0, false, false));
-                Messages.debug("[PTP] Applied Speed buff to: " + president.getName());
+                presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION, 0, false, false));
+                Messages.debug("[PTP] Applied Speed buff to: " + presPlayer.getName());
             }
             case HP -> {
                 // Add 3 extra hearts (permanent for this round, will be reset on round end)
-                var maxHealthAttr = president.getAttribute(Attribute.MAX_HEALTH);
+                var maxHealthAttr = presPlayer.getAttribute(Attribute.MAX_HEALTH);
                 if (maxHealthAttr != null) {
-                    double currentMax = maxHealthAttr.getValue();
+                    double currentMax = maxHealthAttr.getBaseValue();
                     maxHealthAttr.setBaseValue(currentMax + 6.0); // 3 hearts = 6 health
-                    president.setHealth(Math.min(president.getHealth() + 6.0, currentMax + 6.0));
-                    Messages.debug("[PTP] Applied +3 hearts buff to: " + president.getName());
+                    presPlayer.setHealth(Math.min(presPlayer.getHealth() + 6.0, currentMax + 6.0));
+                    Messages.debug("[PTP] Applied +3 hearts buff to: " + presPlayer.getName());
                 }
             }
         }
 
-        Messages.send(president, "<gold>Buff Activated: " + buff.getName() + "!</gold>");
+        Messages.send(presPlayer, "<gold>Buff Activated: " + buff.getName() + "!</gold>");
     }
 
-    public boolean isPresident(UUID uuid) {
-        for (President pres : presidents.values()) {
+    public boolean isNotPresident(UUID uuid) {
+        return findPresidentTeam(uuid) != 0;
+    }
+
+    /**
+     * Find which team a player is president of
+     * @return team number (1 or 2) or null if not a president
+     */
+    private int findPresidentTeam(UUID uuid) {
+        for (int team = 1; team <= 2; team++) {
+            President pres = presidents.get(team);
             if (pres != null && pres.uuid().equals(uuid)) {
-                return true;
+                return team;
             }
         }
-        return false;
+        return 0;
+    }
+
+    /**
+     * Get the President object by player UUID
+     */
+    private President getPresidentByUUID(UUID uuid) {
+        int team = findPresidentTeam(uuid);
+        return team == 0 ? presidents.get(team) : null;
+    }
+
+    /**
+     * Get the online Player for a president team
+     */
+    private Player getPresidentPlayerByTeam(int team) {
+        President pres = presidents.get(team);
+        return pres != null ? Bukkit.getPlayer(pres.uuid()) : null;
+    }
+
+    /**
+     * Get the online Player for a president UUID
+     */
+    private Player getPresidentPlayerByUUID(UUID uuid) {
+        President pres = getPresidentByUUID(uuid);
+        return pres != null ? Bukkit.getPlayer(pres.uuid()) : null;
+    }
+
+    /**
+     * Get death count for a president's team
+     */
+    private int getPresidentDeaths(int team) {
+        President pres = presidents.get(team);
+        return pres != null ? pres.deaths() : 0;
     }
 
     /**
@@ -633,8 +621,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * Get assassination count for a specific team
      */
     public int getAssassinationCount(int teamNumber) {
-        President pres = presidents.get(teamNumber);
-        return pres != null ? pres.deaths() : 0;
+        return getPresidentDeaths(teamNumber);
     }
 
     /**
@@ -655,7 +642,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
 
         UUID playerUuid = player.getUniqueId();
-        if (!isPresident(playerUuid)) {
+        if (isNotPresident(playerUuid)) {
             Messages.debug("[PTP] Non-president " + player.getName() + " tried to select buff");
             return false;
         }
@@ -673,18 +660,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
             }
         }
         
-        // Find the president record
-        President pres = null;
-        int presTeam = -1;
-        for (int team = 1; team <= 2; team++) {
-            President p = presidents.get(team);
-            if (p != null && p.uuid().equals(playerUuid)) {
-                pres = p;
-                presTeam = team;
-                break;
-            }
+        // Find the president record for this team
+        Integer presTeam = findPresidentTeam(playerUuid);
+        if (presTeam == 0) {
+            return false;
         }
 
+        President pres = presidents.get(presTeam);
         if (pres == null) {
             return false;
         }
