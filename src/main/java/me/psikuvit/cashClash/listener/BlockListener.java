@@ -119,19 +119,7 @@ public class BlockListener implements Listener {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
-        if (session == null) return;
-
-        // Check if in correct world
-        if (!player.getWorld().equals(session.getGameWorld())) {
-            Messages.debug("World mismatch for player " + player.getName() + " in BlockPlaceEvent");
-            event.setCancelled(true);
-            return;
-        }
-
-        // Only allow placing during combat
-        if (session.getState() != GameState.COMBAT) {
-            Messages.debug("Session state is not COMBAT for player " + player.getName() + " in BlockPlaceEvent");
-            event.setCancelled(true);
+        if (!validateBlockPlaceContext(event, player, session)) {
             return;
         }
 
@@ -139,87 +127,138 @@ public class BlockListener implements Listener {
         Material blockType = block.getType();
         UUID sessionId = session.getSessionId();
         UUID playerId = player.getUniqueId();
-        Team team = session.getTeamRed().hasPlayer(playerId) ? session.getTeamRed() : session.getTeamBlue();
 
-        // Handle web placement limits (max 4 per player)
-        if (blockType == Material.COBWEB) {
-            int currentCount = playerWebBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>())
-                .getOrDefault(playerId, 0);
-
-            if (currentCount >= 4) {
-                event.setCancelled(true);
-                Messages.send(player, "<red>You have reached the maximum of 4 webs!</red>");
-                return;
-            }
-
-            // Increment web count
-            playerWebBlockCount.get(sessionId).put(playerId, currentCount + 1);
-
-            Location loc = block.getLocation().toBlockLocation();
-            placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
-
-            // Schedule despawn after 5 seconds of no touch
-            scheduleWebDespawn(block); // 100 ticks = 5 seconds
-            return;
-        }
-
-        // Handle leaf block placement limits (max 64 per player)
-        if (isLeafBlock(blockType)) {
-            int currentCount = playerLeafBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>())
-                .getOrDefault(playerId, 0);
-
-            if (currentCount >= 64) {
-                event.setCancelled(true);
-                Messages.send(player, "<red>You have reached the maximum of 64 leaf blocks!</red>");
-                return;
-            }
-
-            // Check stacking height (max 3 leaf blocks vertically)
-            int stackHeight = 1;
-            Block below = block.getRelative(0, -1, 0);
-            while (isLeafBlock(below.getType()) && stackHeight < 3) {
-                stackHeight++;
-                below = below.getRelative(0, -1, 0);
-            }
-
-            if (stackHeight >= 3) {
-                event.setCancelled(true);
-                Messages.send(player, "<red>You cannot stack more than 3 leaf blocks vertically!</red>");
-                return;
-            }
-
-            playerLeafBlockCount.get(sessionId).put(playerId, currentCount + 1);
-            Location loc = block.getLocation().toBlockLocation();
-            placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
-
-            // Schedule leaf decay after 6 seconds
-            scheduleLeafDecay(block); // 120 ticks = 6 seconds
-            return;
-        }
-
-        if (blockType == Material.WATER || blockType == Material.LAVA) {
-            int teamNum = team.getTeamNumber();
-            int currentCount = waterLavaSourceCount.computeIfAbsent(sessionId, k -> new HashMap<>())
-                .getOrDefault(teamNum, 0);
-
-            if (currentCount >= 4) {
-                event.setCancelled(true);
-                Messages.send(player, "<red>Your team has reached the maximum of 4 water/lava sources!</red>");
-                return;
-            }
-
-            waterLavaSourceCount.get(sessionId).put(teamNum, currentCount + 1);
-            Location loc = block.getLocation().toBlockLocation();
-            placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
-
-            // If water bucket is used, schedule refill after 10 seconds (only for water, not lava)
-            if (blockType == Material.WATER) {
-                scheduleWaterBucketRefill(player);
-            }
-            return;
-        }
+        // Handle block type-specific placement logic
+        if (handleWebPlacement(event, blockType, sessionId, playerId, block)) return;
+        if (handleLeafPlacement(event, blockType, sessionId, playerId, block)) return;
+        if (handleWaterLavaPlacement(event, blockType, sessionId, playerId, player, session)) return;
 
         // Track other player-placed blocks
+        trackPlacedBlock(sessionId, block);
+    }
+
+    /**
+     * Validate block placement context (session, world, state)
+     */
+    private boolean validateBlockPlaceContext(BlockPlaceEvent event, Player player, GameSession session) {
+        if (session == null) return false;
+
+        // Check if in correct world
+        if (!player.getWorld().equals(session.getGameWorld())) {
+            Messages.debug("World mismatch for player " + player.getName() + " in BlockPlaceEvent");
+            event.setCancelled(true);
+            return false;
+        }
+
+        // Only allow placing during combat
+        if (session.getState() != GameState.COMBAT) {
+            Messages.debug("Session state is not COMBAT for player " + player.getName() + " in BlockPlaceEvent");
+            event.setCancelled(true);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Handle web block placement (max 4 per player)
+     */
+    private boolean handleWebPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
+        if (blockType != Material.COBWEB) return false;
+
+        int currentCount = playerWebBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>())
+            .getOrDefault(playerId, 0);
+
+        if (currentCount >= 4) {
+            event.setCancelled(true);
+            Messages.send(event.getPlayer(), "<red>You have reached the maximum of 4 webs!</red>");
+            return true;
+        }
+
+        // Increment web count and track
+        playerWebBlockCount.get(sessionId).put(playerId, currentCount + 1);
+        trackPlacedBlock(sessionId, block);
+        scheduleWebDespawn(block);
+        return true;
+    }
+
+    /**
+     * Handle leaf block placement (max 64 per player, max 3 stack height)
+     */
+    private boolean handleLeafPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
+        if (!isLeafBlock(blockType)) return false;
+
+        int currentCount = playerLeafBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>())
+            .getOrDefault(playerId, 0);
+
+        if (currentCount >= 64) {
+            event.setCancelled(true);
+            Messages.send(event.getPlayer(), "<red>You have reached the maximum of 64 leaf blocks!</red>");
+            return true;
+        }
+
+        // Check stacking height
+        if (!validateLeafStackHeight(event, block)) {
+            return true;
+        }
+
+        playerLeafBlockCount.get(sessionId).put(playerId, currentCount + 1);
+        trackPlacedBlock(sessionId, block);
+        scheduleLeafDecay(block);
+        return true;
+    }
+
+    /**
+     * Validate leaf block stacking (max 3 vertically)
+     */
+    private boolean validateLeafStackHeight(BlockPlaceEvent event, Block block) {
+        int stackHeight = 1;
+        Block below = block.getRelative(0, -1, 0);
+        while (isLeafBlock(below.getType()) && stackHeight < 3) {
+            stackHeight++;
+            below = below.getRelative(0, -1, 0);
+        }
+
+        if (stackHeight >= 3) {
+            event.setCancelled(true);
+            Messages.send(event.getPlayer(), "<red>You cannot stack more than 3 leaf blocks vertically!</red>");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Handle water/lava placement (max 4 per team)
+     */
+    private boolean handleWaterLavaPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Player player, GameSession session) {
+        if (blockType != Material.WATER && blockType != Material.LAVA) return false;
+
+        Team team = session.getTeamRed().hasPlayer(playerId) ? session.getTeamRed() : session.getTeamBlue();
+        int teamNum = team.getTeamNumber();
+
+        int currentCount = waterLavaSourceCount.computeIfAbsent(sessionId, k -> new HashMap<>())
+            .getOrDefault(teamNum, 0);
+
+        if (currentCount >= 4) {
+            event.setCancelled(true);
+            Messages.send(player, "<red>Your team has reached the maximum of 4 water/lava sources!</red>");
+            return true;
+        }
+
+        waterLavaSourceCount.get(sessionId).put(teamNum, currentCount + 1);
+        trackPlacedBlock(sessionId, event.getBlock());
+
+        // Schedule water bucket refill (only for water, not lava)
+        if (blockType == Material.WATER) {
+            scheduleWaterBucketRefill(player);
+        }
+        return true;
+    }
+
+    /**
+     * Track a placed block location
+     */
+    private void trackPlacedBlock(UUID sessionId, Block block) {
         Location loc = block.getLocation().toBlockLocation();
         placedBlocks.computeIfAbsent(sessionId, k -> new HashSet<>()).add(loc);
     }
@@ -302,7 +341,7 @@ public class BlockListener implements Listener {
         Set<Location> sessionPlacedBlocks = placedBlocks.get(sessionId);
 
         // If the block was NOT placed by a player, cancel the break
-        if (sessionPlacedBlocks == null || !sessionPlacedBlocks.contains(loc)) {
+        if (!isBlockPlayerPlaced(sessionPlacedBlocks, loc)) {
             event.setCancelled(true);
             return;
         }
@@ -311,18 +350,32 @@ public class BlockListener implements Listener {
         sessionPlacedBlocks.remove(loc);
 
         // Update water/lava source count if applicable
+        updateBlockTypeCountOnBreak(session, player, block);
+    }
+
+    /**
+     * Check if a block was placed by a player
+     */
+    private boolean isBlockPlayerPlaced(Set<Location> sessionPlacedBlocks, Location loc) {
+        return sessionPlacedBlocks != null && sessionPlacedBlocks.contains(loc);
+    }
+
+    /**
+     * Update block type counts when a block is broken
+     */
+    private void updateBlockTypeCountOnBreak(GameSession session, Player player, Block block) {
         Material blockType = block.getType();
-        if (blockType == Material.WATER || blockType == Material.LAVA) {
-            Team playerTeam = session.getTeamRed().hasPlayer(player.getUniqueId()) ? session.getTeamRed() : session.getTeamBlue();
-            if (playerTeam != null) {
-                int teamNum = playerTeam.getTeamNumber();
-                Map<Integer, Integer> counts = waterLavaSourceCount.get(sessionId);
-                if (counts != null) {
-                    int current = counts.getOrDefault(teamNum, 0);
-                    if (current > 0) {
-                        counts.put(teamNum, current - 1);
-                    }
-                }
+        if (blockType != Material.WATER && blockType != Material.LAVA) return;
+
+        Team playerTeam = session.getTeamRed().hasPlayer(player.getUniqueId()) ? session.getTeamRed() : session.getTeamBlue();
+        if (playerTeam == null) return;
+
+        int teamNum = playerTeam.getTeamNumber();
+        Map<Integer, Integer> counts = waterLavaSourceCount.get(session.getSessionId());
+        if (counts != null) {
+            int current = counts.getOrDefault(teamNum, 0);
+            if (current > 0) {
+                counts.put(teamNum, current - 1);
             }
         }
     }
