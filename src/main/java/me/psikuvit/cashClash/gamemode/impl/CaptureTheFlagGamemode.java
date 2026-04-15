@@ -142,7 +142,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 "<" + teamName.toLowerCase() + "><bold>Team " + teamName + "'s flag holder was eliminated!</bold></" + teamName.toLowerCase() + ">");
 
         flagStates.put(teamNumber, flag.withoutHolder());
-        moveBannerToLocation(flag.bannerDisplay(), flag.capturePlate());
+        moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
         SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
     }
 
@@ -179,7 +179,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
             if (flag.bannerDisplay().getVehicle() != null) {
                 flag.bannerDisplay().getVehicle().removePassenger(flag.bannerDisplay());
             }
-            moveBannerToLocation(flag.bannerDisplay(), flag.capturePlate());
+            moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
         }
         flagStates.put(teamNumber, flag.withoutHolder());
     }
@@ -249,7 +249,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
                 // Move banner back to its plate
                 if (flag.capturePlate() != null) {
-                    moveBannerToLocation(flag.bannerDisplay(), flag.capturePlate());
+                    moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
                 }
             }
         }
@@ -501,7 +501,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         FlagState enemyFlag = flagStates.get(teamNumber == 1 ? 2 : 1);
         if (enemyFlag != null) {
             flagStates.put(teamNumber == 1 ? 2 : 1, enemyFlag.withoutHolder());
-            moveBannerToLocation(enemyFlag.bannerDisplay(), enemyFlag.capturePlate());
+            moveBannerBack(enemyFlag.bannerDisplay(), enemyFlag.getFlagLoc());
         }
     }
 
@@ -586,7 +586,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     /**
      * Move banner to float above a location (plate) and remove from passengers
      */
-    private void moveBannerToLocation(BlockDisplay banner, Location location) {
+    private void moveBannerBack(BlockDisplay banner, Location location) {
         if (banner == null || banner.isDead() || location == null) {
             return;
         }
@@ -596,16 +596,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
             banner.getVehicle().removePassenger(banner);
         }
 
-        Location displayLoc = location.clone().add(0.5, 1.5, 0.5);
-        banner.teleport(displayLoc);
-        Messages.debug("[CTF] Moved banner back to plate at " + displayLoc);
+        banner.teleport(location);
+        Messages.debug("[CTF] Moved banner back to plate at " + location);
     }
 
     /**
      * Start task to rotate banners
      */
     private void startBannerRotationTask() {
-        bannerRotationTask = SchedulerUtils.runTaskTimer(this::rotateBanners, 0, 1);
+        bannerRotationTask = SchedulerUtils.runTaskTimer(this::rotateBanners, 0, 10);
     }
 
     /**
@@ -673,7 +672,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Compute position on circumference
         double x = centerX + Math.cos(theta) * BANNER_ORBIT_RADIUS;
         double z = centerZ + Math.sin(theta) * BANNER_ORBIT_RADIUS;
-        Location newLoc = new Location(flag.capturePlate().getWorld(), x - 0.5, centerY + 1.0, z - 0.5);
+        Location newLoc = new Location(flag.capturePlate().getWorld(), x, centerY, z);
         flag.bannerDisplay().teleport(newLoc);
 
         // Compute rotation matrix for outward facing
@@ -708,19 +707,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
 
-    public boolean isFlagHeld(int teamNumber) {
-        FlagState flag = flagStates.get(teamNumber);
-        return flag != null && flag.isHeld();
-    }
-
     public UUID getFlagHolder(int teamNumber) {
         FlagState flag = flagStates.get(teamNumber);
         return flag != null ? flag.holder() : null;
-    }
-
-    public Location getFlagBase(int teamNumber) {
-        FlagState flag = flagStates.get(teamNumber);
-        return flag != null ? flag.getFlagBase() : null;
     }
 
     public int getFlagCaptures(int teamNumber) {
