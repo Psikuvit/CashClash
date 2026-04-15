@@ -62,7 +62,7 @@ public record FlagState(
     /**
      * Get flag base location (2 blocks above capture plate)
      */
-    public Location getFlagBase() {
+    public Location getFlagLoc() {
         return capturePlate != null ? capturePlate.clone().add(0, 2, 0) : null;
     }
 
