@@ -1,73 +1,97 @@
 package me.psikuvit.cashClash.scoreboard;
 
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
-import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.scoreboard.context.CTFScoreboardContext;
 import me.psikuvit.cashClash.scoreboard.context.ContextType;
-import me.psikuvit.cashClash.scoreboard.context.GameScoreboardContext;
-import me.psikuvit.cashClash.scoreboard.context.LobbyScoreboardContext;
-import me.psikuvit.cashClash.scoreboard.context.PTPScoreboardContext;
 import me.psikuvit.cashClash.scoreboard.context.ScoreboardContext;
+import me.psikuvit.cashClash.scoreboard.placeholder.PlaceholderRegistry;
+import me.psikuvit.cashClash.util.Messages;
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
+
+import java.util.List;
 
 /**
  * Factory class for selecting and providing appropriate scoreboard contexts
- * Automatically detects player state and returns the correct context
+ * Auto-detects player state (lobby or game) and creates appropriate context
  */
 public class ScoreboardProvider {
 
-    private static final LobbyScoreboardContext LOBBY_CONTEXT = new LobbyScoreboardContext();
+    private static final ScoreboardContext LOBBY_CONTEXT = new ScoreboardContext() {
+        @Override
+        public Component getTitle(Player player, GameSession session) {
+            String titleRaw = ConfigManager.getInstance().getLobbyScoreboardTitle();
+            return Messages.parse(fillPlaceholders(titleRaw, player, session));
+        }
+
+        @Override
+        public List<String> getLines(Player player, GameSession session) {
+            return ConfigManager.getInstance().getLobbyScoreboardLines();
+        }
+
+        @Override
+        public String fillPlaceholders(String line, Player player, GameSession session) {
+            PlaceholderRegistry registry = PlaceholderRegistry.forLobby();
+            return registry.fillPlaceholders(line, player);
+        }
+
+        @Override
+        public ContextType getContextType() {
+            return ContextType.LOBBY;
+        }
+    };
 
     /**
      * Get the appropriate scoreboard context for a player
-     * Auto-detects if player is in lobby or game, and what gamemode
-     *
-     * @param player The player to get context for
-     * @return The appropriate ScoreboardContext
      */
     public static ScoreboardContext getContext(Player player) {
-        // Check if player is in a game
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
         if (session == null) {
-            // Player is in lobby
             return LOBBY_CONTEXT;
         }
 
-        // Player is in game - detect gamemode
-        return getGamemodeContext(session);
-    }
-
-    /**
-     * Get the scoreboard context based on the gamemode
-     *
-     * @param session The game session
-     * @return The appropriate GameScoreboardContext
-     */
-    private static GameScoreboardContext getGamemodeContext(GameSession session) {
-        if (session.getGamemode() instanceof CaptureTheFlagGamemode) {
-            return new CTFScoreboardContext();
-        } else if (session.getGamemode() instanceof ProtectThePresidentGamemode) {
-            return new PTPScoreboardContext();
-        }
-
-        // Default game context if no specific gamemode handler
-        return new GameScoreboardContext() {
+        return new ScoreboardContext() {
             @Override
-            protected String fillGamemodeSpecificPlaceholders(String line, Player player, GameSession session) {
-                return line;
+            public Component getTitle(Player player, GameSession session) {
+                String configTitle = switch (session.getGamemode().getType()) {
+                    case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFScoreboardTitle();
+                    case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPScoreboardTitle();
+                };
+                String filled = fillPlaceholders(configTitle, player, session);
+                return Messages.parse(filled);
+            }
+
+            @Override
+            public List<String> getLines(Player player, GameSession session) {
+                return switch (session.getGamemode().getType()) {
+                    case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFScoreboardLines();
+                    case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPScoreboardLines();
+                };
+            }
+
+            @Override
+            public String fillPlaceholders(String line, Player player, GameSession session) {
+                if (session == null || player == null) {
+                    return line;
+                }
+                PlaceholderRegistry registry = PlaceholderRegistry.forGameSession(session, player);
+                return registry.fillPlaceholders(line, player);
+            }
+
+            @Override
+            public ContextType getContextType() {
+                return switch (session.getGamemode().getType()) {
+                    case CAPTURE_THE_FLAG -> ContextType.CTF;
+                    case PROTECT_THE_PRESIDENT -> ContextType.PTP;
+                };
             }
         };
     }
 
     /**
-     * Check if a player's context changed (used to detect lobby ↔ game transitions)
-     *
-     * @param player The player to check
-     * @param previousContext The previous context type
-     * @return true if context changed
+     * Check if a player's context changed
      */
     public static boolean hasContextChanged(Player player, ContextType previousContext) {
         ScoreboardContext currentContext = getContext(player);
@@ -76,7 +100,6 @@ public class ScoreboardProvider {
             return true;
         }
 
-        // Check if context type changed
         return previousContext != currentContext.getContextType();
     }
 }
