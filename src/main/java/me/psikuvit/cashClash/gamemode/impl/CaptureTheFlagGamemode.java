@@ -630,10 +630,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private void rotateBanner(FlagState flag, int teamNumber) {
         if (!isBannerRotatable(flag)) return;
 
-        Location centerPlate = flag.capturePlate();
-        double centerX = centerPlate.getX();
-        double centerY = centerPlate.getY();
-        double centerZ = centerPlate.getZ();
+        Location centerPlate = flag.getFlagLoc();
+        if (centerPlate == null) {
+            Messages.debug("[CTF] Cannot rotate banner for Team " + teamNumber + " - no flag found");
+            return;
+        }
+        double centerX = centerPlate.getBlockX();
+        double centerY = centerPlate.getBlockY();
+        double centerZ = centerPlate.getBlockZ();
 
         // Compute new position and rotation
         double newTheta = calculateNextAngle(flag.bannerAngle());
