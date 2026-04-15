@@ -113,8 +113,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         flagCaptures.put(1, 0);
         flagCaptures.put(2, 0);
-        flagStates.put(1, FlagState.create());
-        flagStates.put(2, FlagState.create());
+        // Reset flag states but preserve the plate locations and banners for next round
+        flagStates.put(1, flagStates.get(1).withoutHolder());
+        flagStates.put(2, flagStates.get(2).withoutHolder());
     }
 
     @Override
