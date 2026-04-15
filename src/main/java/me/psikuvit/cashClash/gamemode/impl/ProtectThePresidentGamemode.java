@@ -560,7 +560,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     public boolean isNotPresident(UUID uuid) {
-        return findPresidentTeam(uuid) != 0;
+        return findPresidentTeam(uuid) == 0;
     }
 
     /**
