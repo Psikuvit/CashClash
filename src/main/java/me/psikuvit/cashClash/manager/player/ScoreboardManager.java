@@ -240,7 +240,7 @@ public class ScoreboardManager {
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
         int score = lines.size();
-        int emptyCount = 0;
+        int lineIndex = 0;
         for (String line : lines) {
             String filled = context.fillPlaceholders(line, player, session);
 
@@ -250,14 +250,15 @@ public class ScoreboardManager {
                 filled = filled.replaceAll("</?[a-z]*$", "");
             }
 
-            if (filled.isEmpty()) {
-                filled = "§" + Integer.toHexString(emptyCount % 16);
-                emptyCount++;
-            }
+            // Create unique entry name using line index to prevent duplicates
+            String entryName = filled.isEmpty() ? "§" + Integer.toHexString(lineIndex % 16) : filled;
+            // Append line index to ensure uniqueness
+            String uniqueEntry = entryName + "§r" + lineIndex;
 
-            Score scoreObj = objective.getScore(filled);
-            scoreObj.customName(Messages.parse(filled));
+            Score scoreObj = objective.getScore(uniqueEntry);
+            scoreObj.customName(Messages.parse(filled.isEmpty() ? entryName : filled));
             scoreObj.setScore(score--);
+            lineIndex++;
         }
 
         if (player.getScoreboard() != board) {
