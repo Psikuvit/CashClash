@@ -40,8 +40,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private static final int GLOW_INTERVAL_TICKS = 100; // 5 seconds
     private static final long CAPTURE_BONUS = 15000;
     private static final long CAPTURE_TIMER_MS = 45 * 1000; // 45 seconds for bonus
-    private static final double BANNER_ORBIT_RADIUS = 0.7; // Distance from plate center
-    private static final double BANNER_ANGULAR_SPEED = 0.15; // Radians per tick (higher = faster rotation)
+    private static final double BANNER_ORBIT_RADIUS = 1; // Distance from plate center
+    private static final double BANNER_ANGULAR_SPEED = Math.PI / 2; // Radians per tick (higher = faster rotation)
 
     private final Map<Integer, Integer> flagCaptures;
     private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
@@ -551,7 +551,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Location displayLoc = location.clone().add(0, 1.5, 0);
         BlockDisplay banner = world.spawn(displayLoc, BlockDisplay.class);
         banner.setBlock(Bukkit.createBlockData(bannerType));
-        banner.setTeleportDuration(0);
+        banner.setTeleportDuration(1);
         banner.setInterpolationDuration(0);
 
         // Center the block on the display origin (-0.5 offset on X/Y/Z)
