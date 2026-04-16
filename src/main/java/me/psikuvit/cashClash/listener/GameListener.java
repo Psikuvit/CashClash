@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
+import me.psikuvit.cashClash.event.PlayerBackToGameEvent;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -212,6 +213,9 @@ public class GameListener implements Listener {
         restorePlayerHealth(player);
         preparePlayerForCombat(player, session, respawnProtectionSec);
         Messages.send(player, "<green>You have respawned.</green>");
+
+        // Fire custom event when player is back in game
+        Bukkit.getPluginManager().callEvent(new PlayerBackToGameEvent(player));
     }
 
     /**
@@ -676,16 +680,22 @@ public class GameListener implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session != null && session.getState() == GameState.SHOPPING) {
+            Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
+                var attr = player.getAttribute(Attribute.MAX_HEALTH);
+                double maxHealth = attr != null ? attr.getValue() : 20.0;
+                player.setHealth(Math.clamp(maxHealth, 1.0, player.getHealth()));
+                player.setFoodLevel(20);
+            }, 2L);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerBackInGame(PlayerBackToGameEvent event) {
+        Player player = event.getPlayer();
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null) {
             session.getGamemode().onPlayerSpawn(player);
-            if (session.getState() == GameState.SHOPPING) {
-                Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-                    var attr = player.getAttribute(Attribute.MAX_HEALTH);
-                    double maxHealth = attr != null ? attr.getValue() : 20.0;
-                    player.setHealth(Math.clamp(maxHealth, 1.0, player.getHealth()));
-                    player.setFoodLevel(20);
-                }, 2L);
-            }
         }
     }
 
