@@ -20,10 +20,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.Transformation;
-import org.joml.Matrix3f;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
+import org.joml.Matrix4f;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,8 +37,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private static final int GLOW_INTERVAL_TICKS = 100; // 5 seconds
     private static final long CAPTURE_BONUS = 15000;
     private static final long CAPTURE_TIMER_MS = 45 * 1000; // 45 seconds for bonus
-    private static final double BANNER_ORBIT_RADIUS = 1; // Distance from plate center
-    private static final double BANNER_ANGULAR_SPEED = Math.PI / 2; // Radians per tick (higher = faster rotation)
+    private static final double BANNER_ORBIT_RADIUS = 2; // Distance from plate center
+    private static final double BANNER_ANGULAR_SPEED = 0.03; // Radians per tick - smooth rotation
 
     private final Map<Integer, Integer> flagCaptures;
     private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
@@ -243,12 +240,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
         for (FlagState flag : flagStates.values()) {
             if (flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
                 // Remove from any passengers (i.e., from player if being carried)
+                if (!flag.isHeld()) {
+                    continue; // If not held, banner should already be at plate, no need to move
+                }
                 if (flag.bannerDisplay().getVehicle() != null) {
                     flag.bannerDisplay().getVehicle().removePassenger(flag.bannerDisplay());
                 }
 
                 // Move banner back to its plate
-                if (flag.capturePlate() != null) {
+                if (flag.getFlagLoc() != null) {
                     moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
                 }
             }
@@ -548,20 +548,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         // Spawn banner display above the pressure plate
-        Location displayLoc = location.clone().add(0, 1.5, 0);
+        Location displayLoc = location.clone().add(0, 2, 0);
         BlockDisplay banner = world.spawn(displayLoc, BlockDisplay.class);
         banner.setBlock(Bukkit.createBlockData(bannerType));
-        banner.setTeleportDuration(1);
-        banner.setInterpolationDuration(0);
-
-        // Center the block on the display origin (-0.5 offset on X/Y/Z)
-        banner.setTransformation(new Transformation(
-                new Vector3f(-0.5f, -0.5f, -0.5f), // translation: center the block
-                new Quaternionf(),                   // left rotation (will be updated by rotateBanner)
-                new Vector3f(1f, 1f, 1f),            // scale
-                new Quaternionf()                    // right rotation
-        ));
-
         Messages.debug("[CTF] Created banner display at " + displayLoc);
         return banner;
     }
@@ -573,11 +562,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (banner == null || banner.isDead() || !player.isOnline()) {
             return;
         }
-
-        // Position banner straight up above player's head
-        Location headLoc = player.getEyeLocation().add(0, 1.2, 0);
-        banner.teleport(headLoc);
-
         // Add banner as passenger to the player
         player.addPassenger(banner);
         Messages.debug("[CTF] Moved banner to " + player.getName() + "'s head and added as passenger");
@@ -604,7 +588,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * Start task to rotate banners
      */
     private void startBannerRotationTask() {
-        bannerRotationTask = SchedulerUtils.runTaskTimer(this::rotateBanners, 0, 10);
+        bannerRotationTask = SchedulerUtils.runTaskTimer(this::rotateBanners, 0, 1);
     }
 
     /**
@@ -635,9 +619,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Messages.debug("[CTF] Cannot rotate banner for Team " + teamNumber + " - no flag found");
             return;
         }
-        double centerX = centerPlate.getBlockX();
-        double centerY = centerPlate.getBlockY();
-        double centerZ = centerPlate.getBlockZ();
+        double centerX = centerPlate.getX();
+        double centerY = centerPlate.getY();
+        double centerZ = centerPlate.getZ();
 
         // Compute new position and rotation
         double newTheta = calculateNextAngle(flag.bannerAngle());
@@ -647,7 +631,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         flagStates.put(teamNumber, flag.withBannerAngle(newTheta));
 
         // Spawn team-colored particles
-        spawnBannerParticles(centerPlate, teamNumber);
+        spawnBannerParticles(flag.capturePlate(), teamNumber);
     }
 
     /**
@@ -671,30 +655,20 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     /**
      * Update banner transform (position and rotation)
+     * Uses only the angle theta to calculate both position and rotation
+     * Banner faces outward and rotates to face the direction it's moving
      */
     private void updateBannerTransform(FlagState flag, double centerX, double centerY, double centerZ, double theta) {
         // Compute position on circumference
         double x = centerX + Math.cos(theta) * BANNER_ORBIT_RADIUS;
         double z = centerZ + Math.sin(theta) * BANNER_ORBIT_RADIUS;
+
+        Matrix4f mat = new Matrix4f();
+        mat.rotateY((float) theta);
+
         Location newLoc = new Location(flag.capturePlate().getWorld(), x, centerY, z);
+        flag.bannerDisplay().setTransformationMatrix(mat);
         flag.bannerDisplay().teleport(newLoc);
-
-        // Compute rotation matrix for outward facing
-        float cosT = (float) Math.cos(theta);
-        float sinT = (float) Math.sin(theta);
-        Matrix3f rotMat = new Matrix3f(
-                -sinT, 0f, cosT,   // right  (X column)
-                0f,    1f, 0f,     // up     (Y column)
-                cosT,  0f, sinT    // forward (Z column) ← outward direction
-        );
-
-        Quaternionf quat = new Quaternionf().setFromNormalized(rotMat);
-        flag.bannerDisplay().setTransformation(new Transformation(
-                new Vector3f(-0.5f, -0.5f, -0.5f), // keep block centered
-                quat,
-                new Vector3f(1f, 1f, 1f),
-                new Quaternionf()
-        ));
     }
 
     /**
