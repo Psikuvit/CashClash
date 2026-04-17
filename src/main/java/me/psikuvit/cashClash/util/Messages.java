@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.util;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.Team;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -28,6 +29,8 @@ public final class Messages {
     private static final MiniMessage MINI = MiniMessage.miniMessage();
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
     private static final int DEFAULT_WRAP_WIDTH = 40;
+    private static final MessagesConfig config = MessagesConfig.getInstance();
+
 
     /**
      * Log a debug message to the console if debug mode is enabled.
@@ -148,47 +151,37 @@ public final class Messages {
      * Send a MiniMessage/legacy string to a player (parses then sends).
      *
      * @param player The player to send to (can be null)
-     * @param miniMsg The message to send
+     * @param key The message to send
      */
-    public static void send(@Nullable Player player, @Nullable String miniMsg) {
+    public static void send(@Nullable Player player, @Nullable String key) {
         if (player != null && player.isOnline()) {
-            player.sendMessage(parse(miniMsg));
+            player.sendMessage(parse(config.getRaw(key)));
         }
     }
 
     /**
-     * Send a MiniMessage/legacy string to any CommandSender (player/console).
-     *
-     * @param sender The sender to send to (can be null)
-     * @param miniMsg The message to send
-     */
-    public static void send(@Nullable CommandSender sender, @Nullable String miniMsg) {
-        if (sender != null) {
-            sender.sendMessage(parse(miniMsg));
-        }
-    }
-
-    /**
-     * Send an already-built component to a player, ensuring italics disabled on the root.
+     * Send a MiniMessage/legacy string to a player (parses then sends).
      *
      * @param player The player to send to (can be null)
-     * @param component The component to send
+     * @param key The message to send
      */
-    public static void send(@Nullable Player player, @Nullable Component component) {
-        if (player != null && player.isOnline() && component != null) {
-            player.sendMessage(component.decoration(TextDecoration.ITALIC, false));
+    public static void send(@Nullable Player player, @Nullable String key, @NotNull Object... args) {
+        if (player != null && player.isOnline()) {
+            player.sendMessage(parse(config.getMessage(key, args)));
         }
     }
 
+
     /**
-     * Send an already-built component to a CommandSender, ensuring italics disabled on the root.
+     * Send a message to a CommandSender using a message key.
+     * For console/non-player senders, use the Component-based send() method instead.
      *
      * @param sender The sender to send to (can be null)
-     * @param component The component to send
+     * @param key The message key from MessagesConfig
      */
-    public static void send(@Nullable CommandSender sender, @Nullable Component component) {
-        if (sender != null && component != null) {
-            sender.sendMessage(component.decoration(TextDecoration.ITALIC, false));
+    public static void send(@Nullable CommandSender sender, @Nullable String key) {
+        if (sender != null) {
+            sender.sendMessage(parse(config.getRaw(key)));
         }
     }
 
@@ -209,25 +202,11 @@ public final class Messages {
     /**
      * Broadcast a message to a collection of player UUIDs.
      */
-    public static void broadcast(Collection<UUID> players, String miniMsg) {
-        Component comp = parse(miniMsg);
+    public static void broadcast(Collection<UUID> players, String key) {
         players.forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
-                send(player, comp);
-            }
-        });
-    }
-
-    /**
-     * Broadcast a component to a collection of player UUIDs.
-     */
-    public static void broadcast(Collection<UUID> players, Component component) {
-        Component comp = component.decoration(TextDecoration.ITALIC, false);
-        players.forEach(uuid -> {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null && player.isOnline()) {
-                send(player, comp);
+                send(player, key);
             }
         });
     }
@@ -235,27 +214,10 @@ public final class Messages {
     /**
      * Broadcast a message to all players in a team.
      */
-    public static void broadcastToTeam(Team team, String miniMsg) {
+    public static void broadcastToTeam(Team team, String key) {
         if (team != null) {
-            broadcast(team.getPlayers(), miniMsg);
+            broadcast(team.getPlayers(), key);
         }
-    }
-
-    /**
-     * Broadcast a component to all players in a team.
-     */
-    public static void broadcastToTeam(Team team, Component component) {
-        if (team != null) {
-            broadcast(team.getPlayers(), component);
-        }
-    }
-
-    /**
-     * Broadcast a message with a prefix to a collection of player UUIDs.
-     */
-    public static void broadcastWithPrefix(Collection<UUID> players, String miniMsg) {
-        String full = ConfigManager.getInstance().getPrefix() + " " + miniMsg;
-        broadcast(players, full);
     }
 
     /**

@@ -512,6 +512,27 @@ public class ConfigValidator {
         return errors.isEmpty();
     }
 
+    /**
+     * Validate messages.yml configuration.
+     * @param config The config to validate
+     * @param autoAdd If true, missing keys will be added with defaults
+     * @return true if valid, false if critical errors found
+     */
+    public boolean validateMessagesConfig(FileConfiguration config, boolean autoAdd) {
+        errors.clear();
+        warnings.clear();
+        added.clear();
+
+        // Note: Simply check if messages section exists
+        // Individual message keys are not required - the system handles missing keys gracefully
+        if (!config.contains("messages")) {
+            warnings.add("'messages' section not found - using internal defaults");
+        }
+
+        logResults("messages.yml");
+        return errors.isEmpty();
+    }
+
     private void validateSection(FileConfiguration config, String section, Map<String, Object> defaults, boolean autoAdd) {
         if (!config.isConfigurationSection(section)) {
             if (autoAdd) {

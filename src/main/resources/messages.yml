@@ -1,0 +1,364 @@
+# ============================================
+# Cash Clash Messages Configuration
+# ============================================
+# All messages use MiniMessage format
+# Placeholders are replaced dynamically by the code
+
+messages:
+  # ============================================
+  # COMMAND PREFIX
+  # ============================================
+  command:
+    prefix: "<gold><bold>[Cash Clash]</bold></gold>"
+    no-permission: "<red>You don't have permission to use this command.</red>"
+    only-players: "<red>Only players can use this command.</red>"
+    help-title: "<gold><bold>=== Cash Clash Commands ===</bold></gold>"
+    help-arenas: "<yellow>/cc arenas <gray>- Browse and join arenas</gray>"
+    help-join: "<yellow>/cc join <gray>- Join a game (quick match)</gray>"
+    help-leave: "<yellow>/cc leave <gray>- Leave your current game</gray>"
+    help-stats: "<yellow>/cc stats <gray>- View your stats</gray>"
+    help-forfeit: "<yellow>/cc forfeit <gray>- Vote to forfeit the round</gray>"
+    help-transfer: "<yellow>/cc transfer <gray>- Transfer money to a teammate</gray>"
+    help-layout: "<yellow>/cc layout <gray>- Customize your kit item layout</gray>"
+    help-shop: "<yellow>/cc shop <gray>- Open the in-game shop</gray>"
+    help-admin-section: "<gray>--- Admin Commands ---</gray>"
+    help-arena: "<yellow>/cc arena <gray>- Arena admin actions (tp,assign)</gray>"
+    help-template: "<yellow>/cc template <gray>- Template world management</gray>"
+    help-blockdisplay: "<yellow>/cc blockdisplay <gray>- Edit block displays</gray>"
+    help-stop: "<yellow>/cc stop <gray>- Stop an ongoing game</gray>"
+    help-forcestart: "<yellow>/cc forcestart <gray>- Force start a game immediately</gray>"
+    help-forcenextround: "<yellow>/cc forcenextround <gray>- Force the next round to start</gray>"
+    help-selectkit: "<yellow>/cc selectkit <gray>- Select a kit for all players</gray>"
+    help-setlobby: "<yellow>/cc setlobby <gray>- Set the lobby spawn point</gray>"
+    help-reload: "<yellow>/cc reload [config|shop|items|all] <gray>- Reload configs</gray>"
+    help-debug: "<yellow>/cc debug <gray>- Toggle debug mode</gray>"
+
+  # ============================================
+  # CHAT MESSAGES
+  # ============================================
+  chat:
+    switched-to-global: "<gray>Switched to </gray><white>Global</white><gray> chat.</gray>"
+    switched-to-channel: "<gray>Switched to </gray>{channel_color}{channel_name}<gray> chat.</gray>"
+    not-in-party-message: "<red>You are not in a party! Message not sent.</red>"
+    not-in-game-message: "<red>You are not in a game! Message not sent.</red>"
+    not-on-team-message: "<red>You are not on a team! Message not sent.</red>"
+    no-permission: "<red>You don't have permission to use arena admin commands.</red>"
+    only-players: "<red>Only players can use this command.</red>"
+    usage: "<red>Usage: /cc arena <tp|assign> ...</red>"
+    unknown-action: "<red>Unknown arena action. Use tp or assign.</red>"
+    not-found: "<red>Arena not found: {arena_id}</red>"
+    tp-usage: "<red>Usage: /cc arena tp <arenaNumber|arenaName></red>"
+    no-template: "<red>Template world not available for this arena.</red>"
+    teleported: "<green>Teleported to arena: {arena_name}</green>"
+    assign-usage: "<red>Usage: /cc arena assign <arenaName> <templateId></red>"
+    template-not-found: "<red>Template not found: {template_id}</red>"
+    assigned: "<green>Assigned template '{template_id}' to {arena_name}</green>"
+
+  # ============================================
+  # BLOCK DISPLAY COMMANDS
+  # ============================================
+  blockdisplay:
+    only-players: "<red>Only players can use this command.</red>"
+    error: "<red>Error: {error_msg}</red>"
+    target-usage: "<red>Usage: /cc blockdisplay target <nearest|index></red>"
+    targeted-by-location: "<green>Targeted BlockDisplay at {location}</green>"
+    no-blockdisplay-found: "<red>No BlockDisplay found within 50 blocks.</red>"
+    targeted-by-index: "<green>Targeted BlockDisplay #{index}</green>"
+    index-out-of-range: "<red>Index out of range. Use 'list' to see available displays.</red>"
+    invalid-index: "<red>Invalid index. Use 'nearest' or a number.</red>"
+    setblock-usage: "<red>Usage: /cc blockdisplay setblock <material></red>"
+    invalid-material: "<red>{material_name} is not a valid block material.</red>"
+    block-set: "<green>Set block to {material}</green>"
+    unknown-material: "<red>Unknown material: {material_name}</red>"
+    teleport-usage: "<red>Usage: /cc blockdisplay teleport <player|x y z> [world]</red>"
+    invalid-coordinates: "<red>Invalid coordinates.</red>"
+    teleported: "<green>Teleported display to {location}</green>"
+    translate-usage: "<red>Usage: /cc blockdisplay translate <dx> <dy> <dz></red>"
+    translated: "<green>Translated display by ({dx}, {dy}, {dz})</green>"
+    invalid-translation: "<red>Invalid translation values.</red>"
+    rotate-usage: "<red>Usage: /cc blockdisplay rotate <axis> <degrees> or rotate <pitch> <yaw> <roll></red>"
+    rotated-euler: "<green>Rotated display to pitch={pitch} yaw={yaw} roll={roll}</green>"
+    invalid-axis: "<red>Invalid axis. Use x, y, z, pitch, yaw, or roll.</red>"
+    rotated-axis: "<green>Rotated {axis} by {degrees}</green>"
+    invalid-rotation: "<red>Invalid rotation values.</red>"
+    scale-usage: "<red>Usage: /cc blockdisplay scale <factor> or scale <sx> <sy> <sz></red>"
+    scaled-uniform: "<green>Scaled display uniformly to {factor}</green>"
+    scaled: "<green>Scaled display to ({sx}, {sy}, {sz})</green>"
+    invalid-scale-args: "<red>Invalid scale arguments.</red>"
+    invalid-scale: "<red>Invalid scale values.</red>"
+    reset: "<green>Reset display transformation to default.</green>"
+    no-displays-found: "<yellow>No BlockDisplays found within {range} blocks.</yellow>"
+    list-title: "<gold>BlockDisplays within {range} blocks:</gold>"
+    list-item: "<yellow>[{index}]</yellow> {location} - {material}"
+    info-title: "<gold>═══ BlockDisplay Info ═══</gold>"
+    info-location: "<yellow>Location:</yellow> {location}"
+    info-material: "<yellow>Block Material:</yellow> {material}"
+    info-translation: "<yellow>Translation:</yellow> ({x}, {y}, {z})"
+    info-scale: "<yellow>Scale:</yellow> ({x}, {y}, {z})"
+    info-rotation: "<yellow>Rotation (Quaternion):</yellow> ({x}, {y}, {z}, {w})"
+    info-entity-id: "<yellow>Entity ID:</yellow> {entity_id}"
+    no-target: "<red>No target selected. Use 'target' subcommand first.</red>"
+
+  # ============================================
+  # PARTY COMMANDS
+  # ============================================
+  party:
+    only-players: "<red>Only players can use party commands.</red>"
+    invite-usage: "<red>Usage: /party invite <player></red>"
+    player-not-found: "<red>Player not found!</red>"
+    already-in-party: "<red>You are already in a party! Leave your current party first.</red>"
+    created: "<green>Party created! Use <yellow>/party invite <player></yellow> to invite players.</green>"
+    only-owner-can-disband: "<red>Only the party owner can disband the party!</red>"
+    only-owner-disband: "<red>Only the party owner can disband the party!</red>"
+    disbanded-members: "<red>The party has been disbanded by the owner.</red>"
+    disbanded-by-owner: "<red>The party has been disbanded by the owner.</red>"
+    disbanded: "<yellow>Party disbanded.</yellow>"
+    not-in-party: "<red>You are not in a party!</red>"
+    new-owner: "<gold>You are now the party owner!</gold>"
+    new-owner-broadcast: "<gold>{player_name} is now the party owner!</gold>"
+    left: "<yellow>You left the party.</yellow>"
+    member-left: "<yellow>{player_name} has left the party.</yellow>"
+    member-left-new-owner: "<yellow>{player_name} has left the party. {new_owner_name} is now the owner.</yellow>"
+    kick-usage: "<red>Usage: /party kick <player></red>"
+    only-owner-kick: "<red>Only the party owner can kick players!</red>"
+    player-not-in-party: "<red>That player is not in your party!</red>"
+    cannot-kick-self: "<red>You cannot kick yourself! Use /party leave or /party disband.</red>"
+    kicked: "<red>You have been kicked from the party!</red>"
+    member-kicked: "<yellow>{player_name} has been kicked from the party.</yellow>"
+    transfer-usage: "<red>Usage: /party transfer <player></red>"
+    only-owner-transfer: "<red>Only the party owner can transfer ownership!</red>"
+    transfer-not-in-party: "<red>That player is not in your party!</red>"
+    disband-only-owner: "<red>You are not in a party!</red>"
+    chat-usage: "<red>Usage: /party chat <message></red>"
+    only-owner-invite: "<red>Only the party owner can invite players!</red>"
+    cannot-invite-self: "<red>You cannot invite yourself!</red>"
+    player-already-in-party: "<red>{player_name} is already in a party!</red>"
+    invite-already-pending: "<red>You already have a pending invite to this player!</red>"
+    invite-sent: "<green>Invite sent to {player_name}!</green>"
+    invite-expires: "<gray>This invite expires in 60 seconds.</gray>"
+    no-pending-invites: "<red>You have no pending party invites!</red>"
+    invite-expired: "<red>That invite has expired or doesn't exist!</red>"
+    already-in-party-accept: "<red>You are already in a party! Leave it first.</red>"
+    party-no-longer-exists: "<red>That party no longer exists!</red>"
+    invite-denied: "<yellow>Invite denied.</yellow>"
+    invite-denied-broadcast: "<red>{player_name} denied your party invite.</red>"
+    no-invite-to-deny: "<red>No invite found to deny!</red>"
+    no-party-help: "<gray>Create one with /party create or join one.</gray>"
+    info-header: "<gold>═══════ Party Info ═══════</gold>"
+    info-owner: "<yellow>Owner:</yellow> <white>{owner_name}</white>"
+    info-members-header: "<yellow>Members ({member_count}):</yellow>"
+    info-member-line: "  {status} <white>{member_name}</white>{role}"
+    member-joined: "<green>{player_name} has joined the party!</green>"
+    info-footer: "<gold>══════════════════════════</gold>"
+    help-title: "<gold>═══════ Party Commands ═══════</gold>"
+    help-create: "<yellow>/party create</yellow> <gray>- Create a new party</gray>"
+    help-invite: "<yellow>/party invite <player></yellow> <gray>- Invite a player</gray>"
+    help-accept: "<yellow>/party accept [player]</yellow> <gray>- Accept an invite</gray>"
+    help-deny: "<yellow>/party deny [player]</yellow> <gray>- Deny an invite</gray>"
+    help-leave: "<yellow>/party leave</yellow> <gray>- Leave your party</gray>"
+    help-kick: "<yellow>/party kick <player></yellow> <gray>- Kick a player (owner)</gray>"
+    help-transfer: "<yellow>/party transfer <player></yellow> <gray>- Transfer ownership</gray>"
+    help-disband: "<yellow>/party disband</yellow> <gray>- Disband the party (owner)</gray>"
+    help-info: "<yellow>/party info</yellow> <gray>- Show party info</gray>"
+    help-chat: "<yellow>/party chat <msg></yellow> <gray>- Send party message</gray>"
+    help-footer: "<gold>══════════════════════════════</gold>"
+
+  # ============================================
+  # SHOP MESSAGES
+  # ============================================
+  shop:
+    refunded: "<green>Refunded ${amount} to your balance.</green>"
+    set-purchase-undone: "<green>Set purchase undone. Refunded ${amount} and restored your previous armor.</green>"
+    purchase-undone: "<green>Purchase undone. Refunded ${amount} and restored your previous item.</green>"
+    purchased-set: "<green>Purchased {item_name} for ${price}</green>"
+    purchased-quantity: "<green>Purchased {item_name} x{quantity} for ${price}</green>"
+    purchased: "<green>Purchased {item_name} for ${price}</green>"
+    purchase-successful: "<green>Purchase successful! Deducted ${cost}</green>"
+    not-in-game: "<red>You are not part of this game session.</red>"
+
+  # ============================================
+  # BONUS & REWARD MESSAGES
+  # ============================================
+  bonus:
+    bonus-earned: "<dark_purple><bold>⭐ BONUS!</bold></dark_purple> <light_purple>{bonus_name}</light_purple>"
+    bonus-coins: "<gray>+${amount} coins</gray>"
+    bonus-investor: "<gray>Investor's Set: +{multiplier_percent}% bonus</gray>"
+    bonus-broadcast: "<dark_purple>{player_name}</dark_purple> <dark_gray>earned</dark_gray> <light_purple>{bonus_name}</light_purple>"
+
+  # ============================================
+  # ENCHANTMENT MESSAGES
+  # ============================================
+  enchant:
+    protection-applied: "<green>Protection {level} applied to all armor pieces.</green>"
+    protection-no-eligible: "<red>No eligible armor pieces found to apply Protection. It will be saved for future purchases.</red>"
+    ineligible-item: "<red>The item in your main hand is not eligible for this enchantment. It will be saved for future purchases.</red>"
+
+  # ============================================
+  # ROUND/GAME MESSAGES
+  # ============================================
+  round:
+    buff-selection-title: "<yellow><bold>Round {round} - Buff Selection Phase!</bold></yellow>"
+    buff-selection-prompt: "<gold>Presidents: Right-click an item to select your buff!</gold>"
+    buff-selection-time: "<gray>You have <yellow>15 seconds </yellow><gray>to select!</gray>"
+    shopping-phase-title: "<yellow><bold>Round {round} - Shopping Phase!</bold></yellow>"
+    shopping-phase-time: "<gray>You have <yellow>{time_remaining} seconds </yellow><gray>to shop!</gray>"
+    buff-selection-countdown: "<gold>{time_remaining} seconds to select buff!</gold>"
+    both-teams-ready: "<green>Both teams are ready! Ending shopping phase early.</green>"
+    shopping-countdown: "<yellow>{time_remaining} seconds remaining!</yellow>"
+    buff-selection-complete: "<gold>Buff selection complete! Starting shopping phase...</gold>"
+    combat-phase-starting: "<red><bold>Combat Phase Starting!</bold></red>"
+    round-ended: "<yellow>Round {round} ended!</yellow>"
+    combat-countdown: "<yellow>{time_remaining} seconds remaining!</yellow>"
+    team-blue-wins: "<red><bold>Blue Team wins the round!</bold></red>"
+    team-red-wins: "<red><bold>Red Team wins the round!</bold></red>"
+    game-countdown-start: "<yellow>Minimum players reached! Starting game in <gold>{seconds}s</gold>. Join now!</yellow>"
+    game-countdown-cancelled: "<red>Not enough players, starting countdown cancelled.</red>"
+    game-countdown-tick: "<yellow>Game starting in <gold>{seconds}s</gold>...</yellow>"
+    game-starting: "<green>Starting game now!</green>"
+    team-assignment: "<yellow>You have been assigned to Team {team_color}</yellow>"
+    kit-assigned: "<green>You have been assigned kit: <yellow>{kit_name}</yellow></green>"
+    forfeit-min-deaths: "<red>You can only start a forfeit when at least 2 teammates have died.</red>"
+    forfeit-two-dead: "<red>At least two teammates must be dead to start a forfeit.</red>"
+    forfeit-recent-damage: "<red>Can't start forfeit while any teammate has taken damage in the last {grace_seconds} seconds.</red>"
+    forfeit-vote-started: "<yellow>Forfeit vote started by {player_name} - agreement required by all teammates. Type /cc forfeit to vote.</yellow>"
+    forfeit-vote-cast: "<yellow>{player_name} has voted to forfeit. ({votes}/{total})</yellow>"
+    forfeit-executed: "<gold>Team {team_color} has chosen to forfeit the round. Team {other_team_color} earns {bonus} each.</gold>"
+    buff-selection-countdown-ptp: "<gold>Presidents must select their buff in {time_remaining}s!</gold>"
+    investment-success: "<green><bold>INVESTMENT SUCCESS!</bold></green>"
+    investment-success-detail: "<green>Your {type_name} earned you <gold>${amount}</gold>!</green>"
+    investment-success-deaths: "<gray>(Deaths: {deaths})</gray>"
+    investment-breakeven: "<yellow><bold>INVESTMENT BREAK EVEN</bold></yellow>"
+    investment-breakeven-detail: "<yellow>Your {type_name} returned your investment of <gold>${amount}</gold>.</yellow>"
+    investment-breakeven-deaths: "<gray>(Deaths: {deaths})</gray>"
+    investment-failed: "<red><bold>INVESTMENT FAILED!</bold></red>"
+    investment-failed-detail: "<red>Your {type_name} cost you <gold>${amount}</gold>!</red>"
+    investment-failed-deaths: "<gray>(Deaths: {deaths} - Lost invested amount + penalty)</gray>"
+    game-end-win: "<green><bold>YOU WIN!</bold></green>"
+    game-end-lose: "<red><bold>YOU LOSE</bold></red>"
+    game-end-winners: "<yellow>Winning Team: {team_color}</yellow>"
+    game-end-winner-list: "<gray>Winners: {players}</gray>"
+    game-end-loser-list: "<gray>Losers: {players}</gray>"
+    game-end-thanks: "<gray>Thanks for playing!</gray>"
+    rejoin-success: "<green>You have successfully rejoined the game!</green>"
+    rejoin-status: "<yellow>Round: <gold>{round}</gold> | Lives: <gold>{lives}</gold></yellow>"
+    game-force-end: "<yellow>Game ending - one team has no remaining players.</yellow>"
+
+  # ============================================
+  # GAMEMODE - PROTECT THE PRESIDENT
+  # ============================================
+  gamemode-ptp:
+    game-started: "<gold>Protect the President has been selected as the gamemode!</gold>"
+    red-president: "<red>{president_name} is Team Red's president and can pick a bonus effect.</red>"
+    blue-president: "<blue>{president_name} is Team Blue's president and can pick a bonus effect.</blue>"
+    buff-selection-prompt: "<gold>Right-click an item to select your buff! Right-click again to deselect.</gold>"
+    buff-selection-time-remaining: "<gold>Presidents must select their buff in {time_remaining}s!</gold>"
+    no-buff-selected: "<gold>No buff selected! Random buff applied: {buff_name}</gold>"
+    buff-selected: "<gold>Presidents have selected their buffs! Shop is now unlocked!</gold>"
+    buff-activated: "<gold>Buff Activated: {buff_name}!</gold>"
+    buff-deselected: "<red>Buff deselected!</red>"
+    president-died: "<{color}><bold>Team {team_name}'s president has been assassinated!</bold> <yellow>1/{win_condition}</yellow>"
+    buy-phase-message: "<yellow>Best of 7 series - First to 4 assassinations wins! Every 2 kills the president's team gets a split 15k bonus!</yellow>"
+    kill-bonus: "<green>+3,750 coins! (Kill bonus)</green>"
+    strength-buff-name: "Strength"
+    resistance-buff-name: "Resistance"
+    speed-buff-name: "Speed"
+    health-buff-name: "Extra Hearts"
+    strength-buff-description: "<gold>Strength I - Deal more damage</gold>"
+    speed-buff-description: "<gold>Speed I - Move faster</gold>"
+    resistance-buff-description: "<gold>Resistance I - Take less damage</gold>"
+    health-buff-description: "<gold>Extra Hearts - Gain +3 max hearts</gold>"
+
+  # ============================================
+  # GAMEMODE - CAPTURE THE FLAG
+  # ============================================
+  gamemode-ctf:
+    game-started: "<gold>Capture the Flag has been selected as the gamemode!</gold>"
+    objective: "<yellow>Capture the enemy's flag and return it to your base to score!</yellow>"
+    bonus-info: "<yellow>Capturing the flag 45 seconds after stealing it grants your team a split 15k bonus!</yellow>"
+    flag-holder-eliminated: "<{color}><bold>Team {team_name}'s flag holder was eliminated!</bold></{color}>"
+    flag-captured: "<{color}><bold>Team {team_name} captured the flag! {captures}/{win_condition}</bold></{color}>"
+    flag-stolen-red: "<blue>{player_name} has stolen Team Red's flag!</blue>"
+    flag-stolen-blue: "<red>{player_name} has stolen Team Blue's flag!</red>"
+    flag-captured-bonus: "<green>+3,750 coins! (Capture bonus)</green>"
+    flag-pickup: "<{color}>The flag carrier is highlighted!</{color}>"
+    flag-dropped: "<{color}>The flag has been dropped!</{color}>"
+    silenced-activated: "<red>You have been silenced! All item abilities are disabled.</red>"
+
+  # ============================================
+  # PARTY INFO MESSAGES
+  # ============================================
+  party-info:
+    not-in-party: "<red>You are not in a party!</red>"
+
+  # ============================================
+  # LOBBY & MANNEQUIN MESSAGES
+  # ============================================
+  lobby:
+    npc-spawned: "<green>Arena NPC spawned and saved!</green>"
+    npc-spawned-id: "<gray>ID: {id} - Players can right-click it to open the arena selection menu.</gray>"
+    layout-editing: "<green>Editing layout for <yellow>{kit_name}</yellow>.</green>"
+    layout-editing-instructions: "<gray>Arrange items as you like, then use <yellow>/cc layout confirm</yellow> to save.</gray>"
+    layout-editing-cancel-instructions: "<gray>Use <yellow>/cc layout cancel</yellow> to cancel without saving.</gray>"
+    not-editing-layout: "<red>You are not editing any kit layout!</red>"
+    layout-saved: "<green>Layout for <yellow>{kit_name}</yellow> saved!</green>"
+    layout-cancelled: "<yellow>Layout editing cancelled for {kit_name}.</yellow>"
+
+  # ============================================
+  # MYTHIC ITEM MESSAGES
+  # ============================================
+  mythic:
+    coin-cleaver-charge: "<yellow>Coin Cleaver: {remaining_hits} more charged hits for No KB!</yellow>"
+    coin-cleaver-activated: "<gold><bold>COIN CLEAVER: NO KNOCKBACK ACTIVATED!</bold></gold>"
+    coin-cleaver-duration: "<yellow>Duration: {duration}s | Uses remaining: {uses_left}/{max_uses}</yellow>"
+    coin-cleaver-expired: "<gray>Coin Cleaver No KB expired.</gray>"
+    coin-cleaver-hits-needed: "<gray>Land {required_hits} more charged hits for another use.</gray>"
+    coin-cleaver-no-uses: "<red>No more No KB uses available this round.</red>"
+    coin-cleaver-grenade-cooldown: "<red>Grenade on cooldown! ({cooldown_seconds}s)</red>"
+    coin-cleaver-insufficient-coins: "<red>Not enough coins! (Costs ${cost})</red>"
+    coin-cleaver-grenade-cost: "<gold>-${cost} for grenade!</gold>"
+    carls-battleaxe-cooldown: "<red>Spin attack on cooldown! ({cooldown_seconds}s)</red>"
+    carls-battleaxe-already-spinning: "<red>You're already spinning!</red>"
+    carls-battleaxe-activated: "<gold>Carl's Battleaxe: SPIN ATTACK!</gold>"
+    carls-battleaxe-ended: "<gray>Spin attack ended.</gray>"
+    wind-bow-critical: "<gold>Critical launch!</gold>"
+    wind-bow-reloading: "<red>Wind Bow reloading! ({remaining}s)</red>"
+    wind-bow-out-of-shots: "<yellow>Wind Bow out of shots! Reloading...</yellow>"
+    wind-bow-magazine-empty: "<yellow>Wind Bow magazine empty! Reloading...</yellow>"
+    wind-bow-shots-remaining: "<yellow>Wind Bow: {shots} shots remaining</yellow>"
+    wind-bow-boost-cooldown: "<red>Wind boost on cooldown! ({cooldown_seconds}s)</red>"
+    wind-bow-boost-activated: "<aqua>Wind boost!</aqua>"
+    electric-eel-teleport-cooldown: "<red>Teleport on cooldown! ({cooldown_seconds}s)</red>"
+    electric-eel-zap: "<aqua>Zap!</aqua>"
+    goblin-spear-reloading: "<red>Goblin Spear reloading! ({cooldown_seconds}s)</red>"
+    goblin-spear-reload-start: "<yellow>Goblin Spear reloading...</yellow>"
+
+  # ============================================
+  # CASHQUAKE/LOTTERY MESSAGES
+  # ============================================
+  cashquake:
+    lottery-ended: "<gray>The lottery has ended!</gray>"
+    lottery-winner: "<gold>{player_name}</gold> <green>won the lottery!</green>"
+    life-steal-active: "<gray>Lasts for 2 minutes, then health resets.</gray>"
+    life-steal-ended: "<gray>Life Steal has ended. Health reset.</gray>"
+    checkup-expired: "<gray>Check Up bonus hearts have expired.</gray>"
+    mega-jackpot: "<gold><bold>🎉 MEGA JACKPOT! Everyone got 50,000 coins!</bold></gold>"
+    weight-of-wealth-prompt: "<gray>Type <white>/cc paytax</white> within 20 seconds to pay.</gray>"
+    weight-of-wealth-ended: "<gray>Weight of Wealth has concluded.</gray>"
+    auction-prompt: "<gray>First come, first serve!</gray>"
+
+  # ============================================
+  # ADMIN COMMAND MESSAGES
+  # ============================================
+  admin:
+    game-ended: "<gold><bold>Game ended by an admin!</bold></gold>"
+    round-skipped: "<gold><bold>Round skipped by an admin! Moving to Round {next_round}!</bold></gold>"
+    game-force-started: "<gold><bold>Game force started by an admin!</bold></gold>"
+
+  # ============================================
+  # ERROR & VALIDATION MESSAGES
+  # ============================================
+  error:
+    unknown-error: "<red>An unknown error occurred.</red>"
+    invalid-input: "<red>Invalid input!</red>"
+    invalid-number: "<red>'{input}' is not a valid number.</red>"
+
