@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -52,12 +53,12 @@ public class ForceNextRoundCommand extends AbstractArgCommand {
         if (currentRound >= totalRounds) {
             Messages.send(sender, "<yellow>This is the final round. Ending game instead.</yellow>");
             session.end();
-            Messages.broadcast(session.getPlayers(), "<gold><bold>Game ended by an admin!</bold></gold>");
+            Messages.broadcast(session.getPlayers(), "admin.game-ended");
             return true;
         }
 
         // Force transition to next round
-        Messages.broadcast(session.getPlayers(), "<gold><bold>Round skipped by an admin! Moving to Round " + (currentRound + 1) + "!</bold></gold>");
+        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("admin.round-skipped", "next_round", String.valueOf(currentRound + 1)));
 
         // Trigger next round (this will handle cleanup and setup)
         session.nextRound();
@@ -67,3 +68,4 @@ public class ForceNextRoundCommand extends AbstractArgCommand {
         return true;
     }
 }
+

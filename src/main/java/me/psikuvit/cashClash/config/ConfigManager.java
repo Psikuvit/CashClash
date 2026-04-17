@@ -235,7 +235,7 @@ public class ConfigManager {
     // ==================== MESSAGES ====================
 
     public String getPrefix() {
-        return config.getString("messages.prefix", "<gold><bold>[Cash Clash]</bold></gold>");
+        return MessagesConfig.getInstance().getRaw("command.prefix");
     }
 
     // ==================== SCOREBOARD ====================

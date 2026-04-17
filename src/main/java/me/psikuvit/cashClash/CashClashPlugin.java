@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.command.CommandHandler;
 import me.psikuvit.cashClash.command.PartyCommandHandler;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.gui.builder.GuiListener;
 import me.psikuvit.cashClash.listener.BlockListener;
@@ -44,6 +45,7 @@ public final class CashClashPlugin extends JavaPlugin {
 
         try {
             ConfigManager.getInstance();
+            MessagesConfig.getInstance();
             ItemsConfig.getInstance();
             ShopConfig.getInstance();
             getLogger().info("Configuration files loaded successfully");

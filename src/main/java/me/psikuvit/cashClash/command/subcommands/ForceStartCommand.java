@@ -46,10 +46,11 @@ public class ForceStartCommand extends AbstractArgCommand {
         session.cancelStartCountdown();
 
         session.start();
-        Messages.broadcast(session.getPlayers(), "<gold><bold>Game force started by an admin!</bold></gold>");
+        Messages.broadcast(session.getPlayers(), "admin.game-force-started");
         Messages.send(sender, "<green>Game force started successfully.</green>");
 
         return true;
     }
 }
+
 

@@ -119,7 +119,10 @@ public class ArenaCommand extends AbstractArgCommand {
     }
 
     private void arenaAssign(Player player, String[] args) {
-        if (args.length < 3) { Messages.send(player, "<red>Usage: /cc arena assign <arenaName> <templateId></red>"); return; }
+        if (args.length < 3) {
+            Messages.send(player, "<red>Usage: /cc arena assign <arenaName> <templateId></red>");
+            return;
+        }
         String arenaId = args[1];
         String templateId = args[2];
 

@@ -63,9 +63,10 @@ public class LayoutManager {
         // Track editing state
         editingKit.put(uuid, kit);
 
-        Messages.send(player, "<green>Editing layout for <yellow>" + kit.getDisplayName() + "</yellow>.</green>");
-        Messages.send(player, "<gray>Arrange items as you like, then use <yellow>/cc layout confirm</yellow> to save.</gray>");
-        Messages.send(player, "<gray>Use <yellow>/cc layout cancel</yellow> to cancel without saving.</gray>");
+        Messages.send(player, "lobby.layout-editing",
+                "kit_name", kit.getDisplayName());
+        Messages.send(player, "lobby.layout-editing-instructions");
+        Messages.send(player, "lobby.layout-editing-cancel-instructions");
     }
 
     /**
@@ -80,7 +81,7 @@ public class LayoutManager {
         Kit kit = editingKit.get(uuid);
 
         if (kit == null) {
-            Messages.send(player, "<red>You are not editing any kit layout!</red>");
+            Messages.send(player, "lobby.not-editing-layout");
             return false;
         }
 
@@ -110,7 +111,8 @@ public class LayoutManager {
         editingKit.remove(uuid);
         originalInventory.remove(uuid);
 
-        Messages.send(player, "<green>Layout for <yellow>" + kit.getDisplayName() + "</yellow> saved!</green>");
+        Messages.send(player, "lobby.layout-saved",
+                "kit_name", kit.getDisplayName());
         return true;
     }
 
@@ -141,7 +143,7 @@ public class LayoutManager {
         UUID uuid = player.getUniqueId();
 
         if (!editingKit.containsKey(uuid)) {
-            Messages.send(player, "<red>You are not editing any kit layout!</red>");
+            Messages.send(player, "lobby.not-editing-layout");
             return false;
         }
 
@@ -154,7 +156,8 @@ public class LayoutManager {
         editingKit.remove(uuid);
         originalInventory.remove(uuid);
 
-        Messages.send(player, "<yellow>Layout editing cancelled for " + kit.getDisplayName() + ".</yellow>");
+        Messages.send(player, "lobby.layout-cancelled",
+                "kit_name", kit.getDisplayName());
         return true;
     }
 

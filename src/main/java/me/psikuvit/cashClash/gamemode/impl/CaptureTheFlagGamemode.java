@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
@@ -69,14 +70,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
     @Override
     public void onGameStart() {
         Messages.debug("[CTF] Gamemode started");
-        Messages.broadcastWithPrefix(session.getPlayers(),
-                "<gold>Capture the Flag has been selected as the gamemode!</gold>");
-        Messages.broadcastWithPrefix(session.getPlayers(),
-                "<yellow>Capture the enemy's flag and return it to your base to score!</yellow>");
-        Messages.broadcastWithPrefix(session.getPlayers(),
-                "<yellow>Capturing the flag 45 seconds after stealing it grants your team a split 15k bonus!</yellow>");
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.game-started");
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.objective");
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.bonus-info");
 
-        // Place pressure plates for capture zones
+        // ...existing code...
         placePressurePlates();
     }
 
@@ -135,8 +133,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         String teamName = teamNumber == 1 ? "Red" : "Blue";
         Messages.debug("[CTF] Team " + teamName + " flag holder eliminated: " + victim.getName());
-        Messages.broadcastWithPrefix(session.getPlayers(),
-                "<" + teamName.toLowerCase() + "><bold>Team " + teamName + "'s flag holder was eliminated!</bold></" + teamName.toLowerCase() + ">");
+        String colorTag = teamNumber == 1 ? "red" : "blue";
+        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-holder-eliminated",
+                "color", colorTag,
+                "team_name", teamName));
 
         flagStates.put(teamNumber, flag.withoutHolder());
         moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
@@ -457,15 +457,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (enemyTeamNumber == 1) {
             flagStates.put(1, updatedFlag);
             Messages.debug("[CTF] " + player.getName() + " picked up Team Red's flag");
-            Messages.broadcastWithPrefix(session.getPlayers(),
-                    "<blue>" + player.getName() + " has stolen Team Red's flag!</blue>");
+            Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-stolen-red",
+                    "player_name", player.getName()));
 
             // Move banner to player head
         } else {
             flagStates.put(2, updatedFlag);
             Messages.debug("[CTF] " + player.getName() + " picked up Team Blue's flag");
-            Messages.broadcastWithPrefix(session.getPlayers(),
-                    "<red>" + player.getName() + " has stolen Team Blue's flag!</red>");
+            Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-stolen-blue",
+                    "player_name", player.getName()));
 
             // Move banner to player head
         }
@@ -483,7 +483,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         int targetCaptures = inSuddenDeath ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
 
         Messages.debug("[CTF] Team " + teamNumber + " captured a flag! Total captures: " + captures + "/" + targetCaptures);
-        Messages.broadcastWithPrefix(session.getPlayers(),
+        Messages.broadcast(session.getPlayers(),
                 "<gold><bold>" + player.getName() + " has captured the flag! " +
                 captures + "/" + targetCaptures + "</bold></gold>");
 
@@ -523,7 +523,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         String teamName = team == 1 ? "Red" : "Blue";
-        Messages.broadcastWithPrefix(session.getPlayers(),
+        Messages.broadcast(session.getPlayers(),
                 "<yellow>Team " + teamName + " earned a 45-second capture bonus!</yellow>");
     }
 
@@ -533,7 +533,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private void enterSuddenDeath() {
         inSuddenDeath = true;
         Messages.debug("[CTF] Entering sudden death mode - both teams at 3-3 captures");
-        Messages.broadcastWithPrefix(session.getPlayers(),
+        Messages.broadcast(session.getPlayers(),
                 "<red><bold>SUDDEN DEATH! Both teams must now capture 4 flags to win!</bold></red>");
     }
 

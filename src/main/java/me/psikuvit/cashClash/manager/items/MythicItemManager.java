@@ -439,10 +439,8 @@ public class MythicItemManager {
             case BLOODWRENCH_CROSSBOW -> {
                 // No enchantments - mode system handles functionality
             }
-            case WIND_BOW -> {
-                // Legendary bow gets Power 3
-                meta.addEnchant(Enchantment.POWER, 3, true);
-            }
+            case WIND_BOW -> // Legendary bow gets Power 3
+                    meta.addEnchant(Enchantment.POWER, 3, true);
             case BLAZEBITE_CROSSBOWS -> {
                 // Legendary crossbow - damage boost handled in hit handler
             }
@@ -530,7 +528,8 @@ public class MythicItemManager {
             activateCoinCleaverNoKB(player);
         } else if (hits == COIN_CLEAVER_HITS_REQUIRED - 3) {
             // Warn player they're close
-            Messages.send(player, "<yellow>Coin Cleaver: " + (COIN_CLEAVER_HITS_REQUIRED - hits) + " more charged hits for No KB!</yellow>");
+            Messages.send(player, "mythic.coin-cleaver-charge",
+                    "remaining_hits", String.valueOf(COIN_CLEAVER_HITS_REQUIRED - hits));
         }
     }
 
@@ -552,8 +551,11 @@ public class MythicItemManager {
         coinCleaverNoKBActiveUntil.put(uuid, activeUntil);
 
         int usesLeft = usesRemaining - 1;
-        Messages.send(player, "<gold><bold>COIN CLEAVER: NO KNOCKBACK ACTIVATED!</bold></gold>");
-        Messages.send(player, "<yellow>Duration: " + COIN_CLEAVER_NO_KB_DURATION_SECONDS + "s | Uses remaining: " + usesLeft + "/" + COIN_CLEAVER_MAX_USES_PER_ROUND + "</yellow>");
+        Messages.send(player, "mythic.coin-cleaver-activated");
+        Messages.send(player, "mythic.coin-cleaver-duration",
+                "duration", String.valueOf(COIN_CLEAVER_NO_KB_DURATION_SECONDS),
+                "uses_left", String.valueOf(usesLeft),
+                "max_uses", String.valueOf(COIN_CLEAVER_MAX_USES_PER_ROUND));
 
         SoundUtils.play(player, Sound.BLOCK_ANVIL_LAND, 1.0f, 0.5f);
         ParticleUtils.totem(player.getLocation().add(0, 1, 0), 30, 0.5);
@@ -563,11 +565,11 @@ public class MythicItemManager {
         // Schedule expiration message
         SchedulerUtils.runTaskLater(() -> {
             if (player.isOnline()) {
-                Messages.send(player, "<gray>Coin Cleaver No KB expired.</gray>");
+                Messages.send(player, "mythic.coin-cleaver-expired");
                 if (usesLeft > 0) {
-                    Messages.send(player, "<gray>Land " + COIN_CLEAVER_HITS_REQUIRED + " more charged hits for another use.</gray>");
+                    Messages.send(player, "mythic.coin-cleaver-hits-needed", "required_hits", String.valueOf(COIN_CLEAVER_HITS_REQUIRED));
                 } else {
-                    Messages.send(player, "<red>No more No KB uses available this round.</red>");
+                    Messages.send(player, "mythic.coin-cleaver-no-uses");
                 }
             }
         }, COIN_CLEAVER_NO_KB_DURATION_SECONDS * 20L);
@@ -647,7 +649,7 @@ public class MythicItemManager {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE)) {
             Messages.debug(player, "COIN_CLEAVER: On cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE) + "s remaining");
-            Messages.send(player, "<red>Grenade on cooldown! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE) + "s)</red>");
+            Messages.send(player, "mythic.coin-cleaver-grenade-cooldown", "cooldown_seconds", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE)));
             return;
         }
 
@@ -660,7 +662,7 @@ public class MythicItemManager {
         CashClashPlayer ccp = session.getCashClashPlayer(uuid);
         if (ccp == null || ccp.getCoins() < cfg.getCoinCleaverGrenadeCost()) {
             Messages.debug(player, "COIN_CLEAVER: Not enough coins - need " + cfg.getCoinCleaverGrenadeCost());
-            Messages.send(player, "<red>Not enough coins! (Costs $" + String.format("%,d", cfg.getCoinCleaverGrenadeCost()) + ")</red>");
+            Messages.send(player, "mythic.coin-cleaver-insufficient-coins", "cost", String.format("%,d", cfg.getCoinCleaverGrenadeCost()));
             return;
         }
 
@@ -696,7 +698,7 @@ public class MythicItemManager {
 
         Messages.debug(player, "COIN_CLEAVER: Grenade hit " + hitCount + " enemies");
 
-        Messages.send(player, "<gold>-$" + String.format("%,d", cfg.getCoinCleaverGrenadeCost()) + " for grenade!</gold>");
+        Messages.send(player, "mythic.coin-cleaver-grenade-cost", "cost", String.format("%,d", cfg.getCoinCleaverGrenadeCost()));
     }
 
     // ==================== CARL'S BATTLEAXE ====================
@@ -720,7 +722,7 @@ public class MythicItemManager {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH)) {
             Messages.debug(attacker, "CARLS_BATTLEAXE: Spin attack on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH) + "s");
-            Messages.send(attacker, "<red>Spin attack on cooldown! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH) + "s)</red>");
+            Messages.send(attacker, "mythic.carls-battleaxe-cooldown", "cooldown_seconds", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH)));
             return;
         }
 
@@ -836,7 +838,7 @@ public class MythicItemManager {
                     axeDisplay.remove();
                 }
                 attacker.removePotionEffect(PotionEffectType.SLOWNESS);
-                Messages.send(attacker, "<gray>Spin attack ended.</gray>");
+                Messages.send(attacker, "mythic.carls-battleaxe-ended");
                 cancel();
             }
         }.runTaskTimer(CashClashPlugin.getInstance(), 0L, 1L);
@@ -933,7 +935,7 @@ public class MythicItemManager {
         SoundUtils.play(victim, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0f, 0.8f);
         SoundUtils.play(attacker, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.8f);
         ParticleUtils.crit(victim.getLocation().add(0, 1, 0), 20, 0.5);
-        Messages.send(attacker, "<gold>Critical launch!</gold>");
+        Messages.send(attacker, "mythic.wind-bow-critical");
     }
 
     // ==================== WIND BOW ====================
@@ -949,7 +951,8 @@ public class MythicItemManager {
         // Check if on reload cooldown
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_RELOAD)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD);
-            Messages.send(player, "<red>Wind Bow reloading! (" + remaining + "s)</red>");
+            Messages.send(player, "mythic.wind-bow-reloading",
+                    "remaining", String.valueOf(remaining));
             return false;
         }
 
@@ -960,7 +963,7 @@ public class MythicItemManager {
             // Start reload cooldown
             cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD, cfg.getWindBowReloadCooldown());
             windBowShotsRemaining.put(uuid, cfg.getWindBowShotsPerMagazine());
-            Messages.send(player, "<yellow>Wind Bow out of shots! Reloading...</yellow>");
+            Messages.send(player, "mythic.wind-bow-out-of-shots");
             SoundUtils.play(player, Sound.ITEM_CROSSBOW_LOADING_END, 1.0f, 0.5f);
             return false;
         }
@@ -973,7 +976,7 @@ public class MythicItemManager {
             // Start reload cooldown
             cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD, cfg.getWindBowReloadCooldown());
             windBowShotsRemaining.put(uuid, cfg.getWindBowShotsPerMagazine());
-            Messages.send(player, "<yellow>Wind Bow magazine empty! Reloading...</yellow>");
+            Messages.send(player, "mythic.wind-bow-magazine-empty");
             SoundUtils.play(player, Sound.ITEM_CROSSBOW_LOADING_END, 1.0f, 0.5f);
         } else if (shots <= 3) {
             Messages.send(player, "<yellow>Wind Bow: " + shots + " shots remaining</yellow>");
@@ -1973,4 +1976,7 @@ public class MythicItemManager {
         CashClashPlugin.getInstance().getLogger().info("[MythicItemManager] Cleanup complete");
     }
 }
+
+
+
 

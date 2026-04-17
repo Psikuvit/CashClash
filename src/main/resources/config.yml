@@ -145,17 +145,6 @@ gamemodes:
     # Bonus timer (milliseconds)
     capture-bonus-timer-ms: 45000
 
-# ============================================
-# MESSAGES (MiniMessage format)
-# ============================================
-messages:
-  prefix: "<gold><bold>[Cash Clash]</bold></gold>"
-  game-starting: "<green>Game starting in {time} seconds!</green>"
-  round-starting: "<yellow>Round {round} - Shopping Phase!</yellow>"
-  combat-starting: "<red>Combat Phase Starting!</red>"
-  team-eliminated: "<red>Team {team} has been eliminated!</red>"
-  team-forfeited: "<yellow>Team {team} has forfeited! Team {winner} earns {amount} each!</yellow>"
-  winner: "<gold><bold>Team {team} wins with ${amount}!</bold></gold>"
 
 # ============================================
 # SCOREBOARD CONFIGURATION

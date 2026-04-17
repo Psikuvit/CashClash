@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.command;
 
 import me.psikuvit.cashClash.command.subcommands.ArenaCommand;
 import me.psikuvit.cashClash.command.subcommands.ArenasCommand;
+import me.psikuvit.cashClash.command.subcommands.BlockDisplayCommand;
 import me.psikuvit.cashClash.command.subcommands.ChatCommand;
 import me.psikuvit.cashClash.command.subcommands.CoinsCommand;
 import me.psikuvit.cashClash.command.subcommands.DebugCommand;
@@ -20,6 +21,7 @@ import me.psikuvit.cashClash.command.subcommands.SpawnNPCCommand;
 import me.psikuvit.cashClash.command.subcommands.StatsCommand;
 import me.psikuvit.cashClash.command.subcommands.StopCommand;
 import me.psikuvit.cashClash.command.subcommands.TemplateCommand;
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -82,6 +84,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new StatsCommand());
         registerSubcommand(new CoinsCommand());
         registerSubcommand(new MythicsCommand());
+        registerSubcommand(new BlockDisplayCommand());
     }
 
     public void registerSubcommand(AbstractArgCommand cmd) {
@@ -105,7 +108,7 @@ public class CommandHandler extends Command {
 
         String perm = sub.getPermission();
         if (perm != null && !perm.isBlank() && !sender.hasPermission(perm)) {
-            Messages.send(sender, "<red>You don't have permission to use this command.</red>");
+            Messages.send(sender, MessagesConfig.getInstance().getRaw("command.no-permission"));
             return true;
         }
 
@@ -137,24 +140,26 @@ public class CommandHandler extends Command {
     }
 
     private void sendHelp(CommandSender sender) {
-        Messages.send(sender, "<gold><bold>=== Cash Clash Commands ===</bold></gold>");
-        Messages.send(sender, "<yellow>/cc arenas <gray>- Browse and join arenas</gray>");
-        Messages.send(sender, "<yellow>/cc join <gray>- Join a game (quick match)</gray>");
-        Messages.send(sender, "<yellow>/cc leave <gray>- Leave your current game</gray>");
-        Messages.send(sender, "<yellow>/cc stats <gray>- View your stats</gray>");
-        Messages.send(sender, "<yellow>/cc forfeit <gray>- Vote to forfeit the round</gray>");
-        Messages.send(sender, "<yellow>/cc transfer <gray>- Transfer money to a teammate</gray>");
-        Messages.send(sender, "<yellow>/cc layout <gray>- Customize your kit item layout</gray>");
+        MessagesConfig msgs = MessagesConfig.getInstance();
+        Messages.send(sender, msgs.getRaw("command.help-title"));
+        Messages.send(sender, msgs.getRaw("command.help-arenas"));
+        Messages.send(sender, msgs.getRaw("command.help-join"));
+        Messages.send(sender, msgs.getRaw("command.help-leave"));
+        Messages.send(sender, msgs.getRaw("command.help-stats"));
+        Messages.send(sender, msgs.getRaw("command.help-forfeit"));
+        Messages.send(sender, msgs.getRaw("command.help-transfer"));
+        Messages.send(sender, msgs.getRaw("command.help-layout"));
         if (sender.hasPermission("cashclash.admin")) {
-            Messages.send(sender, "<gray>--- Admin Commands ---</gray>");
-            Messages.send(sender, "<yellow>/cc arena <gray>- Arena admin actions (tp,set,assign)</gray>");
-            Messages.send(sender, "<yellow>/cc template <gray>- Template world management</gray>");
-            Messages.send(sender, "<yellow>/cc stop <gray>- Stop an ongoing game</gray>");
-            Messages.send(sender, "<yellow>/cc forcestart <gray>- Force start a game immediately</gray>");
-            Messages.send(sender, "<yellow>/cc setlobby <gray>- Set the lobby spawn point</gray>");
-            Messages.send(sender, "<yellow>/cc reload [config|shop|items|all] <gray>- Reload configs</gray>");
-            Messages.send(sender, "<yellow>/cc debug <gray>- Toggle debug mode</gray>");
+            Messages.send(sender, msgs.getRaw("command.help-admin-section"));
+            Messages.send(sender, msgs.getRaw("command.help-arena"));
+            Messages.send(sender, msgs.getRaw("command.help-template"));
+            Messages.send(sender, msgs.getRaw("command.help-blockdisplay"));
+            Messages.send(sender, msgs.getRaw("command.help-stop"));
+            Messages.send(sender, msgs.getRaw("command.help-forcestart"));
+            Messages.send(sender, msgs.getRaw("command.help-setlobby"));
+            Messages.send(sender, msgs.getRaw("command.help-reload"));
+            Messages.send(sender, msgs.getRaw("command.help-debug"));
         }
-        Messages.send(sender, "<yellow>/cc shop <gray>- Open the in-game shop</gray>");
+        Messages.send(sender, msgs.getRaw("command.help-shop"));
     }
 }

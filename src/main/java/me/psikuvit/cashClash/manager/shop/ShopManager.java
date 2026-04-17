@@ -152,7 +152,7 @@ public class ShopManager {
         if (sess == null) return;
 
         if (!sess.getPlayers().contains(player.getUniqueId())) {
-            Messages.send(player, "<red>You are not part of this game session.</red>");
+            Messages.send(player, "shop.not-in-game");
             return;
         }
 

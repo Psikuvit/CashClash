@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
 import io.papermc.paper.datacomponent.DataComponentTypes;
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -76,12 +77,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
         selectPresidents();
 
         // Announce presidents
-        Messages.broadcastWithPrefix(session.getPlayers(),
-                "<gold>Protect the President has been selected as the gamemode!</gold>");
-        Messages.broadcastWithPrefix(session.getPlayers(),
-                "<red>" + getPresidentName(1) + " is Team Red's president and can pick a bonus effect.</red>");
-        Messages.broadcastWithPrefix(session.getPlayers(),
-                "<blue>" + getPresidentName(2) + " is Team Blue's president and can pick a bonus effect.</blue>");
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.game-started");
+        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ptp.red-president",
+                "president_name", getPresidentName(1)));
+        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ptp.blue-president",
+                "president_name", getPresidentName(2)));
     }
 
     @Override
@@ -174,9 +174,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
             if (deaths == 1) {
                 String presTeamName = presidentTeam == 1 ? "Red" : "Blue";
-                Messages.broadcastWithPrefix(session.getPlayers(),
-                        "<" + presTeamName.toLowerCase() + "><bold>Team " + presTeamName +
-                                "'s president has been assassinated!</bold></> <yellow>1/" + WIN_CONDITION + "</yellow>");
+                String colorTag = presTeamName.toLowerCase();
+                Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ptp.president-died",
+                        "color", colorTag,
+                        "team_name", presTeamName,
+                        "win_condition", String.valueOf(WIN_CONDITION)));
             }
 
             addTeamKill(killerTeam);
@@ -403,8 +405,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
         if (selectionTimeRemaining > 0) {
             if (selectionTimeRemaining == 15 || selectionTimeRemaining == 10 ||
                 selectionTimeRemaining == 5 || selectionTimeRemaining <= 3) {
-                Messages.broadcastWithPrefix(session.getPlayers(),
-                        "<gold>Presidents must select their buff in " + selectionTimeRemaining + "s!</gold>");
+                Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("round.buff-selection-countdown-ptp",
+                        "time_remaining", String.valueOf(selectionTimeRemaining)));
             }
             selectionTimeRemaining--;
         } else if (!buffSelectionFinalized) {
@@ -451,7 +453,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
 
         // Unlock the shop for all players
-        Messages.broadcastWithPrefix(session.getPlayers(), "<green>Presidents have selected their buffs! Shop is now unlocked!</green>");
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.buff-selected");
         Messages.debug("[PTP] Shop unlocked - All presidents have buffs selected");
     }
 

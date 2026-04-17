@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.party;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -103,7 +104,7 @@ public class PartyManager {
      */
     public Party createParty(Player owner) {
         if (isInParty(owner)) {
-            Messages.send(owner, "<red>You are already in a party! Leave your current party first.</red>");
+            Messages.send(owner, MessagesConfig.getInstance().getRaw("party.already-in-party"));
             return null;
         }
 
@@ -111,7 +112,7 @@ public class PartyManager {
         parties.add(party);
         playerPartyMap.put(owner.getUniqueId(), party);
 
-        Messages.send(owner, "<green>Party created! Use <yellow>/party invite <player></yellow> to invite players.</green>");
+        Messages.send(owner, MessagesConfig.getInstance().getRaw("party.created"));
         return party;
     }
 
@@ -120,14 +121,14 @@ public class PartyManager {
      */
     public void disbandParty(Party party, Player disbander) {
         if (!party.isOwner(disbander.getUniqueId())) {
-            Messages.send(disbander, "<red>Only the party owner can disband the party!</red>");
+            Messages.send(disbander, "party.only-owner-disband");
             return;
         }
 
         // Notify all members
         for (Player member : party.getOnlineMembers()) {
             if (!member.equals(disbander)) {
-                Messages.send(member, "<red>The party has been disbanded by the owner.</red>");
+                Messages.send(member, "party.disbanded-by-owner");
             }
             playerPartyMap.remove(member.getUniqueId());
         }
@@ -135,7 +136,7 @@ public class PartyManager {
         parties.remove(party);
         party.disband();
 
-        Messages.send(disbander, "<yellow>Party disbanded.</yellow>");
+        Messages.send(disbander, "party.disbanded");
     }
 
     /**
@@ -144,7 +145,7 @@ public class PartyManager {
     public void leaveParty(Player player) {
         Party party = getPlayerParty(player);
         if (party == null) {
-            Messages.send(player, "<red>You are not in a party!</red>");
+            Messages.send(player, "party.not-in-party");
             return;
         }
 
@@ -168,20 +169,22 @@ public class PartyManager {
 
                     Player newOwnerPlayer = Bukkit.getPlayer(newOwner);
                     if (newOwnerPlayer != null) {
-                        Messages.send(newOwnerPlayer, "<gold>You are now the party owner!</gold>");
+                        Messages.send(newOwnerPlayer, "party.new-owner");
                     }
 
-                    broadcastToParty(party, "<yellow>" + player.getName() + " has left the party. " +
-                            (newOwnerPlayer != null ? newOwnerPlayer.getName() : "Someone") + " is now the owner.</yellow>");
-                    Messages.send(player, "<yellow>You left the party.</yellow>");
+                    broadcastToParty(party, MessagesConfig.getInstance().getMessage("party.member-left-new-owner",
+                        "player_name", player.getName(),
+                        "new_owner_name", newOwnerPlayer != null ? newOwnerPlayer.getName() : "Someone"));
+                    Messages.send(player, "party.left");
                 }
             }
         } else {
             party.removeMember(playerId);
             playerPartyMap.remove(playerId);
 
-            broadcastToParty(party, "<yellow>" + player.getName() + " has left the party.</yellow>");
-            Messages.send(player, "<yellow>You left the party.</yellow>");
+            broadcastToParty(party, MessagesConfig.getInstance().getMessage("party.member-left",
+                "player_name", player.getName()));
+            Messages.send(player, "party.left");
         }
     }
 
@@ -191,30 +194,31 @@ public class PartyManager {
     public void kickPlayer(Player kicker, Player target) {
         Party party = getPlayerParty(kicker);
         if (party == null) {
-            Messages.send(kicker, "<red>You are not in a party!</red>");
+            Messages.send(kicker, "party.not-in-party");
             return;
         }
 
         if (!party.isOwner(kicker.getUniqueId())) {
-            Messages.send(kicker, "<red>Only the party owner can kick players!</red>");
+            Messages.send(kicker, "party.only-owner-kick");
             return;
         }
 
         if (!party.isMember(target.getUniqueId())) {
-            Messages.send(kicker, "<red>That player is not in your party!</red>");
+            Messages.send(kicker, "party.player-not-in-party");
             return;
         }
 
         if (target.equals(kicker)) {
-            Messages.send(kicker, "<red>You cannot kick yourself! Use /party leave or /party disband.</red>");
+            Messages.send(kicker, "party.cannot-kick-self");
             return;
         }
 
         party.removeMember(target.getUniqueId());
         playerPartyMap.remove(target.getUniqueId());
 
-        Messages.send(target, "<red>You have been kicked from the party!</red>");
-        broadcastToParty(party, "<yellow>" + target.getName() + " has been kicked from the party.</yellow>");
+        Messages.send(target, "party.kicked");
+        broadcastToParty(party, MessagesConfig.getInstance().getMessage("party.member-kicked",
+            "player_name", target.getName()));
     }
 
     /**
@@ -223,22 +227,23 @@ public class PartyManager {
     public void transferOwnership(Player owner, Player newOwner) {
         Party party = getPlayerParty(owner);
         if (party == null) {
-            Messages.send(owner, "<red>You are not in a party!</red>");
+            Messages.send(owner, "party.not-in-party");
             return;
         }
 
         if (!party.isOwner(owner.getUniqueId())) {
-            Messages.send(owner, "<red>Only the party owner can transfer ownership!</red>");
+            Messages.send(owner, "party.only-owner-transfer");
             return;
         }
 
         if (!party.isMember(newOwner.getUniqueId())) {
-            Messages.send(owner, "<red>That player is not in your party!</red>");
+            Messages.send(owner, "party.player-not-in-party");
             return;
         }
 
         party.transferOwnership(newOwner.getUniqueId());
-        broadcastToParty(party, "<gold>" + newOwner.getName() + " is now the party owner!</gold>");
+        broadcastToParty(party, MessagesConfig.getInstance().getMessage("party.new-owner-broadcast",
+            "player_name", newOwner.getName()));
     }
 
     // ==================== INVITE OPERATIONS ====================
@@ -256,17 +261,18 @@ public class PartyManager {
         }
 
         if (!party.isOwner(inviter.getUniqueId())) {
-            Messages.send(inviter, "<red>Only the party owner can invite players!</red>");
+            Messages.send(inviter, "party.only-owner-invite");
             return;
         }
 
         if (invitee.equals(inviter)) {
-            Messages.send(inviter, "<red>You cannot invite yourself!</red>");
+            Messages.send(inviter, "party.cannot-invite-self");
             return;
         }
 
         if (isInParty(invitee)) {
-            Messages.send(inviter, "<red>" + invitee.getName() + " is already in a party!</red>");
+            Messages.send(inviter, MessagesConfig.getInstance().getMessage("party.player-already-in-party",
+                "player_name", invitee.getName()));
             return;
         }
 
@@ -277,7 +283,7 @@ public class PartyManager {
                 .anyMatch(i -> i.getPartyId().equals(finalParty.getPartyId()) && !i.isExpired());
 
         if (hasExistingInvite) {
-            Messages.send(inviter, "<red>You already have a pending invite to this player!</red>");
+            Messages.send(inviter, "party.invite-already-pending");
             return;
         }
 
@@ -285,7 +291,8 @@ public class PartyManager {
         PartyInvite invite = new PartyInvite(inviter.getUniqueId(), invitee.getUniqueId(), party.getPartyId());
         invites.add(invite);
 
-        Messages.send(inviter, "<green>Invite sent to " + invitee.getName() + "!</green>");
+        Messages.send(inviter, MessagesConfig.getInstance().getMessage("party.invite-sent",
+            "player_name", invitee.getName()));
 
         // Send clickable invite message
         Component acceptButton = Messages.parse("<green><bold>[ACCEPT]</bold></green>")
@@ -302,7 +309,7 @@ public class PartyManager {
                 .append(denyButton);
 
         invitee.sendMessage(inviteMessage);
-        Messages.send(invitee, "<gray>This invite expires in 60 seconds.</gray>");
+        Messages.send(invitee, "party.invite-expires");
     }
 
     /**
@@ -311,7 +318,7 @@ public class PartyManager {
     public void acceptInvite(Player player, String inviterName) {
         List<PartyInvite> invites = pendingInvites.get(player.getUniqueId());
         if (invites == null || invites.isEmpty()) {
-            Messages.send(player, "<red>You have no pending party invites!</red>");
+            Messages.send(player, "party.no-pending-invites");
             return;
         }
 
@@ -333,18 +340,18 @@ public class PartyManager {
         }
 
         if (invite == null) {
-            Messages.send(player, "<red>That invite has expired or doesn't exist!</red>");
+            Messages.send(player, "party.invite-expired");
             return;
         }
 
         if (isInParty(player)) {
-            Messages.send(player, "<red>You are already in a party! Leave it first.</red>");
+            Messages.send(player, "party.already-in-party-accept");
             return;
         }
 
         Party party = getParty(invite.getPartyId());
         if (party == null) {
-            Messages.send(player, "<red>That party no longer exists!</red>");
+            Messages.send(player, "party.party-no-longer-exists");
             invites.remove(invite);
             return;
         }
@@ -354,7 +361,8 @@ public class PartyManager {
         playerPartyMap.put(player.getUniqueId(), party);
         invites.remove(invite);
 
-        broadcastToParty(party, "<green>" + player.getName() + " has joined the party!</green>");
+        broadcastToParty(party, MessagesConfig.getInstance().getMessage("party.member-joined",
+            "player_name", player.getName()));
     }
 
     /**
@@ -363,7 +371,7 @@ public class PartyManager {
     public void denyInvite(Player player, String inviterName) {
         List<PartyInvite> invites = pendingInvites.get(player.getUniqueId());
         if (invites == null || invites.isEmpty()) {
-            Messages.send(player, "<red>You have no pending party invites!</red>");
+            Messages.send(player, "party.no-pending-invites");
             return;
         }
 
@@ -384,14 +392,15 @@ public class PartyManager {
 
         if (invite != null) {
             invites.remove(invite);
-            Messages.send(player, "<yellow>Invite denied.</yellow>");
+            Messages.send(player, "party.invite-denied");
 
             Player inviterPlayer = Bukkit.getPlayer(invite.getInviter());
             if (inviterPlayer != null) {
-                Messages.send(inviterPlayer, "<red>" + player.getName() + " denied your party invite.</red>");
+                Messages.send(inviterPlayer, MessagesConfig.getInstance().getMessage("party.invite-denied-broadcast",
+                    "player_name", player.getName()));
             }
         } else {
-            Messages.send(player, "<red>No invite found to deny!</red>");
+            Messages.send(player, "party.no-invite-to-deny");
         }
     }
 
@@ -413,7 +422,7 @@ public class PartyManager {
     public void sendPartyMessage(Player sender, String message) {
         Party party = getPlayerParty(sender);
         if (party == null) {
-            Messages.send(sender, "<red>You are not in a party!</red>");
+            Messages.send(sender, "party-info.not-in-party");
             return;
         }
 
@@ -445,27 +454,32 @@ public class PartyManager {
     public void showPartyInfo(Player player) {
         Party party = getPlayerParty(player);
         if (party == null) {
-            Messages.send(player, "<red>You are not in a party!</red>");
-            Messages.send(player, "<gray>Create one with /party create or join one.</gray>");
+            Messages.send(player, "party.not-in-party");
+            Messages.send(player, "party.no-party-help");
             return;
         }
 
-        Messages.send(player, "<gold>═══════ Party Info ═══════</gold>");
+        Messages.send(player, "party.info-header");
 
         Player ownerPlayer = party.getOwnerPlayer();
         String ownerName = ownerPlayer != null ? ownerPlayer.getName() : "Unknown";
-        Messages.send(player, "<yellow>Owner:</yellow> <white>" + ownerName + "</white>");
-        Messages.send(player, "<yellow>Members (" + party.getSize() + "):</yellow>");
+        Messages.send(player, MessagesConfig.getInstance().getMessage("party.info-owner",
+            "owner_name", ownerName));
+        Messages.send(player, MessagesConfig.getInstance().getMessage("party.info-members-header",
+            "member_count", String.valueOf(party.getSize())));
 
         for (UUID memberId : party.getMembers()) {
             Player member = Bukkit.getPlayer(memberId);
             String name = member != null ? member.getName() : "Offline";
             String status = member != null && member.isOnline() ? "<green>●</green>" : "<red>●</red>";
             String role = party.isOwner(memberId) ? " <gold>★</gold>" : "";
-            Messages.send(player, "  " + status + " <white>" + name + "</white>" + role);
+            Messages.send(player, MessagesConfig.getInstance().getMessage("party.info-member-line",
+                "status", status,
+                "member_name", name,
+                "role", role));
         }
 
-        Messages.send(player, "<gold>══════════════════════════</gold>");
+        Messages.send(player, "party.info-footer");
     }
 }
 

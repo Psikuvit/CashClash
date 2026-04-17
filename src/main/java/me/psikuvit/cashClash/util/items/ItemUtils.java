@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.items;
 
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
@@ -111,9 +112,10 @@ public final class ItemUtils {
             }
             if (appliedAny) {
                 player.getInventory().setArmorContents(armor);
-                Messages.send(player, "<green>Protection " + lvl + " applied to all armor pieces.</green>");
+                Messages.send(player, MessagesConfig.getInstance().getMessage("enchant.protection-applied",
+                    "level", String.valueOf(lvl)));
             } else {
-                Messages.send(player, "<red>No eligible armor pieces found to apply Protection. It will be saved for future purchases.</red>");
+                Messages.send(player, MessagesConfig.getInstance().getRaw("enchant.protection-no-eligible"));
             }
             return true;
         }
@@ -121,7 +123,7 @@ public final class ItemUtils {
         ItemStack held = player.getInventory().getItemInMainHand();
 
         if (!ee.getApplicableMaterials().contains(held.getType())) {
-            Messages.send(player, "<red>The item in your main hand is not eligible for this enchantment. It will be saved for future purchases.</red>");
+            Messages.send(player, "enchant.ineligible-item");
             return false;
         }
 

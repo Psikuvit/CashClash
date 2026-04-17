@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -79,16 +80,21 @@ public class RoundManager {
 
         // Broadcast phase messages
         if (phaseType == GameState.BUFF_SELECTION) {
-            Messages.broadcastWithPrefix(session.getPlayers(), "<yellow><bold>Round " + roundNumber + " - Buff Selection Phase!</bold></yellow>");
-            Messages.broadcastWithPrefix(session.getPlayers(), "<gold>Presidents: Right-click an item to select your buff!</gold>");
-            Messages.broadcastWithPrefix(session.getPlayers(), "<gray>You have <yellow>15 seconds </yellow><gray>to select!</gray>");
+            MessagesConfig msgs = MessagesConfig.getInstance();
+            Messages.broadcast(session.getPlayers(), msgs.getMessage("round.buff-selection-title",
+                "round", String.valueOf(roundNumber)));
+            Messages.broadcast(session.getPlayers(), msgs.getRaw("round.buff-selection-prompt"));
+            Messages.broadcast(session.getPlayers(), msgs.getRaw("round.buff-selection-time"));
         } else {
             // Apply loss streak bonuses at start of shopping phase (round 2+)
             if (roundNumber > 1) {
                 applyLossStreakBonuses();
             }
-            Messages.broadcastWithPrefix(session.getPlayers(), "<yellow><bold>Round " + roundNumber + " - Shopping Phase!</bold></yellow>");
-            Messages.broadcastWithPrefix(session.getPlayers(), "<gray>You have <yellow>" + timeRemaining + " seconds </yellow><gray>to shop!</gray>");
+            MessagesConfig msgs = MessagesConfig.getInstance();
+            Messages.broadcast(session.getPlayers(), msgs.getMessage("round.shopping-phase-title",
+                "round", String.valueOf(roundNumber)));
+            Messages.broadcast(session.getPlayers(), msgs.getMessage("round.shopping-phase-time",
+                "time_remaining", String.valueOf(timeRemaining)));
         }
 
         // Teleport all players to their team's shop area
@@ -170,7 +176,8 @@ public class RoundManager {
             if (timeRemaining <= 0) {
                 endBuffSelectionPhase(roundNumber);
             } else if (timeRemaining <= 10 || timeRemaining % 5 == 0) {
-                Messages.broadcastWithPrefix(session.getPlayers(), "<gold>" + timeRemaining + " seconds to select buff!</gold>");
+                Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("round.buff-selection-countdown",
+                    "time_remaining", String.valueOf(timeRemaining)));
             }
         }, 0, 20L);
     }
@@ -181,7 +188,7 @@ public class RoundManager {
     private void startShoppingTimer(int roundNumber, Team teamRed, Team teamBlue) {
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
             if (teamRed.isTeamReady() && teamBlue.isTeamReady()) {
-                Messages.broadcastWithPrefix(session.getPlayers(), "<green>Both teams are ready! Ending shopping phase early.</green>");
+                Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getRaw("round.both-teams-ready"));
                 endShoppingPhase();
                 return;
             }
@@ -194,7 +201,8 @@ public class RoundManager {
             if (timeRemaining <= 0) {
                 endShoppingPhase();
             } else if (timeRemaining <= 10 || timeRemaining % 30 == 0) {
-                Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>" + timeRemaining + " seconds remaining!</yellow>");
+                Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("round.shopping-countdown",
+                    "time_remaining", String.valueOf(timeRemaining)));
             }
         }, 0, 20L);
     }
@@ -209,7 +217,7 @@ public class RoundManager {
             phaseTask = null;
         }
 
-        Messages.broadcastWithPrefix(session.getPlayers(), "<gold>Buff selection complete! Starting shopping phase...</gold>");
+        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getRaw("round.buff-selection-complete"));
 
         // Start the shopping phase
         startPhase(roundNumber, GameState.SHOPPING);
@@ -236,7 +244,7 @@ public class RoundManager {
             }
         }
 
-        Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Combat Phase Starting!</bold></red>");
+        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getRaw("round.combat-phase-starting"));
         session.startCombatPhase();
         startCombatPhase();
     }
@@ -265,7 +273,8 @@ public class RoundManager {
             if (timeRemaining <= 0) {
                 endCombatPhase();
             } else if (timeRemaining <= 10 || timeRemaining % 60 == 0) {
-                Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>" + timeRemaining + " seconds remaining!</yellow>");
+                Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("round.combat-countdown",
+                    "time_remaining", String.valueOf(timeRemaining)));
             }
 
             // Check armor effects for all players (Flamebringer fire, Tax Evasion tick)
@@ -290,7 +299,8 @@ public class RoundManager {
 
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
 
-        Messages.broadcastWithPrefix(session.getPlayers(), "<yellow>Round " + session.getCurrentRound() + " ended!</yellow>");
+        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("round.round-ended",
+            "round", String.valueOf(session.getCurrentRound())));
 
         BonusManager bonusManager = session.getBonusManager();
         if (bonusManager != null) {
@@ -314,7 +324,7 @@ public class RoundManager {
             if (winnerTeam > 0) {
                 String winnerName = winnerTeam == 1 ? session.getTeamRed().getName() : session.getTeamBlue().getName();
                 SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
-                Messages.broadcastWithPrefix(session.getPlayers(), 
+                Messages.broadcast(session.getPlayers(), 
                     "<gold><bold>" + winnerName + " Team Wins the Round!</bold></gold>");
                 // Update loss streaks for this round
                 if (winnerTeam == 1) {
@@ -340,13 +350,13 @@ public class RoundManager {
 
         if (teamRedAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
-            Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Blue Team wins the round!</bold></red>");
+            Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getRaw("round.team-blue-wins"));
             session.getTeamBlue().resetLossStreak();
             session.getTeamRed().incrementLossStreak();
             endCombatPhase();
         } else if (teamBlueAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
-            Messages.broadcastWithPrefix(session.getPlayers(), "<red><bold>Red Team wins the round!</bold></red>");
+            Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getRaw("round.team-red-wins"));
             session.getTeamRed().resetLossStreak();
             session.getTeamBlue().incrementLossStreak();
             endCombatPhase();

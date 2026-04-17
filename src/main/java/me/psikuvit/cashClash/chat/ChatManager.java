@@ -7,7 +7,6 @@ import me.psikuvit.cashClash.party.Party;
 import me.psikuvit.cashClash.party.PartyManager;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -59,10 +58,12 @@ public class ChatManager {
         ChatChannel current = getPlayerChannel(player);
         if (current == channel) {
             setPlayerChannel(player, ChatChannel.GLOBAL);
-            Messages.send(player, "<gray>Switched to </gray><white>Global</white><gray> chat.</gray>");
+            Messages.send(player, "chat.switched-to-global");
         } else {
             setPlayerChannel(player, channel);
-            Messages.send(player, "<gray>Switched to </gray>" + channel.getNameColor() + channel.getDisplayName() + "<gray> chat.</gray>");
+            Messages.send(player, "chat.switched-to-channel",
+                "channel_color", channel.getNameColor(),
+                "channel_name", channel.getDisplayName());
         }
     }
 
@@ -109,7 +110,7 @@ public class ChatManager {
     public boolean sendPartyMessage(Player sender, String message) {
         Party party = PartyManager.getInstance().getPlayerParty(sender);
         if (party == null) {
-            Messages.send(sender, "<red>You are not in a party! Message not sent.</red>");
+            Messages.send(sender, "chat.not-in-party-message");
             return true;
         }
 
@@ -130,28 +131,16 @@ public class ChatManager {
     public boolean sendTeamMessage(Player sender, String message) {
         GameSession session = GameManager.getInstance().getPlayerSession(sender);
         if (session == null) {
-            Messages.send(sender, "<red>You are not in a game! Message not sent.</red>");
+            Messages.send(sender, "chat.not-in-game-message");
             return true;
         }
 
         Team team = session.getPlayerTeam(sender);
         if (team == null) {
-            Messages.send(sender, "<red>You are not on a team! Message not sent.</red>");
+            Messages.send(sender, "chat.not-on-team-message");
             return true;
         }
-
-        Component chatMessage = Messages.parse(ChatChannel.TEAM.getPrefix())
-                .append(Messages.parse(ChatChannel.TEAM.getNameColor() + sender.getName()))
-                .append(Messages.parse("<gray>: </gray>"))
-                .append(Messages.parse("<white>" + message + "</white>"));
-
-        for (UUID memberId : team.getPlayers()) {
-            Player member = Bukkit.getPlayer(memberId);
-            if (member != null && member.isOnline()) {
-                member.sendMessage(chatMessage);
-            }
-        }
-        return true;
+        return false;
     }
 
     /**
@@ -160,22 +149,10 @@ public class ChatManager {
     public boolean sendGameMessage(Player sender, String message) {
         GameSession session = GameManager.getInstance().getPlayerSession(sender);
         if (session == null) {
-            Messages.send(sender, "<red>You are not in a game! Message not sent.</red>");
+            Messages.send(sender, "chat.not-in-game-message");
             return true;
         }
-
-        Component chatMessage = Messages.parse(ChatChannel.GAME.getPrefix())
-                .append(Messages.parse(ChatChannel.GAME.getNameColor() + sender.getName()))
-                .append(Messages.parse("<gray>: </gray>"))
-                .append(Messages.parse("<white>" + message + "</white>"));
-
-        for (UUID playerId : session.getPlayers()) {
-            Player player = Bukkit.getPlayer(playerId);
-            if (player != null && player.isOnline()) {
-                player.sendMessage(chatMessage);
-            }
-        }
-        return true;
+        return false;
     }
 
     /**

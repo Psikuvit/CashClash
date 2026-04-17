@@ -405,14 +405,6 @@ public class ConfigValidator {
         validateAndSet(config, "gamemodes.capture-the-flag.capture-bonus-coins", 15000, autoAdd);
         validateAndSet(config, "gamemodes.capture-the-flag.capture-bonus-timer-ms", 45000, autoAdd);
 
-        // Messages
-        validateAndSet(config, "messages.prefix", "<gold><bold>[Cash Clash]</bold></gold>", autoAdd);
-        validateAndSet(config, "messages.game-starting", "<green>Game starting in {time} seconds!</green>", autoAdd);
-        validateAndSet(config, "messages.round-starting", "<yellow>Round {round} - Shopping Phase!</yellow>", autoAdd);
-        validateAndSet(config, "messages.combat-starting", "<red>Combat Phase Starting!</red>", autoAdd);
-        validateAndSet(config, "messages.team-eliminated", "<red>Team {team} has been eliminated!</red>", autoAdd);
-        validateAndSet(config, "messages.team-forfeited", "<yellow>Team {team} has forfeited! Team {winner} earns {amount} each!</yellow>", autoAdd);
-        validateAndSet(config, "messages.winner", "<gold><bold>Team {team} wins with ${amount}!</bold></gold>", autoAdd);
 
         // Scoreboard - Lobby
         validateAndSet(config, "scoreboard.lobby.enabled", true, autoAdd);

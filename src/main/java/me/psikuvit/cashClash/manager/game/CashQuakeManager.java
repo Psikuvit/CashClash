@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.CashQuakeEvent;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -178,7 +179,7 @@ public class CashQuakeManager {
 
         lotteryEndTask = SchedulerUtils.runTaskLater(() -> {
             lotteryActive = false;
-            Messages.broadcast(session.getPlayers(), "<gray>The lottery has ended!</gray>");
+            Messages.broadcast(session.getPlayers(), "cashquake.lottery-ended");
         }, 30 * 20L);
     }
 
@@ -207,7 +208,7 @@ public class CashQuakeManager {
             ccp.addCoins(10000);
             Messages.send(player, "<green><bold>🎉 YOU WON!</bold></green> <yellow>+10,000 coins!</yellow>");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
-            Messages.broadcast(session.getPlayers(), "<gold>" + player.getName() + "</gold> <green>won the lottery!</green>");
+            Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("cashquake.lottery-winner", "player_name", player.getName()));
         } else {
             Messages.send(player, "<red><bold>💔 YOU LOST!</bold></red> <gray>Better luck next time...</gray>");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
@@ -220,7 +221,7 @@ public class CashQuakeManager {
 
         Messages.broadcast(session.getPlayers(),
                 prefix + " <red><bold>💀 LIFE STEAL!</bold></red> <yellow>Kills grant extra hearts!</yellow>");
-        Messages.broadcast(session.getPlayers(), "<gray>Lasts for 2 minutes, then health resets.</gray>");
+        Messages.broadcast(session.getPlayers(), "cashquake.life-steal-active");
 
         lifeStealEndTask = SchedulerUtils.runTaskLater(() -> {
             lifeStealActive.clear();
@@ -234,7 +235,7 @@ public class CashQuakeManager {
                     p.setHealth(Math.min(p.getHealth(), 20.0));
                 }
             }
-            Messages.broadcast(session.getPlayers(), "<gray>Life Steal has ended. Health reset.</gray>");
+            Messages.broadcast(session.getPlayers(), "cashquake.life-steal-ended");
         }, 2 * 60 * 20L);
     }
 
@@ -287,7 +288,7 @@ public class CashQuakeManager {
                     p.setHealth(Math.min(p.getHealth(), 20.0));
                 }
             }
-            Messages.broadcast(session.getPlayers(), "<gray>Check Up bonus hearts have expired.</gray>");
+            Messages.broadcast(session.getPlayers(), "cashquake.checkup-expired");
         }, 2 * 60 * 20L);
     }
 
@@ -462,7 +463,7 @@ public class CashQuakeManager {
 
         Messages.broadcast(session.getPlayers(),
                 prefix + " <gold><bold>⚖ WEIGHT OF WEALTH!</bold></gold> <yellow>Pay 5,000 coins or lose a random item!</yellow>");
-        Messages.broadcast(session.getPlayers(), "<gray>Type <white>/cc paytax</white> within 20 seconds to pay.</gray>");
+        Messages.broadcast(session.getPlayers(), "cashquake.weight-of-wealth-prompt");
 
         weightOfWealthEndTask = SchedulerUtils.runTaskLater(() -> {
             weightOfWealthActive = false;
@@ -496,7 +497,7 @@ public class CashQuakeManager {
                 }
             }
 
-            Messages.broadcast(session.getPlayers(), "<gray>Weight of Wealth has concluded.</gray>");
+            Messages.broadcast(session.getPlayers(), "cashquake.weight-of-wealth-ended");
         }, 20 * 20L);
     }
 
@@ -570,7 +571,7 @@ public class CashQuakeManager {
                 prefix + " <yellow><bold>📦 SUPPLY DROP!</bold></yellow> <green>Rich Man Bobby dropped his riches!</green>");
         Messages.broadcast(session.getPlayers(),
                 "<gold>Location: X=" + dropLoc.getBlockX() + " Z=" + dropLoc.getBlockZ() + "</gold>");
-        Messages.broadcast(session.getPlayers(), "<gray>First come, first serve!</gray>");
+        Messages.broadcast(session.getPlayers(), "cashquake.auction-prompt");
 
         int chestCount = random.nextInt(4) + 3;
         activeSupplyDropChests.clear();
@@ -690,4 +691,6 @@ public class CashQuakeManager {
         cleanupSupplyDrops();
     }
 }
+
+
 

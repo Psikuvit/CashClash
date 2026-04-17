@@ -66,7 +66,8 @@ public final class LocationUtils {
     /**
      * Normalizes a given {@link Location} to align it to the center of the corresponding block.
      * This is achieved by adjusting the X and Z coordinates to the middle of the block
-     * while keeping all other parameters unchanged.
+     * while keeping all other parameters unchanged. For example, X and Z are set
+     * to blockX + 0.5 and blockZ + 0.5, respectively.
      *
      * @param loc the {@link Location} to normalize; may be null
      * @return a new {@link Location} object aligned to the center of the block,
@@ -77,11 +78,13 @@ public final class LocationUtils {
         int bx = loc.getBlockX();
         int by = loc.getBlockY();
         int bz = loc.getBlockZ();
+        double cx = bx + 0.5d;
+        double cz = bz + 0.5d;
         return new Location(
                 loc.getWorld(),
-                bx,
+                cx,
                 by,
-                bz,
+                cz,
                 loc.getYaw(),
                 loc.getPitch()
         );

@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.kit.Kit;
@@ -225,7 +226,8 @@ public class GameSession {
 
         int minPlayers = ConfigManager.getInstance().getMinPlayers();
 
-        Messages.broadcast(players.keySet(), "<yellow>Minimum players reached! Starting game in <gold>" + seconds + "s</gold>. Join now!</yellow>");
+        Messages.broadcast(players.keySet(), MessagesConfig.getInstance().getMessage("round.game-countdown-start",
+            "seconds", String.valueOf(seconds)));
 
         startCountdownTask = SchedulerUtils.runTaskTimer(() -> {
              if (state != GameState.WAITING) {
@@ -235,18 +237,19 @@ public class GameSession {
 
              int count = players.size();
              if (count < minPlayers) {
-                 Messages.broadcast(players.keySet(), "<red>Not enough players, starting countdown cancelled.</red>");
+                 Messages.broadcast(players.keySet(), "round.game-countdown-cancelled");
                  cancelStartCountdown();
                  return;
              }
 
              if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10)
-                 Messages.broadcast(players.keySet(), "<yellow>Game starting in <gold>" + countdownSecondsRemaining + "s</gold>...</yellow>");
+                 Messages.broadcast(players.keySet(), MessagesConfig.getInstance().getMessage("round.game-countdown-tick",
+                     "seconds", String.valueOf(countdownSecondsRemaining)));
              if (countdownSecondsRemaining <= 5 && countdownSecondsRemaining > 0)
                  SoundUtils.playTo(players.keySet(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
 
              if (countdownSecondsRemaining <= 0) {
-                 Messages.broadcast(players.keySet(), "<green>Starting game now!</green>");
+                 Messages.broadcast(players.keySet(), "round.game-starting");
 
                   players.keySet()
                           .stream()
@@ -254,7 +257,8 @@ public class GameSession {
                           .filter(Objects::nonNull)
                           .forEach(player -> {
                               Team team = teamRed.hasPlayer(player.getUniqueId()) ? teamRed : teamBlue;
-                              Messages.send(player, "<yellow>You have been assigned to Team " + team.getColoredName() + "</yellow>");
+                              Messages.send(player, MessagesConfig.getInstance().getMessage("round.team-assignment",
+                                  "team_color", team.getColoredName()));
                           });
                  cancelStartCountdown();
                  start();
@@ -396,7 +400,8 @@ public class GameSession {
     private void applyKitToPlayer(Player p, CashClashPlayer ccp, Kit kitToApply) {
         if (currentRound == 1) {
             applyKitWithLayout(p, ccp.getUuid(), kitToApply);
-            Messages.send(p, "<green>You have been assigned kit: <yellow>" + kitToApply + "</yellow></green>");
+            Messages.send(p, MessagesConfig.getInstance().getMessage("round.kit-assigned",
+                "kit_name", kitToApply.toString()));
         } else {
             kitToApply.apply(p, currentRound, rounds1to3HaveShields);
         }
@@ -603,20 +608,24 @@ public class GameSession {
                 // 0-1 deaths: Bonus
                 ccp.addCoins(returnAmount);
                 if (p != null && p.isOnline()) {
-                    Messages.send(p, "<green><bold>INVESTMENT SUCCESS!</bold></green>");
-                    Messages.send(p, "<green>Your " + typeName + " earned you <gold>$" +
-                        String.format("%,d", returnAmount) + "</gold>!</green>");
-                    Messages.send(p, "<gray>(Deaths: " + investment.getDeaths() + ")</gray>");
+                    Messages.send(p, "round.investment-success");
+                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-success-detail",
+                        "type_name", typeName,
+                        "amount", String.format("%,d", returnAmount)));
+                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-success-deaths",
+                        "deaths", String.valueOf(investment.getDeaths())));
                     SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
                 }
             } else if (investment.isBreakEven()) {
                 // 2 deaths: Break even
                 ccp.addCoins(returnAmount);
                 if (p != null && p.isOnline()) {
-                    Messages.send(p, "<yellow><bold>INVESTMENT BREAK EVEN</bold></yellow>");
-                    Messages.send(p, "<yellow>Your " + typeName + " returned your investment of <gold>$" +
-                        String.format("%,d", returnAmount) + "</gold>.</yellow>");
-                    Messages.send(p, "<gray>(Deaths: " + investment.getDeaths() + ")</gray>");
+                    Messages.send(p, "round.investment-breakeven");
+                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-breakeven-detail",
+                        "type_name", typeName,
+                        "amount", String.format("%,d", returnAmount)));
+                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-breakeven-deaths",
+                        "deaths", String.valueOf(investment.getDeaths())));
                     SoundUtils.play(p, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
                 }
             } else {
@@ -624,10 +633,12 @@ public class GameSession {
                 long penalty = investment.getType().getNegativeReturn();
                 ccp.deductCoins(penalty);
                 if (p != null && p.isOnline()) {
-                    Messages.send(p, "<red><bold>INVESTMENT FAILED!</bold></red>");
-                    Messages.send(p, "<red>Your " + typeName + " cost you <gold>$" +
-                        String.format("%,d", penalty) + "</gold>!</red>");
-                    Messages.send(p, "<gray>(Deaths: " + investment.getDeaths() + " - Lost invested amount + penalty)</gray>");
+                    Messages.send(p, "round.investment-failed");
+                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-failed-detail",
+                        "type_name", typeName,
+                        "amount", String.format("%,d", penalty)));
+                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-failed-deaths",
+                        "deaths", String.valueOf(investment.getDeaths())));
                     SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
                 }
             }
@@ -728,7 +739,7 @@ public class GameSession {
     private boolean validateForfeitRequest(Team team, Player requester) {
         int aliveCount = countAliveTeammates(team);
         if (aliveCount > 2) {
-            Messages.send(requester, "<red>You can only start a forfeit when at least 2 teammates have died.</red>");
+            Messages.send(requester, "round.forfeit-min-deaths");
             return false;
         }
 
@@ -738,7 +749,7 @@ public class GameSession {
 
         long deadCount = team.getPlayers().stream().filter(uuid -> !currentRoundData.isAlive(uuid)).count();
         if (deadCount < 2) {
-            Messages.send(requester, "<red>At least two teammates must be dead to start a forfeit.</red>");
+            Messages.send(requester, "round.forfeit-two-dead");
             return false;
         }
 
@@ -764,7 +775,8 @@ public class GameSession {
         if (aliveCount > 1 && anyRecentDamage) {
             Player requester = Bukkit.getPlayer(team.getPlayers().iterator().next());
             if (requester != null) {
-                Messages.send(requester, "<red>Can't start forfeit while any teammate has taken damage in the last " + combatGrace + " seconds.</red>");
+                Messages.send(requester, MessagesConfig.getInstance().getMessage("round.forfeit-recent-damage",
+                    "grace_seconds", String.valueOf(combatGrace)));
             }
             return false;
         }
@@ -779,7 +791,8 @@ public class GameSession {
         if (team.getForfeitStartTime() == 0L) team.setForfeitStartTime(now);
         team.addForfeitVote(requester.getUniqueId());
 
-        Messages.broadcastToTeam(team, "<yellow>Forfeit vote started by " + requester.getName() + " - agreement required by all teammates. Type /cc forfeit to vote.</yellow>");
+        Messages.broadcastToTeam(team, MessagesConfig.getInstance().getMessage("round.forfeit-vote-started",
+            "player_name", requester.getName()));
         if (team.hasAllForfeitVotes()) executeForfeit(team);
     }
 
@@ -792,7 +805,10 @@ public class GameSession {
         }
 
         team.addForfeitVote(voter.getUniqueId());
-        Messages.broadcastToTeam(team, "<yellow>" + voter.getName() + " has voted to forfeit. (" + team.getForfeitVotes().size() + "/" + team.getSize() + ")</yellow>");
+        Messages.broadcastToTeam(team, MessagesConfig.getInstance().getMessage("round.forfeit-vote-cast",
+            "player_name", voter.getName(),
+            "votes", String.valueOf(team.getForfeitVotes().size()),
+            "total", String.valueOf(team.getSize())));
         if (team.hasAllForfeitVotes()) executeForfeit(team);
     }
 
@@ -803,7 +819,10 @@ public class GameSession {
         applyForfeitPenalty(forfeitingTeam);
         applyForfeitBonus(other, bonus);
 
-        Messages.broadcast(players.keySet(), "<gold>Team " + forfeitingTeam.getColoredName() + " has chosen to forfeit the round. Team " + other.getColoredName() + " earns " + bonus + " each.</gold>");
+        Messages.broadcast(players.keySet(), MessagesConfig.getInstance().getMessage("round.forfeit-executed",
+            "team_color", forfeitingTeam.getColoredName(),
+            "other_team_color", other.getColoredName(),
+            "bonus", String.valueOf(bonus)));
         if (roundManager != null) roundManager.endCombatPhase();
     }
 
@@ -872,11 +891,14 @@ public class GameSession {
         preparePlayerForGameEnd(player);
 
         boolean isWinner = winner.getPlayers().contains(uuid);
-        Messages.send(player, isWinner ? "<green><bold>YOU WIN!</bold></green>" : "<red><bold>YOU LOSE</bold></red>");
-        Messages.send(player, "<yellow>Winning Team: " + winner.getColoredName() + "</yellow>");
-        Messages.send(player, "<gray>Winners: " + winnerList + "</gray>");
-        Messages.send(player, "<gray>Losers: " + loserList + "</gray>");
-        Messages.send(player, "<gray>Thanks for playing!</gray>");
+        Messages.send(player, isWinner ? "round.game-end-win" : "round.game-end-lose");
+        Messages.send(player, MessagesConfig.getInstance().getMessage("round.game-end-winners",
+            "team_color", winner.getColoredName()));
+        Messages.send(player, MessagesConfig.getInstance().getMessage("round.game-end-winner-list",
+            "players", winnerList));
+        Messages.send(player, MessagesConfig.getInstance().getMessage("round.game-end-loser-list",
+            "players", loserList));
+        Messages.send(player, "round.game-end-thanks");
     }
 
     /**
@@ -988,8 +1010,10 @@ public class GameSession {
         // Set up scoreboard
         ScoreboardManager.getInstance().setScoreboard(player);
 
-        Messages.send(player, "<green>You have successfully rejoined the game!</green>");
-        Messages.send(player, "<yellow>Round: <gold>" + currentRound + "</gold> | Lives: <gold>" + existingCcp.getLives() + "</gold></yellow>");
+        Messages.send(player, "round.rejoin-success");
+        Messages.send(player, MessagesConfig.getInstance().getMessage("round.rejoin-status",
+            "round", String.valueOf(currentRound),
+            "lives", String.valueOf(existingCcp.getLives())));
 
         return true;
     }
@@ -1071,7 +1095,7 @@ public class GameSession {
         // If one team has no players and the game is active
         if (state != GameState.WAITING && state != GameState.ENDING) {
             if (teamRed.getPlayers().isEmpty() || teamBlue.getPlayers().isEmpty()) {
-                Messages.broadcast(players.keySet(), "<yellow>Game ending - one team has no remaining players.</yellow>");
+                Messages.broadcast(players.keySet(), "round.game-force-end");
                 end();
             }
         }

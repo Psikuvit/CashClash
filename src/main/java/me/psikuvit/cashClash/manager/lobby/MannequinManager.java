@@ -156,8 +156,9 @@ public class MannequinManager {
         // Spawn the mannequin
         spawnArenaMannequin(loc, id);
 
-        Messages.send(creator, "<green>Arena NPC spawned and saved!</green>");
-        Messages.send(creator, "<gray>ID: " + id + " - Players can right-click it to open the arena selection menu.</gray>");
+        Messages.send(creator, "lobby.npc-spawned");
+        Messages.send(creator, "lobby.npc-spawned-id",
+                "id", id));
     }
 
     /**

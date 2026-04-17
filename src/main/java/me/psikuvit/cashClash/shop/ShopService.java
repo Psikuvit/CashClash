@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.shop;
 
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -60,7 +61,8 @@ public class ShopService {
         CashClashPlayer ccp = getCashClashPlayer(player);
         if (ccp != null) {
             ccp.addCoins(amount);
-            Messages.send(player, "<green>Refunded $" + String.format("%,d", amount) + " to your balance.</green>");
+            Messages.send(player, MessagesConfig.getInstance().getMessage("shop.refunded",
+                "amount", String.format("%,d", amount)));
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_YES, 1.0f, 1.0f);
         }
     }
@@ -110,19 +112,25 @@ public class ShopService {
             // 2. Remove from inventory
             // 3. Re-equip them
             restoreReplacedSetItemsFromInventory(player, record.getReplacedSetItemsSafe());
-            Messages.send(player, "<green>Set purchase undone. Refunded $" + String.format("%,d", record.price()) + " and restored your previous armor.</green>");
+            Messages.send(player, MessagesConfig.getInstance().getMessage("shop.set-purchase-undone",
+                "amount", String.format("%,d", record.price())));
         } else {
             boolean removed = ItemUtils.removeItemFromPlayer(player, record.item().name(), record.quantity());
 
             if (record.replacedItem() != null) {
                 // Restore the previous purchased item
                 restoreReplacedItem(player, record);
-                Messages.send(player, "<green>Purchase undone. Refunded $" + String.format("%,d", record.price()) + " and restored your previous item.</green>");
+                Messages.send(player, MessagesConfig.getInstance().getMessage("shop.purchase-undone",
+                    "amount", String.format("%,d", record.price())));
             } else {
                 // No purchased item to restore - restore round 1 starter gear if applicable
                 restoreStarterGear(player, record.item());
-                Messages.send(player, "<green>Purchase undone. Refunded $" + String.format("%,d", record.price()) +
-                        (removed ? "" : " (could not find item(s) to remove)") + "</green>");
+                String message = MessagesConfig.getInstance().getMessage("shop.purchase-undone",
+                    "amount", String.format("%,d", record.price()));
+                if (!removed) {
+                    message += " (could not find item(s) to remove)";
+                }
+                Messages.send(player, message);
             }
         }
 
@@ -281,7 +289,9 @@ public class ShopService {
                         ItemUtils.applyOwnedEnchantsAfterPurchase(player, piece);
                     }
 
-                    Messages.send(player, "<green>Purchased " + customArmor.getArmorSet().getDisplayName() + " for $" + String.format("%,d", setPrice) + "</green>");
+                    Messages.send(player, MessagesConfig.getInstance().getMessage("shop.purchased-set",
+                        "item_name", customArmor.getArmorSet().getDisplayName(),
+                        "price", String.format("%,d", setPrice)));
                     SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
                 } else {
                     // Individual custom armor piece (Magic Helmet, Bunny Shoes, Tax Evasion Pants, Guardian's Vest)
@@ -353,7 +363,10 @@ public class ShopService {
                 player.getInventory().addItem(stack);
                 ccp.addPurchase(new PurchaseRecord(item, giveQty, totalPrice, round));
 
-                Messages.send(player, "<green>Purchased " + item.getDisplayName() + " x" + giveQty + " for $" + String.format("%,d", totalPrice) + "</green>");
+                Messages.send(player, MessagesConfig.getInstance().getMessage("shop.purchased-quantity",
+                    "item_name", item.getDisplayName(),
+                    "quantity", String.valueOf(giveQty),
+                    "price", String.format("%,d", totalPrice)));
                 SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
             }
         }
@@ -375,7 +388,9 @@ public class ShopService {
         ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
         ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
 
-        Messages.send(player, "<green>Purchased " + item.getDisplayName() + " for $" + String.format("%,d", item.getPrice()) + "</green>");
+        Messages.send(player, MessagesConfig.getInstance().getMessage("shop.purchased",
+            "item_name", item.getDisplayName(),
+            "price", String.format("%,d", item.getPrice())));
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
     }
 
@@ -416,7 +431,8 @@ public class ShopService {
         CashClashPlayer ccp = getCashClashPlayer(player);
         if (ccp != null) {
             ccp.deductCoins(cost);
-            Messages.send(player, "<green>Purchase successful! Deducted $" + String.format("%,d", cost) + "</green>");
+            Messages.send(player, MessagesConfig.getInstance().getMessage("shop.purchase-successful",
+                "cost", String.format("%,d", cost)));
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
         }
     }
