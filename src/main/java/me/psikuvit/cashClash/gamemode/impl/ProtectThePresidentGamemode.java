@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
+import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -40,14 +41,12 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private static final int WIN_CONDITION = 4;
 
     private final Map<Integer, President> presidents;
-    private final Map<UUID, Long> extraHeartExpiry;
     private final Map<Integer, Integer> teamKillCount;
     private final Map<UUID, ItemStack[]> savedInventories;
 
-    private final boolean inSuddenDeath;
+    private final SuddenDeathManager suddenDeathManager;
     private boolean selectionPhaseActive;
     private boolean buffSelectionFinalized;
-    private final BukkitTask extraHeartTask;
     private BukkitTask selectionTask;
     private int selectionTimeRemaining;
 
@@ -56,13 +55,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         // Initialize all data structures
         this.presidents = new HashMap<>(2);
-        this.extraHeartExpiry = new HashMap<>();
         this.teamKillCount = new HashMap<>(2);
         this.savedInventories = new HashMap<>();
-        this.inSuddenDeath = false;
+        this.suddenDeathManager = new SuddenDeathManager(session);
         this.selectionPhaseActive = false;
         this.buffSelectionFinalized = false;
-        this.extraHeartTask = null;
         this.selectionTask = null;
         this.selectionTimeRemaining = SELECTION_TIME;
 
@@ -205,9 +202,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
 
         // Apply extra heart effect if in sudden death
-        if (inSuddenDeath && extraHeartExpiry.containsKey(playerUuid)) {
-            applyExtraHeart(player);
-        }
+        suddenDeathManager.onPlayerSpawn(player);
     }
 
     @Override
@@ -236,27 +231,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public void cleanup() {
         cancelTask(selectionTask);
-        cancelTask(extraHeartTask);
+        suddenDeathManager.cleanup();
         presidents.clear();
-        extraHeartExpiry.clear();
         teamKillCount.clear();
         savedInventories.clear();
-
-        // Remove extra heart effects from all players
-        for (UUID uuid : extraHeartExpiry.keySet()) {
-            Player p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline()) {
-                clearPresidentialBuffs();
-                // Reset health if over max
-                if (p.getHealth() > 20.0) {
-                    p.setHealth(20.0);
-                }
-                var maxHealthAttr = p.getAttribute(Attribute.MAX_HEALTH);
-                if (maxHealthAttr != null) {
-                    maxHealthAttr.setBaseValue(20.0);
-                }
-            }
-        }
     }
 
     private void cancelTask(BukkitTask task) {
@@ -267,7 +245,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public String getRoundStartMessage() {
-        if (inSuddenDeath) {
+        if (suddenDeathManager.isInSuddenDeath()) {
             String pres1Name = getPresidentName(1);
             String pres2Name = getPresidentName(2);
             return "<gold>" + pres1Name + " and " + pres2Name + " are elected as your presidents! " +
@@ -285,7 +263,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public String getBuyPhaseMessage() {
-        if (inSuddenDeath) {
+        if (suddenDeathManager.isInSuddenDeath()) {
             return "<yellow>The game has entered sudden death. Money bonuses have been replaced with an extra heart " +
                     "that lasts for 45 seconds. Eliminate the other team's president 4 times to win!</yellow>";
         }
@@ -493,20 +471,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     /**
-     * Apply an extra heart to a player (45s duration)
+     * Apply an extra heart to a player via SuddenDeathManager
      */
-    private void applyExtraHeart(Player player) {
-        UUID uuid = player.getUniqueId();
-        long expiryTime = System.currentTimeMillis() + HEART_DURATION_MS;
-        extraHeartExpiry.put(uuid, expiryTime);
-
-        Messages.debug("[PTP] Applied extra heart to: " + player.getName());
-
-        var maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
-        if (maxHealthAttr != null) {
-            double maxHealth = maxHealthAttr.getBaseValue();
-            player.setHealth(Math.min(player.getHealth() + 4, maxHealth));
-        }
+    public void applyExtraHeartBonus(Player player) {
+        suddenDeathManager.applyExtraHeart(player);
     }
 
     /**
@@ -610,6 +578,15 @@ public class ProtectThePresidentGamemode extends Gamemode {
      */
     public int getAssassinationCount(int teamNumber) {
         return getPresidentDeaths(teamNumber);
+    }
+
+    /**
+     * Enter sudden death mode
+     */
+    public void enterSuddenDeath() {
+        suddenDeathManager.enterSuddenDeath();
+        Messages.broadcast(session.getPlayers(),
+                "<red><bold>SUDDEN DEATH! Both presidents must now be eliminated 4 times to win!</bold></red>");
     }
 
     /**
@@ -733,10 +710,3 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
     }
 }
-
-
-
-
-
-
-

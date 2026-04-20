@@ -4,7 +4,7 @@ import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
-import me.psikuvit.cashClash.util.LocationUtils;
+import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -43,7 +43,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<Integer, Integer> flagCaptures;
     private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
 
-    private boolean inSuddenDeath;
+    private final SuddenDeathManager suddenDeathManager;
     private BukkitTask carrierGlowTask;
     private BukkitTask captureTimerTask;
     private BukkitTask bannerRotationTask;
@@ -55,6 +55,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.flagCaptures = new HashMap<>(2);
         this.flagStates = new HashMap<>(2);
         this.inSuddenDeath = false;
+        this.suddenDeathManager = new SuddenDeathManager(session);
         this.carrierGlowTask = null;
         this.captureTimerTask = null;
         this.bannerRotationTask = null;
@@ -105,6 +106,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.captureTimerTask = null;
         this.bannerRotationTask = null;
 
+        // Reset state for next round
+        suddenDeathManager.resetForNewRound();
         flagCaptures.put(1, 0);
         flagCaptures.put(2, 0);
         // Reset flag states but preserve the plate locations and banners for next round
@@ -182,7 +185,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public boolean checkGameWinner() {
-        int targetCaptures = inSuddenDeath ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
+        int targetCaptures = suddenDeathManager.isInSuddenDeath() ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
         int captures1 = flagCaptures.get(1);
         int captures2 = flagCaptures.get(2);
 
@@ -192,7 +195,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         // Check for sudden death condition
-        if (!inSuddenDeath && captures1 == 3 && captures2 == 3) {
+        if (!suddenDeathManager.isInSuddenDeath() && captures1 == 3 && captures2 == 3) {
             enterSuddenDeath();
         }
 
@@ -201,7 +204,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public int getWinningTeam() {
-        int targetCaptures = inSuddenDeath ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
+        int targetCaptures = suddenDeathManager.isInSuddenDeath() ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
 
         if (flagCaptures.get(1) >= targetCaptures) {
             return 1;
@@ -220,6 +223,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         cancelTask(carrierGlowTask);
         cancelTask(captureTimerTask);
         cancelTask(bannerRotationTask);
+        suddenDeathManager.cleanup();
 
         // Remove banner entities
         for (FlagState flag : flagStates.values()) {
@@ -275,7 +279,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public String getBuyPhaseMessage() {
-        int targetCaptures = inSuddenDeath ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
+        int targetCaptures = suddenDeathManager.isInSuddenDeath() ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
         return "<yellow>Capture the enemy's flag! First team to " + targetCaptures + " captures wins!</yellow>";
     }
 
@@ -331,6 +335,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     /**
      * Check if player is pressing a plate and handle flag pickup/scoring
+     * Check if final stand is active
+     */
+    private boolean isFinalStandActive() {
+        return suddenDeathManager.isFinalStandActive();
+    }
      * This should be called from PlayerInteractEvent when a player steps on a pressure plate
      * Pickup and capture happen instantly when conditions are met.
      * <p>
@@ -411,7 +420,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-stolen-blue",
                     "player_name", player.getName()));
 
-            // Move banner to player head
+            // Apply silenced ability if not in final stand
+        }
+        if (!isFinalStandActive()) {
+            Messages.send(player, "gamemode-ctf.silenced-activated");
+            Messages.debug("[CTF] Applied silenced ability to flag carrier: " + player.getName());
         }
         moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
 
@@ -424,7 +437,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void flagCapture(Player player, int teamNumber) {
         flagCaptures.merge(teamNumber, 1, Integer::sum);
         int captures = flagCaptures.get(teamNumber);
-        int targetCaptures = inSuddenDeath ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
+        int targetCaptures = suddenDeathManager.isInSuddenDeath() ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
 
         Messages.debug("[CTF] Team " + teamNumber + " captured a flag! Total captures: " + captures + "/" + targetCaptures);
         Messages.broadcast(session.getPlayers(),
@@ -461,8 +474,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
         for (UUID uuid : teamObj.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null) {
-                Messages.send(p, "<green>+3,750 coins! (45-second capture bonus)</green>");
-                session.getCashClashPlayer(uuid).addCoins(bonusPerPlayer);
+                // In sudden death with final stand active, award extra hearts instead
+                if (suddenDeathManager.isInSuddenDeath() && suddenDeathManager.isFinalStandActive()) {
+                    applyExtraHeartCTF(p);
+                    Messages.send(p, "<gold>+1 Extra Heart! (Capture bonus in Final Stand)</gold>");
+                } else {
+                    Messages.send(p, "<green>+3,750 coins! (45-second capture bonus)</green>");
+                    session.getCashClashPlayer(uuid).addCoins(bonusPerPlayer);
+                }
             }
         }
 
@@ -475,10 +494,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * Enter sudden death
      */
     private void enterSuddenDeath() {
-        inSuddenDeath = true;
+        suddenDeathManager.enterSuddenDeath();
         Messages.debug("[CTF] Entering sudden death mode - both teams at 3-3 captures");
         Messages.broadcast(session.getPlayers(),
                 "<red><bold>SUDDEN DEATH! Both teams must now capture 4 flags to win!</bold></red>");
+
+        // Start final stand timer (5 minutes)
+        startFinalStandTimer();
     }
 
     /**
@@ -639,6 +661,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     public boolean isSilenced(UUID playerUuid) {
+        // If final stand is active, silenced is not applied
+        if (isFinalStandActive()) {
+            return false;
+        }
+
         FlagState redFlag = flagStates.get(1);
         FlagState blueFlag = flagStates.get(2);
 
