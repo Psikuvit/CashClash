@@ -42,6 +42,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     private final Map<Integer, President> presidents;
     private final Map<Integer, Integer> teamKillCount;
+    private final Map<UUID, Integer> selectedBuffCount;
     private final Map<UUID, ItemStack[]> savedInventories;
 
     private final SuddenDeathManager suddenDeathManager;
@@ -56,6 +57,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Initialize all data structures
         this.presidents = new HashMap<>(2);
         this.teamKillCount = new HashMap<>(2);
+        this.selectedBuffCount = new HashMap<>();
         this.savedInventories = new HashMap<>();
         this.suddenDeathManager = new SuddenDeathManager(session);
         this.selectionPhaseActive = false;
@@ -85,6 +87,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public void onCombatPhaseStart() {
         Messages.debug("[PTP] Combat phase started");
 
+        // Apply glow and buffs to presidents now that combat has started
+        for (int team = 1; team <= 2; team++) {
+            President pres = presidents.get(team);
+            if (pres != null && pres.hasSelectedBuff()) {
+                applyGlow(pres);
+            }
+        }
 
         // Reset kill count for round
         teamKillCount.put(1, 0);
@@ -370,7 +379,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
             // Mark as buff selection potion (undrinkable)
             meta.getPersistentDataContainer().set(Keys.BUFF_SELECTION_POTION, PersistentDataType.BYTE, (byte) 1);
             item.setItemMeta(meta);
-            item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
+            try {
+                item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
+            } catch (Exception e) {
+                Messages.debug("[PTP] Warning: Could not unset consumable data: " + e.getMessage());
+            }
         } else {
             Messages.debug("[PTP] WARNING: Could not get ItemMeta for POTION");
         }
@@ -418,7 +431,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 }
             } else if (pres != null) {
                 Messages.debug("[PTP] Team " + team + " - President selected buff: " + pres.selectedBuff().getName());
-                applyGlow(presidents.get(team));
+                // Don't apply glow here - will be applied at combat start
             }
         }
         
@@ -647,19 +660,31 @@ public class ProtectThePresidentGamemode extends Gamemode {
             return false;
         }
 
+        // In sudden death, allow 2 buffs
+        int buffCountForPres = selectedBuffCount.getOrDefault(playerUuid, 0);
+        int maxBuffs = suddenDeathManager.isInSuddenDeath() ? 2 : 1;
+
         // Check if already selected - if so, deselect
         if (pres.hasSelectedBuff() && pres.selectedBuff() == buff) {
             President updatedPres = pres.withResetBuff();
             presidents.put(presTeam, updatedPres);
+            selectedBuffCount.put(playerUuid, buffCountForPres - 1);
             Messages.debug("[PTP] " + player.getName() + " deselected buff: " + buff.getName());
             Messages.send(player, "<red>Buff deselected!</red>");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
             return true;
         }
         
+        // Check if we can select another buff
+        if (buffCountForPres >= maxBuffs) {
+            Messages.send(player, "<red>You have already selected " + maxBuffs + " buff(s)!</red>");
+            return false;
+        }
+
         // Select new buff
         President updatedPres = pres.withBuff(buff);
         presidents.put(presTeam, updatedPres);
+        selectedBuffCount.put(playerUuid, buffCountForPres + 1);
         Messages.debug("[PTP] " + player.getName() + " selected buff: " + buff.getName());
         Messages.send(player, "<green>Buff selected: " + buff.getName() + "!</green>");
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
