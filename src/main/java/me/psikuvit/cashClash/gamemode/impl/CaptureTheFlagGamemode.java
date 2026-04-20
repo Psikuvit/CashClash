@@ -12,7 +12,6 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -281,61 +280,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
 
-    /**
-     * Place pressure plates from template config at their capture locations
-     */
-    private void placePressurePlates() {
-        var template = session.getArenaTemplate();
-        if (!isTemplateValid(template)) {
-            return;
-        }
-
-        World world = session.getGameWorld();
-        if (world == null) {
-            Messages.debug("[CTF] Game world is null, cannot place pressure plates");
-            return;
-        }
-
-        // Place Team 1 and Team 2 capture plates
-        placeCapturePlace(1, template.getCTFCaptureTeamRedPlate(), world, Material.RED_BANNER);
-        placeCapturePlace(2, template.getCTFCaptureTeamBluePlate(), world, Material.BLUE_BANNER);
-    }
-
-    /**
-     * Validate template exists
-     */
-    private boolean isTemplateValid(Object template) {
-        if (template == null) {
-            Messages.debug("[CTF] Template not found for CTF pressure plates");
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Place a capture plate at a template location
-     */
-    private void placeCapturePlace(int teamNumber, Location templateLocation, World world, Material bannerMaterial) {
-        if (templateLocation == null) {
-            String teamName = teamNumber == 1 ? "Red" : "Blue";
-            Messages.debug("[CTF] Team " + teamName + " capture plate location not found in template");
-            return;
-        }
-
-        Location copiedLoc = LocationUtils.copyToWorld(templateLocation.clone(), world);
-        Block block = world.getBlockAt(copiedLoc);
-        block.setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
-
-        String teamName = teamNumber == 1 ? "Red" : "Blue";
-        Messages.debug("[CTF] Placed Team " + teamName + " capture plate at " + copiedLoc);
-
-        // Create banner for the plate
-        BlockDisplay banner = createBannerDisplay(copiedLoc, bannerMaterial);
-        FlagState flag = flagStates.get(teamNumber)
-                .withCapturePlate(copiedLoc)
-                .withBannerDisplay(banner);
-        flagStates.put(teamNumber, flag);
-    }
 
     /**
      * Start task to show glowing effect on flag carriers every 5 seconds

@@ -26,18 +26,12 @@ public class TemplateWorld {
     private Location teamBlueShopSpawn;
     private final List<Location> villagersSpawnPoint;
 
-    // CTF Capture plate locations
-    private Location ctfCaptureTeamRedPlate;
-    private Location ctfCaptureTeamBluePlate;
-
     public TemplateWorld(String id, World world) {
         this.id = id;
         this.world = world;
         this.teamRedSpawns = new ArrayList<>();
         this.teamBlueSpawns = new ArrayList<>();
         this.villagersSpawnPoint = new ArrayList<>();
-        this.ctfCaptureTeamRedPlate = null;
-        this.ctfCaptureTeamBluePlate = null;
     }
 
     public String getId() {
@@ -103,18 +97,6 @@ public class TemplateWorld {
     }
     public void addVillagerSpawnPoint(Location loc) {
         villagersSpawnPoint.add(loc);
-    }
-    public Location getCTFCaptureTeamRedPlate() {
-        return ctfCaptureTeamRedPlate;
-    }
-    public void setCTFCaptureTeamRedPlate(Location loc) {
-        this.ctfCaptureTeamRedPlate = loc;
-    }
-    public Location getCTFCaptureTeamBluePlate() {
-        return ctfCaptureTeamBluePlate;
-    }
-    public void setCTFCaptureTeamBluePlate(Location loc) {
-        this.ctfCaptureTeamBluePlate = loc;
     }
 
     public boolean isConfigured() {

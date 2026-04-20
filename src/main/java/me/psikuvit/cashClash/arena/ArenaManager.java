@@ -171,18 +171,6 @@ public class ArenaManager {
                 }
             }
 
-            // Load CTF capture plate locations
-            if (cfg.contains("ctf.capture-team1")) {
-                tpl.setCTFCaptureTeamRedPlate(LocationUtils.deserializeLocation(
-                        cfg.getConfigurationSection("ctf.capture-team1"))
-                );
-            }
-            if (cfg.contains("ctf.capture-team2")) {
-                tpl.setCTFCaptureTeamBluePlate(LocationUtils.deserializeLocation(
-                        cfg.getConfigurationSection("ctf.capture-team2"))
-                );
-            }
-
             templates.put(id, tpl);
             Messages.debug("ARENA", "Loaded template: " + id + " -> " + w.getName());
         }
@@ -243,14 +231,6 @@ public class ArenaManager {
                 LocationUtils.serializeLocation(cfg, "villagers." + index, villagerLoc);
                 index++;
             }
-        }
-
-        // Save CTF capture plate locations
-        if (tpl.getCTFCaptureTeamRedPlate() != null) {
-            LocationUtils.serializeLocation(cfg, "ctf.capture-team1", tpl.getCTFCaptureTeamRedPlate());
-        }
-        if (tpl.getCTFCaptureTeamBluePlate() != null) {
-            LocationUtils.serializeLocation(cfg, "ctf.capture-team2", tpl.getCTFCaptureTeamBluePlate());
         }
 
         try {
