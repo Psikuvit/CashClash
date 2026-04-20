@@ -727,7 +727,7 @@ public class MythicItemManager {
         }
 
         if (spinningPlayers.contains(uuid)) {
-            Messages.send(attacker, "<red>You're already spinning!</red>");
+            Messages.send(attacker, "mythic.carls-battleaxe-already-spinning");
             return;
         }
 
@@ -737,7 +737,7 @@ public class MythicItemManager {
         // Apply slowness during spin
         attacker.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, cfg.getCarlsSpinDuration(), 1, false, false));
 
-        Messages.send(attacker, "<gold>Carl's Battleaxe: SPIN ATTACK!</gold>");
+        Messages.send(attacker, "mythic.carls-battleaxe-activated");
         SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.5f);
 
         // Spawn the spinning axe display
@@ -979,7 +979,7 @@ public class MythicItemManager {
             Messages.send(player, "mythic.wind-bow-magazine-empty");
             SoundUtils.play(player, Sound.ITEM_CROSSBOW_LOADING_END, 1.0f, 0.5f);
         } else if (shots <= 3) {
-            Messages.send(player, "<yellow>Wind Bow: " + shots + " shots remaining</yellow>");
+            Messages.send(player, "mythic.wind-bow-shots-remaining", "{shots}", String.valueOf(shots));
         }
 
         Messages.debug(player, "WIND_BOW: Shot fired, " + shots + " remaining");
@@ -998,7 +998,7 @@ public class MythicItemManager {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_BOOST)) {
             Messages.debug(player, "WIND_BOW: Boost on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST) + "s");
-            Messages.send(player, "<red>Wind boost on cooldown! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST) + "s)</red>");
+            Messages.send(player, "mythic.wind-bow-boost-cooldown", "{cooldown_seconds}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST)));
             return;
         }
 
@@ -1014,7 +1014,7 @@ public class MythicItemManager {
         SoundUtils.play(player, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.0f, 1.0f);
         ParticleUtils.cloud(player.getLocation(), 20, 0.5);
 
-        Messages.send(player, "<aqua>Wind boost!</aqua>");
+        Messages.send(player, "mythic.wind-bow-boost-activated");
     }
 
     /**
@@ -1103,7 +1103,7 @@ public class MythicItemManager {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING)) {
             Messages.debug(player, "ELECTRIC_EEL: Teleport on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING) + "s");
-            Messages.send(player, "<red>Teleport on cooldown! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING) + "s)</red>");
+            Messages.send(player, "mythic.electric-eel-teleport-cooldown", "{cooldown_seconds}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING)));
             return;
         }
 
@@ -1136,7 +1136,7 @@ public class MythicItemManager {
 
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING, cfg.getEelTeleportCooldown());
         Messages.debug(player, "ELECTRIC_EEL: Teleported! Distance: " + distance + ", Cooldown: " + cfg.getEelTeleportCooldown() + "s");
-        Messages.send(player, "<aqua>Zap!</aqua>");
+        Messages.send(player, "mythic.electric-eel-zap");
     }
 
     /**
@@ -1153,7 +1153,7 @@ public class MythicItemManager {
         if (shots <= 0) {
             if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD)) {
                 Messages.debug(player, "GOBLIN_SPEAR: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD) + "s");
-                Messages.send(player, "<red>Goblin Spear reloading! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD) + "s)</red>");
+                Messages.send(player, "mythic.goblin-spear-reloading", "{cooldown_seconds}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD)));
                 return false;
             }
             goblinSpearShotsRemaining.put(uuid, cfg.getGoblinShotsPerMag());
@@ -1167,7 +1167,7 @@ public class MythicItemManager {
         if (shots - 1 <= 0) {
             cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD, cfg.getGoblinReloadCooldown());
             Messages.debug(player, "GOBLIN_SPEAR: Out of shots, reloading for " + cfg.getGoblinReloadCooldown() + "s");
-            Messages.send(player, "<yellow>Goblin Spear reloading...</yellow>");
+            Messages.send(player, "mythic.goblin-spear-reload-start");
         }
 
         return true;
@@ -1198,7 +1198,7 @@ public class MythicItemManager {
         // Check cooldown
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE);
-            Messages.send(player, "<red>Charge on cooldown! (" + remaining + "s)</red>");
+            Messages.send(player, "mythic.charge-cooldown", "{remaining}", String.valueOf(remaining));
             return;
         }
 
@@ -1208,7 +1208,7 @@ public class MythicItemManager {
         }
 
         Messages.debug(player, "GOBLIN_SPEAR: Charge started!");
-        Messages.send(player, "<green>Charge!</green>");
+        Messages.send(player, "mythic.charge-activated");
         SoundUtils.play(player, Sound.ENTITY_RAVAGER_ROAR, 1.0f, 1.5f);
 
         // Initialize caught players list
@@ -1316,7 +1316,7 @@ public class MythicItemManager {
                 Messages.debug(player, "GOBLIN_SPEAR: Wall impact dealt " + damage + " damage + Poison to " + caught.getName());
             }
 
-            Messages.send(player, "<gold>Wall impact! Dealt " + (int) damage + " damage to " + caughtPlayers.size() + " enemies!</gold>");
+            Messages.send(player, "mythic.wall-impact", "{damage}", String.valueOf((int) damage), "{enemy_count}", String.valueOf(caughtPlayers.size()));
             SoundUtils.play(player, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 1.0f, 0.8f);
         } else {
             Messages.debug(player, "GOBLIN_SPEAR: Charge ended without wall impact");
@@ -1339,40 +1339,39 @@ public class MythicItemManager {
 
     // ==================== BLOODWRENCH_CROSSBOW ====================
 
-    /**
-     * Toggle BloodWrench mode between Rapid Fire and Supercharged.
-     * Cannot switch modes while rapid firing or on cooldown.
-     * 1 second cooldown between toggles.
-     */
-    public void toggleBloodwrenchMode(Player player) {
-        UUID uuid = player.getUniqueId();
+     /**
+      * Toggle BloodWrench mode between Rapid Fire and Supercharged.
+      * Cannot switch modes while rapid firing or on cooldown.
+      * 1 second cooldown between toggles.
+      */
+     public void toggleBloodwrenchMode(Player player) {
+         UUID uuid = player.getUniqueId();
 
-        // Cannot switch while in rapid fire burst
-        if (bloodwrenchRapidFiring.contains(uuid)) {
-            Messages.send(player, "<red>Cannot switch modes while firing!</red>");
-            return;
-        }
+         // Cannot switch while in rapid fire burst
+         if (bloodwrenchRapidFiring.contains(uuid)) {
+             Messages.send(player, "mythic.cannot-switch-modes");
+             return;
+         }
 
-        // Check toggle cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE)) {
-            Messages.send(player, "<red>Mode switch on cooldown! (" +
-                cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE) + "s)</red>");
-            return;
-        }
+         // Check toggle cooldown
+         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE)) {
+             Messages.send(player, "mythic.mode-switch-cooldown", "{remaining}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE)));
+             return;
+         }
 
-        // Toggle mode (default is rapid mode = true)
-        boolean currentRapid = bloodwrenchRapidMode.getOrDefault(uuid, true);
-        boolean newRapid = !currentRapid;
-        bloodwrenchRapidMode.put(uuid, newRapid);
+         // Toggle mode (default is rapid mode = true)
+         boolean currentRapid = bloodwrenchRapidMode.getOrDefault(uuid, true);
+         boolean newRapid = !currentRapid;
+         bloodwrenchRapidMode.put(uuid, newRapid);
 
-        // Set toggle cooldown
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE, cfg.getBloodwrenchModeToggleCooldown());
+         // Set toggle cooldown
+         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE, cfg.getBloodwrenchModeToggleCooldown());
 
-        String modeName = newRapid ? "<red>Rapid Fire</red>" : "<dark_purple>Supercharged</dark_purple>";
-        Messages.send(player, "<gold>BloodWrench mode: " + modeName);
-        SoundUtils.play(player, Sound.BLOCK_LEVER_CLICK, 1.0f, newRapid ? 1.5f : 0.8f);
-        Messages.debug(player, "BLOODWRENCH: Switched to " + (newRapid ? "Rapid Fire" : "Supercharged") + " mode");
-    }
+         String modeName = newRapid ? "Rapid Fire" : "Supercharged";
+         Messages.send(player, "mythic.bloodwrench-mode", "{mode_name}", modeName);
+         SoundUtils.play(player, Sound.BLOCK_LEVER_CLICK, 1.0f, newRapid ? 1.5f : 0.8f);
+         Messages.debug(player, "BLOODWRENCH: Switched to " + (newRapid ? "Rapid Fire" : "Supercharged") + " mode");
+     }
 
     /**
      * Check if BloodWrench is in Rapid Fire mode.
@@ -1403,40 +1402,40 @@ public class MythicItemManager {
      * Player fires 3 blood shots. Once started, must complete all 3 before switching modes.
      * After 3 shots, cooldown begins.
      */
-    private boolean handleBloodwrenchRapidShot(Player player) {
-        UUID uuid = player.getUniqueId();
+     private boolean handleBloodwrenchRapidShot(Player player) {
+         UUID uuid = player.getUniqueId();
 
-        // Check if on reload cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD);
-            Messages.send(player, "<red>BloodWrench reloading! (" + remaining + "s)</red>");
-            Messages.debug(player, "BLOODWRENCH: Rapid reloading - " + remaining + "s");
-            return false;
-        }
+         // Check if on reload cooldown
+         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD)) {
+             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD);
+             Messages.send(player, "mythic.bloodwrench-reloading", "{remaining}", String.valueOf(remaining));
+             Messages.debug(player, "BLOODWRENCH: Rapid reloading - " + remaining + "s");
+             return false;
+         }
 
-        int shots = bloodwrenchRapidShotsRemaining.getOrDefault(uuid, cfg.getBloodwrenchRapidShots());
+         int shots = bloodwrenchRapidShotsRemaining.getOrDefault(uuid, cfg.getBloodwrenchRapidShots());
 
-        // First shot starts the burst
-        if (shots == cfg.getBloodwrenchRapidShots()) {
-            bloodwrenchRapidFiring.add(uuid);
-            Messages.debug(player, "BLOODWRENCH: Rapid fire burst started");
-        }
+         // First shot starts the burst
+         if (shots == cfg.getBloodwrenchRapidShots()) {
+             bloodwrenchRapidFiring.add(uuid);
+             Messages.debug(player, "BLOODWRENCH: Rapid fire burst started");
+         }
 
-        // Fire the shot
-        bloodwrenchRapidShotsRemaining.put(uuid, shots - 1);
-        Messages.debug(player, "BLOODWRENCH: Rapid shot fired! Remaining: " + (shots - 1));
+         // Fire the shot
+         bloodwrenchRapidShotsRemaining.put(uuid, shots - 1);
+         Messages.debug(player, "BLOODWRENCH: Rapid shot fired! Remaining: " + (shots - 1));
 
-        // Check if burst complete
-        if (shots - 1 <= 0) {
-            bloodwrenchRapidFiring.remove(uuid);
-            bloodwrenchRapidShotsRemaining.remove(uuid);
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD, cfg.getBloodwrenchRapidReloadCooldown());
-            Messages.send(player, "<yellow>BloodWrench reloading...</yellow>");
-            Messages.debug(player, "BLOODWRENCH: Rapid burst complete, reloading for " + cfg.getBloodwrenchRapidReloadCooldown() + "s");
-        }
+         // Check if burst complete
+         if (shots - 1 <= 0) {
+             bloodwrenchRapidFiring.remove(uuid);
+             bloodwrenchRapidShotsRemaining.remove(uuid);
+             cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD, cfg.getBloodwrenchRapidReloadCooldown());
+             Messages.send(player, "mythic.bloodwrench-reload-start");
+             Messages.debug(player, "BLOODWRENCH: Rapid burst complete, reloading for " + cfg.getBloodwrenchRapidReloadCooldown() + "s");
+         }
 
-        return true;
-    }
+         return true;
+     }
 
     /**
      * Handle Supercharged mode shot.
@@ -1445,13 +1444,13 @@ public class MythicItemManager {
     private boolean handleBloodwrenchSuperchargedShot(Player player) {
         UUID uuid = player.getUniqueId();
 
-        // Check cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN);
-            Messages.send(player, "<red>Supercharged shot on cooldown! (" + remaining + "s)</red>");
-            Messages.debug(player, "BLOODWRENCH: Supercharged on cooldown - " + remaining + "s");
-            return false;
-        }
+         // Check cooldown
+         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN)) {
+             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN);
+             Messages.send(player, "mythic.bloodwrench-supercharged-cooldown", "{remaining}", String.valueOf(remaining));
+             Messages.debug(player, "BLOODWRENCH: Supercharged on cooldown - " + remaining + "s");
+             return false;
+         }
 
         Messages.debug(player, "BLOODWRENCH: Supercharged shot fired!");
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN, cfg.getBloodwrenchSuperchargeCooldown());
@@ -1609,12 +1608,12 @@ public class MythicItemManager {
 
         Messages.debug(player, "WARDEN_GLOVES: Punch attack on " + victim.getName());
 
-        // Check if boxing ability is on cooldown (ability hasn't been started yet)
-        if (!wardenBoxingActive.contains(uuid) && cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_BOXING)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING);
-            Messages.send(player, "<red>Boxing gloves on cooldown! (" + remaining + "s)</red>");
-            return;
-        }
+         // Check if boxing ability is on cooldown (ability hasn't been started yet)
+         if (!wardenBoxingActive.contains(uuid) && cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_BOXING)) {
+             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING);
+             Messages.send(player, "mythic.genericitem-cooldown", "{item_name}", "Boxing gloves", "{cooldown_seconds}", String.valueOf(remaining));
+             return;
+         }
 
         // Start boxing ability if not already active
         if (!wardenBoxingActive.contains(uuid)) {
@@ -1670,7 +1669,7 @@ public class MythicItemManager {
         ));
 
         Messages.send(player, "<dark_aqua><bold>BOXING GLOVES ACTIVATED!</bold></dark_aqua>");
-        Messages.send(player, "<gray>Punch enemies to brawl! Speed locked at I.</gray>");
+        Messages.send(player, "mythic.genericitem-punch");
         SoundUtils.play(player, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.5f);
 
         // End the ability after duration

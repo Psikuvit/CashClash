@@ -158,7 +158,7 @@ public class MannequinManager {
 
         Messages.send(creator, "lobby.npc-spawned");
         Messages.send(creator, "lobby.npc-spawned-id",
-                "id", id));
+                "id", id);
     }
 
     /**

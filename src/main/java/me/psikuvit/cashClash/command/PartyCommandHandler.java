@@ -30,7 +30,7 @@ public class PartyCommandHandler extends Command {
     @Override
     public boolean execute(@NotNull CommandSender sender, @NotNull String label, @NotNull @NonNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use party commands.</red>");
+            Messages.send(sender, "party.only-players");
             return true;
         }
 
@@ -47,12 +47,12 @@ public class PartyCommandHandler extends Command {
 
             case "invite" -> {
                 if (args.length < 2) {
-                    Messages.send(player, "<red>Usage: /party invite <player></red>");
+                    Messages.send(player, "party.invite-usage");
                     return true;
                 }
                 Player target = Bukkit.getPlayer(args[1]);
                 if (target == null) {
-                    Messages.send(player, "<red>Player not found!</red>");
+                    Messages.send(player, "party.player-not-found");
                     return true;
                 }
                 pm.invitePlayer(player, target);
@@ -72,12 +72,12 @@ public class PartyCommandHandler extends Command {
 
             case "kick" -> {
                 if (args.length < 2) {
-                    Messages.send(player, "<red>Usage: /party kick <player></red>");
+                    Messages.send(player, "party.kick-usage");
                     return true;
                 }
                 Player target = Bukkit.getPlayer(args[1]);
                 if (target == null) {
-                    Messages.send(player, "<red>Player not found!</red>");
+                    Messages.send(player, "party.player-not-found");
                     return true;
                 }
                 pm.kickPlayer(player, target);
@@ -85,12 +85,12 @@ public class PartyCommandHandler extends Command {
 
             case "transfer", "promote" -> {
                 if (args.length < 2) {
-                    Messages.send(player, "<red>Usage: /party transfer <player></red>");
+                    Messages.send(player, "party.transfer-usage");
                     return true;
                 }
                 Player target = Bukkit.getPlayer(args[1]);
                 if (target == null) {
-                    Messages.send(player, "<red>Player not found!</red>");
+                    Messages.send(player, "party.player-not-found");
                     return true;
                 }
                 pm.transferOwnership(player, target);
@@ -101,7 +101,7 @@ public class PartyCommandHandler extends Command {
                 if (party != null) {
                     pm.disbandParty(party, player);
                 } else {
-                    Messages.send(player, "<red>You are not in a party!</red>");
+                    Messages.send(player, "party.not-in-party");
                 }
             }
 
@@ -109,7 +109,7 @@ public class PartyCommandHandler extends Command {
 
             case "chat", "c" -> {
                 if (args.length < 2) {
-                    Messages.send(player, "<red>Usage: /party chat <message></red>");
+                    Messages.send(player, "party.chat-usage");
                     return true;
                 }
                 String message = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length));
@@ -123,18 +123,18 @@ public class PartyCommandHandler extends Command {
     }
 
     private void showHelp(Player player) {
-        Messages.send(player, "<gold>═══════ Party Commands ═══════</gold>");
-        Messages.send(player, "<yellow>/party create</yellow> <gray>- Create a new party</gray>");
-        Messages.send(player, "<yellow>/party invite <player></yellow> <gray>- Invite a player</gray>");
-        Messages.send(player, "<yellow>/party accept [player]</yellow> <gray>- Accept an invite</gray>");
-        Messages.send(player, "<yellow>/party deny [player]</yellow> <gray>- Deny an invite</gray>");
-        Messages.send(player, "<yellow>/party leave</yellow> <gray>- Leave your party</gray>");
-        Messages.send(player, "<yellow>/party kick <player></yellow> <gray>- Kick a player (owner)</gray>");
-        Messages.send(player, "<yellow>/party transfer <player></yellow> <gray>- Transfer ownership</gray>");
-        Messages.send(player, "<yellow>/party disband</yellow> <gray>- Disband the party (owner)</gray>");
-        Messages.send(player, "<yellow>/party info</yellow> <gray>- Show party info</gray>");
-        Messages.send(player, "<yellow>/party chat <msg></yellow> <gray>- Send party message</gray>");
-        Messages.send(player, "<gold>══════════════════════════════</gold>");
+        Messages.send(player, "party.help-title");
+        Messages.send(player, "party.help-create");
+        Messages.send(player, "party.help-invite");
+        Messages.send(player, "party.help-accept");
+        Messages.send(player, "party.help-deny");
+        Messages.send(player, "party.help-leave");
+        Messages.send(player, "party.help-kick");
+        Messages.send(player, "party.help-transfer");
+        Messages.send(player, "party.help-disband");
+        Messages.send(player, "party.help-info");
+        Messages.send(player, "party.help-chat");
+        Messages.send(player, "party.help-footer");
     }
 
     @Override

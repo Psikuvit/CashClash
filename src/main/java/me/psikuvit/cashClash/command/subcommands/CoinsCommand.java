@@ -21,18 +21,18 @@ public class CoinsCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NonNull @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this command.</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) {
-            Messages.send(sender, "<red>You're not in a game session. Join an arena first.</red>");
+            Messages.send(sender, "generic.player-not-in-game");
             return true;
         }
 
         if (session.getState() == GameState.WAITING) {
-            Messages.send(sender, "<red>The game has already started!</red>");
+            Messages.send(sender, "generic.game-started");
             return true;
         }
 
@@ -41,7 +41,7 @@ public class CoinsCommand extends AbstractArgCommand {
         try {
             amount = Long.parseLong(args[0]);
         } catch (NumberFormatException | IndexOutOfBoundsException e) {
-            Messages.send(sender, "<red>Invalid amount. Please enter a valid number.</red>");
+            Messages.send(sender, "generic.invalid-amount-number");
             return true;
         }
 

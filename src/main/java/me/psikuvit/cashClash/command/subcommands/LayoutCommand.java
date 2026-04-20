@@ -29,13 +29,13 @@ public class LayoutCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>This command can only be used by players!</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
 
         // Don't allow if in a game
         if (GameManager.getInstance().getPlayerSession(player) != null) {
-            Messages.send(player, "<red>You cannot edit layouts while in a game!</red>");
+            Messages.send(player, "command.in-game");
             return true;
         }
 
@@ -44,8 +44,8 @@ public class LayoutCommand extends AbstractArgCommand {
         if (args.length == 0) {
             // Check if already editing
             if (layoutManager.isEditing(player)) {
-                Messages.send(player, "<yellow>You are currently editing a layout.</yellow>");
-                Messages.send(player, "<gray>Use <yellow>/cc layout confirm</yellow> to save or <yellow>/cc layout cancel</yellow> to cancel.</gray>");
+                Messages.send(player, "lobby.layout-editing-instructions");
+                Messages.send(player, "lobby.layout-editing-cancel-instructions");
                 return true;
             }
 
@@ -59,15 +59,14 @@ public class LayoutCommand extends AbstractArgCommand {
         switch (action) {
             case "confirm", "save" -> {
                 if (!layoutManager.isEditing(player)) {
-                    Messages.send(player, "<red>You are not editing any kit layout!</red>");
-                    Messages.send(player, "<gray>Use <yellow>/cc layout</yellow> to start editing.</gray>");
+                    Messages.send(player, "lobby.not-editing-layout");
                     return true;
                 }
                 layoutManager.confirmLayout(player);
             }
             case "cancel", "quit", "exit" -> {
                 if (!layoutManager.isEditing(player)) {
-                    Messages.send(player, "<red>You are not editing any kit layout!</red>");
+                    Messages.send(player, "lobby.not-editing-layout");
                     return true;
                 }
                 layoutManager.cancelEditing(player);

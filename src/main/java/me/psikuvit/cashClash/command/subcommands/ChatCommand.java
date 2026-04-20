@@ -25,7 +25,7 @@ public class ChatCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use chat commands.</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
 
@@ -40,7 +40,7 @@ public class ChatCommand extends AbstractArgCommand {
         switch (arg) {
             case "global", "g", "all", "a" -> {
                 ChatManager.getInstance().setPlayerChannel(player, ChatChannel.GLOBAL);
-                Messages.send(player, "<gray>Switched to </gray><white>Global</white><gray> chat.</gray>");
+                Messages.send(player, "chat.switched-to-global");
             }
             case "party", "p" -> ChatManager.getInstance().toggleChannel(player, ChatChannel.PARTY);
             case "team", "t" -> ChatManager.getInstance().toggleChannel(player, ChatChannel.TEAM);

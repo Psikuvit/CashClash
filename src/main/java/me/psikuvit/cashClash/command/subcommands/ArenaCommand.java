@@ -25,17 +25,17 @@ public class ArenaCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!sender.hasPermission("cashclash.admin")) {
-            Messages.send(sender, "<red>You don't have permission to use arena admin commands.</red>");
+            Messages.send(sender, "chat.no-permission");
             return true;
         }
 
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this command.</red>");
+            Messages.send(sender, "chat.only-players");
             return true;
         }
 
         if (args.length < 1) {
-            Messages.send(player, "<red>Usage: /cc arena <tp|assign> ...</red>");
+            Messages.send(player, "chat.usage");
             return true;
         }
 
@@ -44,7 +44,7 @@ public class ArenaCommand extends AbstractArgCommand {
             case "tp" -> arenaTp(player, args);
             case "assign" -> arenaAssign(player, args);
             case "name" -> arenaName(player, args);
-            default -> Messages.send(player, "<red>Unknown arena action. Use tp or assign.</red>");
+            default -> Messages.send(player, "chat.unknown-action");
         }
         return true;
     }
@@ -93,20 +93,20 @@ public class ArenaCommand extends AbstractArgCommand {
 
     private void arenaTp(Player player, String[] args) {
         if (args.length < 2) {
-            Messages.send(player, "<red>Usage: /cc arena tp <arenaNumber|arenaName></red>");
+            Messages.send(player, "chat.tp-usage");
             return;
         }
 
         String id = args[1];
         Arena arena = ArenaManager.getInstance().getArena(id);
         if (arena == null) {
-            Messages.send(player, "<red>Arena not found: " + id + "</red>");
+            Messages.send(player, "chat.not-found", "{arena_id}", id);
             return;
         }
 
         TemplateWorld tplObj = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
         if (tplObj == null || tplObj.getWorld() == null) {
-            Messages.send(player, "<red>Template world not available for this arena.</red>");
+            Messages.send(player, "chat.no-template");
             return;
         }
 
@@ -115,12 +115,12 @@ public class ArenaCommand extends AbstractArgCommand {
         if (target == null) target = tplWorld.getSpawnLocation();
 
         player.teleport(target);
-        Messages.send(player, "<green>Teleported to arena: " + arena.getName() + "</green>");
+        Messages.send(player, "chat.teleported", "{arena_name}", arena.getName());
     }
 
     private void arenaAssign(Player player, String[] args) {
         if (args.length < 3) {
-            Messages.send(player, "<red>Usage: /cc arena assign <arenaName> <templateId></red>");
+            Messages.send(player, "chat.assign-usage");
             return;
         }
         String arenaId = args[1];
@@ -128,20 +128,20 @@ public class ArenaCommand extends AbstractArgCommand {
 
         Arena arena = ArenaManager.getInstance().getArena(arenaId);
         if (arena == null) {
-            Messages.send(player, "<red>Arena not found: " + arenaId + "</red>");
+            Messages.send(player, "chat.not-found", "{arena_id}", arenaId);
             return;
         }
 
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(templateId);
         if (tpl == null) {
-            Messages.send(player, "<red>Template not found: " + templateId + "</red>");
+            Messages.send(player, "chat.template-not-found", "{template_id}", templateId);
             return;
         }
 
         arena.setTemplateId(templateId);
         Integer num = ArenaManager.getInstance().getArenaNumber(arena);
         if (num != null) ArenaManager.getInstance().saveArena(num);
-        Messages.send(player, "<green>Assigned template '" + templateId + "' to " + arena.getName() + "</green>");
+        Messages.send(player, "chat.assigned", "{template_id}", templateId, "{arena_name}", arena.getName());
     }
 }
 

@@ -186,6 +186,19 @@ public final class Messages {
     }
 
     /**
+     * Send a message to a CommandSender using a message key.
+     * For console/non-player senders, use the Component-based send() method instead.
+     *
+     * @param sender The sender to send to (can be null)
+     * @param key The message key from MessagesConfig
+     */
+    public static void send(@Nullable CommandSender sender, @Nullable String key, @NotNull Object... args) {
+        if (sender != null) {
+            sender.sendMessage(parse(config.getMessage(key, args)));
+        }
+    }
+
+    /**
      * Wrap a (mostly single-tagged) mini-message into multiple component lines suitable for item lore.
      * This handles simple cases like "<gray>Long description here...</gray>" by splitting words
      * and re-applying the same outer tag per resulting line. If no outer tag is present the method
