@@ -13,8 +13,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Sound;
-import org.bukkit.World;
-import org.bukkit.block.Block;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -39,14 +38,19 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private static final long CAPTURE_TIMER_MS = 45 * 1000; // 45 seconds for bonus
     private static final double BANNER_ORBIT_RADIUS = 2; // Distance from plate center
     private static final double BANNER_ANGULAR_SPEED = 0.03; // Radians per tick - smooth rotation
+    private static final long FLAG_PICKUP_DURATION_MS = 3000; // 3 seconds to pick up flag
+    private static final double CIRCLE_RADIUS = 1.5; // Radius of flag capture circle
 
     private final Map<Integer, Integer> flagCaptures;
     private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
+    private final Map<UUID, Long> playerCircleTimestamps; // Track when each player entered the circle
+    private final Map<UUID, Integer> playerNearestFlagTeam; // Track which flag team player is near
 
     private final SuddenDeathManager suddenDeathManager;
     private BukkitTask carrierGlowTask;
     private BukkitTask captureTimerTask;
     private BukkitTask bannerRotationTask;
+    private BukkitTask flagPickupTask;
 
     public CaptureTheFlagGamemode(GameSession session) {
         super(session, GamemodeType.CAPTURE_THE_FLAG);
@@ -54,11 +58,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Initialize all data structures
         this.flagCaptures = new HashMap<>(2);
         this.flagStates = new HashMap<>(2);
-        this.inSuddenDeath = false;
+        this.playerCircleTimestamps = new HashMap<>();
+        this.playerNearestFlagTeam = new HashMap<>();
         this.suddenDeathManager = new SuddenDeathManager(session);
         this.carrierGlowTask = null;
         this.captureTimerTask = null;
         this.bannerRotationTask = null;
+        this.flagPickupTask = null;
 
         // Pre-populate flag states and capture map
         flagCaptures.put(1, 0);
@@ -73,9 +79,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.game-started");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.objective");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.bonus-info");
-
-        // ...existing code...
-        placePressurePlates();
     }
 
     @Override
@@ -86,6 +89,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
         flagStates.put(1, flagStates.get(1).withoutHolder());
         flagStates.put(2, flagStates.get(2).withoutHolder());
 
+        // Clear circle tracking data
+        playerCircleTimestamps.clear();
+        playerNearestFlagTeam.clear();
+
         // Start carrier glow effect task
         startCarrierGlowEffect();
 
@@ -94,17 +101,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         // Start banner rotation task
         startBannerRotationTask();
+
+        // Start flag pickup task (3-second circle mechanic)
+        startFlagPickupTask();
     }
 
     @Override
     public void onRoundEnd() {
         // Remove all banners from players and reset positions
         removeBannersFromPlayers();
-
-        this.inSuddenDeath = false;
-        this.carrierGlowTask = null;
-        this.captureTimerTask = null;
-        this.bannerRotationTask = null;
 
         // Reset state for next round
         suddenDeathManager.resetForNewRound();
@@ -113,6 +118,16 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Reset flag states but preserve the plate locations and banners for next round
         flagStates.put(1, flagStates.get(1).withoutHolder());
         flagStates.put(2, flagStates.get(2).withoutHolder());
+
+        // Clear circle tracking data
+        playerCircleTimestamps.clear();
+        playerNearestFlagTeam.clear();
+
+        // Reset task references (tasks will be recreated in next combat phase)
+        this.carrierGlowTask = null;
+        this.captureTimerTask = null;
+        this.bannerRotationTask = null;
+        this.flagPickupTask = null;
     }
 
     @Override
@@ -223,6 +238,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         cancelTask(carrierGlowTask);
         cancelTask(captureTimerTask);
         cancelTask(bannerRotationTask);
+        cancelTask(flagPickupTask);
+
+        // Cleanup sudden death manager
         suddenDeathManager.cleanup();
 
         // Remove banner entities
@@ -234,6 +252,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         flagStates.clear();
         flagCaptures.clear();
+        playerCircleTimestamps.clear();
+        playerNearestFlagTeam.clear();
     }
 
     /**
@@ -334,18 +354,123 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Check if player is pressing a plate and handle flag pickup/scoring
      * Check if final stand is active
      */
     private boolean isFinalStandActive() {
         return suddenDeathManager.isFinalStandActive();
     }
+
+    /**
+     * Start flag pickup task - checks if players are standing in flag capture circles
+     * Players must stand in the circle for 3 seconds to pick up the flag
+     */
+    private void startFlagPickupTask() {
+        flagPickupTask = SchedulerUtils.runTaskTimer(this::checkFlagPickupProgress, 0, 5); // Check every 5 ticks
+    }
+
+    /**
+     * Check flag pickup progress for all online players
+     */
+    private void checkFlagPickupProgress() {
+        for (UUID playerUuid : session.getPlayers()) {
+            Player player = Bukkit.getPlayer(playerUuid);
+            if (player == null || !player.isOnline()) {
+                playerCircleTimestamps.remove(playerUuid);
+                playerNearestFlagTeam.remove(playerUuid);
+                continue;
+            }
+
+            FlagState redFlag = flagStates.get(1);
+            FlagState blueFlag = flagStates.get(2);
+
+            // Determine which flag team player is near (if any)
+            Integer nearestTeam = null;
+            boolean nearRedFlag = isPlayerNearFlag(player, redFlag);
+            boolean nearBlueFlag = isPlayerNearFlag(player, blueFlag);
+
+            // Check Red flag pickup
+            if (nearRedFlag && redFlag != null && !redFlag.isHeld()) {
+                int playerTeam = session.getPlayerTeam(player).getTeamNumber();
+                // Only enemy team can pick up
+                if (playerTeam == 2 && (blueFlag == null || !blueFlag.isHeld())) {
+                    nearestTeam = 1;
+                }
+            }
+
+            // Check Blue flag pickup
+            if (nearBlueFlag && blueFlag != null && !blueFlag.isHeld()) {
+                int playerTeam = session.getPlayerTeam(player).getTeamNumber();
+                // Only enemy team can pick up
+                if (playerTeam == 1 && (redFlag == null || !redFlag.isHeld())) {
+                    nearestTeam = 2;
+                }
+            }
+
+            // Update player's standing time
+            if (nearestTeam != null) {
+                long now = System.currentTimeMillis();
+                Long prevTime = playerCircleTimestamps.get(playerUuid);
+                Integer prevTeam = playerNearestFlagTeam.get(playerUuid);
+
+                if (prevTeam == null || !prevTeam.equals(nearestTeam)) {
+                    // Player entered a different flag circle or first time - reset
+                    playerCircleTimestamps.put(playerUuid, now);
+                    playerNearestFlagTeam.put(playerUuid, nearestTeam);
+
+                    // Show "capturing" message
+                    FlagState flag = flagStates.get(nearestTeam);
+                    String teamName = nearestTeam == 1 ? "Red" : "Blue";
+                    String colorTag = nearestTeam == 1 ? "red" : "blue";
+                    Messages.send(player, MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-capturing",
+                            "team_name", teamName, "color", colorTag));
+                } else if (prevTime != null) {
+                    long elapsedMs = now - prevTime;
+                    if (elapsedMs >= FLAG_PICKUP_DURATION_MS) {
+                        // 3 seconds elapsed - pickup the flag
+                        flagPickup(player, nearestTeam);
+                        playerCircleTimestamps.remove(playerUuid);
+                        playerNearestFlagTeam.remove(playerUuid);
+                    }
+                }
+            } else {
+                // Player left the circle - reset if they were in one
+                if (playerNearestFlagTeam.containsKey(playerUuid)) {
+                    Integer previousTeam = playerNearestFlagTeam.get(playerUuid);
+                    String teamName = previousTeam == 1 ? "Red" : "Blue";
+                    Messages.send(player, MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-capture-cancelled",
+                            "team_name", teamName));
+                }
+                playerCircleTimestamps.remove(playerUuid);
+                playerNearestFlagTeam.remove(playerUuid);
+            }
+        }
+    }
+
+    /**
+     * Check if a player is within the capture circle radius of a flag
+     */
+    private boolean isPlayerNearFlag(Player player, FlagState flag) {
+        if (flag == null || flag.capturePlate() == null) return false;
+
+        Location flagLoc = flag.capturePlate();
+        if (player.getWorld() != flagLoc.getWorld()) return false;
+
+        // Check horizontal distance (ignore Y)
+        Location playerLoc = player.getLocation();
+        double dx = playerLoc.getX() - (flagLoc.getX() + 0.5);
+        double dz = playerLoc.getZ() - (flagLoc.getZ() + 0.5);
+        double distance = Math.sqrt(dx * dx + dz * dz);
+
+        return distance <= CIRCLE_RADIUS;
+    }
+
+    /**
+     * Check if player is pressing a plate and handle flag capture (scoring only)
      * This should be called from PlayerInteractEvent when a player steps on a pressure plate
-     * Pickup and capture happen instantly when conditions are met.
+     * Note: Flag pickup now happens through the 3-second circle mechanic, not pressure plates
      * <p>
      * Logic:
-     * 1. If player presses ENEMY plate without flag -> pickup flag instantly
-     * 2. If player presses OWN plate while carrying ENEMY flag -> score instantly
+     * If player presses OWN plate while carrying ENEMY flag AND OWN FLAG IS NOT HELD -> score instantly
      */
     public void checkPlateCapture(Player player) {
         UUID playerUuid = player.getUniqueId();
@@ -358,30 +483,20 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         // Check if player is on Team 1 (Red) plate
         if (redFlag != null && redFlag.capturePlate() != null && isPlayerOnPlate(player, redFlag.capturePlate())) {
-            // Carrying Blue flag and on Red plate = SCORE INSTANTLY
-            if (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid)) {
-                Messages.debug("[CTF] " + player.getName() + " scored with Blue flag!");
+            // Carrying Blue flag and on Red plate = SCORE INSTANTLY (only if Red flag not held)
+            if (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid) && !redFlag.isHeld()) {
+                Messages.debug("[CTF] " + player.getName() + " scored with Blue flag on Red plate!");
                 flagCapture(player, 1);
                 return;
-            }
-            // Red flag available and not held = PICKUP INSTANTLY (only if player is on Team 2)
-            if (playerTeam == 2 && !redFlag.isHeld() && (blueFlag == null || !blueFlag.isHeld())) {
-                Messages.debug("[CTF] " + player.getName() + " picked up Red flag instantly!");
-                flagPickup(player, 1);
             }
         }
         // Check if player is on Team 2 (Blue) plate
         else if (blueFlag != null && blueFlag.capturePlate() != null && isPlayerOnPlate(player, blueFlag.capturePlate())) {
-            // Carrying Red flag and on Blue plate = SCORE INSTANTLY
-            if (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid)) {
-                Messages.debug("[CTF] " + player.getName() + " scored with Red flag!");
+            // Carrying Red flag and on Blue plate = SCORE INSTANTLY (only if Blue flag not held)
+            if (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid) && !blueFlag.isHeld()) {
+                Messages.debug("[CTF] " + player.getName() + " scored with Red flag on Blue plate!");
                 flagCapture(player, 2);
                 return;
-            }
-            // Blue flag available and not held = PICKUP INSTANTLY (only if player is on Team 1)
-            if (playerTeam == 1 && !blueFlag.isHeld() && (redFlag == null || !redFlag.isHeld())) {
-                Messages.debug("[CTF] " + player.getName() + " picked up Blue flag instantly!");
-                flagPickup(player, 2);
             }
         }
     }
@@ -413,7 +528,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-stolen-red",
                     "player_name", player.getName()));
 
-            // Move banner to player head
+            // Apply silenced ability if not in final stand
         } else {
             flagStates.put(2, updatedFlag);
             Messages.debug("[CTF] " + player.getName() + " picked up Team Blue's flag");
@@ -491,6 +606,22 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
+     * Apply extra heart to a player in CTF (for final stand)
+     */
+    private void applyExtraHeartCTF(Player player) {
+        var maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            double currentMax = maxHealthAttr.getBaseValue();
+            maxHealthAttr.setBaseValue(currentMax + 2.0); // 1 heart = 2 health
+            player.setHealth(Math.min(player.getHealth() + 2.0, currentMax + 2.0));
+        }
+
+        // Apply red glow effect for 45 seconds
+        long heartDurationMs = 45 * 1000;
+        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, (int) (heartDurationMs / 50), 0, false, false));
+    }
+
+    /**
      * Enter sudden death
      */
     private void enterSuddenDeath() {
@@ -504,22 +635,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Create a BlockDisplay banner entity at the given location
-     * Applies initial transformation to center the block on the display origin
+     * Start final stand timer (5 minutes in sudden death)
      */
-    private BlockDisplay createBannerDisplay(Location location, Material bannerType) {
-        World world = location.getWorld();
-        if (world == null) {
-            return null;
-        }
-
-        // Spawn banner display above the pressure plate
-        Location displayLoc = location.clone().add(0, 2, 0);
-        BlockDisplay banner = world.spawn(displayLoc, BlockDisplay.class);
-        banner.setBlock(Bukkit.createBlockData(bannerType));
-        Messages.debug("[CTF] Created banner display at " + displayLoc);
-        return banner;
+    private void startFinalStandTimer() {
+        // This is now handled internally by SuddenDeathManager
+        // Nothing to do here anymore
     }
+
+
 
     /**
      * Move banner to float above player's head and add as passenger
