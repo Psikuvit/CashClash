@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 
 import org.bukkit.Location;
 import org.bukkit.entity.BlockDisplay;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.UUID;
 
@@ -15,48 +16,57 @@ public record FlagState(
         long captureTime,
         Location capturePlate,
         BlockDisplay bannerDisplay,
-        double bannerAngle
+        double bannerAngle,
+        BukkitTask carryingTask,
+        double carryingAngle
 ) {
     /**
      * Create a new flag state with default values
      */
     public static FlagState create() {
-        return new FlagState(null, 0, null, null, 0.0);
+        return new FlagState(null, 0, null, null, 0.0, null, 0.0);
     }
 
     /**
      * Create a flag state with a holder picked up
      */
     public FlagState withHolder(UUID holderUuid, long captureTime) {
-        return new FlagState(holderUuid, captureTime, this.capturePlate, this.bannerDisplay, this.bannerAngle);
+        return new FlagState(holderUuid, captureTime, this.capturePlate, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle);
     }
 
     /**
      * Create a flag state with holder removed
      */
     public FlagState withoutHolder() {
-        return new FlagState(null, 0, this.capturePlate, this.bannerDisplay, this.bannerAngle);
-    }
-
-    /**
-     * Create a flag state with capture plate location set (banner rotates around this)
-     */
-    public FlagState withCapturePlate(Location plate) {
-        return new FlagState(this.holder, this.captureTime, plate, this.bannerDisplay, this.bannerAngle);
+        return new FlagState(null, 0, this.capturePlate, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle);
     }
 
     /**
      * Create a flag state with banner display set
      */
     public FlagState withBannerDisplay(BlockDisplay banner) {
-        return new FlagState(this.holder, this.captureTime, this.capturePlate, banner, this.bannerAngle);
+        return new FlagState(this.holder, this.captureTime, this.capturePlate, banner, this.bannerAngle, this.carryingTask, this.carryingAngle);
     }
 
     /**
      * Create a flag state with updated banner angle
      */
     public FlagState withBannerAngle(double angle) {
-        return new FlagState(this.holder, this.captureTime, this.capturePlate, this.bannerDisplay, angle);
+        return new FlagState(this.holder, this.captureTime, this.capturePlate, this.bannerDisplay, angle, this.carryingTask, this.carryingAngle);
+    }
+
+    /**
+     * Create a flag state with carrying task
+     */
+    public FlagState withCarryingTask(BukkitTask task) {
+        return new FlagState(this.holder, this.captureTime, this.capturePlate, this.bannerDisplay, this.bannerAngle, task, this.carryingAngle);
+    }
+
+    /**
+     * Create a flag state with updated carrying angle
+     */
+    public FlagState withCarryingAngle(double angle) {
+        return new FlagState(this.holder, this.captureTime, this.capturePlate, this.bannerDisplay, this.bannerAngle, this.carryingTask, angle);
     }
 
     /**
