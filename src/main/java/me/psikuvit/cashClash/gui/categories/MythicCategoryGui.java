@@ -38,7 +38,7 @@ public final class MythicCategoryGui {
     public static void handleMythicPurchase(Player player, MythicItem mythic, AbstractGui parentGui) {
         GameSession sess = GameManager.getInstance().getPlayerSession(player);
         if (sess == null) {
-            Messages.send(player, "<red>You must be in a game to shop.</red>");
+            Messages.send(player, "shop.must-be-in-game");
             player.closeInventory();
             return;
         }
@@ -49,7 +49,7 @@ public final class MythicCategoryGui {
         UUID playerUuid = player.getUniqueId();
 
         if (MythicItemManager.getInstance().isUnavailable(sess, mythic)) {
-            Messages.send(player, "<red>This mythic is not available in this game!</red>");
+            Messages.send(player, "shop.mythic-unavailable");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -57,21 +57,21 @@ public final class MythicCategoryGui {
         if (MythicItemManager.getInstance().isMythicPurchased(sess, mythic)) {
             UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(sess, mythic);
             String ownerName = ownerUuid != null ? Bukkit.getOfflinePlayer(ownerUuid).getName() : "Someone";
-            Messages.send(player, "<red>This mythic has already been purchased by " + ownerName + "!</red>");
+            Messages.send(player, "shop.mythic-already-purchased", "owner_name", ownerName);
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         if (MythicItemManager.getInstance().hasPlayerPurchasedMythic(sess, playerUuid)) {
             MythicItem owned = MythicItemManager.getInstance().getPlayerMythic(sess, playerUuid);
-            Messages.send(player, "<red>You already own a mythic (" + owned.getDisplayName() + ")!</red>");
+            Messages.send(player, "shop.mythic-already-owned", "mythic_name", owned.getDisplayName());
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         long price = mythic.getPrice();
         if (!ShopService.getInstance().canAfford(player, price)) {
-            Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
+            Messages.send(player, "shop.not-enough-coins", "cost", String.format("%,d", price));
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -94,9 +94,9 @@ public final class MythicCategoryGui {
         }
 
         Messages.send(player, "");
-        Messages.send(player, "<dark_purple><bold>✦ MYTHIC ACQUIRED ✦</bold></dark_purple>");
-        Messages.send(player, "<light_purple>" + mythic.getDisplayName() + "</light_purple>");
-        Messages.send(player, "<dark_gray>-$" + String.format("%,d", price) + "</dark_gray>");
+        Messages.send(player, "shop.mythic-acquired-title");
+        Messages.send(player, "shop.mythic-acquired-name", "mythic_name", mythic.getDisplayName());
+        Messages.send(player, "shop.mythic-acquired-cost", "price", String.format("%,d", price));
         Messages.send(player, "");
         SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 

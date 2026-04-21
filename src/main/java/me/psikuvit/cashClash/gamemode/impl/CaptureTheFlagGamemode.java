@@ -592,9 +592,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 // In sudden death with final stand active, award extra hearts instead
                 if (suddenDeathManager.isInSuddenDeath() && suddenDeathManager.isFinalStandActive()) {
                     applyExtraHeartCTF(p);
-                    Messages.send(p, "<gold>+1 Extra Heart! (Capture bonus in Final Stand)</gold>");
+                    Messages.send(p, "gamemode-ctf.capture-bonus-final-stand");
                 } else {
-                    Messages.send(p, "<green>+3,750 coins! (45-second capture bonus)</green>");
+                    Messages.send(p, "gamemode-ctf.flag-captured-bonus");
                     session.getCashClashPlayer(uuid).addCoins(bonusPerPlayer);
                 }
             }

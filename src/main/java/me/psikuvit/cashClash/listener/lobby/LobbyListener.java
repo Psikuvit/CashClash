@@ -77,8 +77,8 @@ public class LobbyListener implements Listener {
     private void handleLayoutConfiguratorItem(Player player) {
         // Check if already editing a layout
         if (LayoutManager.getInstance().isEditing(player)) {
-            Messages.send(player, "<yellow>You are currently editing a layout.</yellow>");
-            Messages.send(player, "<gray>Use <yellow>/cc layout confirm</yellow> to save or <yellow>/cc layout cancel</yellow> to cancel.</gray>");
+            Messages.send(player, "lobby.layout-currently-editing");
+            Messages.send(player, "lobby.layout-currently-editing-help");
             return;
         }
 

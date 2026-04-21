@@ -104,7 +104,7 @@ public class BlockListener implements Listener {
                 // Add water bucket to inventory
                 org.bukkit.inventory.ItemStack waterBucket = new org.bukkit.inventory.ItemStack(Material.WATER_BUCKET);
                 player.getInventory().addItem(waterBucket);
-                Messages.send(player, "<aqua>Water bucket refilled!</aqua>");
+                Messages.send(player, "listener.water-bucket-refilled");
             }
             waterBucketRefillTasks.remove(playerId);
         }, 200); // 200 ticks = 10 seconds
@@ -171,7 +171,7 @@ public class BlockListener implements Listener {
 
         if (currentCount >= 4) {
             event.setCancelled(true);
-            Messages.send(event.getPlayer(), "<red>You have reached the maximum of 4 webs!</red>");
+            Messages.send(event.getPlayer(), "listener.max-webs-reached");
             return true;
         }
 
@@ -193,7 +193,7 @@ public class BlockListener implements Listener {
 
         if (currentCount >= 64) {
             event.setCancelled(true);
-            Messages.send(event.getPlayer(), "<red>You have reached the maximum of 64 leaf blocks!</red>");
+            Messages.send(event.getPlayer(), "listener.max-leaf-blocks-reached");
             return true;
         }
 
@@ -221,7 +221,7 @@ public class BlockListener implements Listener {
 
         if (stackHeight >= 3) {
             event.setCancelled(true);
-            Messages.send(event.getPlayer(), "<red>You cannot stack more than 3 leaf blocks vertically!</red>");
+            Messages.send(event.getPlayer(), "listener.leaf-stack-limit");
             return false;
         }
         return true;
@@ -241,7 +241,7 @@ public class BlockListener implements Listener {
 
         if (currentCount >= 4) {
             event.setCancelled(true);
-            Messages.send(player, "<red>Your team has reached the maximum of 4 water/lava sources!</red>");
+            Messages.send(player, "listener.max-water-lava-sources");
             return true;
         }
 

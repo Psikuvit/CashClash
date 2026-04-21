@@ -35,8 +35,8 @@ public class SelectKitCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (args.length < 1) {
-            Messages.send(sender, "<red>Usage: /cc selectkit <kit> [player]</red>");
-            Messages.send(sender, "<gray>Available kits: " + getKitList() + "</gray>");
+            Messages.send(sender, "selectkit.usage");
+            Messages.send(sender, "selectkit.available-kits", "kits", getKitList());
             return true;
         }
 
@@ -45,8 +45,8 @@ public class SelectKitCommand extends AbstractArgCommand {
         try {
             kit = Kit.valueOf(kitName);
         } catch (IllegalArgumentException e) {
-            Messages.send(sender, "<red>Invalid kit: " + args[0] + "</red>");
-            Messages.send(sender, "<gray>Available kits: " + getKitList() + "</gray>");
+            Messages.send(sender, "selectkit.invalid-kit", "kit_name", args[0]);
+            Messages.send(sender, "selectkit.available-kits", "kits", getKitList());
             return true;
         }
 
@@ -55,12 +55,12 @@ public class SelectKitCommand extends AbstractArgCommand {
         if (args.length >= 2) {
             target = Bukkit.getPlayer(args[1]);
             if (target == null) {
-                Messages.send(sender, "<red>Player not found: " + args[1] + "</red>");
+                Messages.send(sender, "stats.player-not-found", "player", args[1]);
                 return true;
             }
         } else {
             if (!(sender instanceof Player)) {
-                Messages.send(sender, "<red>Console must specify a player: /cc selectkit <kit> <player></red>");
+                Messages.send(sender, "generic.console-player-required");
                 return true;
             }
             target = (Player) sender;
@@ -69,19 +69,19 @@ public class SelectKitCommand extends AbstractArgCommand {
         // Check if target is in a game
         GameSession session = GameManager.getInstance().getPlayerSession(target);
         if (session == null) {
-            Messages.send(sender, "<red>" + target.getName() + " is not in a game session.</red>");
+            Messages.send(sender, "selectkit.target-not-in-game", "player_name", target.getName());
             return true;
         }
 
         // Check game state - can only change kit during shopping or waiting
         GameState state = session.getState();
         if (state == GameState.COMBAT) {
-            Messages.send(sender, "<yellow>Warning: Changing kit during combat phase!</yellow>");
+            Messages.send(sender, "selectkit.warning");
         }
 
         CashClashPlayer ccp = session.getCashClashPlayer(target.getUniqueId());
         if (ccp == null) {
-            Messages.send(sender, "<red>Could not find player data for " + target.getName() + ".</red>");
+            Messages.send(sender, "selectkit.data-not-found", "player_name", target.getName());
             return true;
         }
 
@@ -103,10 +103,10 @@ public class SelectKitCommand extends AbstractArgCommand {
             kit.apply(target, currentRound, rounds1to3HaveShields);
         }
 
-        Messages.send(target, "<green>Your kit has been changed to: <yellow>" + kit.getDisplayName() + "</yellow></green>");
+        Messages.send(target, "selectkit.success", "kit_name", kit.getDisplayName());
 
         if (!target.equals(sender)) {
-            Messages.send(sender, "<green>Set " + target.getName() + "'s kit to: <yellow>" + kit.getDisplayName() + "</yellow></green>");
+            Messages.send(sender, "selectkit.success-other", "player_name", target.getName(), "kit_name", kit.getDisplayName());
         }
 
         return true;

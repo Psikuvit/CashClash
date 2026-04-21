@@ -41,13 +41,13 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
     private void handleInvestmentPurchase(InvestmentType type) {
         GameSession sess = getSession();
         if (sess == null) {
-            Messages.send(viewer, "<red>You must be in a game to shop.</red>");
+            Messages.send(viewer, "shop.must-be-in-game");
             viewer.closeInventory();
             return;
         }
 
         if (sess.getCurrentRound() >= 6) {
-            Messages.send(viewer, "<red>Investments cannot be purchased in Round 6 or later!</red>");
+            Messages.send(viewer, "shop.investment-round-locked");
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -56,15 +56,15 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
         if (ccp == null) return;
 
         if (ccp.getCurrentInvestment() != null) {
-            Messages.send(viewer, "<red>You already have an active investment! (" +
-                    ccp.getCurrentInvestment().getType().name().replace("_", " ") + ")</red>");
+            Messages.send(viewer, "shop.investment-already-active",
+                    "type", ccp.getCurrentInvestment().getType().name().replace("_", " "));
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         long cost = type.getCost();
         if (!ShopService.getInstance().canAfford(viewer, cost)) {
-            Messages.send(viewer, "<red>Not enough coins! (Cost: $" + String.format("%,d", cost) + ")</red>");
+            Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", cost));
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -79,11 +79,12 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
         ccp.addPurchase(new PurchaseRecord(type, 1, cost, round));
 
         String displayName = type.name().replace("_", " ");
-        Messages.send(viewer, "<green>You invested <gold>$" + String.format("%,d", cost) +
-                "</gold> in a <yellow>" + displayName + "</yellow>!</green>");
-        Messages.send(viewer, "<gray>Bonus: <green>$" + String.format("%,d", type.getBonusReturn()) +
-                "</green> | Negative: <red>$" + String.format("%,d", type.getNegativeReturn()) + "</red></gray>");
-        Messages.send(viewer, "<gray>1 death = Bonus | 2 deaths = Break even | 3+ deaths = Loss</gray>");
+        Messages.send(viewer, "shop.investment-purchased",
+                "cost", String.format("%,d", cost), "type", displayName);
+        Messages.send(viewer, "shop.investment-details",
+                "bonus", String.format("%,d", type.getBonusReturn()),
+                "negative", String.format("%,d", type.getNegativeReturn()));
+        Messages.send(viewer, "shop.investment-rules");
 
         SoundUtils.play(viewer, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
 
@@ -94,7 +95,7 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
     protected void handleUndoPurchase() {
         GameSession sess = getSession();
         if (sess == null) {
-            Messages.send(viewer, "<red>You're not in a game.</red>");
+            Messages.send(viewer, "generic.player-not-in-game");
             viewer.closeInventory();
             return;
         }
@@ -104,12 +105,12 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
 
         PurchaseRecord rec = ccp.peekLastPurchase();
         if (rec == null || rec.round() != sess.getCurrentRound()) {
-            Messages.send(viewer, "<red>No purchase to undo.</red>");
+            Messages.send(viewer, "shop.no-purchase-undo");
             return;
         }
 
         if (rec.item().getCategory() != ShopCategory.INVESTMENTS) {
-            Messages.send(viewer, "<red>No purchase to undo in this category.</red>");
+            Messages.send(viewer, "shop.no-purchase-undo-category");
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -120,7 +121,7 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
         // Clear the investment
         ccp.setCurrentInvestment(null);
         ccp.setInvestedCoins(0);
-        Messages.send(viewer, "<green>Investment cancelled. Refunded $" + String.format("%,d", rec.price()) + "</green>");
+        Messages.send(viewer, "shop.investment-cancelled", "price", String.format("%,d", rec.price()));
         SoundUtils.play(viewer, Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.5f);
 
         refresh();

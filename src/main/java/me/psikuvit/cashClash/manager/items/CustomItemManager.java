@@ -187,7 +187,7 @@ public class CustomItemManager {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.MEDIC_POUCH)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH);
-            Messages.send(player, "<red>Medic Pouch on cooldown! (" + remaining + "s)</red>");
+            Messages.send(player, "customitem.medic-pouch-cooldown", "remaining", String.valueOf(remaining));
             return;
         }
 
@@ -198,7 +198,7 @@ public class CustomItemManager {
 
         if (currentHealth >= maxHealth) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 20 * 30, 0, false, true));
-            Messages.send(player, "<green>Healing converted to absorption!</green>");
+            Messages.send(player, "customitem.healing-converted");
         } else {
             double newHealth = Math.min(maxHealth, currentHealth + healAmount);
             double excess = (currentHealth + healAmount) - maxHealth;
@@ -207,9 +207,9 @@ public class CustomItemManager {
 
             if (excess > 0) {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 20 * 30, 0, false, true));
-                Messages.send(player, "<green>Healed to full! Excess converted to absorption.</green>");
+                Messages.send(player, "customitem.healed-full");
             } else {
-                Messages.send(player, "<green>Healed 3 hearts!</green>");
+                Messages.send(player, "customitem.healed-three-hearts");
             }
         }
 
@@ -224,7 +224,7 @@ public class CustomItemManager {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.MEDIC_POUCH)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH);
-            Messages.send(player, "<red>Medic Pouch on cooldown! (" + remaining + "s)</red>");
+            Messages.send(player, "customitem.medic-pouch-cooldown", "remaining", String.valueOf(remaining));
             return;
         }
 
@@ -235,7 +235,7 @@ public class CustomItemManager {
         Team targetTeam = session.getPlayerTeam(target);
 
         if (playerTeam == null || targetTeam == null || playerTeam.getTeamNumber() != targetTeam.getTeamNumber()) {
-            Messages.send(player, "<red>You can only heal teammates!</red>");
+            Messages.send(player, "customitem.heal-teammates-only");
             return;
         }
 
@@ -246,7 +246,7 @@ public class CustomItemManager {
 
         if (currentHealth >= maxHealth) {
             target.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 20 * 30, 1, false, true));
-            Messages.send(target, "<green>" + player.getName() + " gave you absorption!</green>");
+            Messages.send(target, "customitem.ally-gave-absorption", "player_name", player.getName());
         } else {
             double newHealth = Math.min(maxHealth, currentHealth + healAmount);
             double excess = (currentHealth + healAmount) - maxHealth;
@@ -256,12 +256,12 @@ public class CustomItemManager {
             if (excess > 0) {
                 target.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 20 * 30, 1, false, true));
             }
-            Messages.send(target, "<green>" + player.getName() + " healed you!</green>");
+            Messages.send(target, "customitem.ally-healed-you", "player_name", player.getName());
         }
 
         consumeItem(player, item);
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH, cfg.getMedicPouchCooldown());
-        Messages.send(player, "<green>Healed " + target.getName() + "!</green>");
+        Messages.send(player, "customitem.healed-ally", "player_name", target.getName());
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
         SoundUtils.play(target, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
     }
@@ -283,7 +283,7 @@ public class CustomItemManager {
         long cost = 2000L;
         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
         if (ccp == null || ccp.getCoins() < cost) {
-            Messages.send(player, "<red>Not enough coins to use Tablet of Hacking! Cost: $2,000");
+            Messages.send(player, "customitem.tablet-insufficient-coins");
             return;
         }
 
@@ -300,12 +300,12 @@ public class CustomItemManager {
         long cost = 2000L;
         CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
         if (ccp == null || ccp.getCoins() < cost) {
-            Messages.send(viewer, "<red>Not enough coins to use Tablet of Hacking! Cost: $2,000");
+            Messages.send(viewer, "customitem.tablet-insufficient-coins");
             return;
         }
         ccp.deductCoins(cost);
         viewer.openInventory(target.getInventory());
-        Messages.send(viewer, "<gray>Viewing " + target.getName() + "'s inventory.</gray>");
+        Messages.send(viewer, "customitem.tablet-viewing-inventory", "player_name", target.getName());
         SoundUtils.play(viewer, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.5f);
     }
 
@@ -318,13 +318,13 @@ public class CustomItemManager {
         if (turnOn && !invisCloakActive.contains(uuid)) {
             if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.INVIS_CLOAK)) {
                 long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK);
-                Messages.send(player, "<red>Invisibility Cloak on cooldown! (" + remaining + "s)</red>");
+                Messages.send(player, "customitem.invis-cooldown", "remaining", String.valueOf(remaining));
                 return;
             }
 
             int uses = invisCloakUsesRemaining.getOrDefault(uuid, 5);
             if (uses <= 0) {
-                Messages.send(player, "<red>No uses remaining this round!</red>");
+                Messages.send(player, "customitem.no-uses-remaining");
                 return;
             }
 
@@ -346,9 +346,9 @@ public class CustomItemManager {
 
             player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
 
-            Messages.send(player, "<green>Invisibility activated! Right-click to deactivate.</green>");
+            Messages.send(player, "customitem.invis-activated");
             int costPerSecond = cfg.getInvisCloakCostPerSecond();
-            Messages.send(player, "<yellow>Losing " + costPerSecond + " coins per second...</yellow>");
+            Messages.send(player, "customitem.invis-cost-per-second", "cost", String.valueOf(costPerSecond));
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0f, 1.0f);
 
             GameSession session = GameManager.getInstance().getPlayerSession(player);
@@ -361,7 +361,7 @@ public class CustomItemManager {
                     ccp.deductCoins(costPerSecond);
                 } else {
                     toggleInvisCloak(player, false);
-                    Messages.send(player, "<red>Out of coins! Invisibility ended.</red>");
+                    Messages.send(player, "customitem.invis-out-of-coins");
                 }
             }, 20L, 20L);
 
@@ -392,7 +392,7 @@ public class CustomItemManager {
 
             cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK, cfg.getInvisCloakCooldown());
 
-            Messages.send(player, "<yellow>Invisibility deactivated.</yellow>");
+            Messages.send(player, "customitem.invis-deactivated");
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.0f, 0.8f);
         }
     }
@@ -500,9 +500,9 @@ public class CustomItemManager {
                 if (remaining > 0) {
                     ccp.addCoins(remaining);
                     cashBlasterEarningsThisRound.put(attackerId, MAX_EARNINGS_PER_ROUND);
-                    Messages.send(attacker, "<green>+$" + remaining + " from Cash Blaster hit! (Reached max: $" + MAX_EARNINGS_PER_ROUND + ")</green>");
+                    Messages.send(attacker, "customitem.cash-blaster-hit-capped", "amount", String.valueOf(remaining), "max", String.valueOf(MAX_EARNINGS_PER_ROUND));
                 } else {
-                    Messages.send(attacker, "<red>Cash Blaster limit of $" + MAX_EARNINGS_PER_ROUND + " reached this round!</red>");
+                    Messages.send(attacker, "customitem.cash-blaster-limit", "max", String.valueOf(MAX_EARNINGS_PER_ROUND));
                 }
                 SoundUtils.play(attacker, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
                 return;
@@ -510,7 +510,7 @@ public class CustomItemManager {
 
             ccp.addCoins(coinsPerHit);
             cashBlasterEarningsThisRound.put(attackerId, currentEarnings + coinsPerHit);
-            Messages.send(attacker, "<green>+$" + coinsPerHit + " from Cash Blaster hit!</green>");
+            Messages.send(attacker, "customitem.cash-blaster-hit", "amount", String.valueOf(coinsPerHit));
             SoundUtils.play(attacker, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
         }
     }
@@ -525,14 +525,14 @@ public class CustomItemManager {
         if (team == null) return;
 
         if (session.getState() == GameState.SHOPPING) {
-            Messages.send(player, "<red>You can't place this item during shopping!</red>");
+            Messages.send(player, "customitem.cannot-place-during-shopping");
             return;
         }
 
         Block placeBlock = clickedBlock.getRelative(BlockFace.UP);
 
         if (!placeBlock.getType().isAir()) {
-            Messages.send(player, "<red>Cannot place bounce pad here!</red>");
+            Messages.send(player, "customitem.cannot-place-bounce-pad");
             return;
         }
 
@@ -542,7 +542,7 @@ public class CustomItemManager {
         bouncePadTeams.put(blockLoc, team.getTeamNumber());
 
         consumeItem(player, item);
-        Messages.send(player, "<green>Bounce pad placed!</green>");
+        Messages.send(player, "customitem.bounce-pad-placed");
         SoundUtils.play(player, Sound.BLOCK_SLIME_BLOCK_PLACE, 1.0f, 1.0f);
 
         SchedulerUtils.runTaskLater(() -> {
@@ -565,7 +565,7 @@ public class CustomItemManager {
         if (playerTeam == null) return;
 
         if (playerTeam.getTeamNumber() != padTeam) {
-            Messages.send(player, "<red>This bounce pad belongs to the enemy team!</red>");
+            Messages.send(player, "customitem.bounce-pad-enemy-team");
             return;
         }
 
@@ -590,12 +590,12 @@ public class CustomItemManager {
         Block placeBlock = placeLoc.getBlock();
 
         if (GameManager.getInstance().getPlayerSession(player).getState() == GameState.SHOPPING) {
-            Messages.send(player, "<red>You can't place this item during shopping!</red>");
+            Messages.send(player, "customitem.cannot-place-during-shopping");
             return;
         }
 
         if (placeBlock.getType() != Material.AIR) {
-            Messages.send(player, "<red>Cannot place boombox here!</red>");
+            Messages.send(player, "customitem.cannot-place-boombox");
             return;
         }
 
@@ -603,7 +603,7 @@ public class CustomItemManager {
         activeBoomboxes.add(placeBlock.getLocation());
 
         consumeItem(player, item);
-        Messages.send(player, "<green>Boombox placed! Pulsing knockback for 12 seconds.</green>");
+        Messages.send(player, "mythic.boombox-placed");
         SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
 
         final Location boomLoc = placeBlock.getLocation().clone().add(0.5, 0.5, 0.5);
@@ -659,7 +659,7 @@ public class CustomItemManager {
 
         GameSession session = GameManager.getInstance().getPlayerSession(reviver);
         if (session == null) {
-            Messages.send(reviver, "<red>You must be in a game!</red>");
+            Messages.send(reviver, "gamestate.must-be-in-game");
             return;
         }
 
@@ -667,33 +667,33 @@ public class CustomItemManager {
         Team reviverTeam = session.getPlayerTeam(reviver);
         Team targetTeam = session.getPlayerTeam(target);
         if (reviverTeam == null || targetTeam == null || reviverTeam.getTeamNumber() != targetTeam.getTeamNumber()) {
-            Messages.send(reviver, "<red>You can only revive teammates!</red>");
+            Messages.send(reviver, "customitem.revive-teammates-only");
             return;
         }
 
         // Check if target actually needs reviving (has 0 lives)
         CashClashPlayer targetCcp = session.getCashClashPlayer(targetUuid);
         if (targetCcp == null || targetCcp.getLives() > 0) {
-            Messages.send(reviver, "<red>" + target.getName() + " still has lives remaining!</red>");
+            Messages.send(reviver, "customitem.revive-target-has-lives", "player_name", target.getName());
             return;
         }
 
         // Check max 2 uses per round
         int usesThisRound = respawnAnchorsUsedThisRound.getOrDefault(reviverUuid, 0);
         if (usesThisRound >= 2) {
-            Messages.send(reviver, "<red>You've used the maximum respawn anchors this round!</red>");
+            Messages.send(reviver, "customitem.revive-max-anchors");
             return;
         }
 
         // Check if target was already revived this round
         if (playersRevivedThisRound.contains(targetUuid)) {
-            Messages.send(reviver, "<red>" + target.getName() + " was already revived this round!</red>");
+            Messages.send(reviver, "customitem.revive-already-revived", "player_name", target.getName());
             return;
         }
 
         // Check if already reviving someone
         if (respawnAnchorTargets.containsKey(reviverUuid)) {
-            Messages.send(reviver, "<red>You're already reviving someone!</red>");
+            Messages.send(reviver, "customitem.revive-already-reviving");
             return;
         }
 
@@ -702,8 +702,8 @@ public class CustomItemManager {
         consumeItem(reviver, item);
         respawnAnchorsUsedThisRound.merge(reviverUuid, 1, Integer::sum);
 
-        Messages.send(reviver, "<yellow>Reviving " + target.getName() + "... Stay close for 10 seconds!</yellow>");
-        Messages.send(target, "<yellow>" + reviver.getName() + " is reviving you! Stay close for 10 seconds!</yellow>");
+        Messages.send(reviver, "customitem.revive-start-reviver", "player_name", target.getName());
+        Messages.send(target, "customitem.revive-start-target", "player_name", reviver.getName());
         SoundUtils.play(reviver, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.0f, 1.0f);
 
         final Location startLoc = reviver.getLocation();
@@ -736,7 +736,7 @@ public class CustomItemManager {
 
             // Final distance check
             if (reviver.getLocation().distance(target.getLocation()) > 5) {
-                Messages.send(reviver, "<red>Revive failed - target too far!</red>");
+                Messages.send(reviver, "customitem.revive-failed-distance");
                 return;
             }
 
@@ -753,7 +753,7 @@ public class CustomItemManager {
 
         Player reviver = Bukkit.getPlayer(reviverUuid);
         if (reviver != null) {
-            Messages.send(reviver, "<red>" + message + "</red>");
+            Messages.send(reviver, "customitem.revive-failed-generic", "reason", message);
             SoundUtils.play(reviver, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.0f, 0.5f);
         }
     }
@@ -792,8 +792,8 @@ public class CustomItemManager {
         target.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 3 * 20, 4, false, true)); // Resistance V = invincible
         target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 3 * 20, 0, false, true));
 
-        Messages.send(reviver, "<green>Successfully revived " + target.getName() + "!</green>");
-        Messages.send(target, "<green>You have been revived by " + reviver.getName() + "! +2 bonus hearts!</green>");
+        Messages.send(reviver, "customitem.revive-success-reviver", "player_name", target.getName());
+        Messages.send(target, "customitem.revive-success-target", "player_name", reviver.getName());
 
         SoundUtils.play(reviver, Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 1.0f, 1.0f);
         SoundUtils.play(target, Sound.ITEM_TOTEM_USE, 1.0f, 1.0f);

@@ -458,13 +458,13 @@ public class DamageListener implements Listener {
         // Remove invisibility from attacker when they deal damage
         if (customItemManager.isInvisActive(attacker.getUniqueId())) {
             customItemManager.toggleInvisCloak(attacker, false);
-            Messages.send(attacker, "<red>Invisibility lost - you dealt damage!</red>");
+            Messages.send(attacker, "listener.invisibility-lost-attacker");
         }
 
         // Remove invisibility from victim when they take damage
         if (customItemManager.isInvisActive(victim.getUniqueId())) {
             customItemManager.toggleInvisCloak(victim, false);
-            Messages.send(victim, "<red>Invisibility lost - you took damage!</red>");
+            Messages.send(victim, "listener.invisibility-lost-victim");
         }
     }
 

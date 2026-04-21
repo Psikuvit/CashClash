@@ -317,7 +317,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     private GameSession ensureInGame(Player player) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) {
-            Messages.send(player, "<red>You must be in a game to shop.</red>");
+            Messages.send(player, "shop.must-be-in-game");
             player.closeInventory();
         }
         return session;
@@ -335,7 +335,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         if (ShopService.getInstance().canAfford(player, totalPrice)) {
             return true;
         }
-        Messages.send(player, "<red>Not enough coins! (Cost: $" + String.format("%,d", totalPrice) + ")</red>");
+        Messages.send(player, "shop.not-enough-coins", "cost", String.format("%,d", totalPrice));
         SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         return false;
     }
@@ -412,9 +412,9 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      */
     private void sendSetPurchaseSuccessMessage(Player player, CustomArmorItem.ArmorSet armorSet, long totalPrice) {
         Messages.send(player, "");
-        Messages.send(player, "<green><bold>✓ SET PURCHASED</bold></green>");
-        Messages.send(player, "<yellow>" + armorSet.getDisplayName() + "</yellow>");
-        Messages.send(player, "<dark_gray>-$" + String.format("%,d", totalPrice) + "</dark_gray>");
+        Messages.send(player, "shop.set-purchased-title");
+        Messages.send(player, "shop.set-purchased-name", "item_name", armorSet.getDisplayName());
+        Messages.send(player, "shop.set-purchased-cost", "price", String.format("%,d", totalPrice));
         Messages.send(player, "");
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
     }

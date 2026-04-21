@@ -85,7 +85,7 @@ public class ArenaCommand extends AbstractArgCommand {
         String newName = args[2];
         Arena arena = ArenaManager.getInstance().getArena(id);
         if (arena == null) {
-            Messages.send(player, "<red>Arena not found: " + id + "</red>");
+            Messages.send(player, "chat.not-found", "arena_id", id);
             return;
         }
         arena.setName(newName);

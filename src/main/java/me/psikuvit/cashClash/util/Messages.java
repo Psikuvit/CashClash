@@ -225,6 +225,18 @@ public final class Messages {
     }
 
     /**
+     * Broadcast a message to a collection of player UUIDs.
+     */
+    public static void broadcast(Collection<UUID> players, String key, Object... args) {
+        players.forEach(uuid -> {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && player.isOnline()) {
+                send(player, key, args);
+            }
+        });
+    }
+
+    /**
      * Broadcast a message to all players in a team.
      */
     public static void broadcastToTeam(Team team, String key) {

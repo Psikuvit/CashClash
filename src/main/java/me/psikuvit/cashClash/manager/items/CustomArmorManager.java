@@ -201,14 +201,14 @@ public class CustomArmorManager {
         // Play effects sequentially
         // 1. Resistance I (4s)
         p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 4 * 20, 0, false, true, true));
-        Messages.send(p, "<gold>Magic Helmet: Absorption I activated! (4s)</gold>");
+        Messages.send(p, "armor.magic-helmet-absorption");
         SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.4f);
         
         // 2. Absorption I after 4 seconds
         SchedulerUtils.runTaskLater(() -> {
             if (p.isOnline() && hasMagicHelmet(p)) {
                 p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 4 * 20, 0, false, true, true));
-                Messages.send(p, "<aqua>Magic Helmet: Resistance I activated! (4s)</aqua>");
+                Messages.send(p, "armor.magic-helmet-resistance");
                 SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
             }
         }, 4 * 20L);
@@ -217,7 +217,7 @@ public class CustomArmorManager {
         SchedulerUtils.runTaskLater(() -> {
             if (p.isOnline() && hasMagicHelmet(p)) {
                 p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 4 * 20, 0, false, true, true));
-                Messages.send(p, "<green>Magic Helmet: Speed I activated! (4s)</green>");
+                Messages.send(p, "armor.magic-helmet-speed");
                 SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.6f);
                 
                 // Start 25 second cooldown after speed wears off (4 seconds)
@@ -225,7 +225,7 @@ public class CustomArmorManager {
                     if (p.isOnline()) {
                         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.MAGIC_HELMET, 25);
                         magicHelmetActivated.remove(id); // Reset activation flag after cooldown starts
-                        Messages.send(p, "<gray>Magic Helmet: 25s cooldown started</gray>");
+                        Messages.send(p, "armor.magic-helmet-cooldown");
                     }
                 }, 4 * 20L);
             }
@@ -291,7 +291,7 @@ public class CustomArmorManager {
         int markDuration = cfg.getDragonMarkDuration();
         cooldownManager.setCooldownSeconds(attackerId, CooldownManager.Keys.DRAGON_MARK_EXPIRE, markDuration);
 
-        Messages.send(attacker, "<light_purple>🐉 Target marked! Right-click to dash within 5 blocks!</light_purple>");
+        Messages.send(attacker, "armor.dragon-target-marked");
         SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.5f);
 
         // Clear mark after duration
@@ -409,7 +409,7 @@ public class CustomArmorManager {
             0
         ));
 
-        Messages.send(killer, "<light_purple>🐉 Dragon power surges! Strength I (4s)</light_purple>");
+        Messages.send(killer, "armor.dragon-kill-buff");
         SoundUtils.play(killer, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.8f);
     }
 
@@ -436,7 +436,7 @@ public class CustomArmorManager {
 
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.BUNNY_SHOES)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES);
-            Messages.send(p, "<red>Bunny Shoes on cooldown: " + remaining + "s</red>");
+            Messages.send(p, "armor.bunny-shoes-cooldown", "remaining", String.valueOf(remaining));
             return;
         }
 
@@ -445,7 +445,7 @@ public class CustomArmorManager {
         p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, duration * 20, 0));
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES, cfg.getBunnyShoesCooldown());
 
-        Messages.send(p, "<green>Bunny Shoes activated! Speed II & Jump Boost for " + duration + " seconds.</green>");
+        Messages.send(p, "armor.bunny-shoes-activated", "duration", String.valueOf(duration));
         SoundUtils.play(p, Sound.ENTITY_RABBIT_JUMP, 1.0f, 1.5f);
     }
 
@@ -466,7 +466,7 @@ public class CustomArmorManager {
         guardianUsesThisRound.put(id, used + 1);
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.GUARDIAN_VEST, 20);
 
-        Messages.send(p, "<gold>Guardian's Vest activated! Resistance II for 15 seconds. (" + (used + 1) + "/3 uses)</gold>");
+        Messages.send(p, "armor.guardian-vest-activated", "uses", String.valueOf(used + 1));
         SoundUtils.play(p, Sound.ITEM_TOTEM_USE, 0.5f, 1.5f);
     }
 
@@ -484,7 +484,7 @@ public class CustomArmorManager {
             killer.setHealth(newHealth);
         }
 
-        Messages.send(killer, "<dark_red>Deathmauler healed you +4 hearts!</dark_red>");
+        Messages.send(killer, "armor.deathmauler-heal");
 
         // Show small healing particle effect on normal kills
         ParticleUtils.deathmaulerHeal(killer.getLocation());
@@ -504,7 +504,7 @@ public class CustomArmorManager {
                 return;
             }
             p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
-            Messages.send(p, "<dark_red>Deathmauler granted 2 absorption hearts!</dark_red>");
+            Messages.send(p, "armor.deathmauler-absorption");
         }, delaySeconds * 20L);
     }
 
@@ -548,7 +548,7 @@ public class CustomArmorManager {
         }
 
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST, 35);
-        Messages.send(attacker, "<dark_red>Soul Burst unleashed!</dark_red>");
+        Messages.send(attacker, "armor.soul-burst");
         SoundUtils.play(attacker, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.8f);
     }
 
@@ -619,7 +619,7 @@ public class CustomArmorManager {
         p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 6 * 20, 0, false, false, true));
         flamebringerLavaUses.put(id, used + 1);
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, 2);
-        Messages.send(p, "<gold>Flamebringer: Speed I from lava (" + (3 - (used + 1)) + " left)!</gold>");
+        Messages.send(p, "armor.flamebringer-speed", "remaining", String.valueOf(3 - (used + 1)));
     }
 
     /**
@@ -645,7 +645,7 @@ public class CustomArmorManager {
         if (kills >= cfg.getFlamebringerKillsForPull()) {
             flamebringerKills.put(id, 0);
 
-            Messages.send(killer, "<gold>🔥 Flamebringer Pull Activated!</gold>");
+            Messages.send(killer, "armor.flamebringer-pull-activated");
             SoundUtils.play(killer, Sound.ENTITY_BLAZE_SHOOT, 1.0f, 0.8f);
 
             double radius = cfg.getFlamebringerPullRadius();
@@ -683,7 +683,7 @@ public class CustomArmorManager {
                     pullTask.cancel();
                 }
                 if (killer.isOnline()) {
-                    Messages.send(killer, "<gray>Flamebringer pull ended.</gray>");
+                    Messages.send(killer, "armor.flamebringer-pull-ended");
                 }
             }, durationTicks);
         }
@@ -712,7 +712,7 @@ public class CustomArmorManager {
             CashClashPlayer ccp = session.getCashClashPlayer(id);
             if (ccp != null) {
                 ccp.addCoins(3000);
-                Messages.send(p, "<green>Tax Evasion Pants: +3,000 coins for surviving 1 minute!</green>");
+                Messages.send(p, "armor.tax-evasion-reward");
                 SoundUtils.play(p, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
             }
             cooldownManager.setTimestamp(id, CooldownManager.Keys.TAX_EVASION_MINUTE);

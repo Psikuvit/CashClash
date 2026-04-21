@@ -357,7 +357,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             // Update inventory on client
             president.updateInventory();
 
-            Messages.send(president, "<gold>Right-click an item to select your buff! Right-click again to deselect.</gold>");
+            Messages.send(president, "gamemode-ptp.buff-selection-prompt");
         });
     }
     
@@ -427,7 +427,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 Player presPlayer = getPresidentPlayerByTeam(team);
                 if (presPlayer != null) {
                     Messages.debug("[PTP] Team " + team + " - Applied random buff: " + randomBuff.getName());
-                    Messages.send(presPlayer, "<gold>No buff selected! Random buff applied: " + randomBuff.getName() + "</gold>");
+                    Messages.send(presPlayer, "gamemode-ptp.no-buff-selected", "buff_name", randomBuff.getName());
                 }
             } else if (pres != null) {
                 Messages.debug("[PTP] Team " + team + " - President selected buff: " + pres.selectedBuff().getName());
@@ -476,7 +476,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             for (UUID uuid : teamObj.getPlayers()) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null) {
-                    Messages.send(p, "<green>+3,750 coins! (Kill bonus)</green>");
+                    Messages.send(p, "gamemode-ptp.kill-bonus");
                     session.getCashClashPlayer(uuid).addCoins(bonusPerPlayer);
                 }
             }
@@ -533,7 +533,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             }
         }
 
-        Messages.send(presPlayer, "<gold>Buff Activated: " + buff.getName() + "!</gold>");
+        Messages.send(presPlayer, "gamemode-ptp.buff-activated", "buff_name", buff.getName());
     }
 
     public boolean isNotPresident(UUID uuid) {
@@ -670,14 +670,14 @@ public class ProtectThePresidentGamemode extends Gamemode {
             presidents.put(presTeam, updatedPres);
             selectedBuffCount.put(playerUuid, buffCountForPres - 1);
             Messages.debug("[PTP] " + player.getName() + " deselected buff: " + buff.getName());
-            Messages.send(player, "<red>Buff deselected!</red>");
+            Messages.send(player, "gamemode-ptp.buff-deselected");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
             return true;
         }
         
         // Check if we can select another buff
         if (buffCountForPres >= maxBuffs) {
-            Messages.send(player, "<red>You have already selected " + maxBuffs + " buff(s)!</red>");
+            Messages.send(player, "gamemode-ptp.buff-selection-limit", "max_buffs", String.valueOf(maxBuffs));
             return false;
         }
 
@@ -686,7 +686,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         presidents.put(presTeam, updatedPres);
         selectedBuffCount.put(playerUuid, buffCountForPres + 1);
         Messages.debug("[PTP] " + player.getName() + " selected buff: " + buff.getName());
-        Messages.send(player, "<green>Buff selected: " + buff.getName() + "!</green>");
+        Messages.send(player, "gamemode-ptp.buff-selected-player", "buff_name", buff.getName());
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
         return true;
     }

@@ -23,15 +23,15 @@ public class SpawnNPCCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can spawn NPCs.</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
 
         if (args.length == 0) {
-            Messages.send(player, "<yellow>Usage: /cc spawnnpc <arena|remove></yellow>");
-            Messages.send(player, "<gray>  arena - Spawn an arena selector NPC at your location</gray>");
-            Messages.send(player, "<gray>  remove - Remove nearby arena NPCs (within 5 blocks)</gray>");
-            Messages.send(player, "<gray>Total saved NPCs: " + MannequinManager.getInstance().getCount() + "</gray>");
+            Messages.send(player, "spawnnpc.usage");
+            Messages.send(player, "spawnnpc.help-arena");
+            Messages.send(player, "spawnnpc.help-remove");
+            Messages.send(player, "spawnnpc.total-saved", "count", String.valueOf(MannequinManager.getInstance().getCount()));
             return true;
         }
 
@@ -44,12 +44,12 @@ public class SpawnNPCCommand extends AbstractArgCommand {
             case "remove" -> {
                 int removed = MannequinManager.getInstance().removeNearby(player.getLocation(), 5);
                 if (removed > 0) {
-                    Messages.send(player, "<green>Removed " + removed + " arena NPC(s) within 5 blocks.</green>");
+                    Messages.send(player, "spawnnpc.removed", "count", String.valueOf(removed));
                 } else {
-                    Messages.send(player, "<yellow>No arena NPCs found within 5 blocks.</yellow>");
+                    Messages.send(player, "spawnnpc.not-found");
                 }
             }
-            default -> Messages.send(player, "<red>Unknown NPC type. Use: arena, remove</red>");
+            default -> Messages.send(player, "spawnnpc.invalid-type");
         }
 
         return true;

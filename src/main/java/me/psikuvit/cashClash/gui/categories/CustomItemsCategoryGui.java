@@ -50,7 +50,7 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
     private void handleCustomItemPurchase(CustomItem type) {
         GameSession sess = getSession();
         if (sess == null) {
-            Messages.send(viewer, "<red>You must be in a game to shop.</red>");
+            Messages.send(viewer, "shop.must-be-in-game");
             viewer.closeInventory();
             return;
         }
@@ -60,7 +60,7 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
 
         long price = type.getPrice();
         if (!ShopService.getInstance().canAfford(viewer, price)) {
-            Messages.send(viewer, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
+            Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", price));
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -71,7 +71,7 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
         ShopService.getInstance().deductCoins(viewer, price);
         viewer.getInventory().addItem(customItem);
 
-        Messages.send(viewer, "<green>Purchased " + type.getDisplayName() + " for $" + String.format("%,d", price) + "</green>");
+        Messages.send(viewer, "shop.purchased", "item_name", type.getDisplayName(), "price", String.format("%,d", price));
         SoundUtils.play(viewer, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
 
         refresh();

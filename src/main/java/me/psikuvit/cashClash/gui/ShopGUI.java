@@ -181,7 +181,7 @@ public class ShopGUI extends AbstractGui {
         // Check if player is in buff selection phase (PTP gamemode)
         if (session != null && session.getGamemode() instanceof me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode ptp) {
             if (ptp.isBuffSelectionActive()) {
-                Messages.send(player, "<red>Shop is locked during buff selection phase!</red>");
+                Messages.send(player, "gamestate.shop-locked");
                 return;
             }
         }

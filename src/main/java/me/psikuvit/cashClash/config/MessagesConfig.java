@@ -84,7 +84,12 @@ public class MessagesConfig {
         // Replace placeholders
         if (placeholders.length > 0 && placeholders.length % 2 == 0) {
             for (int i = 0; i < placeholders.length; i += 2) {
-                String placeholder = "{" + placeholders[i] + "}";
+                String placeholderName = placeholders[i].toString();
+                if (placeholderName.startsWith("{") && placeholderName.endsWith("}") && placeholderName.length() > 2) {
+                    placeholderName = placeholderName.substring(1, placeholderName.length() - 1);
+                }
+
+                String placeholder = "{" + placeholderName + "}";
                 String replacement = placeholders[i + 1].toString();
                 message = message.replace(placeholder, replacement);
             }

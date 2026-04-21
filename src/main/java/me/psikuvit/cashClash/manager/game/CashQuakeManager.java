@@ -185,19 +185,19 @@ public class CashQuakeManager {
 
     public void enterLottery(Player player) {
         if (!lotteryActive) {
-            Messages.send(player, "<red>There is no active lottery!</red>");
+            Messages.send(player, "cashquake.no-active-lottery");
             return;
         }
 
         UUID uuid = player.getUniqueId();
         if (lotteryParticipants.contains(uuid)) {
-            Messages.send(player, "<red>You have already entered this lottery!</red>");
+            Messages.send(player, "cashquake.already-entered-lottery");
             return;
         }
 
         CashClashPlayer ccp = session.getCashClashPlayer(uuid);
         if (ccp == null || !ccp.canAfford(5000)) {
-            Messages.send(player, "<red>You need 5,000 coins to enter the lottery!</red>");
+            Messages.send(player, "cashquake.lottery-entry-cost");
             return;
         }
 
@@ -206,11 +206,11 @@ public class CashQuakeManager {
 
         if (random.nextBoolean()) {
             ccp.addCoins(10000);
-            Messages.send(player, "<green><bold>🎉 YOU WON!</bold></green> <yellow>+10,000 coins!</yellow>");
+            Messages.send(player, "cashquake.lottery-win");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
             Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("cashquake.lottery-winner", "player_name", player.getName()));
         } else {
-            Messages.send(player, "<red><bold>💔 YOU LOST!</bold></red> <gray>Better luck next time...</gray>");
+            Messages.send(player, "cashquake.lottery-lose");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         }
     }
@@ -249,7 +249,7 @@ public class CashQuakeManager {
             attr.setBaseValue(newMax);
             killer.setHealth(Math.min(killer.getHealth() + 4.0, newMax));
         }
-        Messages.send(killer, "<red>💀 Life Steal!</red> <yellow>+2 hearts!</yellow>");
+        Messages.send(killer, "cashquake.life-steal-kill");
     }
 
     public boolean isLifeStealActive() {
@@ -273,7 +273,7 @@ public class CashQuakeManager {
                 double newMax = Math.min(attr.getValue() + extraHP, 40.0);
                 attr.setBaseValue(newMax);
                 p.setHealth(Math.min(p.getHealth() + extraHP, newMax));
-                Messages.send(p, "<green>+" + extraHearts + " hearts!</green>");
+                Messages.send(p, "cashquake.checkup-hearts", "hearts", String.valueOf(extraHearts));
             }
         }
 
@@ -308,15 +308,15 @@ public class CashQuakeManager {
             ccp.addCoins(bonus);
 
             if (megaJackpot) {
-                Messages.send(p, "<gold><bold>🎉 MEGA JACKPOT!</bold></gold> <yellow>+50,000 coins!</yellow>");
+                Messages.send(p, "cashquake.mega-jackpot-personal");
             } else {
-                Messages.send(p, "<gold>+$" + String.format("%,d", bonus) + " coins!</gold>");
+                Messages.send(p, "cashquake.bonus-coins", "amount", String.format("%,d", bonus));
             }
             SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
         }
 
         if (megaJackpot) {
-            Messages.broadcast(session.getPlayers(), "<gold><bold>🎉 MEGA JACKPOT! Everyone got 50,000 coins!</bold></gold>");
+            Messages.broadcast(session.getPlayers(), "cashquake.mega-jackpot");
         }
     }
 
@@ -335,7 +335,7 @@ public class CashQuakeManager {
             long taxAmount = (ccp.getCoins() * taxPercent) / 100;
             ccp.deductCoins(taxAmount);
 
-            Messages.send(p, "<red>-$" + String.format("%,d", taxAmount) + " coins taxed!</red>");
+            Messages.send(p, "cashquake.tax-deducted", "amount", String.format("%,d", taxAmount));
             SoundUtils.play(p, Sound.ENTITY_VILLAGER_HURT, 1.0f, 0.8f);
         }
     }
@@ -368,7 +368,7 @@ public class CashQuakeManager {
             p.getInventory().addItem(item);
 
             String name = item.getType().name().toLowerCase().replace("_", " ");
-            Messages.send(p, "<dark_purple>You received: <yellow>" + name + "</yellow></dark_purple>");
+            Messages.send(p, "cashquake.mystery-loot-received", "item_name", name);
             SoundUtils.play(p, Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.0f);
         }
     }
@@ -406,7 +406,7 @@ public class CashQuakeManager {
                 brokenGearStorage.put(uuid, new ItemStack[]{removedItem, new ItemStack(Material.STONE, slot + 100)});
 
                 String name = removedItem.getType().name().toLowerCase().replace("_", " ");
-                Messages.send(p, "<red>Your " + name + " broke temporarily!</red>");
+                Messages.send(p, "cashquake.item-broke-temporary", "item_name", name);
                 SoundUtils.play(p, Sound.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
 
                 BukkitTask task = SchedulerUtils.runTaskLater(() -> restoreBrokenGear(uuid, slot), 30 * 20L);
@@ -447,7 +447,7 @@ public class CashQuakeManager {
         }
 
         String name = item.getType().name().toLowerCase().replace("_", " ");
-        Messages.send(p, "<green>Your " + name + " has been restored!</green>");
+        Messages.send(p, "cashquake.item-restored", "item_name", name);
         SoundUtils.play(p, Sound.BLOCK_ANVIL_USE, 1.0f, 1.0f);
     }
 
@@ -488,10 +488,10 @@ public class CashQuakeManager {
                     String name = item.getType().name().toLowerCase().replace("_", " ");
                     if (item.getAmount() > 10) {
                         item.setAmount(item.getAmount() - 10);
-                        Messages.send(p, "<red>You lost 10x " + name + "!</red>");
+                        Messages.send(p, "cashquake.lost-items-ten", "item_name", name);
                     } else {
                         inv.setItem(slot, null);
-                        Messages.send(p, "<red>You lost your " + name + "!</red>");
+                        Messages.send(p, "cashquake.lost-item", "item_name", name);
                     }
                     SoundUtils.play(p, Sound.ENTITY_ITEM_BREAK, 1.0f, 0.8f);
                 }
@@ -503,25 +503,25 @@ public class CashQuakeManager {
 
     public void payWeightOfWealthTax(Player player) {
         if (!weightOfWealthActive) {
-            Messages.send(player, "<red>There is no active Weight of Wealth event!</red>");
+            Messages.send(player, "cashquake.no-active-weight-of-wealth");
             return;
         }
 
         UUID uuid = player.getUniqueId();
         if (weightOfWealthPaid.contains(uuid)) {
-            Messages.send(player, "<red>You have already paid the tax!</red>");
+            Messages.send(player, "cashquake.already-paid-tax");
             return;
         }
 
         CashClashPlayer ccp = session.getCashClashPlayer(uuid);
         if (ccp == null || !ccp.canAfford(5000)) {
-            Messages.send(player, "<red>You need 5,000 coins to pay the tax!</red>");
+            Messages.send(player, "cashquake.tax-payment-cost");
             return;
         }
 
         ccp.deductCoins(5000);
         weightOfWealthPaid.add(uuid);
-        Messages.send(player, "<green>You paid the tax. Your items are safe!</green>");
+        Messages.send(player, "cashquake.tax-paid-safe");
         SoundUtils.play(player, Sound.ENTITY_VILLAGER_YES, 1.0f, 1.0f);
     }
 
@@ -633,7 +633,7 @@ public class CashQuakeManager {
         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
         if (ccp != null) {
             ccp.addCoins(amount);
-            Messages.send(player, "<gold>+$" + String.format("%,d", amount) + " from supply drop!</gold>");
+            Messages.send(player, "cashquake.supply-drop-reward", "amount", String.format("%,d", amount));
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         }
         // Remove one emerald instance from inventory (consume)

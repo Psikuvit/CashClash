@@ -25,12 +25,12 @@ public class TemplateCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!sender.hasPermission("cashclash.admin")) {
-            Messages.send(sender, "<red>You don't have permission to use template admin commands.</red>");
+            Messages.send(sender, "generic.permission-template-admin");
             return true;
         }
 
         if (args.length < 1) {
-            Messages.send(sender, "<red>Usage: /cc template <register|set|setspawn|list|tp|show> ...</red>");
+            Messages.send(sender, "template.main-usage");
             return true;
         }
 
@@ -42,7 +42,7 @@ public class TemplateCommand extends AbstractArgCommand {
             case "show" -> templateShow(sender, args);
             case "list" -> templateList(sender);
             case "tp" -> templateTeleport(sender, args);
-            default -> Messages.send(sender, "<red>Unknown template action. Use register, set, setspawn, list, tp or show.</red>");
+            default -> Messages.send(sender, "template.invalid-action");
         }
 
         return true;
@@ -97,7 +97,7 @@ public class TemplateCommand extends AbstractArgCommand {
     // Implementation methods pulled from legacy command
     private void templateRegister(CommandSender sender, String[] args) {
         if (args.length < 3) {
-            Messages.send(sender, "<red>Usage: /cc template register <templateId> <worldName></red>");
+            Messages.send(sender, "template.register-usage");
             return;
         }
 
@@ -105,60 +105,60 @@ public class TemplateCommand extends AbstractArgCommand {
         String worldName = args[2];
 
         if (ArenaManager.getInstance().getTemplate(id) != null) {
-            Messages.send(sender, "<red>Template with ID '" + id + "' already exists.</red>");
+            Messages.send(sender, "template.already-exists", "template_id", id);
             return;
         }
 
         boolean ok = ArenaManager.getInstance().registerTemplate(id, worldName);
-        if (ok) Messages.send(sender, "<green>Registered template '" + id + "' -> world '" + worldName + "'</green>");
-        else Messages.send(sender, "<red>Failed to register template. Check world name and server logs.</red>");
+        if (ok) Messages.send(sender, "template.register-success", "template_id", id, "world_name", worldName);
+        else Messages.send(sender, "template.register-failed");
     }
 
     private void templateSetSpawn(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this.</red>");
+            Messages.send(sender, "command.only-players");
             return;
         }
 
         if (args.length < 2) {
-            Messages.send(player, "<red>Usage: /cc template setspawn <templateId></red>");
+            Messages.send(player, "template.setspawn-usage");
             return;
         }
 
         String id = args[1];
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(id);
         if (tpl == null) {
-            Messages.send(player, "<red>Template not found: " + id + "</red>");
+            Messages.send(player, "template.not-found", "template_id", id);
             return;
         }
         if (!player.getWorld().equals(tpl.getWorld())) {
-            Messages.send(player, "<red>Please teleport to the template world first.</red>");
+            Messages.send(player, "template.player-not-in-template");
             return;
         }
 
         tpl.setSpawn(LocationUtils.clone(player.getLocation()));
-        Messages.send(player, "<green>Set lobby spawn for template '" + id + "'</green>");
+        Messages.send(player, "template.setspawn-success", "template_id", id);
         ArenaManager.getInstance().saveTemplate(id);
     }
 
     private void templateTeleport(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this command.</red>");
+            Messages.send(sender, "command.only-players");
             return;
         }
 
         if (args.length < 2) {
-            Messages.send(player, "<red>Usage: /cc template tp <templateId></red>");
+            Messages.send(player, "template.tp-usage");
             return;
         }
 
         String id = args[1];
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(id);
-        if (tpl == null) { Messages.send(player, "<red>Template not found: " + id + "</red>"); return; }
+        if (tpl == null) { Messages.send(player, "template.not-found", "template_id", id); return; }
 
         World w = tpl.getWorld();
         if (w == null) {
-            Messages.send(player, "<red>Template world is not loaded: " + id + "</red>");
+            Messages.send(player, "template.world-not-loaded", "template_id", id);
             return;
         }
 
@@ -167,66 +167,66 @@ public class TemplateCommand extends AbstractArgCommand {
 
         Location to = LocationUtils.copyToWorld(target, w);
         player.teleport(to);
-        Messages.send(player, "<green>Teleported to template '" + id + "' (world: " + w.getName() + ")</green>");
+        Messages.send(player, "template.tp-success", "template_id", id);
     }
 
     private void templateList(CommandSender sender) {
         var templates = ArenaManager.getInstance().getAllTemplates();
         if (templates.isEmpty()) {
-            Messages.send(sender, "<yellow>No templates registered.</yellow>");
+            Messages.send(sender, "template.list-empty");
             return;
         }
 
-        Messages.send(sender, "<gold>=== Templates ===</gold>");
+        Messages.send(sender, "template.list-title");
         templates.forEach((id, tpl) -> {
             String worldName = "(unloaded)";
             if (tpl != null && tpl.getWorld() != null) worldName = tpl.getWorld().getName();
-            String status = tpl != null && tpl.isConfigured() ? "<green>(configured)" : "<red>(incomplete)";
-            Messages.send(sender, "<yellow>" + id + "</yellow> -> <gray>" + worldName + "</gray> " + status);
+            String status = tpl != null && tpl.isConfigured() ? "configured" : "incomplete";
+            Messages.send(sender, "template.list-item-with-status", "template_id", id, "world_name", worldName, "status", status);
         });
     }
 
     private void templateShow(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this.</red>");
+            Messages.send(sender, "command.only-players");
             return;
         }
         if (args.length < 2) {
-            Messages.send(player, "<red>Usage: /cc template show <templateId></red>");
+            Messages.send(player, "template.show-usage");
             return;
         }
 
         String id = args[1];
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(id);
         if (tpl == null) {
-            Messages.send(player, "<red>Template not found: " + id + "</red>");
+            Messages.send(player, "template.not-found", "template_id", id);
             return;
         }
 
-        Messages.send(player, "<gold>=== Template: " + tpl.getId() + " Positions ===</gold>");
+        Messages.send(player, "template.show-title", "template_id", tpl.getId());
         String worldName = tpl.getWorld() != null ? tpl.getWorld().getName() : "(unloaded)";
-        Messages.send(player, "<yellow>World: </yellow><gray>" + worldName + "</gray>");
-        Messages.send(player, "<yellow>Lobby spawn: </yellow>" + (tpl.getLobbySpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getLobbySpawn()) + "</gray>"));
-        Messages.send(player, "<yellow>Spectator: </yellow>" + (tpl.getSpectatorSpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getSpectatorSpawn()) + "</gray>"));
-        Messages.send(player, "<yellow>Shops: </yellow><gray>" + (tpl.getVillagersSpawnPoint().size() + "</gray>") );
+        Messages.send(player, "template.show-world", "world_name", worldName);
+        Messages.send(player, "template.show-lobby", "location", tpl.getLobbySpawn() == null ? "unset" : formatLoc(tpl.getLobbySpawn()));
+        Messages.send(player, "template.show-spectator", "location", tpl.getSpectatorSpawn() == null ? "unset" : formatLoc(tpl.getSpectatorSpawn()));
+        Messages.send(player, "template.show-shops", "shop_info", String.valueOf(tpl.getVillagersSpawnPoint().size()));
 
         for (int i = 0; i < 3; i++) {
-            Messages.send(player, "<yellow>teamRed spawn #" + (i+1) + ": </yellow>" + (tpl.getTeamRedSpawn(i) == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeamRedSpawn(i)) + "</gray>"));
-            Messages.send(player, "<yellow>teamBlue spawn #" + (i+1) + ": </yellow>" + (tpl.getTeamBlueSpawn(i) == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeamBlueSpawn(i)) + "</gray>"));
+            Messages.send(player, "template.show-team-red-spawn", "index", String.valueOf(i + 1), "location", tpl.getTeamRedSpawn(i) == null ? "unset" : formatLoc(tpl.getTeamRedSpawn(i)));
+            Messages.send(player, "template.show-team-blue-spawn", "index", String.valueOf(i + 1), "location", tpl.getTeamBlueSpawn(i) == null ? "unset" : formatLoc(tpl.getTeamBlueSpawn(i)));
         }
 
-        Messages.send(player, "<yellow>Shop teamRed: </yellow>" + (tpl.getTeamRedShopSpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeamRedShopSpawn()) + "</gray>"));
-        Messages.send(player, "<yellow>Shop teamBlue: </yellow>" + (tpl.getTeamBlueShopSpawn() == null ? "<red>unset</red>" : "<gray>" + formatLoc(tpl.getTeamBlueShopSpawn()) + "</gray>"));
+        Messages.send(player, "template.show-shop-red", "location", tpl.getTeamRedShopSpawn() == null ? "unset" : formatLoc(tpl.getTeamRedShopSpawn()));
+        Messages.send(player, "template.show-shop-blue", "location", tpl.getTeamBlueShopSpawn() == null ? "unset" : formatLoc(tpl.getTeamBlueShopSpawn()));
     }
 
     private void templateSet(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this.</red>");
+            Messages.send(sender, "command.only-players");
             return;
         }
 
         if (args.length < 3) {
-            Messages.send(player, "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager> [index/team]</red>");
+            Messages.send(player, "template.set-usage");
             return;
         }
 
@@ -235,13 +235,13 @@ public class TemplateCommand extends AbstractArgCommand {
 
         TemplateWorld tpl = ArenaManager.getInstance().getTemplate(templateId);
         if (tpl == null || tpl.getWorld() == null) {
-            Messages.send(player, "<red>Template not found or world not loaded: " + templateId + "</red>");
+            Messages.send(player, "template.not-found-or-not-loaded", "template_id", templateId);
             return;
         }
 
         World tplWorld = tpl.getWorld();
         if (!player.getWorld().equals(tplWorld)) {
-            Messages.send(player, "<red>Please teleport to the template world first: /cc template tp " + templateId + "</red>");
+            Messages.send(player, "template.player-not-in-template-with-id", "template_id", templateId);
             return;
         }
 
@@ -250,49 +250,49 @@ public class TemplateCommand extends AbstractArgCommand {
         switch (type) {
             case "spectator" -> {
                 tpl.setSpectatorSpawn(stored);
-                Messages.send(player, "<green>Spectator spawn set for template '" + templateId + "'</green>");
+                Messages.send(player, "template.set-spectator-success", "template_id", templateId);
             }
             case "shop" -> {
                 if (args.length < 4) {
-                    Messages.send(player, "<red>Usage: /cc template set <templateId> shop <teamRed|teamBlue></red>");
+                    Messages.send(player, "template.set-shop-usage");
                     return;
                 }
                 String team = args[3].toLowerCase(Locale.ROOT);
 
                 if ("teamred".equals(team)) {
                     tpl.setTeamRedShopSpawn(stored);
-                    Messages.send(player, "<green>Set shop spawn for team Red on template '" + templateId + "'</green>");
+                    Messages.send(player, "template.set-shop-success", "team", "Red", "template_id", templateId);
                 } else if ("teamblue".equals(team)) {
                     tpl.setTeamBlueShopSpawn(stored);
-                    Messages.send(player, "<green>Set shop spawn for team Blue on template '" + templateId + "'</green>");
+                    Messages.send(player, "template.set-shop-success", "team", "Blue", "template_id", templateId);
                 } else {
-                    Messages.send(player, "<red>Invalid shop team. Use teamRed or teamBlue.</red>");
+                    Messages.send(player, "template.invalid-shop-team");
                     return;
                 }
             }
             case "teamred", "teamblue" -> {
-                if (args.length < 4) { Messages.send(player, "<red>Usage: /cc template set <templateId> " + type + " <1|2|3></red>"); return; }
+                if (args.length < 4) { Messages.send(player, "template.set-team-usage", "type", type); return; }
                 int idx;
                 try {
                     idx = Integer.parseInt(args[3]);
                 } catch (NumberFormatException ex) {
-                    Messages.send(player, "<red>Index must be 1,2,3 or 4</red>");
+                    Messages.send(player, "generic.invalid-index");
                     return;
                 }
 
                 if (idx < 1 || idx > 4) {
-                    Messages.send(player, "<red>Index must be 1,2,3 or 4</red>");
+                    Messages.send(player, "generic.invalid-index");
                     return;
                 }
                 if ("teamred".equals(type)) tpl.setTeamRedSpawn(idx - 1, stored);
                 else tpl.setTeamBlueSpawn(idx - 1, stored);
-                Messages.send(player, "<green>Set " + type + " spawn #" + idx + " for template '" + templateId + "'</green>");
+                Messages.send(player, "template.set-success", "spawn_type", type, "index", String.valueOf(idx), "template_id", templateId);
             }
             case "villager" -> {
                 tpl.addVillagerSpawnPoint(stored);
-                Messages.send(player, "<green>Added villager/shop spawn for template '" + templateId + "'</green>");
+                Messages.send(player, "template.set-villager-success", "template_id", templateId);
             }
-            default -> Messages.send(player, "<red>Unknown spawn type: " + type + "</red>");
+            default -> Messages.send(player, "template.invalid-spawn-type", "spawn_type", type);
         }
 
         ArenaManager.getInstance().saveTemplate(templateId);

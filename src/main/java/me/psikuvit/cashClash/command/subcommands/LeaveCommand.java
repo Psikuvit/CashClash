@@ -19,7 +19,7 @@ public class LeaveCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this command.</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
 
@@ -30,12 +30,10 @@ public class LeaveCommand extends AbstractArgCommand {
 
             var lobbyLoc = ArenaManager.getInstance().getServerLobbySpawn();
             if (lobbyLoc != null) player.teleport(LocationUtils.clone(lobbyLoc));
-
-            Messages.send(player, "<green>You left the game.</green>");
+            Messages.send(player, "gamestate.left-game");
             return true;
         }
-
-        Messages.send(player, "<red>You're not in a game.</red>");
+        Messages.send(player, "generic.player-not-in-game");
         return true;
     }
 }

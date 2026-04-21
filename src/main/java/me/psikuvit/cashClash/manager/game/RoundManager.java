@@ -134,7 +134,7 @@ public class RoundManager {
                 }
 
                 if (destTemplate == null) {
-                    Messages.send(p, "<red>Your team's shopping area is not set. Teleporting to spectator area.</red>");
+                    Messages.send(p, "round.shopping-area-missing");
                     destTemplate = tpl.getSpectatorSpawn();
                 }
 
@@ -144,7 +144,7 @@ public class RoundManager {
                     p.teleport(dest);
                     p.closeInventory();
                     if (phaseType == GameState.SHOPPING) {
-                        Messages.send(p, "<yellow>Teleported to your team's shopping area.</yellow>");
+                        Messages.send(p, "round.shopping-area-teleported");
                     }
                 }
             }
@@ -401,7 +401,7 @@ public class RoundManager {
                     player.addCoins(bonus);
                     Player bukkit = Bukkit.getPlayer(uuid);
                     if (bukkit != null && bukkit.isOnline()) {
-                        Messages.send(bukkit, "<gold>Loss Streak Bonus: +$" + String.format("%,d", bonus) + "</gold>");
+                        Messages.send(bukkit, "round.loss-streak-bonus", "bonus", String.format("%,d", bonus));
                     }
                 }
             }
@@ -441,7 +441,7 @@ public class RoundManager {
         }
 
         if (refilled > 0) {
-            Messages.send(player, "<aqua>Water buckets refilled for shopping phase!</aqua>");
+            Messages.send(player, "round.water-refilled-shopping");
         }
     }
 }

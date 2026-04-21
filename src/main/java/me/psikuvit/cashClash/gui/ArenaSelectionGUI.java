@@ -78,11 +78,11 @@ public class ArenaSelectionGUI extends AbstractGui {
         // Check if all party members are available (not in games, not editing layouts)
         for (Player member : partyMembers) {
             if (gameManager.getPlayerSession(member) != null) {
-                Messages.send(owner, "<red>Party member " + member.getName() + " is already in a game!</red>");
+                Messages.send(owner, "arena.party-member-in-game", "player_name", member.getName());
                 return;
             }
             if (LayoutManager.getInstance().isEditing(member)) {
-                Messages.send(owner, "<red>Party member " + member.getName() + " is editing a layout!</red>");
+                Messages.send(owner, "arena.party-member-editing-layout", "player_name", member.getName());
                 return;
             }
         }
@@ -92,8 +92,9 @@ public class ArenaSelectionGUI extends AbstractGui {
         int availableSlots = maxPlayers - currentPlayers;
 
         if (partyMembers.size() > availableSlots) {
-            Messages.send(owner, "<red>Not enough space in this arena for your party!</red>");
-            Messages.send(owner, "<gray>Party size: <white>" + partyMembers.size() + "</white>, Available slots: <white>" + availableSlots + "</white></gray>");
+            Messages.send(owner, "arena.not-enough-space-party");
+            Messages.send(owner, "arena.party-size-vs-slots", "party_size", String.valueOf(partyMembers.size()),
+                    "available_slots", String.valueOf(availableSlots));
             return;
         }
 
@@ -149,14 +150,14 @@ public class ArenaSelectionGUI extends AbstractGui {
             }
 
             String teamColor = primaryTeam == 1 ? "<red>Red</red>" : "<blue>Blue</blue>";
-            Messages.send(member, "<green>Joined " + arena.getName() + " with your party!</green>");
-            Messages.send(member, "<yellow>Team: " + teamColor + "</yellow>");
+            Messages.send(member, "arena.joined-with-party", "arena_name", arena.getName());
+            Messages.send(member, "arena.team-assigned", "team_color", teamColor);
         }
 
         // Add secondary team members (overflow)
         if (!secondaryTeamMembers.isEmpty()) {
             for (Player member : partyMembers) {
-                Messages.send(member, "<yellow>Party was split due to team size limits!</yellow>");
+                Messages.send(member, "arena.party-split");
             }
         }
 
@@ -169,8 +170,8 @@ public class ArenaSelectionGUI extends AbstractGui {
             }
 
             String teamColor = secondaryTeam == 1 ? "<red>Red</red>" : "<blue>Blue</blue>";
-            Messages.send(member, "<green>Joined " + arena.getName() + " with your party!</green>");
-            Messages.send(member, "<yellow>Team: " + teamColor + " <gray>(overflow)</gray></yellow>");
+            Messages.send(member, "arena.joined-with-party", "arena_name", arena.getName());
+            Messages.send(member, "arena.team-assigned-overflow", "team_color", teamColor);
         }
 
         // Notify all players in the session
@@ -178,7 +179,7 @@ public class ArenaSelectionGUI extends AbstractGui {
         session.getPlayers().forEach(uuid -> {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null) {
-                Messages.send(p, "<gray>Waiting for players... (" + newPlayerCount + "/" + maxPlayers + ")</gray>");
+                Messages.send(p, "arena.waiting-for-players", "current", String.valueOf(newPlayerCount), "max", String.valueOf(maxPlayers));
             }
         });
 
@@ -196,27 +197,27 @@ public class ArenaSelectionGUI extends AbstractGui {
 
         // Prevent joining while editing a layout
         if (LayoutManager.getInstance().isEditing(player)) {
-            Messages.send(player, "<red>You cannot join a game while editing a layout!</red>");
-            Messages.send(player, "<gray>Use <yellow>/cc layout confirm</yellow> or <yellow>/cc layout cancel</yellow> first.</gray>");
+            Messages.send(player, "arena.cannot-join-while-editing");
+            Messages.send(player, "arena.layout-finish-help");
             player.closeInventory();
             return;
         }
 
         if (gameManager.getPlayerSession(player) != null) {
-            Messages.send(player, "<red>You're already in a game!</red>");
+            Messages.send(player, "arena.already-in-game");
             player.closeInventory();
             return;
         }
 
         if (!arenaManager.isArenaJoinable(arenaNumber)) {
-            Messages.send(player, "<red>This arena cannot be joined right now!</red>");
+            Messages.send(player, "arena.not-joinable");
             player.closeInventory();
             return;
         }
 
         Arena arena = arenaManager.getArena(arenaNumber);
         if (arena == null) {
-            Messages.send(player, "<red>Arena not found!</red>");
+            Messages.send(player, "arena.not-found");
             player.closeInventory();
             return;
         }
@@ -227,8 +228,8 @@ public class ArenaSelectionGUI extends AbstractGui {
 
         // If player is in a party but not the owner, they can't join on their own
         if (party != null && !isPartyOwner) {
-            Messages.send(player, "<red>Only the party owner can join games for the party!</red>");
-            Messages.send(player, "<gray>Ask <yellow>" + getOwnerName(party) + "</yellow> to join a game.</gray>");
+            Messages.send(player, "arena.only-party-owner-can-join");
+            Messages.send(player, "arena.ask-owner-to-join", "owner_name", getOwnerName(party));
             player.closeInventory();
             return;
         }
@@ -286,13 +287,13 @@ public class ArenaSelectionGUI extends AbstractGui {
 
         int newPlayerCount = arenaManager.getArenaPlayerCount(arenaNumber);
         String teamColor = teamNumber == 1 ? "<red>Red</red>" : "<blue>Blue</blue>";
-        Messages.send(player, "<green>Joined " + arena.getName() + "!</green>");
-        Messages.send(player, "<yellow>Team: " + teamColor + "</yellow>");
+        Messages.send(player, "arena.joined", "arena_name", arena.getName());
+        Messages.send(player, "arena.team-assigned", "team_color", teamColor);
 
         session.getPlayers().forEach(uuid -> {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null) {
-                Messages.send(p, "<gray>Waiting for players... (" + newPlayerCount + "/" + maxPlayers + ")</gray>");
+                Messages.send(p, "arena.waiting-for-players", "current", String.valueOf(newPlayerCount), "max", String.valueOf(maxPlayers));
             }
         });
 

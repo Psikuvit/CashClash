@@ -99,6 +99,25 @@ messages:
     info-rotation: "<yellow>Rotation (Quaternion):</yellow> ({x}, {y}, {z}, {w})"
     info-entity-id: "<yellow>Entity ID:</yellow> {entity_id}"
     no-target: "<red>No target selected. Use 'target' subcommand first.</red>"
+    orbit-usage: "<red>Usage: /cc blockdisplay orbit <radius> [height_offset]</red>"
+    orbit-activated: "<green>Display now orbiting at radius {radius} with height offset {height}</green>"
+    invalid-orbit-args: "<red>Invalid orbit arguments. Must be numbers.</red>"
+    passenger-added: "<green>Block display is now following you as a passenger!</green>"
+    passenger-removed: "<green>Block display removed as passenger.</green>"
+    help-title: "<gold>═══ BlockDisplay Commands ═══</gold>"
+    help-target: "<yellow>/cc blockdisplay target <nearest|index></yellow> <gray>- Select a display</gray>"
+    help-setblock: "<yellow>/cc blockdisplay setblock <material></yellow> <gray>- Set block type</gray>"
+    help-teleport: "<yellow>/cc blockdisplay teleport <player|x y z></yellow> <gray>- Move to location</gray>"
+    help-translate: "<yellow>/cc blockdisplay translate <dx> <dy> <dz></yellow> <gray>- Move relative</gray>"
+    help-rotate-axis: "<yellow>/cc blockdisplay rotate <axis> <degrees></yellow> <gray>- Rotate on axis</gray>"
+    help-rotate-euler: "<yellow>/cc blockdisplay rotate <pitch> <yaw> <roll></yellow> <gray>- Rotate by Euler angles</gray>"
+    help-scale-uniform: "<yellow>/cc blockdisplay scale <factor></yellow> <gray>- Uniform scale</gray>"
+    help-scale-axes: "<yellow>/cc blockdisplay scale <sx> <sy> <sz></yellow> <gray>- Per-axis scale</gray>"
+    help-reset: "<yellow>/cc blockdisplay reset</yellow> <gray>- Reset to default</gray>"
+    help-list: "<yellow>/cc blockdisplay list [range]</yellow> <gray>- List nearby displays</gray>"
+    help-info: "<yellow>/cc blockdisplay info</yellow> <gray>- Show target info</gray>"
+    help-orbit: "<yellow>/cc blockdisplay orbit <radius> [height]</yellow> <gray>- Orbit around player</gray>"
+    help-passenger: "<yellow>/cc blockdisplay passenger</yellow> <gray>- Add/remove as passenger</gray>"
 
   # ============================================
   # PARTY COMMANDS
@@ -176,6 +195,31 @@ messages:
     purchased: "<green>Purchased {item_name} for ${price}</green>"
     purchase-successful: "<green>Purchase successful! Deducted ${cost}</green>"
     not-in-game: "<red>You are not part of this game session.</red>"
+    must-be-in-game: "<red>You must be in a game to shop.</red>"
+    not-enough-coins: "<red>Not enough coins! (Cost: ${cost})</red>"
+    no-purchase-undo: "<red>No purchase to undo.</red>"
+    no-purchase-undo-category: "<red>No purchase to undo in this category.</red>"
+    max-tier-reached: "<yellow>You already have the maximum tier of this item!</yellow>"
+    set-purchased-title: "<green><bold>✓ SET PURCHASED</bold></green>"
+    set-purchased-name: "<yellow>{item_name}</yellow>"
+    set-purchased-cost: "<dark_gray>-${price}</dark_gray>"
+    investment-round-locked: "<red>Investments cannot be purchased in Round 6 or later!</red>"
+    investment-already-active: "<red>You already have an active investment! ({type})</red>"
+    investment-purchased: "<green>You invested <gold>${cost}</gold> in a <yellow>{type}</yellow>!</green>"
+    investment-details: "<gray>Bonus: <green>${bonus}</green> | Negative: <red>${negative}</red></gray>"
+    investment-rules: "<gray>1 death = Bonus | 2 deaths = Break even | 3+ deaths = Loss</gray>"
+    investment-cancelled: "<green>Investment cancelled. Refunded ${price}</green>"
+    max-enchant-level: "<yellow>You already have the maximum level of this enchant!</yellow>"
+    deathmauler-has-projectile: "<red>Deathmauler set restriction: You already have Projectile Protection!</red>"
+    deathmauler-has-protection: "<red>Deathmauler set restriction: You already have Protection!</red>"
+    deathmauler-protection-choice: "<red>You must choose either Protection OR Projectile Protection.</red>"
+    enchant-purchased: "<green>Purchased {enchant_name} {level} for ${price}</green>"
+    mythic-unavailable: "<red>This mythic is not available in this game!</red>"
+    mythic-already-purchased: "<red>This mythic has already been purchased by {owner_name}!</red>"
+    mythic-already-owned: "<red>You already own a mythic ({mythic_name})!</red>"
+    mythic-acquired-title: "<dark_purple><bold>✦ MYTHIC ACQUIRED ✦</bold></dark_purple>"
+    mythic-acquired-name: "<light_purple>{mythic_name}</light_purple>"
+    mythic-acquired-cost: "<dark_gray>-${price}</dark_gray>"
 
   # ============================================
   # BONUS & REWARD MESSAGES
@@ -243,6 +287,10 @@ messages:
     rejoin-success: "<green>You have successfully rejoined the game!</green>"
     rejoin-status: "<yellow>Round: <gold>{round}</gold> | Lives: <gold>{lives}</gold></yellow>"
     game-force-end: "<yellow>Game ending - one team has no remaining players.</yellow>"
+    shopping-area-missing: "<red>Your team's shopping area is not set. Teleporting to spectator area.</red>"
+    shopping-area-teleported: "<yellow>Teleported to your team's shopping area.</yellow>"
+    loss-streak-bonus: "<gold>Loss Streak Bonus: +${bonus}</gold>"
+    water-refilled-shopping: "<aqua>Water buckets refilled for shopping phase!</aqua>"
 
   # ============================================
   # GAMEMODE - PROTECT THE PRESIDENT
@@ -257,6 +305,8 @@ messages:
     buff-selected: "<gold>Presidents have selected their buffs! Shop is now unlocked!</gold>"
     buff-activated: "<gold>Buff Activated: {buff_name}!</gold>"
     buff-deselected: "<red>Buff deselected!</red>"
+    buff-selection-limit: "<red>You have already selected {max_buffs} buff(s)!</red>"
+    buff-selected-player: "<green>Buff selected: {buff_name}!</green>"
     president-died: "<{color}><bold>Team {team_name}'s president has been assassinated!</bold> <yellow>{win_condition} total wins the match</yellow>"
     buy-phase-message: "<yellow>Best of 7 series - First to 4 assassinations wins! Every 2 kills the president's team gets a split 15k bonus!</yellow>"
     kill-bonus: "<green>+3,750 coins! (Kill bonus)</green>"
@@ -281,6 +331,7 @@ messages:
     flag-stolen-red: "<blue>{player_name} has stolen Team Red's flag!</blue>"
     flag-stolen-blue: "<red>{player_name} has stolen Team Blue's flag!</red>"
     flag-captured-bonus: "<green>+3,750 coins! (Capture bonus)</green>"
+    capture-bonus-final-stand: "<gold>+1 Extra Heart! (Capture bonus in Final Stand)</gold>"
     flag-pickup: "<{color}>The flag carrier is highlighted!</{color}>"
     flag-dropped: "<{color}>The flag has been dropped!</{color}>"
     silenced-activated: "<red>You have been silenced! All item abilities are disabled.</red>"
@@ -305,6 +356,9 @@ messages:
     not-editing-layout: "<red>You are not editing any kit layout!</red>"
     layout-saved: "<green>Layout for <yellow>{kit_name}</yellow> saved!</green>"
     layout-cancelled: "<yellow>Layout editing cancelled for {kit_name}.</yellow>"
+    server-lobby-set: "<green>Server lobby spawn set to your current location.</green>"
+    layout-currently-editing: "<yellow>You are currently editing a layout.</yellow>"
+    layout-currently-editing-help: "<gray>Use <yellow>/cc layout confirm</yellow> to save or <yellow>/cc layout cancel</yellow> to cancel.</gray>"
 
   # ============================================
   # MYTHIC ITEM MESSAGES
@@ -346,6 +400,15 @@ messages:
      charge-activated: "<green>Charge!</green>"
      cannot-switch-modes: "<red>Cannot switch modes while firing!</red>"
      mode-switch-cooldown: "<red>Mode switch on cooldown! ({remaining}s)</red>"
+     blood-vortex-activated: "<dark_purple>Blood Vortex activated!</dark_purple>"
+     boxing-gloves-activated: "<dark_aqua><bold>BOXING GLOVES ACTIVATED!</bold></dark_aqua>"
+     boxing-gloves-cooldown: "<gray>Boxing gloves cooling down...{seconds}s</gray>"
+     shockwave-cooldown: "<red>Shockwave on cooldown! ({cooldown_seconds}s)</red>"
+     shockwave-activated: "<dark_aqua>SHOCKWAVE!</dark_aqua>"
+     blazebite-reloading: "<red>BlazeBite reloading! ({cooldown_seconds}s)</red>"
+     blazebite-reload-start: "<yellow>BlazeBite reloading...</yellow>"
+     target-frozen: "<aqua>Target frozen solid!</aqua>"
+     you-are-frozen: "<aqua>You are frozen in place!</aqua>"
 
   # ============================================
   # CASHQUAKE/LOTTERY MESSAGES
@@ -360,151 +423,343 @@ messages:
     weight-of-wealth-prompt: "<gray>Type <white>/cc paytax</white> within 20 seconds to pay.</gray>"
     weight-of-wealth-ended: "<gray>Weight of Wealth has concluded.</gray>"
     auction-prompt: "<gray>First come, first serve!</gray>"
+    supply-drop-reward: "<gold>+${amount} from supply drop!</gold>"
+    no-active-lottery: "<red>There is no active lottery!</red>"
+    already-entered-lottery: "<red>You have already entered this lottery!</red>"
+    lottery-entry-cost: "<red>You need 5,000 coins to enter the lottery!</red>"
+    lottery-win: "<green><bold>🎉 YOU WON!</bold></green> <yellow>+10,000 coins!</yellow>"
+    lottery-lose: "<red><bold>💔 YOU LOST!</bold></red> <gray>Better luck next time...</gray>"
+    life-steal-kill: "<red>💀 Life Steal!</red> <yellow>+2 hearts!</yellow>"
+    checkup-hearts: "<green>+{hearts} hearts!</green>"
+    mega-jackpot-personal: "<gold><bold>🎉 MEGA JACKPOT!</bold></gold> <yellow>+50,000 coins!</yellow>"
+    bonus-coins: "<gold>+${amount} coins!</gold>"
+    tax-deducted: "<red>-${amount} coins taxed!</red>"
+    mystery-loot-received: "<dark_purple>You received: <yellow>{item_name}</yellow></dark_purple>"
+    item-broke-temporary: "<red>Your {item_name} broke temporarily!</red>"
+    item-restored: "<green>Your {item_name} has been restored!</green>"
+    lost-items-ten: "<red>You lost 10x {item_name}!</red>"
+    lost-item: "<red>You lost your {item_name}!</red>"
+    no-active-weight-of-wealth: "<red>There is no active Weight of Wealth event!</red>"
+    already-paid-tax: "<red>You have already paid the tax!</red>"
+    tax-payment-cost: "<red>You need 5,000 coins to pay the tax!</red>"
+    tax-paid-safe: "<green>You paid the tax. Your items are safe!</green>"
 
   # ============================================
   # ADMIN COMMAND MESSAGES
   # ============================================
   admin:
-     game-ended: "<gold><bold>Game ended by an admin!</bold></gold>"
-     round-skipped: "<gold><bold>Round skipped by an admin! Moving to Round {next_round}!</bold></gold>"
-     game-force-started: "<gold><bold>Game force started by an admin!</bold></gold>"
+    game-ended: "<gold><bold>Game ended by an admin!</bold></gold>"
+    round-skipped: "<gold><bold>Round skipped by an admin! Moving to Round {next_round}!</bold></gold>"
+    game-force-started: "<gold><bold>Game force started by an admin!</bold></gold>"
+    stop-success: "<green>Game ended.</green>"
+    forcenextround-not-started: "<red>The game hasn't started yet.</red>"
+    forcenextround-already-ending: "<yellow>Game is already ending.</yellow>"
+    forcenextround-final-round: "<yellow>Already at final round, ending game instead.</yellow>"
+    forcenextround-success: "<green>Successfully skipped to round {round}.</green>"
 
-   # ============================================
-   # TEMPLATE WORLD MESSAGES
-   # ============================================
-   template:
-     register-usage: "<red>Usage: /cc template register <templateId> <worldName></red>"
-     register-success: "<green>Registered template '{template_id}' to world '{world_name}'</green>"
-     register-failed: "<red>Failed to register template. Check world name and server logs.</red>"
-     set-usage: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager> [index/team]</red>"
-     set-lobby-usage: "<red>Usage: /cc template set <templateId> lobby</red>"
-     set-success: "<green>Set {spawn_type} spawn #{index} for template '{template_id}'</green>"
-     set-shop-success: "<green>Set shop spawn for team {team} on template '{template_id}'</green>"
-     set-spectator-success: "<green>Spectator spawn set for template '{template_id}'</green>"
-     set-villager-success: "<green>Added villager/shop spawn for template '{template_id}'</green>"
-     setspawn-usage: "<red>Usage: /cc template setspawn <templateId></red>"
-     setspawn-success: "<green>Lobby spawn for template '{template_id}' set to your current location.</green>"
-     list-title: "<gold>=== Templates ===</gold>"
-     list-item: "<yellow>{template_id}</yellow> <gray>- World: {world_name}</gray>"
-     list-empty: "<yellow>No templates registered.</yellow>"
-     show-title: "<gold>=== Template: {template_id} ===</gold>"
-     show-world: "<yellow>World:</yellow> {world_name}"
-     show-lobby: "<yellow>Lobby: {location}</yellow>"
-     show-spectator: "<yellow>Spectator:</yellow> {location}"
-     show-shop-red: "<yellow>Shop teamRed:</yellow> {location}"
-     show-shop-blue: "<yellow>Shop teamBlue:</yellow> {location}"
-     show-shops: "<yellow>Shops:</yellow> <gray>{shop_info}</gray>"
-     tp-success: "<green>Teleported to template '{template_id}'</green>"
-     tp-usage: "<red>Usage: /cc template tp <templateId></red>"
-     not-found: "<red>Template not found: {template_id}</red>"
-     not-found-or-not-loaded: "<red>Template not found or world not loaded: {template_id}</red>"
-     world-not-loaded: "<red>Template world is not loaded: {template_id}</red>"
-     invalid-action: "<red>Unknown template action. Use register, set, setspawn, list, tp or show.</red>"
-     invalid-spawn-type: "<red>Unknown spawn type: {spawn_type}</red>"
-     invalid-shop-team: "<red>Invalid shop team. Use teamRed or teamBlue.</red>"
-     invalid-set-args: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager> [index/team]</red>"
-     player-not-in-template: "<red>Please teleport to the template world first.</red>"
-     player-not-in-template-with-id: "<red>Please teleport to the template world first: /cc template tp {template_id}</red>"
+  # ============================================
+  # TEMPLATE WORLD MESSAGES
+  # ============================================
+  template:
+    main-usage: "<red>Usage: /cc template <register|set|setspawn|list|tp|show> ...</red>"
+    register-usage: "<red>Usage: /cc template register <templateId> <worldName></red>"
+    register-success: "<green>Registered template '{template_id}' to world '{world_name}'</green>"
+    register-failed: "<red>Failed to register template. Check world name and server logs.</red>"
+    already-exists: "<red>Template with ID '{template_id}' already exists.</red>"
+    set-usage: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager> [index/team]</red>"
+    set-team-usage: "<red>Usage: /cc template set <templateId> {type} <1|2|3></red>"
+    set-shop-usage: "<red>Usage: /cc template set <templateId> shop <teamRed|teamBlue></red>"
+    set-lobby-usage: "<red>Usage: /cc template set <templateId> lobby</red>"
+    set-success: "<green>Set {spawn_type} spawn #{index} for template '{template_id}'</green>"
+    set-shop-success: "<green>Set shop spawn for team {team} on template '{template_id}'</green>"
+    set-spectator-success: "<green>Spectator spawn set for template '{template_id}'</green>"
+    set-villager-success: "<green>Added villager/shop spawn for template '{template_id}'</green>"
+    setspawn-usage: "<red>Usage: /cc template setspawn <templateId></red>"
+    setspawn-success: "<green>Lobby spawn for template '{template_id}' set to your current location.</green>"
+    list-title: "<gold>=== Templates ===</gold>"
+    list-item: "<yellow>{template_id}</yellow> <gray>- World: {world_name}</gray>"
+    list-item-with-status: "<yellow>{template_id}</yellow> <gray>- World: {world_name} ({status})</gray>"
+    list-empty: "<yellow>No templates registered.</yellow>"
+    show-title: "<gold>=== Template: {template_id} ===</gold>"
+    show-usage: "<red>Usage: /cc template show <templateId></red>"
+    show-world: "<yellow>World:</yellow> {world_name}"
+    show-lobby: "<yellow>Lobby: {location}</yellow>"
+    show-spectator: "<yellow>Spectator:</yellow> {location}"
+    show-team-red-spawn: "<yellow>teamRed spawn #{index}:</yellow> {location}"
+    show-team-blue-spawn: "<yellow>teamBlue spawn #{index}:</yellow> {location}"
+    show-shop-red: "<yellow>Shop teamRed:</yellow> {location}"
+    show-shop-blue: "<yellow>Shop teamBlue:</yellow> {location}"
+    show-shops: "<yellow>Shops:</yellow> <gray>{shop_info}</gray>"
+    tp-success: "<green>Teleported to template '{template_id}'</green>"
+    tp-usage: "<red>Usage: /cc template tp <templateId></red>"
+    not-found: "<red>Template not found: {template_id}</red>"
+    not-found-or-not-loaded: "<red>Template not found or world not loaded: {template_id}</red>"
+    world-not-loaded: "<red>Template world is not loaded: {template_id}</red>"
+    invalid-action: "<red>Unknown template action. Use register, set, setspawn, list, tp or show.</red>"
+    invalid-spawn-type: "<red>Unknown spawn type: {spawn_type}</red>"
+    invalid-shop-team: "<red>Invalid shop team. Use teamRed or teamBlue.</red>"
+    invalid-set-args: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager> [index/team]</red>"
+    player-not-in-template: "<red>Please teleport to the template world first.</red>"
+    player-not-in-template-with-id: "<red>Please teleport to the template world first: /cc template tp {template_id}</red>"
 
   # ============================================
   # SPAWN NPC MESSAGES
   # ============================================
   spawnnpc:
-     arena-spawned: "<green>Arena NPC spawned and saved!</green>"
-     arena-spawned-id: "<gray>ID: {id} - Players can right-click it to open the arena selection menu.</gray>"
-     removed: "<green>Removed {count} arena NPC(s) within 5 blocks.</green>"
-     not-found: "<yellow>No arena NPCs found within 5 blocks.</yellow>"
-     invalid-type: "<red>Unknown NPC type. Use: arena, remove</red>"
-     usage: "<yellow>Usage: /cc spawnnpc <arena|remove></yellow>"
-     help-arena: "<gray>  arena - Spawn an arena selector NPC at your location</gray>"
-     help-remove: "<gray>  remove - Remove nearby arena NPCs (within 5 blocks)</gray>"
-     total-saved: "<gray>Total saved NPCs: {count}</gray>"
+    arena-spawned: "<green>Arena NPC spawned and saved!</green>"
+    arena-spawned-id: "<gray>ID: {id} - Players can right-click it to open the arena selection menu.</gray>"
+    removed: "<green>Removed {count} arena NPC(s) within 5 blocks.</green>"
+    not-found: "<yellow>No arena NPCs found within 5 blocks.</yellow>"
+    invalid-type: "<red>Unknown NPC type. Use: arena, remove</red>"
+    usage: "<yellow>Usage: /cc spawnnpc <arena|remove></yellow>"
+    help-arena: "<gray>  arena - Spawn an arena selector NPC at your location</gray>"
+    help-remove: "<gray>  remove - Remove nearby arena NPCs (within 5 blocks)</gray>"
+    total-saved: "<gray>Total saved NPCs: {count}</gray>"
 
   # ============================================
   # GENERIC COMMAND MESSAGES
   # ============================================
   generic:
-     invalid-amount: "<red>Invalid amount.</red>"
-     invalid-amount-number: "<red>Invalid amount. Please enter a valid number.</red>"
-     invalid-index: "<red>Index must be 1,2,3 or 4</red>"
-     player-not-found: "<red>Player not found!</red>"
-     player-not-found-or-offline: "<red>Player not found or not online.</red>"
-     player-not-in-game: "<red>You're not in a game session. Join an arena first.</red>"
-     game-started: "<red>The game has already started!</red>"
-     both-players-same-game: "<red>Both players must be in the same game.</red>"
-     permission-reset-stats: "<red>You don't have permission to reset player stats.</red>"
-     permission-template-admin: "<red>You don't have permission to use template admin commands.</red>"
-     mythic-not-found: "<red>Mythic item not found: {item_name}</red>"
-     cashquake-unavailable: "<red>Cash Quake events are not available.</red>"
-     console-player-required: "<red>Console must specify a player: /cc selectkit <kit> <player></red>"
-     error-reloading: "<red>✗ Error reloading configs: {error_msg}</red>"
+    invalid-amount: "<red>Invalid amount.</red>"
+    invalid-amount-number: "<red>Invalid amount. Please enter a valid number.</red>"
+    invalid-index: "<red>Index must be 1,2,3 or 4</red>"
+    player-not-found: "<red>Player not found!</red>"
+    player-not-found-or-offline: "<red>Player not found or not online.</red>"
+    player-not-in-game: "<red>You're not in a game session. Join an arena first.</red>"
+    game-started: "<red>The game has already started!</red>"
+    both-players-same-game: "<red>Both players must be in the same game.</red>"
+    permission-reset-stats: "<red>You don't have permission to reset player stats.</red>"
+    permission-template-admin: "<red>You don't have permission to use template admin commands.</red>"
+    mythic-not-found: "<red>Mythic item not found: {item_name}</red>"
+    cashquake-unavailable: "<red>Cash Quake events are not available.</red>"
+    console-player-required: "<red>Console must specify a player: /cc selectkit <kit> <player></red>"
+    error-reloading: "<red>✗ Error reloading configs: {error_msg}</red>"
 
-   # ============================================
-   # RELOAD COMMAND MESSAGES
-   # ============================================
-   reload:
-     title: "<yellow>Reloading CashClash configurations...</yellow>"
-     all-success: "<green>✓ Reloaded all configuration files and mannequins</green>"
-     config-success: "<green>✓ Reloaded config.yml</green>"
-     items-success: "<green>✓ Reloaded items.yml</green>"
-     shop-success: "<green>✓ Reloaded shop.yml</green>"
-     mannequins-success: "<green>✓ Reloaded mannequins (respawned all NPCs)</green>"
-     invalid-target: "<red>Unknown config: {target}</red>"
-     usage: "<gray>Usage: /cc reload [config|shop|items|mannequins|all]</gray>"
+  # ============================================
+  # RELOAD COMMAND MESSAGES
+  # ============================================
+  reload:
+    title: "<yellow>Reloading CashClash configurations...</yellow>"
+    all-success: "<green>✓ Reloaded all configuration files and mannequins</green>"
+    config-success: "<green>✓ Reloaded config.yml</green>"
+    items-success: "<green>✓ Reloaded items.yml</green>"
+    shop-success: "<green>✓ Reloaded shop.yml</green>"
+    mannequins-success: "<green>✓ Reloaded mannequins (respawned all NPCs)</green>"
+    count-success: "<green>Successfully reloaded {count} configuration file(s)!</green>"
+    invalid-target: "<red>Unknown config: {target}</red>"
+    usage: "<gray>Usage: /cc reload [config|shop|items|mannequins|all]</gray>"
 
-   # ============================================
-   # STATS COMMAND MESSAGES
-   # ============================================
-    stats:
-      title: "<gold>=== Your Stats ===</gold>"
-      coins: "<yellow>Coins: $<gold>{coins}</gold></yellow>"
-      kills: "<yellow>Kills: <gray>{kills}</gray></yellow>"
-      deaths: "<yellow>Deaths: <gray>{deaths}</gray></yellow>"
-      wins: "<yellow>Wins: <gray>{wins}</gray></yellow>"
-      losses: "<yellow>Losses: <gray>{losses}</gray></yellow>"
-      kdr: "<yellow>K/D Ratio: <gray>{kdr}</gray></yellow>"
-      invalid-args: "<red>Invalid stats command usage.</red>"
-      no-mythic: "<gray>No mythic owned</gray>"
-      mythic-owned: "<light_purple>Mythic: {mythic_name}</light_purple>"
-      only-players-no-args: "<red>Only players can use this command without arguments.</red>"
-      player-not-found: "<red>Player not found: {player}</red>"
+  # ============================================
+  # STATS COMMAND MESSAGES
+  # ============================================
+  stats:
+    title: "<gold>=== Your Stats ===</gold>"
+    coins: "<yellow>Coins: $<gold>{coins}</gold></yellow>"
+    kills: "<yellow>Kills: <gray>{kills}</gray></yellow>"
+    deaths: "<yellow>Deaths: <gray>{deaths}</gray></yellow>"
+    wins: "<yellow>Wins: <gray>{wins}</gray></yellow>"
+    losses: "<yellow>Losses: <gray>{losses}</gray></yellow>"
+    kdr: "<yellow>K/D Ratio: <gray>{kdr}</gray></yellow>"
+    invalid-args: "<red>Invalid stats command usage.</red>"
+    total-invested: "<yellow>Total Invested: <gray>${invested}</gray></yellow>"
+    reset-success: "<green>Player stats reset for: <yellow>{player_name}</yellow></green>"
+    no-mythic: "<gray>No mythic owned</gray>"
+    mythic-owned: "<light_purple>Mythic: {mythic_name}</light_purple>"
+    only-players-no-args: "<red>Only players can use this command without arguments.</red>"
+    player-not-found: "<red>Player not found: {player}</red>"
 
-   # ============================================
-   # DEBUG COMMAND MESSAGES
-   # ============================================
-    debug:
-      usage: "<red>Usage: /cashclash debug <player></red>"
-      session-header: "<gold>=== Debug: {player_name} ===</gold>"
-      session-id: "<green>Session ID: {session_id}</green>"
-      arena: "<green>Arena: {arena_number}</green>"
-      round: "<yellow>Round: {round}</yellow>"
-      lives: "<yellow>Lives: {lives}</yellow>"
-      team: "<yellow>Team: {team}</yellow>"
+  # ============================================
+  # DEBUG COMMAND MESSAGES
+  # ============================================
+  debug:
+    usage: "<red>Usage: /cashclash debug <player></red>"
+    session-header: "<gold>=== Debug: {player_name} ===</gold>"
+    session-id: "<green>Session ID: {session_id}</green>"
+    arena: "<green>Arena: {arena_number}</green>"
+    round: "<yellow>Round: {round}</yellow>"
+    lives: "<yellow>Lives: {lives}</yellow>"
+    team: "<yellow>Team: {team}</yellow>"
 
-   # ============================================
-   # SELECT KIT COMMAND MESSAGES
-   # ============================================
-   selectkit:
-     success: "<green>Your kit has been changed to: <yellow>{kit_name}</yellow></green>"
-     invalid-kit: "<red>Invalid kit: {kit_name}</red>"
-     available-kits: "<gray>Available kits: {kits}</gray>"
-     warning: "<yellow>Warning: Changing kit during combat phase!</yellow>"
+  # ============================================
+  # SELECT KIT COMMAND MESSAGES
+  # ============================================
+  selectkit:
+    usage: "<red>Usage: /cc selectkit <kit> [player]</red>"
+    success: "<green>Your kit has been changed to: <yellow>{kit_name}</yellow></green>"
+    success-other: "<green>Set {player_name}'s kit to: <yellow>{kit_name}</yellow></green>"
+    invalid-kit: "<red>Invalid kit: {kit_name}</red>"
+    available-kits: "<gray>Available kits: {kits}</gray>"
+    warning: "<yellow>Warning: Changing kit during combat phase!</yellow>"
+    target-not-in-game: "<red>{player_name} is not in a game session.</red>"
+    data-not-found: "<red>Could not find player data for {player_name}.</red>"
 
-   # ============================================
-   # GAME STATE MESSAGES
-   # ============================================
-   gamestate:
-     left-game: "<green>You left the game.</green>"
-     shop-locked: "<red>Shop is locked during buff selection phase!</red>"
-     cannot-purchase-during-buff: "<red>You cannot purchase items during buff selection!</red>"
-     cannot-use-during-shopping: "<red>You cannot use special consumables during the shopping phase!</red>"
-     cannot-use-abilities-shopping: "<red>You cannot use mythic abilities during the shopping phase!</red>"
-     must-be-in-game: "<red>You must be in a game!</red>"
-     must-be-on-team: "<red>You must be on a team to transfer money!</red>"
+  # ============================================
+  # TRANSFER COMMAND MESSAGES
+  # ============================================
+  transfer:
+    usage: "<red>Usage: /cc transfer <player> <amount></red>"
+    insufficient-funds: "<red>You don't have enough coins.</red>"
+    sent: "<green>Transferred {amount} coins to {target} (fee applied).</green>"
+    received: "<green>You received {amount} coins from {sender}</green>"
+    must-be-in-game: "<red>You must be in a game to transfer money!</red>"
+    must-be-on-team: "<red>You must be on a team to transfer money!</red>"
+    cancelled: "<red>Transfer cancelled.</red>"
+    enter-valid-amount: "<red>Please enter a valid amount greater than 0.</red>"
+    failed-session-not-found: "<red>Transfer failed: Game session not found.</red>"
+    failed-receiver-offline: "<red>Transfer failed: Player is no longer online.</red>"
+    failed-player-not-in-game: "<red>Transfer failed: Player not found in game.</red>"
+    balance: "<gray>Your balance: <gold>${balance}</gold></gray>"
+    fee: "<gray>Fee: <red>-${fee}</red></gray>"
 
-   # ============================================
-   # ERROR & VALIDATION MESSAGES
-   # ============================================
+  # ============================================
+  # GAME STATE MESSAGES
+  # ============================================
+  gamestate:
+    left-game: "<green>You left the game.</green>"
+    shop-locked: "<red>Shop is locked during buff selection phase!</red>"
+    cannot-purchase-during-buff: "<red>You cannot purchase items during buff selection!</red>"
+    cannot-use-during-shopping: "<red>You cannot use special consumables during the shopping phase!</red>"
+    cannot-use-abilities-shopping: "<red>You cannot use mythic abilities during the shopping phase!</red>"
+    must-be-in-game: "<red>You must be in a game!</red>"
+    must-be-on-team: "<red>You must be on a team to transfer money!</red>"
+
+  # ============================================
+  # LOBBY MESSAGES
+  # ============================================
+  lobby-messages:
+    welcome-title: "<gold><bold>=== Welcome to Cash Clash ===</bold></gold>"
+    welcome-arenas: "<yellow>Type <green>/cc arenas</green> <yellow>to browse and join games!</yellow>"
+    welcome-help: "<gray>Use <yellow>/cc help <gray>for more commands.</gray>"
+    rejoin-available: "<yellow>You have a game in progress! Rejoining...</yellow>"
+    rejoin-time-remaining: "<gray>Time remaining to rejoin: <gold>{time_remaining}s</gold></gray>"
+    rejoin-failed: "<red>Failed to rejoin game. Starting fresh.</red>"
+
+  # ============================================
+  # REJOIN MESSAGES
+  # ============================================
+  rejoin:
+    session-ended: "<red>Your game session has ended.</red>"
+    game-ended: "<red>Your game has ended.</red>"
+
+  # ============================================
+  # LISTENER MESSAGES
+  # ============================================
+  listener:
+    out-of-lives: "<red>You are out of lives for this round!</red>"
+    respawn-delay: "<yellow>You will respawn in {seconds} seconds...</yellow>"
+    round-ended-no-respawn: "<red>The round ended. You cannot respawn.</red>"
+    respawned: "<green>You have respawned.</green>"
+    buff-potion-undrinkable: "<red>You cannot drink this potion! Right-click it to select your buff.</red>"
+    cannot-use-consumables-dead: "<red>You cannot use consumables while dead!</red>"
+    consumable-cooldown: "<red>Consumable on cooldown! ({remaining}s)</red>"
+    team-kill-bonus: "<aqua>Team Kill Bonus: +${bonus}</aqua>"
+    water-bucket-refilled: "<aqua>Water bucket refilled!</aqua>"
+    max-webs-reached: "<red>You have reached the maximum of 4 webs!</red>"
+    max-leaf-blocks-reached: "<red>You have reached the maximum of 64 leaf blocks!</red>"
+    leaf-stack-limit: "<red>You cannot stack more than 3 leaf blocks vertically!</red>"
+    max-water-lava-sources: "<red>Your team has reached the maximum of 4 water/lava sources!</red>"
+    invisibility-lost-attacker: "<red>Invisibility lost - you dealt damage!</red>"
+    invisibility-lost-victim: "<red>Invisibility lost - you took damage!</red>"
+    no-enderpearl-after-spawn: "<red>You cannot use ender pearls right after spawning.</red>"
+    enderpearls-disabled: "<red>Your team's Ender Pearls are currently disabled.</red>"
+    no-throw-respawn-protection: "<red>You cannot throw weapons during respawn protection!</red>"
+    ready-state: "<gold>You are now {state}<gold>!</gold>"
+    tablet-shopping-only: "<red>Tablet of Hacking can only be used during the shopping phase!</red>"
+    cannot-use-items-dead: "<red>You cannot use items while dead!</red>"
+    cannot-use-items-respawn-protection: "<red>You cannot use items during respawn protection!</red>"
+    cannot-use-items-while-silenced: "<red>You cannot use items while carrying the enemy's flag!</red>"
+    cannot-use-abilities-dead: "<red>You cannot use abilities while dead!</red>"
+    cannot-use-mythic-respawn-protection: "<red>You cannot use mythic abilities during respawn protection!</red>"
+    cannot-use-abilities-while-silenced: "<red>You cannot use abilities while carrying the enemy's flag!</red>"
+    cannot-use-armor-abilities-dead: "<red>You cannot use armor abilities while dead!</red>"
+    cannot-use-armor-abilities-respawn-protection: "<red>You cannot use armor abilities during respawn protection!</red>"
+
+  # ============================================
+  # ARENA GUI MESSAGES
+  # ============================================
+  arena:
+    party-member-in-game: "<red>Party member {player_name} is already in a game!</red>"
+    party-member-editing-layout: "<red>Party member {player_name} is editing a layout!</red>"
+    not-enough-space-party: "<red>Not enough space in this arena for your party!</red>"
+    party-size-vs-slots: "<gray>Party size: <white>{party_size}</white>, Available slots: <white>{available_slots}</white></gray>"
+    joined-with-party: "<green>Joined {arena_name} with your party!</green>"
+    team-assigned: "<yellow>Team: {team_color}</yellow>"
+    party-split: "<yellow>Party was split due to team size limits!</yellow>"
+    team-assigned-overflow: "<yellow>Team: {team_color} <gray>(overflow)</gray></yellow>"
+    waiting-for-players: "<gray>Waiting for players... ({current}/{max})</gray>"
+    cannot-join-while-editing: "<red>You cannot join a game while editing a layout!</red>"
+    layout-finish-help: "<gray>Use <yellow>/cc layout confirm</yellow> or <yellow>/cc layout cancel</yellow> first.</gray>"
+    already-in-game: "<red>You're already in a game!</red>"
+    not-joinable: "<red>This arena cannot be joined right now!</red>"
+    not-found: "<red>Arena not found!</red>"
+    only-party-owner-can-join: "<red>Only the party owner can join games for the party!</red>"
+    ask-owner-to-join: "<gray>Ask <yellow>{owner_name}</yellow> to join a game.</gray>"
+    joined: "<green>Joined {arena_name}!</green>"
+
+  # ============================================
+  # CUSTOM ARMOR MESSAGES
+  # ============================================
+  armor:
+    magic-helmet-absorption: "<gold>Magic Helmet: Absorption I activated! (4s)</gold>"
+    magic-helmet-resistance: "<aqua>Magic Helmet: Resistance I activated! (4s)</aqua>"
+    magic-helmet-speed: "<green>Magic Helmet: Speed I activated! (4s)</green>"
+    magic-helmet-cooldown: "<gray>Magic Helmet: 25s cooldown started</gray>"
+    dragon-target-marked: "<light_purple>🐉 Target marked! Right-click to dash within 5 blocks!</light_purple>"
+    dragon-kill-buff: "<light_purple>🐉 Dragon power surges! Strength I (4s)</light_purple>"
+    bunny-shoes-cooldown: "<red>Bunny Shoes on cooldown: {remaining}s</red>"
+    bunny-shoes-activated: "<green>Bunny Shoes activated! Speed II & Jump Boost for {duration} seconds.</green>"
+    guardian-vest-activated: "<gold>Guardian's Vest activated! Resistance II for 15 seconds. ({uses}/3 uses)</gold>"
+    deathmauler-heal: "<dark_red>Deathmauler healed you +4 hearts!</dark_red>"
+    deathmauler-absorption: "<dark_red>Deathmauler granted 2 absorption hearts!</dark_red>"
+    soul-burst: "<dark_red>Soul Burst unleashed!</dark_red>"
+    flamebringer-speed: "<gold>Flamebringer: Speed I from lava ({remaining} left)!</gold>"
+    flamebringer-pull-activated: "<gold>🔥 Flamebringer Pull Activated!</gold>"
+    flamebringer-pull-ended: "<gray>Flamebringer pull ended.</gray>"
+    tax-evasion-reward: "<green>Tax Evasion Pants: +3,000 coins for surviving 1 minute!</green>"
+
+  # ============================================
+  # CUSTOM ITEM MESSAGES
+  # ============================================
+  customitem:
+    medic-pouch-cooldown: "<red>Medic Pouch on cooldown! ({remaining}s)</red>"
+    healing-converted: "<green>Healing converted to absorption!</green>"
+    healed-full: "<green>Healed to full! Excess converted to absorption.</green>"
+    healed-three-hearts: "<green>Healed 3 hearts!</green>"
+    heal-teammates-only: "<red>You can only heal teammates!</red>"
+    ally-gave-absorption: "<green>{player_name} gave you absorption!</green>"
+    ally-healed-you: "<green>{player_name} healed you!</green>"
+    healed-ally: "<green>Healed {player_name}!</green>"
+    tablet-insufficient-coins: "<red>Not enough coins to use Tablet of Hacking! Cost: $2,000</red>"
+    tablet-viewing-inventory: "<gray>Viewing {player_name}'s inventory.</gray>"
+    invis-cooldown: "<red>Invisibility Cloak on cooldown! ({remaining}s)</red>"
+    no-uses-remaining: "<red>No uses remaining this round!</red>"
+    invis-activated: "<green>Invisibility activated! Right-click to deactivate.</green>"
+    invis-cost-per-second: "<yellow>Losing {cost} coins per second...</yellow>"
+    invis-out-of-coins: "<red>Out of coins! Invisibility ended.</red>"
+    invis-deactivated: "<yellow>Invisibility deactivated.</yellow>"
+    cash-blaster-hit-capped: "<green>+${amount} from Cash Blaster hit! (Reached max: ${max})</green>"
+    cash-blaster-limit: "<red>Cash Blaster limit of ${max} reached this round!</red>"
+    cash-blaster-hit: "<green>+${amount} from Cash Blaster hit!</green>"
+    cannot-place-during-shopping: "<red>You can't place this item during shopping!</red>"
+    cannot-place-bounce-pad: "<red>Cannot place bounce pad here!</red>"
+    bounce-pad-placed: "<green>Bounce pad placed!</green>"
+    bounce-pad-enemy-team: "<red>This bounce pad belongs to the enemy team!</red>"
+    cannot-place-boombox: "<red>Cannot place boombox here!</red>"
+    revive-teammates-only: "<red>You can only revive teammates!</red>"
+    revive-target-has-lives: "<red>{player_name} still has lives remaining!</red>"
+    revive-max-anchors: "<red>You've used the maximum respawn anchors this round!</red>"
+    revive-already-revived: "<red>{player_name} was already revived this round!</red>"
+    revive-already-reviving: "<red>You're already reviving someone!</red>"
+    revive-start-reviver: "<yellow>Reviving {player_name}... Stay close for 10 seconds!</yellow>"
+    revive-start-target: "<yellow>{player_name} is reviving you! Stay close for 10 seconds!</yellow>"
+    revive-failed-distance: "<red>Revive failed - target too far!</red>"
+    revive-failed-generic: "<red>{reason}</red>"
+    revive-success-reviver: "<green>Successfully revived {player_name}!</green>"
+    revive-success-target: "<green>You have been revived by {player_name}! +2 bonus hearts!</green>"
+
+  # ============================================
+  # ERROR & VALIDATION MESSAGES
+  # ============================================
   error:
     unknown-error: "<red>An unknown error occurred.</red>"
     invalid-input: "<red>Invalid input!</red>"

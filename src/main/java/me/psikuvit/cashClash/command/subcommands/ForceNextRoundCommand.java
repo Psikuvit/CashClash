@@ -2,7 +2,6 @@ package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.config.ConfigManager;
-import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -26,24 +25,24 @@ public class ForceNextRoundCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this command.</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) {
-            Messages.send(sender, "<red>You're not in a game session. Join an arena first.</red>");
+            Messages.send(sender, "generic.player-not-in-game");
             return true;
         }
 
         GameState state = session.getState();
         if (state == GameState.WAITING) {
-            Messages.send(sender, "<red>The game hasn't started yet! Use /cc forcestart instead.</red>");
+            Messages.send(sender, "admin.forcenextround-not-started");
             return true;
         }
 
         if (state == GameState.ENDING) {
-            Messages.send(sender, "<red>The game is already ending.</red>");
+            Messages.send(sender, "admin.forcenextround-already-ending");
             return true;
         }
 
@@ -51,19 +50,18 @@ public class ForceNextRoundCommand extends AbstractArgCommand {
         int totalRounds = ConfigManager.getInstance().getTotalRounds();
 
         if (currentRound >= totalRounds) {
-            Messages.send(sender, "<yellow>This is the final round. Ending game instead.</yellow>");
+            Messages.send(sender, "admin.forcenextround-final-round");
             session.end();
             Messages.broadcast(session.getPlayers(), "admin.game-ended");
             return true;
         }
 
         // Force transition to next round
-        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("admin.round-skipped", "next_round", String.valueOf(currentRound + 1)));
+        Messages.broadcast(session.getPlayers(), "admin.round-skipped", "next_round", String.valueOf(currentRound + 1));
 
         // Trigger next round (this will handle cleanup and setup)
         session.nextRound();
-
-        Messages.send(sender, "<green>Successfully skipped to round " + (currentRound + 1) + ".</green>");
+        Messages.send(sender, "admin.forcenextround-success", "round", String.valueOf(currentRound + 1));
 
         return true;
     }

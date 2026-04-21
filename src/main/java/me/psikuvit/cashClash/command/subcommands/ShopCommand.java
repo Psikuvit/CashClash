@@ -18,13 +18,13 @@ public class ShopCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this command.</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
 
         var sess = GameManager.getInstance().getPlayerSession(player);
         if (sess == null) {
-            Messages.send(player, "<red>You're not in a game.</red>");
+            Messages.send(player, "generic.player-not-in-game");
             player.closeInventory();
             return true;
         }

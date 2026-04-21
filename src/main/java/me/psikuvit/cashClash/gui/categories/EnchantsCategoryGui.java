@@ -57,7 +57,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
     private void handleEnchantPurchase(EnchantEntry ee, int nextLevel) {
         GameSession sess = getSession();
         if (sess == null) {
-            Messages.send(viewer, "<red>You must be in a game to shop.</red>");
+            Messages.send(viewer, "shop.must-be-in-game");
             viewer.closeInventory();
             return;
         }
@@ -73,13 +73,13 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
         }
 
         if (nextLevel > ee.getMaxLevel()) {
-            Messages.send(viewer, "<yellow>You already have the maximum level of this enchant!</yellow>");
+            Messages.send(viewer, "shop.max-enchant-level");
             return;
         }
 
         long price = ee.getPriceForLevel(nextLevel);
         if (!ShopService.getInstance().canAfford(viewer, price)) {
-            Messages.send(viewer, "<red>Not enough coins! (Cost: $" + String.format("%,d", price) + ")</red>");
+            Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", price));
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -88,14 +88,14 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
         CustomArmorManager armorManager = CustomArmorManager.getInstance();
         if (armorManager.hasDeathmaulerSet(viewer)) {
             if (ee == EnchantEntry.PROTECTION && ccp.getOwnedEnchantLevel(EnchantEntry.PROJECTILE_PROTECTION) > 0) {
-                Messages.send(viewer, "<red>Deathmauler set restriction: You already have Projectile Protection!</red>");
-                Messages.send(viewer, "<red>You must choose either Protection OR Projectile Protection.</red>");
+                Messages.send(viewer, "shop.deathmauler-has-projectile");
+                Messages.send(viewer, "shop.deathmauler-protection-choice");
                 SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 return;
             }
             if (ee == EnchantEntry.PROJECTILE_PROTECTION && ccp.getOwnedEnchantLevel(EnchantEntry.PROTECTION) > 0) {
-                Messages.send(viewer, "<red>Deathmauler set restriction: You already have Protection!</red>");
-                Messages.send(viewer, "<red>You must choose either Protection OR Projectile Protection.</red>");
+                Messages.send(viewer, "shop.deathmauler-has-protection");
+                Messages.send(viewer, "shop.deathmauler-protection-choice");
                 SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 return;
             }
@@ -104,7 +104,8 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
         if (ItemUtils.applyEnchant(viewer, ee, nextLevel)) {
             ShopService.getInstance().deductCoins(viewer, price);
             ccp.setOwnedEnchantLevel(ee, nextLevel);
-            Messages.send(viewer, "<green>Purchased " + ee.getDisplayName() + " " + nextLevel + " for $" + String.format("%,d", price) + "</green>");
+            Messages.send(viewer, "shop.enchant-purchased",
+                    "enchant_name", ee.getDisplayName(), "level", String.valueOf(nextLevel), "price", String.format("%,d", price));
             SoundUtils.play(viewer, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
             refresh();
         }

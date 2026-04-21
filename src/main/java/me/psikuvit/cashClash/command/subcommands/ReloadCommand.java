@@ -29,7 +29,7 @@ public class ReloadCommand extends AbstractArgCommand {
     public boolean onCommand(@NotNull CommandSender sender, String @NotNull [] args) {
         String target = args.length > 0 ? args[0].toLowerCase() : "all";
 
-        Messages.send(sender, "<yellow>Reloading CashClash configurations...</yellow>");
+        Messages.send(sender, "reload.title");
 
         try {
             int reloaded;
@@ -39,22 +39,22 @@ public class ReloadCommand extends AbstractArgCommand {
                     CashClashPlugin.getInstance().reloadConfig();
                     ConfigManager.getInstance().reload();
                     reloaded = 1;
-                    Messages.send(sender, "<green>✓ Reloaded config.yml</green>");
+                    Messages.send(sender, "reload.config-success");
                 }
                 case "shop" -> {
                     ShopConfig.getInstance().reload();
                     reloaded = 1;
-                    Messages.send(sender, "<green>✓ Reloaded shop.yml</green>");
+                    Messages.send(sender, "reload.shop-success");
                 }
                 case "items" -> {
                     ItemsConfig.getInstance().reload();
                     reloaded = 1;
-                    Messages.send(sender, "<green>✓ Reloaded items.yml</green>");
+                    Messages.send(sender, "reload.items-success");
                 }
                 case "mannequins", "npcs" -> {
                     MannequinManager.getInstance().reload();
                     reloaded = 1;
-                    Messages.send(sender, "<green>✓ Reloaded mannequins (respawned all NPCs)</green>");
+                    Messages.send(sender, "reload.mannequins-success");
                 }
                 case "all" -> {
                     CashClashPlugin.getInstance().reloadConfig();
@@ -63,16 +63,16 @@ public class ReloadCommand extends AbstractArgCommand {
                     ItemsConfig.getInstance().reload();
                     MannequinManager.getInstance().reload();
                     reloaded = 4;
-                    Messages.send(sender, "<green>✓ Reloaded all configuration files and mannequins</green>");
+                    Messages.send(sender, "reload.all-success");
                 }
                 default -> {
-                    Messages.send(sender, "<red>Unknown config: " + target + "</red>");
-                    Messages.send(sender, "<gray>Usage: /cc reload [config|shop|items|mannequins|all]</gray>");
+                    Messages.send(sender, "reload.invalid-target", "target", target);
+                    Messages.send(sender, "reload.usage");
                     return false;
                 }
             }
 
-            Messages.send(sender, "<green>Successfully reloaded " + reloaded + " configuration file(s)!</green>");
+            Messages.send(sender, "reload.count-success", "count", String.valueOf(reloaded));
 
             // Log to console
             CashClashPlugin.getInstance().getLogger().info(
@@ -81,7 +81,7 @@ public class ReloadCommand extends AbstractArgCommand {
 
             return true;
         } catch (Exception e) {
-            Messages.send(sender, "<red>✗ Error reloading configs: " + e.getMessage() + "</red>");
+            Messages.send(sender, "generic.error-reloading", "error_msg", e.getMessage());
             CashClashPlugin.getInstance().getLogger().log(Level.WARNING, "Config reload error", e);
             return false;
         }

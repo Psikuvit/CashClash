@@ -72,8 +72,8 @@ public class LayoutCommand extends AbstractArgCommand {
                 layoutManager.cancelEditing(player);
             }
             default -> {
-                Messages.send(player, "<red>Unknown action: " + action + "</red>");
-                Messages.send(player, "<gray>Usage: /cc layout [confirm|cancel]</gray>");
+                Messages.send(player, "command.layout-unknown-action", "action", action);
+                Messages.send(player, "command.layout-usage");
             }
         }
 

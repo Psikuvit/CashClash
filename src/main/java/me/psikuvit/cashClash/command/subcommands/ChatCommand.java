@@ -61,24 +61,26 @@ public class ChatCommand extends AbstractArgCommand {
 
     private void showCurrentChannel(Player player) {
         ChatChannel channel = ChatManager.getInstance().getPlayerChannel(player);
-        Messages.send(player, "<gray>Current chat channel: </gray>" + channel.getNameColor() + channel.getDisplayName());
-        Messages.send(player, "<gray>Use </gray><yellow>/cc chat <channel></yellow><gray> to switch.</gray>");
-        Messages.send(player, "<gray>Quick prefixes: </gray><aqua>@p</aqua><gray>, </gray><green>@t</green><gray>, </gray><gold>@g</gold><gray>, </gray><white>@a</white>");
+        Messages.send(player, "chat.current-channel",
+                "channel_color", channel.getNameColor(),
+                "channel_name", channel.getDisplayName());
+        Messages.send(player, "chat.switch-hint");
+        Messages.send(player, "chat.quick-prefixes");
     }
 
     private void showHelp(Player player) {
-        Messages.send(player, "<gold>═══════ Chat Commands ═══════</gold>");
-        Messages.send(player, "<yellow>/cc chat global</yellow> <gray>- Switch to global chat</gray>");
-        Messages.send(player, "<yellow>/cc chat party</yellow> <gray>- Toggle party chat</gray>");
-        Messages.send(player, "<yellow>/cc chat team</yellow> <gray>- Toggle team chat (in-game)</gray>");
-        Messages.send(player, "<yellow>/cc chat game</yellow> <gray>- Toggle game chat (in-game)</gray>");
-        Messages.send(player, "");
-        Messages.send(player, "<yellow>Quick prefixes in chat:</yellow>");
-        Messages.send(player, "<aqua>@p <msg></aqua> <gray>- Send to party</gray>");
-        Messages.send(player, "<green>@t <msg></green> <gray>- Send to team</gray>");
-        Messages.send(player, "<gold>@g <msg></gold> <gray>- Send to game</gray>");
-        Messages.send(player, "<white>@a <msg></white> <gray>- Send to all (global)</gray>");
-        Messages.send(player, "<gold>══════════════════════════════</gold>");
+        Messages.send(player, "chat.help-title");
+        Messages.send(player, "chat.help-global");
+        Messages.send(player, "chat.help-party");
+        Messages.send(player, "chat.help-team");
+        Messages.send(player, "chat.help-game");
+        Messages.send(player, "chat.help-spacer");
+        Messages.send(player, "chat.help-quick-title");
+        Messages.send(player, "chat.help-quick-party");
+        Messages.send(player, "chat.help-quick-team");
+        Messages.send(player, "chat.help-quick-game");
+        Messages.send(player, "chat.help-quick-global");
+        Messages.send(player, "chat.help-footer");
     }
 
     @Override

@@ -27,20 +27,20 @@ public class MythicsCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NonNull @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this command.</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) {
-            Messages.send(player, "<red>You're not in a game.</red>");
+            Messages.send(player, "generic.player-not-in-game");
             return true;
         }
 
         MythicItem mythicItem = ShopItems.getMythic(args[0]);
 
         if (mythicItem == null) {
-            Messages.send(player, "<red>Mythic item not found: " + args[0] + "</red>");
+            Messages.send(player, "generic.mythic-not-found", "item_name", args[0]);
             return true;
         }
 

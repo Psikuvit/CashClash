@@ -112,7 +112,7 @@ public class TransferInputListener implements Listener {
         if (pending == null) return;
 
         if (amountStr.isEmpty() || amountStr.equalsIgnoreCase("cancel")) {
-            Messages.send(player, "<red>Transfer cancelled.</red>");
+            Messages.send(player, "transfer.cancelled");
             SchedulerUtils.runTaskLater(() -> TransferGUI.open(player), 5L);
             return;
         }
@@ -121,7 +121,7 @@ public class TransferInputListener implements Listener {
             long amount = Long.parseLong(amountStr.replaceAll("[^0-9]", ""));
 
             if (amount <= 0) {
-                Messages.send(player, "<red>Please enter a valid amount greater than 0.</red>");
+                Messages.send(player, "transfer.enter-valid-amount");
                 SchedulerUtils.runTaskLater(() -> TransferGUI.open(player), 20L);
                 return;
             }
@@ -129,7 +129,7 @@ public class TransferInputListener implements Listener {
             processTransfer(player, pending, amount);
 
         } catch (NumberFormatException e) {
-            Messages.send(player, "<red>Invalid amount. Please enter a number.</red>");
+            Messages.send(player, "generic.invalid-amount-number");
             SchedulerUtils.runTaskLater(() -> TransferGUI.open(player), 20L);
         }
     }
@@ -141,13 +141,13 @@ public class TransferInputListener implements Listener {
                 .orElse(null);
 
         if (session == null) {
-            Messages.send(sender, "<red>Transfer failed: Game session not found.</red>");
+            Messages.send(sender, "transfer.failed-session-not-found");
             return;
         }
 
         Player receiver = Bukkit.getPlayer(pending.receiverId());
         if (receiver == null || !receiver.isOnline()) {
-            Messages.send(sender, "<red>Transfer failed: Player is no longer online.</red>");
+            Messages.send(sender, "transfer.failed-receiver-offline");
             SchedulerUtils.runTaskLater(() -> TransferGUI.open(sender), 20L);
             return;
         }
@@ -156,14 +156,14 @@ public class TransferInputListener implements Listener {
         CashClashPlayer receiverCcp = session.getCashClashPlayer(receiver.getUniqueId());
 
         if (senderCcp == null || receiverCcp == null) {
-            Messages.send(sender, "<red>Transfer failed: Player not found in game.</red>");
+            Messages.send(sender, "transfer.failed-player-not-in-game");
             SchedulerUtils.runTaskLater(() -> TransferGUI.open(sender), 20L);
             return;
         }
 
         if (!senderCcp.canAfford(amount)) {
-            Messages.send(sender, "<red>You don't have enough coins!</red>");
-            Messages.send(sender, "<gray>Your balance: <gold>$" + String.format("%,d", senderCcp.getCoins()) + "</gold></gray>");
+            Messages.send(sender, "transfer.insufficient-funds");
+            Messages.send(sender, "transfer.balance", "balance", String.format("%,d", senderCcp.getCoins()));
             SchedulerUtils.runTaskLater(() -> TransferGUI.open(sender), 20L);
             return;
         }
@@ -175,12 +175,9 @@ public class TransferInputListener implements Listener {
         senderCcp.deductCoins(amount);
         receiverCcp.addCoins(netAmount);
 
-        Messages.send(sender, "<green>Transferred <gold>$" + String.format("%,d", amount) +
-                "</gold> to " + receiver.getName() + "!</green>");
-        Messages.send(sender, "<gray>Fee: <red>-$" + String.format("%,d", fee) + "</red></gray>");
-
-        Messages.send(receiver, "<green>You received <gold>$" + String.format("%,d", netAmount) +
-                "</gold> from " + sender.getName() + "!</green>");
+        Messages.send(sender, "transfer.sent", "amount", String.format("%,d", amount), "target", receiver.getName());
+        Messages.send(sender, "transfer.fee", "fee", String.format("%,d", fee));
+        Messages.send(receiver, "transfer.received", "amount", String.format("%,d", netAmount), "sender", sender.getName());
 
         // Reopen shop after a short delay
         SchedulerUtils.runTaskLater(() -> ShopGUI.openMain(sender), 20L);

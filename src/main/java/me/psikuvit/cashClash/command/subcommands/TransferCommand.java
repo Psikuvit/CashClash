@@ -22,18 +22,18 @@ public class TransferCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this command.</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
 
         if (args.length < 2) {
-            Messages.send(player, "<red>Usage: /cc transfer <player> <amount></red>");
+            Messages.send(player, "transfer.usage");
             return true;
         }
 
         Player target = Bukkit.getPlayer(args[0]);
         if (target == null || !target.isOnline()) {
-            Messages.send(player, "<red>Player not found or not online.</red>");
+            Messages.send(player, "generic.player-not-found-or-offline");
             return true;
         }
 
@@ -41,32 +41,30 @@ public class TransferCommand extends AbstractArgCommand {
         try {
             amount = Long.parseLong(args[1]);
         } catch (NumberFormatException e) {
-            Messages.send(player, "<red>Invalid amount.</red>");
+            Messages.send(player, "generic.invalid-amount");
             return true;
         }
 
         var session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) { Messages.send(player, "<red>You're not in a game.</red>"); return true; }
+        if (session == null) { Messages.send(player, "generic.player-not-in-game"); return true; }
 
         CashClashPlayer senderCCP = session.getCashClashPlayer(player.getUniqueId());
         CashClashPlayer receiverCCP = session.getCashClashPlayer(target.getUniqueId());
         if (senderCCP == null || receiverCCP == null) {
-            Messages.send(player, "<red>Both players must be in the same game.</red>");
+            Messages.send(player, "generic.both-players-same-game");
             return true;
         }
 
         boolean ok = EconomyManager.transferMoney(senderCCP, receiverCCP, amount, session);
         if (!ok) {
-            Messages.send(player, "<red>You don't have enough coins.</red>");
+            Messages.send(player, "transfer.insufficient-funds");
             return true;
         }
 
-        Messages.send(player, "<green>Transferred " +
-                amount + " coins to " + target.getName()
-                + " (fee applied).</green>");
-        Messages.send(target, "<green>You received " +
-                (long)(amount * (1 - EconomyManager.getTransferFee(session)))
-                + " coins from " + player.getName() + "</green>");
+        Messages.send(player, "transfer.sent", "amount", String.valueOf(amount), "target", target.getName());
+        Messages.send(target, "transfer.received",
+                "amount", String.valueOf((long) (amount * (1 - EconomyManager.getTransferFee(session)))),
+                "sender", player.getName());
 
         return true;
     }

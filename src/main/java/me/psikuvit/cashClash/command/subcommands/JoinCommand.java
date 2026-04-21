@@ -8,7 +8,6 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
-import java.util.List;
 
 public class JoinCommand extends AbstractArgCommand {
     public JoinCommand() {
@@ -18,11 +17,11 @@ public class JoinCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this command.</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
         ArenaSelectionGUI.openArenaGUI(player);
-        Messages.send(player, "<yellow>Select an arena to join!</yellow>");
+        Messages.send(player, "command.join-select-arena");
         return true;
     }
 }

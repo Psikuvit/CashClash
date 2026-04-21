@@ -23,18 +23,18 @@ public class StatsCommand extends AbstractArgCommand {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (args.length == 0) {
             if (!(sender instanceof Player player)) {
-                Messages.send(sender, "<red>Only players can use this command without arguments.</red>");
+                Messages.send(sender, "stats.only-players-no-args");
                 return true;
             }
 
 
             PlayerData data = PlayerDataManager.getInstance().getData(player.getUniqueId());
 
-            Messages.send(player, "<gold>=== Your Stats ===</gold>");
-            Messages.send(player, "<yellow>Wins: <gray>" + data.getWins() + "</gray></yellow>");
-            Messages.send(player, "<yellow>Kills: <gray>" + data.getKills() + "</gray></yellow>");
-            Messages.send(player, "<yellow>Deaths: <gray>" + data.getDeaths() + "</gray></yellow>");
-            Messages.send(player, "<yellow>Total Invested: <gray>$" + data.getTotalCoinsInvested() + "</gray></yellow>");
+            Messages.send(player, "stats.title");
+            Messages.send(player, "stats.wins", "wins", String.valueOf(data.getWins()));
+            Messages.send(player, "stats.kills", "kills", String.valueOf(data.getKills()));
+            Messages.send(player, "stats.deaths", "deaths", String.valueOf(data.getDeaths()));
+            Messages.send(player, "stats.total-invested", "invested", String.valueOf(data.getTotalCoinsInvested()));
 
             return true;
         }
@@ -42,13 +42,13 @@ public class StatsCommand extends AbstractArgCommand {
         // Admin actions: /cc stats reset <player>
         if (args.length >= 2 && args[0].equalsIgnoreCase("reset")) {
             if (!sender.hasPermission("cashclash.admin")) {
-                Messages.send(sender, "<red>You don't have permission to reset player stats.</red>");
+                Messages.send(sender, "generic.permission-reset-stats");
                 return true;
             }
 
             Player target = Bukkit.getPlayer(args[1]);
             if (target == null) {
-                Messages.send(sender, "<red>Player not found or not online.</red>");
+                Messages.send(sender, "generic.player-not-found-or-offline");
                 return true;
             }
 
@@ -59,12 +59,12 @@ public class StatsCommand extends AbstractArgCommand {
             data.setWins(0);
             data.setTotalCoinsInvested(0L);
 
-            Messages.send(sender, "<green>Player stats reset for: <yellow>" + target.getName() + "</yellow></green>");
+            Messages.send(sender, "stats.reset-success", "player_name", target.getName());
 
             return true;
         }
 
-        Messages.send(sender, "<red>Invalid stats command usage.</red>");
+        Messages.send(sender, "stats.invalid-args");
         return true;
     }
 

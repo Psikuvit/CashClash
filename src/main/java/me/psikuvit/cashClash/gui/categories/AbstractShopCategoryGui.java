@@ -113,14 +113,14 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
     protected void handlePurchasableClick(Purchasable item, ClickType clickType) {
         GameSession sess = getSession();
         if (sess == null) {
-            Messages.send(viewer, "<red>You must be in a game to shop.</red>");
+            Messages.send(viewer, "shop.must-be-in-game");
             viewer.closeInventory();
             return;
         }
 
         // Prevent purchases during buff selection phase
         if (sess.getState() == GameState.BUFF_SELECTION) {
-            Messages.send(viewer, "<red>You cannot purchase items during buff selection!</red>");
+            Messages.send(viewer, "gamestate.cannot-purchase-during-buff");
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -138,7 +138,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         long totalPrice = ShopService.getInstance().calculateTotalPrice(item, qty);
 
         if (!ShopService.getInstance().canAfford(viewer, totalPrice)) {
-            Messages.send(viewer, "<red>Not enough coins! (Cost: $" + String.format("%,d", totalPrice) + ")</red>");
+            Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", totalPrice));
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -153,7 +153,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
     protected void handleUndoPurchase() {
         GameSession sess = getSession();
         if (sess == null) {
-            Messages.send(viewer, "<red>You're not in a game.</red>");
+            Messages.send(viewer, "generic.player-not-in-game");
             viewer.closeInventory();
             return;
         }
@@ -163,12 +163,12 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
 
         PurchaseRecord rec = ccp.peekLastPurchase();
         if (rec == null || rec.round() != sess.getCurrentRound()) {
-            Messages.send(viewer, "<red>No purchase to undo.</red>");
+            Messages.send(viewer, "shop.no-purchase-undo");
             return;
         }
         Messages.debug(rec.toString());
         if (rec.item().getCategory() != category) {
-            Messages.send(viewer, "<red>No purchase to undo in this category.</red>");
+            Messages.send(viewer, "shop.no-purchase-undo-category");
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -199,7 +199,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         ItemStack itemStack = ItemFactory.getInstance().createUpgradableGuiItem(item, maxed);
         return GuiButton.of(itemStack).onClick((p, clickType) -> {
             if (maxed) {
-                Messages.send(p, "<yellow>You already have the maximum tier of this item!</yellow>");
+                Messages.send(p, "shop.max-tier-reached");
                 SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 return;
             }

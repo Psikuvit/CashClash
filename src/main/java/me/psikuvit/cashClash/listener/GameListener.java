@@ -163,7 +163,8 @@ public class GameListener implements Listener {
         killerCCP.addCoins(finalReward);
         
         if (investorMultiplier > 1.0) {
-            Messages.send(killer, "<gray>Investor's Set: +" + String.format("%.1f", (investorMultiplier - 1.0) * 100) + "% bonus coins</gray>");
+            Messages.send(killer, "bonus.bonus-investor", "multiplier_percent",
+                    String.format("%.1f", (investorMultiplier - 1.0) * 100));
         }
 
         // Apply kill team split bonus to entire team
@@ -176,7 +177,7 @@ public class GameListener implements Listener {
     }
 
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {
-        Messages.send(player, "<red>You are out of lives for this round!</red>");
+        Messages.send(player, "listener.out-of-lives");
         SchedulerUtils.runTask(() -> {
             player.spigot().respawn();
             player.teleport(spectatorLocation);
@@ -188,7 +189,7 @@ public class GameListener implements Listener {
         int respawnDelaySec = ConfigManager.getInstance().getRespawnDelay();
         int respawnProtectionSec = ConfigManager.getInstance().getRespawnProtection();
 
-        Messages.send(player, "<yellow>You will respawn in " + respawnDelaySec + " seconds...</yellow>");
+        Messages.send(player, "listener.respawn-delay", "seconds", String.valueOf(respawnDelaySec));
 
         SchedulerUtils.runTask(() -> {
             player.spigot().respawn();
@@ -205,14 +206,14 @@ public class GameListener implements Listener {
 
         // If round ended (moved to shopping phase), don't respawn into combat
         if (!isGameInCombat(session)) {
-            Messages.send(player, "<red>The round ended. You cannot respawn.</red>");
+            Messages.send(player, "listener.round-ended-no-respawn");
             return;
         }
 
         teleportToSpawn(player, session);
         restorePlayerHealth(player);
         preparePlayerForCombat(player, session, respawnProtectionSec);
-        Messages.send(player, "<green>You have respawned.</green>");
+        Messages.send(player, "listener.respawned");
 
         // Fire custom event when player is back in game
         Bukkit.getPluginManager().callEvent(new PlayerBackToGameEvent(player));
@@ -300,7 +301,7 @@ public class GameListener implements Listener {
         // Check if this is a Protect the President buff selection potion (undrinkable)
         if (PDCDetection.isBuffSelectionPotion(consumed)) {
             event.setCancelled(true);
-            Messages.send(p, "<red>You cannot drink this potion! Right-click it to select your buff.</red>");
+            Messages.send(p, "listener.buff-potion-undrinkable");
             return true;
         }
 
@@ -314,7 +315,7 @@ public class GameListener implements Listener {
             FoodItem fi = PDCDetection.getFood(consumed);
             if (fi != null) {
                 event.setCancelled(true);
-                Messages.send(p, "<red>You cannot use special consumables during the shopping phase!</red>");
+                Messages.send(p, "gamestate.cannot-use-during-shopping");
                 return true;
             }
         }
@@ -332,7 +333,7 @@ public class GameListener implements Listener {
             RoundData roundData = session.getCurrentRoundData();
             if (roundData != null && !roundData.isAlive(p.getUniqueId())) {
                 event.setCancelled(true);
-                Messages.send(p, "<red>You cannot use consumables while dead!</red>");
+                Messages.send(p, "listener.cannot-use-consumables-dead");
                 return true;
             }
         }
@@ -366,7 +367,7 @@ public class GameListener implements Listener {
         CooldownManager cooldownManager = CooldownManager.getInstance();
         if (cooldownManager.isOnCooldown(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE);
-            Messages.send(p, "<red>Consumable on cooldown! (" + remaining + "s)</red>");
+            Messages.send(p, "listener.consumable-cooldown", "remaining", String.valueOf(remaining));
             return false;
         }
         int cooldownSeconds = ItemsConfig.getInstance().getConsumableCooldown();
@@ -670,7 +671,7 @@ public class GameListener implements Listener {
         }
 
         ccp.addCoins(amount);
-        Messages.send(p, "<gold>+$" + String.format("%,d", amount) + " from supply drop!</gold>");
+        Messages.send(p, "cashquake.supply-drop-reward", "amount", String.format("%,d", amount));
         SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
     }
 
@@ -721,7 +722,7 @@ public class GameListener implements Listener {
                 player.addCoins(bonusPerPlayer);
                 Player bukkitPlayer = Bukkit.getPlayer(uuid);
                 if (bukkitPlayer != null && bukkitPlayer.isOnline()) {
-                    Messages.send(bukkitPlayer, "<aqua>Team Kill Bonus: +$" + String.format("%,d", bonusPerPlayer) + "</aqua>");
+                    Messages.send(bukkitPlayer, "listener.team-kill-bonus", "bonus", String.format("%,d", bonusPerPlayer));
                 }
             }
         }

@@ -218,14 +218,14 @@ public class RejoinManager {
         // Find the session
         GameSession session = findSessionById(data.sessionId());
         if (session == null) {
-            Messages.send(player, "<red>Your game session has ended.</red>");
+            Messages.send(player, "rejoin.session-ended");
             pendingRejoins.remove(player.getUniqueId());
             return false;
         }
 
         // Check if session is still active
         if (session.getState() == GameState.ENDING || session.getState() == GameState.WAITING) {
-            Messages.send(player, "<red>Your game has ended.</red>");
+            Messages.send(player, "rejoin.game-ended");
             pendingRejoins.remove(player.getUniqueId());
             return false;
         }

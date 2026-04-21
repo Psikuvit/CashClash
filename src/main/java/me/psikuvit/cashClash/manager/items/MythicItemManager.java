@@ -1539,7 +1539,7 @@ public class MythicItemManager {
         Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
 
         Messages.debug(shooter, "BLOODWRENCH: Supercharged hit - creating blood vortex at " + hitLocation);
-        Messages.send(shooter, "<dark_purple>Blood Vortex activated!</dark_purple>");
+        Messages.send(shooter, "mythic.blood-vortex-activated");
 
         SoundUtils.playAt(hitLocation, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.5f);
         SoundUtils.playAt(hitLocation, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 1.2f);
@@ -1668,7 +1668,7 @@ public class MythicItemManager {
                 true
         ));
 
-        Messages.send(player, "<dark_aqua><bold>BOXING GLOVES ACTIVATED!</bold></dark_aqua>");
+        Messages.send(player, "mythic.boxing-gloves-activated");
         Messages.send(player, "mythic.genericitem-punch");
         SoundUtils.play(player, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.5f);
 
@@ -1696,7 +1696,7 @@ public class MythicItemManager {
 
         // Start cooldown
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING, cfg.getWardenBoxingCooldown());
-        Messages.send(player, "<gray>Boxing gloves cooling down..." + cfg.getWardenBoxingCooldown() + "s</gray>");
+        Messages.send(player, "mythic.boxing-gloves-cooldown", "seconds", String.valueOf(cfg.getWardenBoxingCooldown()));
         Messages.debug(player, "WARDEN_GLOVES: Boxing ability ended - cooldown " + cfg.getWardenBoxingCooldown() + "s");
     }
 
@@ -1718,7 +1718,8 @@ public class MythicItemManager {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE)) {
             Messages.debug(player, "WARDEN_GLOVES: Shockwave on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE) + "s");
-            Messages.send(player, "<red>Shockwave on cooldown! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE) + "s)</red>");
+            Messages.send(player, "mythic.shockwave-cooldown", "cooldown_seconds",
+                    String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE)));
             return;
         }
 
@@ -1763,7 +1764,7 @@ public class MythicItemManager {
         }
 
         Messages.debug(player, "WARDEN_GLOVES: Shockwave hit " + hitCount + " enemies, damage: " + cfg.getWardenShockwaveDamage() + ", cooldown: " + cfg.getWardenShockwaveCooldown() + "s");
-        Messages.send(player, "<dark_aqua>SHOCKWAVE!</dark_aqua>");
+        Messages.send(player, "mythic.shockwave-activated");
     }
 
 
@@ -1786,7 +1787,8 @@ public class MythicItemManager {
         if (shots <= 0) {
             if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD)) {
                 Messages.debug(player, "BLAZEBITE: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD) + "s");
-                Messages.send(player, "<red>BlazeBite reloading! (" + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD) + "s)</red>");
+                Messages.send(player, "mythic.blazebite-reloading", "cooldown_seconds",
+                        String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD)));
                 return false;
             }
             blazebiteShotsRemaining.put(uuid, cfg.getBlazebiteShotsPerMag());
@@ -1800,7 +1802,7 @@ public class MythicItemManager {
         if (shots - 1 <= 0) {
             cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD, cfg.getBlazebiteReloadCooldown());
             Messages.debug(player, "BLAZEBITE: Out of shots, reloading for " + cfg.getBlazebiteReloadCooldown() + "s");
-            Messages.send(player, "<yellow>BlazeBite reloading...</yellow>");
+            Messages.send(player, "mythic.blazebite-reload-start");
         }
 
         return true;
@@ -1833,8 +1835,8 @@ public class MythicItemManager {
                     victim.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, freezeInPlaceDuration, 128, false, true));
 
                     Messages.debug(shooter, "BLAZEBITE: Glacier DOUBLE HIT on " + victim.getName() + " - FROZEN IN PLACE for " + (freezeInPlaceDuration / 20) + "s");
-                    Messages.send(shooter, "<aqua>Target frozen solid!</aqua>");
-                    Messages.send(victim, "<aqua>You are frozen in place!</aqua>");
+                    Messages.send(shooter, "mythic.target-frozen");
+                    Messages.send(victim, "mythic.you-are-frozen");
 
                     SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
                     SoundUtils.play(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);

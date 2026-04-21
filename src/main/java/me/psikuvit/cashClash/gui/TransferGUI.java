@@ -44,13 +44,13 @@ public class TransferGUI extends AbstractGui {
     public static void open(Player player) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) {
-            Messages.send(player, "<red>You must be in a game to transfer money!</red>");
+            Messages.send(player, "transfer.must-be-in-game");
             return;
         }
 
         Team playerTeam = session.getPlayerTeam(player);
         if (playerTeam == null) {
-            Messages.send(player, "<red>You must be on a team to transfer money!</red>");
+            Messages.send(player, "transfer.must-be-on-team");
             return;
         }
 

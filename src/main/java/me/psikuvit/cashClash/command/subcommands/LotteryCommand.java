@@ -24,19 +24,19 @@ public class LotteryCommand extends AbstractArgCommand {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Messages.send(sender, "<red>Only players can use this command.</red>");
+            Messages.send(sender, "command.only-players");
             return true;
         }
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) {
-            Messages.send(player, "<red>You're not in a game.</red>");
+            Messages.send(player, "generic.player-not-in-game");
             return true;
         }
 
         /**CashQuakeManager cqm = session.getCashQuakeManager();
         if (cqm == null) {
-            Messages.send(player, "<red>Cash Quake events are not available.</red>");
+            Messages.send(player, "generic.cashquake-unavailable");
             return true;
         }
 

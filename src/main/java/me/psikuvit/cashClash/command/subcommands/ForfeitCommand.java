@@ -16,11 +16,11 @@ public class ForfeitCommand extends AbstractArgCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
-        if (!(sender instanceof Player player)) { Messages.send(sender, "<red>Only players can use this command.</red>"); return true; }
+        if (!(sender instanceof Player player)) { Messages.send(sender, "command.only-players"); return true; }
 
         var session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) {
-            Messages.send(player, "<red>You're not in a game.</red>");
+            Messages.send(player, "generic.player-not-in-game");
             return true;
         }
 

@@ -38,8 +38,9 @@ public class PlayerConnectionListener implements Listener {
             RejoinData rejoinData = RejoinManager.getInstance().getRejoinData(player.getUniqueId());
             int timeRemaining = rejoinData.getSecondsRemaining(ConfigManager.getInstance().getRejoinTimeoutSeconds());
 
-            Messages.send(player, "<yellow>You have a game in progress! Rejoining...</yellow>");
-            Messages.send(player, "<gray>Time remaining to rejoin: <gold>" + timeRemaining + "s</gold></gray>");
+            Messages.send(player, "lobby-messages.rejoin-available");
+            Messages.send(player, "lobby-messages.rejoin-time-remaining",
+                    "time_remaining", String.valueOf(timeRemaining));
 
             // Process the rejoin
             boolean rejoined = RejoinManager.getInstance().processRejoin(player);
@@ -47,7 +48,7 @@ public class PlayerConnectionListener implements Listener {
                 Messages.debug(player, "REJOIN", "Successfully rejoined game");
                 return; // Don't set up lobby state if they rejoined a game
             } else {
-                Messages.send(player, "<red>Failed to rejoin game. Starting fresh.</red>");
+                Messages.send(player, "lobby-messages.rejoin-failed");
             }
         }
 
@@ -85,9 +86,9 @@ public class PlayerConnectionListener implements Listener {
         // Set lobby tab appearance
         TabListManager.getInstance().setPlayerToLobby(player);
 
-        Messages.send(player, "<gold><bold>=== Welcome to Cash Clash ===</bold></gold>");
-        Messages.send(player, "<yellow>Type <green>/cc arenas</green> <yellow>to browse and join games!</yellow>");
-        Messages.send(player, "<gray>Use <yellow>/cc help <gray>for more commands.");
+        Messages.send(player, "lobby-messages.welcome-title");
+        Messages.send(player, "lobby-messages.welcome-arenas");
+        Messages.send(player, "lobby-messages.welcome-help");
     }
 
     @EventHandler(priority = EventPriority.HIGH)

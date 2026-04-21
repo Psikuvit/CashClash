@@ -60,14 +60,14 @@ public class InteractListener implements Listener {
                 CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
                 if (ccp != null && ccp.isRespawnProtected()) {
                     event.setCancelled(true);
-                    Messages.send(player, "<red>You cannot use ender pearls right after spawning.</red>");
+                    Messages.send(player, "listener.no-enderpearl-after-spawn");
                     return;
                 }
 
                 Team team = session.getPlayerTeam(player);
                 if (team != null && team.isEnderPearlsDisabled()) {
                     event.setCancelled(true);
-                    Messages.send(player, "<red>Your team's Ender Pearls are currently disabled.</red>");
+                    Messages.send(player, "listener.enderpearls-disabled");
                 }
             }
         }
@@ -82,7 +82,7 @@ public class InteractListener implements Listener {
                 CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
                 if (ccp != null && ccp.isRespawnProtected()) {
                     event.setCancelled(true);
-                    Messages.send(player, "<red>You cannot throw weapons during respawn protection!</red>");
+                    Messages.send(player, "listener.no-throw-respawn-protection");
                     return;
                 }
 
@@ -150,7 +150,8 @@ public class InteractListener implements Listener {
         if (team == null) return;
 
         team.toggleReadyStatus(player.getUniqueId());
-        Messages.send(player, "<gold>You are now " + (team.isPlayerReady(player.getUniqueId()) ? "<green>READY" : "<red>NOT READY") + "<gold>!</gold>");
+        Messages.send(player, "listener.ready-state",
+                "state", team.isPlayerReady(player.getUniqueId()) ? "<green>READY</green>" : "<red>NOT READY</red>");
         Messages.debug(Messages.DebugCategory.GAME, "Player " + player.getName() + " toggled ready status to " + team.isPlayerReady(player.getUniqueId()));
         event.setCancelled(true);
 
@@ -166,14 +167,14 @@ public class InteractListener implements Listener {
         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
         if (ccp != null && ccp.isRespawnProtected()) {
             event.setCancelled(true);
-            Messages.send(player, "<red>You cannot use ender pearls right after spawning.</red>");
+            Messages.send(player, "listener.no-enderpearl-after-spawn");
             return true;
         }
 
         Team team = session.getPlayerTeam(player);
         if (team != null && team.isEnderPearlsDisabled()) {
             event.setCancelled(true);
-            Messages.send(player, "<red>Your team's Ender Pearls are currently disabled.</red>");
+            Messages.send(player, "listener.enderpearls-disabled");
             return true;
         }
 
@@ -221,7 +222,7 @@ public class InteractListener implements Listener {
         }
 
         ccp.addCoins(amount);
-        Messages.send(player, "<gold>+$" + String.format("%,d", amount) + " from supply drop!</gold>");
+        Messages.send(player, "cashquake.supply-drop-reward", "amount", String.format("%,d", amount));
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         event.setCancelled(true);
         return true;
@@ -240,7 +241,7 @@ public class InteractListener implements Listener {
                 if (isInShoppingPhase(player)) {
                     customItemManager.useTabletOfHacking(player);
                 } else {
-                    Messages.send(player, "<red>Tablet of Hacking can only be used during the shopping phase!</red>");
+                    Messages.send(player, "listener.tablet-shopping-only");
                 }
                 return true;
             }
@@ -253,21 +254,21 @@ public class InteractListener implements Listener {
         // Prevent dead players from using items
         if (isPlayerDead(player)) {
             event.setCancelled(true);
-            Messages.send(player, "<red>You cannot use items while dead!</red>");
+            Messages.send(player, "listener.cannot-use-items-dead");
             return true;
         }
 
         // Check respawn protection for combat items
         if (isRespawnProtected(player)) {
             event.setCancelled(true);
-            Messages.send(player, "<red>You cannot use items during respawn protection!</red>");
+            Messages.send(player, "listener.cannot-use-items-respawn-protection");
             return true;
         }
 
         // Check if player is silenced (carrying CTF flag)
         if (isSilenced(player)) {
             event.setCancelled(true);
-            Messages.send(player, "<red>You cannot use items while carrying the enemy's flag!</red>");
+            Messages.send(player, "listener.cannot-use-items-while-silenced");
             return true;
         }
 
@@ -328,28 +329,28 @@ public class InteractListener implements Listener {
 
         if (isInShoppingPhase(player)) {
             event.setCancelled(true);
-            Messages.send(player, "<red>You cannot use mythic abilities during the shopping phase!</red>");
+            Messages.send(player, "gamestate.cannot-use-abilities-shopping");
             return true;
         }
 
         // Prevent dead players from using mythic abilities
         if (isPlayerDead(player)) {
             event.setCancelled(true);
-            Messages.send(player, "<red>You cannot use abilities while dead!</red>");
+            Messages.send(player, "listener.cannot-use-abilities-dead");
             return true;
         }
 
         // Check respawn protection for mythic abilities
         if (isRespawnProtected(player)) {
             event.setCancelled(true);
-            Messages.send(player, "<red>You cannot use mythic abilities during respawn protection!</red>");
+            Messages.send(player, "listener.cannot-use-mythic-respawn-protection");
             return true;
         }
 
         // Check if player is silenced (carrying CTF flag)
         if (isSilenced(player)) {
             event.setCancelled(true);
-            Messages.send(player, "<red>You cannot use abilities while carrying the enemy's flag!</red>");
+            Messages.send(player, "listener.cannot-use-abilities-while-silenced");
             return true;
         }
 
@@ -413,13 +414,13 @@ public class InteractListener implements Listener {
 
         // Prevent dead players from using armor abilities
         if (isPlayerDead(player)) {
-            Messages.send(player, "<red>You cannot use armor abilities while dead!</red>");
+            Messages.send(player, "listener.cannot-use-armor-abilities-dead");
             return;
         }
 
         // Check respawn protection for armor abilities
         if (isRespawnProtected(player)) {
-            Messages.send(player, "<red>You cannot use armor abilities during respawn protection!</red>");
+            Messages.send(player, "listener.cannot-use-armor-abilities-respawn-protection");
             return;
         }
 

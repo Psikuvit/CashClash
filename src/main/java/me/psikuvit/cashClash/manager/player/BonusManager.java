@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.manager.player;
 
-import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -372,21 +371,21 @@ public class BonusManager {
         if (player != null && player.isOnline()) {
             String bonusName = formatBonusName(bonusType);
             Messages.send(player, "");
-            Messages.send(player, MessagesConfig.getInstance().getMessage("bonus.bonus-earned",
-                "bonus_name", bonusName));
-            Messages.send(player, MessagesConfig.getInstance().getMessage("bonus.bonus-coins",
-                "amount", formatCoins(finalReward)));
+            Messages.send(player,"bonus.bonus-earned",
+                "bonus_name", bonusName);
+            Messages.send(player, "bonus.bonus-coins",
+                "amount", formatCoins(finalReward));
             if (investorMultiplier > 1.0) {
-                Messages.send(player, MessagesConfig.getInstance().getMessage("bonus.bonus-investor",
-                    "multiplier_percent", String.format("%.1f", (investorMultiplier - 1.0) * 100)));
+                Messages.send(player, "bonus.bonus-investor",
+                    "multiplier_percent", String.format("%.1f", (investorMultiplier - 1.0) * 100));
             }
             Messages.send(player, "");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         }
 
-        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("bonus.bonus-broadcast",
+        Messages.broadcast(session.getPlayers(), "bonus.bonus-broadcast",
             "player_name", getPlayerName(playerUuid),
-            "bonus_name", formatBonusName(bonusType)));
+            "bonus_name", formatBonusName(bonusType));
     }
 
     private void stopTasks() {

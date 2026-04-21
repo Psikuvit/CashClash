@@ -47,7 +47,7 @@ public class DebugCommand extends AbstractArgCommand {
             // Game session info
             GameSession session = GameManager.getInstance().getPlayerSession(target);
             if (session == null) {
-                Messages.send(player, "<gray>Not in a game session</gray>");
+                Messages.send(player, "debug.not-in-session");
             } else {
                 Messages.send(player, "debug.session-id", "{session_id}", session.getSessionId());
                 Messages.send(player, "debug.arena", "{arena_number}", String.valueOf(session.getArenaNumber()));
@@ -69,10 +69,10 @@ public class DebugCommand extends AbstractArgCommand {
 
             // Invis cloak status
             if (CustomItemManager.getInstance().isInvisActive(uuid)) {
-                Messages.send(player, "<dark_purple>Invisibility: ACTIVE</dark_purple>");
+                Messages.send(player, "debug.invisibility-active");
             }
 
-            Messages.send(player, "<gold>===========================</gold>");
+            Messages.send(player, "debug.footer");
         }
         return true;
     }
