@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
+import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -19,11 +20,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.Transformation;
-import org.joml.AxisAngle4f;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
-import org.jspecify.annotations.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -233,18 +229,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return 0;
     }
 
-    private static @NonNull Location getPlayerHeadLoc(Location playerLoc) {
-        double headHeight = 2.0; // Above player
-        double behindDistance = 0.5; // Behind player
 
-        // Calculate position behind player (based on player's yaw)
-        float yaw = (float) Math.toRadians(playerLoc.getYaw());
-        double x = playerLoc.getX() - Math.sin(yaw) * behindDistance;
-        double z = playerLoc.getZ() + Math.cos(yaw) * behindDistance;
-        double y = playerLoc.getY() + headHeight;
-
-        return new Location(playerLoc.getWorld(), x, y, z);
-    }
 
     @Override
     public void cleanup() {
@@ -398,17 +383,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      */
     private boolean isPlayerNearFlag(Player player, FlagState flag) {
         if (flag == null || flag.capturePlate() == null) return false;
-
-        Location flagLoc = flag.capturePlate();
-        if (player.getWorld() != flagLoc.getWorld()) return false;
-
-        // Check horizontal distance (ignore Y)
-        Location playerLoc = player.getLocation();
-        double dx = playerLoc.getX() - (flagLoc.getX() + 0.5);
-        double dz = playerLoc.getZ() - (flagLoc.getZ() + 0.5);
-        double distance = Math.sqrt(dx * dx + dz * dz);
-
-        return distance <= CIRCLE_RADIUS;
+        return LocationUtils.isPlayerNearLocation(player.getLocation(), flag.capturePlate(), CIRCLE_RADIUS);
     }
 
     /**
@@ -447,10 +422,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * Check if a player is standing on a specific block by checking distance to the block location
      */
     private boolean isPlayerOnPlate(Player player, Location blockLoc) {
-        if (blockLoc == null || player.getWorld() != blockLoc.getWorld()) return false;
-
-        // Check if player is within 1 block horizontally of the plate center
-        return player.getLocation().distance(blockLoc.clone().add(0.5, 0, 0.5)) <= 0.7;
+        return LocationUtils.isPlayerOnBlock(player.getLocation(), blockLoc, 0.7);
     }
 
     /**
@@ -706,17 +678,23 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 return;
             }
 
-            // Position banner behind player's head with continuous rotation
+            FlagState current = flagStates.get(finalTeamNumber);
+            if (current == null) return;
+
+            // Position banner on player's head facing player's direction
             Location playerLoc = finalPlayer.getLocation();
-            Location bannerLoc = getPlayerHeadLoc(playerLoc);
 
-            // Create rotation to face same direction as player
-            float bannerYaw = (float) Math.toRadians(playerLoc.getYaw());
-            Matrix4f transform = new Matrix4f();
-            transform.rotateY(bannerYaw);
+            float yaw = playerLoc.getYaw();
+            double x = playerLoc.getX();
+            double y = playerLoc.getY() + 2.0; // On top of player's head
+            double z = playerLoc.getZ();
 
-            finalBanner.setTransformationMatrix(transform);
-            finalBanner.teleport(bannerLoc);
+            Location bannerLoc = new Location(playerLoc.getWorld(), x, y, z);
+
+            LocationUtils.applyOrbitTransformation(finalBanner, bannerLoc, yaw);
+
+            // Update yaw in flag state
+            flagStates.put(finalTeamNumber, current.withCarryingAngle(yaw));
         }, 0, 1); // Run every tick
 
         // Store the task in flag state
@@ -789,7 +767,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         double centerZ = centerPlate.getZ();
 
         // Compute new position and rotation
-        double newTheta = calculateNextAngle(flag.bannerAngle());
+        double newTheta = LocationUtils.calculateNextOrbitAngle(flag.bannerAngle(), BANNER_ANGULAR_SPEED);
         updateBannerTransform(flag, centerX, centerY, centerZ, newTheta);
 
         // Update angle in flag state
@@ -808,17 +786,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Calculate next banner angle
-     */
-    private double calculateNextAngle(double currentTheta) {
-        double newTheta = currentTheta + BANNER_ANGULAR_SPEED;
-        if (newTheta > Math.PI * 2) {
-            newTheta -= Math.PI * 2;
-        }
-        return newTheta;
-    }
-
-    /**
      * Update banner transform (position and rotation)
      * Uses same logic as BlockDisplayCommand with AxisAngle4f
      * Banner rotates on Y-axis using angle theta
@@ -828,18 +795,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
         double x = centerX + Math.cos(theta) * BANNER_ORBIT_RADIUS;
         double z = centerZ + Math.sin(theta) * BANNER_ORBIT_RADIUS;
 
-        // Create transformation using AxisAngle4f (same as BlockDisplayCommand)
+        // Create rotation using Y-axis formula (same as BlockDisplayCommand)
         float yaw = (float) (-theta + Math.PI / 2);
-        Transformation transform = new Transformation(
-                new Vector3f(0, 0, 0),                 // translation
-                new AxisAngle4f(yaw, 0, 1, 0),         // left rotation (Y-axis spin)
-                new Vector3f(1, 1, 1),                 // scale
-                new AxisAngle4f(0, 0, 1, 0)            // right rotation (none)
-        );
-
         Location newLoc = new Location(flag.capturePlate().getWorld(), x, centerY, z);
-        flag.bannerDisplay().setTransformation(transform);
-        flag.bannerDisplay().teleport(newLoc);
+
+        LocationUtils.applyOrbitTransformation(flag.bannerDisplay(), newLoc, yaw);
     }
 
     /**
