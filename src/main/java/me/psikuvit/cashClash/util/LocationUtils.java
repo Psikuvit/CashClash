@@ -5,6 +5,10 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.BlockDisplay;
+import org.bukkit.util.Transformation;
+import org.joml.AxisAngle4f;
+import org.joml.Vector3f;
 
 /**
  * Utility helpers for serializing/deserializing and manipulating Bukkit Locations.
@@ -95,5 +99,92 @@ public final class LocationUtils {
      */
     public static Location clone(Location loc) {
         return loc == null ? null : loc.clone();
+    }
+
+    /**
+     * Calculate position behind player's head for orbit mechanics
+     * Used for flag carrying in CTF
+     *
+     * @param playerLoc player's location
+     * @param headHeight height above player (typically 2.0)
+     * @param behindDistance distance behind player (typically 0.5)
+     * @return location behind player's head
+     */
+    public static Location getPlayerHeadLoc(Location playerLoc, double headHeight, double behindDistance) {
+        float yaw = (float) Math.toRadians(playerLoc.getYaw());
+        double x = playerLoc.getX() - Math.sin(yaw) * behindDistance;
+        double z = playerLoc.getZ() + Math.cos(yaw) * behindDistance;
+        double y = playerLoc.getY() + headHeight;
+
+        return new Location(playerLoc.getWorld(), x, y, z);
+    }
+
+    /**
+     * Apply transformation to a BlockDisplay using AxisAngle4f rotation
+     * Positions the display and rotates it on Y-axis
+     *
+     * @param display block display entity
+     * @param location new location for display
+     * @param yaw rotation angle in radians
+     */
+    public static void applyOrbitTransformation(BlockDisplay display, Location location, float yaw) {
+        Transformation transform = new Transformation(
+                new Vector3f(0, 0, 0),                 // translation
+                new AxisAngle4f(yaw, 0, 1, 0),         // left rotation (Y-axis spin)
+                new Vector3f(1, 1, 1),                 // scale
+                new AxisAngle4f(0, 0, 1, 0)            // right rotation (none)
+        );
+
+        display.setTransformation(transform);
+        display.teleport(location);
+    }
+
+    /**
+     * Calculate next angle for orbit rotation
+     * Increments angle and wraps at 2π
+     *
+     * @param currentAngle current angle in radians
+     * @param angularSpeed increment amount
+     * @return next angle in radians
+     */
+    public static double calculateNextOrbitAngle(double currentAngle, double angularSpeed) {
+        double newAngle = currentAngle + angularSpeed;
+        if (newAngle > Math.PI * 2) {
+            newAngle -= Math.PI * 2;
+        }
+        return newAngle;
+    }
+
+    /**
+     * Check if a player is within a specific distance of a location (horizontal only)
+     *
+     * @param playerLoc player's location
+     * @param targetLoc target location
+     * @param radius horizontal radius to check
+     * @return true if player is within radius horizontally
+     */
+    public static boolean isPlayerNearLocation(Location playerLoc, Location targetLoc, double radius) {
+        if (playerLoc == null || targetLoc == null) return false;
+        if (playerLoc.getWorld() != targetLoc.getWorld()) return false;
+
+        double dx = playerLoc.getX() - (targetLoc.getX() + 0.5);
+        double dz = playerLoc.getZ() - (targetLoc.getZ() + 0.5);
+        double distance = Math.sqrt(dx * dx + dz * dz);
+
+        return distance <= radius;
+    }
+
+    /**
+     * Check if a player is standing on a specific block location
+     *
+     * @param playerLoc player's location
+     * @param blockLoc block location to check
+     * @param tolerance horizontal distance tolerance (typically 0.7)
+     * @return true if player is on the block
+     */
+    public static boolean isPlayerOnBlock(Location playerLoc, Location blockLoc, double tolerance) {
+        if (blockLoc == null || playerLoc.getWorld() != blockLoc.getWorld()) return false;
+
+        return playerLoc.distance(blockLoc.clone().add(0.5, 0, 0.5)) <= tolerance;
     }
 }
