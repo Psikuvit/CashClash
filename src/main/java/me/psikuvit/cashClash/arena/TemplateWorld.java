@@ -26,6 +26,10 @@ public class TemplateWorld {
     private Location teamBlueShopSpawn;
     private final List<Location> villagersSpawnPoint;
 
+    // CTF Flag locations
+    private Location redFlagLoc;
+    private Location blueFlagLoc;
+
     public TemplateWorld(String id, World world) {
         this.id = id;
         this.world = world;
@@ -97,6 +101,34 @@ public class TemplateWorld {
     }
     public void addVillagerSpawnPoint(Location loc) {
         villagersSpawnPoint.add(loc);
+    }
+
+    /**
+     * Get Red flag location (CTF mode)
+     */
+    public Location getRedFlagLoc() {
+        return redFlagLoc;
+    }
+
+    /**
+     * Set Red flag location (CTF mode)
+     */
+    public void setRedFlagLoc(Location loc) {
+        this.redFlagLoc = loc;
+    }
+
+    /**
+     * Get Blue flag location (CTF mode)
+     */
+    public Location getBlueFlagLoc() {
+        return blueFlagLoc;
+    }
+
+    /**
+     * Set Blue flag location (CTF mode)
+     */
+    public void setBlueFlagLoc(Location loc) {
+        this.blueFlagLoc = loc;
     }
 
     public boolean isConfigured() {

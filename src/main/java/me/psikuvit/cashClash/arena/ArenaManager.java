@@ -171,6 +171,14 @@ public class ArenaManager {
                 }
             }
 
+            // Load CTF flag locations
+            if (cfg.contains("ctf.red_flag")) {
+                tpl.setRedFlagLoc(LocationUtils.deserializeLocation(cfg.getConfigurationSection("ctf.red_flag")));
+            }
+            if (cfg.contains("ctf.blue_flag")) {
+                tpl.setBlueFlagLoc(LocationUtils.deserializeLocation(cfg.getConfigurationSection("ctf.blue_flag")));
+            }
+
             templates.put(id, tpl);
             Messages.debug("ARENA", "Loaded template: " + id + " -> " + w.getName());
         }
@@ -231,6 +239,14 @@ public class ArenaManager {
                 LocationUtils.serializeLocation(cfg, "villagers." + index, villagerLoc);
                 index++;
             }
+        }
+
+        // Save CTF flag locations
+        if (tpl.getRedFlagLoc() != null) {
+            LocationUtils.serializeLocation(cfg, "ctf.red_flag", tpl.getRedFlagLoc());
+        }
+        if (tpl.getBlueFlagLoc() != null) {
+            LocationUtils.serializeLocation(cfg, "ctf.blue_flag", tpl.getBlueFlagLoc());
         }
 
         try {
