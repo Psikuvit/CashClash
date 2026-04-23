@@ -76,17 +76,23 @@ public class TemplateCommand extends AbstractArgCommand {
             if (action.equals("register")) {
                 out.addAll(Bukkit.getWorlds().stream().map(World::getName).filter(n -> n.toLowerCase(Locale.ROOT).startsWith(last)).toList());
             } else if (action.equals("set")) {
-                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager")) if (t.startsWith(last)) out.add(t);
+                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "ctf")) if (t.startsWith(last)) out.add(t);
             }
             return out;
         }
 
         if (args.length == 4 && action.equals("set")) {
             String type = args[2].toLowerCase(Locale.ROOT);
-            if ("teamred".equals(type) || "teamblue".equals(type)) {
-                for (String idx : List.of("1","2","3","4")) if (idx.startsWith(last)) out.add(idx);
-            } else if ("shop".equals(type)) {
-                for (String t : List.of("teamred","teamblue")) if (t.startsWith(last)) out.add(t);
+            switch (type) {
+                case "teamred", "teamblue" -> {
+                    for (String idx : List.of("1", "2", "3", "4")) if (idx.startsWith(last)) out.add(idx);
+                }
+                case "shop" -> {
+                    for (String t : List.of("teamred", "teamblue")) if (t.startsWith(last)) out.add(t);
+                }
+                case "ctf" -> {
+                    for (String t : List.of("red", "blue")) if (t.startsWith(last)) out.add(t);
+                }
             }
             return out;
         }
@@ -217,6 +223,10 @@ public class TemplateCommand extends AbstractArgCommand {
 
         Messages.send(player, "template.show-shop-red", "location", tpl.getTeamRedShopSpawn() == null ? "unset" : formatLoc(tpl.getTeamRedShopSpawn()));
         Messages.send(player, "template.show-shop-blue", "location", tpl.getTeamBlueShopSpawn() == null ? "unset" : formatLoc(tpl.getTeamBlueShopSpawn()));
+
+        // Show CTF flag locations
+        Messages.send(player, "template.show-ctf-red-flag", "location", tpl.getRedFlagLoc() == null ? "unset" : formatLoc(tpl.getRedFlagLoc()));
+        Messages.send(player, "template.show-ctf-blue-flag", "location", tpl.getBlueFlagLoc() == null ? "unset" : formatLoc(tpl.getBlueFlagLoc()));
     }
 
     private void templateSet(CommandSender sender, String[] args) {
@@ -267,6 +277,24 @@ public class TemplateCommand extends AbstractArgCommand {
                     Messages.send(player, "template.set-shop-success", "team", "Blue", "template_id", templateId);
                 } else {
                     Messages.send(player, "template.invalid-shop-team");
+                    return;
+                }
+            }
+            case "ctf" -> {
+                if (args.length < 4) {
+                    Messages.send(player, "template.set-ctf-usage");
+                    return;
+                }
+                String team = args[3].toLowerCase(Locale.ROOT);
+
+                if ("red".equals(team)) {
+                    tpl.setRedFlagLoc(stored);
+                    Messages.send(player, "template.set-ctf-flag-success", "team", "Red", "template_id", templateId);
+                } else if ("blue".equals(team)) {
+                    tpl.setBlueFlagLoc(stored);
+                    Messages.send(player, "template.set-ctf-flag-success", "team", "Blue", "template_id", templateId);
+                } else {
+                    Messages.send(player, "template.invalid-ctf-team");
                     return;
                 }
             }
