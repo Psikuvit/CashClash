@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
+import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -13,13 +14,18 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Transformation;
+import org.joml.AxisAngle4f;
+import org.joml.Vector3f;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -85,6 +91,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void onCombatPhaseStart() {
         Messages.debug("[CTF] Combat phase started");
 
+        // Initialize banners at flag plates
+        initializeBanners();
+
         // Reset flag state each round
         flagStates.put(1, flagStates.get(1).withoutHolder());
         flagStates.put(2, flagStates.get(2).withoutHolder());
@@ -104,6 +113,87 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         // Start flag pickup task (3-second circle mechanic)
         startFlagPickupTask();
+    }
+
+    /**
+     * Initialize banners for both flags at their base locations
+     * Banners are BlockDisplay entities that rotate around the flag plates
+     */
+    private void initializeBanners() {
+        // Get template world to access pre-configured flag locations
+        // If not configured, fallback to team spawn locations
+
+        // Team 1 (Red) flag
+        Location redFlagLoc = getRedFlagLocation();
+        if (redFlagLoc != null) {
+            BlockDisplay redBanner = spawnFlagBanner(redFlagLoc, Color.RED);
+            if (redBanner != null) {
+                flagStates.put(1, new FlagState(null, 0, redFlagLoc, redBanner, 0.0, null, 0.0));
+                Messages.debug("[CTF] Spawned Red flag banner at " + redFlagLoc);
+            }
+        }
+
+        // Team 2 (Blue) flag
+        Location blueFlagLoc = getBlueFlagLocation();
+        if (blueFlagLoc != null) {
+            BlockDisplay blueBanner = spawnFlagBanner(blueFlagLoc, Color.BLUE);
+            if (blueBanner != null) {
+                flagStates.put(2, new FlagState(null, 0, blueFlagLoc, blueBanner, 0.0, null, 0.0));
+                Messages.debug("[CTF] Spawned Blue flag banner at " + blueFlagLoc);
+            }
+        }
+    }
+
+    /**
+     * Get red flag location from template or fallback to team spawn
+     */
+    private Location getRedFlagLocation() {
+        TemplateWorld template = session.getArenaTemplate();
+        if (template != null && template.getRedFlagLoc() != null) {
+            return template.getRedFlagLoc().clone();
+        }
+        return null;
+    }
+
+    /**
+     * Get blue flag location from template or fallback to team spawn
+     */
+    private Location getBlueFlagLocation() {
+        TemplateWorld template = session.getArenaTemplate();
+        if (template != null && template.getBlueFlagLoc() != null) {
+            return template.getBlueFlagLoc().clone();
+        }
+        return null;
+    }
+
+    /**
+     * Spawn a flag banner (BlockDisplay) at a location
+     */
+    private BlockDisplay spawnFlagBanner(Location location, Color color) {
+        if (location == null || location.getWorld() == null) {
+            return null;
+        }
+
+        // Create banner 2 blocks above the flag plate
+        Location bannerLoc = location.clone().add(0, 2, 0);
+
+        // Spawn BlockDisplay entity for the flag
+        BlockDisplay banner = (BlockDisplay) location.getWorld().spawnEntity(bannerLoc, EntityType.BLOCK_DISPLAY);
+
+        // Use a material that matches the team color
+        Material bannerMaterial = color == Color.RED ? Material.RED_BANNER : Material.BLUE_BANNER;
+        banner.setBlock(bannerMaterial.createBlockData());
+
+        // Set initial transformation
+        Transformation transform = new Transformation(
+                new Vector3f(0, 0, 0),
+                new AxisAngle4f(0, 0, 1, 0),
+                new Vector3f(1, 1, 1),
+                new AxisAngle4f(0, 0, 1, 0)
+        );
+        banner.setTransformation(transform);
+
+        return banner;
     }
 
     @Override
