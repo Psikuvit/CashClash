@@ -85,6 +85,9 @@ public class CashClashPlayer {
         this.hasFirstBlood = false;
         this.lowestHealthThisLife = 20.0;
         this.reachedOneHeart = false;
+
+        // Clear enchants to prevent carryover
+        this.ownedEnchants.clear();
     }
 
     public boolean canAfford(long amount) {
