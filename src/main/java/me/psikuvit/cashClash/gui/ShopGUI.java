@@ -8,7 +8,6 @@ import me.psikuvit.cashClash.gui.categories.ArmorCategoryGui;
 import me.psikuvit.cashClash.gui.categories.CustomItemsCategoryGui;
 import me.psikuvit.cashClash.gui.categories.EnchantsCategoryGui;
 import me.psikuvit.cashClash.gui.categories.FoodCategoryGui;
-import me.psikuvit.cashClash.gui.categories.InvestmentsCategoryGui;
 import me.psikuvit.cashClash.gui.categories.MythicCategoryGui;
 import me.psikuvit.cashClash.gui.categories.UtilityCategoryGui;
 import me.psikuvit.cashClash.gui.categories.WeaponsCategoryGui;
@@ -54,7 +53,8 @@ public class ShopGUI extends AbstractGui {
         setButton(22, createCategoryButton(ShopCategory.UTILITY, Material.WATER_BUCKET));
         setButton(23, createCategoryButton(ShopCategory.CUSTOM_ITEMS, Material.NAME_TAG));
 
-        setButton(31, createInvestmentCategoryButton());
+        // Investments system removed
+        // setButton(31, createInvestmentCategoryButton());
 
         // Mythic items section
         addMythicItems();
@@ -142,7 +142,7 @@ public class ShopGUI extends AbstractGui {
             case UTILITY -> new UtilityCategoryGui(viewer);
             case CUSTOM_ITEMS -> new CustomItemsCategoryGui(viewer);
             case ENCHANTS -> new EnchantsCategoryGui(viewer);
-            case INVESTMENTS -> new InvestmentsCategoryGui(viewer);
+            case INVESTMENTS -> throw new UnsupportedOperationException("Investments system has been removed");
             default -> throw new IllegalArgumentException("Unknown shop category: " + category);
         };
     }
