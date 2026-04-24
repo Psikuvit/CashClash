@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.CustomItemManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.LocationUtils;
@@ -154,6 +155,9 @@ public class RoundManager {
         if (phaseType == GameState.BUFF_SELECTION) {
             startBuffSelectionTimer(roundNumber);
         } else {
+            // Disable all invisibility cloaks when shopping phase starts
+            CustomItemManager.getInstance().disableAllInvisibilityCloaks();
+
             // Notify gamemode when shopping phase starts (for cleanup, banner removal, etc.)
             if (session.getGamemode() instanceof CaptureTheFlagGamemode ctf) {
                 ctf.onShoppingPhaseStart();

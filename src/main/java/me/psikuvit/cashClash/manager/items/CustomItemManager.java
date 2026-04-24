@@ -33,6 +33,7 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -864,6 +865,20 @@ public class CustomItemManager {
         playersRevivedThisRound.clear();
 
         cashBlasterEarningsThisRound.clear();
+    }
+
+    /**
+     * Disable all active invisibility cloaks - used when shopping phase starts
+     */
+    public void disableAllInvisibilityCloaks() {
+        Collection<? extends Player> online = Bukkit.getOnlinePlayers();
+        for (Player player : online) {
+            UUID uuid = player.getUniqueId();
+            if (invisCloakActive.contains(uuid)) {
+                toggleInvisCloak(player, false);
+                Messages.send(player, "customitem.invis-disabled-shopping");
+            }
+        }
     }
 }
 
