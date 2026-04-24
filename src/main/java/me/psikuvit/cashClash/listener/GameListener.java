@@ -270,9 +270,20 @@ public class GameListener implements Listener {
         if (event.isCancelled()) return;
 
         Player player = event.getPlayer();
-        if (GameManager.getInstance().getPlayerSession(player) != null) return;
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
 
-        event.setCancelled(true);
+        // If not in active game session, prevent drop
+        if (session == null) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // During active game session, prevent dropping of purchased items (items with shop tag)
+        ItemStack item = event.getItemDrop().getItemStack();
+        if (PDCDetection.getAnyShopTag(item) != null) {
+            event.setCancelled(true);
+            Messages.send(player, "listener.item-cannot-drop");
+        }
     }
 
     // ==================== ITEM CONSUME ====================
