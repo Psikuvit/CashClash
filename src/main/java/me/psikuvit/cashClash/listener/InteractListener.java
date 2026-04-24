@@ -78,6 +78,15 @@ public class InteractListener implements Listener {
                 GameSession session = GameManager.getInstance().getPlayerSession(player);
                 if (session == null) return;
 
+                // Check if player is dead - cannot use any abilities
+                if (session.getState() == GameState.COMBAT) {
+                    RoundData roundData = session.getCurrentRoundData();
+                    if (roundData != null && !roundData.isAlive(player.getUniqueId())) {
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+
                 // Check respawn protection
                 CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
                 if (ccp != null && ccp.isRespawnProtected()) {
@@ -186,6 +195,13 @@ public class InteractListener implements Listener {
     private boolean handleFireCharge(PlayerInteractEvent event, Player player, ItemStack item) {
         if (item.getType() != Material.FIRE_CHARGE) return false;
         if (PDCDetection.getAnyShopTag(item) == null) {
+            // Prevent dead players from using fire charges
+            if (isPlayerDead(player)) {
+                event.setCancelled(true);
+                Messages.send(player, "listener.cannot-use-items-dead");
+                return true;
+            }
+
             Fireball fireball = player.launchProjectile(Fireball.class);
             fireball.setIsIncendiary(true);
             fireball.setYield(0f);
