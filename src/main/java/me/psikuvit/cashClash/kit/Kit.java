@@ -236,16 +236,6 @@ public enum Kit {
         player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
         player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
 
-        // Diamond pickaxe with Efficiency 2
-        ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
-        ItemMeta pickMeta = pickaxe.getItemMeta();
-        if (pickMeta != null) {
-            pickMeta.addEnchant(Enchantment.EFFICIENCY, 2, true);
-            pickaxe.setItemMeta(pickMeta);
-        }
-        player.getInventory().addItem(pickaxe);
-
-        // Shears
         player.getInventory().addItem(new ItemStack(Material.SHEARS));
 
         // === FOOD ===
@@ -320,17 +310,7 @@ public enum Kit {
         // Stone tools
         player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
         player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
-
-        // Diamond pickaxe with Efficiency 2
-        ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
-        ItemMeta pickMeta = pickaxe.getItemMeta();
-        if (pickMeta != null) {
-            pickMeta.addEnchant(Enchantment.EFFICIENCY, 2, true);
-            pickaxe.setItemMeta(pickMeta);
-        }
-        player.getInventory().addItem(pickaxe);
-
-        // Shears
+        
         player.getInventory().addItem(new ItemStack(Material.SHEARS));
 
         // Food (with ITEM_ID for refund tracking)
