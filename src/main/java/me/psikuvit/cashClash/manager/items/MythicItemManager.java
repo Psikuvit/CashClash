@@ -1309,6 +1309,9 @@ public class MythicItemManager {
                 caught.damage(damage, player);
                 caught.addPotionEffect(new PotionEffect(PotionEffectType.POISON, poisonDuration, poisonLevel, false, true));
 
+                // Remove any resistance effects (invincibility fix)
+                caught.removePotionEffect(PotionEffectType.RESISTANCE);
+
                 // Visual effects
                 ParticleUtils.damageIndicator(caught.getLocation().add(0, 1, 0), 20, 0.5);
                 SoundUtils.play(caught, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
