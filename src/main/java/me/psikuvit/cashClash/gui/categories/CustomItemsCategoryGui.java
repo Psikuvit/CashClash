@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.ItemFactory;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -57,6 +58,22 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
 
         CashClashPlayer ccp = getCashClashPlayer();
         if (ccp == null) return;
+
+        // Check if trying to buy more than 1 invisibility cloak per round
+        if (type == CustomItem.INVIS_CLOAK) {
+            // Check if player already has an invis cloak in inventory
+            int cloakCount = 0;
+            for (ItemStack item : viewer.getInventory().getContents()) {
+                if (item != null && PDCDetection.getCustomItem(item) == CustomItem.INVIS_CLOAK) {
+                    cloakCount++;
+                }
+            }
+            if (cloakCount > 0) {
+                Messages.send(viewer, "customitem.max-one-cloak");
+                SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                return;
+            }
+        }
 
         long price = type.getPrice();
         if (!ShopService.getInstance().canAfford(viewer, price)) {
