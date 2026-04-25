@@ -17,14 +17,10 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.BlockDisplay;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.Transformation;
-import org.joml.AxisAngle4f;
-import org.joml.Vector3f;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -177,22 +173,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Location bannerLoc = location.clone().add(0, 2, 0);
 
         // Spawn BlockDisplay entity for the flag
-        BlockDisplay banner = (BlockDisplay) location.getWorld().spawnEntity(bannerLoc, EntityType.BLOCK_DISPLAY);
+        return location.getWorld().spawn(bannerLoc, BlockDisplay.class, banner ->{
 
-        // Use a material that matches the team color
-        Material bannerMaterial = color == Color.RED ? Material.RED_BANNER : Material.BLUE_BANNER;
-        banner.setBlock(bannerMaterial.createBlockData());
+            // Use a material that matches the team color
+            Material bannerMaterial = color == Color.RED ? Material.RED_BANNER : Material.BLUE_BANNER;
+            banner.setBlock(bannerMaterial.createBlockData());
 
-        // Set initial transformation
-        Transformation transform = new Transformation(
-                new Vector3f(0, 0, 0),
-                new AxisAngle4f(0, 0, 1, 0),
-                new Vector3f(1, 1, 1),
-                new AxisAngle4f(0, 0, 1, 0)
-        );
-        banner.setTransformation(transform);
-
-        return banner;
+        });
     }
 
     @Override
