@@ -15,8 +15,6 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -432,8 +430,7 @@ public class DamageListener implements Listener {
         }
 
         double healthBefore = player.getHealth();
-        AttributeInstance maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
-        double maxHealth = maxHealthAttr != null ? maxHealthAttr.getValue() : 20.0;
+        double maxHealth = ccPlayer.getMaxHealth();
         double healthAfter = Math.min(player.getHealth() + event.getAmount(), maxHealth);
 
         ccPlayer.updateLowestHealth(healthAfter);
@@ -472,10 +469,11 @@ public class DamageListener implements Listener {
      * Handle attacker-side effects (mythic items, custom items, combat modifiers).
      */
     private void handleAttackerEffects(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
         ItemStack weapon = attacker.getInventory().getItemInMainHand();
 
         // Apply custom item effects
-        handleCustomItemEffects(attacker, weapon);
+        handleCustomItemEffects(attacker, weapon, session);
 
         // Apply mythic item effects
         handleMythicItemEffects(event, attacker, victim, weapon);
@@ -487,14 +485,14 @@ public class DamageListener implements Listener {
     /**
      * Handle custom item effects (e.g., Bag of Potatoes).
      */
-    private void handleCustomItemEffects(Player attacker, ItemStack weapon) {
+    private void handleCustomItemEffects(Player attacker, ItemStack weapon, GameSession session) {
         if (!isValidWeapon(weapon)) {
             return;
         }
 
         CustomItem customType = PDCDetection.getCustomItem(weapon);
         if (customType == CustomItem.BAG_OF_POTATOES) {
-            customItemManager.handleBagOfPotatoesHit(attacker, weapon);
+            customItemManager.handleBagOfPotatoesHit(attacker, weapon, session);
         }
     }
 

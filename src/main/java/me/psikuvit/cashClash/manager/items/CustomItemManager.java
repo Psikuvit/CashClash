@@ -219,7 +219,7 @@ public class CustomItemManager {
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
     }
 
-    public void useMedicPouchAlly(Player player, Player target, ItemStack item) {
+    public void useMedicPouchAlly(Player player, Player target, ItemStack item, GameSession session) {
         UUID uuid = player.getUniqueId();
         ItemsConfig cfg = ItemsConfig.getInstance();
 
@@ -229,7 +229,6 @@ public class CustomItemManager {
             return;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
 
         Team playerTeam = session.getPlayerTeam(player);
@@ -241,8 +240,8 @@ public class CustomItemManager {
         }
 
         double currentHealth = target.getHealth();
-        var attr = target.getAttribute(Attribute.MAX_HEALTH);
-        double maxHealth = attr != null ? attr.getValue() : 20.0;
+        var targetCCP = session.getCashClashPlayer(target.getUniqueId());
+        double maxHealth = targetCCP != null ? targetCCP.getMaxHealth() : 20.0;
         double healAmount = cfg.getMedicPouchAllyHeal();
 
         if (currentHealth >= maxHealth) {
@@ -456,10 +455,10 @@ public class CustomItemManager {
 
     // ==================== BAG OF POTATOES IMPLEMENTATION ====================
 
-    public void handleBagOfPotatoesHit(Player attacker, ItemStack item) {
+    public void handleBagOfPotatoesHit(Player attacker, ItemStack item, GameSession session) {
         double currentHealth = attacker.getHealth();
-        var attr = attacker.getAttribute(Attribute.MAX_HEALTH);
-        double maxHealth = attr != null ? attr.getValue() : 20.0;
+        var attackerCCP = session != null ? session.getCashClashPlayer(attacker.getUniqueId()) : null;
+        double maxHealth = attackerCCP != null ? attackerCCP.getMaxHealth() : 20.0;
 
         attacker.setHealth(Math.min(maxHealth, currentHealth + 2.0));
 

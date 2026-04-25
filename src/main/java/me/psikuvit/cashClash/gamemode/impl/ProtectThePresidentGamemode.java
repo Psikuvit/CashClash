@@ -13,7 +13,6 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -143,13 +142,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 presPlayer.removePotionEffect(PotionEffectType.RESISTANCE);
                 presPlayer.removePotionEffect(PotionEffectType.SPEED);
 
-                // Reset max health if HP buff was active
-                var maxHealthAttr = presPlayer.getAttribute(Attribute.MAX_HEALTH);
-                if (maxHealthAttr != null) {
-                    double maxHealth = maxHealthAttr.getValue();
-                    if (maxHealth > 20.0) {
-                        maxHealthAttr.setBaseValue(20.0);
-                    }
+                // Reset health modifier through CashClashPlayer
+                UUID presUuid = presPlayer.getUniqueId();
+                var cashPlayer = session.getCashClashPlayer(presUuid);
+                if (cashPlayer != null) {
+                    cashPlayer.resetHealthModifier();
                 }
 
                 Messages.debug("[PTP] Cleared all buffs for president: " + presPlayer.getName());
@@ -208,6 +205,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         if (presidentTeam != 0) {
             // Always reapply glowing to presidents
             President pres = presidents.get(presidentTeam);
+            clearPresidentialBuffs();
             applyGlow(pres);
             Messages.debug("[PTP] Applied glowing to president on spawn: " + player.getName());
         }
@@ -486,13 +484,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     /**
-     * Apply an extra heart to a player via SuddenDeathManager
-     */
-    public void applyExtraHeartBonus(Player player) {
-        suddenDeathManager.applyExtraHeart(player);
-    }
-
-    /**
      * Apply the selected presidential buff to a president
      */
     private void applyPresidentialBuff(Player presPlayer) {
@@ -525,11 +516,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
             }
             case HP -> {
                 // Add 3 extra hearts (permanent for this round, will be reset on round end)
-                var maxHealthAttr = presPlayer.getAttribute(Attribute.MAX_HEALTH);
-                if (maxHealthAttr != null) {
-                    double currentMax = maxHealthAttr.getBaseValue();
-                    maxHealthAttr.setBaseValue(currentMax + 6.0); // 3 hearts = 6 health
-                    presPlayer.setHealth(Math.min(presPlayer.getHealth() + 6.0, currentMax + 6.0));
+                UUID presUuid = presPlayer.getUniqueId();
+                var cashPlayer = session.getCashClashPlayer(presUuid);
+                if (cashPlayer != null) {
+                    cashPlayer.setHealthModifier(6.0); // 6 health = 3 hearts
                     Messages.debug("[PTP] Applied +3 hearts buff to: " + presPlayer.getName());
                 }
             }

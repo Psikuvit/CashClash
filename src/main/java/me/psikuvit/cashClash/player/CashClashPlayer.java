@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.BonusType;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayDeque;
@@ -49,6 +50,9 @@ public class CashClashPlayer {
 
     private final Map<EnchantEntry, Integer> ownedEnchants;
 
+    // Health management
+    private double healthModifier = 0.0; // Tracks additional health from buffs (e.g. +6 for +3 hearts)
+
     public CashClashPlayer(Player player) {
         this.uuid = player.getUniqueId();
         this.player = player;
@@ -88,6 +92,9 @@ public class CashClashPlayer {
 
         // Clear enchants to prevent carryover
         this.ownedEnchants.clear();
+
+        // Reset health modifier
+        resetHealthModifier();
     }
 
     public boolean canAfford(long amount) {
@@ -194,7 +201,74 @@ public class CashClashPlayer {
         return respawnProtectionUntil;
     }
 
-    // Getters and setters
+    // Health Management System
+    /**
+     * Get the maximum health for this player (base 20 + modifiers)
+     */
+    public double getMaxHealth() {
+        return 20.0 + healthModifier;
+    }
+
+    /**
+     * Add to the current health modifier
+     * @param amount health to add
+     */
+    public void addHealthModifier(double amount) {
+        this.healthModifier += amount;
+        applyHealth();
+    }
+
+    /**
+     * Remove from the current health modifier
+     * @param amount health to remove
+     */
+    public void removeHealthModifier(double amount) {
+        this.healthModifier = Math.max(0.0, healthModifier - amount);
+        applyHealth();
+    }
+
+    /**
+     * Apply the current health configuration to the player
+     * Sets max health and heals player to max
+     */
+    public void applyHealth() {
+        if (player == null || !player.isOnline()) return;
+
+        var maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            double maxHealth = getMaxHealth();
+            maxHealthAttr.setBaseValue(maxHealth);
+            // Heal to max when applying
+            player.setHealth(Math.min(player.getHealth(), maxHealth));
+            Messages.debug(player, "HEALTH", "Set max health to " + maxHealth);
+        }
+    }
+
+    /**
+     * Reset health modifier to 0 and apply (resets to base 20)
+     */
+    public void resetHealthModifier() {
+        this.healthModifier = 0.0;
+        applyHealth();
+    }
+
+    /**
+     * Get current health modifier amount
+     */
+    public double getHealthModifier() {
+        return healthModifier;
+    }
+
+    /**
+     * Set a specific health modifier (overwrites current)
+     * Base health is always 20, this adds to it
+     * @param amount health to add (e.g., 6.0 for +3 hearts)
+     */
+    public void setHealthModifier(double amount) {
+        this.healthModifier = Math.max(0.0, amount); // Don't allow negative modifiers
+        applyHealth();
+    }
+
     public UUID getUuid() {
         return uuid;
     }

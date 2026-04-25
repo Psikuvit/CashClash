@@ -1,10 +1,10 @@
 package me.psikuvit.cashClash.gamemode;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -100,28 +100,6 @@ public class SuddenDeathManager {
     }
 
     /**
-     * Apply an extra heart to a player (45s duration)
-     */
-    public void applyExtraHeart(Player player) {
-        UUID uuid = player.getUniqueId();
-        long expiryTime = System.currentTimeMillis() + HEART_DURATION_MS;
-        extraHeartExpiry.put(uuid, expiryTime);
-
-        Messages.debug("[SuddenDeathManager] Applied extra heart to: " + player.getName());
-
-        var maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
-        if (maxHealthAttr != null) {
-            double maxHealth = maxHealthAttr.getBaseValue();
-            double healthIncrease = 4.0; // 2 hearts = 4 health
-            maxHealthAttr.setBaseValue(maxHealth + healthIncrease);
-            player.setHealth(Math.min(player.getHealth() + healthIncrease, maxHealth + healthIncrease));
-        }
-
-        // Apply visual glowing effect
-        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, (int) (HEART_DURATION_MS / 50), 0, false, false));
-    }
-
-    /**
      * Apply extra heart with custom duration
      */
     public void applyExtraHeart(Player player, long durationMs) {
@@ -131,12 +109,11 @@ public class SuddenDeathManager {
 
         Messages.debug("[SuddenDeathManager] Applied extra heart to: " + player.getName() + " for " + durationMs + "ms");
 
-        var maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
-        if (maxHealthAttr != null) {
-            double maxHealth = maxHealthAttr.getBaseValue();
-            double healthIncrease = 4.0; // 2 hearts = 4 health
-            maxHealthAttr.setBaseValue(maxHealth + healthIncrease);
-            player.setHealth(Math.min(player.getHealth() + healthIncrease, maxHealth + healthIncrease));
+        // Use centralized health system to add temporary hearts (2 hearts = 4 health)
+        var ccp = session.getCashClashPlayer(uuid);
+        if (ccp != null) {
+            ccp.addHealthModifier(4.0);
+            Messages.debug("[SuddenDeathManager] Added +4 health to " + player.getName() + " via health modifier system");
         }
 
         // Apply visual glowing effect
@@ -149,16 +126,11 @@ public class SuddenDeathManager {
     private void removeExtraHeart(UUID playerUuid) {
         Player p = Bukkit.getPlayer(playerUuid);
         if (p != null && p.isOnline()) {
-            var maxHealthAttr = p.getAttribute(Attribute.MAX_HEALTH);
-            if (maxHealthAttr != null) {
-                double currentMax = maxHealthAttr.getBaseValue();
-                if (currentMax > 20.0) {
-                    maxHealthAttr.setBaseValue(20.0);
-                    // Reset health if over max
-                    if (p.getHealth() > 20.0) {
-                        p.setHealth(20.0);
-                    }
-                }
+            // Use centralized health system to remove the temporary hearts
+            CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
+            if (ccp != null) {
+                ccp.removeHealthModifier(4.0);
+                Messages.debug("[SuddenDeathManager] Removed +4 health from " + p.getName() + " via health modifier system");
             }
         }
         extraHeartExpiry.remove(playerUuid);

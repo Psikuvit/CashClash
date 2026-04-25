@@ -15,7 +15,6 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Location;
 import org.bukkit.Sound;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
@@ -472,17 +471,15 @@ public class CustomArmorManager {
 
     // ==================== DEATHMAULER'S OUTFIT ====================
 
-    public void onPlayerKill(Player killer) {
+    public void onPlayerKill(Player killer, GameSession session) {
         if (!hasDeathmaulerSet(killer)) return;
         UUID id = killer.getUniqueId();
 
-        // Heal 4 hearts (8 HP)
-        var attr = killer.getAttribute(Attribute.MAX_HEALTH);
-        if (attr != null) {
-            double maxHealth = attr.getValue();
-            double newHealth = Math.min(maxHealth, killer.getHealth() + 8.0);
-            killer.setHealth(newHealth);
-        }
+        // Heal 4 hearts (8 HP) using centralized health system for max health
+        CashClashPlayer killerCCP = session != null ? session.getCashClashPlayer(id) : null;
+        double maxHealth = killerCCP != null ? killerCCP.getMaxHealth() : 20.0;
+        double newHealth = Math.min(maxHealth, killer.getHealth() + 8.0);
+        killer.setHealth(newHealth);
 
         Messages.send(killer, "armor.deathmauler-heal");
 
@@ -514,8 +511,9 @@ public class CustomArmorManager {
         if (!hasDeathmaulerSet(attacker) || victim == null) return;
         UUID id = attacker.getUniqueId();
 
-        var attr = attacker.getAttribute(Attribute.MAX_HEALTH);
-        double max = attr != null ? attr.getValue() : 20.0;
+        // Use centralized health system for correct max health
+        var attackerCCP = session != null ? session.getCashClashPlayer(id) : null;
+        double max = attackerCCP != null ? attackerCCP.getMaxHealth() : 20.0;
         if (attacker.getHealth() > max * 0.5) return;
 
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST)) return;

@@ -664,9 +664,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private void applyExtraHeartCTF(Player player) {
         var maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealthAttr != null) {
-            double currentMax = maxHealthAttr.getBaseValue();
-            maxHealthAttr.setBaseValue(currentMax + 2.0); // 1 heart = 2 health
-            player.setHealth(Math.min(player.getHealth() + 2.0, currentMax + 2.0));
+            maxHealthAttr.setBaseValue(22);
+            player.setHealth(22);
         }
 
         // Apply red glow effect for 45 seconds

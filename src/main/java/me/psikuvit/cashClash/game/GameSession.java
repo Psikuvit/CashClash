@@ -1068,8 +1068,8 @@ public class GameSession {
             }
         }
 
-        // Reset health and food
-        player.setHealth(20.0);
+        // Reset health and food using centralized health system
+        ccp.resetHealthModifier();
         player.setFoodLevel(20);
         player.setSaturation(20.0f);
         player.setGameMode(GameMode.SURVIVAL);

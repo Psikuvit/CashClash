@@ -37,8 +37,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -171,7 +169,7 @@ public class GameListener implements Listener {
         applyKillTeamSplitBonus(session, killer);
 
         // Handle armor set kill effects
-        armorManager.onPlayerKill(killer);
+        armorManager.onPlayerKill(killer, session);
         armorManager.onDragonKill(killer);
         armorManager.onFlamebringerKill(killer);
     }
@@ -211,7 +209,7 @@ public class GameListener implements Listener {
         }
 
         teleportToSpawn(player, session);
-        restorePlayerHealth(player);
+        restorePlayerHealth(player, session);
         preparePlayerForCombat(player, session, respawnProtectionSec);
         Messages.send(player, "listener.respawned");
 
@@ -237,12 +235,11 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Restore player health to max
+     * Restore player health to max using centralized health system
      */
-    private void restorePlayerHealth(Player player) {
-        AttributeInstance maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
-        double maxHealth = maxHealthAttr != null ? maxHealthAttr.getValue() : 20.0;
-        player.setHealth(Math.max(1.0, maxHealth));
+    private void restorePlayerHealth(Player player, GameSession session) {
+        var ccp = session.getCashClashPlayer(player.getUniqueId());
+        ccp.resetHealthModifier();
     }
 
     /**
@@ -644,7 +641,7 @@ public class GameListener implements Listener {
         switch (type) {
             case MEDIC_POUCH -> {
                 event.setCancelled(true);
-                customItemManager.useMedicPouchAlly(player, target, item);
+                customItemManager.useMedicPouchAlly(player, target, item, session);
             }
             case RESPAWN_ANCHOR -> {
                 event.setCancelled(true);
@@ -694,9 +691,9 @@ public class GameListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null && session.getState() == GameState.SHOPPING) {
             Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-                var attr = player.getAttribute(Attribute.MAX_HEALTH);
-                double maxHealth = attr != null ? attr.getValue() : 20.0;
-                player.setHealth(Math.clamp(maxHealth, 1.0, player.getHealth()));
+                // Use centralized health system to get max health (respects modifiers)
+                var ccp = session.getCashClashPlayer(player.getUniqueId());
+                ccp.resetHealthModifier();
                 player.setFoodLevel(20);
             }, 2L);
         }
