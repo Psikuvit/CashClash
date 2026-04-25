@@ -115,6 +115,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public void startRoundBuffSelection() {
         Messages.debug("[PTP] Starting buff selection for round: " + session.getCurrentRound());
 
+        // Reset buff selection count for all players so they can pick new buffs this round
+        selectedBuffCount.clear();
+
         // Select new presidents for this round (except round 1, presidents already selected)
         if (session.getCurrentRound() > 1) {
             selectPresidents();
@@ -658,7 +661,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             return false;
         }
 
-        // In sudden death, allow 2 buffs
+        // In sudden death, allow 2 buffs; otherwise allow 1
         int buffCountForPres = selectedBuffCount.getOrDefault(playerUuid, 0);
         int maxBuffs = suddenDeathManager.isInSuddenDeath() ? 2 : 1;
 
@@ -673,7 +676,17 @@ public class ProtectThePresidentGamemode extends Gamemode {
             return true;
         }
         
-        // Check if we can select another buff
+        // In non-sudden death, allow replacing the current buff
+        if (!suddenDeathManager.isInSuddenDeath() && pres.hasSelectedBuff()) {
+            President updatedPres = pres.withBuff(buff);
+            presidents.put(presTeam, updatedPres);
+            Messages.debug("[PTP] " + player.getName() + " replaced buff with: " + buff.getName());
+            Messages.send(player, "gamemode-ptp.buff-selected-player", "buff_name", buff.getName());
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
+            return true;
+        }
+        
+        // Check if we can select another buff (for sudden death with multiple buffs)
         if (buffCountForPres >= maxBuffs) {
             Messages.send(player, "gamemode-ptp.buff-selection-limit", "max_buffs", String.valueOf(maxBuffs));
             return false;
