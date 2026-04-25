@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.util.items;
 
-import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
@@ -112,10 +111,10 @@ public final class ItemUtils {
             }
             if (appliedAny) {
                 player.getInventory().setArmorContents(armor);
-                Messages.send(player, MessagesConfig.getInstance().getMessage("enchant.protection-applied",
-                    "level", String.valueOf(lvl)));
+                Messages.send(player, "enchant.protection-applied",
+                    "level", String.valueOf(lvl));
             } else {
-                Messages.send(player, MessagesConfig.getInstance().getRaw("enchant.protection-no-eligible"));
+                Messages.send(player, "enchant.protection-no-eligible");
             }
             return true;
         }

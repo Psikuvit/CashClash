@@ -93,11 +93,11 @@ public final class MythicCategoryGui {
             player.getInventory().addItem(new ItemStack(Material.ARROW, 20));
         }
 
-        Messages.send(player, "");
+        Messages.send(player, "bonus.announce-spacer");
         Messages.send(player, "shop.mythic-acquired-title");
         Messages.send(player, "shop.mythic-acquired-name", "mythic_name", mythic.getDisplayName());
         Messages.send(player, "shop.mythic-acquired-cost", "price", String.format("%,d", price));
-        Messages.send(player, "");
+        Messages.send(player, "bonus.announce-spacer");
         SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
 
         // Refresh the parent GUI

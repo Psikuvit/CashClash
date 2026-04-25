@@ -36,44 +36,40 @@ public class DebugCommand extends AbstractArgCommand {
 
         Player target = Bukkit.getPlayer(args[0]);
         if (target == null) {
-            Messages.send(sender, "generic.player-not-found");
+            Messages.send(sender, "debug.player-not-found", "player", args[0]);
             return false;
         }
 
         UUID uuid = target.getUniqueId();
-        if (sender instanceof Player player) {
-            Messages.send(player, "debug.session-header", "{player_name}", target.getName());
+        Messages.send(sender, "debug.session-header", "player_name", target.getName());
 
-            // Game session info
-            GameSession session = GameManager.getInstance().getPlayerSession(target);
-            if (session == null) {
-                Messages.send(player, "debug.not-in-session");
+        GameSession session = GameManager.getInstance().getPlayerSession(target);
+        if (session == null) {
+            Messages.send(sender, "debug.no-session");
+        } else {
+            Messages.send(sender, "debug.session-id", "session_id", session.getSessionId().toString());
+            Messages.send(sender, "debug.arena", "arena_number", String.valueOf(session.getArenaNumber()));
+            Messages.send(sender, "debug.round", "round", String.valueOf(session.getCurrentRound()));
+
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+            if (ccp != null) {
+                Messages.send(sender, "debug.coins", "coins", String.format("%,d", ccp.getCoins()));
+                Messages.send(sender, "debug.lives", "lives", String.valueOf(ccp.getLives()));
+            }
+
+            MythicItem mythic = MythicItemManager.getInstance().getPlayerMythic(session, uuid);
+            if (mythic != null) {
+                Messages.send(sender, "debug.mythic-line", "mythic_name", mythic.getDisplayName());
             } else {
-                Messages.send(player, "debug.session-id", "{session_id}", session.getSessionId());
-                Messages.send(player, "debug.arena", "{arena_number}", String.valueOf(session.getArenaNumber()));
-
-                CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-                if (ccp != null) {
-                    Messages.send(player, "stats.coins", "{coins}", String.format("%,d", ccp.getCoins()));
-                    Messages.send(player, "debug.lives", "{lives}", String.valueOf(ccp.getLives()));
-                }
-
-                // Mythic ownership
-                MythicItem mythic = MythicItemManager.getInstance().getPlayerMythic(session, uuid);
-                if (mythic != null) {
-                    Messages.send(player, "stats.mythic-owned", "{mythic_name}", mythic.getDisplayName());
-                } else {
-                    Messages.send(player, "stats.no-mythic");
-                }
+                Messages.send(sender, "stats.no-mythic");
             }
-
-            // Invis cloak status
-            if (CustomItemManager.getInstance().isInvisActive(uuid)) {
-                Messages.send(player, "debug.invisibility-active");
-            }
-
-            Messages.send(player, "debug.footer");
         }
+
+        if (CustomItemManager.getInstance().isInvisActive(uuid)) {
+            Messages.send(sender, "debug.invis-cloak-active");
+        }
+
+        Messages.send(sender, "debug.footer");
         return true;
     }
 
@@ -88,4 +84,3 @@ public class DebugCommand extends AbstractArgCommand {
         return Collections.emptyList();
     }
 }
-

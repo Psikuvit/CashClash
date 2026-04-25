@@ -72,7 +72,10 @@ public class MessagesConfig {
     }
 
     /**
-     * Get a message by key with placeholder replacement
+     * Get a message by key with placeholder replacement.
+     * <p><b>Intended use:</b> only {@link me.psikuvit.cashClash.util.Messages#send}
+     * (and its broadcast helpers) should call this; callers should use
+     * {@code Messages.send(..., key, placeholder, value, ...)} instead.</p>
      *
      * @param key Message key (e.g., "chat.switched-to-global")
      * @param placeholders Pairs of (placeholder_name, replacement_value)
@@ -99,7 +102,9 @@ public class MessagesConfig {
     }
 
     /**
-     * Get a message by key without placeholder replacement
+     * Get a message by key without placeholder replacement.
+     * <p><b>Intended use:</b> only {@link me.psikuvit.cashClash.util.Messages}
+     * (e.g. {@code send} with no placeholder args, {@link me.psikuvit.cashClash.util.Messages#commandPrefix}) should call this.</p>
      *
      * @param key Message key
      * @return The raw message value

@@ -16,21 +16,20 @@ public class StopCommand extends AbstractArgCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
-        if (!(sender instanceof Player player)) {
+    public boolean onCommand(@NotNull CommandSender sender, String @NotNull [] args) {
+        if (!(sender instanceof Player p)) {
             Messages.send(sender, "command.only-players");
             return true;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
         if (session == null) {
-            Messages.send(sender, "generic.player-not-in-game");
+            Messages.send(sender, "generic.not-in-game");
             return true;
         }
 
         session.end();
-        Messages.send(sender, "admin.stop-success");
+        Messages.send(sender, "admin.stop-sender-success");
         return true;
     }
 }
-

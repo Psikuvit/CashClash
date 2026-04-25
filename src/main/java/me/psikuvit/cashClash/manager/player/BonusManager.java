@@ -370,8 +370,8 @@ public class BonusManager {
 
         if (player != null && player.isOnline()) {
             String bonusName = formatBonusName(bonusType);
-            Messages.send(player, "");
-            Messages.send(player,"bonus.bonus-earned",
+            Messages.send(player, "bonus.announce-spacer");
+            Messages.send(player, "bonus.bonus-earned",
                 "bonus_name", bonusName);
             Messages.send(player, "bonus.bonus-coins",
                 "amount", formatCoins(finalReward));
@@ -379,7 +379,7 @@ public class BonusManager {
                 Messages.send(player, "bonus.bonus-investor",
                     "multiplier_percent", String.format("%.1f", (investorMultiplier - 1.0) * 100));
             }
-            Messages.send(player, "");
+            Messages.send(player, "bonus.announce-spacer");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         }
 

@@ -4,7 +4,6 @@ import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
-import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.kit.Kit;
@@ -226,8 +225,8 @@ public class GameSession {
 
         int minPlayers = ConfigManager.getInstance().getMinPlayers();
 
-        Messages.broadcast(players.keySet(), MessagesConfig.getInstance().getMessage("round.game-countdown-start",
-            "seconds", String.valueOf(seconds)));
+        Messages.broadcast(players.keySet(), "round.game-countdown-start",
+            "seconds", String.valueOf(seconds));
 
         startCountdownTask = SchedulerUtils.runTaskTimer(() -> {
              if (state != GameState.WAITING) {
@@ -243,8 +242,8 @@ public class GameSession {
              }
 
              if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10)
-                 Messages.broadcast(players.keySet(), MessagesConfig.getInstance().getMessage("round.game-countdown-tick",
-                     "seconds", String.valueOf(countdownSecondsRemaining)));
+                 Messages.broadcast(players.keySet(), "round.game-countdown-tick",
+                     "seconds", String.valueOf(countdownSecondsRemaining));
              if (countdownSecondsRemaining <= 5 && countdownSecondsRemaining > 0)
                  SoundUtils.playTo(players.keySet(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
 
@@ -257,8 +256,8 @@ public class GameSession {
                           .filter(Objects::nonNull)
                           .forEach(player -> {
                               Team team = teamRed.hasPlayer(player.getUniqueId()) ? teamRed : teamBlue;
-                              Messages.send(player, MessagesConfig.getInstance().getMessage("round.team-assignment",
-                                  "team_color", team.getColoredName()));
+                              Messages.send(player, "round.team-assignment",
+                                  "team_color", team.getColoredName());
                           });
                  cancelStartCountdown();
                  start();
@@ -400,8 +399,8 @@ public class GameSession {
     private void applyKitToPlayer(Player p, CashClashPlayer ccp, Kit kitToApply) {
         if (currentRound == 1) {
             applyKitWithLayout(p, ccp.getUuid(), kitToApply);
-            Messages.send(p, MessagesConfig.getInstance().getMessage("round.kit-assigned",
-                "kit_name", kitToApply.toString()));
+            Messages.send(p, "round.kit-assigned",
+                "kit_name", kitToApply.toString());
         } else {
             kitToApply.apply(p, currentRound, rounds1to3HaveShields);
         }
@@ -609,11 +608,11 @@ public class GameSession {
                 ccp.addCoins(returnAmount);
                 if (p != null && p.isOnline()) {
                     Messages.send(p, "round.investment-success");
-                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-success-detail",
+                    Messages.send(p, "round.investment-success-detail",
                         "type_name", typeName,
-                        "amount", String.format("%,d", returnAmount)));
-                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-success-deaths",
-                        "deaths", String.valueOf(investment.getDeaths())));
+                        "amount", String.format("%,d", returnAmount));
+                    Messages.send(p, "round.investment-success-deaths",
+                        "deaths", String.valueOf(investment.getDeaths()));
                     SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
                 }
             } else if (investment.isBreakEven()) {
@@ -621,11 +620,11 @@ public class GameSession {
                 ccp.addCoins(returnAmount);
                 if (p != null && p.isOnline()) {
                     Messages.send(p, "round.investment-breakeven");
-                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-breakeven-detail",
+                    Messages.send(p, "round.investment-breakeven-detail",
                         "type_name", typeName,
-                        "amount", String.format("%,d", returnAmount)));
-                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-breakeven-deaths",
-                        "deaths", String.valueOf(investment.getDeaths())));
+                        "amount", String.format("%,d", returnAmount));
+                    Messages.send(p, "round.investment-breakeven-deaths",
+                        "deaths", String.valueOf(investment.getDeaths()));
                     SoundUtils.play(p, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
                 }
             } else {
@@ -634,11 +633,11 @@ public class GameSession {
                 ccp.deductCoins(penalty);
                 if (p != null && p.isOnline()) {
                     Messages.send(p, "round.investment-failed");
-                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-failed-detail",
+                    Messages.send(p, "round.investment-failed-detail",
                         "type_name", typeName,
-                        "amount", String.format("%,d", penalty)));
-                    Messages.send(p, MessagesConfig.getInstance().getMessage("round.investment-failed-deaths",
-                        "deaths", String.valueOf(investment.getDeaths())));
+                        "amount", String.format("%,d", penalty));
+                    Messages.send(p, "round.investment-failed-deaths",
+                        "deaths", String.valueOf(investment.getDeaths()));
                     SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
                 }
             }
@@ -775,8 +774,8 @@ public class GameSession {
         if (aliveCount > 1 && anyRecentDamage) {
             Player requester = Bukkit.getPlayer(team.getPlayers().iterator().next());
             if (requester != null) {
-                Messages.send(requester, MessagesConfig.getInstance().getMessage("round.forfeit-recent-damage",
-                    "grace_seconds", String.valueOf(combatGrace)));
+                Messages.send(requester, "round.forfeit-recent-damage",
+                    "grace_seconds", String.valueOf(combatGrace));
             }
             return false;
         }
@@ -791,8 +790,8 @@ public class GameSession {
         if (team.getForfeitStartTime() == 0L) team.setForfeitStartTime(now);
         team.addForfeitVote(requester.getUniqueId());
 
-        Messages.broadcastToTeam(team, MessagesConfig.getInstance().getMessage("round.forfeit-vote-started",
-            "player_name", requester.getName()));
+        Messages.broadcastToTeam(team, "round.forfeit-vote-started",
+            "player_name", requester.getName());
         if (team.hasAllForfeitVotes()) executeForfeit(team);
     }
 
@@ -805,10 +804,10 @@ public class GameSession {
         }
 
         team.addForfeitVote(voter.getUniqueId());
-        Messages.broadcastToTeam(team, MessagesConfig.getInstance().getMessage("round.forfeit-vote-cast",
+        Messages.broadcastToTeam(team, "round.forfeit-vote-cast",
             "player_name", voter.getName(),
             "votes", String.valueOf(team.getForfeitVotes().size()),
-            "total", String.valueOf(team.getSize())));
+            "total", String.valueOf(team.getSize()));
         if (team.hasAllForfeitVotes()) executeForfeit(team);
     }
 
@@ -819,10 +818,10 @@ public class GameSession {
         applyForfeitPenalty(forfeitingTeam);
         applyForfeitBonus(other, bonus);
 
-        Messages.broadcast(players.keySet(), MessagesConfig.getInstance().getMessage("round.forfeit-executed",
+        Messages.broadcast(players.keySet(), "round.forfeit-executed",
             "team_color", forfeitingTeam.getColoredName(),
             "other_team_color", other.getColoredName(),
-            "bonus", String.valueOf(bonus)));
+            "bonus", String.valueOf(bonus));
         if (roundManager != null) roundManager.endCombatPhase();
     }
 
@@ -892,12 +891,12 @@ public class GameSession {
 
         boolean isWinner = winner.getPlayers().contains(uuid);
         Messages.send(player, isWinner ? "round.game-end-win" : "round.game-end-lose");
-        Messages.send(player, MessagesConfig.getInstance().getMessage("round.game-end-winners",
-            "team_color", winner.getColoredName()));
-        Messages.send(player, MessagesConfig.getInstance().getMessage("round.game-end-winner-list",
-            "players", winnerList));
-        Messages.send(player, MessagesConfig.getInstance().getMessage("round.game-end-loser-list",
-            "players", loserList));
+        Messages.send(player, "round.game-end-winners",
+            "team_color", winner.getColoredName());
+        Messages.send(player, "round.game-end-winner-list",
+            "players", winnerList);
+        Messages.send(player, "round.game-end-loser-list",
+            "players", loserList);
         Messages.send(player, "round.game-end-thanks");
     }
 
@@ -1011,9 +1010,9 @@ public class GameSession {
         ScoreboardManager.getInstance().setScoreboard(player);
 
         Messages.send(player, "round.rejoin-success");
-        Messages.send(player, MessagesConfig.getInstance().getMessage("round.rejoin-status",
+        Messages.send(player, "round.rejoin-status",
             "round", String.valueOf(currentRound),
-            "lives", String.valueOf(existingCcp.getLives())));
+            "lives", String.valueOf(existingCcp.getLives()));
 
         return true;
     }

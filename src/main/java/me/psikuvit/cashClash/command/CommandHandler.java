@@ -21,7 +21,6 @@ import me.psikuvit.cashClash.command.subcommands.SpawnNPCCommand;
 import me.psikuvit.cashClash.command.subcommands.StatsCommand;
 import me.psikuvit.cashClash.command.subcommands.StopCommand;
 import me.psikuvit.cashClash.command.subcommands.TemplateCommand;
-import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -108,7 +107,7 @@ public class CommandHandler extends Command {
 
         String perm = sub.getPermission();
         if (perm != null && !perm.isBlank() && !sender.hasPermission(perm)) {
-            Messages.send(sender, MessagesConfig.getInstance().getRaw("command.no-permission"));
+            Messages.send(sender, "command.no-permission");
             return true;
         }
 
@@ -140,26 +139,27 @@ public class CommandHandler extends Command {
     }
 
     private void sendHelp(CommandSender sender) {
-        MessagesConfig msgs = MessagesConfig.getInstance();
-        Messages.send(sender, msgs.getRaw("command.help-title"));
-        Messages.send(sender, msgs.getRaw("command.help-arenas"));
-        Messages.send(sender, msgs.getRaw("command.help-join"));
-        Messages.send(sender, msgs.getRaw("command.help-leave"));
-        Messages.send(sender, msgs.getRaw("command.help-stats"));
-        Messages.send(sender, msgs.getRaw("command.help-forfeit"));
-        Messages.send(sender, msgs.getRaw("command.help-transfer"));
-        Messages.send(sender, msgs.getRaw("command.help-layout"));
+        Messages.send(sender, "command.help-title");
+        Messages.send(sender, "command.help-arenas");
+        Messages.send(sender, "command.help-join");
+        Messages.send(sender, "command.help-leave");
+        Messages.send(sender, "command.help-stats");
+        Messages.send(sender, "command.help-forfeit");
+        Messages.send(sender, "command.help-transfer");
+        Messages.send(sender, "command.help-layout");
         if (sender.hasPermission("cashclash.admin")) {
-            Messages.send(sender, msgs.getRaw("command.help-admin-section"));
-            Messages.send(sender, msgs.getRaw("command.help-arena"));
-            Messages.send(sender, msgs.getRaw("command.help-template"));
-            Messages.send(sender, msgs.getRaw("command.help-blockdisplay"));
-            Messages.send(sender, msgs.getRaw("command.help-stop"));
-            Messages.send(sender, msgs.getRaw("command.help-forcestart"));
-            Messages.send(sender, msgs.getRaw("command.help-setlobby"));
-            Messages.send(sender, msgs.getRaw("command.help-reload"));
-            Messages.send(sender, msgs.getRaw("command.help-debug"));
+            Messages.send(sender, "command.help-admin-section");
+            Messages.send(sender, "command.help-arena");
+            Messages.send(sender, "command.help-template");
+            Messages.send(sender, "command.help-blockdisplay");
+            Messages.send(sender, "command.help-stop");
+            Messages.send(sender, "command.help-forcestart");
+            Messages.send(sender, "command.help-forcenextround");
+            Messages.send(sender, "command.help-selectkit");
+            Messages.send(sender, "command.help-setlobby");
+            Messages.send(sender, "command.help-reload");
+            Messages.send(sender, "command.help-debug");
         }
-        Messages.send(sender, msgs.getRaw("command.help-shop"));
+        Messages.send(sender, "command.help-shop");
     }
 }

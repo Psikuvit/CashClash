@@ -23,15 +23,15 @@ public class ForceNextRoundCommand extends AbstractArgCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
-        if (!(sender instanceof Player player)) {
+    public boolean onCommand(@NotNull CommandSender sender, String @NotNull [] args) {
+        if (!(sender instanceof Player p)) {
             Messages.send(sender, "command.only-players");
             return true;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
         if (session == null) {
-            Messages.send(sender, "generic.player-not-in-game");
+            Messages.send(sender, "generic.not-in-game");
             return true;
         }
 
@@ -50,20 +50,19 @@ public class ForceNextRoundCommand extends AbstractArgCommand {
         int totalRounds = ConfigManager.getInstance().getTotalRounds();
 
         if (currentRound >= totalRounds) {
-            Messages.send(sender, "admin.forcenextround-final-round");
+            Messages.send(sender, "admin.forcenextround-is-final-round");
             session.end();
-            Messages.broadcast(session.getPlayers(), "admin.game-ended");
+            Messages.broadcast(session.getPlayers(), "admin.forcenextround-broadcast-game-ended");
             return true;
         }
 
-        // Force transition to next round
-        Messages.broadcast(session.getPlayers(), "admin.round-skipped", "next_round", String.valueOf(currentRound + 1));
+        int nextRound = currentRound + 1;
+        Messages.broadcast(session.getPlayers(), "admin.forcenextround-broadcast-advance",
+                "next_round", String.valueOf(nextRound));
 
-        // Trigger next round (this will handle cleanup and setup)
         session.nextRound();
-        Messages.send(sender, "admin.forcenextround-success", "round", String.valueOf(currentRound + 1));
+        Messages.send(sender, "admin.forcenextround-success", "round", String.valueOf(nextRound));
 
         return true;
     }
 }
-

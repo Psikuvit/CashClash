@@ -33,6 +33,9 @@ messages:
     help-setlobby: "<yellow>/cc setlobby <gray>- Set the lobby spawn point</gray>"
     help-reload: "<yellow>/cc reload [config|shop|items|all] <gray>- Reload configs</gray>"
     help-debug: "<yellow>/cc debug <gray>- Toggle debug mode</gray>"
+    join-select-arena: "<yellow>Select an arena from the menu to join a game.</yellow>"
+    layout-unknown-action: "<red>Unknown layout action: <gray>{action}</gray></red>"
+    layout-usage: "<gray>Usage: <yellow>/cc layout</yellow> (open editor), <yellow>/cc layout confirm</yellow>, <yellow>/cc layout cancel</yellow></gray>"
 
   # ============================================
   # CHAT MESSAGES
@@ -40,6 +43,21 @@ messages:
   chat:
     switched-to-global: "<gray>Switched to </gray><white>Global</white><gray> chat.</gray>"
     switched-to-channel: "<gray>Switched to </gray>{channel_color}{channel_name}<gray> chat.</gray>"
+    current-channel: "<gray>Current channel: </gray>{channel_color}{channel_name}"
+    switch-hint: "<gray>Use <yellow>/cc chat <global|party|team|game></yellow> or quick prefixes below.</gray>"
+    quick-prefixes: "<gray>Quick send: <yellow>@party</yellow> / <yellow>@p</yellow>, <yellow>@team</yellow> / <yellow>@t</yellow>, <yellow>@game</yellow> / <yellow>@g</yellow>, <yellow>@all</yellow> / <yellow>@a</yellow> (global)</gray>"
+    help-title: "<gold><bold>=== Chat Channels ===</bold></gold>"
+    help-global: "<yellow>/cc chat global</yellow> <gray>- Global chat (default)</gray>"
+    help-party: "<yellow>/cc chat party</yellow> <gray>- Party chat (toggle)</gray>"
+    help-team: "<yellow>/cc chat team</yellow> <gray>- Team chat (toggle, in game)</gray>"
+    help-game: "<yellow>/cc chat game</yellow> <gray>- Game session chat (toggle)</gray>"
+    help-spacer: "<gray>---</gray>"
+    help-quick-title: "<gold>Quick prefixes (start message):</gold>"
+    help-quick-party: "<yellow>@p </yellow><gray>or</gray> <yellow>@party </yellow><gray>- Party</gray>"
+    help-quick-team: "<yellow>@t </yellow><gray>or</gray> <yellow>@team </yellow><gray>- Team</gray>"
+    help-quick-game: "<yellow>@g </yellow><gray>or</gray> <yellow>@game </yellow><gray>- Game</gray>"
+    help-quick-global: "<yellow>@a </yellow><gray>or</gray> <yellow>@all </yellow><gray>- Force global</gray>"
+    help-footer: "<gray>Type a message after <yellow>/cc chat</yellow> to send in your current channel.</gray>"
     not-in-party-message: "<red>You are not in a party! Message not sent.</red>"
     not-in-game-message: "<red>You are not in a game! Message not sent.</red>"
     not-on-team-message: "<red>You are not on a team! Message not sent.</red>"
@@ -190,6 +208,7 @@ messages:
     refunded: "<green>Refunded ${amount} to your balance.</green>"
     set-purchase-undone: "<green>Set purchase undone. Refunded ${amount} and restored your previous armor.</green>"
     purchase-undone: "<green>Purchase undone. Refunded ${amount} and restored your previous item.</green>"
+    purchase-undone-item-not-found: "<gray>(Could not find item(s) to remove from inventory.)</gray>"
     purchased-set: "<green>Purchased {item_name} for ${price}</green>"
     purchased-quantity: "<green>Purchased {item_name} x{quantity} for ${price}</green>"
     purchased: "<green>Purchased {item_name} for ${price}</green>"
@@ -225,6 +244,7 @@ messages:
   # BONUS & REWARD MESSAGES
   # ============================================
   bonus:
+    announce-spacer: "<dark_gray> </dark_gray>"
     bonus-earned: "<dark_purple><bold>⭐ BONUS!</bold></dark_purple> <light_purple>{bonus_name}</light_purple>"
     bonus-coins: "<gray>+${amount} coins</gray>"
     bonus-investor: "<gray>Investor's Set: +{multiplier_percent}% bonus</gray>"
@@ -256,6 +276,7 @@ messages:
     combat-countdown: "<yellow>{time_remaining} seconds remaining!</yellow>"
     team-blue-wins: "<red><bold>Blue Team wins the round!</bold></red>"
     team-red-wins: "<red><bold>Red Team wins the round!</bold></red>"
+    team-wins-round: "<gold><bold>{team_name} Team Wins the Round!</bold></gold>"
     game-countdown-start: "<yellow>Minimum players reached! Starting game in <gold>{seconds}s</gold>. Join now!</yellow>"
     game-countdown-cancelled: "<red>Not enough players, starting countdown cancelled.</red>"
     game-countdown-tick: "<yellow>Game starting in <gold>{seconds}s</gold>...</yellow>"
@@ -318,6 +339,7 @@ messages:
     speed-buff-description: "<gold>Speed I - Move faster</gold>"
     resistance-buff-description: "<gold>Resistance I - Take less damage</gold>"
     health-buff-description: "<gold>Extra Hearts - Gain +3 max hearts</gold>"
+    sudden-death: "<red><bold>SUDDEN DEATH! Both presidents must now be eliminated 4 times to win!</bold></red>"
 
   # ============================================
   # GAMEMODE - CAPTURE THE FLAG
@@ -337,6 +359,9 @@ messages:
     silenced-activated: "<red>You have been silenced! All item abilities are disabled.</red>"
     flag-capturing: "<{color}>Capturing Team {team_name}'s flag... Stand still!</{color}>"
     flag-capture-cancelled: "<yellow>Capturing Team {team_name}'s flag cancelled.</yellow>"
+    flag-captured-by-player: "<gold><bold>{player_name} has captured the flag! {captures}/{win_condition}</bold></gold>"
+    sudden-death: "<red><bold>SUDDEN DEATH! Both teams must now capture 4 flags to win!</bold></red>"
+    capture-bonus-team-broadcast: "<yellow>Team {team_name} earned a 45-second capture bonus!</yellow>"
 
   # ============================================
   # PARTY INFO MESSAGES
@@ -443,6 +468,17 @@ messages:
     already-paid-tax: "<red>You have already paid the tax!</red>"
     tax-payment-cost: "<red>You need 5,000 coins to pay the tax!</red>"
     tax-paid-safe: "<green>You paid the tax. Your items are safe!</green>"
+    lottery-announce: "{prefix} <gold><bold>🎰 LOTTERY!</bold></gold> <yellow>Type <white>/cc lottery</white> to enter!</yellow>"
+    lottery-subtitle: "<gray>Pay 5,000 coins for a 50% chance to win 10,000! You have 30 seconds.</gray>"
+    life-steal-announce: "{prefix} <red><bold>💀 LIFE STEAL!</bold></red> <yellow>Kills grant extra hearts!</yellow>"
+    checkup-announce: "{prefix} <green><bold>💚 CHECK UP!</bold></green> <yellow>Everyone receives bonus hearts!</yellow>"
+    bonus-jackpot-announce: "{prefix} <gold><bold>💰 BONUS JACKPOT!</bold></gold> <yellow>Everyone receives bonus money!</yellow>"
+    tax-time-announce: "{prefix} <red><bold>📉 TAX TIME!</bold></red> <yellow>Everyone loses {tax_percent}% of their money!</yellow>"
+    mystery-loot-announce: "{prefix} <dark_purple><bold>🎁 MYSTERY LOOT!</bold></dark_purple> <yellow>Everyone receives a random item!</yellow>"
+    broken-gear-announce: "{prefix} <red><bold>⚠ BROKEN GEAR!</bold></red> <yellow>A random piece of equipment disappears for 30 seconds!</yellow>"
+    weight-of-wealth-announce: "{prefix} <gold><bold>⚖ WEIGHT OF WEALTH!</bold></gold> <yellow>Pay 5,000 coins or lose a random item!</yellow>"
+    supply-drop-announce: "{prefix} <yellow><bold>📦 SUPPLY DROP!</bold></yellow> <green>Rich Man Bobby dropped his riches!</green>"
+    supply-drop-location: "<gold>Location: X={x} Z={z}</gold>"
 
   # ============================================
   # ADMIN COMMAND MESSAGES
@@ -452,10 +488,16 @@ messages:
     round-skipped: "<gold><bold>Round skipped by an admin! Moving to Round {next_round}!</bold></gold>"
     game-force-started: "<gold><bold>Game force started by an admin!</bold></gold>"
     stop-success: "<green>Game ended.</green>"
+    stop-sender-success: "<green>Game stopped successfully.</green>"
+    forcestart-no-players: "<red>No players are in the game.</red>"
+    forcestart-sender-success: "<green>Game force started successfully.</green>"
     forcenextround-not-started: "<red>The game hasn't started yet.</red>"
     forcenextround-already-ending: "<yellow>Game is already ending.</yellow>"
     forcenextround-final-round: "<yellow>Already at final round, ending game instead.</yellow>"
     forcenextround-success: "<green>Successfully skipped to round {round}.</green>"
+    forcenextround-broadcast-advance: "<yellow>The round has been skipped. Advancing to round {next_round}.</yellow>"
+    forcenextround-broadcast-game-ended: "<gold>The game has ended.</gold>"
+    forcenextround-is-final-round: "<red>The current round is the final round.</red>"
 
   # ============================================
   # TEMPLATE WORLD MESSAGES
@@ -466,7 +508,7 @@ messages:
     register-success: "<green>Registered template '{template_id}' to world '{world_name}'</green>"
     register-failed: "<red>Failed to register template. Check world name and server logs.</red>"
     already-exists: "<red>Template with ID '{template_id}' already exists.</red>"
-    set-usage: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager> [index/team]</red>"
+    set-usage: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager|ctf> [index/team]</red>"
     set-team-usage: "<red>Usage: /cc template set <templateId> {type} <1|2|3></red>"
     set-shop-usage: "<red>Usage: /cc template set <templateId> shop <teamRed|teamBlue></red>"
     set-lobby-usage: "<red>Usage: /cc template set <templateId> lobby</red>"
@@ -489,6 +531,8 @@ messages:
     show-team-blue-spawn: "<yellow>teamBlue spawn #{index}:</yellow> {location}"
     show-shop-red: "<yellow>Shop teamRed:</yellow> {location}"
     show-shop-blue: "<yellow>Shop teamBlue:</yellow> {location}"
+    show-red-flag: "<yellow>Red Flag: {location}</yellow>"
+    show-blue-flag: "<yellow>Blue Flag: {location}</yellow>"
     show-shops: "<yellow>Shops:</yellow> <gray>{shop_info}</gray>"
     tp-success: "<green>Teleported to template '{template_id}'</green>"
     tp-usage: "<red>Usage: /cc template tp <templateId></red>"
@@ -501,6 +545,13 @@ messages:
     invalid-set-args: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager> [index/team]</red>"
     player-not-in-template: "<red>Please teleport to the template world first.</red>"
     player-not-in-template-with-id: "<red>Please teleport to the template world first: /cc template tp {template_id}</red>"
+    set-ctf-usage: "<gold>Usage: /cc template set <templateId> ctf <red|blue></gold>"
+    set-ctf-red-success: "<green>Set CTF Red flag location for template '{template_id}'</green>"
+    set-ctf-blue-success: "<green>Set CTF Blue flag location for template '{template_id}'</green>"
+    invalid-ctf-team: "<red>Invalid CTF team. Use red or blue.</red>"
+    set-spawn-index-usage: "<gold>Usage: /cc template set <templateId> {spawn_type} <1|2|3|4></gold>"
+    set-shop-red-success: "<green>Set shop spawn for team Red on template '{template_id}'</green>"
+    set-shop-blue-success: "<green>Set shop spawn for team Blue on template '{template_id}'</green>"
 
   # ============================================
   # SPAWN NPC MESSAGES
@@ -522,7 +573,8 @@ messages:
   generic:
     invalid-amount: "<red>Invalid amount.</red>"
     invalid-amount-number: "<red>Invalid amount. Please enter a valid number.</red>"
-    invalid-index: "<red>Index must be 1,2,3 or 4</red>"
+    invalid-index: "<red>Index must be 1, 2, 3, or 4</red>"
+    not-in-game: "<red>You are not in a game.</red>"
     player-not-found: "<red>Player not found!</red>"
     player-not-found-or-offline: "<red>Player not found or not online.</red>"
     player-not-in-game: "<red>You're not in a game session. Join an arena first.</red>"
@@ -563,6 +615,7 @@ messages:
     invalid-args: "<red>Invalid stats command usage.</red>"
     total-invested: "<yellow>Total Invested: <gray>${invested}</gray></yellow>"
     reset-success: "<green>Player stats reset for: <yellow>{player_name}</yellow></green>"
+    reset-target-not-found: "<red>Player not found or offline: {player}</red>"
     no-mythic: "<gray>No mythic owned</gray>"
     mythic-owned: "<light_purple>Mythic: {mythic_name}</light_purple>"
     only-players-no-args: "<red>Only players can use this command without arguments.</red>"
@@ -572,12 +625,18 @@ messages:
   # DEBUG COMMAND MESSAGES
   # ============================================
   debug:
-    usage: "<red>Usage: /cashclash debug <player></red>"
+    usage: "<gold>Usage: /cc debug <player></gold>"
     session-header: "<gold>=== Debug: {player_name} ===</gold>"
+    player-not-found: "<red>Player not found: {player}</red>"
+    no-session: "<red>Player is not in a session.</red>"
     session-id: "<green>Session ID: {session_id}</green>"
     arena: "<green>Arena: {arena_number}</green>"
     round: "<yellow>Round: {round}</yellow>"
     lives: "<yellow>Lives: {lives}</yellow>"
+    coins: "<yellow>Coins: {coins}</yellow>"
+    mythic-line: "<yellow>Mythic: {mythic_name}</yellow>"
+    footer: "<gold>=== End Debug ===</gold>"
+    invis-cloak-active: "<yellow>Invisibility Cloak: <green>ACTIVE</green></yellow>"
     team: "<yellow>Team: {team}</yellow>"
 
   # ============================================
@@ -585,11 +644,13 @@ messages:
   # ============================================
   selectkit:
     usage: "<red>Usage: /cc selectkit <kit> [player]</red>"
+    player-not-found: "<red>Player not found: {player}</red>"
+    need-player-or-target: "<red>You must be a player or specify a player target.</red>"
     success: "<green>Your kit has been changed to: <yellow>{kit_name}</yellow></green>"
     success-other: "<green>Set {player_name}'s kit to: <yellow>{kit_name}</yellow></green>"
     invalid-kit: "<red>Invalid kit: {kit_name}</red>"
     available-kits: "<gray>Available kits: {kits}</gray>"
-    warning: "<yellow>Warning: Changing kit during combat phase!</yellow>"
+    warning: "<yellow>Warning: Changing kit during combat.</yellow>"
     target-not-in-game: "<red>{player_name} is not in a game session.</red>"
     data-not-found: "<red>Could not find player data for {player_name}.</red>"
 
@@ -618,7 +679,8 @@ messages:
     left-game: "<green>You left the game.</green>"
     shop-locked: "<red>Shop is locked during buff selection phase!</red>"
     cannot-purchase-during-buff: "<red>You cannot purchase items during buff selection!</red>"
-    cannot-use-during-shopping: "<red>You cannot use special consumables during the shopping phase!</red>"
+    cannot-use-during-shopping: "<red>You cannot consume food during the shopping phase!</red>"
+    cannot-use-consumables-during-shopping: "<red>You cannot use special consumables during the shopping phase!</red>"
     cannot-use-abilities-shopping: "<red>You cannot use mythic abilities during the shopping phase!</red>"
     must-be-in-game: "<red>You must be in a game!</red>"
     must-be-on-team: "<red>You must be on a team to transfer money!</red>"
@@ -640,6 +702,9 @@ messages:
   rejoin:
     session-ended: "<red>Your game session has ended.</red>"
     game-ended: "<red>Your game has ended.</red>"
+    timeout-removed-broadcast: "<red>{player_name} did not rejoin in time and has been removed.</red>"
+    disconnect-warning: "<yellow>{player_name} disconnected! They have <gold>{timeout_seconds}s</gold> to rejoin.</yellow>"
+    reconnected-broadcast: "<green>{player_name} has reconnected!</green>"
 
   # ============================================
   # LISTENER MESSAGES
@@ -649,6 +714,7 @@ messages:
     respawn-delay: "<yellow>You will respawn in {seconds} seconds...</yellow>"
     round-ended-no-respawn: "<red>The round ended. You cannot respawn.</red>"
     respawned: "<green>You have respawned.</green>"
+    item-cannot-drop: "<red>You cannot drop shop items.</red>"
     buff-potion-undrinkable: "<red>You cannot drink this potion! Right-click it to select your buff.</red>"
     cannot-use-consumables-dead: "<red>You cannot use consumables while dead!</red>"
     consumable-cooldown: "<red>Consumable on cooldown! ({remaining}s)</red>"
@@ -737,6 +803,8 @@ messages:
     invis-cost-per-second: "<yellow>Losing {cost} coins per second...</yellow>"
     invis-out-of-coins: "<red>Out of coins! Invisibility ended.</red>"
     invis-deactivated: "<yellow>Invisibility deactivated.</yellow>"
+    invis-disabled-shopping: "<red>Invisibility disabled at start of shopping phase!</red>"
+    max-one-cloak: "<red>You can only carry one Invisibility Cloak at a time!</red>"
     cash-blaster-hit-capped: "<green>+${amount} from Cash Blaster hit! (Reached max: ${max})</green>"
     cash-blaster-limit: "<red>Cash Blaster limit of ${max} reached this round!</red>"
     cash-blaster-hit: "<green>+${amount} from Cash Blaster hit!</green>"

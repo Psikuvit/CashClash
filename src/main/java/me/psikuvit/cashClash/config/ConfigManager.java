@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.config;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -235,7 +236,7 @@ public class ConfigManager {
     // ==================== MESSAGES ====================
 
     public String getPrefix() {
-        return MessagesConfig.getInstance().getRaw("command.prefix");
+        return Messages.commandPrefix();
     }
 
     // ==================== SCOREBOARD ====================

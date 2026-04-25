@@ -21,7 +21,7 @@ public class SpawnNPCCommand extends AbstractArgCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, String @NotNull [] args) {
         if (!(sender instanceof Player player)) {
             Messages.send(sender, "command.only-players");
             return true;
@@ -38,9 +38,7 @@ public class SpawnNPCCommand extends AbstractArgCommand {
         String subAction = args[0].toLowerCase();
 
         switch (subAction) {
-            case "arena" -> {
-                MannequinManager.getInstance().createArenaMannequin(player.getLocation(), player);
-            }
+            case "arena" -> MannequinManager.getInstance().createArenaMannequin(player.getLocation(), player);
             case "remove" -> {
                 int removed = MannequinManager.getInstance().removeNearby(player.getLocation(), 5);
                 if (removed > 0) {
@@ -56,11 +54,10 @@ public class SpawnNPCCommand extends AbstractArgCommand {
     }
 
     @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, String @NotNull [] args) {
         if (args.length == 1) {
             return List.of("arena", "remove");
         }
         return Collections.emptyList();
     }
 }
-

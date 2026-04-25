@@ -2,7 +2,6 @@ package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.config.ConfigManager;
-import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.CashQuakeEvent;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -172,10 +171,8 @@ public class CashQuakeManager {
         lotteryActive = true;
         lotteryParticipants.clear();
 
-        Messages.broadcast(session.getPlayers(),
-                prefix + " <gold><bold>🎰 LOTTERY!</bold></gold> <yellow>Type <white>/cc lottery</white> to enter!</yellow>");
-        Messages.broadcast(session.getPlayers(),
-                "<gray>Pay 5,000 coins for a 50% chance to win 10,000! You have 30 seconds.</gray>");
+        Messages.broadcast(session.getPlayers(), "cashquake.lottery-announce", "prefix", prefix);
+        Messages.broadcast(session.getPlayers(), "cashquake.lottery-subtitle");
 
         lotteryEndTask = SchedulerUtils.runTaskLater(() -> {
             lotteryActive = false;
@@ -208,7 +205,7 @@ public class CashQuakeManager {
             ccp.addCoins(10000);
             Messages.send(player, "cashquake.lottery-win");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
-            Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("cashquake.lottery-winner", "player_name", player.getName()));
+            Messages.broadcast(session.getPlayers(), "cashquake.lottery-winner", "player_name", player.getName());
         } else {
             Messages.send(player, "cashquake.lottery-lose");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
@@ -219,8 +216,7 @@ public class CashQuakeManager {
     private void executeLifeSteal(String prefix) {
         lifeStealActive.addAll(session.getPlayers());
 
-        Messages.broadcast(session.getPlayers(),
-                prefix + " <red><bold>💀 LIFE STEAL!</bold></red> <yellow>Kills grant extra hearts!</yellow>");
+        Messages.broadcast(session.getPlayers(), "cashquake.life-steal-announce", "prefix", prefix);
         Messages.broadcast(session.getPlayers(), "cashquake.life-steal-active");
 
         lifeStealEndTask = SchedulerUtils.runTaskLater(() -> {
@@ -258,8 +254,7 @@ public class CashQuakeManager {
 
     // ==================== CHECK UP ====================
     private void executeCheckUp(String prefix) {
-        Messages.broadcast(session.getPlayers(),
-                prefix + " <green><bold>💚 CHECK UP!</bold></green> <yellow>Everyone receives bonus hearts!</yellow>");
+        Messages.broadcast(session.getPlayers(), "cashquake.checkup-announce", "prefix", prefix);
 
         for (UUID uuid : session.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
@@ -294,8 +289,7 @@ public class CashQuakeManager {
 
     // ==================== BONUS JACKPOT ====================
     private void executeBonusJackpot(String prefix) {
-        Messages.broadcast(session.getPlayers(),
-                prefix + " <gold><bold>💰 BONUS JACKPOT!</bold></gold> <yellow>Everyone receives bonus money!</yellow>");
+        Messages.broadcast(session.getPlayers(), "cashquake.bonus-jackpot-announce", "prefix", prefix);
 
         boolean megaJackpot = random.nextInt(100) == 0;
 
@@ -324,8 +318,8 @@ public class CashQuakeManager {
     private void executeTaxTime(String prefix) {
         int taxPercent = random.nextInt(6) + 5;
 
-        Messages.broadcast(session.getPlayers(),
-                prefix + " <red><bold>📉 TAX TIME!</bold></red> <yellow>Everyone loses " + taxPercent + "% of their money!</yellow>");
+        Messages.broadcast(session.getPlayers(), "cashquake.tax-time-announce",
+                "prefix", prefix, "tax_percent", String.valueOf(taxPercent));
 
         for (UUID uuid : session.getPlayers()) {
             CashClashPlayer ccp = session.getCashClashPlayer(uuid);
@@ -342,8 +336,7 @@ public class CashQuakeManager {
 
     // ==================== MYSTERY LOOT ====================
     private void executeMysteryLoot(String prefix) {
-        Messages.broadcast(session.getPlayers(),
-                prefix + " <dark_purple><bold>🎁 MYSTERY LOOT!</bold></dark_purple> <yellow>Everyone receives a random item!</yellow>");
+        Messages.broadcast(session.getPlayers(), "cashquake.mystery-loot-announce", "prefix", prefix);
 
         ItemStack[] items = {
                 new ItemStack(Material.IRON_SWORD),
@@ -375,8 +368,7 @@ public class CashQuakeManager {
 
     // ==================== BROKEN GEAR ====================
     private void executeBrokenGear(String prefix) {
-        Messages.broadcast(session.getPlayers(),
-                prefix + " <red><bold>⚠ BROKEN GEAR!</bold></red> <yellow>A random piece of equipment disappears for 30 seconds!</yellow>");
+        Messages.broadcast(session.getPlayers(), "cashquake.broken-gear-announce", "prefix", prefix);
 
         for (UUID uuid : session.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
@@ -461,8 +453,7 @@ public class CashQuakeManager {
         weightOfWealthActive = true;
         weightOfWealthPaid.clear();
 
-        Messages.broadcast(session.getPlayers(),
-                prefix + " <gold><bold>⚖ WEIGHT OF WEALTH!</bold></gold> <yellow>Pay 5,000 coins or lose a random item!</yellow>");
+        Messages.broadcast(session.getPlayers(), "cashquake.weight-of-wealth-announce", "prefix", prefix);
         Messages.broadcast(session.getPlayers(), "cashquake.weight-of-wealth-prompt");
 
         weightOfWealthEndTask = SchedulerUtils.runTaskLater(() -> {
@@ -567,10 +558,9 @@ public class CashQuakeManager {
             dropLoc.setY(world.getHighestBlockYAt(dropLoc) + 1);
         }
 
-        Messages.broadcast(session.getPlayers(),
-                prefix + " <yellow><bold>📦 SUPPLY DROP!</bold></yellow> <green>Rich Man Bobby dropped his riches!</green>");
-        Messages.broadcast(session.getPlayers(),
-                "<gold>Location: X=" + dropLoc.getBlockX() + " Z=" + dropLoc.getBlockZ() + "</gold>");
+        Messages.broadcast(session.getPlayers(), "cashquake.supply-drop-announce", "prefix", prefix);
+        Messages.broadcast(session.getPlayers(), "cashquake.supply-drop-location",
+                "x", String.valueOf(dropLoc.getBlockX()), "z", String.valueOf(dropLoc.getBlockZ()));
         Messages.broadcast(session.getPlayers(), "cashquake.auction-prompt");
 
         int chestCount = random.nextInt(4) + 3;

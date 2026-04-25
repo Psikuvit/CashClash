@@ -74,7 +74,6 @@ public class ReloadCommand extends AbstractArgCommand {
 
             Messages.send(sender, "reload.count-success", "count", String.valueOf(reloaded));
 
-            // Log to console
             CashClashPlugin.getInstance().getLogger().info(
                 sender.getName() + " reloaded " + target + " configuration(s)"
             );
@@ -102,4 +101,3 @@ public class ReloadCommand extends AbstractArgCommand {
         return Collections.emptyList();
     }
 }
-

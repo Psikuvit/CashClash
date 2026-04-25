@@ -1,7 +1,6 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
 import io.papermc.paper.datacomponent.DataComponentTypes;
-import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -77,10 +76,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         // Announce presidents
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.game-started");
-        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ptp.red-president",
-                "president_name", getPresidentName(1)));
-        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ptp.blue-president",
-                "president_name", getPresidentName(2)));
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.red-president",
+                "president_name", getPresidentName(1));
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.blue-president",
+                "president_name", getPresidentName(2));
     }
 
     @Override
@@ -181,10 +180,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
             if (deaths == 1) {
                 String presTeamName = presidentTeam == 1 ? "Red" : "Blue";
                 String colorTag = presTeamName.toLowerCase();
-                Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ptp.president-died",
+                Messages.broadcast(session.getPlayers(), "gamemode-ptp.president-died",
                         "color", colorTag,
                         "team_name", presTeamName,
-                        "win_condition", String.valueOf(WIN_CONDITION)));
+                        "win_condition", String.valueOf(WIN_CONDITION));
             }
 
             addTeamKill(killerTeam);
@@ -396,8 +395,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
         if (selectionTimeRemaining > 0) {
             if (selectionTimeRemaining == 15 || selectionTimeRemaining == 10 ||
                 selectionTimeRemaining == 5 || selectionTimeRemaining <= 3) {
-                Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("round.buff-selection-countdown-ptp",
-                        "time_remaining", String.valueOf(selectionTimeRemaining)));
+                Messages.broadcast(session.getPlayers(), "round.buff-selection-countdown-ptp",
+                        "time_remaining", String.valueOf(selectionTimeRemaining));
             }
             selectionTimeRemaining--;
         } else if (!buffSelectionFinalized) {
@@ -598,8 +597,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
      */
     public void enterSuddenDeath() {
         suddenDeathManager.enterSuddenDeath();
-        Messages.broadcast(session.getPlayers(),
-                "<red><bold>SUDDEN DEATH! Both presidents must now be eliminated 4 times to win!</bold></red>");
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
     }
 
     /**

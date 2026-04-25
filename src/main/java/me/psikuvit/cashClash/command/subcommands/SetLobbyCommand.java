@@ -16,14 +16,13 @@ public class SetLobbyCommand extends AbstractArgCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
-        if (!(sender instanceof Player player)) { 
+    public boolean onCommand(@NotNull CommandSender sender, String @NotNull [] args) {
+        if (!(sender instanceof Player player)) {
             Messages.send(sender, "command.only-players");
-             return true;
+            return true;
         }
         ArenaManager.getInstance().setServerLobbySpawn(LocationUtils.clone(player.getLocation()));
         Messages.send(player, "lobby.server-lobby-set");
         return true;
     }
 }
-

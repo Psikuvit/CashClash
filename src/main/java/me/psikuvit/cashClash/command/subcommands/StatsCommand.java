@@ -48,7 +48,7 @@ public class StatsCommand extends AbstractArgCommand {
 
             Player target = Bukkit.getPlayer(args[1]);
             if (target == null) {
-                Messages.send(sender, "generic.player-not-found-or-offline");
+                Messages.send(sender, "stats.reset-target-not-found", "player", args[1]);
                 return true;
             }
 

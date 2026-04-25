@@ -1,7 +1,6 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
 import me.psikuvit.cashClash.arena.TemplateWorld;
-import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
@@ -241,9 +240,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         String teamName = teamNumber == 1 ? "Red" : "Blue";
         Messages.debug("[CTF] Team " + teamName + " flag holder eliminated: " + victim.getName());
         String colorTag = teamNumber == 1 ? "red" : "blue";
-        Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-holder-eliminated",
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-holder-eliminated",
                 "color", colorTag,
-                "team_name", teamName));
+                "team_name", teamName);
 
         flagStates.put(teamNumber, flag.withoutHolder());
         moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
@@ -529,15 +528,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (enemyTeamNumber == 1) {
             flagStates.put(1, updatedFlag);
             Messages.debug("[CTF] " + player.getName() + " picked up Team Red's flag");
-            Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-stolen-red",
-                    "player_name", player.getName()));
+            Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-stolen-red",
+                    "player_name", player.getName());
 
             // Apply silenced ability if not in final stand
         } else {
             flagStates.put(2, updatedFlag);
             Messages.debug("[CTF] " + player.getName() + " picked up Team Blue's flag");
-            Messages.broadcast(session.getPlayers(), MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-stolen-blue",
-                    "player_name", player.getName()));
+            Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-stolen-blue",
+                    "player_name", player.getName());
 
             // Apply silenced ability if not in final stand
         }
@@ -559,9 +558,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
         int targetCaptures = suddenDeathManager.isInSuddenDeath() ? SUDDEN_DEATH_CONDITION : WIN_CONDITION;
 
         Messages.debug("[CTF] Team " + teamNumber + " captured a flag! Total captures: " + captures + "/" + targetCaptures);
-        Messages.broadcast(session.getPlayers(),
-                "<gold><bold>" + player.getName() + " has captured the flag! " +
-                captures + "/" + targetCaptures + "</bold></gold>");
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-captured-by-player",
+                "player_name", player.getName(),
+                "captures", String.valueOf(captures),
+                "win_condition", String.valueOf(targetCaptures));
 
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
@@ -633,8 +633,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     // Show "capturing" message
                     String teamName = nearestTeam == 1 ? "Red" : "Blue";
                     String colorTag = nearestTeam == 1 ? "red" : "blue";
-                    Messages.send(player, MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-capturing",
-                            "team_name", teamName, "color", colorTag));
+                    Messages.send(player, "gamemode-ctf.flag-capturing",
+                            "team_name", teamName, "color", colorTag);
                 } else if (prevTime != null) {
                     long elapsedMs = now - prevTime;
                     if (elapsedMs >= FLAG_PICKUP_DURATION_MS) {
@@ -649,8 +649,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 if (playerNearestFlagTeam.containsKey(playerUuid)) {
                     Integer previousTeam = playerNearestFlagTeam.get(playerUuid);
                     String teamName = previousTeam == 1 ? "Red" : "Blue";
-                    Messages.send(player, MessagesConfig.getInstance().getMessage("gamemode-ctf.flag-capture-cancelled",
-                            "team_name", teamName));
+                    Messages.send(player, "gamemode-ctf.flag-capture-cancelled",
+                            "team_name", teamName);
                 }
                 playerCircleTimestamps.remove(playerUuid);
                 playerNearestFlagTeam.remove(playerUuid);
@@ -680,8 +680,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private void enterSuddenDeath() {
         suddenDeathManager.enterSuddenDeath();
         Messages.debug("[CTF] Entering sudden death mode - both teams at 3-3 captures");
-        Messages.broadcast(session.getPlayers(),
-                "<red><bold>SUDDEN DEATH! Both teams must now capture 4 flags to win!</bold></red>");
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death");
 
         // Start final stand timer (5 minutes)
         startFinalStandTimer();
@@ -719,8 +718,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         String teamName = team == 1 ? "Red" : "Blue";
-        Messages.broadcast(session.getPlayers(),
-                "<yellow>Team " + teamName + " earned a 45-second capture bonus!</yellow>");
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.capture-bonus-team-broadcast",
+                "team_name", teamName);
     }
 
     /**

@@ -33,7 +33,7 @@ public class SelectKitCommand extends AbstractArgCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, String @NotNull [] args) {
         if (args.length < 1) {
             Messages.send(sender, "selectkit.usage");
             Messages.send(sender, "selectkit.available-kits", "kits", getKitList());
@@ -50,30 +50,27 @@ public class SelectKitCommand extends AbstractArgCommand {
             return true;
         }
 
-        // Determine target player
         Player target;
         if (args.length >= 2) {
             target = Bukkit.getPlayer(args[1]);
             if (target == null) {
-                Messages.send(sender, "stats.player-not-found", "player", args[1]);
+                Messages.send(sender, "selectkit.player-not-found", "player", args[1]);
                 return true;
             }
         } else {
             if (!(sender instanceof Player)) {
-                Messages.send(sender, "generic.console-player-required");
+                Messages.send(sender, "selectkit.need-player-or-target");
                 return true;
             }
             target = (Player) sender;
         }
 
-        // Check if target is in a game
         GameSession session = GameManager.getInstance().getPlayerSession(target);
         if (session == null) {
             Messages.send(sender, "selectkit.target-not-in-game", "player_name", target.getName());
             return true;
         }
 
-        // Check game state - can only change kit during shopping or waiting
         GameState state = session.getState();
         if (state == GameState.COMBAT) {
             Messages.send(sender, "selectkit.warning");
@@ -85,13 +82,10 @@ public class SelectKitCommand extends AbstractArgCommand {
             return true;
         }
 
-        // Clear current inventory and apply new kit
         target.getInventory().clear();
 
-        // Update the player's current kit
         ccp.setCurrentKit(kit);
 
-        // Check for custom layout
         PlayerData playerData = PlayerDataManager.getInstance().getData(target.getUniqueId());
         int currentRound = session.getCurrentRound();
         boolean rounds1to3HaveShields = session.hasShieldsInRounds1to3();
@@ -103,26 +97,25 @@ public class SelectKitCommand extends AbstractArgCommand {
             kit.apply(target, currentRound, rounds1to3HaveShields);
         }
 
-        Messages.send(target, "selectkit.success", "kit_name", kit.getDisplayName());
+        String display = kit.getDisplayName();
+        Messages.send(target, "selectkit.success", "kit_name", display);
 
         if (!target.equals(sender)) {
-            Messages.send(sender, "selectkit.success-other", "player_name", target.getName(), "kit_name", kit.getDisplayName());
+            Messages.send(sender, "selectkit.success-other", "player_name", target.getName(), "kit_name", display);
         }
 
         return true;
     }
 
     @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, String @NotNull [] args) {
         if (args.length == 1) {
-            // Tab complete kit names
             String input = args[0].toLowerCase(Locale.ROOT);
             return Arrays.stream(Kit.values())
                     .map(Kit::name)
                     .filter(name -> name.toLowerCase(Locale.ROOT).startsWith(input))
                     .collect(Collectors.toList());
         } else if (args.length == 2) {
-            // Tab complete player names
             String input = args[1].toLowerCase(Locale.ROOT);
             return Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)

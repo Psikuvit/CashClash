@@ -1,7 +1,6 @@
 package me.psikuvit.cashClash.party;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -104,7 +103,7 @@ public class PartyManager {
      */
     public Party createParty(Player owner) {
         if (isInParty(owner)) {
-            Messages.send(owner, MessagesConfig.getInstance().getRaw("party.already-in-party"));
+            Messages.send(owner, "party.already-in-party");
             return null;
         }
 
@@ -112,7 +111,7 @@ public class PartyManager {
         parties.add(party);
         playerPartyMap.put(owner.getUniqueId(), party);
 
-        Messages.send(owner, MessagesConfig.getInstance().getRaw("party.created"));
+        Messages.send(owner, "party.created");
         return party;
     }
 
@@ -172,9 +171,9 @@ public class PartyManager {
                         Messages.send(newOwnerPlayer, "party.new-owner");
                     }
 
-                    broadcastToParty(party, MessagesConfig.getInstance().getMessage("party.member-left-new-owner",
+                    broadcastToParty(party, "party.member-left-new-owner",
                         "player_name", player.getName(),
-                        "new_owner_name", newOwnerPlayer != null ? newOwnerPlayer.getName() : "Someone"));
+                        "new_owner_name", newOwnerPlayer != null ? newOwnerPlayer.getName() : "Someone");
                     Messages.send(player, "party.left");
                 }
             }
@@ -182,8 +181,8 @@ public class PartyManager {
             party.removeMember(playerId);
             playerPartyMap.remove(playerId);
 
-            broadcastToParty(party, MessagesConfig.getInstance().getMessage("party.member-left",
-                "player_name", player.getName()));
+            broadcastToParty(party, "party.member-left",
+                "player_name", player.getName());
             Messages.send(player, "party.left");
         }
     }
@@ -217,8 +216,8 @@ public class PartyManager {
         playerPartyMap.remove(target.getUniqueId());
 
         Messages.send(target, "party.kicked");
-        broadcastToParty(party, MessagesConfig.getInstance().getMessage("party.member-kicked",
-            "player_name", target.getName()));
+        broadcastToParty(party, "party.member-kicked",
+            "player_name", target.getName());
     }
 
     /**
@@ -242,8 +241,8 @@ public class PartyManager {
         }
 
         party.transferOwnership(newOwner.getUniqueId());
-        broadcastToParty(party, MessagesConfig.getInstance().getMessage("party.new-owner-broadcast",
-            "player_name", newOwner.getName()));
+        broadcastToParty(party, "party.new-owner-broadcast",
+            "player_name", newOwner.getName());
     }
 
     // ==================== INVITE OPERATIONS ====================
@@ -271,8 +270,8 @@ public class PartyManager {
         }
 
         if (isInParty(invitee)) {
-            Messages.send(inviter, MessagesConfig.getInstance().getMessage("party.player-already-in-party",
-                "player_name", invitee.getName()));
+            Messages.send(inviter, "party.player-already-in-party",
+                "player_name", invitee.getName());
             return;
         }
 
@@ -291,8 +290,8 @@ public class PartyManager {
         PartyInvite invite = new PartyInvite(inviter.getUniqueId(), invitee.getUniqueId(), party.getPartyId());
         invites.add(invite);
 
-        Messages.send(inviter, MessagesConfig.getInstance().getMessage("party.invite-sent",
-            "player_name", invitee.getName()));
+        Messages.send(inviter, "party.invite-sent",
+            "player_name", invitee.getName());
 
         // Send clickable invite message
         Component acceptButton = Messages.parse("<green><bold>[ACCEPT]</bold></green>")
@@ -361,8 +360,8 @@ public class PartyManager {
         playerPartyMap.put(player.getUniqueId(), party);
         invites.remove(invite);
 
-        broadcastToParty(party, MessagesConfig.getInstance().getMessage("party.member-joined",
-            "player_name", player.getName()));
+        broadcastToParty(party, "party.member-joined",
+            "player_name", player.getName());
     }
 
     /**
@@ -396,8 +395,8 @@ public class PartyManager {
 
             Player inviterPlayer = Bukkit.getPlayer(invite.getInviter());
             if (inviterPlayer != null) {
-                Messages.send(inviterPlayer, MessagesConfig.getInstance().getMessage("party.invite-denied-broadcast",
-                    "player_name", player.getName()));
+                Messages.send(inviterPlayer, "party.invite-denied-broadcast",
+                    "player_name", player.getName());
             }
         } else {
             Messages.send(player, "party.no-invite-to-deny");
@@ -437,12 +436,11 @@ public class PartyManager {
     }
 
     /**
-     * Broadcast a system message to all party members.
+     * Broadcast a configured message to all party members.
      */
-    public void broadcastToParty(Party party, String miniMessage) {
-        Component message = Messages.parse(miniMessage);
+    public void broadcastToParty(Party party, String messageKey, Object... args) {
         for (Player member : party.getOnlineMembers()) {
-            member.sendMessage(message);
+            Messages.send(member, messageKey, args);
         }
     }
 
@@ -463,20 +461,20 @@ public class PartyManager {
 
         Player ownerPlayer = party.getOwnerPlayer();
         String ownerName = ownerPlayer != null ? ownerPlayer.getName() : "Unknown";
-        Messages.send(player, MessagesConfig.getInstance().getMessage("party.info-owner",
-            "owner_name", ownerName));
-        Messages.send(player, MessagesConfig.getInstance().getMessage("party.info-members-header",
-            "member_count", String.valueOf(party.getSize())));
+        Messages.send(player, "party.info-owner",
+            "owner_name", ownerName);
+        Messages.send(player, "party.info-members-header",
+            "member_count", String.valueOf(party.getSize()));
 
         for (UUID memberId : party.getMembers()) {
             Player member = Bukkit.getPlayer(memberId);
             String name = member != null ? member.getName() : "Offline";
             String status = member != null && member.isOnline() ? "<green>●</green>" : "<red>●</red>";
             String role = party.isOwner(memberId) ? " <gold>★</gold>" : "";
-            Messages.send(player, MessagesConfig.getInstance().getMessage("party.info-member-line",
+            Messages.send(player, "party.info-member-line",
                 "status", status,
                 "member_name", name,
-                "role", role));
+                "role", role);
         }
 
         Messages.send(player, "party.info-footer");

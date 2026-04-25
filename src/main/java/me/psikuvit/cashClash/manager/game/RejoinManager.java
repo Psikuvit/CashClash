@@ -74,8 +74,8 @@ public class RejoinManager {
 
                 if (session != null) {
                     session.handleRejoinTimeout(data.playerUuid());
-                    Messages.broadcast(session.getPlayers(),
-                            "<red>" + getPlayerName(data.playerUuid()) + " did not rejoin in time and has been removed.</red>");
+                    Messages.broadcast(session.getPlayers(), "rejoin.timeout-removed-broadcast",
+                            "player_name", getPlayerName(data.playerUuid()));
                 }
 
                 Messages.debug("REJOIN", "Removed expired rejoin data for " + data.playerUuid());
@@ -144,8 +144,8 @@ public class RejoinManager {
 
         // Notify team
         int timeout = ConfigManager.getInstance().getRejoinTimeoutSeconds();
-        Messages.broadcast(session.getPlayers(),
-                "<yellow>" + player.getName() + " disconnected! They have <gold>" + timeout + "s</gold> to rejoin.</yellow>");
+        Messages.broadcast(session.getPlayers(), "rejoin.disconnect-warning",
+                "player_name", player.getName(), "timeout_seconds", String.valueOf(timeout));
 
         return true;
     }
@@ -240,8 +240,8 @@ public class RejoinManager {
             Messages.debug("REJOIN", "Successfully restored " + player.getName() + " to session " + session.getSessionId());
 
             // Notify team
-            Messages.broadcast(session.getPlayers(),
-                    "<green>" + player.getName() + " has reconnected!</green>");
+            Messages.broadcast(session.getPlayers(), "rejoin.reconnected-broadcast",
+                    "player_name", player.getName());
         }
 
         return restored;

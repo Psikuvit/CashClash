@@ -21,15 +21,15 @@ public class ForceStartCommand extends AbstractArgCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
-        if (!(sender instanceof Player player)) {
+    public boolean onCommand(@NotNull CommandSender sender, String @NotNull [] args) {
+        if (!(sender instanceof Player p)) {
             Messages.send(sender, "command.only-players");
             return true;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
         if (session == null) {
-            Messages.send(sender, "generic.player-not-in-game");
+            Messages.send(sender, "generic.not-in-game");
             return true;
         }
 
@@ -47,10 +47,9 @@ public class ForceStartCommand extends AbstractArgCommand {
 
         session.start();
         Messages.broadcast(session.getPlayers(), "admin.game-force-started");
-        Messages.send(sender, "admin.forcestart-success");
+        Messages.send(sender, "admin.forcestart-sender-success");
 
         return true;
     }
 }
-
 

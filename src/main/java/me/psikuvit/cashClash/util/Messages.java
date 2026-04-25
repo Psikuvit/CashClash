@@ -246,6 +246,24 @@ public final class Messages {
     }
 
     /**
+     * Broadcast a message with placeholders to all players in a team.
+     */
+    public static void broadcastToTeam(Team team, String key, Object... args) {
+        if (team != null) {
+            broadcast(team.getPlayers(), key, args);
+        }
+    }
+
+    /**
+     * MiniMessage string for the command chat prefix (from messages.yml).
+     * Not sent through {@link #send}; used when assembling command feedback elsewhere.
+     */
+    @NotNull
+    public static String commandPrefix() {
+        return config.getRaw("command.prefix");
+    }
+
+    /**
      * Wrap a mini-message into multiple component lines with custom width.
      *
      * @param miniMsg the input mini-message / legacy string
