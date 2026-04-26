@@ -246,38 +246,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Check if player is pressing a plate and handle flag capture (scoring only)
-     * This should be called from PlayerInteractEvent when a player steps on a pressure plate
-     * Note: Flag pickup now happens through the 3-second circle mechanic, not pressure plates
-     * <p>
-     * Logic:
-     * If player presses OWN plate while carrying ENEMY flag AND OWN FLAG IS NOT HELD -> score instantly
-     */
-    public void checkPlateCapture(Player player) {
-        UUID playerUuid = player.getUniqueId();
-
-        FlagState blueFlag = flagStates.get(2);
-        FlagState redFlag = flagStates.get(1);
-
-        // Check if player is on Team 1 (Red) plate
-        if (redFlag != null && redFlag.flagLoc() != null && isPlayerOnPlate(player, redFlag.flagLoc())) {
-            // Carrying Blue flag and on Red plate = SCORE INSTANTLY (only if Red flag not held)
-            if (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid) && !redFlag.isHeld()) {
-                Messages.debug("[CTF] " + player.getName() + " scored with Blue flag on Red plate!");
-                flagCapture(player, 1);
-            }
-        }
-        // Check if player is on Team 2 (Blue) plate
-        else if (blueFlag != null && blueFlag.flagLoc() != null && isPlayerOnPlate(player, blueFlag.flagLoc())) {
-            // Carrying Red flag and on Blue plate = SCORE INSTANTLY (only if Blue flag not held)
-            if (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid) && !blueFlag.isHeld()) {
-                Messages.debug("[CTF] " + player.getName() + " scored with Red flag on Blue plate!");
-                flagCapture(player, 2);
-            }
-        }
-    }
-
-    /**
      * Handle flag pickup
      */
     public void flagPickup(Player player, int enemyTeamNumber) {

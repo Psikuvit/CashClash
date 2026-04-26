@@ -12,7 +12,6 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
-import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
@@ -45,7 +44,6 @@ import org.bukkit.entity.Trident;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -53,7 +51,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -734,22 +731,6 @@ public class GameListener implements Listener {
                 }
             }
         }
-    }
-
-    // ==================== CTF FLAG PICKUP/SCORE (Pressure Plate) ====================
-
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onPlayerInteractPressurePlate(PlayerInteractEvent event) {
-        if (event.getAction() != Action.PHYSICAL) return;
-
-        Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-
-        if (session == null || session.getState() != GameState.COMBAT) return;
-        if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return;
-
-        // Let the gamemode handle all plate logic (pickup + scoring)
-        gamemode.checkPlateCapture(player);
     }
 }
 
