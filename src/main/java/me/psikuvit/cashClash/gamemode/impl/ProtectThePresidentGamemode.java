@@ -21,6 +21,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,7 +90,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         for (int team = 1; team <= 2; team++) {
             President pres = presidents.get(team);
             if (pres != null && pres.hasSelectedBuff()) {
-                applyGlow(pres);
+                refreshPresidentEffects(pres, true);
             }
         }
 
@@ -136,11 +137,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         for (int team = 1; team <= 2; team++) {
             Player presPlayer = getPresidentPlayerByTeam(team);
             if (presPlayer != null && presPlayer.isOnline()) {
-                // Explicitly remove all potion effects using removePotionEffect()
-                presPlayer.removePotionEffect(PotionEffectType.GLOWING);
-                presPlayer.removePotionEffect(PotionEffectType.STRENGTH);
-                presPlayer.removePotionEffect(PotionEffectType.RESISTANCE);
-                presPlayer.removePotionEffect(PotionEffectType.SPEED);
+                clearPresidentEffects(presPlayer);
 
                 // Reset health modifier through CashClashPlayer
                 UUID presUuid = presPlayer.getUniqueId();
@@ -203,11 +200,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Check if this player is a president
         int presidentTeam = findPresidentTeam(playerUuid);
         if (presidentTeam != 0) {
-            // Always reapply glowing to presidents
             President pres = presidents.get(presidentTeam);
-            clearPresidentialBuffs();
-            applyGlow(pres);
-            Messages.debug("[PTP] Applied glowing to president on spawn: " + player.getName());
+            refreshPresidentEffects(pres, true);
+            Messages.debug("[PTP] Refreshed president effects on spawn: " + player.getName());
         }
 
         // Apply extra heart effect if in sudden death
@@ -216,22 +211,32 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public boolean checkGameWinner() {
-        // Check if a president has died 2 times in this round - if so, the round ends
+        int targetAssassinations = suddenDeathManager.isInSuddenDeath() ? WIN_CONDITION : 2;
         int deaths1 = getPresidentDeaths(1);
         int deaths2 = getPresidentDeaths(2);
 
-        return deaths1 >= 2 || deaths2 >= 2; // Round ends
+        if (deaths1 >= targetAssassinations || deaths2 >= targetAssassinations) {
+            return true;
+        }
+
+        // If both teams are tied one kill before normal finish, enter sudden death.
+        if (!suddenDeathManager.isInSuddenDeath() && deaths1 == targetAssassinations - 1 && deaths2 == targetAssassinations - 1) {
+            enterSuddenDeath();
+        }
+
+        return false;
     }
 
     @Override
     public int getWinningTeam() {
+        int targetAssassinations = suddenDeathManager.isInSuddenDeath() ? WIN_CONDITION : 2;
         int deaths1 = getPresidentDeaths(1);
         int deaths2 = getPresidentDeaths(2);
 
-        // Return the team whose president didn't die 2 times (round winner)
-        if (deaths1 >= 2 && deaths2 < 2) {
+        // Return the team whose president didn't reach the assassination target first.
+        if (deaths1 >= targetAssassinations && deaths2 < targetAssassinations) {
             return 2; // Team 2 wins the round
-        } else if (deaths2 >= 2 && deaths1 < 2) {
+        } else if (deaths2 >= targetAssassinations && deaths1 < targetAssassinations) {
             return 1; // Team 1 wins the round
         }
         return 0; // No winner yet
@@ -436,7 +441,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
         
         // Restore inventories for all presidents SYNCHRONOUSLY before combat
-        for (UUID uuid : savedInventories.keySet().stream().toList()) {
+        for (UUID uuid : new ArrayList<>(savedInventories.keySet())) {
             Player presPlayer = Bukkit.getPlayer(uuid);
             if (presPlayer != null) {
                 restoreInventory(presPlayer);
@@ -448,15 +453,25 @@ public class ProtectThePresidentGamemode extends Gamemode {
         Messages.debug("[PTP] Shop unlocked - All presidents have buffs selected");
     }
 
-    private void applyGlow(President pres) {
+    private void refreshPresidentEffects(President pres, boolean applyBuff) {
         if (pres != null) {
             Player presPlayer = Bukkit.getPlayer(pres.uuid());
-            if (presPlayer != null) {
+            if (presPlayer != null && presPlayer.isOnline()) {
+                clearPresidentEffects(presPlayer);
                 presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, PotionEffect.INFINITE_DURATION, 0, false, false));
                 Messages.debug("[PTP] Applied glowing to president: " + presPlayer.getName());
-                applyPresidentialBuff(presPlayer);
+                if (applyBuff) {
+                    applyPresidentialBuff(presPlayer);
+                }
             }
         }
+    }
+
+    private void clearPresidentEffects(Player player) {
+        player.removePotionEffect(PotionEffectType.GLOWING);
+        player.removePotionEffect(PotionEffectType.STRENGTH);
+        player.removePotionEffect(PotionEffectType.RESISTANCE);
+        player.removePotionEffect(PotionEffectType.SPEED);
     }
 
     /**
