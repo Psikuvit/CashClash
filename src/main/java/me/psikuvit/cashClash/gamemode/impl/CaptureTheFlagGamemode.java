@@ -74,6 +74,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         flagStates.put(2, FlagState.create());
     }
 
+    // ========= OVERRIDDEN METHODS =========
+
     @Override
     public void onGameStart() {
         Messages.debug("[CTF] Gamemode started");
@@ -110,78 +112,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         startFlagPickupTask();
     }
 
-    /**
-     * Initialize banners for both flags at their base locations
-     * Banners are BlockDisplay entities that rotate around the flag plates
-     */
-    private void initializeBanners() {
-        // Get template world to access pre-configured flag locations
-        // If not configured, fallback to team spawn locations
-
-        // Team 1 (Red) flag
-        Location redFlagLoc = getRedFlagLocation();
-        if (redFlagLoc != null) {
-            BlockDisplay redBanner = spawnFlagBanner(redFlagLoc, Color.RED);
-            if (redBanner != null) {
-                flagStates.put(1, new FlagState(null, 0, redFlagLoc, redBanner, 0.0, null, 0.0));
-                Messages.debug("[CTF] Spawned Red flag banner at " + redFlagLoc);
-            }
-        }
-
-        // Team 2 (Blue) flag
-        Location blueFlagLoc = getBlueFlagLocation();
-        if (blueFlagLoc != null) {
-            BlockDisplay blueBanner = spawnFlagBanner(blueFlagLoc, Color.BLUE);
-            if (blueBanner != null) {
-                flagStates.put(2, new FlagState(null, 0, blueFlagLoc, blueBanner, 0.0, null, 0.0));
-                Messages.debug("[CTF] Spawned Blue flag banner at " + blueFlagLoc);
-            }
-        }
-    }
-
-    /**
-     * Get red flag location from template or fallback to team spawn
-     */
-    private Location getRedFlagLocation() {
-        TemplateWorld template = session.getArenaTemplate();
-        if (template != null && template.getRedFlagLoc() != null) {
-            return template.getRedFlagLoc().clone();
-        }
-        return null;
-    }
-
-    /**
-     * Get blue flag location from template or fallback to team spawn
-     */
-    private Location getBlueFlagLocation() {
-        TemplateWorld template = session.getArenaTemplate();
-        if (template != null && template.getBlueFlagLoc() != null) {
-            return template.getBlueFlagLoc().clone();
-        }
-        return null;
-    }
-
-    /**
-     * Spawn a flag banner (BlockDisplay) at a location
-     */
-    private BlockDisplay spawnFlagBanner(Location location, Color color) {
-        if (location == null || location.getWorld() == null) {
-            return null;
-        }
-
-        // Create banner 2 blocks above the flag plate
-        Location bannerLoc = location.clone().add(0, 2, 0);
-
-        // Spawn BlockDisplay entity for the flag
-        return location.getWorld().spawn(bannerLoc, BlockDisplay.class, banner ->{
-
-            // Use a material that matches the team color
-            Material bannerMaterial = color == Color.RED ? Material.RED_BANNER : Material.BLUE_BANNER;
-            banner.setBlock(bannerMaterial.createBlockData());
-
-        });
-    }
-
     @Override
     public void onRoundEnd() {
         // Remove all banners from players and reset positions
@@ -215,35 +145,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
         handleFlagHolderDeath(2, victimUuid, victim);
     }
 
-    /**
-     * Handle flag holder death for a specific team
-     */
-    private void handleFlagHolderDeath(int teamNumber, UUID victimUuid, Player victim) {
-        FlagState flag = flagStates.get(teamNumber);
-        if (flag == null || !flag.isHeld() || !flag.holder().equals(victimUuid)) {
-            return;
-        }
-
-        String teamName = teamNumber == 1 ? "Red" : "Blue";
-        Messages.debug("[CTF] Team " + teamName + " flag holder eliminated: " + victim.getName());
-        String colorTag = teamNumber == 1 ? "red" : "blue";
-        Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-holder-eliminated",
-                "color", colorTag,
-                "team_name", teamName);
-
-        flagStates.put(teamNumber, flag.withoutHolder());
-        moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
-        SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
-    }
-
     @Override
     public void onPlayerSpawn(Player player) {
         // No special spawn logic
     }
 
-    /**
-     * Handle player removal - remove any banners they were carrying
-     */
     @Override
     public void onPlayerRemove(Player player) {
         UUID playerUuid = player.getUniqueId();
@@ -251,27 +157,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Check if this player was carrying any flags and remove their banners
         removeFlagIfCarriedByPlayer(1, playerUuid, player);
         removeFlagIfCarriedByPlayer(2, playerUuid, player);
-    }
-
-    /**
-     * Remove flag if player was carrying it
-     */
-    private void removeFlagIfCarriedByPlayer(int teamNumber, UUID playerUuid, Player player) {
-        FlagState flag = flagStates.get(teamNumber);
-        if (flag == null || !flag.isHeld() || !flag.holder().equals(playerUuid)) {
-            return;
-        }
-
-        String teamName = teamNumber == 1 ? "Red" : "Blue";
-        Messages.debug("[CTF] Removing player " + player.getName() + " who was carrying " + teamName + " flag");
-
-        if (flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
-            if (flag.bannerDisplay().getVehicle() != null) {
-                flag.bannerDisplay().getVehicle().removePassenger(flag.bannerDisplay());
-            }
-            moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
-        }
-        flagStates.put(teamNumber, flag.withoutHolder());
     }
 
     @Override
@@ -304,8 +189,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
         return 0;
     }
-
-
 
     @Override
     public void cleanup() {
@@ -341,20 +224,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         playerNearestFlagTeam.clear();
     }
 
-    /**
-     * Handle shopping phase start - remove banners from players
-     */
-    public void onShoppingPhaseStart() {
-        Messages.debug("[CTF] Shopping phase starting - removing banners from players");
-        removeBannersFromPlayers();
-    }
-
-    private void cancelTask(BukkitTask task) {
-        if (task != null) {
-            task.cancel();
-        }
-    }
-
     @Override
     public String getRoundStartMessage() {
         return "<gold>Capture the Flag Round!</gold>";
@@ -366,100 +235,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return "<yellow>Capture the enemy's flag! First team to " + targetCaptures + " captures wins!</yellow>";
     }
 
-
-
-    /**
-     * Start task to show glowing effect on flag carriers every 5 seconds
-     */
-    private void startCarrierGlowEffect() {
-        carrierGlowTask = SchedulerUtils.runTaskTimer(this::applyGlowToCarriers, 0, GLOW_INTERVAL_TICKS);
-    }
-
-    private void applyGlowToCarriers() {
-        FlagState redFlag = flagStates.get(1);
-        FlagState blueFlag = flagStates.get(2);
-
-        applyGlowIfCarrying(redFlag);
-        applyGlowIfCarrying(blueFlag);
-    }
-
-    private void applyGlowIfCarrying(FlagState flag) {
-        if (flag != null && flag.isHeld()) {
-            Player carrier = Bukkit.getPlayer(flag.holder());
-            if (carrier != null && carrier.isOnline()) {
-                carrier.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 10, 0, false, false));
-            }
-        }
-    }
+    // ========= PUBLIC METHODS (non-overridden) =========
 
     /**
-     * Start task to track capture timers (45 seconds for bonus)
+     * Handle shopping phase start - remove banners from players
      */
-    private void startCaptureTimerTask() {
-        captureTimerTask = SchedulerUtils.runTaskTimer(this::checkCaptureTimers, 0, 20);
-    }
-
-    /**
-     * Remove all banners from players and move them back to their plates
-     */
-    private void removeBannersFromPlayers() {
-        for (FlagState flag : flagStates.values()) {
-            if (flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
-                // Stop carrying task if active
-                if (flag.carryingTask() != null) {
-                    flag.carryingTask().cancel();
-                }
-
-                if (!flag.isHeld()) {
-                    continue; // If not held, banner should already be at plate, no need to move
-                }
-
-                // Move banner back to its plate
-                if (flag.getFlagLoc() != null) {
-                    moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
-                }
-            }
-        }
-    }
-
-    /**
-     * Check if final stand is active
-     */
-    private boolean isFinalStandActive() {
-        return suddenDeathManager.isFinalStandActive();
-    }
-
-    /**
-     * Start flag pickup task - checks if players are standing in flag capture circles
-     * Players must stand in the circle for 3 seconds to pick up the flag
-     */
-    private void startFlagPickupTask() {
-        flagPickupTask = SchedulerUtils.runTaskTimer(this::checkFlagPickupProgress, 0, 5); // Check every 5 ticks
-    }
-
-    private void checkCaptureTimers() {
-        long now = System.currentTimeMillis();
-
-        FlagState redFlag = flagStates.get(1);
-        FlagState blueFlag = flagStates.get(2);
-
-        if (redFlag != null && redFlag.captureTime() > 0 && (now - redFlag.captureTime()) >= CAPTURE_TIMER_MS) {
-            awardCaptureBonus(1);
-            flagStates.put(1, redFlag.withHolder(null, 0));
-        }
-
-        if (blueFlag != null && blueFlag.captureTime() > 0 && (now - blueFlag.captureTime()) >= CAPTURE_TIMER_MS) {
-            awardCaptureBonus(2);
-            flagStates.put(2, blueFlag.withHolder(null, 0));
-        }
-    }
-
-    /**
-     * Check if a player is within the capture circle radius of a flag
-     */
-    private boolean isPlayerNearFlag(Player player, FlagState flag) {
-        if (flag == null || flag.capturePlate() == null) return false;
-        return LocationUtils.isPlayerNearLocation(player.getLocation(), flag.capturePlate(), CIRCLE_RADIUS);
+    public void onShoppingPhaseStart() {
+        Messages.debug("[CTF] Shopping phase starting - removing banners from players");
+        removeBannersFromPlayers();
     }
 
     /**
@@ -477,7 +260,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         FlagState redFlag = flagStates.get(1);
 
         // Check if player is on Team 1 (Red) plate
-        if (redFlag != null && redFlag.capturePlate() != null && isPlayerOnPlate(player, redFlag.capturePlate())) {
+        if (redFlag != null && redFlag.flagLoc() != null && isPlayerOnPlate(player, redFlag.flagLoc())) {
             // Carrying Blue flag and on Red plate = SCORE INSTANTLY (only if Red flag not held)
             if (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid) && !redFlag.isHeld()) {
                 Messages.debug("[CTF] " + player.getName() + " scored with Blue flag on Red plate!");
@@ -485,20 +268,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
             }
         }
         // Check if player is on Team 2 (Blue) plate
-        else if (blueFlag != null && blueFlag.capturePlate() != null && isPlayerOnPlate(player, blueFlag.capturePlate())) {
+        else if (blueFlag != null && blueFlag.flagLoc() != null && isPlayerOnPlate(player, blueFlag.flagLoc())) {
             // Carrying Red flag and on Blue plate = SCORE INSTANTLY (only if Blue flag not held)
             if (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid) && !blueFlag.isHeld()) {
                 Messages.debug("[CTF] " + player.getName() + " scored with Red flag on Blue plate!");
                 flagCapture(player, 2);
             }
         }
-    }
-
-    /**
-     * Check if a player is standing on a specific block by checking distance to the block location
-     */
-    private boolean isPlayerOnPlate(Player player, Location blockLoc) {
-        return LocationUtils.isPlayerOnBlock(player.getLocation(), blockLoc, 0.7);
     }
 
     /**
@@ -554,6 +330,249 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         awardCaptureBonus(teamNumber);
         resetFlagsAfterCapture(teamNumber);
+    }
+
+    public UUID getFlagHolder(int teamNumber) {
+        FlagState flag = flagStates.get(teamNumber);
+        return flag != null ? flag.holder() : null;
+    }
+
+    public int getFlagCaptures(int teamNumber) {
+        return flagCaptures.get(teamNumber);
+    }
+
+    public boolean isSilenced(UUID playerUuid) {
+        // If final stand is active, silenced is not applied
+        if (isFinalStandActive()) {
+            return false;
+        }
+
+        FlagState redFlag = flagStates.get(1);
+        FlagState blueFlag = flagStates.get(2);
+
+        return (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid)) ||
+               (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid));
+    }
+
+    // ========= PRIVATE HELPER METHODS =========
+
+    /**
+     * Initialize banners for both flags at their base locations
+     * Banners are BlockDisplay entities that rotate around the flag plates
+     */
+    private void initializeBanners() {
+        // Team 1 (Red) flag
+        Location redFlagLoc = getRedFlagLocation();
+        if (redFlagLoc != null) {
+            BlockDisplay redBanner = spawnFlagBanner(redFlagLoc, Color.RED);
+            if (redBanner != null) {
+                flagStates.put(1, new FlagState(null, 0, redFlagLoc, redBanner, 0.0, null, 0.0));
+                Messages.debug("[CTF] Spawned Red flag banner at " + redFlagLoc);
+            }
+        }
+
+        // Team 2 (Blue) flag
+        Location blueFlagLoc = getBlueFlagLocation();
+        if (blueFlagLoc != null) {
+            BlockDisplay blueBanner = spawnFlagBanner(blueFlagLoc, Color.BLUE);
+            if (blueBanner != null) {
+                flagStates.put(2, new FlagState(null, 0, blueFlagLoc, blueBanner, 0.0, null, 0.0));
+                Messages.debug("[CTF] Spawned Blue flag banner at " + blueFlagLoc);
+            }
+        }
+    }
+
+    /**
+     * Get red flag location from template or fallback to team spawn
+     */
+    private Location getRedFlagLocation() {
+        TemplateWorld template = session.getArenaTemplate();
+        if (template != null && template.getRedFlagLoc() != null) {
+            return LocationUtils.copyToWorld(template.getRedFlagLoc(), session.getGameWorld());
+        }
+        return null;
+    }
+
+    /**
+     * Get blue flag location from template or fallback to team spawn
+     */
+    private Location getBlueFlagLocation() {
+        TemplateWorld template = session.getArenaTemplate();
+        if (template != null && template.getBlueFlagLoc() != null) {
+            return LocationUtils.copyToWorld(template.getBlueFlagLoc(), session.getGameWorld());
+        }
+        return null;
+    }
+
+    /**
+     * Spawn a flag banner (BlockDisplay) at a location
+     */
+    private BlockDisplay spawnFlagBanner(Location location, Color color) {
+        if (location == null || location.getWorld() == null) {
+            return null;
+        }
+
+        // Create banner 2 blocks above the flag plate
+        Location bannerLoc = location.clone().add(0, 2, 0);
+
+        // Spawn BlockDisplay entity for the flag
+        return location.getWorld().spawn(bannerLoc, BlockDisplay.class, banner ->{
+
+            // Use a material that matches the team color
+            Material bannerMaterial = color == Color.RED ? Material.RED_BANNER : Material.BLUE_BANNER;
+            banner.setBlock(bannerMaterial.createBlockData());
+
+        });
+    }
+
+    /**
+     * Handle flag holder death for a specific team
+     */
+    private void handleFlagHolderDeath(int teamNumber, UUID victimUuid, Player victim) {
+        FlagState flag = flagStates.get(teamNumber);
+        if (flag == null || !flag.isHeld() || !flag.holder().equals(victimUuid)) {
+            return;
+        }
+
+        String teamName = teamNumber == 1 ? "Red" : "Blue";
+        Messages.debug("[CTF] Team " + teamName + " flag holder eliminated: " + victim.getName());
+        String colorTag = teamNumber == 1 ? "red" : "blue";
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-holder-eliminated",
+                "color", colorTag,
+                "team_name", teamName);
+
+        flagStates.put(teamNumber, flag.withoutHolder());
+        moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
+        SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
+    }
+
+    /**
+     * Remove flag if player was carrying it
+     */
+    private void removeFlagIfCarriedByPlayer(int teamNumber, UUID playerUuid, Player player) {
+        FlagState flag = flagStates.get(teamNumber);
+        if (flag == null || !flag.isHeld() || !flag.holder().equals(playerUuid)) {
+            return;
+        }
+
+        String teamName = teamNumber == 1 ? "Red" : "Blue";
+        Messages.debug("[CTF] Removing player " + player.getName() + " who was carrying " + teamName + " flag");
+
+        if (flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
+            if (flag.bannerDisplay().getVehicle() != null) {
+                flag.bannerDisplay().getVehicle().removePassenger(flag.bannerDisplay());
+            }
+            moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
+        }
+        flagStates.put(teamNumber, flag.withoutHolder());
+    }
+
+    private void cancelTask(BukkitTask task) {
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
+
+    /**
+     * Start task to show glowing effect on flag carriers every 5 seconds
+     */
+    private void startCarrierGlowEffect() {
+        carrierGlowTask = SchedulerUtils.runTaskTimer(this::applyGlowToCarriers, 0, GLOW_INTERVAL_TICKS);
+    }
+
+    private void applyGlowToCarriers() {
+        FlagState redFlag = flagStates.get(1);
+        FlagState blueFlag = flagStates.get(2);
+
+        applyGlowIfCarrying(redFlag);
+        applyGlowIfCarrying(blueFlag);
+    }
+
+    private void applyGlowIfCarrying(FlagState flag) {
+        if (flag != null && flag.isHeld()) {
+            Player carrier = Bukkit.getPlayer(flag.holder());
+            if (carrier != null && carrier.isOnline()) {
+                carrier.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 10, 0, false, false));
+            }
+        }
+    }
+
+    /**
+     * Start task to track capture timers (45 seconds for bonus)
+     */
+    private void startCaptureTimerTask() {
+        captureTimerTask = SchedulerUtils.runTaskTimer(this::checkCaptureTimers, 0, 20);
+    }
+
+    private void checkCaptureTimers() {
+        long now = System.currentTimeMillis();
+
+        FlagState redFlag = flagStates.get(1);
+        FlagState blueFlag = flagStates.get(2);
+
+        if (redFlag != null && redFlag.captureTime() > 0 && (now - redFlag.captureTime()) >= CAPTURE_TIMER_MS) {
+            awardCaptureBonus(1);
+            flagStates.put(1, redFlag.withHolder(null, 0));
+        }
+
+        if (blueFlag != null && blueFlag.captureTime() > 0 && (now - blueFlag.captureTime()) >= CAPTURE_TIMER_MS) {
+            awardCaptureBonus(2);
+            flagStates.put(2, blueFlag.withHolder(null, 0));
+        }
+    }
+
+    /**
+     * Remove all banners from players and move them back to their plates
+     */
+    private void removeBannersFromPlayers() {
+        for (FlagState flag : flagStates.values()) {
+            if (flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
+                // Stop carrying task if active
+                if (flag.carryingTask() != null) {
+                    flag.carryingTask().cancel();
+                }
+
+                if (!flag.isHeld()) {
+                    continue; // If not held, banner should already be at plate, no need to move
+                }
+
+                // Move banner back to its plate
+                if (flag.getFlagLoc() != null) {
+                    moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if final stand is active
+     */
+    private boolean isFinalStandActive() {
+        return suddenDeathManager.isFinalStandActive();
+    }
+
+    /**
+     * Start flag pickup task - checks if players are standing in flag capture circles
+     * Players must stand in the circle for 3 seconds to pick up the flag
+     */
+    private void startFlagPickupTask() {
+        flagPickupTask = SchedulerUtils.runTaskTimer(this::checkFlagPickupProgress, 0, 5); // Check every 5 ticks
+    }
+
+    /**
+     * Check if a player is within the capture circle radius of a flag
+     */
+    private boolean isPlayerNearFlag(Player player, FlagState flag) {
+        if (flag == null || flag.flagLoc() == null) return false;
+        return LocationUtils.isPlayerNearLocation(player.getLocation(), flag.flagLoc(), CIRCLE_RADIUS);
+    }
+
+    /**
+     * Check if a player is standing on a specific block by checking distance to the block location
+     */
+    private boolean isPlayerOnPlate(Player player, Location blockLoc) {
+        return LocationUtils.isPlayerOnBlock(player.getLocation(), blockLoc, 0.7);
     }
 
     /**
@@ -849,7 +868,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         flagStates.put(teamNumber, flag.withBannerAngle(newTheta));
 
         // Spawn team-colored particles
-        spawnBannerParticles(flag.capturePlate(), teamNumber);
+        spawnBannerParticles(flag.flagLoc(), teamNumber);
     }
 
     /**
@@ -857,7 +876,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      */
     private boolean isBannerRotatable(FlagState flag) {
         return flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead() &&
-               flag.capturePlate() != null && !flag.isHeld();
+               flag.flagLoc() != null && !flag.isHeld();
     }
 
     /**
@@ -872,7 +891,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         // Create rotation using Y-axis formula (same as BlockDisplayCommand)
         float yaw = (float) (-theta + Math.PI / 2);
-        Location newLoc = new Location(flag.capturePlate().getWorld(), x, centerY, z);
+        Location newLoc = new Location(flag.flagLoc().getWorld(), x, centerY, z);
 
         LocationUtils.applyOrbitTransformation(flag.bannerDisplay(), newLoc, yaw);
     }
@@ -888,28 +907,5 @@ public class CaptureTheFlagGamemode extends Gamemode {
             double particleZ = BANNER_ORBIT_RADIUS * Math.sin(particleAngle);
             ParticleUtils.spawnDust(centerPlate.clone().add(particleX, 0.1, particleZ), teamColor, 1, 1, 0);
         }
-    }
-
-
-    public UUID getFlagHolder(int teamNumber) {
-        FlagState flag = flagStates.get(teamNumber);
-        return flag != null ? flag.holder() : null;
-    }
-
-    public int getFlagCaptures(int teamNumber) {
-        return flagCaptures.get(teamNumber);
-    }
-
-    public boolean isSilenced(UUID playerUuid) {
-        // If final stand is active, silenced is not applied
-        if (isFinalStandActive()) {
-            return false;
-        }
-
-        FlagState redFlag = flagStates.get(1);
-        FlagState blueFlag = flagStates.get(2);
-
-        return (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid)) ||
-               (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid));
     }
 }
