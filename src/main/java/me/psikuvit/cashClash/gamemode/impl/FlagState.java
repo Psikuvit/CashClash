@@ -14,7 +14,7 @@ import java.util.UUID;
 public record FlagState(
         UUID holder,
         long captureTime,
-        Location capturePlate,
+        Location flagLoc,
         BlockDisplay bannerDisplay,
         double bannerAngle,
         BukkitTask carryingTask,
@@ -31,49 +31,49 @@ public record FlagState(
      * Create a flag state with a holder picked up
      */
     public FlagState withHolder(UUID holderUuid, long captureTime) {
-        return new FlagState(holderUuid, captureTime, this.capturePlate, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle);
+        return new FlagState(holderUuid, captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle);
     }
 
     /**
      * Create a flag state with holder removed
      */
     public FlagState withoutHolder() {
-        return new FlagState(null, 0, this.capturePlate, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle);
+        return new FlagState(null, 0, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle);
     }
 
     /**
      * Create a flag state with banner display set
      */
     public FlagState withBannerDisplay(BlockDisplay banner) {
-        return new FlagState(this.holder, this.captureTime, this.capturePlate, banner, this.bannerAngle, this.carryingTask, this.carryingAngle);
+        return new FlagState(this.holder, this.captureTime, this.flagLoc, banner, this.bannerAngle, this.carryingTask, this.carryingAngle);
     }
 
     /**
      * Create a flag state with updated banner angle
      */
     public FlagState withBannerAngle(double angle) {
-        return new FlagState(this.holder, this.captureTime, this.capturePlate, this.bannerDisplay, angle, this.carryingTask, this.carryingAngle);
+        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, angle, this.carryingTask, this.carryingAngle);
     }
 
     /**
      * Create a flag state with carrying task
      */
     public FlagState withCarryingTask(BukkitTask task) {
-        return new FlagState(this.holder, this.captureTime, this.capturePlate, this.bannerDisplay, this.bannerAngle, task, this.carryingAngle);
+        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, task, this.carryingAngle);
     }
 
     /**
      * Create a flag state with updated carrying angle
      */
     public FlagState withCarryingAngle(double angle) {
-        return new FlagState(this.holder, this.captureTime, this.capturePlate, this.bannerDisplay, this.bannerAngle, this.carryingTask, angle);
+        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, angle);
     }
 
     /**
      * Get flag base location (2 blocks above capture plate)
      */
     public Location getFlagLoc() {
-        return capturePlate != null ? capturePlate.clone().add(0, 2, 0) : null;
+        return flagLoc != null ? flagLoc.clone().add(0, 2, 0) : null;
     }
 
     /**

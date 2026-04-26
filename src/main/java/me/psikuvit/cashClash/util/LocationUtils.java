@@ -167,8 +167,8 @@ public final class LocationUtils {
         if (playerLoc == null || targetLoc == null) return false;
         if (playerLoc.getWorld() != targetLoc.getWorld()) return false;
 
-        double dx = playerLoc.getX() - (targetLoc.getX() + 0.5);
-        double dz = playerLoc.getZ() - (targetLoc.getZ() + 0.5);
+        double dx = playerLoc.getX() - targetLoc.getX();
+        double dz = playerLoc.getZ() - targetLoc.getZ();
         double distance = Math.sqrt(dx * dx + dz * dz);
 
         return distance <= radius;
