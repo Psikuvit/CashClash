@@ -236,7 +236,9 @@ public class GameListener implements Listener {
      */
     private void restorePlayerHealth(Player player, GameSession session) {
         var ccp = session.getCashClashPlayer(player.getUniqueId());
-        ccp.resetHealthModifier();
+        if (ccp != null) {
+            ccp.applyHealth();
+        }
     }
 
     /**
@@ -690,7 +692,7 @@ public class GameListener implements Listener {
             Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
                 // Use centralized health system to get max health (respects modifiers)
                 var ccp = session.getCashClashPlayer(player.getUniqueId());
-                ccp.resetHealthModifier();
+                ccp.applyHealth();
                 player.setFoodLevel(20);
             }, 2L);
         }

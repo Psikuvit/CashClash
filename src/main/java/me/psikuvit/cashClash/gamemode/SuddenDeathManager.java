@@ -6,8 +6,6 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
@@ -115,9 +113,6 @@ public class SuddenDeathManager {
             ccp.addHealthModifier(4.0);
             Messages.debug("[SuddenDeathManager] Added +4 health to " + player.getName() + " via health modifier system");
         }
-
-        // Apply visual glowing effect
-        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, (int) (durationMs / 50), 0, false, false));
     }
 
     /**
@@ -147,7 +142,11 @@ public class SuddenDeathManager {
             long remainingMs = expiryTime - System.currentTimeMillis();
 
             if (remainingMs > 0) {
-                applyExtraHeart(player, remainingMs);
+                // Reapply only current health state; do not stack another temporary modifier on each respawn
+                var ccp = session.getCashClashPlayer(playerUuid);
+                if (ccp != null) {
+                    ccp.applyHealth();
+                }
                 Messages.debug("[SuddenDeathManager] Reapplied extra heart to respawned player: " + player.getName());
             } else {
                 removeExtraHeart(playerUuid);
