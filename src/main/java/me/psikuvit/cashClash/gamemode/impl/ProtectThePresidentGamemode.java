@@ -49,6 +49,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private boolean buffSelectionFinalized;
     private BukkitTask selectionTask;
     private int selectionTimeRemaining;
+    private boolean finalStandTriggered; // Track if we've already executed final stand
 
     public ProtectThePresidentGamemode(GameSession session) {
         super(session, GamemodeType.PROTECT_THE_PRESIDENT);
@@ -63,6 +64,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.buffSelectionFinalized = false;
         this.selectionTask = null;
         this.selectionTimeRemaining = SELECTION_TIME;
+        this.finalStandTriggered = false;
 
         // Pre-populate team kill count
         teamKillCount.put(1, 0);
@@ -174,6 +176,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
             Messages.debug("[PTP] President died! Team " + presidentTeam + " - Deaths: " + deaths + " | Killer team: " + killerTeam);
 
+            // Clear health modifier when president dies so they don't keep extra hearts on respawn
+            var cashPlayer = session.getCashClashPlayer(victimUuid);
+            if (cashPlayer != null) {
+                cashPlayer.resetHealthModifier();
+                Messages.debug("[PTP] Cleared health modifier for deceased president: " + victim.getName());
+            }
+
             if (deaths == 1) {
                 String presTeamName = presidentTeam == 1 ? "Red" : "Blue";
                 String colorTag = presTeamName.toLowerCase();
@@ -215,12 +224,21 @@ public class ProtectThePresidentGamemode extends Gamemode {
         int deaths1 = getPresidentDeaths(1);
         int deaths2 = getPresidentDeaths(2);
 
+        // Check if final stand has activated
+        if (suddenDeathManager.isFinalStandActive() && !finalStandTriggered) {
+            activateFinalStandElimination();
+            finalStandTriggered = true;
+            Messages.broadcast(session.getPlayers(), "gamemode-ptp.final-stand-activated");
+        }
+
         if (deaths1 >= targetAssassinations || deaths2 >= targetAssassinations) {
             return true;
         }
 
         // If both teams are tied one kill before normal finish, enter sudden death.
-        if (!suddenDeathManager.isInSuddenDeath() && deaths1 == targetAssassinations - 1 && deaths2 == targetAssassinations - 1) {
+        if (!suddenDeathManager.isInSuddenDeath() &&
+                deaths1 == targetAssassinations - 1 &&
+                deaths2 == targetAssassinations - 1) {
             enterSuddenDeath();
         }
 
@@ -483,16 +501,29 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         // Every 2 kills grant bonus split among team
         if (killCount % KILL_BONUS_THRESHOLD == 0) {
-            long bonusPerPlayer = KILL_BONUS_AMOUNT / 4;
             Team teamObj = team == 1 ? session.getTeamRed() : session.getTeamBlue();
 
-            Messages.debug("[PTP] Team " + team + " reached " + killCount + " kills - Awarding bonus: " + bonusPerPlayer + " per player");
+            Messages.debug("[PTP] Team " + team + " reached " + killCount + " kills - Awarding bonus");
 
-            for (UUID uuid : teamObj.getPlayers()) {
-                Player p = Bukkit.getPlayer(uuid);
-                if (p != null) {
-                    Messages.send(p, "gamemode-ptp.kill-bonus");
-                    session.getCashClashPlayer(uuid).addCoins(bonusPerPlayer);
+            if (suddenDeathManager.isInSuddenDeath()) {
+                // In sudden death: award extra hearts instead of coins
+                for (UUID uuid : teamObj.getPlayers()) {
+                    Player p = Bukkit.getPlayer(uuid);
+                    if (p != null && p.isOnline()) {
+                        suddenDeathManager.applyExtraHeart(p, HEART_DURATION_MS);
+                        Messages.send(p, "gamemode-ptp.kill-bonus-heart");
+                        Messages.debug("[PTP] Applied extra heart bonus to: " + p.getName());
+                    }
+                }
+            } else {
+                // Normal mode: award coins split among team
+                long bonusPerPlayer = KILL_BONUS_AMOUNT / 4;
+                for (UUID uuid : teamObj.getPlayers()) {
+                    Player p = Bukkit.getPlayer(uuid);
+                    if (p != null) {
+                        Messages.send(p, "gamemode-ptp.kill-bonus");
+                        session.getCashClashPlayer(uuid).addCoins(bonusPerPlayer);
+                    }
                 }
             }
         }
@@ -606,6 +637,30 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public void enterSuddenDeath() {
         suddenDeathManager.enterSuddenDeath();
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
+    }
+
+    /**
+     * Activate Final Stand: eliminate all non-Presidents for 1v1 duel
+     */
+    private void activateFinalStandElimination() {
+        Messages.debug("[PTP] Final Stand activated - eliminating all non-Presidents");
+
+        for (UUID playerUuid : new ArrayList<>(session.getPlayers())) {
+            Player p = Bukkit.getPlayer(playerUuid);
+            if (p != null && p.isOnline()) {
+                // Check if this player is a president
+                int presTeam = findPresidentTeam(playerUuid);
+                if (presTeam == 0) {
+                    // Non-president - eliminate them for the 1v1 duel
+                    p.setHealth(0);
+                    Messages.debug("[PTP] Eliminated non-president: " + p.getName());
+                } else {
+                    // President - apply glow effect and announce
+                    Messages.send(p, "gamemode-ptp.final-stand-president-survived",
+                            "opponent", getPresidentName(presTeam == 1 ? 2 : 1));
+                }
+            }
+        }
     }
 
     /**
