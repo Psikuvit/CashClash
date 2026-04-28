@@ -40,7 +40,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private static final double BANNER_ORBIT_RADIUS = 2; // Distance from plate center
     private static final double BANNER_ANGULAR_SPEED = 0.03; // Radians per tick - smooth rotation
     private static final long FLAG_PICKUP_DURATION_MS = 3000; // 3 seconds to pick up flag
-    private static final double CIRCLE_RADIUS = 1.5; // Radius of flag capture circle
+    private static final double CIRCLE_RADIUS = 1.5; // Radius of flag pickup circle
+    private static final double SCORE_ZONE_RADIUS = 1.5; // Radius of scoring zone around team banner location
 
     private final Map<Integer, Integer> flagCaptures;
     private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
@@ -473,22 +474,24 @@ public class CaptureTheFlagGamemode extends Gamemode {
         captureTimerTask = SchedulerUtils.runTaskTimer(this::checkCaptureTimers, 0, 20);
     }
 
-    private void checkCaptureTimers() {
-        long now = System.currentTimeMillis();
+     private void checkCaptureTimers() {
+         long now = System.currentTimeMillis();
 
-        FlagState redFlag = flagStates.get(1);
-        FlagState blueFlag = flagStates.get(2);
+         FlagState redFlag = flagStates.get(1);
+         FlagState blueFlag = flagStates.get(2);
 
-        if (redFlag != null && redFlag.captureTime() > 0 && (now - redFlag.captureTime()) >= CAPTURE_TIMER_MS) {
-            awardCaptureBonus(1);
-            flagStates.put(1, redFlag.withHolder(null, 0));
-        }
+         // Simply track time - don't award bonuses here
+         // Bonuses are only awarded in flagCapture() when the flag is actually scored
+         if (redFlag != null && redFlag.captureTime() > 0 && (now - redFlag.captureTime()) >= CAPTURE_TIMER_MS) {
+             flagStates.put(1, redFlag.withHolder(null, 0));
+             Messages.debug("[CTF] Red flag timer expired without being scored");
+         }
 
-        if (blueFlag != null && blueFlag.captureTime() > 0 && (now - blueFlag.captureTime()) >= CAPTURE_TIMER_MS) {
-            awardCaptureBonus(2);
-            flagStates.put(2, blueFlag.withHolder(null, 0));
-        }
-    }
+         if (blueFlag != null && blueFlag.captureTime() > 0 && (now - blueFlag.captureTime()) >= CAPTURE_TIMER_MS) {
+             flagStates.put(2, blueFlag.withHolder(null, 0));
+             Messages.debug("[CTF] Blue flag timer expired without being scored");
+         }
+     }
 
     /**
      * Remove all banners from players and move them back to their plates
@@ -537,11 +540,44 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Check if a player is standing on a specific block by checking distance to the block location
+     * Check if a player is inside a circular scoring zone around a banner/plate location.
      */
-    private boolean isPlayerOnPlate(Player player, Location blockLoc) {
-        return LocationUtils.isPlayerOnBlock(player.getLocation(), blockLoc, 0.7);
+    private boolean isPlayerInScoringZone(Player player, Location bannerLoc) {
+        return LocationUtils.isPlayerNearLocation(player.getLocation(), bannerLoc, SCORE_ZONE_RADIUS);
     }
+
+     /**
+      * Check if a player carrying enemy flag reached their own scoring area.
+      */
+     private boolean tryHandleFlagCapture(Player player, int playerTeam, FlagState redFlag, FlagState blueFlag) {
+         UUID playerUuid = player.getUniqueId();
+
+         // Cannot score if both teams have flags (mutual flag stalemate)
+         boolean bothFlagsHeld = redFlag.isHeld() && blueFlag.isHeld();
+         if (bothFlagsHeld) {
+             return false;
+         }
+
+         // Team 1 carries Team 2's (Blue) flag and scores at Team 1's (Red) plate
+         if (playerTeam == 1 && blueFlag != null
+                 && blueFlag.isHeld()
+                 && playerUuid.equals(blueFlag.holder())
+                 && isPlayerInScoringZone(player, redFlag.flagLoc()))
+         {
+             flagCapture(player, 1);
+             return true;
+         }
+
+         // Team 2 carries Team 1's (Red) flag and scores at Team 2's (Blue) plate
+         if (playerTeam == 2 && redFlag.isHeld() &&
+                 playerUuid.equals(redFlag.holder()) &&
+                 isPlayerInScoringZone(player, blueFlag.flagLoc())) {
+             flagCapture(player, 2);
+             return true;
+         }
+
+         return false;
+     }
 
     /**
      * Reset flag holders and move banners back to plates after capture
@@ -570,28 +606,35 @@ public class CaptureTheFlagGamemode extends Gamemode {
             FlagState redFlag = flagStates.get(1);
             FlagState blueFlag = flagStates.get(2);
 
+            int playerTeam = session.getPlayerTeam(player).getTeamNumber();
+
+            // Scoring check: if carrier reached own scoring plate, capture immediately.
+            if (tryHandleFlagCapture(player, playerTeam, redFlag, blueFlag)) {
+                playerCircleTimestamps.remove(playerUuid);
+                playerNearestFlagTeam.remove(playerUuid);
+                continue;
+            }
+
             // Determine which flag team player is near (if any)
             Integer nearestTeam = null;
             boolean nearRedFlag = isPlayerNearFlag(player, redFlag);
             boolean nearBlueFlag = isPlayerNearFlag(player, blueFlag);
 
             // Check Red flag pickup
-            if (nearRedFlag && !redFlag.isHeld()) {
-                int playerTeam = session.getPlayerTeam(player).getTeamNumber();
-                // Only enemy team can pick up
-                if (playerTeam == 2 && (blueFlag == null || !blueFlag.isHeld())) {
-                    nearestTeam = 1;
-                }
-            }
+             if (nearRedFlag && !redFlag.isHeld()) {
+                 // Only enemy team can pick up
+                 if (playerTeam == 2) {
+                     nearestTeam = 1;
+                 }
+             }
 
-            // Check Blue flag pickup
-            if (nearBlueFlag && !blueFlag.isHeld()) {
-                int playerTeam = session.getPlayerTeam(player).getTeamNumber();
-                // Only enemy team can pick up
-                if (playerTeam == 1 && (redFlag == null || !redFlag.isHeld())) {
-                    nearestTeam = 2;
-                }
-            }
+             // Check Blue flag pickup
+             if (nearBlueFlag && !blueFlag.isHeld()) {
+                 // Only enemy team can pick up
+                 if (playerTeam == 1) {
+                     nearestTeam = 2;
+                 }
+             }
 
             // Update player's standing time
             if (nearestTeam != null) {
@@ -695,76 +738,76 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 "team_name", teamName);
     }
 
-    /**
-     * Start carrying task for flag - banner follows behind player's head
-     * Uses orbit-like logic to position banner continuously
-     */
-    private void moveBannerToPlayer(BlockDisplay banner, Player player) {
-        if (banner == null || banner.isDead() || !player.isOnline()) {
-            return;
-        }
+     /**
+      * Start carrying task for flag - banner is attached to player's head and rotates with them
+      * Uses a direct teleport approach for instant rotation with player
+      */
+     private void moveBannerToPlayer(BlockDisplay banner, Player player) {
+         if (banner == null || banner.isDead() || !player.isOnline()) {
+             return;
+         }
 
-        // Find which flag this banner belongs to
-        Integer teamNumber = null;
-        for (int team = 1; team <= 2; team++) {
-            FlagState flag = flagStates.get(team);
-            if (flag != null && flag.bannerDisplay() == banner) {
-                teamNumber = team;
-                break;
+         // Find which flag this banner belongs to
+         Integer teamNumber = null;
+         for (int team = 1; team <= 2; team++) {
+             FlagState flag = flagStates.get(team);
+             if (flag != null && flag.bannerDisplay() == banner) {
+                 teamNumber = team;
+                 break;
             }
-        }
+         }
 
-        if (teamNumber == null) return;
+         if (teamNumber == null) return;
 
-        FlagState flagState = flagStates.get(teamNumber);
+         FlagState flagState = flagStates.get(teamNumber);
 
-        // Stop existing carrying task if any
-        if (flagState.carryingTask() != null) {
-            flagState.carryingTask().cancel();
-        }
+         // Stop existing carrying task if any
+         if (flagState.carryingTask() != null) {
+             flagState.carryingTask().cancel();
+         }
 
-        // Make variables final for lambda capture
-        final int finalTeamNumber = teamNumber;
-        final BlockDisplay finalBanner = banner;
-        final Player finalPlayer = player;
+         // Make variables final for lambda capture
+         final int finalTeamNumber = teamNumber;
+         final BlockDisplay finalBanner = banner;
+         final Player finalPlayer = player;
 
-        // Start new carrying task - runs every tick
-        BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
-            if (!finalPlayer.isOnline() || finalBanner.isDead()) {
-                // Stop task if player offline or banner dead
-                FlagState current = flagStates.get(finalTeamNumber);
-                if (current != null && current.carryingTask() != null) {
-                    current.carryingTask().cancel();
-                    flagStates.put(finalTeamNumber, current.withCarryingTask(null));
-                }
-                return;
-            }
+         // Start new carrying task - runs every tick for instant synchronization
+         BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
+             if (!finalPlayer.isOnline() || finalBanner.isDead()) {
+                 // Stop task if player offline or banner dead
+                 FlagState current = flagStates.get(finalTeamNumber);
+                 if (current != null && current.carryingTask() != null) {
+                     current.carryingTask().cancel();
+                     flagStates.put(finalTeamNumber, current.withCarryingTask(null));
+                 }
+                 return;
+             }
 
-            FlagState current = flagStates.get(finalTeamNumber);
-            if (current == null) return;
+             FlagState current = flagStates.get(finalTeamNumber);
+             if (current == null) return;
 
-            // Position banner on player's head facing player's direction
-            Location playerLoc = finalPlayer.getLocation();
+             // Position banner directly on player's head and rotate with player
+             Location playerLoc = finalPlayer.getLocation();
 
-            float yaw = playerLoc.getYaw();
-            double x = playerLoc.getX();
-            double y = playerLoc.getY() + 2.0; // On top of player's head
-            double z = playerLoc.getZ();
+             // Create location 2 blocks above player (on their head)
+             Location bannerLoc = playerLoc.clone().add(0, 2, 0);
 
-            Location bannerLoc = new Location(playerLoc.getWorld(), x, y, z);
+             // Directly teleport banner to match player position and rotation
+             finalBanner.teleport(bannerLoc);
 
-            LocationUtils.applyOrbitTransformation(finalBanner, bannerLoc, yaw);
+             // Rotate banner to face player's direction using yaw
+             finalBanner.setRotation(playerLoc.getYaw(), playerLoc.getPitch());
 
-            // Update yaw in flag state
-            flagStates.put(finalTeamNumber, current.withCarryingAngle(yaw));
-        }, 0, 1); // Run every tick
+             // Update yaw in flag state
+             flagStates.put(finalTeamNumber, current.withCarryingAngle(playerLoc.getYaw()));
+         }, 0, 1); // Run every tick for instant synchronization
 
-        // Store the task in flag state
-        FlagState updatedFlag = flagState.withCarryingTask(task);
-        flagStates.put(teamNumber, updatedFlag);
+         // Store the task in flag state
+         FlagState updatedFlag = flagState.withCarryingTask(task);
+         flagStates.put(teamNumber, updatedFlag);
 
-        Messages.debug("[CTF] Started carrying task for banner on " + player.getName());
-    }
+         Messages.debug("[CTF] Started carrying task for banner on " + player.getName());
+     }
 
     /**
      * Stop carrying task and move banner back to plate
