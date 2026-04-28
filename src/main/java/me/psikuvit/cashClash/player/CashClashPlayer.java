@@ -238,8 +238,10 @@ public class CashClashPlayer {
         if (maxHealthAttr != null) {
             double maxHealth = getMaxHealth();
             maxHealthAttr.setBaseValue(maxHealth);
-            // Heal to max when applying
-            player.setHealth(Math.min(player.getHealth(), maxHealth));
+            // This prevents infinite recursion from death events
+            if (player.getHealth() > 0) {
+                player.setHealth(Math.min(player.getHealth(), maxHealth));
+            }
             Messages.debug(player, "HEALTH", "Set max health to " + maxHealth);
         }
     }
