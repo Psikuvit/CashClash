@@ -433,6 +433,12 @@ public class CustomArmorManager {
         UUID id = p.getUniqueId();
         ItemsConfig cfg = ItemsConfig.getInstance();
 
+        // Check if player is silenced (carrying enemy flag in CTF)
+        if (isSilenced(p)) {
+            Messages.send(p, "listener.cannot-use-items-while-silenced");
+            return;
+        }
+
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.BUNNY_SHOES)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES);
             Messages.send(p, "armor.bunny-shoes-cooldown", "remaining", String.valueOf(remaining));
@@ -791,6 +797,16 @@ public class CustomArmorManager {
         // Reset flamebringer kill counters
         flamebringerKills.clear();
         flamebringerSpeedEndTime.clear();
+    }
+
+    /**
+     * Check if player is silenced (carrying enemy flag in CTF)
+     */
+    private boolean isSilenced(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null || session.getGamemode() == null) return false;
+        if (!(session.getGamemode() instanceof me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode gamemode)) return false;
+        return gamemode.isSilenced(player.getUniqueId());
     }
 }
 
