@@ -344,24 +344,25 @@ messages:
   # ============================================
   # GAMEMODE - CAPTURE THE FLAG
   # ============================================
-  gamemode-ctf:
-    game-started: "<gold>Capture the Flag has been selected as the gamemode!</gold>"
-    objective: "<yellow>Capture the enemy's flag and return it to your base to score!</yellow>"
-    bonus-info: "<yellow>Capturing the flag 45 seconds after stealing it grants your team a split 15k bonus!</yellow>"
-    flag-holder-eliminated: "<{color}><bold>Team {team_name}'s flag holder was eliminated!</bold></{color}>"
-    flag-captured: "<{color}><bold>Team {team_name} captured the flag! {captures}/{win_condition}</bold></{color}>"
-    flag-stolen-red: "<blue>{player_name} has stolen Team Red's flag!</blue>"
-    flag-stolen-blue: "<red>{player_name} has stolen Team Blue's flag!</red>"
-    flag-captured-bonus: "<green>+3,750 coins! (Capture bonus)</green>"
-    capture-bonus-final-stand: "<gold>+1 Extra Heart! (Capture bonus in Final Stand)</gold>"
-    flag-pickup: "<{color}>The flag carrier is highlighted!</{color}>"
-    flag-dropped: "<{color}>The flag has been dropped!</{color}>"
-    silenced-activated: "<red>You have been silenced! All item abilities are disabled.</red>"
-    flag-capturing: "<{color}>Capturing Team {team_name}'s flag... Stand still!</{color}>"
-    flag-capture-cancelled: "<yellow>Capturing Team {team_name}'s flag cancelled.</yellow>"
-    flag-captured-by-player: "<gold><bold>{player_name} has captured the flag! {captures}/{win_condition}</bold></gold>"
-    sudden-death: "<red><bold>SUDDEN DEATH! Both teams must now capture 4 flags to win!</bold></red>"
-    capture-bonus-team-broadcast: "<yellow>Team {team_name} earned a 45-second capture bonus!</yellow>"
+   gamemode-ctf:
+     game-started: "<gold>Capture the Flag has been selected as the gamemode!</gold>"
+     objective: "<yellow>Capture the enemy's flag and return it to your base to score!</yellow>"
+     bonus-info: "<yellow>Capturing the flag 45 seconds after stealing it grants your team a split 15k bonus!</yellow>"
+     flag-holder-eliminated: "<{color}><bold>Team {team_name}'s flag holder was eliminated!</bold></{color}>"
+     flag-captured: "<{color}><bold>Team {team_name} captured the flag! {captures}/{win_condition}</bold></{color}>"
+     flag-stolen-red: "<blue>{player_name} has stolen Team Red's flag!</blue>"
+     flag-stolen-blue: "<red>{player_name} has stolen Team Blue's flag!</red>"
+     flag-captured-bonus: "<green>+3,750 coins! (Capture bonus)</green>"
+     capture-bonus-final-stand: "<gold>+1 Extra Heart! (Capture bonus in Final Stand)</gold>"
+     flag-pickup: "<{color}>The flag carrier is highlighted!</{color}>"
+     flag-dropped: "<{color}>The flag has been dropped!</{color}>"
+     silenced-activated: "<red>You have been silenced! All item abilities are disabled.</red>"
+     flag-capturing: "<{color}>Capturing Team {team_name}'s flag... Stand still!</{color}>"
+     flag-capture-cancelled: "<yellow>Capturing Team {team_name}'s flag cancelled.</yellow>"
+     flag-captured-by-player: "<gold><bold>{player_name} has captured the flag! {captures}/{win_condition}</bold></gold>"
+     sudden-death: "<red><bold>SUDDEN DEATH! Both teams must now capture 4 flags to win!</bold></red>"
+     capture-bonus-team-broadcast: "<yellow>Team {team_name} earned a 45-second capture bonus!</yellow>"
+     both-flags-held: "<red>You must kill the other flag holder in order to score!</red>"
 
   # ============================================
   # PARTY INFO MESSAGES
