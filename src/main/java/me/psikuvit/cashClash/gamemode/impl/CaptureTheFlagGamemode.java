@@ -23,7 +23,9 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -47,6 +49,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
     private final Map<UUID, Long> playerCircleTimestamps; // Track when each player entered the circle
     private final Map<UUID, Integer> playerNearestFlagTeam; // Track which flag team player is near
+    private final Set<UUID> stalemateMsgShown; // Track players who've been told about stalemate in current state
 
      private final SuddenDeathManager suddenDeathManager;
      private BukkitTask carrierGlowTask;
@@ -63,6 +66,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.flagStates = new HashMap<>(2);
         this.playerCircleTimestamps = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
+        this.stalemateMsgShown = new HashSet<>();
          this.suddenDeathManager = new SuddenDeathManager(session);
          this.carrierGlowTask = null;
          this.captureTimerTask = null;
@@ -91,16 +95,17 @@ public class CaptureTheFlagGamemode extends Gamemode {
      public void onCombatPhaseStart() {
          Messages.debug("[CTF] Combat phase started");
 
-         // Initialize banners at flag plates
-         initializeBanners();
+          // Initialize banners at flag plates
+          initializeBanners();
 
-         // Reset flag state each round
-         flagStates.put(1, flagStates.get(1).withoutHolder());
-         flagStates.put(2, flagStates.get(2).withoutHolder());
+          // Reset flag state each round
+          flagStates.put(1, flagStates.get(1).withoutHolder());
+          flagStates.put(2, flagStates.get(2).withoutHolder());
 
-         // Clear circle tracking data
-         playerCircleTimestamps.clear();
-         playerNearestFlagTeam.clear();
+          // Clear circle tracking data
+          playerCircleTimestamps.clear();
+          playerNearestFlagTeam.clear();
+          stalemateMsgShown.clear();
 
          // Start carrier glow effect task
          startCarrierGlowEffect();
@@ -118,18 +123,19 @@ public class CaptureTheFlagGamemode extends Gamemode {
          startBonusTimerDisplayTask();
      }
 
-     @Override
-     public void onRoundEnd() {
-         // Remove all banners from players and reset positions
-         removeBannersFromPlayers();
+      @Override
+      public void onRoundEnd() {
+          // Remove all banners from players and reset positions
+          removeBannersFromPlayers();
 
-         // Reset state for next round
-         suddenDeathManager.resetForNewRound();
-         flagCaptures.put(1, 0);
-         flagCaptures.put(2, 0);
-         // Reset flag states but preserve the plate locations and banners for next round
-         flagStates.put(1, flagStates.get(1).withoutHolder());
-         flagStates.put(2, flagStates.get(2).withoutHolder());
+          // Reset state for next round
+          suddenDeathManager.resetForNewRound();
+          flagCaptures.put(1, 0);
+          flagCaptures.put(2, 0);
+          // Reset flag states but preserve the plate locations and banners for next round
+          flagStates.put(1, flagStates.get(1).withoutHolder());
+          flagStates.put(2, flagStates.get(2).withoutHolder());
+          stalemateMsgShown.clear();
 
          // Clear circle tracking data
          playerCircleTimestamps.clear();
@@ -431,9 +437,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 "color", colorTag,
                 "team_name", teamName);
 
-        flagStates.put(teamNumber, flag.withoutHolder());
-        moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
-        SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
+         flagStates.put(teamNumber, flag.withoutHolder());
+         moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
+         SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
+
+         // Clear stalemate state since one flag is now down
+         stalemateMsgShown.clear();
     }
 
     /**
@@ -574,22 +583,27 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return LocationUtils.isPlayerNearLocation(player.getLocation(), bannerLoc, SCORE_ZONE_RADIUS);
     }
 
-     /**
-      * Check if a player carrying enemy flag reached their own scoring area.
-      */
-     private boolean tryHandleFlagCapture(Player player, int playerTeam, FlagState redFlag, FlagState blueFlag) {
-         UUID playerUuid = player.getUniqueId();
+      /**
+       * Check if a player carrying enemy flag reached their own scoring area.
+       */
+      private boolean tryHandleFlagCapture(Player player, int playerTeam, FlagState redFlag, FlagState blueFlag) {
+          UUID playerUuid = player.getUniqueId();
 
-         // Cannot score if both teams have flags (mutual flag stalemate)
-         boolean bothFlagsHeld = redFlag.isHeld() && blueFlag.isHeld();
-         if (bothFlagsHeld) {
-             // Show blocking message and black particles at both capture points
-             Messages.send(player, "gamemode-ctf.both-flags-held",
-                     "message", "You must kill the other flag holder in order to score!");
-             spawnBannerParticles(redFlag.flagLoc(), 0); // 0 for black/neutral
-             spawnBannerParticles(blueFlag.flagLoc(), 0);
-             return false;
-         }
+          // Cannot score if both teams have flags (mutual flag stalemate)
+          boolean bothFlagsHeld = redFlag.isHeld() && blueFlag.isHeld();
+          if (bothFlagsHeld) {
+              // Show blocking message once per player per stalemate
+              if (!stalemateMsgShown.contains(playerUuid)) {
+                  Messages.send(player, "gamemode-ctf.both-flags-held");
+                  stalemateMsgShown.add(playerUuid);
+              }
+              spawnBannerParticles(redFlag.flagLoc(), 0); // 0 for black/neutral
+              spawnBannerParticles(blueFlag.flagLoc(), 0);
+              return false;
+          } else {
+              // Clear the message flag if stalemate is broken
+              stalemateMsgShown.remove(playerUuid);
+          }
 
          // ISSUE 3: Cannot score if team's own flag is already held by someone (no double capture)
          if (playerTeam == 1 && redFlag.isHeld()) {
