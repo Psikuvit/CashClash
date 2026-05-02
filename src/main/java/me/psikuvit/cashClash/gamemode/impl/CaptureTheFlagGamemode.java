@@ -10,6 +10,8 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -18,6 +20,8 @@ import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -50,6 +54,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<UUID, Long> playerCircleTimestamps; // Track when each player entered the circle
     private final Map<UUID, Integer> playerNearestFlagTeam; // Track which flag team player is near
     private final Set<UUID> stalemateMsgShown; // Track players who've been told about stalemate in current state
+    private final Map<UUID, Long> playerHeartTimestamps; // Track when each player received a heart bonus (for 45s timer)
 
      private final SuddenDeathManager suddenDeathManager;
      private BukkitTask carrierGlowTask;
@@ -57,6 +62,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      private BukkitTask bannerRotationTask;
      private BukkitTask flagPickupTask;
      private BukkitTask bonusTimerDisplayTask;
+     private BukkitTask heartTimerDisplayTask;
 
     public CaptureTheFlagGamemode(GameSession session) {
         super(session, GamemodeType.CAPTURE_THE_FLAG);
@@ -67,12 +73,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.playerCircleTimestamps = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
         this.stalemateMsgShown = new HashSet<>();
+        this.playerHeartTimestamps = new HashMap<>();
          this.suddenDeathManager = new SuddenDeathManager(session);
          this.carrierGlowTask = null;
          this.captureTimerTask = null;
          this.bannerRotationTask = null;
          this.flagPickupTask = null;
          this.bonusTimerDisplayTask = null;
+         this.heartTimerDisplayTask = null;
 
         // Pre-populate flag states and capture map
         flagCaptures.put(1, 0);
@@ -106,6 +114,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
           playerCircleTimestamps.clear();
           playerNearestFlagTeam.clear();
           stalemateMsgShown.clear();
+          playerHeartTimestamps.clear();
 
          // Start carrier glow effect task
          startCarrierGlowEffect();
@@ -121,6 +130,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
          // ISSUE 5: Start bonus timer display for flag carriers
          startBonusTimerDisplayTask();
+
+         // Start heart timer display for sudden death bonuses
+         startHeartTimerDisplayTask();
      }
 
       @Override
@@ -140,6 +152,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          // Clear circle tracking data
          playerCircleTimestamps.clear();
          playerNearestFlagTeam.clear();
+         playerHeartTimestamps.clear();
 
          // Reset task references (tasks will be recreated in next combat phase)
          this.carrierGlowTask = null;
@@ -147,6 +160,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          this.bannerRotationTask = null;
          this.flagPickupTask = null;
          this.bonusTimerDisplayTask = null;
+         this.heartTimerDisplayTask = null;
      }
 
     @Override
@@ -214,6 +228,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          cancelTask(bannerRotationTask);
          cancelTask(flagPickupTask);
          cancelTask(bonusTimerDisplayTask);
+         cancelTask(heartTimerDisplayTask);
 
          // Cancel carrying tasks for all flags
          for (FlagState flag : flagStates.values()) {
@@ -236,6 +251,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          flagCaptures.clear();
          playerCircleTimestamps.clear();
          playerNearestFlagTeam.clear();
+         playerHeartTimestamps.clear();
      }
 
     @Override
@@ -288,6 +304,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (!isFinalStandActive()) {
             Messages.send(player, "gamemode-ctf.silenced-activated");
             Messages.debug("[CTF] Applied silenced ability to flag carrier: " + player.getName());
+
+            // Grey out unavailable items
+            SchedulerUtils.runTaskLater(() -> updateSilencedItemDisplay(player), 1);
         }
         moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
 
@@ -348,6 +367,77 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         return (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid)) ||
                (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid));
+    }
+
+    /**
+     * Update silenced state visually - grey out unavailable items in player's inventory
+     */
+    public void updateSilencedItemDisplay(Player player) {
+        if (!isSilenced(player.getUniqueId())) {
+            // Player is not silenced - restore normal item names
+            restoreNormalItemDisplay(player);
+            return;
+        }
+
+        // Player is silenced - grey out restricted items
+        updateGreyedItems(player);
+    }
+
+    /**
+     * Grey out items that player can't use while silenced
+     */
+    private void updateGreyedItems(Player player) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType().isAir()) continue;
+
+            ItemMeta meta = item.getItemMeta();
+            if (meta == null) continue;
+
+            boolean shouldGrey = PDCDetection.isCustomArmorItem(item) || PDCDetection.isCustomItem(item);
+
+            if (shouldGrey && meta.hasDisplayName()) {
+                Component currentComp = meta.displayName();
+                String currentStr = Messages.parseToLegacy(currentComp);
+
+                // Only grey if not already greyed
+                if (!currentStr.contains("<gray>") && !currentStr.contains("☒")) {
+                    // Add grey marker to display name
+                    String greyedDisplay = "<gray>☒ " + currentStr + "</gray>";
+                    meta.displayName(Messages.parse(greyedDisplay));
+                    item.setItemMeta(meta);
+                }
+            }
+        }
+    }
+
+    /**
+     * Restore normal item display when player is no longer silenced
+     */
+    private void restoreNormalItemDisplay(Player player) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType().isAir()) continue;
+
+            ItemMeta meta = item.getItemMeta();
+            if (meta == null || !meta.hasDisplayName()) continue;
+
+            Component displayComp = meta.displayName();
+            String displayStr = Messages.parseToLegacy(displayComp);
+
+            // Remove grey marker if present
+            if (displayStr.contains("<gray>") && displayStr.contains("☒")) {
+                // Try to restore by removing grey wrapper
+                String restored = displayStr
+                    .replace("<gray>", "")
+                    .replace("</gray>", "")
+                    .replace("☒ ", "")
+                    .trim();
+
+                if (!restored.isEmpty()) {
+                    meta.displayName(Messages.parse(restored));
+                    item.setItemMeta(meta);
+                }
+            }
+        }
     }
 
     // ========= PRIVATE HELPER METHODS =========
@@ -441,6 +531,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
          moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
          SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
 
+         // Restore normal item display for the flag carrier
+         updateSilencedItemDisplay(victim);
+
          // Clear stalemate state since one flag is now down
          stalemateMsgShown.clear();
     }
@@ -464,6 +557,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
             moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
         }
         flagStates.put(teamNumber, flag.withoutHolder());
+
+        // Restore normal item display for the flag carrier
+        SchedulerUtils.runTaskLater(() -> updateSilencedItemDisplay(player), 1);
     }
 
     private void cancelTask(BukkitTask task) {
@@ -707,15 +803,23 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     String colorTag = nearestTeam == 1 ? "red" : "blue";
                     Messages.send(player, "gamemode-ctf.flag-capturing",
                             "team_name", teamName, "color", colorTag);
-                } else if (prevTime != null) {
-                    long elapsedMs = now - prevTime;
-                    if (elapsedMs >= FLAG_PICKUP_DURATION_MS) {
-                        // 3 seconds elapsed - pickup the flag
-                        flagPickup(player, nearestTeam);
-                        playerCircleTimestamps.remove(playerUuid);
-                        playerNearestFlagTeam.remove(playerUuid);
-                    }
-                }
+                 } else if (prevTime != null) {
+                     long elapsedMs = now - prevTime;
+                     if (elapsedMs >= FLAG_PICKUP_DURATION_MS) {
+                         // 3 seconds elapsed - pickup the flag
+                         flagPickup(player, nearestTeam);
+                         playerCircleTimestamps.remove(playerUuid);
+                         playerNearestFlagTeam.remove(playerUuid);
+                     } else {
+                         // Show countdown timer on action bar (3 2 1)
+                         long remainingMs = FLAG_PICKUP_DURATION_MS - elapsedMs;
+                         long secondsRemaining = remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0);
+
+                         String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
+                         String countdownMsg = flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s") + "</>";
+                         player.sendActionBar(Messages.parse(countdownMsg));
+                     }
+                 }
             } else {
                 // Player left the circle - reset if they were in one
                 if (playerNearestFlagTeam.containsKey(playerUuid)) {
@@ -739,6 +843,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
             maxHealthAttr.setBaseValue(22);
             player.setHealth(22);
         }
+
+        // Record when this player received the heart for timer tracking
+        playerHeartTimestamps.put(player.getUniqueId(), System.currentTimeMillis());
 
         // Apply red glow effect for 45 seconds
         long heartDurationMs = 45 * 1000;
@@ -770,6 +877,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
       */
      private void startBonusTimerDisplayTask() {
          bonusTimerDisplayTask = SchedulerUtils.runTaskTimer(this::updateBonusTimerDisplay, 0, 10);
+     }
+
+     /**
+      * Start heart timer display task - shows 45s countdown for players with hearts
+      */
+     private void startHeartTimerDisplayTask() {
+         heartTimerDisplayTask = SchedulerUtils.runTaskTimer(this::updateHeartTimerDisplay, 0, 10);
      }
 
      /**
@@ -818,6 +932,38 @@ public class CaptureTheFlagGamemode extends Gamemode {
                      String noBonus = "<red>❌ No bonus - score won't grant extra money</red>";
                      carrier.sendActionBar(Messages.parse(noBonus));
                  }
+             }
+         }
+     }
+
+     /**
+      * Update heart timer display for players with active hearts via action bar
+      */
+     private void updateHeartTimerDisplay() {
+         long now = System.currentTimeMillis();
+         long heartDurationMs = 45 * 1000;
+
+         // Check each player that has a heart timestamp
+         for (UUID playerUuid : playerHeartTimestamps.keySet()) {
+             Player player = Bukkit.getPlayer(playerUuid);
+             if (player == null || !player.isOnline()) {
+                 continue;
+             }
+
+             Long heartTime = playerHeartTimestamps.get(playerUuid);
+             if (heartTime == null) continue;
+
+             long elapsed = now - heartTime;
+             long remaining = Math.max(0, heartDurationMs - elapsed);
+             long secondsRemaining = remaining / 1000 + (remaining % 1000 > 0 ? 1 : 0);
+
+             if (remaining > 0) {
+                 // Heart is still active - show countdown
+                 String timerMsg = "<red>❤ Extra Heart expires in: <gold>" + secondsRemaining + "s</gold></red>";
+                 player.sendActionBar(Messages.parse(timerMsg));
+             } else {
+                 // Heart expired - remove from tracking
+                 playerHeartTimestamps.remove(playerUuid);
              }
          }
      }
