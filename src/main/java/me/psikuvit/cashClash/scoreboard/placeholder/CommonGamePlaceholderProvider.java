@@ -53,6 +53,18 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         SUPPORTED_PLACEHOLDERS.add("enemy_team_alive");
         SUPPORTED_PLACEHOLDERS.add("round");
         SUPPORTED_PLACEHOLDERS.add("players");
+
+        // Round wins (objectives completed)
+        SUPPORTED_PLACEHOLDERS.add("round_won");
+        SUPPORTED_PLACEHOLDERS.add("your_team_wins");
+        SUPPORTED_PLACEHOLDERS.add("enemy_team_wins");
+
+        // CTF captures
+        SUPPORTED_PLACEHOLDERS.add("teamRed_captures");
+        SUPPORTED_PLACEHOLDERS.add("teamBlue_captures");
+
+        // Sudden death heart timer
+        SUPPORTED_PLACEHOLDERS.add("player_heart_timer");
     }
 
     private final GameSession session;
@@ -70,7 +82,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         return switch (placeholder) {
             // Time placeholders
             case "phase", "state" -> getPhase(session.getState());
-            case "phase_number" -> String.valueOf(session.getCurrentRound());
+            case "phase_number", "round" -> String.valueOf(session.getCurrentRound());
             case "time" -> formatTime(session.getTimeRemaining());
             case "time_seconds" -> String.valueOf(session.getTimeRemaining());
 
@@ -91,8 +103,32 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             case "round_kills", "teamRed_alive", "teamBlue_alive", "your_team_alive", "enemy_team_alive" ->
                     getRoundData(placeholder, player, session);
 
-            case "round" -> String.valueOf(session.getCurrentRound());
             case "players" -> String.valueOf(session.getPlayers().size());
+
+            // Round wins
+            case "round_won" -> session.getRoundWins(1) + " - " + session.getRoundWins(2);
+            case "your_team_wins" -> {
+                Team playerTeam = session.getPlayerTeam(player);
+                if (playerTeam == null) {
+                    yield "0";
+                }
+                yield String.valueOf(session.getRoundWins(playerTeam.getTeamNumber()));
+            }
+            case "enemy_team_wins" -> {
+                Team playerTeam = session.getPlayerTeam(player);
+                if (playerTeam == null) {
+                    yield "0";
+                }
+                Team enemyTeam = session.getOpposingTeam(playerTeam);
+                yield String.valueOf(session.getRoundWins(enemyTeam.getTeamNumber()));
+            }
+
+            // CTF captures
+            case "teamRed_captures" -> String.valueOf(session.getRoundWins(1));
+            case "teamBlue_captures" -> String.valueOf(session.getRoundWins(2));
+
+            // Sudden death heart timer - placeholder for use in CTF
+            case "player_heart_timer" -> "0:00";
 
             default -> null;
         };
@@ -238,6 +274,8 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             case "time_seconds", "phase_number", "round", "players" -> "0";
             case "phase", "state" -> "Unknown";
             case "teamRed_coins", "teamBlue_coins", "your_team_coins", "enemy_team_coins", "player_coins" -> "0";
+            case "round_won" -> "0 - 0";
+            case "your_team_wins", "enemy_team_wins" -> "0";
             default -> null;
         };
     }
