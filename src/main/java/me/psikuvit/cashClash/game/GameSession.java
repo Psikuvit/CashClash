@@ -80,6 +80,9 @@ public class GameSession {
     private int countdownSecondsRemaining;
     private Gamemode gamemode;
 
+    // Track round wins for each team (incremented when team wins a round)
+    private final Map<Integer, Integer> roundWins; // 1 = Red, 2 = Blue
+
     public GameSession(int arenaNumber) {
         this.sessionId = UUID.randomUUID();
         this.arenaNumber = arenaNumber;
@@ -88,6 +91,9 @@ public class GameSession {
         this.teamRed = new Team(1);
         this.teamBlue = new Team(2);
         this.players = new HashMap<>();
+        this.roundWins = new HashMap<>();
+        this.roundWins.put(1, 0);
+        this.roundWins.put(2, 0);
 
         this.startingCountdown = false;
         
@@ -161,6 +167,36 @@ public class GameSession {
 
     public Gamemode getGamemode() {
         return gamemode;
+    }
+
+    /**
+     * Get the number of round wins (objectives completed) for a team so far this game
+     * In CTF: number of flag captures
+     * In PTP: number of president eliminations
+     *
+     * @param teamNumber Team number (1 for Red, 2 for Blue)
+     * @return Number of round wins
+     */
+    public int getRoundWins(int teamNumber) {
+        return roundWins.getOrDefault(teamNumber, 0);
+    }
+
+    /**
+     * Increment round wins for a team
+     * Called when a team completes an objective (captures flag, kills president, etc.)
+     *
+     * @param teamNumber Team number (1 for Red, 2 for Blue)
+     */
+    public void incrementRoundWins(int teamNumber) {
+        roundWins.put(teamNumber, roundWins.getOrDefault(teamNumber, 0) + 1);
+    }
+
+    /**
+     * Reset round wins for a new game
+     */
+    public void resetRoundWins() {
+        roundWins.put(1, 0);
+        roundWins.put(2, 0);
     }
 
     /**

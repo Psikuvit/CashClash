@@ -327,6 +327,8 @@ public class RoundManager {
                 SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
                 Messages.broadcast(session.getPlayers(), "round.team-wins-round",
                         "team_name", winnerName);
+                // Track round wins for this winner
+                session.incrementRoundWins(winnerTeam);
                 // Update loss streaks for this round
                 if (winnerTeam == 1) {
                     session.getTeamRed().resetLossStreak();
@@ -352,12 +354,14 @@ public class RoundManager {
         if (teamRedAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcast(session.getPlayers(), "round.team-blue-wins");
+            session.incrementRoundWins(2);
             session.getTeamBlue().resetLossStreak();
             session.getTeamRed().incrementLossStreak();
             endCombatPhase();
         } else if (teamBlueAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcast(session.getPlayers(), "round.team-red-wins");
+            session.incrementRoundWins(1);
             session.getTeamRed().resetLossStreak();
             session.getTeamBlue().incrementLossStreak();
             endCombatPhase();
