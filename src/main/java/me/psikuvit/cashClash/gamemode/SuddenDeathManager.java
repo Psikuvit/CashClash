@@ -6,6 +6,8 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
@@ -29,19 +31,21 @@ public class SuddenDeathManager {
     private static final long FINAL_STAND_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
     private final GameSession session;
+    private final Gamemode gamemode;
     private final Map<UUID, Long> extraHeartExpiry; // Player UUID -> expiry time in ms
     private boolean inSuddenDeath;
     private boolean finalStandActive;
     private BukkitTask finalStandTask;
-    private BukkitTask heartExpiryTask;
+    private final BukkitTask heartExpiryTask;
 
-    public SuddenDeathManager(GameSession session) {
+    public SuddenDeathManager(GameSession session, Gamemode gamemode) {
         this.session = session;
+        this.gamemode = gamemode;
         this.inSuddenDeath = false;
         this.finalStandActive = false;
         this.finalStandTask = null;
-        this.heartExpiryTask = null;
         this.extraHeartExpiry = new HashMap<>();
+        this.heartExpiryTask = SchedulerUtils.runTaskTimer(this::removeExpiredHearts, 20L, 20L);
     }
 
     /**
@@ -76,11 +80,16 @@ public class SuddenDeathManager {
     private void activateFinalStand() {
         finalStandActive = true;
         Messages.debug("[SuddenDeathManager] Final stand activated");
-        // Subclasses can override onFinalStandActivated() to handle gamemode-specific logic
+
+        // Notify gamemode to handle final stand activation
+        if (gamemode != null) {
+            gamemode.onFinalStandActivated();
+        }
     }
 
     /**
      * Check if player has an active extra heart and remove it if expired
+     *
      * @return true if player has an active extra heart
      */
     public boolean updateAndCheckExtraHeart(UUID playerUuid) {
@@ -104,6 +113,7 @@ public class SuddenDeathManager {
         UUID uuid = player.getUniqueId();
         long expiryTime = System.currentTimeMillis() + durationMs;
         extraHeartExpiry.put(uuid, expiryTime);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, (int) (durationMs / 50), 0, false, false));
 
         Messages.debug("[SuddenDeathManager] Applied extra heart to: " + player.getName() + " for " + durationMs + "ms");
 
@@ -210,6 +220,18 @@ public class SuddenDeathManager {
     private void cancelTask(BukkitTask task) {
         if (task != null && !task.isCancelled()) {
             task.cancel();
+        }
+    }
+
+    private void removeExpiredHearts() {
+        long now = System.currentTimeMillis();
+        List<UUID> expired = extraHeartExpiry.entrySet().stream()
+                .filter(entry -> now >= entry.getValue())
+                .map(Map.Entry::getKey)
+                .toList();
+
+        for (UUID uuid : expired) {
+            removeExtraHeart(uuid);
         }
     }
 
