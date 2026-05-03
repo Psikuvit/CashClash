@@ -159,7 +159,7 @@ public class RoundManager {
             if (session.getGamemode() instanceof CaptureTheFlagGamemode ctf) {
                 ctf.onShoppingPhaseStart();
             }
-            startShoppingTimer(roundNumber, teamRed, teamBlue);
+            startShoppingTimer(teamRed, teamBlue);
         }
     }
 
@@ -186,7 +186,7 @@ public class RoundManager {
     /**
      * Timer logic for shopping phase
      */
-    private void startShoppingTimer(int roundNumber, Team teamRed, Team teamBlue) {
+    private void startShoppingTimer(Team teamRed, Team teamBlue) {
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
             if (teamRed.isTeamReady() && teamBlue.isTeamReady()) {
                 Messages.broadcast(session.getPlayers(), "round.both-teams-ready");
@@ -269,11 +269,14 @@ public class RoundManager {
 
         // Start countdown
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
-            timeRemaining--;
+            boolean finalStandActive = session.getGamemode() != null && session.getGamemode().isFinalStandActive();
+            if (!finalStandActive) {
+                timeRemaining--;
+            }
 
-            if (timeRemaining <= 0) {
+            if (!finalStandActive && timeRemaining <= 0) {
                 endCombatPhase();
-            } else if (timeRemaining <= 10 || timeRemaining % 60 == 0) {
+            } else if (!finalStandActive && (timeRemaining <= 10 || timeRemaining % 60 == 0)) {
                 Messages.broadcast(session.getPlayers(), "round.combat-countdown",
                     "time_remaining", String.valueOf(timeRemaining));
             }
