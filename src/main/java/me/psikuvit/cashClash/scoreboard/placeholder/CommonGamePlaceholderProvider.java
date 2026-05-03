@@ -65,6 +65,8 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
 
         // Sudden death heart timer
         SUPPORTED_PLACEHOLDERS.add("player_heart_timer");
+        SUPPORTED_PLACEHOLDERS.add("sudden_death_timer");
+        SUPPORTED_PLACEHOLDERS.add("sudden_death_cycle");
     }
 
     private final GameSession session;
@@ -128,7 +130,15 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             case "teamBlue_captures" -> String.valueOf(session.getRoundWins(2));
 
             // Sudden death heart timer - placeholder for use in CTF
-            case "player_heart_timer" -> "0:00";
+            case "player_heart_timer" -> formatMillis(session.getGamemode() == null ? -1 : session.getGamemode().getExtraHeartRemainingMs(player.getUniqueId()));
+            case "sudden_death_timer" -> {
+                int remaining = session.getGamemode() == null ? -1 : session.getGamemode().getSuddenDeathTimerRemainingSeconds();
+                yield remaining < 0 ? "" : formatTime(remaining);
+            }
+            case "sudden_death_cycle" -> {
+                int cycle = session.getGamemode() == null ? 0 : session.getGamemode().getSuddenDeathCycle();
+                yield cycle <= 0 ? "" : String.valueOf(cycle);
+            }
 
             default -> null;
         };
@@ -181,9 +191,8 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
 
     private String getDefaultPlayerTeamValue(String placeholder) {
         return switch (placeholder) {
-            case "your_team", "enemy_team" -> "?";
+            case "your_team", "enemy_team", "your_team_ready", "enemy_team_ready" -> "?";
             case "your_team_coins", "enemy_team_coins" -> "0";
-            case "your_team_ready", "enemy_team_ready" -> "?";
             default -> null;
         };
     }
@@ -207,8 +216,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
 
     private String getDefaultPlayerValue(String placeholder) {
         return switch (placeholder) {
-            case "player_coins" -> "0";
-            case "player_kills", "player_lives", "player_deaths", "kill_streak" -> "0";
+            case "player_coins", "player_kills", "player_lives", "player_deaths", "kill_streak" -> "0";
             default -> null;
         };
     }
@@ -264,6 +272,13 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         return String.format("%d:%02d", minutes, secs);
     }
 
+    private String formatMillis(long millis) {
+        if (millis <= 0) {
+            return "0:00";
+        }
+        return formatTime((int) Math.ceil(millis / 1000.0));
+    }
+
     private String formatCoins(long coins) {
         return String.format("%,d", coins);
     }
@@ -271,11 +286,10 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
     private String getDefaultValue(String placeholder) {
         return switch (placeholder) {
             case "time" -> "0:00";
-            case "time_seconds", "phase_number", "round", "players" -> "0";
+            case "time_seconds", "phase_number", "round", "players", "teamRed_coins", "teamBlue_coins",
+                 "your_team_coins", "enemy_team_coins", "player_coins", "your_team_wins", "enemy_team_wins" -> "0";
             case "phase", "state" -> "Unknown";
-            case "teamRed_coins", "teamBlue_coins", "your_team_coins", "enemy_team_coins", "player_coins" -> "0";
             case "round_won" -> "0 - 0";
-            case "your_team_wins", "enemy_team_wins" -> "0";
             default -> null;
         };
     }
