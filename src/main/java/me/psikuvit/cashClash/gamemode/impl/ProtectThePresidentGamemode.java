@@ -11,8 +11,10 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.WorldBorder;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -38,18 +40,26 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private static final long KILL_BONUS_AMOUNT = 15000;
     private static final long HEART_DURATION_MS = 45 * 1000;
     private static final int WIN_CONDITION = 4;
+    private static final int SUDDEN_DEATH_TRIGGER_SCORE = 3;
+    private static final int SUDDEN_DEATH_CYCLE_SECONDS = 180;
 
     private final Map<Integer, President> presidents;
     private final Map<Integer, Integer> teamKillCount;
+    private final Map<Integer, Integer> suddenDeathPresidentKills;
     private final Map<UUID, Integer> selectedBuffCount;
+    private final Map<UUID, List<PresidentialBuff>> selectedBuffs;
     private final Map<UUID, ItemStack[]> savedInventories;
 
     private final SuddenDeathManager suddenDeathManager;
     private boolean selectionPhaseActive;
     private boolean buffSelectionFinalized;
     private BukkitTask selectionTask;
+    private BukkitTask suddenDeathCycleTask;
     private int selectionTimeRemaining;
     private boolean finalStandTriggered; // Track if we've already executed final stand
+    private long suddenDeathCycleStartMs;
+    private int suddenDeathCycle;
+    private int suddenDeathWinningTeam;
 
     public ProtectThePresidentGamemode(GameSession session) {
         super(session, GamemodeType.PROTECT_THE_PRESIDENT);
@@ -57,18 +67,26 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Initialize all data structures
         this.presidents = new HashMap<>(2);
         this.teamKillCount = new HashMap<>(2);
+        this.suddenDeathPresidentKills = new HashMap<>(2);
         this.selectedBuffCount = new HashMap<>();
+        this.selectedBuffs = new HashMap<>();
         this.savedInventories = new HashMap<>();
-        this.suddenDeathManager = new SuddenDeathManager(session);
+        this.suddenDeathManager = new SuddenDeathManager(session, this);
         this.selectionPhaseActive = false;
         this.buffSelectionFinalized = false;
         this.selectionTask = null;
+        this.suddenDeathCycleTask = null;
         this.selectionTimeRemaining = SELECTION_TIME;
         this.finalStandTriggered = false;
+        this.suddenDeathCycleStartMs = 0L;
+        this.suddenDeathCycle = 0;
+        this.suddenDeathWinningTeam = 0;
 
         // Pre-populate team kill count
         teamKillCount.put(1, 0);
         teamKillCount.put(2, 0);
+        suddenDeathPresidentKills.put(1, 0);
+        suddenDeathPresidentKills.put(2, 0);
     }
 
     @Override
@@ -119,6 +137,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         // Reset buff selection count for all players so they can pick new buffs this round
         selectedBuffCount.clear();
+        selectedBuffs.clear();
 
         // Select new presidents for this round (except round 1, presidents already selected)
         if (session.getCurrentRound() > 1) {
@@ -193,6 +212,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
             }
 
             addTeamKill(killerTeam);
+            if (suddenDeathManager.isInSuddenDeath()) {
+                suddenDeathPresidentKills.merge(killerTeam, 1, Integer::sum);
+            }
         } else if (killer != null) {
             // Regular player died, award killer's team if killer is a president
             int killerPresidentTeam = findPresidentTeam(killer.getUniqueId());
@@ -220,41 +242,43 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public boolean checkGameWinner() {
-        int targetAssassinations = suddenDeathManager.isInSuddenDeath() ? WIN_CONDITION : 2;
         int deaths1 = getPresidentDeaths(1);
         int deaths2 = getPresidentDeaths(2);
+
+        if (suddenDeathWinningTeam > 0) {
+            return true;
+        }
 
         // Check if final stand has activated
         if (suddenDeathManager.isFinalStandActive() && !finalStandTriggered) {
             activateFinalStandElimination();
             finalStandTriggered = true;
-            Messages.broadcast(session.getPlayers(), "gamemode-ptp.final-stand-activated");
         }
 
-        if (deaths1 >= targetAssassinations || deaths2 >= targetAssassinations) {
-            return true;
-        }
-
-        // If both teams are tied one kill before normal finish, enter sudden death.
         if (!suddenDeathManager.isInSuddenDeath() &&
-                deaths1 == targetAssassinations - 1 &&
-                deaths2 == targetAssassinations - 1) {
+                deaths1 == SUDDEN_DEATH_TRIGGER_SCORE &&
+                deaths2 == SUDDEN_DEATH_TRIGGER_SCORE) {
             enterSuddenDeath();
+            return false;
         }
 
-        return false;
+        return !suddenDeathManager.isInSuddenDeath() &&
+                (deaths1 >= WIN_CONDITION || deaths2 >= WIN_CONDITION);
     }
 
     @Override
     public int getWinningTeam() {
-        int targetAssassinations = suddenDeathManager.isInSuddenDeath() ? WIN_CONDITION : 2;
+        if (suddenDeathWinningTeam > 0) {
+            return suddenDeathWinningTeam;
+        }
+
         int deaths1 = getPresidentDeaths(1);
         int deaths2 = getPresidentDeaths(2);
 
         // Return the team whose president didn't reach the assassination target first.
-        if (deaths1 >= targetAssassinations && deaths2 < targetAssassinations) {
+        if (!suddenDeathManager.isInSuddenDeath() && deaths1 >= WIN_CONDITION && deaths2 < WIN_CONDITION) {
             return 2; // Team 2 wins the round
-        } else if (deaths2 >= targetAssassinations && deaths1 < targetAssassinations) {
+        } else if (!suddenDeathManager.isInSuddenDeath() && deaths2 >= WIN_CONDITION && deaths1 < WIN_CONDITION) {
             return 1; // Team 1 wins the round
         }
         return 0; // No winner yet
@@ -263,6 +287,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public void cleanup() {
         cancelTask(selectionTask);
+        cancelTask(suddenDeathCycleTask);
         suddenDeathManager.cleanup();
         presidents.clear();
         teamKillCount.clear();
@@ -297,11 +322,22 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public String getBuyPhaseMessage() {
         if (suddenDeathManager.isInSuddenDeath()) {
             return "<yellow>The game has entered sudden death. Money bonuses have been replaced with an extra heart " +
-                    "that lasts for 45 seconds. Eliminate the other team's president 4 times to win!</yellow>";
+                    "that lasts for 45 seconds. The penalty timer has doubled. Eliminate the other team's president " +
+                    "more times in 3 minutes to win the match!</yellow>";
         }
 
         return "<yellow>Best of 7 series - First to 4 assassinations wins! " +
                 "Every 2 kills the president's team gets a split 15k bonus!</yellow>";
+    }
+
+    @Override
+    public void onFinalStandActivated() {
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.final-stand-activated");
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.border-closing");
+        activateFinalStandElimination();
+        startFinalStandBorder();
+        finalStandTriggered = true;
+        Messages.debug("[PTP] Final Stand activated - non-Presidents will be eliminated");
     }
 
     /**
@@ -442,10 +478,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         for (int team = 1; team <= 2; team++) {
             President pres = presidents.get(team);
-            if (pres != null && !pres.hasSelectedBuff()) {
+            if (pres != null && getSelectedBuffs(pres.uuid()).isEmpty()) {
                 PresidentialBuff randomBuff = buffs[(int) (Math.random() * buffs.length)];
                 President updatedPres = pres.withBuff(randomBuff);
                 presidents.put(team, updatedPres);
+                selectedBuffs.put(pres.uuid(), new ArrayList<>(List.of(randomBuff)));
 
                 Player presPlayer = getPresidentPlayerByTeam(team);
                 if (presPlayer != null) {
@@ -453,7 +490,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
                     Messages.send(presPlayer, "gamemode-ptp.no-buff-selected", "buff_name", randomBuff.getName());
                 }
             } else if (pres != null) {
-                Messages.debug("[PTP] Team " + team + " - President selected buff: " + pres.selectedBuff().getName());
+                Messages.debug("[PTP] Team " + team + " - President selected buffs: " + getPresidentBuff(team));
                 // Don't apply glow here - will be applied at combat start
             }
         }
@@ -539,39 +576,40 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
 
         President pres = getPresidentByUUID(presPlayer.getUniqueId());
-        if (pres == null || !pres.hasSelectedBuff()) {
+        List<PresidentialBuff> buffs = getSelectedBuffs(presPlayer.getUniqueId());
+        if (pres == null || buffs.isEmpty()) {
             Messages.debug("[PTP] No buff found for president: " + presPlayer.getName());
             return;
         }
 
-        PresidentialBuff buff = pres.selectedBuff();
-
-        // Use INFINITE_DURATION - buffs will be explicitly removed on round end via clearPresidentialBuffs()
-        switch (buff) {
-            case OFFENSE -> {
-                presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, PotionEffect.INFINITE_DURATION, 0, false, false));
-                Messages.debug("[PTP] Applied Strength buff to: " + presPlayer.getName());
-            }
-            case TANK -> {
-                presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, 0, false, false));
-                Messages.debug("[PTP] Applied Resistance buff to: " + presPlayer.getName());
-            }
-            case SPEED -> {
-                presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION, 0, false, false));
-                Messages.debug("[PTP] Applied Speed buff to: " + presPlayer.getName());
-            }
-            case HP -> {
-                // Add 3 extra hearts (permanent for this round, will be reset on round end)
-                UUID presUuid = presPlayer.getUniqueId();
-                var cashPlayer = session.getCashClashPlayer(presUuid);
-                if (cashPlayer != null) {
-                    cashPlayer.setHealthModifier(6.0); // 6 health = 3 hearts
-                    Messages.debug("[PTP] Applied +3 hearts buff to: " + presPlayer.getName());
+        for (PresidentialBuff buff : buffs) {
+            // Use INFINITE_DURATION - buffs will be explicitly removed on round end via clearPresidentialBuffs()
+            switch (buff) {
+                case OFFENSE -> {
+                    presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, PotionEffect.INFINITE_DURATION, 0, false, false));
+                    Messages.debug("[PTP] Applied Strength buff to: " + presPlayer.getName());
+                }
+                case TANK -> {
+                    presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, 0, false, false));
+                    Messages.debug("[PTP] Applied Resistance buff to: " + presPlayer.getName());
+                }
+                case SPEED -> {
+                    presPlayer.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION, 0, false, false));
+                    Messages.debug("[PTP] Applied Speed buff to: " + presPlayer.getName());
+                }
+                case HP -> {
+                    // Add 3 extra hearts (permanent for this round, will be reset on round end)
+                    UUID presUuid = presPlayer.getUniqueId();
+                    var cashPlayer = session.getCashClashPlayer(presUuid);
+                    if (cashPlayer != null) {
+                        cashPlayer.setHealthModifier(6.0); // 6 health = 3 hearts
+                        Messages.debug("[PTP] Applied +3 hearts buff to: " + presPlayer.getName());
+                    }
                 }
             }
-        }
 
-        Messages.send(presPlayer, "gamemode-ptp.buff-activated", "buff_name", buff.getName());
+            Messages.send(presPlayer, "gamemode-ptp.buff-activated", "buff_name", buff.getName());
+        }
     }
 
     public boolean isNotPresident(UUID uuid) {
@@ -637,6 +675,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public void enterSuddenDeath() {
         suddenDeathManager.enterSuddenDeath();
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
+        startSuddenDeathCycle();
     }
 
     /**
@@ -663,15 +703,76 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
     }
 
+    private void startFinalStandBorder() {
+        if (session.getGameWorld() == null) {
+            return;
+        }
+
+        Location center = getArenaCenter();
+        WorldBorder border = session.getGameWorld().getWorldBorder();
+        border.setCenter(center);
+        border.setSize(120.0);
+        border.setDamageAmount(1.0);
+        border.setDamageBuffer(0.0);
+        border.setSize(20.0, 30L);
+    }
+
+    private Location getArenaCenter() {
+        Player pres1 = getPresidentPlayerByTeam(1);
+        Player pres2 = getPresidentPlayerByTeam(2);
+        if (pres1 != null && pres2 != null) {
+            Location loc1 = pres1.getLocation();
+            Location loc2 = pres2.getLocation();
+            return new Location(session.getGameWorld(),
+                    (loc1.getX() + loc2.getX()) / 2.0,
+                    (loc1.getY() + loc2.getY()) / 2.0,
+                    (loc1.getZ() + loc2.getZ()) / 2.0);
+        }
+        return session.getGameWorld().getSpawnLocation();
+    }
+
+    private void startSuddenDeathCycle() {
+        suddenDeathPresidentKills.put(1, 0);
+        suddenDeathPresidentKills.put(2, 0);
+        suddenDeathCycle = Math.max(suddenDeathCycle, 0) + 1;
+        suddenDeathCycleStartMs = System.currentTimeMillis();
+        cancelTask(suddenDeathCycleTask);
+        suddenDeathCycleTask = SchedulerUtils.runTaskTimer(this::checkSuddenDeathCycle, 20L, 20L);
+    }
+
+    private void checkSuddenDeathCycle() {
+        if (!suddenDeathManager.isInSuddenDeath() || suddenDeathWinningTeam > 0) {
+            return;
+        }
+
+        if (getSuddenDeathTimerRemainingSeconds() > 0) {
+            return;
+        }
+
+        int team1Kills = suddenDeathPresidentKills.getOrDefault(1, 0);
+        int team2Kills = suddenDeathPresidentKills.getOrDefault(2, 0);
+
+        if (team1Kills == team2Kills) {
+            Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
+            startSuddenDeathCycle();
+            return;
+        }
+
+        suddenDeathWinningTeam = team1Kills > team2Kills ? 1 : 2;
+    }
+
     /**
      * Get the buff for a president's team
      */
     public String getPresidentBuff(int teamNumber) {
         President pres = presidents.get(teamNumber);
-        if (pres == null || !pres.hasSelectedBuff()) {
+        if (pres == null || getSelectedBuffs(pres.uuid()).isEmpty()) {
             return "None";
         }
-        return pres.selectedBuff().getName();
+        return getSelectedBuffs(pres.uuid()).stream()
+                .map(PresidentialBuff::getName)
+                .reduce((first, second) -> first + ", " + second)
+                .orElse("None");
     }
 
     /**
@@ -720,16 +821,17 @@ public class ProtectThePresidentGamemode extends Gamemode {
         if (pres == null) {
             return false;
         }
+        List<PresidentialBuff> buffs = selectedBuffs.computeIfAbsent(playerUuid, uuid -> new ArrayList<>());
 
         // In sudden death, allow 2 buffs; otherwise allow 1
-        int buffCountForPres = selectedBuffCount.getOrDefault(playerUuid, 0);
         int maxBuffs = suddenDeathManager.isInSuddenDeath() ? 2 : 1;
 
         // Check if already selected - if so, deselect
-        if (pres.hasSelectedBuff() && pres.selectedBuff() == buff) {
-            President updatedPres = pres.withResetBuff();
+        if (buffs.contains(buff)) {
+            buffs.remove(buff);
+            President updatedPres = buffs.isEmpty() ? pres.withResetBuff() : pres.withBuff(buffs.getFirst());
             presidents.put(presTeam, updatedPres);
-            selectedBuffCount.put(playerUuid, buffCountForPres - 1);
+            selectedBuffCount.put(playerUuid, buffs.size());
             Messages.debug("[PTP] " + player.getName() + " deselected buff: " + buff.getName());
             Messages.send(player, "gamemode-ptp.buff-deselected");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
@@ -737,9 +839,12 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
         
         // In non-sudden death, allow replacing the current buff
-        if (!suddenDeathManager.isInSuddenDeath() && pres.hasSelectedBuff()) {
+        if (!suddenDeathManager.isInSuddenDeath() && !buffs.isEmpty()) {
+            buffs.clear();
+            buffs.add(buff);
             President updatedPres = pres.withBuff(buff);
             presidents.put(presTeam, updatedPres);
+            selectedBuffCount.put(playerUuid, 1);
             Messages.debug("[PTP] " + player.getName() + " replaced buff with: " + buff.getName());
             Messages.send(player, "gamemode-ptp.buff-selected-player", "buff_name", buff.getName());
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
@@ -747,19 +852,49 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
         
         // Check if we can select another buff (for sudden death with multiple buffs)
-        if (buffCountForPres >= maxBuffs) {
+        if (buffs.size() >= maxBuffs) {
             Messages.send(player, "gamemode-ptp.buff-selection-limit", "max_buffs", String.valueOf(maxBuffs));
             return false;
         }
 
         // Select new buff
+        buffs.add(buff);
         President updatedPres = pres.withBuff(buff);
         presidents.put(presTeam, updatedPres);
-        selectedBuffCount.put(playerUuid, buffCountForPres + 1);
+        selectedBuffCount.put(playerUuid, buffs.size());
         Messages.debug("[PTP] " + player.getName() + " selected buff: " + buff.getName());
         Messages.send(player, "gamemode-ptp.buff-selected-player", "buff_name", buff.getName());
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
         return true;
+    }
+
+    private List<PresidentialBuff> getSelectedBuffs(UUID playerUuid) {
+        return selectedBuffs.getOrDefault(playerUuid, List.of());
+    }
+
+    @Override
+    public boolean isFinalStandActive() {
+        return suddenDeathManager.isFinalStandActive();
+    }
+
+    @Override
+    public int getSuddenDeathTimerRemainingSeconds() {
+        if (!suddenDeathManager.isInSuddenDeath() || suddenDeathManager.isFinalStandActive() || suddenDeathCycleStartMs <= 0) {
+            return -1;
+        }
+
+        long elapsedSeconds = (System.currentTimeMillis() - suddenDeathCycleStartMs) / 1000;
+        return (int) Math.max(0, SUDDEN_DEATH_CYCLE_SECONDS - elapsedSeconds);
+    }
+
+    @Override
+    public int getSuddenDeathCycle() {
+        return suddenDeathCycle;
+    }
+
+    @Override
+    public long getExtraHeartRemainingMs(UUID playerUuid) {
+        return suddenDeathManager.getExtraHeartRemainingMs(playerUuid);
     }
 
     /**
