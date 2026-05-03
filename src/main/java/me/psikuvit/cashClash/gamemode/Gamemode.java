@@ -3,6 +3,8 @@ package me.psikuvit.cashClash.gamemode;
 import me.psikuvit.cashClash.game.GameSession;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
+
 /**
  * Abstract base class for all gamemodes.
  * Each gamemode implements its own win conditions, mechanics, and special features.
@@ -82,5 +84,30 @@ public abstract class Gamemode {
      * Get custom message to display in buy phase
      */
     public abstract String getBuyPhaseMessage();
+
+    /**
+     * Called when Final Stand is activated (5 minute timer expires during sudden death)
+     * Gamemodes can override this to handle final stand specific logic
+     * Default: no special handling
+     */
+    public void onFinalStandActivated() {
+        // Default: no special handling
+    }
+
+    public boolean isFinalStandActive() {
+        return false;
+    }
+
+    public int getSuddenDeathTimerRemainingSeconds() {
+        return -1;
+    }
+
+    public int getSuddenDeathCycle() {
+        return 0;
+    }
+
+    public long getExtraHeartRemainingMs(UUID playerUuid) {
+        return -1;
+    }
 }
 
