@@ -283,6 +283,50 @@ scoreboard:
       - "Time: {time}"
       - ""
 
+  # Capture the Flag - Sudden Death scoreboard
+  capture-the-flag-sudden-death:
+    enabled: true
+    title: "<gold><bold>⚡ SUDDEN DEATH ⚡</bold></gold>"
+    lines:
+      - ""
+      - "<gold><bold>SUDDEN DEATH ACTIVATED!</bold></gold>"
+      - ""
+      - "<red>Team Red</red>"
+      - "Captures: {teamRed_captures}"
+      - "Round Captures: {teamRed_round_captures}"
+      - "Coins: {teamRed_coins}"
+      - ""
+      - "<blue>Team Blue</blue>"
+      - "Captures: {teamBlue_captures}"
+      - "Round Captures: {teamBlue_round_captures}"
+      - "Coins: {teamBlue_coins}"
+      - ""
+      - "<yellow>Round {round}</yellow>"
+      - "Time: {time}"
+      - ""
+
+  # Protect the President - Sudden Death scoreboard
+  protect-the-president-sudden-death:
+    enabled: true
+    title: "<gold><bold>⚡ SUDDEN DEATH ⚡</bold></gold>"
+    lines:
+      - ""
+      - "<gold><bold>SUDDEN DEATH ACTIVATED!</bold></gold>"
+      - ""
+      - "<red>Team Red</red>"
+      - "President: {red_president}"
+      - "Round Kills: {teamRed_round_kills}"
+      - "Coins: {teamRed_coins}"
+      - ""
+      - "<blue>Team Blue</blue>"
+      - "President: {blue_president}"
+      - "Round Kills: {teamBlue_round_kills}"
+      - "Coins: {teamBlue_coins}"
+      - ""
+      - "<yellow>Round {round}</yellow>"
+      - "Time: {time}"
+      - ""
+
 # ============================================
 # NPC CONFIGURATION
 # ============================================
@@ -308,5 +352,4 @@ rejoin:
   restore-inventory: true
   # Restore player balance on rejoin
   restore-balance: true
-
 

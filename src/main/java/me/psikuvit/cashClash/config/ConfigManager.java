@@ -273,6 +273,22 @@ public class ConfigManager {
         return config.getStringList("scoreboard.protect-the-president.lines");
     }
 
+    public String getCTFSuddenDeathScoreboardTitle() {
+        return config.getString("scoreboard.capture-the-flag-sudden-death.title", "<gold><bold>⚡ SUDDEN DEATH ⚡</bold></gold>");
+    }
+
+    public List<String> getCTFSuddenDeathScoreboardLines() {
+        return config.getStringList("scoreboard.capture-the-flag-sudden-death.lines");
+    }
+
+    public String getPTPSuddenDeathScoreboardTitle() {
+        return config.getString("scoreboard.protect-the-president-sudden-death.title", "<gold><bold>⚡ SUDDEN DEATH ⚡</bold></gold>");
+    }
+
+    public List<String> getPTPSuddenDeathScoreboardLines() {
+        return config.getStringList("scoreboard.protect-the-president-sudden-death.lines");
+    }
+
     // ==================== NPC SETTINGS ====================
 
     /**

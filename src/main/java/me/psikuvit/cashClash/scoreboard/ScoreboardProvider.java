@@ -52,23 +52,41 @@ public class ScoreboardProvider {
             return LOBBY_CONTEXT;
         }
 
+        // Check if in sudden death
+        boolean inSuddenDeath = session.getGamemode().getSuddenDeathManager().isInSuddenDeath();
+
         return new ScoreboardContext() {
             @Override
             public Component getTitle(Player player, GameSession session) {
-                String configTitle = switch (session.getGamemode().getType()) {
-                    case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFScoreboardTitle();
-                    case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPScoreboardTitle();
-                };
+                String configTitle;
+                if (inSuddenDeath) {
+                    configTitle = switch (session.getGamemode().getType()) {
+                        case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFSuddenDeathScoreboardTitle();
+                        case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPSuddenDeathScoreboardTitle();
+                    };
+                } else {
+                    configTitle = switch (session.getGamemode().getType()) {
+                        case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFScoreboardTitle();
+                        case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPScoreboardTitle();
+                    };
+                }
                 String filled = fillPlaceholders(configTitle, player, session);
                 return Messages.parse(filled);
             }
 
             @Override
             public List<String> getLines(Player player, GameSession session) {
-                return switch (session.getGamemode().getType()) {
-                    case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFScoreboardLines();
-                    case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPScoreboardLines();
-                };
+                if (inSuddenDeath) {
+                    return switch (session.getGamemode().getType()) {
+                        case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFSuddenDeathScoreboardLines();
+                        case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPSuddenDeathScoreboardLines();
+                    };
+                } else {
+                    return switch (session.getGamemode().getType()) {
+                        case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFScoreboardLines();
+                        case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPScoreboardLines();
+                    };
+                }
             }
 
             @Override
@@ -82,10 +100,17 @@ public class ScoreboardProvider {
 
             @Override
             public ContextType getContextType() {
-                return switch (session.getGamemode().getType()) {
-                    case CAPTURE_THE_FLAG -> ContextType.CTF;
-                    case PROTECT_THE_PRESIDENT -> ContextType.PTP;
-                };
+                if (inSuddenDeath) {
+                    return switch (session.getGamemode().getType()) {
+                        case CAPTURE_THE_FLAG -> ContextType.CTF_SUDDEN_DEATH;
+                        case PROTECT_THE_PRESIDENT -> ContextType.PTP_SUDDEN_DEATH;
+                    };
+                } else {
+                    return switch (session.getGamemode().getType()) {
+                        case CAPTURE_THE_FLAG -> ContextType.CTF;
+                        case PROTECT_THE_PRESIDENT -> ContextType.PTP;
+                    };
+                }
             }
         };
     }

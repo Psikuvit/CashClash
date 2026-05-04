@@ -117,5 +117,9 @@ public abstract class Gamemode {
     public long getExtraHeartRemainingMs(UUID playerUuid) {
         return -1;
     }
-}
 
+    /**
+     * Get the sudden death manager for this gamemode
+     */
+    public abstract SuddenDeathManager getSuddenDeathManager();
+}

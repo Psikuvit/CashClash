@@ -8,7 +8,9 @@ public enum ContextType {
     LOBBY("LOBBY"),
     GAME_DEFAULT("DEFAULT_GAME"),
     CTF("CTF"),
-    PTP("PTP");
+    PTP("PTP"),
+    CTF_SUDDEN_DEATH("CTF_SUDDEN_DEATH"),
+    PTP_SUDDEN_DEATH("PTP_SUDDEN_DEATH");
 
     private final String displayName;
 

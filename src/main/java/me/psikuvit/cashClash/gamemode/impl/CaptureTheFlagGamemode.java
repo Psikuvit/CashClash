@@ -627,6 +627,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return suddenDeathManager.getExtraHeartRemainingMs(playerUuid);
     }
 
+    @Override
+    public SuddenDeathManager getSuddenDeathManager() {
+        return suddenDeathManager;
+    }
+
     /**
      * Start flag pickup task - checks if players are standing in flag capture circles
      * Players must stand in the circle for 3 seconds to pick up the flag
