@@ -46,6 +46,7 @@ public class RoundManager {
 
     public void startShoppingPhase(int roundNumber) {
         Messages.debug("GAME", "Starting shopping phase for round " + roundNumber + " in session " + session.getSessionId());
+        prepareSuddenDeathRoundIfNeeded();
 
         // For Protect the President, run buff selection phase first
         if (session.getGamemode() instanceof ProtectThePresidentGamemode ptp) {
@@ -57,6 +58,16 @@ public class RoundManager {
 
         // Run shopping phase directly
         startPhase(roundNumber, GameState.SHOPPING);
+    }
+
+    private void prepareSuddenDeathRoundIfNeeded() {
+        if (session.getGamemode() == null) {
+            return;
+        }
+
+        if (session.getRoundWins(1) == 3 && session.getRoundWins(2) == 3) {
+            session.getGamemode().prepareSuddenDeathRound();
+        }
     }
 
     /**
