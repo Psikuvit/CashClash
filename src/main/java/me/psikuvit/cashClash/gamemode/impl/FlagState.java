@@ -18,62 +18,78 @@ public record FlagState(
         BlockDisplay bannerDisplay,
         double bannerAngle,
         BukkitTask carryingTask,
-        double carryingAngle
+        double carryingAngle,
+        long dropTime,
+        int pickupDurationSeconds
 ) {
     /**
      * Create a new flag state with default values
      */
     public static FlagState create() {
-        return new FlagState(null, 0, null, null, 0.0, null, 0.0);
+        return new FlagState(null, 0, null, null, 0.0, null, 0.0, 0L, 3);
     }
 
     /**
      * Create a flag state with a holder picked up
      */
     public FlagState withHolder(UUID holderUuid, long captureTime) {
-        return new FlagState(holderUuid, captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle);
+        return new FlagState(holderUuid, captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle, this.dropTime, this.pickupDurationSeconds);
     }
 
     /**
      * Create a flag state with holder removed
      */
     public FlagState withoutHolder() {
-        return new FlagState(null, 0, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle);
+        return new FlagState(null, 0, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle, this.dropTime, this.pickupDurationSeconds);
     }
 
     /**
      * Create a flag state with an updated current pickup location.
      */
     public FlagState withFlagLoc(Location location) {
-        return new FlagState(this.holder, this.captureTime, location, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle);
+        return new FlagState(this.holder, this.captureTime, location, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle, this.dropTime, this.pickupDurationSeconds);
     }
 
     /**
      * Create a flag state with banner display set
      */
     public FlagState withBannerDisplay(BlockDisplay banner) {
-        return new FlagState(this.holder, this.captureTime, this.flagLoc, banner, this.bannerAngle, this.carryingTask, this.carryingAngle);
+        return new FlagState(this.holder, this.captureTime, this.flagLoc, banner, this.bannerAngle, this.carryingTask, this.carryingAngle, this.dropTime, this.pickupDurationSeconds);
     }
 
     /**
      * Create a flag state with updated banner angle
      */
     public FlagState withBannerAngle(double angle) {
-        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, angle, this.carryingTask, this.carryingAngle);
+        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, angle, this.carryingTask, this.carryingAngle, this.dropTime, this.pickupDurationSeconds);
     }
 
     /**
      * Create a flag state with carrying task
      */
     public FlagState withCarryingTask(BukkitTask task) {
-        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, task, this.carryingAngle);
+        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, task, this.carryingAngle, this.dropTime, this.pickupDurationSeconds);
     }
 
     /**
      * Create a flag state with updated carrying angle
      */
     public FlagState withCarryingAngle(double angle) {
-        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, angle);
+        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, angle, this.dropTime, this.pickupDurationSeconds);
+    }
+
+    /**
+     * Create a flag state with drop time
+     */
+    public FlagState withDropTime(long dropTime) {
+        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle, dropTime, this.pickupDurationSeconds);
+    }
+
+    /**
+     * Create a flag state with updated pickup duration in seconds
+     */
+    public FlagState withPickupDuration(int seconds) {
+        return new FlagState(this.holder, this.captureTime, this.flagLoc, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle, this.dropTime, seconds);
     }
 
     /**
@@ -81,6 +97,13 @@ public record FlagState(
      */
     public Location getFlagLoc() {
         return flagLoc != null ? flagLoc.clone().add(0, 2, 0) : null;
+    }
+
+    /**
+     * Check if flag is currently dropped (has a drop time)
+     */
+    public boolean isDropped() {
+        return dropTime > 0;
     }
 
     /**

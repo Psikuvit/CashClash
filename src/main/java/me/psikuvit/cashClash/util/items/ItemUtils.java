@@ -6,8 +6,10 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Messages;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -295,5 +297,101 @@ public final class ItemUtils {
             case LEGGINGS -> inv.getLeggings();
             case BOOTS -> inv.getBoots();
         };
+    }
+
+    /**
+     * Update silenced state visually - grey out movement ability items in player's inventory.
+     * Uses PDC detection for precise item identification.
+     *
+     * @param player The player to update display for
+     * @param isSilenced Whether the player should have items greyed out
+     */
+    public static void updateSilencedItemDisplay(Player player, boolean isSilenced) {
+        if (isSilenced) {
+            greyOutMovementAbilityItems(player);
+        } else {
+            restoreNormalItemDisplay(player);
+        }
+    }
+
+    /**
+     * Grey out items that block movement abilities when silenced.
+     * Silenced only affects MOVEMENT abilities:
+     * - Wind Bow (jump boost)
+     * - Electric Eel Sword (teleport dash)
+     * - Goblin Spear (dash)
+     * - Bunny Shoes (speed/jump)
+     *
+     * @param player The player whose items should be greyed out
+     */
+    public static void greyOutMovementAbilityItems(Player player) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType().isAir()) continue;
+
+            ItemMeta meta = item.getItemMeta();
+            if (meta == null || !meta.hasDisplayName()) continue;
+
+            boolean shouldGrey = false;
+
+            // Check for movement mythic items using PDC
+            MythicItem mythic = PDCDetection.getMythic(item);
+            if (mythic == MythicItem.WIND_BOW ||
+                    mythic == MythicItem.ELECTRIC_EEL_SWORD ||
+                    mythic == MythicItem.GOBLIN_SPEAR) {
+                shouldGrey = true;
+            }
+
+            // Check for movement custom armor using PDC
+            CustomArmorItem armor = PDCDetection.getCustomArmor(item);
+            if (armor == CustomArmorItem.BUNNY_SHOES) {
+                shouldGrey = true;
+            }
+
+            if (shouldGrey) {
+                Component currentComp = meta.displayName();
+                String currentStr = Messages.parseToLegacy(currentComp);
+
+                // Only grey if not already greyed
+                if (!currentStr.contains("<gray>") && !currentStr.contains("☒")) {
+                    // Add grey marker to display name
+                    String greyedDisplay = "<gray>☒ " + currentStr + "</gray>";
+                    meta.displayName(Messages.parse(greyedDisplay));
+                    item.setItemMeta(meta);
+                }
+            }
+        }
+    }
+
+    /**
+     * Restore normal item display when player is no longer silenced.
+     * Removes grey markers from movement ability items.
+     *
+     * @param player The player whose items should be restored
+     */
+    public static void restoreNormalItemDisplay(Player player) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType().isAir()) continue;
+
+            ItemMeta meta = item.getItemMeta();
+            if (meta == null || !meta.hasDisplayName()) continue;
+
+            Component displayComp = meta.displayName();
+            String displayStr = Messages.parseToLegacy(displayComp);
+
+            // Remove grey marker if present
+            if (displayStr.contains("<gray>") && displayStr.contains("☒")) {
+                // Try to restore by removing grey wrapper
+                String restored = displayStr
+                        .replace("<gray>", "")
+                        .replace("</gray>", "")
+                        .replace("☒ ", "")
+                        .trim();
+
+                if (!restored.isEmpty()) {
+                    meta.displayName(Messages.parse(restored));
+                    item.setItemMeta(meta);
+                }
+            }
+        }
     }
 }

@@ -5,24 +5,19 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
-import me.psikuvit.cashClash.shop.items.CustomArmorItem;
-import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
-import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.items.PDCDetection;
-import net.kyori.adventure.text.Component;
+import me.psikuvit.cashClash.util.game.FlagBannerUtils;
+import me.psikuvit.cashClash.util.game.FlagPickupValidator;
+import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -44,11 +39,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private static final int GLOW_INTERVAL_TICKS = 100; // 5 seconds
     private static final long CAPTURE_BONUS = 15000;
     private static final long CAPTURE_TIMER_MS = 45 * 1000; // 45 seconds for bonus
-    private static final double BANNER_ORBIT_RADIUS = 2; // Distance from plate center
-    private static final double BANNER_ANGULAR_SPEED = 0.03; // Radians per tick - smooth rotation
     private static final long FLAG_PICKUP_DURATION_MS = 3000; // 3 seconds to pick up flag
-    private static final double CIRCLE_RADIUS = 1.5; // Radius of flag pickup circle
-    private static final double SCORE_ZONE_RADIUS = 1.5; // Radius of scoring zone around team banner location
 
     private final Map<Integer, Integer> flagCaptures;
     private final Map<Integer, Integer> suddenDeathCycleCaptures;
@@ -60,17 +51,17 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Set<UUID> stalemateMsgShown; // Track players who've been told about stalemate in current state
     private final Map<UUID, Long> playerHeartTimestamps; // Track when each player received a heart bonus (for 45s timer)
 
-     private final SuddenDeathManager suddenDeathManager;
-     private BukkitTask carrierGlowTask;
-     private BukkitTask captureTimerTask;
-     private BukkitTask bannerRotationTask;
-     private BukkitTask flagPickupTask;
-     private BukkitTask bonusTimerDisplayTask;
-     private BukkitTask heartTimerDisplayTask;
-     private BukkitTask suddenDeathCycleTask;
-     private long suddenDeathCycleStartMs;
-     private int suddenDeathCycle;
-     private int suddenDeathWinningTeam;
+    private final SuddenDeathManager suddenDeathManager;
+    private BukkitTask carrierGlowTask;
+    private BukkitTask captureTimerTask;
+    private BukkitTask bannerRotationTask;
+    private BukkitTask flagPickupTask;
+    private BukkitTask bonusTimerDisplayTask;
+    private BukkitTask heartTimerDisplayTask;
+    private BukkitTask suddenDeathCycleTask;
+    private long suddenDeathCycleStartMs;
+    private int suddenDeathCycle;
+    private int suddenDeathWinningTeam;
 
     public CaptureTheFlagGamemode(GameSession session) {
         super(session, GamemodeType.CAPTURE_THE_FLAG);
@@ -85,17 +76,17 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.playerNearestFlagTeam = new HashMap<>();
         this.stalemateMsgShown = new HashSet<>();
         this.playerHeartTimestamps = new HashMap<>();
-         this.suddenDeathManager = new SuddenDeathManager(session, this);
-         this.carrierGlowTask = null;
-         this.captureTimerTask = null;
-         this.bannerRotationTask = null;
-         this.flagPickupTask = null;
-         this.bonusTimerDisplayTask = null;
-         this.heartTimerDisplayTask = null;
-         this.suddenDeathCycleTask = null;
-         this.suddenDeathCycleStartMs = 0L;
-         this.suddenDeathCycle = 0;
-         this.suddenDeathWinningTeam = 0;
+        this.suddenDeathManager = new SuddenDeathManager(session, this);
+        this.carrierGlowTask = null;
+        this.captureTimerTask = null;
+        this.bannerRotationTask = null;
+        this.flagPickupTask = null;
+        this.bonusTimerDisplayTask = null;
+        this.heartTimerDisplayTask = null;
+        this.suddenDeathCycleTask = null;
+        this.suddenDeathCycleStartMs = 0L;
+        this.suddenDeathCycle = 0;
+        this.suddenDeathWinningTeam = 0;
 
         // Pre-populate flag states and capture map
         flagCaptures.put(1, 0);
@@ -116,80 +107,80 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.bonus-info");
     }
 
-     @Override
-     public void onCombatPhaseStart() {
-         Messages.debug("[CTF] Combat phase started");
-         if (suddenDeathManager.isInSuddenDeath()) {
-             startSuddenDeathCombatTimers();
-         }
+    @Override
+    public void onCombatPhaseStart() {
+        Messages.debug("[CTF] Combat phase started");
+        if (suddenDeathManager.isInSuddenDeath()) {
+            startSuddenDeathCombatTimers();
+        }
 
-          // Initialize banners at flag plates
-          initializeBanners();
+        // Initialize banners at flag plates
+        initializeBanners();
 
-          // Reset flag state each round
-          flagStates.put(1, flagStates.get(1).withoutHolder());
-          flagStates.put(2, flagStates.get(2).withoutHolder());
+        // Reset flag state each round
+        flagStates.put(1, flagStates.get(1).withoutHolder());
+        flagStates.put(2, flagStates.get(2).withoutHolder());
 
-          // Clear circle tracking data
-          playerCircleTimestamps.clear();
-          playerNearestFlagTeam.clear();
-          stalemateMsgShown.clear();
-          playerHeartTimestamps.clear();
+        // Clear circle tracking data
+        playerCircleTimestamps.clear();
+        playerNearestFlagTeam.clear();
+        stalemateMsgShown.clear();
+        playerHeartTimestamps.clear();
 
-         // Start carrier glow effect task
-         startCarrierGlowEffect();
+        // Start carrier glow effect task
+        startCarrierGlowEffect();
 
-         // Start capture timer task
-         startCaptureTimerTask();
+        // Start capture timer task
+        startCaptureTimerTask();
 
-         // Start banner rotation task
-         startBannerRotationTask();
+        // Start banner rotation task
+        startBannerRotationTask();
 
-         // Start flag pickup task (3-second circle mechanic)
-         startFlagPickupTask();
+        // Start flag pickup task (3-second circle mechanic)
+        startFlagPickupTask();
 
-         // ISSUE 5: Start bonus timer display for flag carriers
-         startBonusTimerDisplayTask();
+        // ISSUE 5: Start bonus timer display for flag carriers
+        startBonusTimerDisplayTask();
 
-         // Start heart timer display for sudden death bonuses
-         startHeartTimerDisplayTask();
-     }
+        // Start heart timer display for sudden death bonuses
+        startHeartTimerDisplayTask();
+    }
 
-      @Override
-      public void onRoundEnd() {
-          // Remove all banners from players and reset positions
-          removeBannersFromPlayers();
+    @Override
+    public void onRoundEnd() {
+        // Remove all banners from players and reset positions
+        removeBannersFromPlayers();
 
-          // Reset state for next round
-          suddenDeathManager.resetForNewRound();
-          flagCaptures.put(1, 0);
-          flagCaptures.put(2, 0);
-          suddenDeathCycleCaptures.put(1, 0);
-          suddenDeathCycleCaptures.put(2, 0);
-          suddenDeathCycleStartMs = 0L;
-          suddenDeathCycle = 0;
-          suddenDeathWinningTeam = 0;
-         cancelTask(suddenDeathCycleTask);
-         flagReturnTasks.values().forEach(this::cancelTask);
-         flagReturnTasks.clear();
-          // Reset flag states but preserve the plate locations and banners for next round
-          returnFlagToBase(1);
-          returnFlagToBase(2);
-          stalemateMsgShown.clear();
+        // Reset state for next round
+        suddenDeathManager.resetForNewRound();
+        flagCaptures.put(1, 0);
+        flagCaptures.put(2, 0);
+        suddenDeathCycleCaptures.put(1, 0);
+        suddenDeathCycleCaptures.put(2, 0);
+        suddenDeathCycleStartMs = 0L;
+        suddenDeathCycle = 0;
+        suddenDeathWinningTeam = 0;
+        cancelTask(suddenDeathCycleTask);
+        flagReturnTasks.values().forEach(this::cancelTask);
+        flagReturnTasks.clear();
+        // Reset flag states but preserve the plate locations and banners for next round
+        returnFlagToBase(1);
+        returnFlagToBase(2);
+        stalemateMsgShown.clear();
 
-         // Clear circle tracking data
-         playerCircleTimestamps.clear();
-         playerNearestFlagTeam.clear();
-         playerHeartTimestamps.clear();
+        // Clear circle tracking data
+        playerCircleTimestamps.clear();
+        playerNearestFlagTeam.clear();
+        playerHeartTimestamps.clear();
 
-         // Reset task references (tasks will be recreated in next combat phase)
-         this.carrierGlowTask = null;
-         this.captureTimerTask = null;
-         this.bannerRotationTask = null;
-         this.flagPickupTask = null;
-         this.bonusTimerDisplayTask = null;
-         this.heartTimerDisplayTask = null;
-     }
+        // Reset task references (tasks will be recreated in next combat phase)
+        this.carrierGlowTask = null;
+        this.captureTimerTask = null;
+        this.bannerRotationTask = null;
+        this.flagPickupTask = null;
+        this.bonusTimerDisplayTask = null;
+        this.heartTimerDisplayTask = null;
+    }
 
     @Override
     public void onPlayerDeath(Player victim, Player killer) {
@@ -245,46 +236,46 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return 0;
     }
 
-     @Override
-     public void cleanup() {
-         // Remove banners from all players first
-         removeBannersFromPlayers();
+    @Override
+    public void cleanup() {
+        // Remove banners from all players first
+        removeBannersFromPlayers();
 
-         // Cancel all tasks
-         cancelTask(carrierGlowTask);
-         cancelTask(captureTimerTask);
-         cancelTask(bannerRotationTask);
-         cancelTask(flagPickupTask);
-         cancelTask(bonusTimerDisplayTask);
-         cancelTask(heartTimerDisplayTask);
-         cancelTask(suddenDeathCycleTask);
-         flagReturnTasks.values().forEach(this::cancelTask);
-         flagReturnTasks.clear();
+        // Cancel all tasks
+        cancelTask(carrierGlowTask);
+        cancelTask(captureTimerTask);
+        cancelTask(bannerRotationTask);
+        cancelTask(flagPickupTask);
+        cancelTask(bonusTimerDisplayTask);
+        cancelTask(heartTimerDisplayTask);
+        cancelTask(suddenDeathCycleTask);
+        flagReturnTasks.values().forEach(this::cancelTask);
+        flagReturnTasks.clear();
 
-         // Cancel carrying tasks for all flags
-         for (FlagState flag : flagStates.values()) {
-             if (flag != null && flag.carryingTask() != null) {
-                 cancelTask(flag.carryingTask());
-             }
-         }
+        // Cancel carrying tasks for all flags
+        for (FlagState flag : flagStates.values()) {
+            if (flag != null && flag.carryingTask() != null) {
+                cancelTask(flag.carryingTask());
+            }
+        }
 
-         // Cleanup sudden death manager
-         suddenDeathManager.cleanup();
+        // Cleanup sudden death manager
+        suddenDeathManager.cleanup();
 
-         // Remove banner entities
-         for (FlagState flag : flagStates.values()) {
-             if (flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
-                 flag.bannerDisplay().remove();
-             }
-         }
+        // Remove banner entities
+        for (FlagState flag : flagStates.values()) {
+            if (flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
+                flag.bannerDisplay().remove();
+            }
+        }
 
         flagStates.clear();
         flagBaseLocations.clear();
         flagCaptures.clear();
-         playerCircleTimestamps.clear();
-         playerNearestFlagTeam.clear();
-         playerHeartTimestamps.clear();
-     }
+        playerCircleTimestamps.clear();
+        playerNearestFlagTeam.clear();
+        playerHeartTimestamps.clear();
+    }
 
     @Override
     public String getRoundStartMessage() {
@@ -345,42 +336,42 @@ public class CaptureTheFlagGamemode extends Gamemode {
         SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, 1.5f);
     }
 
-     /**
-      * Handle flag capture (returning to base)
-      */
-     public void flagCapture(Player player, int teamNumber) {
-         flagCaptures.merge(teamNumber, 1, Integer::sum);
-         if (suddenDeathManager.isInSuddenDeath()) {
-             suddenDeathCycleCaptures.merge(teamNumber, 1, Integer::sum);
-         }
-         int captures = flagCaptures.get(teamNumber);
-         int targetCaptures = WIN_CONDITION;
+    /**
+     * Handle flag capture (returning to base)
+     */
+    public void flagCapture(Player player, int teamNumber) {
+        flagCaptures.merge(teamNumber, 1, Integer::sum);
+        if (suddenDeathManager.isInSuddenDeath()) {
+            suddenDeathCycleCaptures.merge(teamNumber, 1, Integer::sum);
+        }
+        int captures = flagCaptures.get(teamNumber);
+        int targetCaptures = WIN_CONDITION;
 
-         Messages.debug("[CTF] Team " + teamNumber + " captured a flag! Total captures: " + captures + "/" + targetCaptures);
-         Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-captured-by-player",
-                 "player_name", player.getName(),
-                 "captures", String.valueOf(captures),
-                 "win_condition", String.valueOf(targetCaptures));
+        Messages.debug("[CTF] Team " + teamNumber + " captured a flag! Total captures: " + captures + "/" + targetCaptures);
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-captured-by-player",
+                "player_name", player.getName(),
+                "captures", String.valueOf(captures),
+                "win_condition", String.valueOf(targetCaptures));
 
-         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+        SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
-         // ISSUE 1: Check if bonus timer has expired before awarding bonus
-         long now = System.currentTimeMillis();
-         int enemyTeamNumber = (teamNumber == 1) ? 2 : 1;
-         FlagState enemyFlag = flagStates.get(enemyTeamNumber);
+        // ISSUE 1: Check if bonus timer has expired before awarding bonus
+        long now = System.currentTimeMillis();
+        int enemyTeamNumber = (teamNumber == 1) ? 2 : 1;
+        FlagState enemyFlag = flagStates.get(enemyTeamNumber);
 
-         boolean bonusEarned = (enemyFlag != null && enemyFlag.captureTime() > 0 &&
-                                (now - enemyFlag.captureTime()) <= CAPTURE_TIMER_MS);
+        boolean bonusEarned = (enemyFlag != null && enemyFlag.captureTime() > 0 &&
+                (now - enemyFlag.captureTime()) <= CAPTURE_TIMER_MS);
 
-         if (bonusEarned) {
-             awardCaptureBonus(teamNumber);
-         } else {
-             // Award base points without bonus
-             Messages.debug("[CTF] Flag captured after 45s - no bonus awarded to Team " + teamNumber);
-         }
+        if (bonusEarned) {
+            awardCaptureBonus(teamNumber);
+        } else {
+            // Award base points without bonus
+            Messages.debug("[CTF] Flag captured after 45s - no bonus awarded to Team " + teamNumber);
+        }
 
-         resetFlagsAfterCapture(teamNumber);
-     }
+        resetFlagsAfterCapture(teamNumber);
+    }
 
     public UUID getFlagHolder(int teamNumber) {
         FlagState flag = flagStates.get(teamNumber);
@@ -401,97 +392,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
         FlagState blueFlag = flagStates.get(2);
 
         return (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid)) ||
-               (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid));
+                (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid));
     }
 
     /**
      * Update silenced state visually - grey out unavailable items in player's inventory
      */
     public void updateSilencedItemDisplay(Player player) {
-        if (!isSilenced(player.getUniqueId())) {
-            // Player is not silenced - restore normal item names
-            restoreNormalItemDisplay(player);
-            return;
-        }
-
-        // Player is silenced - grey out restricted items
-        updateGreyedItems(player);
-    }
-
-    /**
-     * Grey out items that player can't use while silenced
-     * Silenced only affects MOVEMENT abilities:
-     * - Wind Bow (jump boost)
-     * - Electric Eel Sword (teleport dash)
-     * - Goblin Spear (dash)
-     * - Bunny Shoes (speed/jump)
-     */
-    private void updateGreyedItems(Player player) {
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item == null || item.getType().isAir()) continue;
-
-            ItemMeta meta = item.getItemMeta();
-            if (meta == null || !meta.hasDisplayName()) continue;
-
-            boolean shouldGrey = false;
-
-            // Check for movement mythic items using PDC
-            MythicItem mythic = PDCDetection.getMythic(item);
-            if (mythic == MythicItem.WIND_BOW ||
-                mythic == MythicItem.ELECTRIC_EEL_SWORD ||
-                mythic == MythicItem.GOBLIN_SPEAR) {
-                shouldGrey = true;
-            }
-
-            // Check for movement custom armor using PDC
-            CustomArmorItem armor = PDCDetection.getCustomArmor(item);
-            if (armor == CustomArmorItem.BUNNY_SHOES) {
-                shouldGrey = true;
-            }
-
-            if (shouldGrey) {
-                Component currentComp = meta.displayName();
-                String currentStr = Messages.parseToLegacy(currentComp);
-
-                // Only grey if not already greyed
-                if (!currentStr.contains("<gray>") && !currentStr.contains("☒")) {
-                    // Add grey marker to display name
-                    String greyedDisplay = "<gray>☒ " + currentStr + "</gray>";
-                    meta.displayName(Messages.parse(greyedDisplay));
-                    item.setItemMeta(meta);
-                }
-            }
-        }
-    }
-
-    /**
-     * Restore normal item display when player is no longer silenced
-     */
-    private void restoreNormalItemDisplay(Player player) {
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item == null || item.getType().isAir()) continue;
-
-            ItemMeta meta = item.getItemMeta();
-            if (meta == null || !meta.hasDisplayName()) continue;
-
-            Component displayComp = meta.displayName();
-            String displayStr = Messages.parseToLegacy(displayComp);
-
-            // Remove grey marker if present
-            if (displayStr.contains("<gray>") && displayStr.contains("☒")) {
-                // Try to restore by removing grey wrapper
-                String restored = displayStr
-                    .replace("<gray>", "")
-                    .replace("</gray>", "")
-                    .replace("☒ ", "")
-                    .trim();
-
-                if (!restored.isEmpty()) {
-                    meta.displayName(Messages.parse(restored));
-                    item.setItemMeta(meta);
-                }
-            }
-        }
+        ItemUtils.updateSilencedItemDisplay(player, isSilenced(player.getUniqueId()));
     }
 
     // ========= PRIVATE HELPER METHODS =========
@@ -504,10 +412,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Team 1 (Red) flag
         Location redFlagLoc = getRedFlagLocation();
         if (redFlagLoc != null) {
-            BlockDisplay redBanner = spawnFlagBanner(redFlagLoc, Color.RED);
+            BlockDisplay redBanner = FlagBannerUtils.spawnFlagBanner(redFlagLoc, Color.RED);
             if (redBanner != null) {
                 flagBaseLocations.put(1, redFlagLoc.clone());
-                flagStates.put(1, new FlagState(null, 0, redFlagLoc, redBanner, 0.0, null, 0.0));
+                flagStates.put(1, new FlagState(null, 0, redFlagLoc, redBanner, 0.0, null, 0.0, 0L, 3));
                 Messages.debug("[CTF] Spawned Red flag banner at " + redFlagLoc);
             }
         }
@@ -515,10 +423,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Team 2 (Blue) flag
         Location blueFlagLoc = getBlueFlagLocation();
         if (blueFlagLoc != null) {
-            BlockDisplay blueBanner = spawnFlagBanner(blueFlagLoc, Color.BLUE);
+            BlockDisplay blueBanner = FlagBannerUtils.spawnFlagBanner(blueFlagLoc, Color.BLUE);
             if (blueBanner != null) {
                 flagBaseLocations.put(2, blueFlagLoc.clone());
-                flagStates.put(2, new FlagState(null, 0, blueFlagLoc, blueBanner, 0.0, null, 0.0));
+                flagStates.put(2, new FlagState(null, 0, blueFlagLoc, blueBanner, 0.0, null, 0.0, 0L, 3));
                 Messages.debug("[CTF] Spawned Blue flag banner at " + blueFlagLoc);
             }
         }
@@ -547,27 +455,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Spawn a flag banner (BlockDisplay) at a location
-     */
-    private BlockDisplay spawnFlagBanner(Location location, Color color) {
-        if (location == null || location.getWorld() == null) {
-            return null;
-        }
-
-        // Create banner 2 blocks above the flag plate
-        Location bannerLoc = location.clone().add(0, 2, 0);
-
-        // Spawn BlockDisplay entity for the flag
-        return location.getWorld().spawn(bannerLoc, BlockDisplay.class, banner ->{
-
-            // Use a material that matches the team color
-            Material bannerMaterial = color == Color.RED ? Material.RED_BANNER : Material.BLUE_BANNER;
-            banner.setBlock(bannerMaterial.createBlockData());
-
-        });
-    }
-
-    /**
      * Handle flag holder death for a specific team
      */
     private void handleFlagHolderDeath(int teamNumber, UUID victimUuid, Player victim) {
@@ -583,14 +470,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 "color", colorTag,
                 "team_name", teamName);
 
-         dropFlagAtLocation(teamNumber, victim.getLocation());
-         SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
+        dropFlagAtLocation(teamNumber, victim.getLocation());
+        SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
 
-         // Restore normal item display for the flag carrier
-         updateSilencedItemDisplay(victim);
+        // Restore normal item display for the flag carrier
+        updateSilencedItemDisplay(victim);
 
-         // Clear stalemate state since one flag is now down
-         stalemateMsgShown.clear();
+        // Clear stalemate state since one flag is now down
+        stalemateMsgShown.clear();
     }
 
     /**
@@ -654,31 +541,31 @@ public class CaptureTheFlagGamemode extends Gamemode {
         captureTimerTask = SchedulerUtils.runTaskTimer(this::checkCaptureTimers, 0, 20);
     }
 
-      private void checkCaptureTimers() {
-          long now = System.currentTimeMillis();
+    private void checkCaptureTimers() {
+        long now = System.currentTimeMillis();
 
-          FlagState redFlag = flagStates.get(1);
-          FlagState blueFlag = flagStates.get(2);
+        FlagState redFlag = flagStates.get(1);
+        FlagState blueFlag = flagStates.get(2);
 
-          // ISSUE 1: Don't reset flags - they stay in play indefinitely
-          // Bonus is only awarded in flagCapture() if <= 45 seconds have elapsed
-          // Flags auto-reset when captured, not by timer
+        // ISSUE 1: Don't reset flags - they stay in play indefinitely
+        // Bonus is only awarded in flagCapture() if <= 45 seconds have elapsed
+        // Flags auto-reset when captured, not by timer
 
-          // Log info for debugging
-          if (redFlag != null && redFlag.captureTime() > 0) {
-              long elapsed = (now - redFlag.captureTime()) / 1000;
-              if (elapsed == 45) {
-                  Messages.debug("[CTF] Red flag: 45-second bonus window closing. If captured, no bonus.");
-              }
-          }
+        // Log info for debugging
+        if (redFlag != null && redFlag.captureTime() > 0) {
+            long elapsed = (now - redFlag.captureTime()) / 1000;
+            if (elapsed == 45) {
+                Messages.debug("[CTF] Red flag: 45-second bonus window closing. If captured, no bonus.");
+            }
+        }
 
-          if (blueFlag != null && blueFlag.captureTime() > 0) {
-              long elapsed = (now - blueFlag.captureTime()) / 1000;
-              if (elapsed == 45) {
-                  Messages.debug("[CTF] Blue flag: 45-second bonus window closing. If captured, no bonus.");
-              }
-          }
-      }
+        if (blueFlag != null && blueFlag.captureTime() > 0) {
+            long elapsed = (now - blueFlag.captureTime()) / 1000;
+            if (elapsed == 45) {
+                Messages.debug("[CTF] Blue flag: 45-second bonus window closing. If captured, no bonus.");
+            }
+        }
+    }
 
     /**
      * Remove all banners from players and move them back to their plates
@@ -715,7 +602,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         for (UUID uuid : session.getPlayers()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
-                restoreNormalItemDisplay(player);
+                ItemUtils.restoreNormalItemDisplay(player);
             }
         }
     }
@@ -753,71 +640,70 @@ public class CaptureTheFlagGamemode extends Gamemode {
      */
     private boolean isPlayerNearFlag(Player player, FlagState flag) {
         if (flag == null || flag.flagLoc() == null) return false;
-        return LocationUtils.isPlayerNearLocation(player.getLocation(), flag.flagLoc(), CIRCLE_RADIUS);
+        return FlagPickupValidator.isPlayerNearFlag(player, flag.flagLoc());
     }
 
     /**
      * Check if a player is inside a circular scoring zone around a banner/plate location.
      */
     private boolean isPlayerInScoringZone(Player player, Location bannerLoc) {
-        return LocationUtils.isPlayerNearLocation(player.getLocation(), bannerLoc, SCORE_ZONE_RADIUS);
+        return FlagPickupValidator.isPlayerInScoringZone(player, bannerLoc);
     }
 
-      /**
-       * Check if a player carrying enemy flag reached their own scoring area.
-       */
-      private boolean tryHandleFlagCapture(Player player, int playerTeam, FlagState redFlag, FlagState blueFlag) {
-          UUID playerUuid = player.getUniqueId();
-          Location redBase = flagBaseLocations.get(1);
-          Location blueBase = flagBaseLocations.get(2);
-          if (redBase == null || blueBase == null) {
-              return false;
-          }
+    /**
+     * Check if a player carrying enemy flag reached their own scoring area.
+     */
+    private boolean tryHandleFlagCapture(Player player, int playerTeam, FlagState redFlag, FlagState blueFlag) {
+        UUID playerUuid = player.getUniqueId();
+        Location redBase = flagBaseLocations.get(1);
+        Location blueBase = flagBaseLocations.get(2);
+        if (redBase == null || blueBase == null) {
+            return false;
+        }
 
-          // Cannot score if both teams have flags (mutual flag stalemate)
-          boolean bothFlagsHeld = redFlag.isHeld() && blueFlag.isHeld();
-          if (bothFlagsHeld) {
-              // Show blocking message once per player per stalemate
-              if (!stalemateMsgShown.contains(playerUuid)) {
-                  Messages.send(player, "gamemode-ctf.both-flags-held");
-                  stalemateMsgShown.add(playerUuid);
-              }
-              spawnBannerParticles(redFlag.flagLoc(), 0); // 0 for black/neutral
-              spawnBannerParticles(blueFlag.flagLoc(), 0);
-              return false;
-          } else {
-              // Clear the message flag if stalemate is broken
-              stalemateMsgShown.remove(playerUuid);
-          }
+        // Cannot score if both teams have flags (mutual flag stalemate)
+        boolean bothFlagsHeld = redFlag.isHeld() && blueFlag.isHeld();
+        if (bothFlagsHeld) {
+            // Show blocking message once per player per stalemate
+            if (!stalemateMsgShown.contains(playerUuid)) {
+                Messages.send(player, "gamemode-ctf.both-flags-held");
+                stalemateMsgShown.add(playerUuid);
+            }
+            FlagBannerUtils.spawnBannerParticles(redFlag.flagLoc(), 0); // 0 for black/neutral
+            FlagBannerUtils.spawnBannerParticles(blueFlag.flagLoc(), 0);
+            return false;
+        } else {
+            // Clear the message flag if stalemate is broken
+            stalemateMsgShown.remove(playerUuid);
+        }
 
-         // ISSUE 3: Cannot score if team's own flag is already held by someone (no double capture)
-         if (playerTeam == 1 && redFlag.isHeld()) {
-             return false; // Team 1's own flag is held, can't score right now
-         }
-         if (playerTeam == 2 && blueFlag.isHeld()) {
-             return false; // Team 2's own flag is held, can't score right now
-         }
+        // ISSUE 3: Cannot score if team's own flag is already held by someone (no double capture)
+        if (playerTeam == 1 && redFlag.isHeld()) {
+            return false; // Team 1's own flag is held, can't score right now
+        }
+        if (playerTeam == 2 && blueFlag.isHeld()) {
+            return false; // Team 2's own flag is held, can't score right now
+        }
 
-         // Team 1 carries Team 2's (Blue) flag and scores at Team 1's (Red) plate
-         if (playerTeam == 1 && blueFlag != null
-                 && blueFlag.isHeld()
-                 && playerUuid.equals(blueFlag.holder())
-                 && isPlayerInScoringZone(player, redBase))
-         {
-             flagCapture(player, 1);
-             return true;
-         }
+        // Team 1 carries Team 2's (Blue) flag and scores at Team 1's (Red) plate
+        if (playerTeam == 1 && blueFlag != null
+                && blueFlag.isHeld()
+                && playerUuid.equals(blueFlag.holder())
+                && isPlayerInScoringZone(player, redBase)) {
+            flagCapture(player, 1);
+            return true;
+        }
 
-         // Team 2 carries Team 1's (Red) flag and scores at Team 2's (Blue) plate
-         if (playerTeam == 2 && redFlag.isHeld() &&
-                 playerUuid.equals(redFlag.holder()) &&
-                 isPlayerInScoringZone(player, blueBase)) {
-             flagCapture(player, 2);
-             return true;
-         }
+        // Team 2 carries Team 1's (Red) flag and scores at Team 2's (Blue) plate
+        if (playerTeam == 2 && redFlag.isHeld() &&
+                playerUuid.equals(redFlag.holder()) &&
+                isPlayerInScoringZone(player, blueBase)) {
+            flagCapture(player, 2);
+            return true;
+        }
 
-         return false;
-     }
+        return false;
+    }
 
     /**
      * Reset flag holders and move banners back to plates after capture
@@ -885,20 +771,20 @@ public class CaptureTheFlagGamemode extends Gamemode {
             boolean nearBlueFlag = isPlayerNearFlag(player, blueFlag);
 
             // Check Red flag pickup
-             if (nearRedFlag && !redFlag.isHeld()) {
-                 // Only enemy team can pick up
-                 if (playerTeam == 2) {
-                     nearestTeam = 1;
-                 }
-             }
+            if (nearRedFlag && !redFlag.isHeld()) {
+                // Only enemy team can pick up
+                if (playerTeam == 2) {
+                    nearestTeam = 1;
+                }
+            }
 
-             // Check Blue flag pickup
-             if (nearBlueFlag && !blueFlag.isHeld()) {
-                 // Only enemy team can pick up
-                 if (playerTeam == 1) {
-                     nearestTeam = 2;
-                 }
-             }
+            // Check Blue flag pickup
+            if (nearBlueFlag && !blueFlag.isHeld()) {
+                // Only enemy team can pick up
+                if (playerTeam == 1) {
+                    nearestTeam = 2;
+                }
+            }
 
             // Update player's standing time
             if (nearestTeam != null) {
@@ -916,23 +802,23 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     String colorTag = nearestTeam == 1 ? "red" : "blue";
                     Messages.send(player, "gamemode-ctf.flag-capturing",
                             "team_name", teamName, "color", colorTag);
-                 } else if (prevTime != null) {
-                     long elapsedMs = now - prevTime;
-                     if (elapsedMs >= FLAG_PICKUP_DURATION_MS) {
-                         // 3 seconds elapsed - pickup the flag
-                         flagPickup(player, nearestTeam);
-                         playerCircleTimestamps.remove(playerUuid);
-                         playerNearestFlagTeam.remove(playerUuid);
-                     } else {
-                         // Show countdown timer on action bar (3 2 1)
-                         long remainingMs = FLAG_PICKUP_DURATION_MS - elapsedMs;
-                         long secondsRemaining = remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0);
+                } else if (prevTime != null) {
+                    long elapsedMs = now - prevTime;
+                    if (elapsedMs >= FLAG_PICKUP_DURATION_MS) {
+                        // 3 seconds elapsed - pickup the flag
+                        flagPickup(player, nearestTeam);
+                        playerCircleTimestamps.remove(playerUuid);
+                        playerNearestFlagTeam.remove(playerUuid);
+                    } else {
+                        // Show countdown timer on action bar (3 2 1)
+                        long remainingMs = FLAG_PICKUP_DURATION_MS - elapsedMs;
+                        long secondsRemaining = remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0);
 
-                         String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
-                         String countdownMsg = flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s");
-                         player.sendActionBar(Messages.parse(countdownMsg));
-                     }
-                 }
+                        String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
+                        String countdownMsg = flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s");
+                        player.sendActionBar(Messages.parse(countdownMsg));
+                    }
+                }
             } else {
                 // Player left the circle - reset if they were in one
                 if (playerNearestFlagTeam.containsKey(playerUuid)) {
@@ -1019,138 +905,138 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return true;
     }
 
-     private void startSuddenDeathCycle() {
-         suddenDeathCycleCaptures.put(1, 0);
-         suddenDeathCycleCaptures.put(2, 0);
-         suddenDeathCycle = Math.max(suddenDeathCycle, 0) + 1;
-         suddenDeathCycleStartMs = System.currentTimeMillis();
-         cancelTask(suddenDeathCycleTask);
-         suddenDeathCycleTask = SchedulerUtils.runTaskTimer(this::checkSuddenDeathCycle, 20L, 20L);
-     }
+    private void startSuddenDeathCycle() {
+        suddenDeathCycleCaptures.put(1, 0);
+        suddenDeathCycleCaptures.put(2, 0);
+        suddenDeathCycle = Math.max(suddenDeathCycle, 0) + 1;
+        suddenDeathCycleStartMs = System.currentTimeMillis();
+        cancelTask(suddenDeathCycleTask);
+        suddenDeathCycleTask = SchedulerUtils.runTaskTimer(this::checkSuddenDeathCycle, 20L, 20L);
+    }
 
-     private void startSuddenDeathCombatTimers() {
-         suddenDeathManager.startFinalStandTimerIfNeeded();
-         if (suddenDeathCycleTask == null || suddenDeathCycleTask.isCancelled()) {
-             startSuddenDeathCycle();
-         }
-     }
+    private void startSuddenDeathCombatTimers() {
+        suddenDeathManager.startFinalStandTimerIfNeeded();
+        if (suddenDeathCycleTask == null || suddenDeathCycleTask.isCancelled()) {
+            startSuddenDeathCycle();
+        }
+    }
 
-     private void checkSuddenDeathCycle() {
-         if (!suddenDeathManager.isInSuddenDeath() || suddenDeathWinningTeam > 0) {
-             return;
-         }
+    private void checkSuddenDeathCycle() {
+        if (!suddenDeathManager.isInSuddenDeath() || suddenDeathWinningTeam > 0) {
+            return;
+        }
 
-         if (getSuddenDeathTimerRemainingSeconds() > 0) {
-             return;
-         }
+        if (getSuddenDeathTimerRemainingSeconds() > 0) {
+            return;
+        }
 
-         int team1Captures = suddenDeathCycleCaptures.getOrDefault(1, 0);
-         int team2Captures = suddenDeathCycleCaptures.getOrDefault(2, 0);
+        int team1Captures = suddenDeathCycleCaptures.getOrDefault(1, 0);
+        int team2Captures = suddenDeathCycleCaptures.getOrDefault(2, 0);
 
-         if (team1Captures == team2Captures) {
-             Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
-             startSuddenDeathCycle();
-             return;
-         }
+        if (team1Captures == team2Captures) {
+            Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
+            startSuddenDeathCycle();
+            return;
+        }
 
-         suddenDeathWinningTeam = team1Captures > team2Captures ? 1 : 2;
-     }
+        suddenDeathWinningTeam = team1Captures > team2Captures ? 1 : 2;
+    }
 
-     /**
-      * ISSUE 5: Start bonus timer display task - shows countdown to flag carriers
-      */
-     private void startBonusTimerDisplayTask() {
-         bonusTimerDisplayTask = SchedulerUtils.runTaskTimer(this::updateBonusTimerDisplay, 0, 10);
-     }
+    /**
+     * ISSUE 5: Start bonus timer display task - shows countdown to flag carriers
+     */
+    private void startBonusTimerDisplayTask() {
+        bonusTimerDisplayTask = SchedulerUtils.runTaskTimer(this::updateBonusTimerDisplay, 0, 10);
+    }
 
-     /**
-      * Start heart timer display task - shows 45s countdown for players with hearts
-      */
-     private void startHeartTimerDisplayTask() {
-         heartTimerDisplayTask = SchedulerUtils.runTaskTimer(this::updateHeartTimerDisplay, 0, 10);
-     }
+    /**
+     * Start heart timer display task - shows 45s countdown for players with hearts
+     */
+    private void startHeartTimerDisplayTask() {
+        heartTimerDisplayTask = SchedulerUtils.runTaskTimer(this::updateHeartTimerDisplay, 0, 10);
+    }
 
-     /**
-      * Update bonus timer display for flag carriers via action bar
-      */
-     private void updateBonusTimerDisplay() {
-         long now = System.currentTimeMillis();
+    /**
+     * Update bonus timer display for flag carriers via action bar
+     */
+    private void updateBonusTimerDisplay() {
+        long now = System.currentTimeMillis();
 
-         FlagState redFlag = flagStates.get(1);
-         FlagState blueFlag = flagStates.get(2);
+        FlagState redFlag = flagStates.get(1);
+        FlagState blueFlag = flagStates.get(2);
 
-         // Show timer to red team flag carrier
-         if (redFlag != null && redFlag.isHeld()) {
-             Player carrier = Bukkit.getPlayer(redFlag.holder());
-             if (carrier != null && carrier.isOnline()) {
-                 long elapsed = now - redFlag.captureTime();
-                 long remaining = Math.max(0, CAPTURE_TIMER_MS - elapsed);
-                 long secondsRemaining = remaining / 1000 + (remaining % 1000 > 0 ? 1 : 0);
+        // Show timer to red team flag carrier
+        if (redFlag != null && redFlag.isHeld()) {
+            Player carrier = Bukkit.getPlayer(redFlag.holder());
+            if (carrier != null && carrier.isOnline()) {
+                long elapsed = now - redFlag.captureTime();
+                long remaining = Math.max(0, CAPTURE_TIMER_MS - elapsed);
+                long secondsRemaining = remaining / 1000 + (remaining % 1000 > 0 ? 1 : 0);
 
-                 if (remaining > 0) {
-                     // During bonus window
-                     String timerMsg = "<green>⏰ Bonus expires in: <gold>" + secondsRemaining + "s</gold></green>";
-                     carrier.sendActionBar(Messages.parse(timerMsg));
-                 } else {
-                     // After bonus window, show "no bonus" message
-                     String noBonus = "<red>❌ No bonus - score won't grant extra money</red>";
-                     carrier.sendActionBar(Messages.parse(noBonus));
-                 }
-             }
-         }
+                if (remaining > 0) {
+                    // During bonus window
+                    String timerMsg = "<green>⏰ Bonus expires in: <gold>" + secondsRemaining + "s</gold></green>";
+                    carrier.sendActionBar(Messages.parse(timerMsg));
+                } else {
+                    // After bonus window, show "no bonus" message
+                    String noBonus = "<red>❌ No bonus - score won't grant extra money</red>";
+                    carrier.sendActionBar(Messages.parse(noBonus));
+                }
+            }
+        }
 
-         // Show timer to blue team flag carrier
-         if (blueFlag != null && blueFlag.isHeld()) {
-             Player carrier = Bukkit.getPlayer(blueFlag.holder());
-             if (carrier != null && carrier.isOnline()) {
-                 long elapsed = now - blueFlag.captureTime();
-                 long remaining = Math.max(0, CAPTURE_TIMER_MS - elapsed);
-                 long secondsRemaining = remaining / 1000 + (remaining % 1000 > 0 ? 1 : 0);
+        // Show timer to blue team flag carrier
+        if (blueFlag != null && blueFlag.isHeld()) {
+            Player carrier = Bukkit.getPlayer(blueFlag.holder());
+            if (carrier != null && carrier.isOnline()) {
+                long elapsed = now - blueFlag.captureTime();
+                long remaining = Math.max(0, CAPTURE_TIMER_MS - elapsed);
+                long secondsRemaining = remaining / 1000 + (remaining % 1000 > 0 ? 1 : 0);
 
-                 if (remaining > 0) {
-                     // During bonus window
-                     String timerMsg = "<blue>⏰ Bonus expires in: <gold>" + secondsRemaining + "s</gold></blue>";
-                     carrier.sendActionBar(Messages.parse(timerMsg));
-                 } else {
-                     // After bonus window, show "no bonus" message
-                     String noBonus = "<red>❌ No bonus - score won't grant extra money</red>";
-                     carrier.sendActionBar(Messages.parse(noBonus));
-                 }
-             }
-         }
-     }
+                if (remaining > 0) {
+                    // During bonus window
+                    String timerMsg = "<blue>⏰ Bonus expires in: <gold>" + secondsRemaining + "s</gold></blue>";
+                    carrier.sendActionBar(Messages.parse(timerMsg));
+                } else {
+                    // After bonus window, show "no bonus" message
+                    String noBonus = "<red>❌ No bonus - score won't grant extra money</red>";
+                    carrier.sendActionBar(Messages.parse(noBonus));
+                }
+            }
+        }
+    }
 
-     /**
-      * Update heart timer display for players with active hearts via action bar
-      */
-     private void updateHeartTimerDisplay() {
-         long now = System.currentTimeMillis();
-         long heartDurationMs = 45 * 1000;
+    /**
+     * Update heart timer display for players with active hearts via action bar
+     */
+    private void updateHeartTimerDisplay() {
+        long now = System.currentTimeMillis();
+        long heartDurationMs = 45 * 1000;
 
-         // Check each player that has a heart timestamp
-         for (UUID playerUuid : new HashSet<>(playerHeartTimestamps.keySet())) {
-             Player player = Bukkit.getPlayer(playerUuid);
-             if (player == null || !player.isOnline()) {
-                 continue;
-             }
+        // Check each player that has a heart timestamp
+        for (UUID playerUuid : new HashSet<>(playerHeartTimestamps.keySet())) {
+            Player player = Bukkit.getPlayer(playerUuid);
+            if (player == null || !player.isOnline()) {
+                continue;
+            }
 
-             Long heartTime = playerHeartTimestamps.get(playerUuid);
-             if (heartTime == null) continue;
+            Long heartTime = playerHeartTimestamps.get(playerUuid);
+            if (heartTime == null) continue;
 
-             long elapsed = now - heartTime;
-             long remaining = Math.max(0, heartDurationMs - elapsed);
-             long secondsRemaining = remaining / 1000 + (remaining % 1000 > 0 ? 1 : 0);
+            long elapsed = now - heartTime;
+            long remaining = Math.max(0, heartDurationMs - elapsed);
+            long secondsRemaining = remaining / 1000 + (remaining % 1000 > 0 ? 1 : 0);
 
-             if (remaining > 0) {
-                 // Heart is still active - show countdown
-                 String timerMsg = "<red>❤ Extra Heart expires in: <gold>" + secondsRemaining + "s</gold></red>";
-                 player.sendActionBar(Messages.parse(timerMsg));
-             } else {
-                 // Heart expired - remove from tracking
-                 playerHeartTimestamps.remove(playerUuid);
-             }
-         }
-     }
+            if (remaining > 0) {
+                // Heart is still active - show countdown
+                String timerMsg = "<red>❤ Extra Heart expires in: <gold>" + secondsRemaining + "s</gold></red>";
+                player.sendActionBar(Messages.parse(timerMsg));
+            } else {
+                // Heart expired - remove from tracking
+                playerHeartTimestamps.remove(playerUuid);
+            }
+        }
+    }
 
     /**
      * Award capture bonus after 45 seconds
@@ -1179,76 +1065,51 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 "team_name", teamName);
     }
 
-     /**
-      * Start carrying task for flag - banner is attached to player's head and rotates with them
-      * Uses a direct teleport approach for instant rotation with player
-      */
-     private void moveBannerToPlayer(BlockDisplay banner, Player player) {
-         if (banner == null || banner.isDead() || !player.isOnline()) {
-             return;
-         }
+    /**
+     * Start carrying task for flag - banner is attached to player's head and rotates with them
+     * Uses a direct teleport approach for instant rotation with player
+     */
+    private void moveBannerToPlayer(BlockDisplay banner, Player player) {
+        if (banner == null || banner.isDead() || !player.isOnline()) {
+            return;
+        }
 
-         // Find which flag this banner belongs to
-         Integer teamNumber = null;
-         for (int team = 1; team <= 2; team++) {
-             FlagState flag = flagStates.get(team);
-             if (flag != null && flag.bannerDisplay() == banner) {
-                 teamNumber = team;
-                 break;
+        // Find which flag this banner belongs to
+        Integer teamNumber = null;
+        for (int team = 1; team <= 2; team++) {
+            FlagState flag = flagStates.get(team);
+            if (flag != null && flag.bannerDisplay() == banner) {
+                teamNumber = team;
+                break;
             }
-         }
+        }
 
-         if (teamNumber == null) return;
+        if (teamNumber == null) return;
 
-         FlagState flagState = flagStates.get(teamNumber);
+        FlagState flagState = flagStates.get(teamNumber);
 
-         // Stop existing carrying task if any
-         if (flagState.carryingTask() != null) {
-             flagState.carryingTask().cancel();
-         }
+        // Stop existing carrying task if any
+        if (flagState.carryingTask() != null) {
+            flagState.carryingTask().cancel();
+        }
 
-         // Make variables final for lambda capture
-         final int finalTeamNumber = teamNumber;
-         final BlockDisplay finalBanner = banner;
-         final Player finalPlayer = player;
+        // Make variables final for lambda capture
+        final int finalTeamNumber = teamNumber;
 
-         // Start new carrying task - runs every tick for instant synchronization
-         BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
-             if (!finalPlayer.isOnline() || finalBanner.isDead()) {
-                 // Stop task if player offline or banner dead
-                 FlagState current = flagStates.get(finalTeamNumber);
-                 if (current != null && current.carryingTask() != null) {
-                     current.carryingTask().cancel();
-                     flagStates.put(finalTeamNumber, current.withCarryingTask(null));
-                 }
-                 return;
-             }
+        // Create carrying task and store it
+        BukkitTask task = FlagBannerUtils.createCarryingTask(banner, player, () -> {
+            FlagState current = flagStates.get(finalTeamNumber);
+            if (current != null && current.carryingTask() != null) {
+                flagStates.put(finalTeamNumber, current.withCarryingTask(null));
+            }
+        });
 
-             FlagState current = flagStates.get(finalTeamNumber);
-             if (current == null) return;
+        // Store the task in flag state
+        FlagState updatedFlag = flagState.withCarryingTask(task);
+        flagStates.put(teamNumber, updatedFlag);
 
-             // Position banner directly on player's head and rotate with player
-             Location playerLoc = finalPlayer.getLocation();
-
-             // Create location 2 blocks above player (on their head)
-             Location bannerLoc = playerLoc.clone().add(0, 2, 0);
-
-             // Directly teleport banner to match player position and rotation
-             finalBanner.teleport(bannerLoc);
-
-             // Rotate banner to face player's direction using yaw
-             finalBanner.setRotation(playerLoc.getYaw(), playerLoc.getPitch());
-
-             // Update yaw in flag state
-             flagStates.put(finalTeamNumber, current.withCarryingAngle(playerLoc.getYaw()));
-         }, 0, 1); // Run every tick for instant synchronization
-
-         // Store the task in flag state
-         FlagState updatedFlag = flagState.withCarryingTask(task);
-         flagStates.put(teamNumber, updatedFlag);
-
-         Messages.debug("[CTF] Started carrying task for banner on " + player.getName());
-     }
+        Messages.debug("[CTF] Started carrying task for banner on " + player.getName());
+    }
 
     /**
      * Stop carrying task and move banner back to plate
@@ -1262,15 +1123,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
         for (int team = 1; team <= 2; team++) {
             FlagState flag = flagStates.get(team);
             if (flag != null && flag.bannerDisplay() == banner && flag.carryingTask() != null) {
-                flag.carryingTask().cancel();
+                FlagBannerUtils.stopCarryingBanner(banner, location, flag.carryingTask());
                 flagStates.put(team, flag.withCarryingTask(null));
                 break;
             }
         }
-
-        // Teleport banner back to location
-        banner.teleport(location);
-        Messages.debug("[CTF] Moved banner back to plate at " + location);
     }
 
     /**
@@ -1292,79 +1149,19 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * Rotate banner for a specific team
      */
     private void rotateBannerForTeam(int teamNumber) {
-        rotateBanner(flagStates.get(teamNumber), teamNumber);
-    }
-
-    /**
-     * Rotate a single banner in a perfect circle around the plate
-     * Banner is only rotated when not being carried by a player
-     * The banner rotates in a circle and faces outward (away from center) like an arrow
-     */
-    private void rotateBanner(FlagState flag, int teamNumber) {
-        if (!isBannerRotatable(flag)) return;
-
-        Location centerPlate = flag.getFlagLoc();
-        if (centerPlate == null) {
-            Messages.debug("[CTF] Cannot rotate banner for Team " + teamNumber + " - no flag found");
+        FlagState flag = flagStates.get(teamNumber);
+        if (flag == null || !FlagBannerUtils.isBannerRotatable(flag.bannerDisplay(), flag.getFlagLoc(), flag.isHeld())) {
             return;
         }
-        double centerX = centerPlate.getX();
-        double centerY = centerPlate.getY();
-        double centerZ = centerPlate.getZ();
 
-        // Compute new position and rotation
-        double newTheta = LocationUtils.calculateNextOrbitAngle(flag.bannerAngle(), BANNER_ANGULAR_SPEED);
-        updateBannerTransform(flag, centerX, centerY, centerZ, newTheta);
+        Location centerPlate = flag.getFlagLoc();
+        double newTheta = FlagBannerUtils.calculateNextRotationAngle(flag.bannerAngle());
+        FlagBannerUtils.updateBannerTransform(flag.bannerDisplay(), centerPlate, flag.bannerAngle(), newTheta);
 
         // Update angle in flag state
         flagStates.put(teamNumber, flag.withBannerAngle(newTheta));
 
         // Spawn team-colored particles
-        spawnBannerParticles(flag.flagLoc(), teamNumber);
+        FlagBannerUtils.spawnBannerParticles(flag.flagLoc(), teamNumber);
     }
-
-    /**
-     * Check if banner is rotatable
-     */
-    private boolean isBannerRotatable(FlagState flag) {
-        return flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead() &&
-               flag.flagLoc() != null && !flag.isHeld();
-    }
-
-    /**
-     * Update banner transform (position and rotation)
-     * Uses same logic as BlockDisplayCommand with AxisAngle4f
-     * Banner rotates on Y-axis using angle theta
-     */
-    private void updateBannerTransform(FlagState flag, double centerX, double centerY, double centerZ, double theta) {
-        // Compute position on circumference
-        double x = centerX + Math.cos(theta) * BANNER_ORBIT_RADIUS;
-        double z = centerZ + Math.sin(theta) * BANNER_ORBIT_RADIUS;
-
-        // Create rotation using Y-axis formula (same as BlockDisplayCommand)
-        float yaw = (float) (-theta + Math.PI / 2);
-        Location newLoc = new Location(flag.flagLoc().getWorld(), x, centerY, z);
-
-        LocationUtils.applyOrbitTransformation(flag.bannerDisplay(), newLoc, yaw);
-    }
-
-     /**
-      * Spawn team-colored particles around the banner orbit
-      */
-     private void spawnBannerParticles(Location centerPlate, int teamNumber) {
-         Color teamColor;
-         if (teamNumber == 0) {
-             // Neutral/black particles for stalemate situations
-             teamColor = Color.fromBGR(30, 30, 30); // Dark gray/black
-         } else {
-             teamColor = teamNumber == 1 ? Color.RED : Color.BLUE;
-         }
-
-         for (int i = 0; i < 8; i++) {
-             double particleAngle = Math.PI * 2 * i / 8;
-             double particleX = BANNER_ORBIT_RADIUS * Math.cos(particleAngle);
-             double particleZ = BANNER_ORBIT_RADIUS * Math.sin(particleAngle);
-             ParticleUtils.spawnDust(centerPlate.clone().add(particleX, 0.1, particleZ), teamColor, 1, 1, 0);
-         }
-     }
 }
