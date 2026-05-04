@@ -40,7 +40,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private static final long KILL_BONUS_AMOUNT = 15000;
     private static final long HEART_DURATION_MS = 45 * 1000;
     private static final int WIN_CONDITION = 4;
-    private static final int SUDDEN_DEATH_TRIGGER_SCORE = 3;
     private static final int SUDDEN_DEATH_CYCLE_SECONDS = 180;
 
     private final Map<Integer, President> presidents;
@@ -105,6 +104,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public void onCombatPhaseStart() {
         Messages.debug("[PTP] Combat phase started");
+        if (suddenDeathManager.isInSuddenDeath()) {
+            startSuddenDeathCombatTimers();
+        }
 
         // Apply glow and buffs to presidents now that combat has started
         for (int team = 1; team <= 2; team++) {
@@ -253,13 +255,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         if (suddenDeathManager.isFinalStandActive() && !finalStandTriggered) {
             activateFinalStandElimination();
             finalStandTriggered = true;
-        }
-
-        if (!suddenDeathManager.isInSuddenDeath() &&
-                deaths1 == SUDDEN_DEATH_TRIGGER_SCORE &&
-                deaths2 == SUDDEN_DEATH_TRIGGER_SCORE) {
-            enterSuddenDeath();
-            return false;
         }
 
         return !suddenDeathManager.isInSuddenDeath() &&
@@ -760,6 +755,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
         suddenDeathCycleStartMs = System.currentTimeMillis();
         cancelTask(suddenDeathCycleTask);
         suddenDeathCycleTask = SchedulerUtils.runTaskTimer(this::checkSuddenDeathCycle, 20L, 20L);
+    }
+
+    private void startSuddenDeathCombatTimers() {
+        suddenDeathManager.startFinalStandTimerIfNeeded();
+        if (suddenDeathCycleTask == null || suddenDeathCycleTask.isCancelled()) {
+            startSuddenDeathCycle();
+        }
     }
 
     private void checkSuddenDeathCycle() {
