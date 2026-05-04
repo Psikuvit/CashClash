@@ -39,8 +39,7 @@ import java.util.UUID;
  */
 public class CaptureTheFlagGamemode extends Gamemode {
 
-    private static final int WIN_CONDITION = 4;
-    private static final int SUDDEN_DEATH_TRIGGER_SCORE = 3;
+    private static final int WIN_CONDITION = 2;
     private static final int SUDDEN_DEATH_CYCLE_SECONDS = 180;
     private static final int GLOW_INTERVAL_TICKS = 100; // 5 seconds
     private static final long CAPTURE_BONUS = 15000;
@@ -54,6 +53,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<Integer, Integer> flagCaptures;
     private final Map<Integer, Integer> suddenDeathCycleCaptures;
     private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
+    private final Map<Integer, Location> flagBaseLocations;
+    private final Map<Integer, BukkitTask> flagReturnTasks;
     private final Map<UUID, Long> playerCircleTimestamps; // Track when each player entered the circle
     private final Map<UUID, Integer> playerNearestFlagTeam; // Track which flag team player is near
     private final Set<UUID> stalemateMsgShown; // Track players who've been told about stalemate in current state
@@ -78,6 +79,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.flagCaptures = new HashMap<>(2);
         this.suddenDeathCycleCaptures = new HashMap<>(2);
         this.flagStates = new HashMap<>(2);
+        this.flagBaseLocations = new HashMap<>(2);
+        this.flagReturnTasks = new HashMap<>(2);
         this.playerCircleTimestamps = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
         this.stalemateMsgShown = new HashSet<>();
@@ -116,6 +119,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
      @Override
      public void onCombatPhaseStart() {
          Messages.debug("[CTF] Combat phase started");
+         if (suddenDeathManager.isInSuddenDeath()) {
+             startSuddenDeathCombatTimers();
+         }
 
           // Initialize banners at flag plates
           initializeBanners();
@@ -163,10 +169,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
           suddenDeathCycleStartMs = 0L;
           suddenDeathCycle = 0;
           suddenDeathWinningTeam = 0;
-          cancelTask(suddenDeathCycleTask);
+         cancelTask(suddenDeathCycleTask);
+         flagReturnTasks.values().forEach(this::cancelTask);
+         flagReturnTasks.clear();
           // Reset flag states but preserve the plate locations and banners for next round
-          flagStates.put(1, flagStates.get(1).withoutHolder());
-          flagStates.put(2, flagStates.get(2).withoutHolder());
+          returnFlagToBase(1);
+          returnFlagToBase(2);
           stalemateMsgShown.clear();
 
          // Clear circle tracking data
@@ -215,14 +223,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
             return true;
         }
 
-        // Check for sudden death condition
-        if (!suddenDeathManager.isInSuddenDeath() &&
-                captures1 == SUDDEN_DEATH_TRIGGER_SCORE &&
-                captures2 == SUDDEN_DEATH_TRIGGER_SCORE) {
-            enterSuddenDeath();
-            return false;
-        }
-
         if (!suddenDeathManager.isInSuddenDeath() && (captures1 >= WIN_CONDITION || captures2 >= WIN_CONDITION)) {
             Messages.debug("[CTF] Game winner found - Team " + (captures1 >= WIN_CONDITION ? 1 : 2) + " with " + Math.max(captures1, captures2) + " captures");
             return true;
@@ -258,6 +258,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
          cancelTask(bonusTimerDisplayTask);
          cancelTask(heartTimerDisplayTask);
          cancelTask(suddenDeathCycleTask);
+         flagReturnTasks.values().forEach(this::cancelTask);
+         flagReturnTasks.clear();
 
          // Cancel carrying tasks for all flags
          for (FlagState flag : flagStates.values()) {
@@ -276,8 +278,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
              }
          }
 
-         flagStates.clear();
-         flagCaptures.clear();
+        flagStates.clear();
+        flagBaseLocations.clear();
+        flagCaptures.clear();
          playerCircleTimestamps.clear();
          playerNearestFlagTeam.clear();
          playerHeartTimestamps.clear();
@@ -312,6 +315,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         FlagState flag = flagStates.get(enemyTeamNumber);
         if (flag == null) return;
+        cancelFlagReturnTask(enemyTeamNumber);
 
         FlagState updatedFlag = flag.withHolder(playerUuid, now);
         if (enemyTeamNumber == 1) {
@@ -502,6 +506,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (redFlagLoc != null) {
             BlockDisplay redBanner = spawnFlagBanner(redFlagLoc, Color.RED);
             if (redBanner != null) {
+                flagBaseLocations.put(1, redFlagLoc.clone());
                 flagStates.put(1, new FlagState(null, 0, redFlagLoc, redBanner, 0.0, null, 0.0));
                 Messages.debug("[CTF] Spawned Red flag banner at " + redFlagLoc);
             }
@@ -512,6 +517,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (blueFlagLoc != null) {
             BlockDisplay blueBanner = spawnFlagBanner(blueFlagLoc, Color.BLUE);
             if (blueBanner != null) {
+                flagBaseLocations.put(2, blueFlagLoc.clone());
                 flagStates.put(2, new FlagState(null, 0, blueFlagLoc, blueBanner, 0.0, null, 0.0));
                 Messages.debug("[CTF] Spawned Blue flag banner at " + blueFlagLoc);
             }
@@ -577,8 +583,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 "color", colorTag,
                 "team_name", teamName);
 
-         flagStates.put(teamNumber, flag.withoutHolder());
-         moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
+         dropFlagAtLocation(teamNumber, victim.getLocation());
          SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
 
          // Restore normal item display for the flag carrier
@@ -604,9 +609,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
             if (flag.bannerDisplay().getVehicle() != null) {
                 flag.bannerDisplay().getVehicle().removePassenger(flag.bannerDisplay());
             }
-            moveBannerBack(flag.bannerDisplay(), flag.getFlagLoc());
         }
-        flagStates.put(teamNumber, flag.withoutHolder());
+        returnFlagToBase(teamNumber);
 
         // Restore normal item display for the flag carrier
         SchedulerUtils.runTaskLater(() -> updateSilencedItemDisplay(player), 1);
@@ -764,6 +768,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
        */
       private boolean tryHandleFlagCapture(Player player, int playerTeam, FlagState redFlag, FlagState blueFlag) {
           UUID playerUuid = player.getUniqueId();
+          Location redBase = flagBaseLocations.get(1);
+          Location blueBase = flagBaseLocations.get(2);
+          if (redBase == null || blueBase == null) {
+              return false;
+          }
 
           // Cannot score if both teams have flags (mutual flag stalemate)
           boolean bothFlagsHeld = redFlag.isHeld() && blueFlag.isHeld();
@@ -793,7 +802,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          if (playerTeam == 1 && blueFlag != null
                  && blueFlag.isHeld()
                  && playerUuid.equals(blueFlag.holder())
-                 && isPlayerInScoringZone(player, redFlag.flagLoc()))
+                 && isPlayerInScoringZone(player, redBase))
          {
              flagCapture(player, 1);
              return true;
@@ -802,7 +811,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          // Team 2 carries Team 1's (Red) flag and scores at Team 2's (Blue) plate
          if (playerTeam == 2 && redFlag.isHeld() &&
                  playerUuid.equals(redFlag.holder()) &&
-                 isPlayerInScoringZone(player, blueFlag.flagLoc())) {
+                 isPlayerInScoringZone(player, blueBase)) {
              flagCapture(player, 2);
              return true;
          }
@@ -815,10 +824,34 @@ public class CaptureTheFlagGamemode extends Gamemode {
      */
     private void resetFlagsAfterCapture(int teamNumber) {
         // Reset the enemy flag that was captured
-        FlagState enemyFlag = flagStates.get(teamNumber == 1 ? 2 : 1);
-        if (enemyFlag != null) {
-            flagStates.put(teamNumber == 1 ? 2 : 1, enemyFlag.withoutHolder());
-            moveBannerBack(enemyFlag.bannerDisplay(), enemyFlag.getFlagLoc());
+        returnFlagToBase(teamNumber == 1 ? 2 : 1);
+    }
+
+    private void returnFlagToBase(int teamNumber) {
+        FlagState flag = flagStates.get(teamNumber);
+        Location baseLocation = flagBaseLocations.get(teamNumber);
+        if (flag == null || baseLocation == null) {
+            return;
+        }
+
+        cancelFlagReturnTask(teamNumber);
+
+        if (flag.carryingTask() != null) {
+            flag.carryingTask().cancel();
+        }
+
+        FlagState returnedFlag = flag.withoutHolder()
+                .withFlagLoc(baseLocation.clone())
+                .withCarryingTask(null);
+        flagStates.put(teamNumber, returnedFlag);
+        moveBannerBack(returnedFlag.bannerDisplay(), returnedFlag.getFlagLoc());
+        Messages.debug("[CTF] Returned Team " + teamNumber + " flag to base");
+    }
+
+    private void cancelFlagReturnTask(int teamNumber) {
+        BukkitTask task = flagReturnTasks.remove(teamNumber);
+        if (task != null) {
+            cancelTask(task);
         }
     }
 
@@ -928,19 +961,78 @@ public class CaptureTheFlagGamemode extends Gamemode {
      */
     private void enterSuddenDeath() {
         suddenDeathManager.enterSuddenDeath();
-        Messages.debug("[CTF] Entering sudden death mode - both teams at 3-3 captures");
+        Messages.debug("[CTF] Entering sudden death mode - match score is 3-3");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-timer-start");
-        startSuddenDeathCycle();
+        startSuddenDeathCombatTimers();
     }
 
-    private void startSuddenDeathCycle() {
+    private void dropFlagAtLocation(int teamNumber, Location location) {
+        FlagState flag = flagStates.get(teamNumber);
+        if (flag == null || location == null) {
+            return;
+        }
+
+        cancelFlagReturnTask(teamNumber);
+
+        Location dropLocation = location.clone();
+        if (dropLocation.getWorld() == null) {
+            dropLocation.setWorld(session.getGameWorld());
+        }
+
+        if (flag.carryingTask() != null) {
+            flag.carryingTask().cancel();
+        }
+
+        FlagState droppedFlag = flag.withoutHolder()
+                .withFlagLoc(dropLocation)
+                .withCarryingTask(null);
+        flagStates.put(teamNumber, droppedFlag);
+
+        moveBannerBack(flag.bannerDisplay(), droppedFlag.getFlagLoc());
+
+        BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> returnFlagToBase(teamNumber), 60L * 20L);
+        flagReturnTasks.put(teamNumber, returnTask);
+        Messages.debug("[CTF] Dropped Team " + teamNumber + " flag at " + dropLocation + "; returning in 60s if not picked up");
+    }
+
+    @Override
+    public boolean forceSuddenDeathForTesting() {
+        if (suddenDeathManager.isInSuddenDeath()) {
+            return false;
+        }
+
+        enterSuddenDeath();
+        return true;
+    }
+
+    @Override
+    public boolean prepareSuddenDeathRound() {
+        if (suddenDeathManager.isInSuddenDeath()) {
+            return false;
+        }
+
+        suddenDeathManager.enterSuddenDeath(false);
+        Messages.debug("[CTF] Prepared sudden death round - match score is 3-3");
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death");
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-timer-start");
+        return true;
+    }
+
+     private void startSuddenDeathCycle() {
          suddenDeathCycleCaptures.put(1, 0);
          suddenDeathCycleCaptures.put(2, 0);
          suddenDeathCycle = Math.max(suddenDeathCycle, 0) + 1;
          suddenDeathCycleStartMs = System.currentTimeMillis();
          cancelTask(suddenDeathCycleTask);
          suddenDeathCycleTask = SchedulerUtils.runTaskTimer(this::checkSuddenDeathCycle, 20L, 20L);
+     }
+
+     private void startSuddenDeathCombatTimers() {
+         suddenDeathManager.startFinalStandTimerIfNeeded();
+         if (suddenDeathCycleTask == null || suddenDeathCycleTask.isCancelled()) {
+             startSuddenDeathCycle();
+         }
      }
 
      private void checkSuddenDeathCycle() {

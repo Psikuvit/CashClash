@@ -94,6 +94,14 @@ public abstract class Gamemode {
         // Default: no special handling
     }
 
+    public boolean forceSuddenDeathForTesting() {
+        return false;
+    }
+
+    public boolean prepareSuddenDeathRound() {
+        return false;
+    }
+
     public boolean isFinalStandActive() {
         return false;
     }

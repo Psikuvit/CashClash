@@ -676,7 +676,29 @@ public class ProtectThePresidentGamemode extends Gamemode {
         suddenDeathManager.enterSuddenDeath();
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
-        startSuddenDeathCycle();
+        startSuddenDeathCombatTimers();
+    }
+
+    @Override
+    public boolean forceSuddenDeathForTesting() {
+        if (suddenDeathManager.isInSuddenDeath()) {
+            return false;
+        }
+
+        enterSuddenDeath();
+        return true;
+    }
+
+    @Override
+    public boolean prepareSuddenDeathRound() {
+        if (suddenDeathManager.isInSuddenDeath()) {
+            return false;
+        }
+
+        suddenDeathManager.enterSuddenDeath(false);
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
+        return true;
     }
 
     /**
