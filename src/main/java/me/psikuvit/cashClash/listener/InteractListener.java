@@ -281,13 +281,6 @@ public class InteractListener implements Listener {
             return true;
         }
 
-        // Check if player is silenced (carrying CTF flag)
-        if (isSilenced(player)) {
-            event.setCancelled(true);
-            Messages.send(player, "listener.cannot-use-items-while-silenced");
-            return true;
-        }
-
         switch (type) {
             case GRENADE -> {
                 if (action.isRightClick()) {
@@ -319,6 +312,11 @@ public class InteractListener implements Listener {
             }
             case BOUNCE_PAD -> {
                 if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
+                    if (isSilenced(player)) {
+                        event.setCancelled(true);
+                        Messages.send(player, "listener.cannot-use-items-while-silenced");
+                        return true;
+                    }
                     event.setCancelled(true);
                     customItemManager.placeBouncePad(player, item, event.getClickedBlock());
                     return true;
@@ -363,13 +361,6 @@ public class InteractListener implements Listener {
             return true;
         }
 
-        // Check if player is silenced (carrying CTF flag)
-        if (isSilenced(player)) {
-            event.setCancelled(true);
-            Messages.send(player, "listener.cannot-use-abilities-while-silenced");
-            return true;
-        }
-
         switch (mythic) {
             case COIN_CLEAVER -> {
                 event.setCancelled(true);
@@ -383,12 +374,22 @@ public class InteractListener implements Listener {
             }
             case WIND_BOW -> {
                 if (player.isSneaking()) {
+                    if (isSilenced(player)) {
+                        event.setCancelled(true);
+                        Messages.send(player, "listener.cannot-use-abilities-while-silenced");
+                        return true;
+                    }
                     event.setCancelled(true);
                     mythicManager.useWindBowBoost(player);
                     return true;
                 }
             }
             case ELECTRIC_EEL_SWORD -> {
+                if (isSilenced(player)) {
+                    event.setCancelled(true);
+                    Messages.send(player, "listener.cannot-use-abilities-while-silenced");
+                    return true;
+                }
                 event.setCancelled(true);
                 mythicManager.useElectricEelTeleport(player);
                 return true;
@@ -396,6 +397,11 @@ public class InteractListener implements Listener {
             case GOBLIN_SPEAR -> {
                 // Allow normal throws; only cancel when activating charge (sneaking)
                 if (player.isSneaking()) {
+                    if (isSilenced(player)) {
+                        event.setCancelled(true);
+                        Messages.send(player, "listener.cannot-use-abilities-while-silenced");
+                        return true;
+                    }
                     event.setCancelled(true);
                     mythicManager.startGoblinSpearCharge(player);
                     return true;
@@ -442,6 +448,10 @@ public class InteractListener implements Listener {
 
         // Dragon Set: Dash to marked target (right-click, no sneak required)
         if (armorManager.hasDragonSet(player)) {
+            if (isSilenced(player)) {
+                Messages.send(player, "listener.cannot-use-abilities-while-silenced");
+                return;
+            }
             armorManager.tryDragonDash(player);
         }
     }
