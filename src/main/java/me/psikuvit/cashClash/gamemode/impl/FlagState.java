@@ -42,6 +42,13 @@ public record FlagState(
     }
 
     /**
+     * Create a flag state with an updated current pickup location.
+     */
+    public FlagState withFlagLoc(Location location) {
+        return new FlagState(this.holder, this.captureTime, location, this.bannerDisplay, this.bannerAngle, this.carryingTask, this.carryingAngle);
+    }
+
+    /**
      * Create a flag state with banner display set
      */
     public FlagState withBannerDisplay(BlockDisplay banner) {

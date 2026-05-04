@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
+import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
@@ -422,8 +423,18 @@ public class GameListener implements Listener {
         if (session == null) return;
 
         if (session.getState() == GameState.SHOPPING) return;
+        if (armorManager.hasBunnyShoes(p) && isSilenced(session, p)) {
+            Messages.send(p, "listener.cannot-use-abilities-while-silenced");
+            return;
+        }
 
         armorManager.onPlayerToggleSneak(p, event.isSneaking());
+    }
+
+    private boolean isSilenced(GameSession session, Player player) {
+        if (session == null || session.getGamemode() == null) return false;
+        if (!(session.getGamemode() instanceof CaptureTheFlagGamemode ctf)) return false;
+        return ctf.isSilenced(player.getUniqueId());
     }
 
 
