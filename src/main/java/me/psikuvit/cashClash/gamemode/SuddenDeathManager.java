@@ -52,6 +52,10 @@ public class SuddenDeathManager {
      * Enter sudden death mode
      */
     public void enterSuddenDeath() {
+        enterSuddenDeath(true);
+    }
+
+    public void enterSuddenDeath(boolean startFinalStandTimer) {
         if (inSuddenDeath) {
             Messages.debug("[SuddenDeathManager] Already in sudden death mode");
             return;
@@ -62,7 +66,9 @@ public class SuddenDeathManager {
         Messages.debug("[SuddenDeathManager] Entering sudden death mode");
 
         // Start final stand timer
-        startFinalStandTimer();
+        if (startFinalStandTimer) {
+            startFinalStandTimer();
+        }
     }
 
     /**
@@ -70,8 +76,17 @@ public class SuddenDeathManager {
      * After 5 minutes, final stand is activated
      */
     private void startFinalStandTimer() {
+        if (finalStandTask != null && !finalStandTask.isCancelled()) {
+            return;
+        }
         long ticksDelay = (FINAL_STAND_DURATION_MS / 50); // Convert milliseconds to ticks
         finalStandTask = SchedulerUtils.runTaskLater(this::activateFinalStand, ticksDelay);
+    }
+
+    public void startFinalStandTimerIfNeeded() {
+        if (inSuddenDeath && !finalStandActive) {
+            startFinalStandTimer();
+        }
     }
 
     /**
