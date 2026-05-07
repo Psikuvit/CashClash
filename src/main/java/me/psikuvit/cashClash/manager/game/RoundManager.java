@@ -314,6 +314,18 @@ public class RoundManager {
 
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
 
+        // If the round timer expired with no winner, start final-stand (if gamemode supports it)
+        if (session.getGamemode() != null) {
+            var fsm = session.getGamemode().getFinalStandManager();
+            if (fsm != null && !fsm.isActive() && session.getGamemode().getWinningTeam() == 0) {
+                Messages.debug("[RoundManager] Starting final-stand for session due to round timer ending with no winner");
+                fsm.start();
+                Messages.broadcast(session.getPlayers(), "round.round-ended",
+                    "round", String.valueOf(session.getCurrentRound()));
+                return;
+            }
+        }
+
         Messages.broadcast(session.getPlayers(), "round.round-ended",
             "round", String.valueOf(session.getCurrentRound()));
 
