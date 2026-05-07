@@ -99,6 +99,9 @@ public abstract class Gamemode {
     public abstract void prepareSuddenDeathRound();
 
     public boolean isFinalStandActive() {
+        FinalStandManager fsm = getFinalStandManager();
+        if (fsm != null) return fsm.isActive();
+
         SuddenDeathManager manager = getSuddenDeathManager();
         return manager != null && manager.isFinalStandActive();
     }
@@ -112,4 +115,12 @@ public abstract class Gamemode {
      * Get the sudden death manager for this gamemode
      */
     public abstract SuddenDeathManager getSuddenDeathManager();
+
+    /**
+     * Get the final stand manager for this gamemode (optional).
+     * Default: null - gamemodes that support final stand should override to return an instance.
+     */
+    public FinalStandManager getFinalStandManager() {
+        return null;
+    }
 }
