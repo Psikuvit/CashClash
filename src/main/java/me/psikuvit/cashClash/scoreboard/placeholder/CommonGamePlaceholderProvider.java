@@ -66,6 +66,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         // Sudden death heart timer
         SUPPORTED_PLACEHOLDERS.add("player_heart_timer");
         SUPPORTED_PLACEHOLDERS.add("sudden_death_timer");
+        SUPPORTED_PLACEHOLDERS.add("final_stand_timer");
         SUPPORTED_PLACEHOLDERS.add("sudden_death_cycle");
     }
 
@@ -140,6 +141,12 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
                 var gamemode = session.getGamemode();
                 var manager = gamemode == null ? null : gamemode.getSuddenDeathManager();
                 int remaining = manager == null ? -1 : manager.getSuddenDeathTimerRemainingSeconds();
+                yield remaining < 0 ? "" : formatTime(remaining);
+            }
+            case "final_stand_timer" -> {
+                var gamemode = session.getGamemode();
+                var fsm = gamemode == null ? null : gamemode.getFinalStandManager();
+                int remaining = fsm == null ? -1 : fsm.getRemainingSeconds();
                 yield remaining < 0 ? "" : formatTime(remaining);
             }
             case "sudden_death_cycle" -> {
