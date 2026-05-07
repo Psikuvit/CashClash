@@ -333,12 +333,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
             // Tied - reset cycle and restart final-stand cycle
             Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
             Messages.debug("[PTP] Tied at final-stand - attempting to restart cycle");
-            FinalStandManager fsm = getFinalStandManager();
-            if (fsm != null) {
-                fsm.resetCycle();
-            } else {
-                Messages.debug("[PTP] No FinalStandManager available to reset cycle");
-            }
+            finalStandManager.resetCycle();
+
         } else {
             // Winner declared
             suddenDeathWinningTeam = team1Kills > team2Kills ? 1 : 2;
@@ -814,7 +810,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public boolean isFinalStandActive() {
-        return super.isFinalStandActive();
+        return finalStandManager.isActive();
     }
 
 
