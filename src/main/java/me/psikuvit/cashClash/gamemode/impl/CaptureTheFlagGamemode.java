@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
@@ -9,6 +10,8 @@ import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.ActionBarQueue;
+import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.util.game.FlagBannerUtils;
 import me.psikuvit.cashClash.util.game.FlagPickupValidator;
 import me.psikuvit.cashClash.util.items.ItemUtils;
@@ -585,7 +588,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public boolean isFinalStandActive() {
-        return suddenDeathManager.isFinalStandActive();
+        return super.isFinalStandActive();
     }
 
     @Override
@@ -604,10 +607,16 @@ public class CaptureTheFlagGamemode extends Gamemode {
         int team2Captures = suddenDeathCycleCaptures.getOrDefault(2, 0);
 
         if (team1Captures == team2Captures) {
-            // Tied - reset cycle and restart 5-minute timer
+            // Tied - reset cycle and restart final-stand or sudden-death cycle depending on manager
             Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
-            Messages.debug("[CTF] Tied at 5 minutes - restarting sudden death cycle");
-            suddenDeathManager.resetSuddenDeathCycle();
+            Messages.debug("[CTF] Tied at final-stand - attempting to restart cycle");
+            FinalStandManager fsm = getFinalStandManager();
+            if (fsm != null) {
+                fsm.resetCycle();
+            } else {
+                // Fallback: if no FinalStandManager, no-op or log
+                Messages.debug("[CTF] No FinalStandManager available to reset cycle");
+            }
         } else {
             // Winner declared
             suddenDeathWinningTeam = team1Captures > team2Captures ? 1 : 2;
@@ -816,7 +825,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
                         String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
                         String countdownMsg = flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s");
-                        player.sendActionBar(Messages.parse(countdownMsg));
+                        // enqueue short-lived high-priority countdowns to avoid overlap
+                        ActionBarQueue.get().enqueue(player, countdownMsg, 1, 20);
                     }
                 }
             } else {
@@ -878,7 +888,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         moveBannerBack(flag.bannerDisplay(), droppedFlag.getFlagLoc());
 
-        BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> returnFlagToBase(teamNumber), 60L * 20L);
+        BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> returnFlagToBase(teamNumber), 5 * 20L);
         flagReturnTasks.put(teamNumber, returnTask);
         Messages.debug("[CTF] Dropped Team " + teamNumber + " flag at " + dropLocation + "; returning in 60s if not picked up");
     }
@@ -899,7 +909,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
             return;
         }
 
-        suddenDeathManager.enterSuddenDeath(false);
+        suddenDeathManager.enterSuddenDeath();
         Messages.debug("[CTF] Prepared sudden death round - match score is 3-3");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-timer-start");
@@ -940,11 +950,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 if (remaining > 0) {
                     // During bonus window
                     String timerMsg = "<green>⏰ Bonus expires in: <gold>" + secondsRemaining + "s</gold></green>";
-                    carrier.sendActionBar(Messages.parse(timerMsg));
+                    ActionBarQueue.get().enqueue(carrier, timerMsg, 5, 40);
                 } else {
                     // After bonus window, show "no bonus" message
                     String noBonus = "<red>❌ No bonus - score won't grant extra money</red>";
-                    carrier.sendActionBar(Messages.parse(noBonus));
+                    ActionBarQueue.get().enqueue(carrier, noBonus, 5, 40);
                 }
             }
         }
@@ -960,11 +970,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 if (remaining > 0) {
                     // During bonus window
                     String timerMsg = "<blue>⏰ Bonus expires in: <gold>" + secondsRemaining + "s</gold></blue>";
-                    carrier.sendActionBar(Messages.parse(timerMsg));
+                    ActionBarQueue.get().enqueue(carrier, timerMsg, 5, 40);
                 } else {
                     // After bonus window, show "no bonus" message
                     String noBonus = "<red>❌ No bonus - score won't grant extra money</red>";
-                    carrier.sendActionBar(Messages.parse(noBonus));
+                    ActionBarQueue.get().enqueue(carrier, noBonus, 5, 40);
                 }
             }
         }
@@ -994,7 +1004,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
             if (remaining > 0) {
                 // Heart is still active - show countdown
                 String timerMsg = "<red>❤ Extra Heart expires in: <gold>" + secondsRemaining + "s</gold></red>";
-                player.sendActionBar(Messages.parse(timerMsg));
+                ActionBarQueue.get().enqueue(player, timerMsg, 3, 40);
             } else {
                 // Heart expired - remove from tracking
                 playerHeartTimestamps.remove(playerUuid);

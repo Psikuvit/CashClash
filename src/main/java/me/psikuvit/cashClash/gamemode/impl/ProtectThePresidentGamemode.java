@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.game.PresidentialBuffSelectionUtils;
 import me.psikuvit.cashClash.util.game.PresidentialEffectsUtils;
+import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -327,10 +328,15 @@ public class ProtectThePresidentGamemode extends Gamemode {
         int team2Kills = suddenDeathPresidentKills.getOrDefault(2, 0);
 
         if (team1Kills == team2Kills) {
-            // Tied - reset cycle and restart 5-minute timer
+            // Tied - reset cycle and restart final-stand cycle
             Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
-            Messages.debug("[PTP] Tied at 5 minutes - restarting sudden death cycle");
-            suddenDeathManager.resetSuddenDeathCycle();
+            Messages.debug("[PTP] Tied at final-stand - attempting to restart cycle");
+            FinalStandManager fsm = getFinalStandManager();
+            if (fsm != null) {
+                fsm.resetCycle();
+            } else {
+                Messages.debug("[PTP] No FinalStandManager available to reset cycle");
+            }
         } else {
             // Winner declared
             suddenDeathWinningTeam = team1Kills > team2Kills ? 1 : 2;
@@ -644,7 +650,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             return;
         }
 
-        suddenDeathManager.enterSuddenDeath(false);
+        suddenDeathManager.enterSuddenDeath();
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
     }
@@ -806,7 +812,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public boolean isFinalStandActive() {
-        return suddenDeathManager.isFinalStandActive();
+        return super.isFinalStandActive();
     }
 
 
