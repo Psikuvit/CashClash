@@ -37,6 +37,7 @@ public class SuddenDeathManager {
     private boolean finalStandActive;
     private BukkitTask finalStandTask;
     private final BukkitTask heartExpiryTask;
+    private long finalStandStartMs; // Start time of the current 5-minute timer
 
     public SuddenDeathManager(GameSession session, Gamemode gamemode) {
         this.session = session;
@@ -44,6 +45,7 @@ public class SuddenDeathManager {
         this.inSuddenDeath = false;
         this.finalStandActive = false;
         this.finalStandTask = null;
+        this.finalStandStartMs = 0;
         this.extraHeartExpiry = new HashMap<>();
         this.heartExpiryTask = SchedulerUtils.runTaskTimer(this::removeExpiredHearts, 20L, 20L);
     }
@@ -79,6 +81,7 @@ public class SuddenDeathManager {
         if (finalStandTask != null && !finalStandTask.isCancelled()) {
             return;
         }
+        finalStandStartMs = System.currentTimeMillis();
         long ticksDelay = (FINAL_STAND_DURATION_MS / 50); // Convert milliseconds to ticks
         finalStandTask = SchedulerUtils.runTaskLater(this::activateFinalStand, ticksDelay);
     }
@@ -90,16 +93,35 @@ public class SuddenDeathManager {
     }
 
     /**
-     * Activate final stand mode
+     * Activate final stand mode and notify the gamemode
+     * The gamemode is responsible for:
+     * - Implementing custom final-stand mechanics (elimination, border, etc.)
+     * - Deciding if a winner has been declared
+     * - Calling resetSuddenDeathCycle() if the match should continue tied
      */
     private void activateFinalStand() {
         finalStandActive = true;
-        Messages.debug("[SuddenDeathManager] Final stand activated");
+        Messages.debug("[SuddenDeathManager] Final stand activated after 5 minutes");
 
-        // Notify gamemode to handle final stand activation
+        // Notify gamemode to handle final stand activation with custom game-specific logic
         if (gamemode != null) {
             gamemode.onFinalStandActivated();
         }
+    }
+
+    /**
+     * Reset the sudden death cycle and restart the 5-minute timer
+     * Called by the gamemode if a cycle ends in a tie and play should continue
+     */
+    public void resetSuddenDeathCycle() {
+        if (!inSuddenDeath) {
+            Messages.debug("[SuddenDeathManager] Cannot reset cycle - not in sudden death");
+            return;
+        }
+
+        finalStandActive = false;
+        Messages.debug("[SuddenDeathManager] Resetting sudden death cycle - restarting 5-minute timer");
+        startFinalStandTimer();
     }
 
     /**
@@ -132,11 +154,11 @@ public class SuddenDeathManager {
 
         Messages.debug("[SuddenDeathManager] Applied extra heart to: " + player.getName() + " for " + durationMs + "ms");
 
-        // Use centralized health system to add temporary hearts (2 hearts = 4 health)
+        // Use centralized health system to add temporary hearts (1 heart = 2 health)
         var ccp = session.getCashClashPlayer(uuid);
         if (ccp != null) {
-            ccp.addHealthModifier(4.0);
-            Messages.debug("[SuddenDeathManager] Added +4 health to " + player.getName() + " via health modifier system");
+            ccp.addHealthModifier(2.0);
+            Messages.debug("[SuddenDeathManager] Added +2 health to " + player.getName() + " via health modifier system");
         }
     }
 
@@ -146,11 +168,11 @@ public class SuddenDeathManager {
     private void removeExtraHeart(UUID playerUuid) {
         Player p = Bukkit.getPlayer(playerUuid);
         if (p != null && p.isOnline()) {
-            // Use centralized health system to remove the temporary hearts
+            // Use centralized health system to remove the temporary heart
             CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
             if (ccp != null) {
-                ccp.removeHealthModifier(4.0);
-                Messages.debug("[SuddenDeathManager] Removed +4 health from " + p.getName() + " via health modifier system");
+                ccp.removeHealthModifier(2.0);
+                Messages.debug("[SuddenDeathManager] Removed +2 health from " + p.getName() + " via health modifier system");
             }
         }
         extraHeartExpiry.remove(playerUuid);
@@ -269,6 +291,34 @@ public class SuddenDeathManager {
     public boolean hasExtraHeart(UUID playerUuid) {
         return extraHeartExpiry.containsKey(playerUuid);
     }
+
+    /**
+     * Get remaining time for the current sudden death timer in seconds
+     * Returns -1 if not in sudden death or timer not active
+     */
+    public int getSuddenDeathTimerRemainingSeconds() {
+        if (!inSuddenDeath || finalStandStartMs <= 0) {
+            return -1;
+        }
+
+        long elapsedMs = System.currentTimeMillis() - finalStandStartMs;
+        long remainingMs = Math.max(0, FINAL_STAND_DURATION_MS - elapsedMs);
+        return (int) (remainingMs / 1000);
+    }
+
+    /**
+     * Get remaining time for the current sudden death timer in milliseconds
+     * Returns -1 if not in sudden death or timer not active
+     */
+    public long getFinalStandRemainingMs() {
+        if (!inSuddenDeath || finalStandStartMs <= 0) {
+            return -1;
+        }
+
+        long elapsedMs = System.currentTimeMillis() - finalStandStartMs;
+        return Math.max(0, FINAL_STAND_DURATION_MS - elapsedMs);
+    }
+
 }
 
 

@@ -3,8 +3,6 @@ package me.psikuvit.cashClash.gamemode;
 import me.psikuvit.cashClash.game.GameSession;
 import org.bukkit.entity.Player;
 
-import java.util.UUID;
-
 /**
  * Abstract base class for all gamemodes.
  * Each gamemode implements its own win conditions, mechanics, and special features.
@@ -98,25 +96,17 @@ public abstract class Gamemode {
         return false;
     }
 
-    public boolean prepareSuddenDeathRound() {
-        return false;
-    }
+    public abstract void prepareSuddenDeathRound();
 
     public boolean isFinalStandActive() {
-        return false;
-    }
-
-    public int getSuddenDeathTimerRemainingSeconds() {
-        return -1;
+        SuddenDeathManager manager = getSuddenDeathManager();
+        return manager != null && manager.isFinalStandActive();
     }
 
     public int getSuddenDeathCycle() {
         return 0;
     }
 
-    public long getExtraHeartRemainingMs(UUID playerUuid) {
-        return -1;
-    }
 
     /**
      * Get the sudden death manager for this gamemode

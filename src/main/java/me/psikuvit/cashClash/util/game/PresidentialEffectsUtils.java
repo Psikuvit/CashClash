@@ -59,7 +59,7 @@ public class PresidentialEffectsUtils {
      * Apply extra hearts buff to a president
      *
      * @param player The president player
-     * @param healthModifier The health modifier value (6.0 = 3 hearts)
+     * @param healthModifier The health modifier value (2.0 = 1 heart)
      */
     public static void applyExtraHearts(Player player, double healthModifier) {
         if (player != null) {

@@ -26,7 +26,7 @@ import java.util.UUID;
 
 /**
  * Protect the President Gamemode
- * Goal: Best of 7 series - first to 4 assassinations wins the match
+ * Goal: Best of 7 series - first to 2 assassinations wins each round
  */
 public class ProtectThePresidentGamemode extends Gamemode {
 
@@ -34,8 +34,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private static final int KILL_BONUS_THRESHOLD = 2;
     private static final long KILL_BONUS_AMOUNT = 15000;
     private static final long HEART_DURATION_MS = 45 * 1000;
-    private static final int WIN_CONDITION = 4;
-    private static final int SUDDEN_DEATH_CYCLE_SECONDS = 180;
+    private static final int WIN_CONDITION = 2;
+    private static final int SUDDEN_DEATH_CYCLE_SECONDS = 300;
 
     private final Map<Integer, President> presidents;
     private final Map<Integer, Integer> teamKillCount;
@@ -47,12 +47,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private boolean selectionPhaseActive;
     private boolean buffSelectionFinalized;
     private BukkitTask selectionTask;
-    private BukkitTask suddenDeathCycleTask;
     private int selectionTimeRemaining;
-    private boolean finalStandTriggered; // Track if we've already executed final stand
-    private long suddenDeathCycleStartMs;
-    private int suddenDeathCycle;
     private int suddenDeathWinningTeam;
+    // Track the most recent team that received an extra-heart bonus and when it was awarded
+    private int recentHeartBonusTeam;
+    private long recentHeartBonusAwardMs;
 
     public ProtectThePresidentGamemode(GameSession session) {
         super(session, GamemodeType.PROTECT_THE_PRESIDENT);
@@ -67,12 +66,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.selectionPhaseActive = false;
         this.buffSelectionFinalized = false;
         this.selectionTask = null;
-        this.suddenDeathCycleTask = null;
         this.selectionTimeRemaining = SELECTION_TIME;
-        this.finalStandTriggered = false;
-        this.suddenDeathCycleStartMs = 0L;
-        this.suddenDeathCycle = 0;
         this.suddenDeathWinningTeam = 0;
+        this.recentHeartBonusTeam = 0;
+        this.recentHeartBonusAwardMs = 0L;
 
         // Pre-populate team kill count
         teamKillCount.put(1, 0);
@@ -98,7 +95,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public void onCombatPhaseStart() {
         Messages.debug("[PTP] Combat phase started");
         if (suddenDeathManager.isInSuddenDeath()) {
-            startSuddenDeathCombatTimers();
+            // Reset sudden death kill counters for this cycle
+            suddenDeathPresidentKills.put(1, 0);
+            suddenDeathPresidentKills.put(2, 0);
+            Messages.debug("[PTP] Sudden death cycle started - kill counters reset");
         }
 
         // Apply glow and buffs to presidents now that combat has started
@@ -121,6 +121,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         // Reset deaths for next round
         presidents.replaceAll((team, pres) -> pres.withResetDeaths());
+        // Reset recent heart bonus tracking
+        recentHeartBonusTeam = 0;
+        recentHeartBonusAwardMs = 0L;
     }
 
     /**
@@ -242,12 +245,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
             return true;
         }
 
-        // Check if final stand has activated
-        if (suddenDeathManager.isFinalStandActive() && !finalStandTriggered) {
-            activateFinalStandElimination();
-            finalStandTriggered = true;
-        }
-
         return !suddenDeathManager.isInSuddenDeath() &&
                 (deaths1 >= WIN_CONDITION || deaths2 >= WIN_CONDITION);
     }
@@ -273,11 +270,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public void cleanup() {
         cancelTask(selectionTask);
-        cancelTask(suddenDeathCycleTask);
         suddenDeathManager.cleanup();
         presidents.clear();
         teamKillCount.clear();
         savedInventories.clear();
+        // Reset recent heart bonus tracking on cleanup
+        recentHeartBonusTeam = 0;
+        recentHeartBonusAwardMs = 0L;
     }
 
     private void cancelTask(BukkitTask task) {
@@ -292,9 +291,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
             String pres1Name = getPresidentName(1);
             String pres2Name = getPresidentName(2);
             return "<gold>" + pres1Name + " and " + pres2Name + " are elected as your presidents! " +
-                    "You can select 2 bonus effects for this final fight!</gold>";
+                    "You can select up to 2 bonus effects for this final fight!</gold>";
         }
-        return "<gold>" + getPresidentName(1) + " is your team's president and can pick a bonus effect.</gold>";
+        return "<gold>" + getPresidentName(1) + " is your team's president and can pick 1 bonus effect.</gold>";
     }
 
     private String getPresidentName(int team) {
@@ -308,11 +307,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public String getBuyPhaseMessage() {
         if (suddenDeathManager.isInSuddenDeath()) {
             return "<yellow>The game has entered sudden death. Money bonuses have been replaced with an extra heart " +
-                    "that lasts for 45 seconds. The penalty timer has doubled. Eliminate the other team's president " +
-                    "more times in 3 minutes to win the match!</yellow>";
+                    "that lasts for 45 seconds. Eliminate the other team's president more times in 5 minutes to win the match!</yellow>";
         }
 
-        return "<yellow>Best of 7 series - First to 4 assassinations wins! " +
+        return "<yellow>Best of 7 series - First to 2 assassinations wins each round! " +
                 "Every 2 kills the president's team gets a split 15k bonus!</yellow>";
     }
 
@@ -322,8 +320,22 @@ public class ProtectThePresidentGamemode extends Gamemode {
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.border-closing");
         activateFinalStandElimination();
         startFinalStandBorder();
-        finalStandTriggered = true;
         Messages.debug("[PTP] Final Stand activated - non-Presidents will be eliminated");
+
+        // Check if there's a winner during this 5-minute sudden death cycle; if tied, reset and continue
+        int team1Kills = suddenDeathPresidentKills.getOrDefault(1, 0);
+        int team2Kills = suddenDeathPresidentKills.getOrDefault(2, 0);
+
+        if (team1Kills == team2Kills) {
+            // Tied - reset cycle and restart 5-minute timer
+            Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
+            Messages.debug("[PTP] Tied at 5 minutes - restarting sudden death cycle");
+            suddenDeathManager.resetSuddenDeathCycle();
+        } else {
+            // Winner declared
+            suddenDeathWinningTeam = team1Kills > team2Kills ? 1 : 2;
+            Messages.debug("[PTP] Sudden death winner determined: Team " + suddenDeathWinningTeam + " with " + Math.max(team1Kills, team2Kills) + " kills");
+        }
     }
 
     /**
@@ -496,6 +508,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
                         Messages.debug("[PTP] Applied extra heart bonus to: " + p.getName());
                     }
                 }
+                // Record which team received the recent heart bonus and timestamp (for scoreboard placeholders)
+                recentHeartBonusTeam = team;
+                recentHeartBonusAwardMs = System.currentTimeMillis();
             } else {
                 // Normal mode: award coins split among team
                 long bonusPerPlayer = KILL_BONUS_AMOUNT / 4;
@@ -532,12 +547,12 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 case TANK -> PresidentialEffectsUtils.applyPotionEffect(presPlayer, PotionEffectType.RESISTANCE);
                 case SPEED -> PresidentialEffectsUtils.applyPotionEffect(presPlayer, PotionEffectType.SPEED);
                 case HP -> {
-                    // Add 3 extra hearts (permanent for this round, will be reset on round end)
+                    // Add 1 extra heart (permanent for this round, will be reset on round end)
                     UUID presUuid = presPlayer.getUniqueId();
                     var cashPlayer = session.getCashClashPlayer(presUuid);
                     if (cashPlayer != null) {
-                        cashPlayer.setHealthModifier(6.0); // 6 health = 3 hearts
-                        PresidentialEffectsUtils.applyExtraHearts(presPlayer, 6.0);
+                        cashPlayer.setHealthModifier(2.0); // 2 health = 1 heart
+                        PresidentialEffectsUtils.applyExtraHearts(presPlayer, 2.0);
                     }
                 }
             }
@@ -610,7 +625,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         suddenDeathManager.enterSuddenDeath();
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
-        startSuddenDeathCombatTimers();
+        Messages.debug("[PTP] Entered sudden death - 5-minute final stand timer started");
     }
 
     @Override
@@ -624,15 +639,14 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     @Override
-    public boolean prepareSuddenDeathRound() {
+    public void prepareSuddenDeathRound() {
         if (suddenDeathManager.isInSuddenDeath()) {
-            return false;
+            return;
         }
 
         suddenDeathManager.enterSuddenDeath(false);
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
-        return true;
     }
 
     /**
@@ -687,41 +701,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
         return session.getGameWorld().getSpawnLocation();
     }
 
-    private void startSuddenDeathCycle() {
-        suddenDeathPresidentKills.put(1, 0);
-        suddenDeathPresidentKills.put(2, 0);
-        suddenDeathCycle = Math.max(suddenDeathCycle, 0) + 1;
-        suddenDeathCycleStartMs = System.currentTimeMillis();
-        cancelTask(suddenDeathCycleTask);
-        suddenDeathCycleTask = SchedulerUtils.runTaskTimer(this::checkSuddenDeathCycle, 20L, 20L);
-    }
 
-    private void startSuddenDeathCombatTimers() {
-        suddenDeathManager.startFinalStandTimerIfNeeded();
-        if (suddenDeathCycleTask == null || suddenDeathCycleTask.isCancelled()) {
-            startSuddenDeathCycle();
-        }
-    }
-
-    private void checkSuddenDeathCycle() {
-        if (!suddenDeathManager.isInSuddenDeath() || suddenDeathWinningTeam > 0) {
-            return;
-        }
-
-        if (getSuddenDeathTimerRemainingSeconds() > 0) {
-            return;
-        }
-
-        int team1Kills = suddenDeathPresidentKills.getOrDefault(1, 0);
-        int team2Kills = suddenDeathPresidentKills.getOrDefault(2, 0);
-
-        if (team1Kills == team2Kills) {
-            Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
-            startSuddenDeathCycle();
-            return;
-        }
-
-        suddenDeathWinningTeam = team1Kills > team2Kills ? 1 : 2;
+    @Override
+    public int getSuddenDeathCycle() {
+        // SuddenDeathManager now owns cycle management; this is kept for compatibility
+        return 0;
     }
 
     /**
@@ -786,7 +770,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
         List<PresidentialBuff> buffs = selectedBuffs.computeIfAbsent(playerUuid, uuid -> new ArrayList<>());
 
-        // In sudden death, allow 2 buffs; otherwise allow 1
+        // In sudden death presidents can select up to 2 buffs; otherwise only 1
         int maxBuffs = suddenDeathManager.isInSuddenDeath() ? 2 : 1;
 
         // Check if already selected - if so, deselect
@@ -800,19 +784,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             return true;
         }
         
-        // In non-sudden death, allow replacing the current buff
-        if (!suddenDeathManager.isInSuddenDeath() && !buffs.isEmpty()) {
-            buffs.clear();
-            buffs.add(buff);
-            President updatedPres = pres.withBuff(buff);
-            presidents.put(presTeam, updatedPres);
-            Messages.debug("[PTP] " + player.getName() + " replaced buff with: " + buff.getName());
-            Messages.send(player, "gamemode-ptp.buff-selected-player", "buff_name", buff.getName());
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
-            return true;
-        }
-        
-        // Check if we can select another buff (for sudden death with multiple buffs)
+        // Check if we can select another buff
         if (buffs.size() >= maxBuffs) {
             Messages.send(player, "gamemode-ptp.buff-selection-limit", "max_buffs", String.valueOf(maxBuffs));
             return false;
@@ -837,24 +809,28 @@ public class ProtectThePresidentGamemode extends Gamemode {
         return suddenDeathManager.isFinalStandActive();
     }
 
-    @Override
-    public int getSuddenDeathTimerRemainingSeconds() {
-        if (!suddenDeathManager.isInSuddenDeath() || suddenDeathManager.isFinalStandActive() || suddenDeathCycleStartMs <= 0) {
-            return -1;
+
+    /**
+     * Return the team number that most recently received an extra-heart bonus, or 0 if none or expired.
+     * The recorded value expires after 3 minutes.
+     */
+    public int getRecentHeartBonusTeam() {
+        if (recentHeartBonusTeam == 0) return 0;
+        long elapsed = System.currentTimeMillis() - recentHeartBonusAwardMs;
+        if (elapsed > 3 * 60 * 1000L) { // 3 minutes
+            return 0;
         }
-
-        long elapsedSeconds = (System.currentTimeMillis() - suddenDeathCycleStartMs) / 1000;
-        return (int) Math.max(0, SUDDEN_DEATH_CYCLE_SECONDS - elapsedSeconds);
+        return recentHeartBonusTeam;
     }
 
-    @Override
-    public int getSuddenDeathCycle() {
-        return suddenDeathCycle;
-    }
-
-    @Override
-    public long getExtraHeartRemainingMs(UUID playerUuid) {
-        return suddenDeathManager.getExtraHeartRemainingMs(playerUuid);
+    /**
+     * Get remaining milliseconds for the recent heart bonus indicator (for scoreboard timers), or 0 if expired.
+     */
+    public long getRecentHeartBonusRemainingMs() {
+        if (recentHeartBonusTeam == 0) return 0L;
+        long elapsed = System.currentTimeMillis() - recentHeartBonusAwardMs;
+        long remaining = 3 * 60 * 1000L - elapsed;
+        return Math.max(0L, remaining);
     }
 
     @Override
