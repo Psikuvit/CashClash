@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
@@ -9,7 +10,6 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.game.PresidentialBuffSelectionUtils;
 import me.psikuvit.cashClash.util.game.PresidentialEffectsUtils;
-import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -36,7 +36,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private static final long KILL_BONUS_AMOUNT = 15000;
     private static final long HEART_DURATION_MS = 45 * 1000;
     private static final int WIN_CONDITION = 2;
-    private static final int SUDDEN_DEATH_CYCLE_SECONDS = 300;
 
     private final Map<Integer, President> presidents;
     private final Map<Integer, Integer> teamKillCount;
@@ -703,13 +702,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
                     (loc1.getZ() + loc2.getZ()) / 2.0);
         }
         return session.getGameWorld().getSpawnLocation();
-    }
-
-
-    @Override
-    public int getSuddenDeathCycle() {
-        // SuddenDeathManager now owns cycle management; this is kept for compatibility
-        return 0;
     }
 
     /**

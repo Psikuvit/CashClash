@@ -6,12 +6,11 @@ import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
+import me.psikuvit.cashClash.util.ActionBarQueue;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.ActionBarQueue;
-import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.util.game.FlagBannerUtils;
 import me.psikuvit.cashClash.util.game.FlagPickupValidator;
 import me.psikuvit.cashClash.util.items.ItemUtils;
@@ -322,7 +321,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
             // Apply silenced ability if not in final stand
         }
-        if (!isFinalStandActive()) {
+        if (finalStandManager.isActive()) {
             Messages.send(player, "gamemode-ctf.silenced-activated");
             Messages.debug("[CTF] Applied silenced ability to flag carrier: " + player.getName());
 
@@ -590,7 +589,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public boolean isFinalStandActive() {
-        return super.isFinalStandActive();
+        return finalStandManager.isActive();
     }
 
     @Override
@@ -612,26 +611,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
             // Tied - reset cycle and restart final-stand or sudden-death cycle depending on manager
             Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
             Messages.debug("[CTF] Tied at final-stand - attempting to restart cycle");
-            FinalStandManager fsm = getFinalStandManager();
-            if (fsm != null) {
-                fsm.resetCycle();
-            } else {
-                // Fallback: if no FinalStandManager, no-op or log
-                Messages.debug("[CTF] No FinalStandManager available to reset cycle");
-            }
+            finalStandManager.resetCycle();
         } else {
             // Winner declared
             suddenDeathWinningTeam = team1Captures > team2Captures ? 1 : 2;
             Messages.debug("[CTF] Sudden death winner determined: Team " + suddenDeathWinningTeam + " with " + Math.max(team1Captures, team2Captures) + " captures");
         }
     }
-
-    @Override
-    public int getSuddenDeathCycle() {
-        // SuddenDeathManager now owns cycle management; this is kept for compatibility
-        return 0;
-    }
-
 
     @Override
     public SuddenDeathManager getSuddenDeathManager() {

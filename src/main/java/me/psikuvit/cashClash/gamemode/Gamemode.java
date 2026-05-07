@@ -86,7 +86,6 @@ public abstract class Gamemode {
     /**
      * Called when Final Stand is activated (5 minute timer expires during sudden death)
      * Gamemodes can override this to handle final stand specific logic
-     * Default: no special handling
      */
     public abstract void onFinalStandActivated();
 
@@ -100,10 +99,6 @@ public abstract class Gamemode {
     public boolean isFinalStandActive() {
         FinalStandManager fsm = getFinalStandManager();
         return fsm.isActive();
-    }
-
-    public int getSuddenDeathCycle() {
-        return 0;
     }
 
 
