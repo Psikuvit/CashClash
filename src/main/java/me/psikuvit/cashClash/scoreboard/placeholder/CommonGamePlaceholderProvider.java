@@ -135,7 +135,8 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
                 var gamemode = session.getGamemode();
                 var manager = gamemode == null ? null : gamemode.getSuddenDeathManager();
                 long remaining = manager == null ? -1 : manager.getExtraHeartRemainingMs(player.getUniqueId());
-                yield formatMillis(remaining);
+                // Only show timer when player actually has an active extra heart
+                yield remaining > 0 ? formatMillis(remaining) : "";
             }
             case "sudden_death_timer" -> {
                 var gamemode = session.getGamemode();
