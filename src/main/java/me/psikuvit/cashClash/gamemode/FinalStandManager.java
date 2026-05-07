@@ -33,7 +33,7 @@ public class FinalStandManager {
     }
 
     public FinalStandManager(GameSession session, Gamemode gamemode) {
-        this(session, gamemode, 5 * 60 * 1000L); // default 5 minutes
+        this(session, gamemode, 3 * 60 * 1000L); // default 3 minutes
     }
 
     /**

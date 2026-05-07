@@ -88,9 +88,8 @@ public abstract class Gamemode {
      * Gamemodes can override this to handle final stand specific logic
      * Default: no special handling
      */
-    public void onFinalStandActivated() {
-        // Default: no special handling
-    }
+    public abstract void onFinalStandActivated();
+
 
     public boolean forceSuddenDeathForTesting() {
         return false;

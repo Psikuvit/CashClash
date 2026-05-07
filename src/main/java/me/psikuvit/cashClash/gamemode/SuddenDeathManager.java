@@ -27,14 +27,10 @@ import java.util.UUID;
  */
 public class SuddenDeathManager {
 
-    private static final long HEART_DURATION_MS = 45 * 1000;
-    private static final long FINAL_STAND_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-
     private final GameSession session;
     private final Gamemode gamemode;
     private final Map<UUID, Long> extraHeartExpiry; // Player UUID -> expiry time in ms
     private boolean inSuddenDeath;
-    // final stand timing moved to FinalStandManager
     private final BukkitTask heartExpiryTask;
 
 
@@ -42,19 +38,12 @@ public class SuddenDeathManager {
         this.session = session;
         this.gamemode = gamemode;
         this.inSuddenDeath = false;
-        // final stand state is handled by FinalStandManager now
         this.extraHeartExpiry = new HashMap<>();
         this.heartExpiryTask = SchedulerUtils.runTaskTimer(this::removeExpiredHearts, 20L, 20L);
     }
 
-    /**
-     * Enter sudden death mode
-     */
-    public void enterSuddenDeath() {
-        enterSuddenDeath(true);
-    }
 
-    public void enterSuddenDeath(boolean startFinalStandTimer) {
+    public void enterSuddenDeath() {
         if (inSuddenDeath) {
             Messages.debug("[SuddenDeathManager] Already in sudden death mode");
             return;
@@ -64,11 +53,6 @@ public class SuddenDeathManager {
         Messages.debug("[SuddenDeathManager] Entering sudden death mode");
 
         // Note: final-stand timer is now managed by FinalStandManager (separate system)
-    }
-
-    // Final-stand lifecycle was extracted to FinalStandManager. Keep reset stub for compatibility.
-    public void resetSuddenDeathCycle() {
-        Messages.debug("[SuddenDeathManager] resetSuddenDeathCycle() called - no-op (moved to FinalStandManager)");
     }
 
     /**
@@ -155,20 +139,12 @@ public class SuddenDeathManager {
         return inSuddenDeath;
     }
 
-    /**
-     * Check if final stand is active
-     */
-    public boolean isFinalStandActive() {
-        // Final stand is now managed by FinalStandManager; SuddenDeathManager no longer tracks it.
-        return false;
-    }
 
     /**
      * Reset sudden death state for new round
      */
     public void resetForNewRound() {
         inSuddenDeath = false;
-        // Final stand state is managed by FinalStandManager; nothing to cancel here.
 
         // Clear all extra hearts - create a list to avoid ConcurrentModificationException
         List<UUID> playersWithHearts = new ArrayList<>(extraHeartExpiry.keySet());
@@ -245,17 +221,6 @@ public class SuddenDeathManager {
         // Timing for final stand moved to FinalStandManager; keep compatibility stub
         return -1;
     }
-
-    /**
-     * Get remaining time for the current sudden death timer in milliseconds
-     * Returns -1 if not in sudden death or timer not active
-     */
-    public long getFinalStandRemainingMs() {
-        // Final stand timing moved to FinalStandManager; keep compatibility stub
-        return -1;
-    }
-
-
 }
 
 
