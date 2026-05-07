@@ -130,9 +130,16 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             case "teamBlue_captures" -> String.valueOf(session.getRoundWins(2));
 
             // Sudden death heart timer - placeholder for use in CTF
-            case "player_heart_timer" -> formatMillis(session.getGamemode() == null ? -1 : session.getGamemode().getExtraHeartRemainingMs(player.getUniqueId()));
+            case "player_heart_timer" -> {
+                var gamemode = session.getGamemode();
+                var manager = gamemode == null ? null : gamemode.getSuddenDeathManager();
+                long remaining = manager == null ? -1 : manager.getExtraHeartRemainingMs(player.getUniqueId());
+                yield formatMillis(remaining);
+            }
             case "sudden_death_timer" -> {
-                int remaining = session.getGamemode() == null ? -1 : session.getGamemode().getSuddenDeathTimerRemainingSeconds();
+                var gamemode = session.getGamemode();
+                var manager = gamemode == null ? null : gamemode.getSuddenDeathManager();
+                int remaining = manager == null ? -1 : manager.getSuddenDeathTimerRemainingSeconds();
                 yield remaining < 0 ? "" : formatTime(remaining);
             }
             case "sudden_death_cycle" -> {
