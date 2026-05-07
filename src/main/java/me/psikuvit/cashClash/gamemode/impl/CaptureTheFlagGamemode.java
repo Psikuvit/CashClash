@@ -48,6 +48,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
     private final Map<Integer, Location> flagBaseLocations;
     private final Map<Integer, BukkitTask> flagReturnTasks;
+    private final Map<Integer, Long> flagReturnExpiry; // scheduled return time (ms) for dropped flags
     private final Map<UUID, Long> playerCircleTimestamps; // Track when each player entered the circle
     private final Map<UUID, Integer> playerNearestFlagTeam; // Track which flag team player is near
     private final Set<UUID> stalemateMsgShown; // Track players who've been told about stalemate in current state
@@ -72,6 +73,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.flagStates = new HashMap<>(2);
         this.flagBaseLocations = new HashMap<>(2);
         this.flagReturnTasks = new HashMap<>(2);
+        this.flagReturnExpiry = new HashMap<>(2);
         this.playerCircleTimestamps = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
         this.stalemateMsgShown = new HashSet<>();
@@ -161,6 +163,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         suddenDeathWinningTeam = 0;
         flagReturnTasks.values().forEach(this::cancelTask);
         flagReturnTasks.clear();
+        flagReturnExpiry.clear();
         // Reset flag states but preserve the plate locations and banners for next round
         returnFlagToBase(1);
         returnFlagToBase(2);
@@ -248,6 +251,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         cancelTask(heartTimerDisplayTask);
         flagReturnTasks.values().forEach(this::cancelTask);
         flagReturnTasks.clear();
+        flagReturnExpiry.clear();
 
         // Cancel carrying tasks for all flags
         for (FlagState flag : flagStates.values()) {
@@ -741,6 +745,22 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (task != null) {
             cancelTask(task);
         }
+        flagReturnExpiry.remove(teamNumber);
+    }
+
+    /**
+     * Reset the return timer for a dropped flag (reschedules to full 5s)
+     */
+    private void resetFlagReturnTimer(int teamNumber) {
+        // Only applicable if a return task exists (flag is dropped)
+        if (!flagReturnTasks.containsKey(teamNumber)) return;
+        // Cancel existing
+        cancelFlagReturnTask(teamNumber);
+        // Schedule a fresh return in 5 seconds
+        BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> returnFlagToBase(teamNumber), 5 * 20L);
+        flagReturnTasks.put(teamNumber, returnTask);
+        flagReturnExpiry.put(teamNumber, System.currentTimeMillis() + 5_000L);
+        Messages.debug("[CTF] Reset return timer for Team " + teamNumber + " flag to 5s");
     }
 
     /**
@@ -816,6 +836,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
                         long remainingMs = FLAG_PICKUP_DURATION_MS - elapsedMs;
                         long secondsRemaining = remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0);
 
+                        // If a teammate stayed inside the drop area for at least 1 second, reset the flag return timer
+                        if (elapsedMs >= 1000L && flagReturnTasks.containsKey(nearestTeam)) {
+                            resetFlagReturnTimer(nearestTeam);
+                        }
+
                         String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
                         String countdownMsg = flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s");
                         // enqueue short-lived high-priority countdowns to avoid overlap
@@ -883,7 +908,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> returnFlagToBase(teamNumber), 5 * 20L);
         flagReturnTasks.put(teamNumber, returnTask);
-        Messages.debug("[CTF] Dropped Team " + teamNumber + " flag at " + dropLocation + "; returning in 60s if not picked up");
+        long expiry = System.currentTimeMillis() + 5_000L;
+        flagReturnExpiry.put(teamNumber, expiry);
+        Messages.debug("[CTF] Dropped Team " + teamNumber + " flag at " + dropLocation + "; returning in 5s if not picked up");
     }
 
     @Override
