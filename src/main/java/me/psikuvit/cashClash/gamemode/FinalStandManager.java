@@ -100,5 +100,14 @@ public class FinalStandManager {
     public void cleanup() {
         cancel();
     }
+
+    /**
+     * Reset the current cycle and restart the final-stand timer.
+     */
+    public void resetCycle() {
+        Messages.debug("[FinalStandManager] Resetting final-stand cycle");
+        cancel();
+        start();
+    }
 }
 

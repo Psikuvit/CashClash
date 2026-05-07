@@ -55,6 +55,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<UUID, Long> playerHeartTimestamps; // Track when each player received a heart bonus (for 45s timer)
 
     private final SuddenDeathManager suddenDeathManager;
+    private final FinalStandManager finalStandManager;
     private BukkitTask carrierGlowTask;
     private BukkitTask captureTimerTask;
     private BukkitTask bannerRotationTask;
@@ -77,6 +78,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.stalemateMsgShown = new HashSet<>();
         this.playerHeartTimestamps = new HashMap<>();
         this.suddenDeathManager = new SuddenDeathManager(session, this);
+        this.finalStandManager = new FinalStandManager(session, this);
         this.carrierGlowTask = null;
         this.captureTimerTask = null;
         this.bannerRotationTask = null;
@@ -634,6 +636,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
     @Override
     public SuddenDeathManager getSuddenDeathManager() {
         return suddenDeathManager;
+    }
+
+    @Override
+    public FinalStandManager getFinalStandManager() {
+        return finalStandManager;
     }
 
     /**

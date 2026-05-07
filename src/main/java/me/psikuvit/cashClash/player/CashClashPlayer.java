@@ -51,7 +51,7 @@ public class CashClashPlayer {
     private final Map<EnchantEntry, Integer> ownedEnchants;
 
     // Health management
-    private double healthModifier = 0.0; // Tracks additional health from buffs (e.g. +6 for +3 hearts)
+    private double healthModifier = 0.0; // Tracks additional health from buffs (e.g. +2 for +1 heart)
 
     public CashClashPlayer(Player player) {
         this.uuid = player.getUniqueId();
@@ -264,7 +264,7 @@ public class CashClashPlayer {
     /**
      * Set a specific health modifier (overwrites current)
      * Base health is always 20, this adds to it
-     * @param amount health to add (e.g., 6.0 for +3 hearts)
+     * @param amount health to add (e.g., 2.0 for +1 heart)
      */
     public void setHealthModifier(double amount) {
         this.healthModifier = Math.max(0.0, amount); // Don't allow negative modifiers

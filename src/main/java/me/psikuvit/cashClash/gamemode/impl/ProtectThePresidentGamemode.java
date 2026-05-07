@@ -45,6 +45,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private final Map<UUID, ItemStack[]> savedInventories;
 
     private final SuddenDeathManager suddenDeathManager;
+    private final FinalStandManager finalStandManager;
     private boolean selectionPhaseActive;
     private boolean buffSelectionFinalized;
     private BukkitTask selectionTask;
@@ -64,6 +65,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.selectedBuffs = new HashMap<>();
         this.savedInventories = new HashMap<>();
         this.suddenDeathManager = new SuddenDeathManager(session, this);
+        this.finalStandManager = new FinalStandManager(session, this);
         this.selectionPhaseActive = false;
         this.buffSelectionFinalized = false;
         this.selectionTask = null;
@@ -842,6 +844,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public SuddenDeathManager getSuddenDeathManager() {
         return suddenDeathManager;
+    }
+
+    @Override
+    public FinalStandManager getFinalStandManager() {
+        return finalStandManager;
     }
 
     /**

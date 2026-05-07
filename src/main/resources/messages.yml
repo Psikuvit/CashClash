@@ -318,10 +318,10 @@ messages:
   # ============================================
   gamemode-ptp:
     game-started: "<gold>Protect the President has been selected as the gamemode!</gold>"
-    red-president: "<red>{president_name} is Team Red's president and can pick a bonus effect.</red>"
-    blue-president: "<blue>{president_name} is Team Blue's president and can pick a bonus effect.</blue>"
-    buff-selection-prompt: "<gold>Right-click an item to select your buff! Right-click again to deselect.</gold>"
-    buff-selection-time-remaining: "<gold>Presidents must select their buff in {time_remaining}s!</gold>"
+    red-president: "<red>{president_name} is Team Red's president and can pick up to 2 bonus effects.</red>"
+    blue-president: "<blue>{president_name} is Team Blue's president and can pick up to 2 bonus effects.</blue>"
+    buff-selection-prompt: "<gold>Right-click an item to select your buff! Right-click again to deselect. You may select up to 2 buffs.</gold>"
+    buff-selection-time-remaining: "<gold>Presidents must select their buffs in {time_remaining}s!</gold>"
     no-buff-selected: "<gold>No buff selected! Random buff applied: {buff_name}</gold>"
     buff-selected: "<gold>Presidents have selected their buffs! Shop is now unlocked!</gold>"
     buff-activated: "<gold>Buff Activated: {buff_name}!</gold>"
@@ -329,7 +329,7 @@ messages:
     buff-selection-limit: "<red>You have already selected {max_buffs} buff(s)!</red>"
     buff-selected-player: "<green>Buff selected: {buff_name}!</green>"
     president-died: "<{color}><bold>Team {team_name}'s president has been assassinated!</bold> <yellow>{win_condition} total wins the match</yellow>"
-    buy-phase-message: "<yellow>Best of 7 series - First to 4 assassinations wins! Every 2 kills the president's team gets a split 15k bonus!</yellow>"
+    buy-phase-message: "<yellow>Best of 7 series - First to 2 assassinations wins each round! Every 2 kills the president's team gets a split 15k bonus!</yellow>"
     kill-bonus: "<green>+3,750 coins! (Kill bonus)</green>"
     strength-buff-name: "Strength"
     resistance-buff-name: "Resistance"
@@ -338,10 +338,10 @@ messages:
     strength-buff-description: "<gold>Strength I - Deal more damage</gold>"
     speed-buff-description: "<gold>Speed I - Move faster</gold>"
     resistance-buff-description: "<gold>Resistance I - Take less damage</gold>"
-    health-buff-description: "<gold>Extra Hearts - Gain +3 max hearts</gold>"
-    sudden-death: "<red><bold>SUDDEN DEATH!</bold> Eliminate the other team's president more times in 3 minutes to win the match!</red>"
-    sudden-death-timer-start: "<yellow>The game has entered sudden death! Money bonuses have been replaced with an extra heart that lasts for 45 seconds. The penalty timer has also doubled. Eliminate the other team's president more times in 3 minutes to win the match!</yellow>"
-    sudden-death-tied-restart: "<gold>Sudden death is tied! A new 3-minute showdown begins now.</gold>"
+    health-buff-description: "<gold>Extra Hearts - Gain +1 max heart</gold>"
+    sudden-death: "<red><bold>SUDDEN DEATH!</bold> Eliminate the other team's president more times in 5 minutes to win the match!</red>"
+    sudden-death-timer-start: "<yellow>The game has entered sudden death! Money bonuses have been replaced with an extra heart that lasts for 45 seconds. Eliminate the other team's president more times in 5 minutes to win the match!</yellow>"
+    sudden-death-tied-restart: "<gold>Sudden death is tied! A new 5-minute showdown begins now.</gold>"
     kill-bonus-heart: "<gold>+1 Extra Heart! (Kill bonus in sudden death)</gold>"
     final-stand-activated: "<gold><bold>FINAL STAND! The presidents now have one final showdown!</bold></gold>"
     border-closing: "<red>The border is closing around the presidents!</red>"
@@ -373,6 +373,7 @@ messages:
     final-stand-activated: "<gold><bold>FINAL STAND! The flag holder has no more restrictions!</bold></gold>"
     capture-bonus-team-broadcast: "<yellow>Team {team_name} earned a 45-second capture bonus!</yellow>"
     both-flags-held: "<red>You must kill the other flag holder in order to score!</red>"
+    flag-drop-timer-reset: "<gold>{team_name} team has reset the dropped flag return timer!</gold>"
 
   # ============================================
   # PARTY INFO MESSAGES

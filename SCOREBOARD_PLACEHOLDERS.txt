@@ -1,0 +1,253 @@
+================================================================================
+                    CASH CLASH SCOREBOARD PLACEHOLDERS
+                          Complete Reference
+================================================================================
+
+USAGE: Use {placeholder_name} anywhere in your scoreboard configuration.
+Example: "Time Remaining: {time} seconds"
+
+================================================================================
+                          TIME PLACEHOLDERS
+================================================================================
+
+{phase} or {state}
+  - Shows current game phase
+  - Returns: "Waiting", "Shopping", "Combat", or "Ending"
+  - Default: "Unknown"
+
+{phase_number} or {round}
+  - Shows the current round/phase number
+  - Returns: Numeric value (e.g., "1", "2", "3")
+  - Default: "0"
+
+{time}
+  - Shows remaining time in MM:SS format
+  - Returns: "5:30", "0:45", etc.
+  - Default: "0:00"
+
+{time_seconds}
+  - Shows remaining time in seconds only
+  - Returns: "330", "45", etc.
+  - Default: "0"
+
+================================================================================
+                      TEAM COIN PLACEHOLDERS
+================================================================================
+
+{teamRed_coins}
+  - Shows Team Red's total coin pool
+  - Returns: Formatted number (e.g., "15,000")
+  - Default: "0"
+
+{teamBlue_coins}
+  - Shows Team Blue's total coin pool
+  - Returns: Formatted number (e.g., "15,000")
+  - Default: "0"
+
+================================================================================
+                    PLAYER TEAM DATA PLACEHOLDERS
+================================================================================
+
+{your_team}
+  - Shows the player's team number
+  - Returns: "1" for Red Team, "2" for Blue Team
+  - Default: "?"
+
+{your_team_coins}
+  - Shows the player's team's total coin pool
+  - Returns: Formatted number (e.g., "15,000")
+  - Default: "0"
+
+{your_team_ready}
+  - Shows if the player's team is ready for combat
+  - Returns: "Yes" or "No"
+  - Default: "?"
+
+{enemy_team}
+  - Shows the opposing team number
+  - Returns: "1" for Red Team, "2" for Blue Team
+  - Default: "?"
+
+{enemy_team_coins}
+  - Shows the opposing team's total coin pool
+  - Returns: Formatted number (e.g., "15,000")
+  - Default: "0"
+
+{enemy_team_ready}
+  - Shows if the opposing team is ready for combat
+  - Returns: "Yes" or "No"
+  - Default: "?"
+
+================================================================================
+                    PLAYER-SPECIFIC PLACEHOLDERS
+================================================================================
+
+{player_coins}
+  - Shows the player's personal coin balance
+  - Returns: Formatted number (e.g., "5,000")
+  - Default: "0"
+
+{player_kills}
+  - Shows the player's total kills in the game
+  - Returns: Numeric value (e.g., "12")
+  - Default: "0"
+
+{player_lives}
+  - Shows the player's remaining lives this round
+  - Returns: Numeric value (e.g., "3")
+  - Default: "0"
+
+{player_deaths}
+  - Shows the player's deaths in the current round
+  - Returns: Numeric value (e.g., "2")
+  - Default: "0"
+
+{kill_streak}
+  - Shows the player's current kill streak
+  - Returns: Numeric value (e.g., "5")
+  - Default: "0"
+
+================================================================================
+                        ROUND DATA PLACEHOLDERS
+================================================================================
+
+{round_kills}
+  - Shows the player's kills in the current round only
+  - Returns: Numeric value (e.g., "3")
+  - Default: "0"
+
+{teamRed_alive}
+  - Shows how many Red Team players are still alive
+  - Returns: Numeric value (e.g., "6")
+  - Default: "0"
+
+{teamBlue_alive}
+  - Shows how many Blue Team players are still alive
+  - Returns: Numeric value (e.g., "7")
+  - Default: "0"
+
+{your_team_alive}
+  - Shows how many players in the player's team are alive
+  - Returns: Numeric value (e.g., "6")
+  - Default: "0"
+
+{enemy_team_alive}
+  - Shows how many players in the opposing team are alive
+  - Returns: Numeric value (e.g., "7")
+  - Default: "0"
+
+{players}
+  - Shows the total number of players in the game
+  - Returns: Numeric value (e.g., "8")
+  - Default: "0"
+
+================================================================================
+                    ROUND WINS / OBJECTIVES PLACEHOLDERS
+================================================================================
+
+{round_won}
+  - Shows round wins for both teams (Red - Blue)
+  - Returns: "1 - 0", "2 - 1", "0 - 0", etc.
+  - Default: "0 - 0"
+  - Use Case: Testing, game progression tracking
+
+{your_team_wins}
+  - Shows the player's team's round wins
+  - Returns: Numeric value (e.g., "2")
+  - Default: "0"
+  - Use Case: Team objective tracking
+
+{enemy_team_wins}
+  - Shows the opposing team's round wins
+  - Returns: Numeric value (e.g., "1")
+  - Default: "0"
+  - Use Case: Competitive display
+
+================================================================================
+               CAPTURE THE FLAG (CTF) SPECIFIC PLACEHOLDERS
+================================================================================
+
+{teamRed_captures}
+  - Shows Team Red's flag capture count
+  - Returns: Numeric value (e.g., "1")
+  - Default: "0"
+  - Use Case: CTF gamemode only
+
+{teamBlue_captures}
+  - Shows Team Blue's flag capture count
+  - Returns: Numeric value (e.g., "2")
+  - Default: "0"
+  - Use Case: CTF gamemode only
+
+{player_heart_timer}
+  - Shows the remaining time for extra heart bonuses in sudden death
+  - Returns: "0:45", "0:30", etc. (in MM:SS format)
+  - Default: "0:00"
+  - Use Case: Sudden death phase, CTF gamemode
+
+================================================================================
+                        EXAMPLE SCOREBOARD LAYOUTS
+================================================================================
+
+EXAMPLE 1 - Basic CTF Scoreboard:
+Line 1: "<bold>Capture the Flag</bold>"
+Line 2: ""
+Line 3: "<red>Red Team: {teamRed_captures} Captures</red>"
+Line 4: "<blue>Blue Team: {teamBlue_captures} Captures</blue>"
+Line 5: ""
+Line 6: "Time: {time}"
+Line 7: "Round: {round}"
+Line 8: ""
+Line 9: "<yellow>Your Team</yellow>"
+Line 10: "Coins: {your_team_coins}"
+Line 11: "Alive: {your_team_alive}"
+Line 12: ""
+Line 13: "<yellow>Enemy Team</yellow>"
+Line 14: "Coins: {enemy_team_coins}"
+Line 15: "Alive: {enemy_team_alive}"
+
+EXAMPLE 2 - Player-Focused:
+Line 1: "<bold>{player_coins}</bold> Coins"
+Line 2: "Kills: {player_kills} | Deaths: {player_deaths}"
+Line 3: "Kill Streak: {kill_streak}"
+Line 4: ""
+Line 5: "Team Wins: {your_team_wins}"
+Line 6: "Enemy Wins: {enemy_team_wins}"
+
+EXAMPLE 3 - Sudden Death with Hearts:
+Line 1: "<bold>⏰ SUDDEN DEATH ⏰</bold>"
+Line 2: ""
+Line 3: "<red>Red: {teamRed_captures} | Blue: {teamBlue_captures}</red>"
+Line 4: "Time Remaining: {time}"
+Line 5: ""
+Line 6: "❤ Heart Timer: {player_heart_timer}"
+
+================================================================================
+                            NOTES & TIPS
+================================================================================
+
+1. All numeric placeholders are automatically formatted with thousands separators
+   - Example: 15000 becomes "15,000"
+
+2. Time placeholders use MM:SS format (minutes:seconds)
+   - Example: 5 minutes 30 seconds = "5:30"
+
+3. Team numbers:
+   - Team 1 = Red Team
+   - Team 2 = Blue Team
+
+4. Placeholders that show "-" values or "?" usually mean data is not available
+   - This can happen if the player hasn't joined a team yet
+
+5. Default values are shown when the game session is null or data unavailable
+
+6. For CTF-specific placeholders, use {teamRed_captures} and {teamBlue_captures}
+   - These track the number of flag captures (round wins)
+
+7. The {round_won} placeholder shows BOTH team scores in format: "Red - Blue"
+   - Example: "2 - 1" means Red has 2 captures, Blue has 1
+
+8. During sudden death, use {player_heart_timer} to show when bonuses expire
+
+================================================================================
+
