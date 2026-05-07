@@ -96,7 +96,7 @@ public class GameSession {
         this.roundWins.put(2, 0);
 
         this.startingCountdown = false;
-        
+
         // Determine shield preference for this game (50/50 chance)
         // If true, rounds 1-3 have shields, rounds 4-6 don't
         // If false, rounds 1-3 don't have shields, rounds 4-6 do
@@ -216,9 +216,11 @@ public class GameSession {
         return rounds1to3HaveShields;
     }
 
-    /**public CashQuakeManager getCashQuakeManager() {
-        return cashQuakeManager;
-    }*/
+    /**
+     * public CashQuakeManager getCashQuakeManager() {
+     * return cashQuakeManager;
+     * }
+     */
 
     public void start() {
         if (state != GameState.WAITING) return;
@@ -237,7 +239,7 @@ public class GameSession {
         roundManager = new RoundManager(this);
         //cashQuakeManager = new CashQuakeManager(this);
         bonusManager = new BonusManager(this);
-        
+
         // Select a random gamemode for this session
         gamemode = GamemodeManager.getInstance().selectGamemode(this);
         gamemode.onGameStart();
@@ -262,46 +264,46 @@ public class GameSession {
         int minPlayers = ConfigManager.getInstance().getMinPlayers();
 
         Messages.broadcast(players.keySet(), "round.game-countdown-start",
-            "seconds", String.valueOf(seconds));
+                "seconds", String.valueOf(seconds));
 
         startCountdownTask = SchedulerUtils.runTaskTimer(() -> {
-             if (state != GameState.WAITING) {
-                 cancelStartCountdown();
-                 return;
-             }
+            if (state != GameState.WAITING) {
+                cancelStartCountdown();
+                return;
+            }
 
-             int count = players.size();
-             if (count < minPlayers) {
-                 Messages.broadcast(players.keySet(), "round.game-countdown-cancelled");
-                 cancelStartCountdown();
-                 return;
-             }
+            int count = players.size();
+            if (count < minPlayers) {
+                Messages.broadcast(players.keySet(), "round.game-countdown-cancelled");
+                cancelStartCountdown();
+                return;
+            }
 
-             if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 10)
-                 Messages.broadcast(players.keySet(), "round.game-countdown-tick",
-                     "seconds", String.valueOf(countdownSecondsRemaining));
-             if (countdownSecondsRemaining <= 5 && countdownSecondsRemaining > 0)
-                 SoundUtils.playTo(players.keySet(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
+            if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 5)
+                Messages.broadcast(players.keySet(), "round.game-countdown-tick",
+                        "seconds", String.valueOf(countdownSecondsRemaining));
+            if (countdownSecondsRemaining <= 5 && countdownSecondsRemaining > 0)
+                SoundUtils.playTo(players.keySet(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
 
-             if (countdownSecondsRemaining <= 0) {
-                 Messages.broadcast(players.keySet(), "round.game-starting");
+            if (countdownSecondsRemaining <= 0) {
+                Messages.broadcast(players.keySet(), "round.game-starting");
 
-                  players.keySet()
-                          .stream()
-                          .map(Bukkit::getPlayer)
-                          .filter(Objects::nonNull)
-                          .forEach(player -> {
-                              Team team = teamRed.hasPlayer(player.getUniqueId()) ? teamRed : teamBlue;
-                              Messages.send(player, "round.team-assignment",
-                                  "team_color", team.getColoredName());
-                          });
-                 cancelStartCountdown();
-                 start();
-                 return;
-             }
-             countdownSecondsRemaining--;
-         }, 0L, 20L);
-     }
+                players.keySet()
+                        .stream()
+                        .map(Bukkit::getPlayer)
+                        .filter(Objects::nonNull)
+                        .forEach(player -> {
+                            Team team = teamRed.hasPlayer(player.getUniqueId()) ? teamRed : teamBlue;
+                            Messages.send(player, "round.team-assignment",
+                                    "team_color", team.getColoredName());
+                        });
+                cancelStartCountdown();
+                start();
+                return;
+            }
+            countdownSecondsRemaining--;
+        }, 0L, 20L);
+    }
 
     /**
      * Expose remaining time from the active RoundManager for scoreboard {time} placeholder.
@@ -383,8 +385,10 @@ public class GameSession {
 
         switch (kit) {
             case GHOST -> player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 60 * 20, 0, false, false));
-            case PYROMANIAC -> player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 60 * 20, 0, false, false));
-            default -> {} // Other kits don't have potion effects
+            case PYROMANIAC ->
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 60 * 20, 0, false, false));
+            default -> {
+            } // Other kits don't have potion effects
         }
     }
 
@@ -436,7 +440,7 @@ public class GameSession {
         if (currentRound == 1) {
             applyKitWithLayout(p, ccp.getUuid(), kitToApply);
             Messages.send(p, "round.kit-assigned",
-                "kit_name", kitToApply.toString());
+                    "kit_name", kitToApply.toString());
         } else {
             kitToApply.apply(p, currentRound, rounds1to3HaveShields);
         }
@@ -645,10 +649,10 @@ public class GameSession {
                 if (p != null && p.isOnline()) {
                     Messages.send(p, "round.investment-success");
                     Messages.send(p, "round.investment-success-detail",
-                        "type_name", typeName,
-                        "amount", String.format("%,d", returnAmount));
+                            "type_name", typeName,
+                            "amount", String.format("%,d", returnAmount));
                     Messages.send(p, "round.investment-success-deaths",
-                        "deaths", String.valueOf(investment.getDeaths()));
+                            "deaths", String.valueOf(investment.getDeaths()));
                     SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
                 }
             } else if (investment.isBreakEven()) {
@@ -657,10 +661,10 @@ public class GameSession {
                 if (p != null && p.isOnline()) {
                     Messages.send(p, "round.investment-breakeven");
                     Messages.send(p, "round.investment-breakeven-detail",
-                        "type_name", typeName,
-                        "amount", String.format("%,d", returnAmount));
+                            "type_name", typeName,
+                            "amount", String.format("%,d", returnAmount));
                     Messages.send(p, "round.investment-breakeven-deaths",
-                        "deaths", String.valueOf(investment.getDeaths()));
+                            "deaths", String.valueOf(investment.getDeaths()));
                     SoundUtils.play(p, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
                 }
             } else {
@@ -670,10 +674,10 @@ public class GameSession {
                 if (p != null && p.isOnline()) {
                     Messages.send(p, "round.investment-failed");
                     Messages.send(p, "round.investment-failed-detail",
-                        "type_name", typeName,
-                        "amount", String.format("%,d", penalty));
+                            "type_name", typeName,
+                            "amount", String.format("%,d", penalty));
                     Messages.send(p, "round.investment-failed-deaths",
-                        "deaths", String.valueOf(investment.getDeaths()));
+                            "deaths", String.valueOf(investment.getDeaths()));
                     SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
                 }
             }
@@ -811,7 +815,7 @@ public class GameSession {
             Player requester = Bukkit.getPlayer(team.getPlayers().iterator().next());
             if (requester != null) {
                 Messages.send(requester, "round.forfeit-recent-damage",
-                    "grace_seconds", String.valueOf(combatGrace));
+                        "grace_seconds", String.valueOf(combatGrace));
             }
             return false;
         }
@@ -827,7 +831,7 @@ public class GameSession {
         team.addForfeitVote(requester.getUniqueId());
 
         Messages.broadcastToTeam(team, "round.forfeit-vote-started",
-            "player_name", requester.getName());
+                "player_name", requester.getName());
         if (team.hasAllForfeitVotes()) executeForfeit(team);
     }
 
@@ -841,9 +845,9 @@ public class GameSession {
 
         team.addForfeitVote(voter.getUniqueId());
         Messages.broadcastToTeam(team, "round.forfeit-vote-cast",
-            "player_name", voter.getName(),
-            "votes", String.valueOf(team.getForfeitVotes().size()),
-            "total", String.valueOf(team.getSize()));
+                "player_name", voter.getName(),
+                "votes", String.valueOf(team.getForfeitVotes().size()),
+                "total", String.valueOf(team.getSize()));
         if (team.hasAllForfeitVotes()) executeForfeit(team);
     }
 
@@ -855,9 +859,9 @@ public class GameSession {
         applyForfeitBonus(other, bonus);
 
         Messages.broadcast(players.keySet(), "round.forfeit-executed",
-            "team_color", forfeitingTeam.getColoredName(),
-            "other_team_color", other.getColoredName(),
-            "bonus", String.valueOf(bonus));
+                "team_color", forfeitingTeam.getColoredName(),
+                "other_team_color", other.getColoredName(),
+                "bonus", String.valueOf(bonus));
         if (roundManager != null) roundManager.endCombatPhase();
     }
 
@@ -928,11 +932,11 @@ public class GameSession {
         boolean isWinner = winner.getPlayers().contains(uuid);
         Messages.send(player, isWinner ? "round.game-end-win" : "round.game-end-lose");
         Messages.send(player, "round.game-end-winners",
-            "team_color", winner.getColoredName());
+                "team_color", winner.getColoredName());
         Messages.send(player, "round.game-end-winner-list",
-            "players", winnerList);
+                "players", winnerList);
         Messages.send(player, "round.game-end-loser-list",
-            "players", loserList);
+                "players", loserList);
         Messages.send(player, "round.game-end-thanks");
     }
 
@@ -1047,8 +1051,8 @@ public class GameSession {
 
         Messages.send(player, "round.rejoin-success");
         Messages.send(player, "round.rejoin-status",
-            "round", String.valueOf(currentRound),
-            "lives", String.valueOf(existingCcp.getLives()));
+                "round", String.valueOf(currentRound),
+                "lives", String.valueOf(existingCcp.getLives()));
 
         return true;
     }
