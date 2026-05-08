@@ -1,5 +1,8 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
+import me.psikuvit.cashClash.arena.Arena;
+import me.psikuvit.cashClash.arena.ArenaManager;
+import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
@@ -324,20 +327,20 @@ public class ProtectThePresidentGamemode extends Gamemode {
         startFinalStandBorder();
         Messages.debug("[PTP] Final Stand activated - non-Presidents will be eliminated");
 
-        // Check if there's a winner during this 5-minute sudden death cycle; if tied, reset and continue
-        int team1Kills = suddenDeathPresidentKills.getOrDefault(1, 0);
-        int team2Kills = suddenDeathPresidentKills.getOrDefault(2, 0);
+        // and should not attempt to restart sudden-death cycles.
+        if (suddenDeathManager.isInSuddenDeath()) {
+            int team1Kills = suddenDeathPresidentKills.getOrDefault(1, 0);
+            int team2Kills = suddenDeathPresidentKills.getOrDefault(2, 0);
 
-        if (team1Kills == team2Kills) {
-            // Tied - reset cycle and restart final-stand cycle
-            Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
-            Messages.debug("[PTP] Tied at final-stand - attempting to restart cycle");
-            finalStandManager.resetCycle();
-
+            if (team1Kills != team2Kills) {
+                // Winner declared for sudden-death (immediate difference)
+                suddenDeathWinningTeam = team1Kills > team2Kills ? 1 : 2;
+                Messages.debug("[PTP] Sudden death winner determined: Team " + suddenDeathWinningTeam + " with " + Math.max(team1Kills, team2Kills) + " kills");
+            } else {
+                Messages.debug("[PTP] Sudden death tie at final-stand - awaiting resolution in ongoing final-stand");
+            }
         } else {
-            // Winner declared
-            suddenDeathWinningTeam = team1Kills > team2Kills ? 1 : 2;
-            Messages.debug("[PTP] Sudden death winner determined: Team " + suddenDeathWinningTeam + " with " + Math.max(team1Kills, team2Kills) + " kills");
+            Messages.debug("[PTP] Final-stand activated from round-end; not touching sudden-death cycle state");
         }
     }
 
@@ -680,28 +683,39 @@ public class ProtectThePresidentGamemode extends Gamemode {
         if (session.getGameWorld() == null) {
             return;
         }
+        // Get spawn points from arena template
+        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
+        if (arena == null) {
+            Messages.debug("[PTP] Cannot start border: arena not found");
+            return;
+        }
+        TemplateWorld template = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        if (template == null) {
+            Messages.debug("[PTP] Cannot start border: template not found");
+            return;
+        }
 
-        Location center = getArenaCenter();
+        Location redSpawn = template.getTeamRedSpawn(0);
+        Location blueSpawn = template.getTeamBlueSpawn(0);
+
+        if (redSpawn == null || blueSpawn == null) {
+            Messages.debug("[PTP] Cannot start border: team spawns not found");
+            return;
+        }
+
+        // Calculate center between the two spawn points
+        Location center = new Location(session.getGameWorld(),
+                (redSpawn.getX() + blueSpawn.getX()) / 2.0,
+                (redSpawn.getY() + blueSpawn.getY()) / 2.0,
+                (redSpawn.getZ() + blueSpawn.getZ()) / 2.0);
+
         WorldBorder border = session.getGameWorld().getWorldBorder();
         border.setCenter(center);
-        border.setSize(120.0);
+        border.setSize(100.0); // Start at 100x100
         border.setDamageAmount(1.0);
         border.setDamageBuffer(0.0);
-        border.setSize(20.0, 30L);
-    }
-
-    private Location getArenaCenter() {
-        Player pres1 = getPresidentPlayerByTeam(1);
-        Player pres2 = getPresidentPlayerByTeam(2);
-        if (pres1 != null && pres2 != null) {
-            Location loc1 = pres1.getLocation();
-            Location loc2 = pres2.getLocation();
-            return new Location(session.getGameWorld(),
-                    (loc1.getX() + loc2.getX()) / 2.0,
-                    (loc1.getY() + loc2.getY()) / 2.0,
-                    (loc1.getZ() + loc2.getZ()) / 2.0);
-        }
-        return session.getGameWorld().getSpawnLocation();
+        border.setSize(20.0, 30L); // Shrink to 20x20 over 30 seconds
+        Messages.debug("[PTP] Final-stand border started: center=" + center + ", initial=100x100, final=20x20 in 30s");
     }
 
     /**

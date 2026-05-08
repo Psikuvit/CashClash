@@ -607,19 +607,18 @@ public class CaptureTheFlagGamemode extends Gamemode {
             }
         }
 
-        // Check if there's a winner during this 5-minute sudden death cycle; if tied, reset and continue
-        int team1Captures = suddenDeathCycleCaptures.getOrDefault(1, 0);
-        int team2Captures = suddenDeathCycleCaptures.getOrDefault(2, 0);
+        if (suddenDeathManager.isInSuddenDeath()) {
+            int team1Captures = suddenDeathCycleCaptures.getOrDefault(1, 0);
+            int team2Captures = suddenDeathCycleCaptures.getOrDefault(2, 0);
 
-        if (team1Captures == team2Captures) {
-            // Tied - reset cycle and restart final-stand or sudden-death cycle depending on manager
-            Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
-            Messages.debug("[CTF] Tied at final-stand - attempting to restart cycle");
-            finalStandManager.resetCycle();
+            if (team1Captures != team2Captures) {
+                suddenDeathWinningTeam = team1Captures > team2Captures ? 1 : 2;
+                Messages.debug("[CTF] Sudden death winner determined: Team " + suddenDeathWinningTeam + " with " + Math.max(team1Captures, team2Captures) + " captures");
+            } else {
+                Messages.debug("[CTF] Sudden death tie at final-stand - awaiting resolution in ongoing final-stand");
+            }
         } else {
-            // Winner declared
-            suddenDeathWinningTeam = team1Captures > team2Captures ? 1 : 2;
-            Messages.debug("[CTF] Sudden death winner determined: Team " + suddenDeathWinningTeam + " with " + Math.max(team1Captures, team2Captures) + " captures");
+            Messages.debug("[CTF] Final-stand activated from round-end; not touching sudden-death cycle state");
         }
     }
 

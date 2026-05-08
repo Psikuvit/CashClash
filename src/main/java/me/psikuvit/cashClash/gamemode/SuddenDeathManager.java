@@ -51,8 +51,6 @@ public class SuddenDeathManager {
 
         inSuddenDeath = true;
         Messages.debug("[SuddenDeathManager] Entering sudden death mode");
-
-        // Note: final-stand timer is now managed by FinalStandManager (separate system)
     }
 
     /**
@@ -213,14 +211,6 @@ public class SuddenDeathManager {
         return extraHeartExpiry.containsKey(playerUuid);
     }
 
-    /**
-     * Get remaining time for the current sudden death timer in seconds
-     * Returns -1 if not in sudden death or timer not active
-     */
-    public int getSuddenDeathTimerRemainingSeconds() {
-        // Timing for final stand moved to FinalStandManager; keep compatibility stub
-        return -1;
-    }
 }
 
 
