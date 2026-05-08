@@ -22,6 +22,7 @@ public class FinalStandManager {
     private boolean active;
     private long startMs;
     private BukkitTask task;
+    private boolean unlimited;
 
     public FinalStandManager(GameSession session, Gamemode gamemode, long durationMs) {
         this.session = session;
@@ -30,6 +31,7 @@ public class FinalStandManager {
         this.active = false;
         this.startMs = 0;
         this.task = null;
+        this.unlimited = false;
     }
 
     public FinalStandManager(GameSession session, Gamemode gamemode) {
@@ -46,10 +48,29 @@ public class FinalStandManager {
         }
         active = true;
         startMs = System.currentTimeMillis();
+        unlimited = false;
 
         long ticksDelay = Math.max(1, durationMs / 50);
         task = SchedulerUtils.runTaskLater(this::activate, ticksDelay);
         Messages.debug("[FinalStandManager] Final stand timer started for " + durationMs + "ms");
+    }
+
+    /**
+     * Start final-stand immediately and keep it active until explicitly cancelled.
+     * This mode is used when final-stand should be unlimited time until a winner is found.
+     * It will immediately notify the gamemode via onFinalStandActivated().
+     */
+    public void startUntilWin() {
+        if (active) {
+            Messages.debug("[FinalStandManager] Final stand already active");
+            return;
+        }
+        active = true;
+        startMs = System.currentTimeMillis();
+        unlimited = true;
+        // Do not schedule a timer; final-stand remains until cancelled
+        Messages.debug("[FinalStandManager] Final stand started (until-win mode)");
+        if (gamemode != null) gamemode.onFinalStandActivated();
     }
 
     private void activate() {
@@ -69,6 +90,7 @@ public class FinalStandManager {
         task = null;
         active = false;
         startMs = 0;
+        unlimited = false;
         Messages.debug("[FinalStandManager] Final stand cancelled");
     }
 
@@ -89,6 +111,7 @@ public class FinalStandManager {
      */
     public long getRemainingMs() {
         if (!active || startMs <= 0) return -1;
+        if (unlimited) return -1;
         long elapsed = System.currentTimeMillis() - startMs;
         long remaining = durationMs - elapsed;
         return Math.max(remaining, 0);
@@ -101,13 +124,5 @@ public class FinalStandManager {
         cancel();
     }
 
-    /**
-     * Reset the current cycle and restart the final-stand timer.
-     */
-    public void resetCycle() {
-        Messages.debug("[FinalStandManager] Resetting final-stand cycle");
-        cancel();
-        start();
-    }
 }
 
