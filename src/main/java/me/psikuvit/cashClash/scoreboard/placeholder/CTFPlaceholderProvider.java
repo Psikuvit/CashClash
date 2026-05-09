@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.scoreboard.placeholder;
 
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
+import me.psikuvit.cashClash.util.FormatUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -47,6 +48,11 @@ public class CTFPlaceholderProvider implements PlaceholderProvider {
             case "blue_flag_holder" -> getFlagHolderName(gamemode.getFlagHolder(2));
             case "red_flag_status" -> getFlagStatus(gamemode.getFlagHolder(1));
             case "blue_flag_status" -> getFlagStatus(gamemode.getFlagHolder(2));
+            case "money_bonus_timer" -> {
+                long remaining = gamemode.getBonusTimeRemainingMs(player.getUniqueId());
+                // Only show timer when player actually has an active extra heart
+                yield remaining > 0 ? "Money Bonus: " + FormatUtils.formatMillis(remaining) : "";
+            }
             default -> null;
         };
     }

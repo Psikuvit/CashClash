@@ -759,6 +759,12 @@ public class GameSession {
         return null;
     }
 
+    public Team getPlayerTeam(UUID uuid) {
+        if (teamRed.hasPlayer(uuid)) return teamRed;
+        if (teamBlue.hasPlayer(uuid)) return teamBlue;
+        return null;
+    }
+
     public Team getOpposingTeam(Team team) {
         return team == teamRed ? teamBlue : teamRed;
     }

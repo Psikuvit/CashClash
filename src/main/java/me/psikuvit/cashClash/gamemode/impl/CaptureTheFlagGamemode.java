@@ -1051,6 +1051,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
     }
 
+    public long getBonusTimeRemainingMs(UUID playerUuid) {
+        int teamNum = session.getPlayerTeam(playerUuid).getTeamNumber();
+        FlagState flagState = flagStates.get(teamNum);
+        long now = System.currentTimeMillis();
+        long elapsed = now - flagState.captureTime();
+        return Math.max(0, CAPTURE_TIMER_MS - elapsed);
+    }
+
     /**
      * Update heart timer display for players with active hearts via action bar
      */
@@ -1082,6 +1090,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
             }
         }
     }
+
+
 
     /**
      * Award capture bonus after 45 seconds

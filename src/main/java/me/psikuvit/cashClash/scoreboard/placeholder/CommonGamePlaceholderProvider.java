@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.util.FormatUtils;
 import org.bukkit.entity.Player;
 
 import java.util.HashSet;
@@ -86,12 +87,12 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             // Time placeholders
             case "phase", "state" -> getPhase(session.getState());
             case "phase_number", "round" -> String.valueOf(session.getCurrentRound());
-            case "time" -> formatTime(session.getTimeRemaining());
+            case "time" -> FormatUtils.formatTime(session.getTimeRemaining());
             case "time_seconds" -> String.valueOf(session.getTimeRemaining());
 
             // Team coin placeholders
-            case "teamRed_coins" -> formatCoins(session.getTeamRedCoins());
-            case "teamBlue_coins" -> formatCoins(session.getTeamBlueCoins());
+            case "teamRed_coins" -> String.format("%,d", session.getTeamRedCoins());
+            case "teamBlue_coins" -> String.format("%,d", session.getTeamBlueCoins());
 
             // Player team data
             case "your_team", "your_team_coins", "your_team_ready",
@@ -136,23 +137,18 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
                 var manager = gamemode == null ? null : gamemode.getSuddenDeathManager();
                 long remaining = manager == null ? -1 : manager.getExtraHeartRemainingMs(player.getUniqueId());
                 // Only show timer when player actually has an active extra heart
-                yield remaining > 0 ? formatMillis(remaining) : "";
+                yield remaining > 0 ? "Heart Timer: " + FormatUtils.formatMillis(remaining) : "";
             }
             case "sudden_death_timer" -> {
                 var gamemode = session.getGamemode();
                 var manager = gamemode == null ? null : gamemode.getSuddenDeathManager();
-                int remaining = manager == null ? -1 : manager.getSuddenDeathTimerRemainingSeconds();
-                yield remaining < 0 ? "" : formatTime(remaining);
+                yield manager != null && manager.isInSuddenDeath() ? FormatUtils.formatTime(session.getTimeRemaining()) : "";
             }
             case "final_stand_timer" -> {
                 var gamemode = session.getGamemode();
                 var fsm = gamemode == null ? null : gamemode.getFinalStandManager();
                 int remaining = fsm == null ? -1 : fsm.getRemainingSeconds();
-                yield remaining < 0 ? "" : formatTime(remaining);
-            }
-            case "sudden_death_cycle" -> {
-                int cycle = session.getGamemode() == null ? 0 : session.getGamemode().getSuddenDeathCycle();
-                yield cycle <= 0 ? "" : String.valueOf(cycle);
+                yield remaining < 0 ? "" : FormatUtils.formatTime(remaining);
             }
 
             default -> null;
@@ -184,7 +180,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             case "your_team" -> String.valueOf(playerTeam.getTeamNumber());
             case "your_team_coins" -> {
                 long coins = playerTeam.getTeamNumber() == 1 ? session.getTeamRedCoins() : session.getTeamBlueCoins();
-                yield formatCoins(coins);
+                yield String.format("%,d", coins);
             }
             case "your_team_ready" -> playerTeam.isTeamReady() ? "Yes" : "No";
             case "enemy_team" -> {
@@ -194,7 +190,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             case "enemy_team_coins" -> {
                 Team enemyTeam = session.getOpposingTeam(playerTeam);
                 long coins = enemyTeam.getTeamNumber() == 1 ? session.getTeamRedCoins() : session.getTeamBlueCoins();
-                yield formatCoins(coins);
+                yield String.format("%,d", coins);
             }
             case "enemy_team_ready" -> {
                 Team enemyTeam = session.getOpposingTeam(playerTeam);
@@ -220,7 +216,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         }
 
         return switch (placeholder) {
-            case "player_coins" -> formatCoins(ccp.getCoins());
+            case "player_coins" -> String.format("%,d", ccp.getCoins());
             case "player_kills" -> String.valueOf(ccp.getTotalKills());
             case "player_lives" -> String.valueOf(ccp.getLives());
             case "player_deaths" -> String.valueOf(ccp.getDeathsThisRound());
@@ -278,24 +274,6 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             case "round_kills", "teamRed_alive", "teamBlue_alive", "your_team_alive", "enemy_team_alive" -> "0";
             default -> null;
         };
-    }
-
-    private String formatTime(int seconds) {
-        if (seconds < 0) seconds = 0;
-        int minutes = seconds / 60;
-        int secs = seconds % 60;
-        return String.format("%d:%02d", minutes, secs);
-    }
-
-    private String formatMillis(long millis) {
-        if (millis <= 0) {
-            return "0:00";
-        }
-        return formatTime((int) Math.ceil(millis / 1000.0));
-    }
-
-    private String formatCoins(long coins) {
-        return String.format("%,d", coins);
     }
 
     private String getDefaultValue(String placeholder) {

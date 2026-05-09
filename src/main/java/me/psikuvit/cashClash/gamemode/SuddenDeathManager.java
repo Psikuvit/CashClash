@@ -22,7 +22,6 @@ import java.util.UUID;
  * - Entering and tracking sudden death state
  * - Final Stand timer management
  * - Extra heart bonuses and tracking
- *
  * This system is reusable for any gamemode that needs sudden death mechanics.
  */
 public class SuddenDeathManager {
@@ -83,10 +82,9 @@ public class SuddenDeathManager {
 
         Messages.debug("[SuddenDeathManager] Applied extra heart to: " + player.getName() + " for " + durationMs + "ms");
 
-        // Use centralized health system to add temporary hearts (1 heart = 2 health)
         var ccp = session.getCashClashPlayer(uuid);
         if (ccp != null) {
-            ccp.addHealthModifier(2.0);
+            ccp.addHealthModifier(4.0);
             Messages.debug("[SuddenDeathManager] Added +2 health to " + player.getName() + " via health modifier system");
         }
     }

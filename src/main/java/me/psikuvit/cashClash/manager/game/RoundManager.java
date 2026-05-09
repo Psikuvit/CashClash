@@ -36,6 +36,8 @@ import java.util.UUID;
  */
 public class RoundManager {
 
+    private static final int SUDDEN_DEATH_PHASE_SECONDS = 180;
+
     private final GameSession session;
     private BukkitTask phaseTask;
     private int timeRemaining;
@@ -270,7 +272,9 @@ public class RoundManager {
         }
 
         ConfigManager config = ConfigManager.getInstance();
-        timeRemaining = config.getCombatPhaseDuration();
+        boolean suddenDeathRound = session.getGamemode() != null
+                && session.getGamemode().getSuddenDeathManager().isInSuddenDeath();
+        timeRemaining = suddenDeathRound ? SUDDEN_DEATH_PHASE_SECONDS : config.getCombatPhaseDuration();
 
         // Start bonus tracking for the round
         BonusManager bonusManager = session.getBonusManager();
@@ -286,6 +290,9 @@ public class RoundManager {
             }
 
             if (!finalStandActive && timeRemaining <= 0) {
+                if (startFinalStandDueToTimer()) {
+                    return;
+                }
                 endCombatPhase();
             } else if (!finalStandActive && (timeRemaining <= 10 || timeRemaining % 60 == 0)) {
                 Messages.broadcast(session.getPlayers(), "round.combat-countdown",
@@ -314,18 +321,6 @@ public class RoundManager {
 
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
 
-        // If the round timer expired with no winner, start final-stand (if gamemode supports it)
-        if (session.getGamemode() != null) {
-            var fsm = session.getGamemode().getFinalStandManager();
-            if (fsm != null && !fsm.isActive() && session.getGamemode().getWinningTeam() == 0) {
-                Messages.debug("[RoundManager] Starting final-stand for session due to round timer ending with no winner");
-                fsm.start();
-                Messages.broadcast(session.getPlayers(), "round.round-ended",
-                    "round", String.valueOf(session.getCurrentRound()));
-                return;
-            }
-        }
-
         Messages.broadcast(session.getPlayers(), "round.round-ended",
             "round", String.valueOf(session.getCurrentRound()));
 
@@ -350,7 +345,6 @@ public class RoundManager {
             int winnerTeam = session.getGamemode().getWinningTeam();
             if (winnerTeam > 0) {
                 String winnerName = winnerTeam == 1 ? session.getTeamRed().getName() : session.getTeamBlue().getName();
-                SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 1.0f);
                 Messages.broadcast(session.getPlayers(), "round.team-wins-round",
                         "team_name", winnerName);
                 // Track round wins for this winner
@@ -392,6 +386,21 @@ public class RoundManager {
             session.getTeamBlue().incrementLossStreak();
             endCombatPhase();
         }
+    }
+
+    private boolean startFinalStandDueToTimer() {
+        if (session.getGamemode() == null) {
+            return false;
+        }
+
+        var fsm = session.getGamemode().getFinalStandManager();
+        if (fsm == null || fsm.isActive() || session.getGamemode().getWinningTeam() != 0) {
+            return false;
+        }
+
+        Messages.debug("[RoundManager] Starting final-stand for session due to round timer ending with no winner");
+        fsm.startUntilWin();
+        return true;
     }
 
     /**
