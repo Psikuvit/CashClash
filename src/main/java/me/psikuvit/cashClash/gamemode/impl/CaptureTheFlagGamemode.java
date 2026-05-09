@@ -360,6 +360,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         long now = System.currentTimeMillis();
         int enemyTeamNumber = (teamNumber == 1) ? 2 : 1;
         FlagState enemyFlag = flagStates.get(enemyTeamNumber);
+        ActionBarQueue.get().stopDisplay(player);
 
         boolean bonusEarned = (enemyFlag != null && enemyFlag.captureTime() > 0 &&
                 (now - enemyFlag.captureTime()) <= CAPTURE_TIMER_MS);
@@ -843,7 +844,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                         String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
                         String countdownMsg = flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s");
                         // enqueue short-lived high-priority countdowns to avoid overlap
-                        ActionBarQueue.get().enqueue(player, countdownMsg, 1, 20);
+                        ActionBarQueue.get().startDisplay(player, countdownMsg, 1, 700);
                     }
                 }
             } else {
@@ -854,6 +855,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     Messages.send(player, "gamemode-ctf.flag-capture-cancelled",
                             "team_name", teamName);
                 }
+                ActionBarQueue.get().stopDisplay(player);
                 playerCircleTimestamps.remove(playerUuid);
                 playerNearestFlagTeam.remove(playerUuid);
             }
@@ -958,7 +960,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         FlagState redFlag = flagStates.get(1);
         FlagState blueFlag = flagStates.get(2);
 
-        // Show timer to red team flag carrier
+        // Red team flag carrier: show bonus timer
         if (redFlag != null && redFlag.isHeld()) {
             Player carrier = Bukkit.getPlayer(redFlag.holder());
             if (carrier != null && carrier.isOnline()) {
@@ -967,18 +969,23 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 long secondsRemaining = remaining / 1000 + (remaining % 1000 > 0 ? 1 : 0);
 
                 if (remaining > 0) {
-                    // During bonus window
+                    // During bonus window - start persistent display
                     String timerMsg = "<green>⏰ Bonus expires in: <gold>" + secondsRemaining + "s</gold></green>";
-                    ActionBarQueue.get().enqueue(carrier, timerMsg, 5, 40);
+                    ActionBarQueue.get().startDisplay(carrier, timerMsg, 5, remaining);
                 } else {
-                    // After bonus window, show "no bonus" message
+                    // After bonus window - stop persistent display
                     String noBonus = "<red>❌ No bonus - score won't grant extra money</red>";
-                    ActionBarQueue.get().enqueue(carrier, noBonus, 5, 40);
+                    ActionBarQueue.get().startDisplay(carrier, noBonus, 5, 5000); // Show for 5s
                 }
+            }
+        } else {
+            // Not carrying red flag - stop any persistent display
+            if (redFlag != null) {
+                ActionBarQueue.get().stopDisplay(redFlag.holder());
             }
         }
 
-        // Show timer to blue team flag carrier
+        // Blue team flag carrier: show bonus timer
         if (blueFlag != null && blueFlag.isHeld()) {
             Player carrier = Bukkit.getPlayer(blueFlag.holder());
             if (carrier != null && carrier.isOnline()) {
@@ -987,14 +994,19 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 long secondsRemaining = remaining / 1000 + (remaining % 1000 > 0 ? 1 : 0);
 
                 if (remaining > 0) {
-                    // During bonus window
+                    // During bonus window - start persistent display
                     String timerMsg = "<blue>⏰ Bonus expires in: <gold>" + secondsRemaining + "s</gold></blue>";
-                    ActionBarQueue.get().enqueue(carrier, timerMsg, 5, 40);
+                    ActionBarQueue.get().startDisplay(carrier, timerMsg, 5, remaining);
                 } else {
-                    // After bonus window, show "no bonus" message
+                    // After bonus window - stop persistent display
                     String noBonus = "<red>❌ No bonus - score won't grant extra money</red>";
-                    ActionBarQueue.get().enqueue(carrier, noBonus, 5, 40);
+                    ActionBarQueue.get().startDisplay(carrier, noBonus, 5, 5000); // Show for 5s
                 }
+            }
+        } else {
+            // Not carrying blue flag - stop any persistent display
+            if (blueFlag != null) {
+                ActionBarQueue.get().stopDisplay(blueFlag.holder());
             }
         }
     }
@@ -1023,7 +1035,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
             if (remaining > 0) {
                 // Heart is still active - show countdown
                 String timerMsg = "<red>❤ Extra Heart expires in: <gold>" + secondsRemaining + "s</gold></red>";
-                ActionBarQueue.get().enqueue(player, timerMsg, 3, 40);
+                ActionBarQueue.get().startDisplay(player, timerMsg, 3, 40);
             } else {
                 // Heart expired - remove from tracking
                 playerHeartTimestamps.remove(playerUuid);

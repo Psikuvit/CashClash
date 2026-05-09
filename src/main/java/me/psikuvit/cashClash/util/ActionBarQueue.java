@@ -5,10 +5,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Lightweight action-bar queue that serializes action-bar messages per-player.
@@ -22,122 +20,107 @@ public class ActionBarQueue {
         return INSTANCE;
     }
 
-    // Per-player waiting queue (insertion order preserved). Paused messages are reinserted
-    // at the front so they resume immediately after the preempting message finishes.
-    private final Map<UUID, LinkedList<Entry>> queues = new HashMap<>();
-    // Currently active message per player
-    private final Map<UUID, Entry> active = new HashMap<>();
-    // Scheduled end task per player
-    private final Map<UUID, BukkitTask> timers = new HashMap<>();
-    // Scheduled end timestamp (ms) per player for computing remaining time when preempted
-    private final Map<UUID, Long> endTimeMs = new HashMap<>();
-
-    public synchronized void enqueue(UUID playerUuid, String message, int priority, long durationTicks) {
-        if (playerUuid == null || message == null) return;
-        LinkedList<Entry> q = queues.computeIfAbsent(playerUuid, k -> new LinkedList<>());
-
-        Entry newEntry = new Entry(message, priority, Math.max(1, durationTicks));
-
-        Entry current = active.get(playerUuid);
-        if (current == null) {
-            // No active message - append and try to show
-            q.addLast(newEntry);
-            tryShowNext(playerUuid);
-            return;
-        }
-
-        // Preempt currently showing message: cancel current task, compute remaining time,
-        // put it back to the front of the queue and show the new message immediately.
-        // If you prefer non-preemptive behaviour for lower-priority messages, adjust here.
-        cancelTimerFor(playerUuid);
-
-        // compute remaining ticks for current
-        long remainTicks = current.remainingTicks();
-        Long scheduledEnd = endTimeMs.get(playerUuid);
-        if (scheduledEnd != null) {
-            long remainingMs = scheduledEnd - System.currentTimeMillis();
-            // if conversion produced 0 due to ms->ticks, keep at least 1 tick
-            remainTicks = Math.max(1, TimeUnit.MILLISECONDS.toMillis(Math.max(0, remainingMs)) / 50);
-        }
-
-        // push paused current to front so it resumes after the new message
-        q.addFirst(new Entry(current.message(), current.priority(), remainTicks));
-        active.remove(playerUuid);
-        endTimeMs.remove(playerUuid);
-
-        // Now show the new message immediately
-        q.addFirst(newEntry);
-        tryShowNext(playerUuid);
-    }
+    private final Map<UUID, PersistentDisplay> persistentDisplays = new HashMap<>();
+    private final Map<UUID, BukkitTask> refreshTasks = new HashMap<>();
 
     private ActionBarQueue() {}
 
-    public void enqueue(Player player, String message, int priority, long durationTicks) {
-        if (player == null || !player.isOnline() || message == null) return;
-        enqueue(player.getUniqueId(), message, priority, durationTicks);
-    }
+    /**
+     * Start a persistent action-bar display that auto-renews until stopped or expired.
+     * If a display is already active for this player, it is updated with the new message/duration.
+     *
+     * @param playerUuid   player UUID
+     * @param message      action-bar message (will be auto-refreshed)
+     * @param priority     display priority (lower = higher)
+     * @param durationMs   how long to display (e.g., 45000 for 45 seconds)
+     */
+    public synchronized void startDisplay(UUID playerUuid, String message, int priority, long durationMs) {
+        if (playerUuid == null || message == null || durationMs <= 0) return;
 
-    private synchronized void tryShowNext(UUID playerUuid) {
-        if (active.containsKey(playerUuid)) return; // already showing
-
-        LinkedList<Entry> q = queues.get(playerUuid);
-        if (q == null || q.isEmpty()) return;
-
-        // Choose next message: prefer lowest priority value; among equals, pick earliest
-        int bestIdx = 0;
-        int bestPriority = q.getFirst().priority();
-        for (int i = 1; i < q.size(); i++) {
-            int p = q.get(i).priority();
-            if (p < bestPriority) {
-                bestPriority = p;
-                bestIdx = i;
-            }
+        long expiryMs = System.currentTimeMillis() + durationMs;
+        PersistentDisplay previous = persistentDisplays.get(playerUuid);
+        if (previous != null && previous.message().equals(message) && previous.priority() == priority) {
+            expiryMs = Math.max(previous.expiryMs(), expiryMs);
+        } else {
+            cancelRefreshTask(playerUuid);
         }
 
-        Entry next = q.remove(bestIdx);
-        if (next == null) return;
+        PersistentDisplay display = new PersistentDisplay(message, priority, expiryMs);
+        persistentDisplays.put(playerUuid, display);
 
+        sendPersistentMessage(playerUuid, display);
+    }
+
+    public void startDisplay(Player player, String message, int priority, long durationMs) {
+        if (player != null && player.isOnline()) {
+            startDisplay(player.getUniqueId(), message, priority, durationMs);
+        }
+    }
+
+    /**
+     * Stop a persistent action-bar display for a player.
+     */
+    public synchronized void stopDisplay(UUID playerUuid) {
+        if (playerUuid == null) return;
+        persistentDisplays.remove(playerUuid);
+        cancelRefreshTask(playerUuid);
+        Player player = Bukkit.getPlayer(playerUuid);
+        if (player != null && player.isOnline()) {
+            player.sendActionBar(Messages.parse(""));
+        }
+    }
+
+    public void stopDisplay(Player player) {
+        if (player != null) {
+            stopDisplay(player.getUniqueId());
+        }
+    }
+
+    /**
+     * Send a persistent message directly to the player. Expires when display duration ends.
+     */
+    private void sendPersistentMessage(UUID playerUuid, PersistentDisplay display) {
         Player p = Bukkit.getPlayer(playerUuid);
         if (p == null || !p.isOnline()) {
-            // drop queued messages for offline player
-            queues.remove(playerUuid);
+            persistentDisplays.remove(playerUuid);
+            cancelRefreshTask(playerUuid);
             return;
         }
 
-        // show immediately
-        active.put(playerUuid, next);
-        p.sendActionBar(Messages.parse(next.message()));
+        long now = System.currentTimeMillis();
+        if (now >= display.expiryMs()) {
+            persistentDisplays.remove(playerUuid);
+            cancelRefreshTask(playerUuid);
+            return;
+        }
 
-        long ticks = Math.max(1, next.remainingTicks());
-        long endMs = System.currentTimeMillis() + ticks * 50L;
-        endTimeMs.put(playerUuid, endMs);
+        p.sendActionBar(Messages.parse(display.message()));
+
+        if (refreshTasks.containsKey(playerUuid)) {
+            return;
+        }
 
         BukkitTask task = SchedulerUtils.runTaskLater(() -> {
-            // End of this message display - remove active and show next
-            synchronized (ActionBarQueue.this) {
-                active.remove(playerUuid);
-                endTimeMs.remove(playerUuid);
-                timers.remove(playerUuid);
-                tryShowNext(playerUuid);
+            synchronized (this) {
+                refreshTasks.remove(playerUuid);
+                PersistentDisplay current = persistentDisplays.get(playerUuid);
+                if (current == display) {
+                    sendPersistentMessage(playerUuid, current);
+                }
             }
-        }, ticks);
-
-        if (task != null) timers.put(playerUuid, task);
+        }, 15L);
+        if (task != null) {
+            refreshTasks.put(playerUuid, task);
+        }
     }
 
-    public synchronized void clear(UUID playerUuid) {
-        queues.remove(playerUuid);
-        Entry a = active.remove(playerUuid);
-        endTimeMs.remove(playerUuid);
-        BukkitTask t = timers.remove(playerUuid);
-        if (t != null) t.cancel();
+    private synchronized void cancelRefreshTask(UUID playerUuid) {
+        BukkitTask task = refreshTasks.remove(playerUuid);
+        if (task != null) {
+            task.cancel();
+        }
     }
 
-    private synchronized void cancelTimerFor(UUID playerUuid) {
-        BukkitTask t = timers.remove(playerUuid);
-        if (t != null) t.cancel();
-    }
-
-    private record Entry(String message, int priority, long remainingTicks) {}
+    private record PersistentDisplay(String message, int priority, long expiryMs) {}
 }
 
