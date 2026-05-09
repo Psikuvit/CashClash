@@ -53,6 +53,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private BukkitTask selectionTask;
     private int selectionTimeRemaining;
     private int suddenDeathWinningTeam;
+    private Location preFinalStandBorderCenter;
+    private double preFinalStandBorderSize;
+    private double preFinalStandBorderDamageAmount;
+    private double preFinalStandBorderDamageBuffer;
     // Track the most recent team that received an extra-heart bonus and when it was awarded
     private int recentHeartBonusTeam;
     private long recentHeartBonusAwardMs;
@@ -73,6 +77,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.selectionTask = null;
         this.selectionTimeRemaining = SELECTION_TIME;
         this.suddenDeathWinningTeam = 0;
+        this.preFinalStandBorderCenter = null;
+        this.preFinalStandBorderSize = -1.0;
+        this.preFinalStandBorderDamageAmount = 0.0;
+        this.preFinalStandBorderDamageBuffer = 0.0;
         this.recentHeartBonusTeam = 0;
         this.recentHeartBonusAwardMs = 0L;
 
@@ -126,6 +134,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         // Reset deaths for next round
         presidents.replaceAll((team, pres) -> pres.withResetDeaths());
+        suddenDeathWinningTeam = 0;
+        finalStandManager.cancel();
+        resetFinalStandBorder();
         // Reset recent heart bonus tracking
         recentHeartBonusTeam = 0;
         recentHeartBonusAwardMs = 0L;
@@ -216,6 +227,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
             if (suddenDeathManager.isInSuddenDeath()) {
                 suddenDeathPresidentKills.merge(killerTeam, 1, Integer::sum);
             }
+            if (finalStandManager.isActive()) {
+                suddenDeathWinningTeam = killerTeam;
+                Messages.debug("[PTP] Final Stand winner determined after president death: Team " + suddenDeathWinningTeam);
+            }
         } else if (killer != null) {
             // Regular player died, award killer's team if killer is a president
             int killerPresidentTeam = findPresidentTeam(killer.getUniqueId());
@@ -275,6 +290,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public void cleanup() {
         cancelTask(selectionTask);
+        finalStandManager.cancel();
+        resetFinalStandBorder();
         suddenDeathManager.cleanup();
         presidents.clear();
         teamKillCount.clear();
@@ -710,12 +727,33 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 (redSpawn.getZ() + blueSpawn.getZ()) / 2.0);
 
         WorldBorder border = session.getGameWorld().getWorldBorder();
+        if (preFinalStandBorderCenter == null) {
+            preFinalStandBorderCenter = border.getCenter().clone();
+            preFinalStandBorderSize = border.getSize();
+            preFinalStandBorderDamageAmount = border.getDamageAmount();
+            preFinalStandBorderDamageBuffer = border.getDamageBuffer();
+        }
         border.setCenter(center);
         border.setSize(100.0); // Start at 100x100
         border.setDamageAmount(1.0);
         border.setDamageBuffer(0.0);
         border.setSize(20.0, 30L); // Shrink to 20x20 over 30 seconds
         Messages.debug("[PTP] Final-stand border started: center=" + center + ", initial=100x100, final=20x20 in 30s");
+    }
+
+    private void resetFinalStandBorder() {
+        if (session.getGameWorld() == null || preFinalStandBorderCenter == null || preFinalStandBorderSize <= 0) {
+            return;
+        }
+
+        WorldBorder border = session.getGameWorld().getWorldBorder();
+        border.setCenter(preFinalStandBorderCenter);
+        border.setSize(preFinalStandBorderSize);
+        border.setDamageAmount(preFinalStandBorderDamageAmount);
+        border.setDamageBuffer(preFinalStandBorderDamageBuffer);
+        preFinalStandBorderCenter = null;
+        preFinalStandBorderSize = -1.0;
+        Messages.debug("[PTP] Final-stand border reset");
     }
 
     /**
