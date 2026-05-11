@@ -25,6 +25,7 @@ public class CTFPlaceholderProvider implements PlaceholderProvider {
         SUPPORTED_PLACEHOLDERS.add("blue_flag_holder");
         SUPPORTED_PLACEHOLDERS.add("red_flag_status");
         SUPPORTED_PLACEHOLDERS.add("blue_flag_status");
+        SUPPORTED_PLACEHOLDERS.add("money_bonus_timer");
     }
 
     private final CaptureTheFlagGamemode gamemode;
