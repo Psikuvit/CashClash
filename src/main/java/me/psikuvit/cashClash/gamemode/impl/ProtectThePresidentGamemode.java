@@ -1,8 +1,5 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
-import me.psikuvit.cashClash.arena.Arena;
-import me.psikuvit.cashClash.arena.ArenaManager;
-import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
@@ -11,12 +8,11 @@ import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
-import me.psikuvit.cashClash.util.game.PresidentialBuffSelectionUtils;
+import me.psikuvit.cashClash.util.game.PTPFinalStandUtils;
+import me.psikuvit.cashClash.util.game.PTPInventoryUtils;
 import me.psikuvit.cashClash.util.game.PresidentialEffectsUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Sound;
-import org.bukkit.WorldBorder;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
@@ -53,10 +49,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private BukkitTask selectionTask;
     private int selectionTimeRemaining;
     private int suddenDeathWinningTeam;
-    private Location preFinalStandBorderCenter;
-    private double preFinalStandBorderSize;
-    private double preFinalStandBorderDamageAmount;
-    private double preFinalStandBorderDamageBuffer;
+    private PTPFinalStandUtils.BorderSnapshot preFinalStandBorderSnapshot;
     // Track the most recent team that received an extra-heart bonus and when it was awarded
     private int recentHeartBonusTeam;
     private long recentHeartBonusAwardMs;
@@ -77,10 +70,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.selectionTask = null;
         this.selectionTimeRemaining = SELECTION_TIME;
         this.suddenDeathWinningTeam = 0;
-        this.preFinalStandBorderCenter = null;
-        this.preFinalStandBorderSize = -1.0;
-        this.preFinalStandBorderDamageAmount = 0.0;
-        this.preFinalStandBorderDamageBuffer = 0.0;
+        this.preFinalStandBorderSnapshot = null;
         this.recentHeartBonusTeam = 0;
         this.recentHeartBonusAwardMs = 0L;
 
@@ -329,7 +319,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public String getBuyPhaseMessage() {
         if (suddenDeathManager.isInSuddenDeath()) {
             return "<yellow>The game has entered sudden death. Money bonuses have been replaced with an extra heart " +
-                    "that lasts for 45 seconds. Eliminate the other team's president more times in 5 minutes to win the match!</yellow>";
+                        "that lasts for 45 seconds. Eliminate the other team's president more times in 3 minutes to win the match!</yellow>";
         }
 
         return "<yellow>Best of 7 series - First to 2 assassinations wins each round! " +
@@ -389,8 +379,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         if (presPlayer1 != null && presPlayer2 != null) {
             Messages.debug("[PTP] Both presidents found, giving buff selection items");
-            giveBuffSelectionItems(presPlayer1);
-            giveBuffSelectionItems(presPlayer2);
+            PTPInventoryUtils.giveBuffSelectionItems(presPlayer1, savedInventories);
+            PTPInventoryUtils.giveBuffSelectionItems(presPlayer2, savedInventories);
             Messages.debug("[PTP] Buff selection items given to both presidents");
         } else {
             Messages.debug("[PTP] ERROR: One or both presidents are null!");
@@ -399,41 +389,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         selectionTask = SchedulerUtils.runTaskTimer(this::updateSelectionCountdown, 0, 20);
     }
     
-    /**
-     * Give buff selection items to a president
-     * Slots: 1 (Strength), 3 (Speed), 5 (Resistance), 7 (Extra Hearts)
-     */
-    private void giveBuffSelectionItems(Player president) {
-        UUID presUuid = president.getUniqueId();
-
-        savedInventories.put(presUuid, president.getInventory().getContents().clone());
-
-        SchedulerUtils.runTask(() -> {
-            Messages.debug("[PTP] Saving inventory for president: " + president.getName());
-
-            president.getInventory().clear();
-            Messages.debug("[PTP] Cleared inventory for: " + president.getName());
-
-            // Slot 1 - Strength Potion
-            president.getInventory().setItem(1, PresidentialBuffSelectionUtils.createStrengthBuffItem());
-
-            // Slot 3 - Speed Potion
-            president.getInventory().setItem(3, PresidentialBuffSelectionUtils.createSpeedBuffItem());
-
-            // Slot 5 - Resistance Potion
-            president.getInventory().setItem(5, PresidentialBuffSelectionUtils.createResistanceBuffItem());
-
-            // Slot 7 - Extra Hearts Potion
-            president.getInventory().setItem(7, PresidentialBuffSelectionUtils.createExtraHeartsBuffItem());
-
-            // Update inventory on client
-            president.updateInventory();
-
-            Messages.send(president, "gamemode-ptp.buff-selection-prompt");
-        });
-    }
-
-
     private void updateSelectionCountdown() {
         if (selectionTimeRemaining > 0) {
             if (selectionTimeRemaining == 15 || selectionTimeRemaining == 10 ||
@@ -478,11 +433,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
             }
         }
         
-        // Restore inventories for all presidents SYNCHRONOUSLY before combat
+        // Restore inventories for all presidents before combat
         for (UUID uuid : new ArrayList<>(savedInventories.keySet())) {
             Player presPlayer = Bukkit.getPlayer(uuid);
             if (presPlayer != null) {
-                restoreInventory(presPlayer);
+                PTPInventoryUtils.restoreInventory(presPlayer, savedInventories);
             }
         }
 
@@ -574,8 +529,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
                     UUID presUuid = presPlayer.getUniqueId();
                     var cashPlayer = session.getCashClashPlayer(presUuid);
                     if (cashPlayer != null) {
-                        cashPlayer.setHealthModifier(2.0); // 2 health = 1 heart
-                        PresidentialEffectsUtils.applyExtraHearts(presPlayer, 2.0);
+                        cashPlayer.addHealthModifier(4.0); // 2 health = 1 heart
                     }
                 }
             }
@@ -648,7 +602,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         suddenDeathManager.enterSuddenDeath();
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
-        Messages.debug("[PTP] Entered sudden death - 5-minute final stand timer started");
+        Messages.debug("[PTP] Entered sudden death - 3-minute sudden-death initial period started");
     }
 
     @Override
@@ -676,84 +630,16 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * Activate Final Stand: eliminate all non-Presidents for 1v1 duel
      */
     private void activateFinalStandElimination() {
-        Messages.debug("[PTP] Final Stand activated - eliminating all non-Presidents");
-
-        for (UUID playerUuid : new ArrayList<>(session.getPlayers())) {
-            Player p = Bukkit.getPlayer(playerUuid);
-            if (p != null && p.isOnline()) {
-                // Check if this player is a president
-                int presTeam = findPresidentTeam(playerUuid);
-                if (presTeam == 0) {
-                    // Non-president - eliminate them for the 1v1 duel
-                    p.setHealth(0);
-                    Messages.debug("[PTP] Eliminated non-president: " + p.getName());
-                } else {
-                    // President - apply glow effect and announce
-                    Messages.send(p, "gamemode-ptp.final-stand-president-survived",
-                            "opponent", getPresidentName(presTeam == 1 ? 2 : 1));
-                }
-            }
-        }
+        PTPFinalStandUtils.eliminateNonPresidents(session, this::findPresidentTeam, this::getPresidentName);
     }
 
     private void startFinalStandBorder() {
-        if (session.getGameWorld() == null) {
-            return;
-        }
-        // Get spawn points from arena template
-        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
-        if (arena == null) {
-            Messages.debug("[PTP] Cannot start border: arena not found");
-            return;
-        }
-        TemplateWorld template = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
-        if (template == null) {
-            Messages.debug("[PTP] Cannot start border: template not found");
-            return;
-        }
-
-        Location redSpawn = template.getTeamRedSpawn(0);
-        Location blueSpawn = template.getTeamBlueSpawn(0);
-
-        if (redSpawn == null || blueSpawn == null) {
-            Messages.debug("[PTP] Cannot start border: team spawns not found");
-            return;
-        }
-
-        // Calculate center between the two spawn points
-        Location center = new Location(session.getGameWorld(),
-                (redSpawn.getX() + blueSpawn.getX()) / 2.0,
-                (redSpawn.getY() + blueSpawn.getY()) / 2.0,
-                (redSpawn.getZ() + blueSpawn.getZ()) / 2.0);
-
-        WorldBorder border = session.getGameWorld().getWorldBorder();
-        if (preFinalStandBorderCenter == null) {
-            preFinalStandBorderCenter = border.getCenter().clone();
-            preFinalStandBorderSize = border.getSize();
-            preFinalStandBorderDamageAmount = border.getDamageAmount();
-            preFinalStandBorderDamageBuffer = border.getDamageBuffer();
-        }
-        border.setCenter(center);
-        border.setSize(100.0); // Start at 100x100
-        border.setDamageAmount(1.0);
-        border.setDamageBuffer(0.0);
-        border.setSize(20.0, 30L); // Shrink to 20x20 over 30 seconds
-        Messages.debug("[PTP] Final-stand border started: center=" + center + ", initial=100x100, final=20x20 in 30s");
+        preFinalStandBorderSnapshot = PTPFinalStandUtils.startFinalStandBorder(session);
     }
 
     private void resetFinalStandBorder() {
-        if (session.getGameWorld() == null || preFinalStandBorderCenter == null || preFinalStandBorderSize <= 0) {
-            return;
-        }
-
-        WorldBorder border = session.getGameWorld().getWorldBorder();
-        border.setCenter(preFinalStandBorderCenter);
-        border.setSize(preFinalStandBorderSize);
-        border.setDamageAmount(preFinalStandBorderDamageAmount);
-        border.setDamageBuffer(preFinalStandBorderDamageBuffer);
-        preFinalStandBorderCenter = null;
-        preFinalStandBorderSize = -1.0;
-        Messages.debug("[PTP] Final-stand border reset");
+        PTPFinalStandUtils.resetFinalStandBorder(session, preFinalStandBorderSnapshot);
+        preFinalStandBorderSnapshot = null;
     }
 
     /**
@@ -891,23 +777,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         return finalStandManager;
     }
 
-    /**
-     * Restore a player's inventory from the saved state
-     */
-    private void restoreInventory(Player player) {
-        UUID uuid = player.getUniqueId();
-        if (savedInventories.containsKey(uuid)) {
-            // Restore synchronously to ensure it's done before combat starts
-            ItemStack[] savedContents = savedInventories.get(uuid);
-            player.getInventory().clear();
-            SchedulerUtils.runTaskAsync(() -> {
-                player.getInventory().setContents(savedContents);
-                Messages.debug("[PTP] Restored inventory for: " + player.getName());
-                savedInventories.remove(uuid);
-                player.updateInventory();
-            });
-        }
-    }
 
     /**
      * Enum for presidential buff options
