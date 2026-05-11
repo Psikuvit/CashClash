@@ -26,21 +26,41 @@ import java.util.UUID;
  */
 public class SuddenDeathManager {
 
+    // Initial sudden-death period before repeating cycles begin (3 minutes)
+    private static final long DEFAULT_INITIAL_CYCLE_MS = 3 * 60 * 1000L;
+    private static final long DEFAULT_REPEAT_CYCLE_MS = 3 * 60 * 1000L;
+    private final long initialCycleDurationMs;
+
     private final GameSession session;
     private final Gamemode gamemode;
+    private final long repeatCycleDurationMs;
+    private boolean cycleActive;
     private final Map<UUID, Long> extraHeartExpiry; // Player UUID -> expiry time in ms
     private boolean inSuddenDeath;
+    private int cycleNumber;
+    private long cycleDurationMs;
+    private long cycleEndsAtMs;
+    private BukkitTask cycleTask;
     private final BukkitTask heartExpiryTask;
-
-
     public SuddenDeathManager(GameSession session, Gamemode gamemode) {
-        this.session = session;
-        this.gamemode = gamemode;
-        this.inSuddenDeath = false;
-        this.extraHeartExpiry = new HashMap<>();
-        this.heartExpiryTask = SchedulerUtils.runTaskTimer(this::removeExpiredHearts, 20L, 20L);
+        this(session, gamemode, DEFAULT_INITIAL_CYCLE_MS, DEFAULT_REPEAT_CYCLE_MS);
     }
 
+
+    public SuddenDeathManager(GameSession session, Gamemode gamemode, long initialCycleDurationMs, long repeatCycleDurationMs) {
+        this.session = session;
+        this.gamemode = gamemode;
+        this.initialCycleDurationMs = initialCycleDurationMs;
+        this.repeatCycleDurationMs = repeatCycleDurationMs;
+        this.inSuddenDeath = false;
+        this.cycleActive = false;
+        this.cycleNumber = 0;
+        this.cycleDurationMs = 0L;
+        this.cycleEndsAtMs = 0L;
+        this.extraHeartExpiry = new HashMap<>();
+        this.heartExpiryTask = SchedulerUtils.runTaskTimer(this::removeExpiredHearts, 20L, 20L);
+        this.cycleTask = null;
+    }
 
     public void enterSuddenDeath() {
         if (inSuddenDeath) {
@@ -49,7 +69,72 @@ public class SuddenDeathManager {
         }
 
         inSuddenDeath = true;
+        cycleNumber = 1;
+        startCycle(initialCycleDurationMs);
         Messages.debug("[SuddenDeathManager] Entering sudden death mode");
+        // Schedule periodic tick to advance sudden-death cycles automatically every second
+        if (cycleTask == null) {
+            cycleTask = SchedulerUtils.runTaskTimer(() -> {
+                try {
+                    CycleTickResult res = tickSuddenDeathCycle();
+                    if (res == CycleTickResult.RESOLVED || res == CycleTickResult.INACTIVE) {
+                        // Sudden death resolved or became inactive -> stop ticking
+                        inSuddenDeath = (res != CycleTickResult.RESOLVED) && inSuddenDeath;
+                        cancelTask(cycleTask);
+                        cycleTask = null;
+                    }
+                } catch (Exception e) {
+                    Messages.debug("[SuddenDeathManager] Exception during cycle tick: " + e.getMessage());
+                }
+            }, 20L, 20L);
+        }
+    }
+
+    /**
+     * Advance the current sudden-death cycle by one second.
+     *
+     * @return the result of the tick, or INACTIVE if sudden death is not active.
+     */
+    public CycleTickResult tickSuddenDeathCycle() {
+        if (!inSuddenDeath || !cycleActive) {
+            return CycleTickResult.INACTIVE;
+        }
+
+        long remaining = getSuddenDeathCycleRemainingMs();
+        if (remaining > 0) {
+            return CycleTickResult.RUNNING;
+        }
+
+        if (gamemode != null) {
+            gamemode.onSuddenDeathCycleEnded();
+        }
+
+        if (gamemode != null && gamemode.getWinningTeam() > 0) {
+            cycleActive = false;
+            Messages.debug("[SuddenDeathManager] Sudden death cycle resolved by Team " + gamemode.getWinningTeam());
+            return CycleTickResult.RESOLVED;
+        }
+
+        restartCycle();
+        return CycleTickResult.RESTARTED;
+    }
+
+    /**
+     * Apply extra heart with custom duration
+     */
+    public void applyExtraHeart(Player player, long durationMs) {
+        UUID uuid = player.getUniqueId();
+        long expiryTime = System.currentTimeMillis() + durationMs;
+        extraHeartExpiry.put(uuid, expiryTime);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, (int) (durationMs / 50), 0, false, false));
+
+        Messages.debug("[SuddenDeathManager] Applied extra heart to: " + player.getName() + " for " + durationMs + "ms");
+
+        var ccp = session.getCashClashPlayer(uuid);
+        if (ccp != null) {
+            ccp.addHealthModifier(2.0);
+            Messages.debug("[SuddenDeathManager] Added +2 health to " + player.getName() + " via health modifier system");
+        }
     }
 
     /**
@@ -71,22 +156,8 @@ public class SuddenDeathManager {
         return true;
     }
 
-    /**
-     * Apply extra heart with custom duration
-     */
-    public void applyExtraHeart(Player player, long durationMs) {
-        UUID uuid = player.getUniqueId();
-        long expiryTime = System.currentTimeMillis() + durationMs;
-        extraHeartExpiry.put(uuid, expiryTime);
-        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, (int) (durationMs / 50), 0, false, false));
-
-        Messages.debug("[SuddenDeathManager] Applied extra heart to: " + player.getName() + " for " + durationMs + "ms");
-
-        var ccp = session.getCashClashPlayer(uuid);
-        if (ccp != null) {
-            ccp.addHealthModifier(4.0);
-            Messages.debug("[SuddenDeathManager] Added +2 health to " + player.getName() + " via health modifier system");
-        }
+    public boolean isSuddenDeathCycleActive() {
+        return cycleActive;
     }
 
     /**
@@ -135,12 +206,35 @@ public class SuddenDeathManager {
         return inSuddenDeath;
     }
 
+    public int getSuddenDeathCycleNumber() {
+        return cycleNumber;
+    }
+
+    public int getSuddenDeathCycleRemainingSeconds() {
+        long remainingMs = getSuddenDeathCycleRemainingMs();
+        return remainingMs < 0 ? -1 : (int) (remainingMs / 1000);
+    }
+
+    public long getSuddenDeathCycleRemainingMs() {
+        if (!cycleActive || cycleEndsAtMs <= 0) {
+            return -1;
+        }
+
+        return Math.max(cycleEndsAtMs - System.currentTimeMillis(), 0);
+    }
 
     /**
      * Reset sudden death state for new round
      */
     public void resetForNewRound() {
         inSuddenDeath = false;
+        cycleActive = false;
+        cycleNumber = 0;
+        cycleDurationMs = 0L;
+        cycleEndsAtMs = 0L;
+        // Cancel any running cycle task
+        cancelTask(cycleTask);
+        cycleTask = null;
 
         // Clear all extra hearts - create a list to avoid ConcurrentModificationException
         List<UUID> playersWithHearts = new ArrayList<>(extraHeartExpiry.keySet());
@@ -157,6 +251,8 @@ public class SuddenDeathManager {
      */
     public void cleanup() {
         cancelTask(heartExpiryTask);
+        cancelTask(cycleTask);
+        cycleActive = false;
 
         // Remove extra heart effects from all players - create a list to avoid ConcurrentModificationException
         List<UUID> playersWithHearts = new ArrayList<>(extraHeartExpiry.keySet());
@@ -166,6 +262,13 @@ public class SuddenDeathManager {
         extraHeartExpiry.clear();
 
         Messages.debug("[SuddenDeathManager] Cleaned up");
+    }
+
+    private void startCycle(long durationMs) {
+        cycleActive = true;
+        cycleDurationMs = durationMs;
+        cycleEndsAtMs = System.currentTimeMillis() + durationMs;
+        Messages.debug("[SuddenDeathManager] Starting sudden death cycle " + cycleNumber + " for " + durationMs + "ms");
     }
 
     /**
@@ -207,6 +310,36 @@ public class SuddenDeathManager {
      */
     public boolean hasExtraHeart(UUID playerUuid) {
         return extraHeartExpiry.containsKey(playerUuid);
+    }
+
+    private void restartCycle() {
+        cycleNumber++;
+        startCycle(repeatCycleDurationMs);
+
+        if (gamemode != null) {
+            gamemode.onSuddenDeathCycleRestart();
+        }
+
+        broadcastCycleRestartMessage();
+        Messages.debug("[SuddenDeathManager] Sudden death tied - restarting cycle " + cycleNumber + " for " + repeatCycleDurationMs + "ms");
+    }
+
+    private void broadcastCycleRestartMessage() {
+        if (gamemode == null) {
+            return;
+        }
+
+        switch (gamemode.getType()) {
+            case CAPTURE_THE_FLAG -> Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
+            case PROTECT_THE_PRESIDENT -> Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
+        }
+    }
+
+    public enum CycleTickResult {
+        RUNNING,
+        RESTARTED,
+        RESOLVED,
+        INACTIVE
     }
 
 }

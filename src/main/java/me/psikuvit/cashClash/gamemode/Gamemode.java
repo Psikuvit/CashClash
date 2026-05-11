@@ -84,10 +84,26 @@ public abstract class Gamemode {
     public abstract String getBuyPhaseMessage();
 
     /**
-     * Called when Final Stand is activated (5 minute timer expires during sudden death)
+     * Called when Final Stand is activated (3 minute initial sudden-death period elapses or gamemode triggers final stand)
      * Gamemodes can override this to handle final stand specific logic
      */
     public abstract void onFinalStandActivated();
+
+    /**
+     * Called when a sudden-death cycle ends.
+     * Gamemodes can inspect their cycle-specific scoring state and set a winner.
+     */
+    public void onSuddenDeathCycleEnded() {
+        // Default: no special handling
+    }
+
+    /**
+     * Called when a tied sudden-death cycle is restarting.
+     * Gamemodes can reset per-cycle counters here.
+     */
+    public void onSuddenDeathCycleRestart() {
+        // Default: no special handling
+    }
 
 
     public boolean forceSuddenDeathForTesting() {

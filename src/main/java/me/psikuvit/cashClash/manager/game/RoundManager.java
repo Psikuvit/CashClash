@@ -290,10 +290,15 @@ public class RoundManager {
             }
 
             if (!finalStandActive && timeRemaining <= 0) {
-                if (startFinalStandDueToTimer()) {
-                    return;
+                if (suddenDeathRound) {
+                    timeRemaining = SUDDEN_DEATH_PHASE_SECONDS;
+                    Messages.debug("[RoundManager] Sudden death cycle expired; restarting combat timer for the next cycle");
+                } else {
+                    if (startFinalStandDueToTimer()) {
+                        return;
+                    }
+                    endCombatPhase();
                 }
-                endCombatPhase();
             } else if (!finalStandActive && (timeRemaining <= 10 || timeRemaining % 60 == 0)) {
                 Messages.broadcast(session.getPlayers(), "round.combat-countdown",
                     "time_remaining", String.valueOf(timeRemaining));
@@ -394,6 +399,11 @@ public class RoundManager {
         }
 
         var fsm = session.getGamemode().getFinalStandManager();
+        // Do not start Final Stand while Sudden Death is active
+        if (session.getGamemode().getSuddenDeathManager() != null && session.getGamemode().getSuddenDeathManager().isInSuddenDeath()) {
+            Messages.debug("[RoundManager] Final-stand suppressed because session is in sudden death");
+            return false;
+        }
         if (fsm == null || fsm.isActive() || session.getGamemode().getWinningTeam() != 0) {
             return false;
         }
