@@ -48,6 +48,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
     private final Map<Integer, Location> flagBaseLocations;
     private final Map<Integer, BukkitTask> flagReturnTasks;
+    private final Map<Integer, BukkitTask> flagReturnDisplayTasks;
     private final Map<Integer, Long> flagReturnExpiry; // scheduled return time (ms) for dropped flags
     private final Map<UUID, Long> playerCircleTimestamps; // Track when each player entered the circle
     private final Map<UUID, Integer> playerNearestFlagTeam; // Track which flag team player is near
@@ -73,6 +74,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.flagStates = new HashMap<>(2);
         this.flagBaseLocations = new HashMap<>(2);
         this.flagReturnTasks = new HashMap<>(2);
+        this.flagReturnDisplayTasks = new HashMap<>(2);
         this.flagReturnExpiry = new HashMap<>(2);
         this.playerCircleTimestamps = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
@@ -164,6 +166,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         suddenDeathWinningTeam = 0;
         flagReturnTasks.values().forEach(this::cancelTask);
         flagReturnTasks.clear();
+        flagReturnDisplayTasks.values().forEach(this::cancelTask);
+        flagReturnDisplayTasks.clear();
         flagReturnExpiry.clear();
         // Reset flag states but preserve the plate locations and banners for next round
         returnFlagToBase(1);
@@ -257,6 +261,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         cancelTask(heartTimerDisplayTask);
         flagReturnTasks.values().forEach(this::cancelTask);
         flagReturnTasks.clear();
+        flagReturnDisplayTasks.values().forEach(this::cancelTask);
+        flagReturnDisplayTasks.clear();
         flagReturnExpiry.clear();
 
         // Cancel carrying tasks for all flags
@@ -700,6 +706,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         // Team 1 carries Team 2's (Blue) flag and scores at Team 1's (Red) plate
+        if (playerTeam == 1 && isDroppedFlagWaitingForReturn(1)) {
+            return false; // Team 1's own flag is dropped and returning, cannot score
+        }
         if (playerTeam == 1 && blueFlag != null
                 && blueFlag.isHeld()
                 && playerUuid.equals(blueFlag.holder())
@@ -709,6 +718,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         // Team 2 carries Team 1's (Red) flag and scores at Team 2's (Blue) plate
+        if (playerTeam == 2 && isDroppedFlagWaitingForReturn(2)) {
+            return false; // Team 2's own flag is dropped and returning, cannot score
+        }
         if (playerTeam == 2 && redFlag.isHeld() &&
                 playerUuid.equals(redFlag.holder()) &&
                 isPlayerInScoringZone(player, blueBase)) {
@@ -754,25 +766,81 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (task != null) {
             cancelTask(task);
         }
+        cancelFlagReturnDisplayTask(teamNumber);
         flagReturnExpiry.remove(teamNumber);
+    }
+
+    private void cancelFlagReturnDisplayTask(int teamNumber) {
+        BukkitTask task = flagReturnDisplayTasks.remove(teamNumber);
+        if (task != null) {
+            cancelTask(task);
+        }
     }
 
     private void scheduleFlagReturnTimer(int teamNumber) {
         if (flagReturnTasks.containsKey(teamNumber)) {
             return;
         }
-        BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> returnFlagToBase(teamNumber), 5 * 20L);
+        long now = System.currentTimeMillis();
+        long expiryMs = flagReturnExpiry.getOrDefault(teamNumber, now + 5_000L);
+        flagReturnExpiry.put(teamNumber, expiryMs);
+
+        long remainingMs = Math.max(0L, expiryMs - now);
+        long remainingTicks = Math.max(1L, (remainingMs + 49L) / 50L);
+
+        BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> {
+            flagReturnTasks.remove(teamNumber);
+            returnFlagToBase(teamNumber);
+        }, remainingTicks);
         flagReturnTasks.put(teamNumber, returnTask);
-        flagReturnExpiry.put(teamNumber, System.currentTimeMillis() + 5_000L);
-        Messages.debug("[CTF] Scheduled return timer for Team " + teamNumber + " flag to 5s");
+        scheduleFlagReturnDisplayTimer(teamNumber);
+        Messages.debug("[CTF] Scheduled return timer for Team " + teamNumber + " flag to " + (remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0)) + "s");
     }
 
     private void pauseFlagReturnTimer(int teamNumber) {
         if (!flagReturnTasks.containsKey(teamNumber)) {
             return;
         }
-        cancelFlagReturnTask(teamNumber);
+        BukkitTask task = flagReturnTasks.remove(teamNumber);
+        if (task != null) {
+            cancelTask(task);
+        }
+        cancelFlagReturnDisplayTask(teamNumber);
         Messages.debug("[CTF] Paused return timer for Team " + teamNumber + " flag because a player entered the circle");
+    }
+
+    private void scheduleFlagReturnDisplayTimer(int teamNumber) {
+        cancelFlagReturnDisplayTask(teamNumber);
+
+        BukkitTask displayTask = SchedulerUtils.runTaskTimer(() -> updateFlagReturnDisplay(teamNumber), 0, 20L);
+        if (displayTask != null) {
+            flagReturnDisplayTasks.put(teamNumber, displayTask);
+        }
+    }
+
+    private void updateFlagReturnDisplay(int teamNumber) {
+        Long expiry = flagReturnExpiry.get(teamNumber);
+        if (expiry == null) {
+            cancelFlagReturnDisplayTask(teamNumber);
+            return;
+        }
+
+        long remainingMs = Math.max(0L, expiry - System.currentTimeMillis());
+        if (remainingMs <= 0L) {
+            cancelFlagReturnDisplayTask(teamNumber);
+            return;
+        }
+
+        long secondsRemaining = remainingMs / 1000L + (remainingMs % 1000L > 0 ? 1 : 0);
+        String flagColor = teamNumber == 1 ? "<red>" : "<blue>";
+        String message = flagColor + "🚩 Flag returns in " + secondsRemaining + "s";
+
+        for (UUID playerUuid : session.getPlayers()) {
+            Player player = Bukkit.getPlayer(playerUuid);
+            if (player != null && player.isOnline()) {
+                ActionBarQueue.get().startDisplay(player, message, 1, 1100);
+            }
+        }
     }
 
     private boolean isDroppedFlagWaitingForReturn(int teamNumber) {
@@ -922,8 +990,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Messages.debug("[CTF] Entering sudden death mode - match score is 3-3");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-timer-start");
-        Messages.debug("[CTF] Entered sudden death - 5-minute final stand timer started");
-        // SuddenDeathManager automatically starts the 5-minute timer
+        Messages.debug("[CTF] Entered sudden death - 3-minute sudden-death initial period started");
+        // SuddenDeathManager automatically starts the 3-minute initial sudden-death period
     }
 
     private void dropFlagAtLocation(int teamNumber, Location location) {
