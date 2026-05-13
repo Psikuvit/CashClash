@@ -7,10 +7,16 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
- * Lightweight action-bar queue that serializes action-bar messages per-player.
- * Messages have a priority (lower is higher priority) and a duration in ticks.
+ * Comprehensive action-bar management system with timer support.
+ *
+ * Features:
+ * - Per-player timer tasks that auto-create and auto-stop
+ * - Message updates only when countdown seconds actually change
+ * - Persistent displays with priority-based queuing
+ * - Custom message formatters for flexible timer displays
  */
 public class ActionBarQueue {
 
@@ -23,17 +29,126 @@ public class ActionBarQueue {
     private final Map<UUID, PersistentDisplay> persistentDisplays = new HashMap<>();
     private final Map<UUID, BukkitTask> refreshTasks = new HashMap<>();
 
+    // Timer-specific tracking
+    private final Map<UUID, TimerDisplay> timerDisplays = new HashMap<>();
+    private final Map<UUID, BukkitTask> timerTasks = new HashMap<>();
+    private final Map<UUID, Long> lastDisplayedSeconds = new HashMap<>();
+
     private ActionBarQueue() {}
 
     /**
-     * Start a persistent action-bar display that auto-renews until stopped or expired.
-     * If a display is already active for this player, it is updated with the new message/duration.
+     * Start a countdown timer display for a player.
+     * The timer automatically creates/manages its own task and updates the actionbar only when seconds change.
      *
-     * @param playerUuid   player UUID
-     * @param message      action-bar message (will be auto-refreshed)
-     * @param priority     display priority (lower = higher)
-     * @param durationMs   how long to display (e.g., 45000 for 45 seconds)
+     * @param player              The player to display the timer to
+     * @param durationMs          Timer duration in milliseconds
+     * @param priority            Display priority (lower = higher)
+     * @param messageFormatter    Function taking remaining seconds (long) and returning formatted message (String)
      */
+    public synchronized void startCountdownTimer(Player player, long durationMs, int priority, Function<Long, String> messageFormatter) {
+        if (player == null || !player.isOnline() || durationMs <= 0 || messageFormatter == null) return;
+
+        UUID playerUuid = player.getUniqueId();
+
+        // Stop any existing timer for this player
+        stopCountdownTimer(playerUuid);
+
+        long expiryMs = System.currentTimeMillis() + durationMs;
+        TimerDisplay timerDisplay = new TimerDisplay(expiryMs, priority, messageFormatter);
+        timerDisplays.put(playerUuid, timerDisplay);
+        lastDisplayedSeconds.put(playerUuid, -1L); // Initialize to -1 so first update always sends
+
+        // Start the timer task
+        startTimerTask(playerUuid);
+    }
+
+    public void startCountdownTimer(UUID playerUuid, long durationMs, int priority, Function<Long, String> messageFormatter) {
+        Player player = Bukkit.getPlayer(playerUuid);
+        if (player != null && player.isOnline()) {
+            startCountdownTimer(player, durationMs, priority, messageFormatter);
+        }
+    }
+
+    /**
+     * Stop a countdown timer for a player
+     */
+    public synchronized void stopCountdownTimer(Player player) {
+        if (player != null) {
+            stopCountdownTimer(player.getUniqueId());
+        }
+    }
+
+    public synchronized void stopCountdownTimer(UUID playerUuid) {
+        if (playerUuid == null) return;
+
+        timerDisplays.remove(playerUuid);
+        lastDisplayedSeconds.remove(playerUuid);
+
+        BukkitTask task = timerTasks.remove(playerUuid);
+        if (task != null) {
+            task.cancel();
+        }
+
+        Player player = Bukkit.getPlayer(playerUuid);
+        if (player != null && player.isOnline()) {
+            player.sendActionBar(Messages.parse(""));
+        }
+    }
+
+    /**
+     * Internal: Start the timer task for a specific player
+     */
+    private void startTimerTask(UUID playerUuid) {
+        BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
+            synchronized (this) {
+                updateTimerDisplay(playerUuid);
+            }
+        }, 0, 2); // Check every 2 ticks (100ms) for smooth transitions
+
+        if (task != null) {
+            timerTasks.put(playerUuid, task);
+        }
+    }
+
+    /**
+     * Internal: Update timer display for a player - only sends message if seconds have changed
+     */
+    private void updateTimerDisplay(UUID playerUuid) {
+        Player player = Bukkit.getPlayer(playerUuid);
+        if (player == null || !player.isOnline()) {
+            stopCountdownTimer(playerUuid);
+            return;
+        }
+
+        TimerDisplay timerDisplay = timerDisplays.get(playerUuid);
+        if (timerDisplay == null) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        long remainingMs = Math.max(0, timerDisplay.expiryMs() - now);
+        long secondsRemaining = remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0);
+
+        // Timer expired - cleanup
+        if (remainingMs == 0) {
+            stopCountdownTimer(playerUuid);
+            return;
+        }
+
+        // Only update if seconds have changed
+        Long lastSeconds = lastDisplayedSeconds.get(playerUuid);
+        if (lastSeconds != null && lastSeconds == secondsRemaining) {
+            return;
+        }
+
+        lastDisplayedSeconds.put(playerUuid, secondsRemaining);
+
+        // Generate message using formatter and send
+        String message = timerDisplay.messageFormatter().apply(secondsRemaining);
+        player.sendActionBar(Messages.parse(message));
+    }
+
+
     public synchronized void startDisplay(UUID playerUuid, String message, int priority, long durationMs) {
         if (playerUuid == null || message == null || durationMs <= 0) return;
 
@@ -122,5 +237,7 @@ public class ActionBarQueue {
     }
 
     private record PersistentDisplay(String message, int priority, long expiryMs) {}
+
+    private record TimerDisplay(long expiryMs, int priority, Function<Long, String> messageFormatter) {}
 }
 
