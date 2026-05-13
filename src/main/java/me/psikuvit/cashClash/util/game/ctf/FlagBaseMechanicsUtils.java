@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.util.game;
+package me.psikuvit.cashClash.util.game.ctf;
 
 import me.psikuvit.cashClash.gamemode.impl.FlagState;
 import me.psikuvit.cashClash.util.Messages;
