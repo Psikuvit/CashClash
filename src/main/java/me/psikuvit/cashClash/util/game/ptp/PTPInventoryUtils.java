@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.util.game;
+package me.psikuvit.cashClash.util.game.ptp;
 
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;

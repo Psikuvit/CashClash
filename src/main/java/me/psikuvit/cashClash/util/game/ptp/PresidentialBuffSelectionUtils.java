@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.util.game;
+package me.psikuvit.cashClash.util.game.ptp;
 
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import me.psikuvit.cashClash.util.Keys;
