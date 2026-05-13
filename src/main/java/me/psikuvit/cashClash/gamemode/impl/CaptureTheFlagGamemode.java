@@ -1011,22 +1011,35 @@ public class CaptureTheFlagGamemode extends Gamemode {
          bannerRotationTask = SchedulerUtils.runTaskTimer(this::updateBannerRotations, 0, 1);
      }
 
-     /**
-      * Update banner rotations and particle effects for both flags
-      */
-     private void updateBannerRotations() {
-         for (int team = 1; team <= 2; team++) {
-             Location centerPlate = flagBaseLocations.get(team);
-             FlagState flag = flagStates.get(team);
+      /**
+       * Update banner rotations and particle effects for both flags
+       */
+      private void updateBannerRotations() {
+          for (int team = 1; team <= 2; team++) {
+              FlagState flag = flagStates.get(team);
 
-             if (centerPlate != null && flag != null) {
-                 // Update banner rotation
-                 FlagState rotatedFlag = FlagBannerUtils.rotateBanner(flag, centerPlate);
-                 flagStates.put(team, rotatedFlag);
+              if (flag != null) {
+                  if (flag.isHeld() && flag.holder() != null) {
+                      Location basePlate = flagBaseLocations.get(team);
+                      if (basePlate != null) {
+                          FlagBannerUtils.spawnBannerParticles(basePlate, 0);
+                      }
+                      continue;
+                  }
 
-                 // Spawn team-colored particles
-                 FlagBannerUtils.spawnBannerParticles(centerPlate, team);
-             }
-         }
-     }
+                  // Use the flag's current location (either base or dropped location)
+                  Location centerPlate = flag.flagLoc() != null ? flag.flagLoc() : flagBaseLocations.get(team);
+                  if (centerPlate == null) {
+                      continue;
+                  }
+
+                  // Update banner rotation while idle/dropped.
+                  FlagState rotatedFlag = FlagBannerUtils.rotateBanner(flag, centerPlate);
+                  flagStates.put(team, rotatedFlag);
+
+                  // At base/dropped, keep team identity with team-colored particles.
+                  FlagBannerUtils.spawnBannerParticles(centerPlate, team);
+              }
+          }
+      }
 }

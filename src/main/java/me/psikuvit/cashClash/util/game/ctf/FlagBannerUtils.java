@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.util.game;
+package me.psikuvit.cashClash.util.game.ctf;
 
 import me.psikuvit.cashClash.gamemode.impl.FlagState;
 import me.psikuvit.cashClash.util.LocationUtils;
@@ -69,7 +69,7 @@ public class FlagBannerUtils {
       * @param centerPlate The center plate location
       * @param newTheta The new rotation angle
       */
-     public static void updateBannerTransform(BlockDisplay banner, Location centerPlate, double theta, double newTheta) {
+     public static void updateBannerTransform(BlockDisplay banner, Location centerPlate, double newTheta) {
          if (banner == null || centerPlate == null) {
              return;
          }
@@ -84,7 +84,7 @@ public class FlagBannerUtils {
 
          // Create rotation using Y-axis formula
          float yaw = (float) (-newTheta + Math.PI / 2);
-         Location newLoc = new Location(centerPlate.getWorld(), x, centerY, z);
+         Location newLoc = new Location(centerPlate.getWorld(), x, banner.getY(), z);
 
          LocationUtils.applyOrbitTransformation(banner, newLoc, yaw);
      }
@@ -100,19 +100,14 @@ public class FlagBannerUtils {
     }
 
     /**
-     * Spawn team-colored particles around the banner
+     * Spawn team-colored particles around the banner.
      *
      * @param centerPlate The center plate location
      * @param teamNumber The team number (1=Red, 2=Blue, 0=Neutral)
      */
-    public static void spawnBannerParticles(Location centerPlate, int teamNumber) {
-        Color teamColor;
-        if (teamNumber == 0) {
-            // Neutral/black particles for stalemate situations
-            teamColor = Color.fromBGR(30, 30, 30);
-        } else {
-            teamColor = teamNumber == 1 ? Color.RED : Color.BLUE;
-        }
+     public static void spawnBannerParticles(Location centerPlate, int teamNumber) {
+        Color teamColor = teamNumber == 0 ? Color.fromBGR(30, 30, 30) :
+                (teamNumber == 1 ? Color.RED : Color.BLUE);
 
         for (int i = 0; i < 8; i++) {
             double particleAngle = Math.PI * 2 * i / 8;
@@ -133,7 +128,7 @@ public class FlagBannerUtils {
      */
     public static BukkitTask createCarryingTask(BlockDisplay banner, Player player, Runnable onTaskComplete) {
         return SchedulerUtils.runTaskTimer(() -> {
-            if (!player.isOnline() || banner.isDead()) {
+            if (!player.isOnline() || banner.isDead() || player.isDead()) {
                 if (onTaskComplete != null) {
                     onTaskComplete.run();
                 }
@@ -215,7 +210,7 @@ public class FlagBannerUtils {
          }
 
          double newTheta = calculateNextRotationAngle(flag.bannerAngle());
-         updateBannerTransform(flag.bannerDisplay(), centerPlate, flag.bannerAngle(), newTheta);
+         updateBannerTransform(flag.bannerDisplay(), centerPlate, newTheta);
 
          return flag.withBannerAngle(newTheta);
      }
