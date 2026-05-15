@@ -362,6 +362,12 @@ public class RoundManager {
                     session.getTeamBlue().resetLossStreak();
                     session.getTeamRed().incrementLossStreak();
                 }
+
+                // Check if game should end early based on dynamic win condition
+                if (checkGameEndCondition(winnerTeam)) {
+                    return; // Game ends immediately
+                }
+
                 endCombatPhase();
                 return;
             }
@@ -382,6 +388,12 @@ public class RoundManager {
             session.incrementRoundWins(2);
             session.getTeamBlue().resetLossStreak();
             session.getTeamRed().incrementLossStreak();
+
+            // Check if game should end early based on dynamic win condition
+            if (checkGameEndCondition(2)) {
+                return; // Game ends immediately
+            }
+
             endCombatPhase();
         } else if (teamBlueAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
@@ -389,8 +401,48 @@ public class RoundManager {
             session.incrementRoundWins(1);
             session.getTeamRed().resetLossStreak();
             session.getTeamBlue().incrementLossStreak();
+
+            // Check if game should end early based on dynamic win condition
+            if (checkGameEndCondition(1)) {
+                return; // Game ends immediately
+            }
+
             endCombatPhase();
         }
+    }
+
+    /**
+     * Check if the game should end early based on dynamic win condition
+     * If the winning team needs fewer additional wins than rounds remaining, they've mathematically won
+     * Returns true if game ends immediately, false if it continues
+     */
+    private boolean checkGameEndCondition(int winnerTeam) {
+        int team1Wins = session.getRoundWins(1);
+        int team2Wins = session.getRoundWins(2);
+        int winnerWins = winnerTeam == 1 ? team1Wins : team2Wins;
+        int loserWins = winnerTeam == 1 ? team2Wins : team1Wins;
+
+        // Total rounds in the game
+        int totalRounds = ConfigManager.getInstance().getTotalRounds();
+        int roundsPlayed = team1Wins + team2Wins;
+        int roundsRemaining = totalRounds - roundsPlayed;
+
+        // Wins needed for loser to tie
+        int winsNeededToTie = winnerWins - loserWins;
+
+        // If loser needs more wins to tie than rounds remaining, winner has won the game
+        if (winsNeededToTie > roundsRemaining) {
+            String winnerName = winnerTeam == 1 ? session.getTeamRed().getName() : session.getTeamBlue().getName();
+            Messages.broadcast(session.getPlayers(), "round.team-wins-match",
+                    "team_name", winnerName,
+                    "score", winnerWins + "-" + loserWins);
+            Messages.debug("GAME", "Game ended early: " + winnerName + " wins " + winnerWins + "-" + loserWins +
+                    " (" + winsNeededToTie + " wins needed to tie, only " + roundsRemaining + " rounds remain)");
+            session.end();
+            return true;
+        }
+
+        return false;
     }
 
     private boolean startFinalStandDueToTimer() {
