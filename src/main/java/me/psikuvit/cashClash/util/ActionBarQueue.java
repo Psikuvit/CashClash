@@ -33,6 +33,7 @@ public class ActionBarQueue {
     private final Map<UUID, TimerDisplay> timerDisplays = new HashMap<>();
     private final Map<UUID, BukkitTask> timerTasks = new HashMap<>();
     private final Map<UUID, Long> lastDisplayedSeconds = new HashMap<>();
+    private final Map<UUID, String> timerCompletionMessages = new HashMap<>(); // Track completion messages
 
     private ActionBarQueue() {}
 
@@ -44,8 +45,9 @@ public class ActionBarQueue {
      * @param durationMs          Timer duration in milliseconds
      * @param priority            Display priority (lower = higher)
      * @param messageFormatter    Function taking remaining seconds (long) and returning formatted message (String)
+     * @param completionMessage   Optional message to display when timer completes (null for no completion message)
      */
-    public synchronized void startCountdownTimer(Player player, long durationMs, int priority, Function<Long, String> messageFormatter) {
+    public synchronized void startCountdownTimer(Player player, long durationMs, int priority, Function<Long, String> messageFormatter, String completionMessage) {
         if (player == null || !player.isOnline() || durationMs <= 0 || messageFormatter == null) return;
 
         UUID playerUuid = player.getUniqueId();
@@ -57,15 +59,38 @@ public class ActionBarQueue {
         TimerDisplay timerDisplay = new TimerDisplay(expiryMs, priority, messageFormatter);
         timerDisplays.put(playerUuid, timerDisplay);
         lastDisplayedSeconds.put(playerUuid, -1L); // Initialize to -1 so first update always sends
+        if (completionMessage != null) {
+            timerCompletionMessages.put(playerUuid, completionMessage);
+        }
 
         // Start the timer task
         startTimerTask(playerUuid);
+    }
+
+    /**
+     * Start a countdown timer display for a player.
+     * The timer automatically creates/manages its own task and updates the actionbar only when seconds change.
+     *
+     * @param player              The player to display the timer to
+     * @param durationMs          Timer duration in milliseconds
+     * @param priority            Display priority (lower = higher)
+     * @param messageFormatter    Function taking remaining seconds (long) and returning formatted message (String)
+     */
+    public synchronized void startCountdownTimer(Player player, long durationMs, int priority, Function<Long, String> messageFormatter) {
+        startCountdownTimer(player, durationMs, priority, messageFormatter, null);
     }
 
     public void startCountdownTimer(UUID playerUuid, long durationMs, int priority, Function<Long, String> messageFormatter) {
         Player player = Bukkit.getPlayer(playerUuid);
         if (player != null && player.isOnline()) {
             startCountdownTimer(player, durationMs, priority, messageFormatter);
+        }
+    }
+
+    public void startCountdownTimer(UUID playerUuid, long durationMs, int priority, Function<Long, String> messageFormatter, String completionMessage) {
+        Player player = Bukkit.getPlayer(playerUuid);
+        if (player != null && player.isOnline()) {
+            startCountdownTimer(player, durationMs, priority, messageFormatter, completionMessage);
         }
     }
 
@@ -83,6 +108,7 @@ public class ActionBarQueue {
 
         timerDisplays.remove(playerUuid);
         lastDisplayedSeconds.remove(playerUuid);
+        timerCompletionMessages.remove(playerUuid);
 
         BukkitTask task = timerTasks.remove(playerUuid);
         if (task != null) {
@@ -129,8 +155,12 @@ public class ActionBarQueue {
         long remainingMs = Math.max(0, timerDisplay.expiryMs() - now);
         long secondsRemaining = remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0);
 
-        // Timer expired - cleanup
+        // Timer expired - show completion message if provided
         if (remainingMs == 0) {
+            String completionMessage = timerCompletionMessages.get(playerUuid);
+            if (completionMessage != null) {
+                player.sendActionBar(Messages.parse(completionMessage));
+            }
             stopCountdownTimer(playerUuid);
             return;
         }
