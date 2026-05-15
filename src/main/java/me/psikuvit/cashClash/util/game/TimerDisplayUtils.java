@@ -57,7 +57,7 @@ public class TimerDisplayUtils {
             return; // Bonus window already expired
         }
 
-        // Start countdown timer with custom message formatter
+        // Start countdown timer with custom message formatter and completion message
         ActionBarQueue.get().startCountdownTimer(
             player,
             remaining,
@@ -68,7 +68,8 @@ public class TimerDisplayUtils {
                 } else {
                     return "<red>❌ No bonus - score won't grant extra money</red>";
                 }
-            }
+            },
+            "<green>✓ You will receive money bonus!</green>"
         );
     }
 

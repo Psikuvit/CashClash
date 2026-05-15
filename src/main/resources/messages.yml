@@ -361,6 +361,7 @@ messages:
     flag-captured-bonus: "<green>+3,750 coins! (Capture bonus)</green>"
     capture-bonus-final-stand: "<gold>+1 Extra Heart! (Capture bonus in Final Stand)</gold>"
     capture-bonus-heart: "<gold>+1 Extra Heart! (Capture bonus in sudden death)</gold>"
+    bonus-timer-expired: "<green>✓ You will receive money bonus!</green>"
     flag-pickup: "<{color}>The flag carrier is highlighted!</{color}>"
     flag-dropped: "<{color}>The flag has been dropped!</{color}>"
     silenced-activated: "<red>You have been silenced! Movement abilities are locked.</red>"
