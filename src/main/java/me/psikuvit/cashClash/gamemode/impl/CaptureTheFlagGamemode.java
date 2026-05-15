@@ -788,10 +788,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
                             "team_name", teamName, "color", colorTag);
                     if (flagReturnTasks.containsKey(nearestTeam)) {
                         Long expiry = flagReturnExpiry.get(nearestTeam);
-                        long returnRemainingMs = expiry == null ? 5_000L : Math.max(0L, expiry - now);
-                        long returnSecondsRemaining = returnRemainingMs / 1000 + (returnRemainingMs % 1000 > 0 ? 1 : 0);
-                        String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
-                        ActionBarQueue.get().startDisplay(player, flagColor + "Flag returns in " + returnSecondsRemaining + "s", 2, 700);
+                        if (expiry != null) {
+                            String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
+                            // Use countdown timer for flag return display (priority 2)
+                            ActionBarQueue.get().startCountdownTimer(player, expiry, 2,
+                                    secondsRemaining -> flagColor + "Flag returns in " + secondsRemaining + "s");
+                        }
                         pauseFlagReturnTimer(nearestTeam);
                     }
                 } else if (prevTime != null) {
@@ -805,12 +807,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     } else {
                         // Show countdown timer on action bar (3 2 1)
                         long remainingMs = FLAG_PICKUP_DURATION_MS - elapsedMs;
-                        long secondsRemaining = remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0);
+                        long expiryMs = now + remainingMs;
 
                         String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
-                        String countdownMsg = flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s");
-                        // enqueue short-lived high-priority countdowns to avoid overlap
-                        ActionBarQueue.get().startDisplay(player, countdownMsg, 0, 700);
+                        // Use countdown timer for flag pickup display (priority 0 - high priority)
+                        ActionBarQueue.get().startCountdownTimer(player, expiryMs, 0,
+                                secondsRemaining -> flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s"));
                     }
                 }
             } else {
