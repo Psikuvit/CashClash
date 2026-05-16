@@ -51,20 +51,30 @@ public class ActionBarQueue {
         if (player == null || !player.isOnline() || durationMs <= 0 || messageFormatter == null) return;
 
         UUID playerUuid = player.getUniqueId();
-
-        // Stop any existing timer for this player
-        stopCountdownTimer(playerUuid);
-
         long expiryMs = System.currentTimeMillis() + durationMs;
-        TimerDisplay timerDisplay = new TimerDisplay(expiryMs, priority, messageFormatter);
-        timerDisplays.put(playerUuid, timerDisplay);
-        lastDisplayedSeconds.put(playerUuid, -1L); // Initialize to -1 so first update always sends
-        if (completionMessage != null) {
-            timerCompletionMessages.put(playerUuid, completionMessage);
+        TimerDisplay existingDisplay = timerDisplays.get(playerUuid);
+        Long existingLastSeconds = lastDisplayedSeconds.get(playerUuid);
+        long remainingSeconds = calculateSecondsRemaining(durationMs);
+
+        if (existingDisplay == null || existingDisplay.priority() != priority) {
+            stopCountdownTimer(playerUuid);
+            existingLastSeconds = -1L;
         }
 
-        // Start the timer task
-        startTimerTask(playerUuid);
+        TimerDisplay timerDisplay = new TimerDisplay(expiryMs, priority, messageFormatter);
+        timerDisplays.put(playerUuid, timerDisplay);
+        lastDisplayedSeconds.put(playerUuid, existingLastSeconds == null ? -1L : existingLastSeconds);
+        if (completionMessage != null) {
+            timerCompletionMessages.put(playerUuid, completionMessage);
+        } else {
+            timerCompletionMessages.remove(playerUuid);
+        }
+
+        if (!timerTasks.containsKey(playerUuid)) {
+            startTimerTask(playerUuid);
+        } else if (existingLastSeconds == null || existingLastSeconds != remainingSeconds) {
+            updateTimerDisplay(playerUuid);
+        }
     }
 
     /**
@@ -106,7 +116,7 @@ public class ActionBarQueue {
     public synchronized void stopCountdownTimer(UUID playerUuid) {
         if (playerUuid == null) return;
 
-        timerDisplays.remove(playerUuid);
+        boolean hadTimer = timerDisplays.remove(playerUuid) != null;
         lastDisplayedSeconds.remove(playerUuid);
         timerCompletionMessages.remove(playerUuid);
 
@@ -116,7 +126,7 @@ public class ActionBarQueue {
         }
 
         Player player = Bukkit.getPlayer(playerUuid);
-        if (player != null && player.isOnline()) {
+        if (hadTimer && player != null && player.isOnline()) {
             player.sendActionBar(Messages.parse(""));
         }
     }
@@ -153,7 +163,7 @@ public class ActionBarQueue {
 
         long now = System.currentTimeMillis();
         long remainingMs = Math.max(0, timerDisplay.expiryMs() - now);
-        long secondsRemaining = remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0);
+        long secondsRemaining = calculateSecondsRemaining(remainingMs);
 
         // Timer expired - show completion message if provided
         if (remainingMs == 0) {
@@ -207,10 +217,11 @@ public class ActionBarQueue {
      */
     public synchronized void stopDisplay(UUID playerUuid) {
         if (playerUuid == null) return;
-        persistentDisplays.remove(playerUuid);
+        boolean hadDisplay = persistentDisplays.remove(playerUuid) != null;
+        boolean hadTask = refreshTasks.containsKey(playerUuid);
         cancelRefreshTask(playerUuid);
         Player player = Bukkit.getPlayer(playerUuid);
-        if (player != null && player.isOnline()) {
+        if ((hadDisplay || hadTask) && player != null && player.isOnline()) {
             player.sendActionBar(Messages.parse(""));
         }
     }
@@ -266,8 +277,11 @@ public class ActionBarQueue {
         }
     }
 
+    private long calculateSecondsRemaining(long remainingMs) {
+        return remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0);
+    }
+
     private record PersistentDisplay(String message, int priority, long expiryMs) {}
 
     private record TimerDisplay(long expiryMs, int priority, Function<Long, String> messageFormatter) {}
 }
-
