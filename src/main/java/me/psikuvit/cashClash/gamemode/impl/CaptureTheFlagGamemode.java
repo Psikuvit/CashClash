@@ -293,9 +293,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
          FlagState flag = flagStates.get(enemyTeamNumber);
          if (flag == null) return;
+         boolean pickedUpFromBase = isFlagAtBase(enemyTeamNumber, flag);
          cancelFlagReturnTask(enemyTeamNumber);
 
-         FlagState updatedFlag = flag.withHolder(playerUuid, now);
+         FlagState updatedFlag = flag.withHolder(playerUuid, pickedUpFromBase ? now : 0L);
          if (enemyTeamNumber == 1) {
              flagStates.put(1, updatedFlag);
              Messages.debug("[CTF] " + player.getName() + " picked up Team Red's flag");
@@ -320,8 +321,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
          }
          moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
 
-         // Start bonus timer display for flag carrier
-         TimerDisplayUtils.startBonusTimer(player, updatedFlag);
+         if (pickedUpFromBase) {
+             TimerDisplayUtils.startBonusTimer(player, updatedFlag);
+         } else {
+             ActionBarQueue.get().stopDisplay(player);
+             TimerDisplayUtils.stopBonusTimer(player);
+         }
 
          SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, 1.5f);
      }
@@ -522,6 +527,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 ItemUtils.restoreNormalItemDisplay(player);
             }
         }
+    }
 
     @Override
     public void onSuddenDeathCycleEnded() {
@@ -720,6 +726,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
          return FlagBaseMechanicsUtils.isDroppedFlagWaitingForReturn(teamNumber, flagStates, flagBaseLocations, flagReturnExpiry);
      }
 
+     private boolean isFlagAtBase(int teamNumber, FlagState flag) {
+         Location base = flagBaseLocations.get(teamNumber);
+         Location flagLoc = flag != null ? flag.flagLoc() : null;
+         if (base == null || flagLoc == null || base.getWorld() != flagLoc.getWorld()) {
+             return false;
+         }
+         return flagLoc.distanceSquared(base) <= 0.25;
+     }
+
       private void stopFlagActionBar(FlagState flag) {
           if (flag != null && flag.holder() != null) {
               Player holder = Bukkit.getPlayer(flag.holder());
@@ -796,7 +811,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
                         if (expiry != null) {
                             String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
                             // Use countdown timer for flag return display (priority 2)
-                            ActionBarQueue.get().startCountdownTimer(player, expiry, 2,
+                            long remainingMs = Math.max(0, expiry - now);
+                            ActionBarQueue.get().startCountdownTimer(player, remainingMs, 2,
                                     secondsRemaining -> flagColor + "Flag returns in " + secondsRemaining + "s");
                         }
                         pauseFlagReturnTimer(nearestTeam);
@@ -812,11 +828,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     } else {
                         // Show countdown timer on action bar (3 2 1)
                         long remainingMs = FLAG_PICKUP_DURATION_MS - elapsedMs;
-                        long expiryMs = now + remainingMs;
 
                         String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
                         // Use countdown timer for flag pickup display (priority 0 - high priority)
-                        ActionBarQueue.get().startCountdownTimer(player, expiryMs, 0,
+                        ActionBarQueue.get().startCountdownTimer(player, remainingMs, 0,
                                 secondsRemaining -> flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s"));
                     }
                 }
