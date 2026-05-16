@@ -19,6 +19,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -333,6 +334,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         activateFinalStandElimination();
         startFinalStandBorder();
         Messages.debug("[PTP] Final Stand activated - non-Presidents will be eliminated");
+    }
 
     @Override
     public void onSuddenDeathCycleEnded() {
@@ -420,15 +422,24 @@ public class ProtectThePresidentGamemode extends Gamemode {
         for (int team = 1; team <= 2; team++) {
             President pres = presidents.get(team);
             if (pres != null && getSelectedBuffs(pres.uuid()).isEmpty()) {
-                PresidentialBuff randomBuff = buffs[(int) (Math.random() * buffs.length)];
-                President updatedPres = pres.withBuff(randomBuff);
+                List<PresidentialBuff> randomBuffs = new ArrayList<>(List.of(buffs));
+                Collections.shuffle(randomBuffs);
+
+                int randomBuffCount = suddenDeathManager.isInSuddenDeath() ? 2 : 1;
+                randomBuffs = new ArrayList<>(randomBuffs.subList(0, randomBuffCount));
+
+                President updatedPres = pres.withBuff(randomBuffs.getFirst());
                 presidents.put(team, updatedPres);
-                selectedBuffs.put(pres.uuid(), new ArrayList<>(List.of(randomBuff)));
+                selectedBuffs.put(pres.uuid(), randomBuffs);
 
                 Player presPlayer = getPresidentPlayerByTeam(team);
                 if (presPlayer != null) {
-                    Messages.debug("[PTP] Team " + team + " - Applied random buff: " + randomBuff.getName());
-                    Messages.send(presPlayer, "gamemode-ptp.no-buff-selected", "buff_name", randomBuff.getName());
+                    String buffNames = randomBuffs.stream()
+                            .map(PresidentialBuff::getName)
+                            .reduce((first, second) -> first + ", " + second)
+                            .orElse("None");
+                    Messages.debug("[PTP] Team " + team + " - Applied random buffs: " + buffNames);
+                    Messages.send(presPlayer, "gamemode-ptp.no-buff-selected", "buff_name", buffNames);
                 }
             } else if (pres != null) {
                 Messages.debug("[PTP] Team " + team + " - President selected buffs: " + getPresidentBuff(team));

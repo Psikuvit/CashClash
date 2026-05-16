@@ -92,7 +92,7 @@ public class PresidentialBuffSelectionUtils {
      */
     public static ItemStack createExtraHeartsBuffItem() {
         return createBuffSelectionItem("Health Potion",
-                "<gold>Extra Hearts - Gain +1 max heart</gold>");
+                "<gold>Extra Hearts - Gain +2 max heart</gold>");
     }
 
     /**
