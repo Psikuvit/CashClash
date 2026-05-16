@@ -523,19 +523,24 @@ public class CaptureTheFlagGamemode extends Gamemode {
             }
         }
 
-        if (suddenDeathManager.isInSuddenDeath()) {
-            int team1Captures = suddenDeathCycleCaptures.getOrDefault(1, 0);
-            int team2Captures = suddenDeathCycleCaptures.getOrDefault(2, 0);
+    @Override
+    public void onSuddenDeathCycleEnded() {
+        int team1Captures = suddenDeathCycleCaptures.getOrDefault(1, 0);
+        int team2Captures = suddenDeathCycleCaptures.getOrDefault(2, 0);
 
-            if (team1Captures != team2Captures) {
-                suddenDeathWinningTeam = team1Captures > team2Captures ? 1 : 2;
-                Messages.debug("[CTF] Sudden death winner determined: Team " + suddenDeathWinningTeam + " with " + Math.max(team1Captures, team2Captures) + " captures");
-            } else {
-                Messages.debug("[CTF] Sudden death tie at final-stand - awaiting resolution in ongoing final-stand");
-            }
+        if (team1Captures != team2Captures) {
+            suddenDeathWinningTeam = team1Captures > team2Captures ? 1 : 2;
+            Messages.debug("[CTF] Sudden death cycle winner determined: Team " + suddenDeathWinningTeam + " with " + Math.max(team1Captures, team2Captures) + " captures");
         } else {
-            Messages.debug("[CTF] Final-stand activated from round-end; not touching sudden-death cycle state");
+            Messages.debug("[CTF] Sudden death cycle tied " + team1Captures + "-" + team2Captures + "; restarting");
         }
+    }
+
+    @Override
+    public void onSuddenDeathCycleRestart() {
+        suddenDeathCycleCaptures.put(1, 0);
+        suddenDeathCycleCaptures.put(2, 0);
+        Messages.debug("[CTF] Sudden death capture counters reset for next cycle");
     }
 
     @Override

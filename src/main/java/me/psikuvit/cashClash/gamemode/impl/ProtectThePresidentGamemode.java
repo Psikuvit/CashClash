@@ -334,21 +334,24 @@ public class ProtectThePresidentGamemode extends Gamemode {
         startFinalStandBorder();
         Messages.debug("[PTP] Final Stand activated - non-Presidents will be eliminated");
 
-        // and should not attempt to restart sudden-death cycles.
-        if (suddenDeathManager.isInSuddenDeath()) {
-            int team1Kills = suddenDeathPresidentKills.getOrDefault(1, 0);
-            int team2Kills = suddenDeathPresidentKills.getOrDefault(2, 0);
+    @Override
+    public void onSuddenDeathCycleEnded() {
+        int team1Kills = suddenDeathPresidentKills.getOrDefault(1, 0);
+        int team2Kills = suddenDeathPresidentKills.getOrDefault(2, 0);
 
-            if (team1Kills != team2Kills) {
-                // Winner declared for sudden-death (immediate difference)
-                suddenDeathWinningTeam = team1Kills > team2Kills ? 1 : 2;
-                Messages.debug("[PTP] Sudden death winner determined: Team " + suddenDeathWinningTeam + " with " + Math.max(team1Kills, team2Kills) + " kills");
-            } else {
-                Messages.debug("[PTP] Sudden death tie at final-stand - awaiting resolution in ongoing final-stand");
-            }
+        if (team1Kills != team2Kills) {
+            suddenDeathWinningTeam = team1Kills > team2Kills ? 1 : 2;
+            Messages.debug("[PTP] Sudden death cycle winner determined: Team " + suddenDeathWinningTeam + " with " + Math.max(team1Kills, team2Kills) + " president kills");
         } else {
-            Messages.debug("[PTP] Final-stand activated from round-end; not touching sudden-death cycle state");
+            Messages.debug("[PTP] Sudden death cycle tied " + team1Kills + "-" + team2Kills + "; restarting");
         }
+    }
+
+    @Override
+    public void onSuddenDeathCycleRestart() {
+        suddenDeathPresidentKills.put(1, 0);
+        suddenDeathPresidentKills.put(2, 0);
+        Messages.debug("[PTP] Sudden death president kill counters reset for next cycle");
     }
 
     /**
