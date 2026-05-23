@@ -6,8 +6,12 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.ParticleUtils;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -150,9 +154,18 @@ public class BlockListener implements Listener {
             return false;
         }
 
-        // Only allow placing during combat
-        if (session.getState() != GameState.COMBAT) {
-            Messages.debug("Session state is not COMBAT for player " + player.getName() + " in BlockPlaceEvent");
+        GameState state = session.getState();
+        Material blockType = event.getBlockPlaced().getType();
+
+        if (state == GameState.SHOPPING) {
+            // Only allow water/lava buckets during shopping (for refill)
+            if (blockType != Material.WATER && blockType != Material.LAVA) {
+                Messages.debug("Only water/lava placement allowed during SHOPPING for player " + player.getName());
+                event.setCancelled(true);
+                return false;
+            }
+        } else if (state != GameState.COMBAT) {
+            Messages.debug("Session state is not COMBAT/SHOPPING for player " + player.getName() + " in BlockPlaceEvent");
             event.setCancelled(true);
             return false;
         }
@@ -161,7 +174,7 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Handle web block placement (max 4 per player)
+     * Handle web block placement (max 8 per player)
      */
     private boolean handleWebPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
         if (blockType != Material.COBWEB) return false;
@@ -169,7 +182,7 @@ public class BlockListener implements Listener {
         int currentCount = playerWebBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>())
             .getOrDefault(playerId, 0);
 
-        if (currentCount >= 4) {
+        if (currentCount >= 8) {
             event.setCancelled(true);
             Messages.send(event.getPlayer(), "listener.max-webs-reached");
             return true;
@@ -183,47 +196,13 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Handle leaf block placement (max 64 per player, max 3 stack height)
+     * Handle leaf block placement (unlimited)
      */
     private boolean handleLeafPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
         if (!isLeafBlock(blockType)) return false;
 
-        int currentCount = playerLeafBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>())
-            .getOrDefault(playerId, 0);
-
-        if (currentCount >= 64) {
-            event.setCancelled(true);
-            Messages.send(event.getPlayer(), "listener.max-leaf-blocks-reached");
-            return true;
-        }
-
-        // Check stacking height
-        if (!validateLeafStackHeight(event, block)) {
-            return true;
-        }
-
-        playerLeafBlockCount.get(sessionId).put(playerId, currentCount + 1);
         trackPlacedBlock(sessionId, block);
         scheduleLeafDecay(block);
-        return true;
-    }
-
-    /**
-     * Validate leaf block stacking (max 3 vertically)
-     */
-    private boolean validateLeafStackHeight(BlockPlaceEvent event, Block block) {
-        int stackHeight = 1;
-        Block below = block.getRelative(0, -1, 0);
-        while (isLeafBlock(below.getType()) && stackHeight < 3) {
-            stackHeight++;
-            below = below.getRelative(0, -1, 0);
-        }
-
-        if (stackHeight >= 3) {
-            event.setCancelled(true);
-            Messages.send(event.getPlayer(), "listener.leaf-stack-limit");
-            return false;
-        }
         return true;
     }
 
@@ -423,11 +402,15 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Schedule leaf block to decay after 6 seconds.
+     * Schedule leaf block to decay after 6 seconds with visual effects.
      */
     private void scheduleLeafDecay(Block block) {
         SchedulerUtils.runTaskLater(() -> {
             if (isLeafBlock(block.getType())) {
+                Location loc = block.getLocation().add(0.5, 0.5, 0.5);
+                ParticleUtils.spawn(Particle.FALLING_DUST, loc, 10, 0.3);
+                SoundUtils.playAt(loc, Sound.BLOCK_GRASS_BREAK, 0.5f, 1.0f);
+
                 block.setType(Material.AIR);
             }
         }, 120);
