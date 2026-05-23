@@ -346,6 +346,9 @@ public class CustomItemManager {
 
             player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
 
+            // Remove all arrows from the player (arrows stuck in them)
+            removeArrowsFromPlayer(player);
+
             Messages.send(player, "customitem.invis-activated");
             int costPerSecond = cfg.getInvisCloakCostPerSecond();
             Messages.send(player, "customitem.invis-cost-per-second", "cost", String.valueOf(costPerSecond));
@@ -376,7 +379,7 @@ public class CustomItemManager {
             if (storedArmor != null && storedArmor.size() >= 4) {
                 // Restore armor contents (first 4 items are helmet, chestplate, leggings, boots)
                 ItemStack[] armorContents = new ItemStack[4];
-                for (int i = 0; i < 4 && i < storedArmor.size(); i++) {
+                for (int i = 0; i < 4; i++) {
                     armorContents[i] = storedArmor.get(i);
                 }
                 player.getInventory().setArmorContents(armorContents);
@@ -451,6 +454,16 @@ public class CustomItemManager {
 
         // Reset cooldown
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK, ItemsConfig.getInstance().getInvisCloakCooldown());
+    }
+
+    /**
+     * Remove all arrows from a player's body
+     */
+    private void removeArrowsFromPlayer(Player player) {
+        player.getLocation().getNearbyEntitiesByType(org.bukkit.entity.Arrow.class, 5.0).stream()
+                .filter(arrow -> arrow.getShooter() != player && arrow.isInBlock() ||
+                        (arrow.getAttachedBlock() != null && arrow.getPassengers().isEmpty()))
+                .forEach(Entity::remove);
     }
 
     // ==================== BAG OF POTATOES IMPLEMENTATION ====================
