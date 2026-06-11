@@ -42,6 +42,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private final Map<Integer, Integer> suddenDeathPresidentKills;
     private final Map<UUID, List<PresidentialBuff>> selectedBuffs;
     private final Map<UUID, ItemStack[]> savedInventories;
+    private final Map<Integer, BukkitTask> glowingTasks;
 
     private final SuddenDeathManager suddenDeathManager;
     private final FinalStandManager finalStandManager;
@@ -64,6 +65,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.suddenDeathPresidentKills = new HashMap<>(2);
         this.selectedBuffs = new HashMap<>();
         this.savedInventories = new HashMap<>();
+        this.glowingTasks = new HashMap<>(2);
         this.suddenDeathManager = new SuddenDeathManager(session, this);
         this.finalStandManager = new FinalStandManager(session, this);
         this.selectionPhaseActive = false;
@@ -116,12 +118,24 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Reset kill count for round
         teamKillCount.put(1, 0);
         teamKillCount.put(2, 0);
+
+        // Schedule president glowing after 15s
+        for (int team = 1; team <= 2; team++) {
+            Player presPlayer = getPresidentPlayerByTeam(team);
+            if (presPlayer != null) {
+                schedulePresidentGlow(team, presPlayer);
+            }
+        }
     }
 
     @Override
     public void onRoundEnd() {
         // Clear all buffs and reset for next round
         clearPresidentialBuffs();
+
+        // Cancel all glowing tasks
+        glowingTasks.values().forEach(this::cancelTask);
+        glowingTasks.clear();
 
         // Reset deaths for next round
         presidents.replaceAll((team, pres) -> pres.withResetDeaths());
@@ -228,6 +242,15 @@ public class ProtectThePresidentGamemode extends Gamemode {
             if (killerPresidentTeam != 0) {
                 addTeamKill(killerPresidentTeam);
             }
+
+            // Permanent deaths during Final Stand
+            if (finalStandManager.isActive()) {
+                var cashVictim = session.getCashClashPlayer(victimUuid);
+                if (cashVictim != null) {
+                    cashVictim.setLives(0);
+                    Messages.debug("[PTP] Permanent death during Final Stand for non-president: " + victim.getName());
+                }
+            }
         }
     }
 
@@ -240,6 +263,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         if (presidentTeam != 0) {
             President pres = presidents.get(presidentTeam);
             refreshPresidentEffects(pres, true);
+            schedulePresidentGlow(presidentTeam, player);
             Messages.debug("[PTP] Refreshed president effects on spawn: " + player.getName());
         }
 
@@ -281,6 +305,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public void cleanup() {
         cancelTask(selectionTask);
+        glowingTasks.values().forEach(this::cancelTask);
+        glowingTasks.clear();
         finalStandManager.cancel();
         resetFinalStandBorder();
         suddenDeathManager.cleanup();
@@ -293,9 +319,26 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     private void cancelTask(BukkitTask task) {
-        if (task != null) {
+        if (task != null && !task.isCancelled()) {
             task.cancel();
         }
+    }
+
+    private void schedulePresidentGlow(int team, Player player) {
+        // Cancel existing task for this team if any
+        cancelTask(glowingTasks.remove(team));
+
+        // Schedule new task for 15s (300 ticks)
+        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
+            if (player.isOnline()) {
+                PresidentialEffectsUtils.applyGlowEffect(player);
+                Messages.debug("[PTP] President glowing activated after 15s delay for: " + player.getName());
+            }
+            glowingTasks.remove(team);
+        }, 300L);
+
+        glowingTasks.put(team, task);
+        Messages.debug("[PTP] Scheduled glowing for " + player.getName() + " in 15s");
     }
 
     @Override
@@ -636,6 +679,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
 
         suddenDeathManager.enterSuddenDeath();
+
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
     }

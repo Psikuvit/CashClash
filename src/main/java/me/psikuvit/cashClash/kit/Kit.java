@@ -228,15 +228,56 @@ public enum Kit {
             leatherHelmet.setItemMeta(helmetMeta);
         }
         player.getInventory().setHelmet(leatherHelmet);
-        player.getInventory().setChestplate(new ItemStack(Material.GOLDEN_CHESTPLATE));
-        player.getInventory().setLeggings(new ItemStack(Material.GOLDEN_LEGGINGS));
-        player.getInventory().setBoots(new ItemStack(Material.GOLDEN_BOOTS));
 
-        // === TOOLS ===
-        player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
-        player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
+        // === GOLD ARMOR (UNBREAKABLE) ===
+        ItemStack goldChestplate = new ItemStack(Material.GOLDEN_CHESTPLATE);
+        ItemMeta chestMeta = goldChestplate.getItemMeta();
+        if (chestMeta != null) {
+            chestMeta.setUnbreakable(true);
+            goldChestplate.setItemMeta(chestMeta);
+        }
+        player.getInventory().setChestplate(goldChestplate);
 
-        player.getInventory().addItem(new ItemStack(Material.SHEARS));
+        ItemStack goldLeggings = new ItemStack(Material.GOLDEN_LEGGINGS);
+        ItemMeta legsMeta = goldLeggings.getItemMeta();
+        if (legsMeta != null) {
+            legsMeta.setUnbreakable(true);
+            goldLeggings.setItemMeta(legsMeta);
+        }
+        player.getInventory().setLeggings(goldLeggings);
+
+        ItemStack goldBoots = new ItemStack(Material.GOLDEN_BOOTS);
+        ItemMeta bootsMeta = goldBoots.getItemMeta();
+        if (bootsMeta != null) {
+            bootsMeta.setUnbreakable(true);
+            goldBoots.setItemMeta(bootsMeta);
+        }
+        player.getInventory().setBoots(goldBoots);
+
+        // === TOOLS (UNBREAKABLE) ===
+        ItemStack stoneSword = new ItemStack(Material.STONE_SWORD);
+        ItemMeta swordMeta = stoneSword.getItemMeta();
+        if (swordMeta != null) {
+            swordMeta.setUnbreakable(true);
+            stoneSword.setItemMeta(swordMeta);
+        }
+        player.getInventory().addItem(stoneSword);
+
+        ItemStack stoneAxe = new ItemStack(Material.STONE_AXE);
+        ItemMeta axeMeta = stoneAxe.getItemMeta();
+        if (axeMeta != null) {
+            axeMeta.setUnbreakable(true);
+            stoneAxe.setItemMeta(axeMeta);
+        }
+        player.getInventory().addItem(stoneAxe);
+
+        ItemStack shears = new ItemStack(Material.SHEARS);
+        ItemMeta shearsMeta = shears.getItemMeta();
+        if (shearsMeta != null) {
+            shearsMeta.setUnbreakable(true);
+            shears.setItemMeta(shearsMeta);
+        }
+        player.getInventory().addItem(shears);
 
         // === FOOD ===
         ItemFactory factory = ItemFactory.getInstance();
@@ -250,6 +291,11 @@ public enum Kit {
 
         // === UTILITY ===
         player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
+
+        ItemStack cobwebs = factory.createGameplayItem(UtilityItem.COBWEB);
+        cobwebs.setAmount(8);
+        markKitItem(cobwebs);
+        player.getInventory().addItem(cobwebs);
 
         // === SHIELD ===
         // Shield logic based on round number
@@ -271,8 +317,7 @@ public enum Kit {
         } else if (round <= 6) {
             return !rounds1to3HaveShields;
         } else {
-            // Round 7+ (overtime): 50/50 chance
-            return Math.random() < 0.5;
+            return true;
         }
     }
 
@@ -354,7 +399,7 @@ public enum Kit {
                 player.getInventory().addItem(new ItemStack(Material.LAVA_BUCKET));
                 player.getInventory().addItem(new ItemStack(Material.FIRE_CHARGE, 2));
             }
-            case SPIDER -> player.getInventory().addItem(new ItemStack(Material.COBWEB, 2));
+            case SPIDER -> player.getInventory().addItem(new ItemStack(Material.COBWEB, 8));
             case BOMBER -> {
                 for (int i = 0; i < 2; i++) {
                     ItemStack grenade = factory.createCustomItem(CustomItem.GRENADE, player);

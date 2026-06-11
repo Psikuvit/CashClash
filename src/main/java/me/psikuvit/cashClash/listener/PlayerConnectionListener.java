@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.manager.player.TabListManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.GameMode;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -62,6 +63,10 @@ public class PlayerConnectionListener implements Listener {
     private void setupLobbyState(Player player) {
         player.setGameMode(GameMode.SURVIVAL);
         player.getInventory().clear();
+        var attr = player.getAttribute(Attribute.MAX_HEALTH);
+        if (attr != null) {
+            attr.setBaseValue(20.0);
+        }
         player.setHealth(20.0);
         player.setFoodLevel(20);
         player.setSaturation(20.0f);
@@ -97,6 +102,9 @@ public class PlayerConnectionListener implements Listener {
 
         // Clean up layout editing state
         LayoutManager.getInstance().handleDisconnect(player.getUniqueId());
+
+        // Cleanup mythic state
+        me.psikuvit.cashClash.manager.items.MythicItemManager.getInstance().cleanup(player);
 
         // Remove lobby scoreboard
         ScoreboardManager.getInstance().setScoreboard(player);

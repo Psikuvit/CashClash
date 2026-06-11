@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
@@ -368,6 +369,16 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         resetFlagsAfterCapture(teamNumber);
+
+        // Check for 2-2 tie in sudden death to restart cycle
+        if (suddenDeathManager.isInSuddenDeath()) {
+            int redC = suddenDeathCycleCaptures.getOrDefault(1, 0);
+            int blueC = suddenDeathCycleCaptures.getOrDefault(2, 0);
+            if (redC >= 2 && blueC >= 2) {
+                Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-restart-tie");
+                suddenDeathManager.restartCycle();
+            }
+        }
     }
 
     public UUID getFlagHolder(int teamNumber) {
@@ -546,7 +557,18 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void onSuddenDeathCycleRestart() {
         suddenDeathCycleCaptures.put(1, 0);
         suddenDeathCycleCaptures.put(2, 0);
-        Messages.debug("[CTF] Sudden death capture counters reset for next cycle");
+        flagCaptures.put(1, 0);
+        flagCaptures.put(2, 0);
+        
+        // Reset scoreboard indicators
+        for (UUID uuid : session.getPlayers()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) {
+                ScoreboardManager.getInstance().updatePlayerScoreboard(p);
+            }
+        }
+        
+        Messages.debug("[CTF] Sudden death capture counters and scoreboard indicators reset for next cycle");
     }
 
     @Override
@@ -915,7 +937,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         suddenDeathManager.enterSuddenDeath();
-        Messages.debug("[CTF] Prepared sudden death round - match score is 3-3");
+        
+        Messages.debug("[CTF] Prepared sudden death round - match score is 3-3.");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-timer-start");
     }
