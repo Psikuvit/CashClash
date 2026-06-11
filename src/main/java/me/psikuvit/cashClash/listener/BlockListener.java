@@ -20,6 +20,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.block.LeavesDecayEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
@@ -51,32 +53,32 @@ public class BlockListener implements Listener {
     // Map of web location to despawn task for web blocks
     private static final Map<Location, BukkitTask> webDespawnTasks = new ConcurrentHashMap<>();
 
+    // Map of leaf location to decay task
+    private static final Map<Location, BukkitTask> leafDecayTasks = new ConcurrentHashMap<>();
+
     // Map of player UUID to water bucket refill task
-    private static final Map<UUID, BukkitTask> waterBucketRefillTasks = new ConcurrentHashMap<>();
+    private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
 
     // ==================== BLOCK PLACE ====================
 
     public static void cleanupRound(UUID sessionId) {
-        Set<Location> blocks = placedBlocks.get(sessionId);
+        Set<Location> blocks = placedBlocks.remove(sessionId);
+        if (blocks != null) {
+            for (Location loc : blocks) {
+                cancelWebDespawnTask(loc);
+                cancelLeafDecayTask(loc);
+            }
+        }
         if (blocks == null) {
             Messages.debug("No blocks to clean up for session " + sessionId);
             return;
         }
         for (Location loc : blocks) {
             if (loc == null) continue;
-            loc.getBlock().setType(Material.AIR);
+            Block block = loc.getBlock();
+            block.setType(Material.AIR);
         }
-        blocks.clear();
     }
-
-    /**
-     * Check if a block was placed by a player in the given session.
-     */
-    public static boolean isPlayerPlaced(UUID sessionId, Location location) {
-        Set<Location> blocks = placedBlocks.get(sessionId);
-        return blocks != null && blocks.contains(location.toBlockLocation());
-    }
-
 
     /**
      * Clean up tracked blocks when a session ends.
@@ -86,34 +88,86 @@ public class BlockListener implements Listener {
         waterLavaSourceCount.remove(sessionId);
         playerLeafBlockCount.remove(sessionId);
         playerWebBlockCount.remove(sessionId);
+        playerWaterBucketRefillCount.remove(sessionId);
         // Note: waterBucketRefillTasks are per-player and handled separately
     }
 
     /**
-     * Schedule water bucket refill after 10 seconds of use.
-     * Only applies to water buckets, not lava.
+     * Queue a water bucket refill for the player to receive during the next shopping phase.
      */
-    private static void scheduleWaterBucketRefill(Player player) {
-        UUID playerId = player.getUniqueId();
-
-        // Cancel any existing refill task
-        BukkitTask existing = waterBucketRefillTasks.get(playerId);
-        if (existing != null) {
-            existing.cancel();
+    private static void queueWaterBucketRefill(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) {
+            return;
         }
 
-        // Schedule new refill task
-        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
-            if (player.isOnline()) {
-                // Add water bucket to inventory
-                org.bukkit.inventory.ItemStack waterBucket = new org.bukkit.inventory.ItemStack(Material.WATER_BUCKET);
-                player.getInventory().addItem(waterBucket);
-                Messages.send(player, "listener.water-bucket-refilled");
-            }
-            waterBucketRefillTasks.remove(playerId);
-        }, 200); // 200 ticks = 10 seconds
+        UUID sessionId = session.getSessionId();
+        UUID playerId = player.getUniqueId();
+        playerWaterBucketRefillCount
+            .computeIfAbsent(sessionId, k -> new ConcurrentHashMap<>())
+            .merge(playerId, 1, Integer::sum);
+    }
 
-        waterBucketRefillTasks.put(playerId, task);
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBucketEmpty(org.bukkit.event.player.PlayerBucketEmptyEvent event) {
+        if (event.getBucket() != Material.WATER_BUCKET) return;
+
+        Player player = event.getPlayer();
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) return;
+
+        // Track water source placement for refill
+        queueWaterBucketRefill(player);
+        
+        // Track the water block for cleanup
+        trackPlacedBlock(session.getSessionId(), event.getBlock());
+    }
+
+    /**
+     * Refill all queued water buckets for a player during the shopping phase.
+     * Replaces empty buckets in inventory with full ones.
+     */
+    public static void refillWaterBuckets(Player player) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) {
+            return;
+        }
+
+        Map<UUID, Integer> counts = playerWaterBucketRefillCount.get(session.getSessionId());
+        if (counts == null) {
+            return;
+        }
+
+        int refillCount = counts.getOrDefault(player.getUniqueId(), 0);
+        if (refillCount <= 0) {
+            return;
+        }
+
+        counts.remove(player.getUniqueId());
+        
+        ItemStack[] contents = player.getInventory().getContents();
+        int refilled = 0;
+        for (int i = 0; i < contents.length && refilled < refillCount; i++) {
+            ItemStack item = contents[i];
+            if (item != null && item.getType() == Material.BUCKET) {
+                if (item.getAmount() > 1) {
+                    item.setAmount(item.getAmount() - 1);
+                    player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
+                } else {
+                    contents[i] = new ItemStack(Material.WATER_BUCKET);
+                }
+                refilled++;
+            }
+        }
+        
+        // If we still have more to refill but no empty buckets found, add them anyway
+        while (refilled < refillCount) {
+            player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
+            refilled++;
+        }
+        
+        player.getInventory().setContents(contents);
+        Messages.send(player, "listener.water-bucket-refilled");
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -134,7 +188,7 @@ public class BlockListener implements Listener {
 
         // Handle block type-specific placement logic
         if (handleWebPlacement(event, blockType, sessionId, playerId, block)) return;
-        if (handleLeafPlacement(event, blockType, sessionId, playerId, block)) return;
+        if (handleLeafPlacement(blockType, sessionId, block)) return;
         if (handleWaterLavaPlacement(event, blockType, sessionId, playerId, player, session)) return;
 
         // Track other player-placed blocks
@@ -179,26 +233,21 @@ public class BlockListener implements Listener {
     private boolean handleWebPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
         if (blockType != Material.COBWEB) return false;
 
-        int currentCount = playerWebBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>())
-            .getOrDefault(playerId, 0);
-
-        if (currentCount >= 8) {
-            event.setCancelled(true);
-            Messages.send(event.getPlayer(), "listener.max-webs-reached");
-            return true;
-        }
-
-        // Increment web count and track
-        playerWebBlockCount.get(sessionId).put(playerId, currentCount + 1);
+        // Track placed block and schedule despawn (limit handled by inventory control)
         trackPlacedBlock(sessionId, block);
         scheduleWebDespawn(block);
         return true;
     }
 
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onLeavesDecay(LeavesDecayEvent event) {
+        event.setCancelled(true);
+    }
+
     /**
      * Handle leaf block placement (unlimited)
      */
-    private boolean handleLeafPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
+    private boolean handleLeafPlacement(Material blockType, UUID sessionId, Block block) {
         if (!isLeafBlock(blockType)) return false;
 
         trackPlacedBlock(sessionId, block);
@@ -229,7 +278,7 @@ public class BlockListener implements Listener {
 
         // Schedule water bucket refill (only for water, not lava)
         if (blockType == Material.WATER) {
-            scheduleWaterBucketRefill(player);
+            queueWaterBucketRefill(player);
         }
         return true;
     }
@@ -272,9 +321,17 @@ public class BlockListener implements Listener {
 
         if (isLeafBlock(type)) {
             event.setDropItems(false);
+            cancelLeafDecayTask(block.getLocation());
 
             // Decrement player's leaf count
             decrementPlayerLeaf(event, playerLeafBlockCount);
+        }
+    }
+
+    private static void cancelLeafDecayTask(Location loc) {
+        BukkitTask task = leafDecayTasks.remove(loc.toBlockLocation());
+        if (task != null) {
+            task.cancel();
         }
     }
 
@@ -377,7 +434,7 @@ public class BlockListener implements Listener {
     /**
      * Cancel web despawn task if player touches it.
      */
-    private void cancelWebDespawnTask(Location loc) {
+    private static void cancelWebDespawnTask(Location loc) {
         BukkitTask task = webDespawnTasks.remove(loc);
         if (task != null) {
             task.cancel();
@@ -402,18 +459,21 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Schedule leaf block to decay after 6 seconds with visual effects.
+     * Schedule leaf block to decay after 5 seconds with visual effects.
      */
     private void scheduleLeafDecay(Block block) {
-        SchedulerUtils.runTaskLater(() -> {
+        Location loc = block.getLocation().toBlockLocation();
+        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
             if (isLeafBlock(block.getType())) {
-                Location loc = block.getLocation().add(0.5, 0.5, 0.5);
-                ParticleUtils.spawn(Particle.FALLING_DUST, loc, 10, 0.3);
-                SoundUtils.playAt(loc, Sound.BLOCK_GRASS_BREAK, 0.5f, 1.0f);
+                Location center = loc.clone().add(0.5, 0.5, 0.5);
+                ParticleUtils.spawn(Particle.FALLING_DUST, center, 10, 0.3);
+                SoundUtils.playAt(center, Sound.BLOCK_GRASS_BREAK, 0.5f, 1.0f);
 
                 block.setType(Material.AIR);
             }
-        }, 120);
+            leafDecayTasks.remove(loc);
+        }, 100);
+        leafDecayTasks.put(loc, task);
     }
 
     /**

@@ -29,6 +29,8 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+import java.util.UUID;
+
 /**
  * Consolidated listener for all damage-related events.
  * Handles: game phase protection, respawn protection, bonus tracking, custom armor effects, mythic item effects.
@@ -128,10 +130,31 @@ public class DamageListener implements Listener {
     }
 
     /**
-     * Apply all protection checks (lobby, respawn)
+     * Apply all protection checks (lobby, respawn, team damage)
      */
     private boolean applyProtectionChecks(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        if (attacker != null && victim != null) {
+            UUID attackerId = attacker.getUniqueId();
+            UUID victimId = victim.getUniqueId();
+
+            // Special case: Goblin Spear Charge
+            // If attacker is charging and victim is caught by THIS attacker, allow damage (bypass protection)
+            if (mythicManager.isGoblinSpearCharging(attackerId)) {
+                UUID victimCharger = mythicManager.getGoblinChargerOf(victimId);
+                if (attackerId.equals(victimCharger)) {
+                    return false; // Allow damage between charger and their victim
+                }
+                
+                // If it's the charger hitting someone NOT caught, or someone else hitting the charger,
+                // we should NOT return false here, we should continue to normal protection checks.
+                // UNLESS we want chargers to be invincible to others? The issue says they ARE invincible, which is bad.
+            }
+        }
+
         if (handleLobbyProtection(event, attacker)) {
+            return true;
+        }
+        if (handleTeamDamage(event, attacker, victim)) {
             return true;
         }
         return handleRespawnProtection(event, attacker, victim);
@@ -253,6 +276,36 @@ public class DamageListener implements Listener {
     }
 
     /**
+     * Handle team damage - prevent players from damaging teammates.
+     * @return true if damage was cancelled
+     */
+    private boolean handleTeamDamage(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        if (attacker == null || victim == null) {
+            return false;
+        }
+
+        GameSession session = gameManager.getPlayerSession(attacker);
+        if (session == null) {
+            return false;
+        }
+
+        // Check if victim is on the same team as attacker
+        if (session.getTeamRed().hasPlayer(attacker.getUniqueId()) &&
+            session.getTeamRed().hasPlayer(victim.getUniqueId())) {
+            event.setCancelled(true);
+            return true;
+        }
+
+        if (session.getTeamBlue().hasPlayer(attacker.getUniqueId()) &&
+            session.getTeamBlue().hasPlayer(victim.getUniqueId())) {
+            event.setCancelled(true);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Handle respawn protection - cancel damage to protected players.
      * @return true if damage was cancelled
      */
@@ -266,8 +319,16 @@ public class DamageListener implements Listener {
             return false;
         }
 
-        CashClashPlayer ccp = session.getCashClashPlayer(victim.getUniqueId());
-        if (ccp != null && ccp.isRespawnProtected()) {
+        // Allow attacker to deal damage even if they are protected
+        if (attacker != null) {
+            CashClashPlayer attackerCcp = session.getCashClashPlayer(attacker.getUniqueId());
+            if (attackerCcp != null && attackerCcp.isRespawnProtected()) {
+                return false;
+            }
+        }
+
+        CashClashPlayer victimCcp = session.getCashClashPlayer(victim.getUniqueId());
+        if (victimCcp != null && victimCcp.isRespawnProtected()) {
             event.setCancelled(true);
             Messages.debug(victim, "DAMAGE", "Damage cancelled due to respawn protection");
             return true;

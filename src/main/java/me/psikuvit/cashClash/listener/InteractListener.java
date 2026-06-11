@@ -135,10 +135,14 @@ public class InteractListener implements Listener {
             handleReadyUp(event, player, block);
         }
 
+        if (action.isRightClick() && handleCustomArmor(player, action)) {
+            event.setCancelled(true);
+            return;
+        }
+
         if (item != null) {
             // Check various item types and delegate
             if (item.getType() == Material.WIND_CHARGE) {
-                Messages.debug("Wind Charge item interaction blocked.");
                 return;
             }
             if (handleEnderPearl(event, player, item)) return;
@@ -274,12 +278,6 @@ public class InteractListener implements Listener {
             return true;
         }
 
-        // Check respawn protection for combat items
-        if (isRespawnProtected(player)) {
-            event.setCancelled(true);
-            Messages.send(player, "listener.cannot-use-items-respawn-protection");
-            return true;
-        }
 
         switch (type) {
             case GRENADE -> {
@@ -354,12 +352,6 @@ public class InteractListener implements Listener {
             return true;
         }
 
-        // Check respawn protection for mythic abilities
-        if (isRespawnProtected(player)) {
-            event.setCancelled(true);
-            Messages.send(player, "listener.cannot-use-mythic-respawn-protection");
-            return true;
-        }
 
         switch (mythic) {
             case COIN_CLEAVER -> {
@@ -426,34 +418,30 @@ public class InteractListener implements Listener {
 
     // ==================== CUSTOM ARMOR (Magic Helmet) ====================
 
-    private void handleCustomArmor(Player player, Action action) {
-        if (!action.isRightClick()) return;
+    private boolean handleCustomArmor(Player player, Action action) {
+        if (!action.isRightClick()) return false;
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) return;
+        if (session == null) return false;
 
-        if (isInShoppingPhase(player)) return;
+        if (isInShoppingPhase(player)) return false;
 
         // Prevent dead players from using armor abilities
         if (isPlayerDead(player)) {
             Messages.send(player, "listener.cannot-use-armor-abilities-dead");
-            return;
-        }
-
-        // Check respawn protection for armor abilities
-        if (isRespawnProtected(player)) {
-            Messages.send(player, "listener.cannot-use-armor-abilities-respawn-protection");
-            return;
+            return true;
         }
 
         // Dragon Set: Dash to marked target (right-click, no sneak required)
         if (armorManager.hasDragonSet(player)) {
             if (isSilenced(player)) {
                 Messages.send(player, "listener.cannot-use-abilities-while-silenced");
-                return;
+                return true;
             }
-            armorManager.tryDragonDash(player);
+            return armorManager.tryDragonDash(player);
         }
+
+        return false;
     }
 
     // ==================== GAMEMODE SPECIFIC HANDLERS ====================

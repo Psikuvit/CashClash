@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
+import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.ItemFactory;
@@ -67,15 +68,7 @@ public class ShopService {
     }
 
     public static void transferEnchants(ItemStack newWeapon, PlayerInventory inv, int bestSlot, ItemStack existing) {
-        ItemMeta oldMeta = existing.getItemMeta();
-        ItemMeta newMeta = newWeapon.getItemMeta();
-        if (oldMeta != null && newMeta != null) {
-            for (var e : oldMeta.getEnchants().entrySet()) {
-                newMeta.addEnchant(e.getKey(), e.getValue(), true);
-            }
-            newWeapon.setItemMeta(newMeta);
-        }
-
+        ItemUtils.transferEnchants(existing, newWeapon);
         inv.setItem(bestSlot, newWeapon);
     }
 
@@ -250,6 +243,29 @@ public class ShopService {
         Messages.debug("Bought item: " + item);
 
         switch (item) {
+            case UtilityItem utilityItem when utilityItem == UtilityItem.COBWEB -> {
+                int currentWebs = 0;
+                for (ItemStack is : player.getInventory().getContents()) {
+                    if (is != null && is.getType() == Material.COBWEB) {
+                        currentWebs += is.getAmount();
+                    }
+                }
+                if (currentWebs >= 8) {
+                    Messages.send(player, "listener.max-webs-reached");
+                    refund(player, totalPrice);
+                    return;
+                }
+                int canGive = Math.min(giveQty, 8 - currentWebs);
+                ItemStack stack = ItemFactory.getInstance().createGameplayItem(item);
+                stack.setAmount(canGive);
+                player.getInventory().addItem(stack);
+                ccp.addPurchase(new PurchaseRecord(item, canGive, totalPrice, round));
+
+                if (canGive < giveQty) {
+                    long refundAmount = (totalPrice / giveQty) * (giveQty - canGive);
+                    refund(player, refundAmount);
+                }
+            }
             case CustomArmorItem customArmor -> {
                 // Check if this is part of a set (Deathmauler, Dragon, Flamebringer, Investor)
                 if (customArmor.isPartOfSet()) {

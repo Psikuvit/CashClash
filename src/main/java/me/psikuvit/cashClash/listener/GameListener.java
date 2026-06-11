@@ -31,6 +31,7 @@ import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -47,7 +48,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
@@ -57,7 +60,11 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.event.entity.EntityResurrectEvent;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
+import org.bukkit.scoreboard.Scoreboard;
 
 import java.util.UUID;
 
@@ -93,6 +100,9 @@ public class GameListener implements Listener {
 
         // Clear invisibility cloak state on death (armor is preserved by keepInventory)
         customItemManager.clearInvisCloakOnDeath(player);
+
+        // Cleanup mythic state (like Goblin Spear charge)
+        mythicManager.cleanup(player);
 
         PlayerDataManager.getInstance().incDeaths(player.getUniqueId());
 
@@ -269,15 +279,8 @@ public class GameListener implements Listener {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
-        // If not in active game session, prevent drop
-        if (session == null) {
-            event.setCancelled(true);
-            return;
-        }
-
-        // During active game session, prevent dropping of purchased items (items with shop tag)
-        ItemStack item = event.getItemDrop().getItemStack();
-        if (PDCDetection.getAnyShopTag(item) != null) {
+        // During active game session, prevent all item drops
+        if (session != null) {
             event.setCancelled(true);
             Messages.send(player, "listener.item-cannot-drop");
         }
@@ -667,30 +670,79 @@ public class GameListener implements Listener {
         if (event.isCancelled()) return;
 
         if (!(event.getWhoClicked() instanceof Player p)) return;
+
+        // --- Handle Supply Drop ---
         ItemStack current = event.getCurrentItem();
-        if (current == null || current.getType() != Material.EMERALD) return;
+        if (current != null && current.getType() == Material.EMERALD) {
+            Integer amount = PDCDetection.getSupplyDropAmount(current);
+            if (amount != null) {
+                GameSession session = GameManager.getInstance().getPlayerSession(p);
+                if (session != null) {
+                    CashClashPlayer ccp = session.getCashClashPlayer(p.getUniqueId());
+                    if (ccp != null) {
+                        event.setCancelled(true);
+                        int left = current.getAmount() - 1;
+                        if (left > 0) {
+                            current.setAmount(left);
+                            event.setCurrentItem(current);
+                        } else {
+                            event.setCurrentItem(null);
+                        }
 
-        Integer amount = PDCDetection.getSupplyDropAmount(current);
-        if (amount == null) return;
-
-        GameSession session = GameManager.getInstance().getPlayerSession(p);
-        if (session == null) return;
-
-        CashClashPlayer ccp = session.getCashClashPlayer(p.getUniqueId());
-        if (ccp == null) return;
-
-        event.setCancelled(true);
-        int left = current.getAmount() - 1;
-        if (left > 0) {
-            current.setAmount(left);
-            event.setCurrentItem(current);
-        } else {
-            event.setCurrentItem(null);
+                        ccp.addCoins(amount);
+                        Messages.send(p, "cashquake.supply-drop-reward", "amount", String.format("%,d", amount));
+                        SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+                        return;
+                    }
+                }
+            }
         }
 
-        ccp.addCoins(amount);
-        Messages.send(p, "cashquake.supply-drop-reward", "amount", String.format("%,d", amount));
-        SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+        // --- Handle Cobweb Limit ---
+        ItemStack cursor = event.getCursor();
+        if (cursor.getType() == Material.COBWEB) {
+            // Player is trying to put cobwebs into their inventory
+            int currentWebs = 0;
+            for (ItemStack is : p.getInventory().getContents()) {
+                if (is != null && is.getType() == Material.COBWEB) {
+                    currentWebs += is.getAmount();
+                }
+            }
+            if (currentWebs >= 8) {
+                event.setCancelled(true);
+                Messages.send(p, "listener.max-webs-reached");
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPickup(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player p)) return;
+
+        ItemStack item = event.getItem().getItemStack();
+        if (item.getType() != Material.COBWEB) return;
+
+        int currentWebs = 0;
+        for (ItemStack is : p.getInventory().getContents()) {
+            if (is != null && is.getType() == Material.COBWEB) {
+                currentWebs += is.getAmount();
+            }
+        }
+
+        if (currentWebs >= 8) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (currentWebs + item.getAmount() > 8) {
+            int canTake = 8 - currentWebs;
+            int remaining = item.getAmount() - canTake;
+
+            item.setAmount(canTake);
+            event.getItem().getItemStack().setAmount(remaining);
+            p.getInventory().addItem(item);
+            event.setCancelled(true);
+        }
     }
 
     // ==================== PLAYER RESPAWN ====================
@@ -715,7 +767,47 @@ public class GameListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null) {
             session.getGamemode().onPlayerSpawn(player);
+            // Apply team outlines when player respawns (Feature #7-8)
+            applyTeamOutlines(player, session);
         }
+    }
+
+    /**
+     * Turn off vanilla durability loss for all items.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlayerItemDamage(PlayerItemDamageEvent event) {
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onTotemUse(EntityResurrectEvent event) {
+        if (!(event.getEntity() instanceof Player p)) return;
+
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        if (session == null) return;
+
+        // Totem is being used (event is called before effects are applied, but we can't easily cancel just the effects)
+        // Spigot applies effects AFTER the event. So we schedule a task to override them.
+        Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
+            if (!p.isOnline()) return;
+            
+            // Remove default totem effects
+            p.removePotionEffect(PotionEffectType.REGENERATION);
+            p.removePotionEffect(PotionEffectType.FIRE_RESISTANCE);
+            p.removePotionEffect(PotionEffectType.ABSORPTION);
+
+            // Apply nerfed effects
+            p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 10 * 20, 1)); // 10s Regen II
+            p.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 10 * 20, 0)); // 10s Fire Res
+            
+            // Absorption hearts: 2 hearts = 4 HP. 
+            // Default totem gives Absorption II (4 hearts/8 HP) for 5s. 
+            // We want 2 hearts (4 HP). 
+            p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 10 * 20, 0)); // 10s Absorption I (2 hearts)
+            
+            Messages.debug("Totem effects nerfed for " + p.getName());
+        }, 1L);
     }
 
     /**
@@ -742,6 +834,47 @@ public class GameListener implements Listener {
                 if (bukkitPlayer != null && bukkitPlayer.isOnline()) {
                     Messages.send(bukkitPlayer, "listener.team-kill-bonus", "bonus", String.format("%,d", bonusPerPlayer));
                 }
+            }
+        }
+    }
+
+    /**
+     * Apply team outlines to show teammates with GREEN glowing effect (Feature #7-8).
+     * Glowing effect is visible through walls.
+     * Enemies have NO outline.
+     */
+    private void applyTeamOutlines(Player player, GameSession session) {
+        Team playerTeam = session.getPlayerTeam(player.getUniqueId());
+        if (playerTeam == null) return;
+
+        Scoreboard scoreboard = player.getScoreboard();
+
+        // Clear previous glow state first so enemies never keep a visible outline.
+        for (UUID sessionPlayerId : session.getPlayers()) {
+            Player sessionPlayer = Bukkit.getPlayer(sessionPlayerId);
+            if (sessionPlayer == null || !sessionPlayer.isOnline()) continue;
+
+            TeamColorUtils.removeFromGreenGlowTeam(scoreboard, sessionPlayer);
+            sessionPlayer.removePotionEffect(PotionEffectType.GLOWING);
+        }
+
+        // Apply glowing effect to all teammates (visible through walls)
+        for (UUID teamMateUUID : playerTeam.getPlayers()) {
+            if (teamMateUUID.equals(player.getUniqueId())) continue;
+            
+            Player teamMate = Bukkit.getPlayer(teamMateUUID);
+            if (teamMate != null && teamMate.isOnline()) {
+                // Add teammate to green glow team (scoreboard team controls outline color)
+                TeamColorUtils.addToGreenGlowTeam(scoreboard, teamMate);
+
+                PotionEffect glowing = new PotionEffect(
+                    PotionEffectType.GLOWING,
+                    PotionEffect.INFINITE_DURATION,
+                    0,
+                    false,
+                    false
+                );
+                teamMate.addPotionEffect(glowing);
             }
         }
     }
