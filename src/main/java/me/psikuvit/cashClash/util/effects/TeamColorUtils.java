@@ -12,11 +12,13 @@ import java.util.UUID;
 
 /**
  * Utility class for managing team colors in scoreboards (tab list and nametags).
+ * Also handles glowing effect colors for teammate outlines.
  */
 public final class TeamColorUtils {
 
     private static final String TEAM_RED_NAME = "cc_team_red";
     private static final String TEAM_BLUE_NAME = "cc_team_blue";
+    private static final String TEAM_GLOW_GREEN_NAME = "cc_glow_green"; // For teammate outlines
 
     private TeamColorUtils() {
         throw new AssertionError("Nope.");
@@ -24,6 +26,7 @@ public final class TeamColorUtils {
 
     /**
      * Setup red/blue teams on a scoreboard for tab list and nametag coloring.
+     * Also setup green team for teammate glow outlines.
      *
      * @param board   the scoreboard to setup teams on
      */
@@ -34,6 +37,9 @@ public final class TeamColorUtils {
         Team existingBlue = board.getTeam(TEAM_BLUE_NAME);
         if (existingBlue != null) existingBlue.unregister();
 
+        Team existingGreen = board.getTeam(TEAM_GLOW_GREEN_NAME);
+        if (existingGreen != null) existingGreen.unregister();
+
         Team teamRed = board.registerNewTeam(TEAM_RED_NAME);
         teamRed.color(NamedTextColor.RED);
         teamRed.prefix(Component.empty());
@@ -41,6 +47,10 @@ public final class TeamColorUtils {
         Team teamBlue = board.registerNewTeam(TEAM_BLUE_NAME);
         teamBlue.color(NamedTextColor.BLUE);
         teamBlue.prefix(Component.empty());
+
+        Team teamGreen = board.registerNewTeam(TEAM_GLOW_GREEN_NAME);
+        teamGreen.color(NamedTextColor.GREEN);
+        teamGreen.prefix(Component.empty());
     }
 
     /**
@@ -74,6 +84,44 @@ public final class TeamColorUtils {
             } else if (session.getTeamBlue().hasPlayer(uuid)) {
                 tBlue.addEntry(entry);
             }
+        }
+    }
+
+    /**
+     * Get the green team from the scoreboard for teammate glow outlines.
+     * Creates it if it doesn't exist.
+     */
+    public static Team getGreenGlowTeam(Scoreboard board) {
+        if (board == null) return null;
+
+        Team greenTeam = board.getTeam(TEAM_GLOW_GREEN_NAME);
+        if (greenTeam == null) {
+            greenTeam = board.registerNewTeam(TEAM_GLOW_GREEN_NAME);
+            greenTeam.color(NamedTextColor.GREEN);
+            greenTeam.prefix(Component.empty());
+        }
+        return greenTeam;
+    }
+
+    /**
+     * Add a player to the green glow team for teammate outlines.
+     */
+    public static void addToGreenGlowTeam(Scoreboard board, Player player) {
+        if (board == null || player == null) return;
+        Team greenTeam = getGreenGlowTeam(board);
+        if (greenTeam != null) {
+            greenTeam.addEntry(player.getName());
+        }
+    }
+
+    /**
+     * Remove a player from the green glow team.
+     */
+    public static void removeFromGreenGlowTeam(Scoreboard board, Player player) {
+        if (board == null || player == null) return;
+        Team greenTeam = board.getTeam(TEAM_GLOW_GREEN_NAME);
+        if (greenTeam != null) {
+            greenTeam.removeEntry(player.getName());
         }
     }
 }

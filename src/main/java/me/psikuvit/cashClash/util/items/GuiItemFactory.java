@@ -203,6 +203,54 @@ public final class GuiItemFactory {
     }
     
     /**
+     * Creates an enchant book item display with player-specific information.
+     * Shows what level the currently held item would receive.
+     *
+     * @param player The player viewing the shop
+     * @param enchant The enchantment entry
+     * @param level The next level to purchase
+     * @param price The price for this level
+     * @return The configured ItemStack for display
+     */
+    public ItemStack createEnchantItem(Player player, EnchantEntry enchant, int level, long price) {
+        ItemStack heldItem = player.getInventory().getItemInMainHand();
+        int effectiveLevel = ItemUtils.getEffectiveEnchantLevel(heldItem, enchant, level);
+
+        ShopItemBuilder builder = ShopItemBuilder.of(Material.ENCHANTED_BOOK)
+                .name("<yellow>" + enchant.getDisplayName() + " " + level + "</yellow>")
+                .price(price)
+                .maxLevel(enchant.getMaxLevel());
+
+        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore("enchants", enchant.getConfigKey());
+        if (!loreLinesFromConfig.isEmpty()) {
+            builder.configLore(loreLinesFromConfig);
+        }
+
+        // Show what level this would apply to the held item
+        if (effectiveLevel > 0) {
+            String heldItemName = heldItem.getType().name().toLowerCase().replace("_", " ");
+            builder.lore("<gray>Applies to held <aqua>" + heldItemName + "</aqua>: <gold>Level " + effectiveLevel + "</gold></gray>");
+        } else {
+            // Show what items this enchant applies to
+            StringBuilder applicableItems = new StringBuilder("<gray>Applies to: <aqua>");
+            List<Material> materials = enchant.getApplicableMaterials();
+            for (int i = 0; i < Math.min(materials.size(), 3); i++) {
+                if (i > 0) applicableItems.append(", ");
+                applicableItems.append(materials.get(i).name().toLowerCase().replace("_", " "));
+            }
+            if (materials.size() > 3) {
+                applicableItems.append(", ...");
+            }
+            applicableItems.append("</aqua></gray>");
+            builder.lore(applicableItems.toString());
+        }
+
+        return builder.purchasePrompt()
+                .itemId(enchant.name())
+                .build();
+    }
+
+    /**
      * Creates a maxed enchant book display.
      * 
      * @param enchant The enchantment entry

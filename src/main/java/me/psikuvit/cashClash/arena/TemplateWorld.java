@@ -139,6 +139,7 @@ public class TemplateWorld {
         if (teamRedSpawns.stream().anyMatch(Objects::isNull)) return false;
         if (teamBlueSpawns.stream().anyMatch(Objects::isNull)) return false;
         if (villagersSpawnPoint.isEmpty()) return false;
+        if (redFlagLoc == null || blueFlagLoc == null) return false;
         return teamRedShopSpawn != null && teamBlueShopSpawn != null;
     }
 }

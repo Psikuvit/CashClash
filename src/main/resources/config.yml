@@ -42,6 +42,16 @@ rounds:
   # Forfeit bonus
   forfeit-bonus: 10000
 
+  # Kill team split bonus
+  # Amount awarded to killer's team, split evenly among all team members
+  kill-team-split-bonus: 7500
+
+  # Loss streak bonuses
+  # Awarded to team that lost consecutive rounds
+  loss-streak-1-bonus: 5000
+  loss-streak-2-bonus: 7500
+  loss-streak-3-bonus: 10000
+
 # ============================================
 # ARMOR RESTRICTIONS
 # ============================================
