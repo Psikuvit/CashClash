@@ -24,8 +24,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
     private static final int[] ENCHANT_SLOTS = {
             3, 5, 10,
             16, 21, 23,
-            28, 34, 39,
-            41
+            28, 34, 39
     };
 
     public EnchantsCategoryGui(Player viewer) {
@@ -48,7 +47,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
                 setButton(slot, GuiButton.of(ItemFactory.getInstance().getGuiFactory().createMaxedEnchant(ee)));
             } else {
                 long price = ee.getPriceForLevel(nextLevel);
-                ItemStack enchantItem = ItemFactory.getInstance().getGuiFactory().createEnchantItem(ee, nextLevel, price);
+                ItemStack enchantItem = ItemFactory.getInstance().getGuiFactory().createEnchantItem(viewer, ee, nextLevel, price);
                 setButton(slot, GuiButton.of(enchantItem).onClick(p -> handleEnchantPurchase(ee, level)));
             }
         }

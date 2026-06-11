@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -56,8 +57,8 @@ public final class MythicCategoryGui {
 
         if (MythicItemManager.getInstance().isMythicPurchased(sess, mythic)) {
             UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(sess, mythic);
-            String ownerName = ownerUuid != null ? Bukkit.getOfflinePlayer(ownerUuid).getName() : "Someone";
-            Messages.send(player, "shop.mythic-already-purchased", "owner_name", ownerName);
+            Messages.send(player, "shop.mythic-already-purchased", "owner_name",
+                ownerUuid == null ? "Someone" : String.valueOf(Bukkit.getOfflinePlayer(ownerUuid).getName()));
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
@@ -88,6 +89,8 @@ public final class MythicCategoryGui {
             ItemStack mythicItem = MythicItemManager.getInstance().createMythicItem(mythic, player);
             player.getInventory().addItem(mythicItem);
         }
+
+        ItemUtils.applyOwnedEnchantsAfterPurchase(player, mythic);
 
         if (mythic == MythicItem.WIND_BOW) {
             player.getInventory().addItem(new ItemStack(Material.ARROW, 20));

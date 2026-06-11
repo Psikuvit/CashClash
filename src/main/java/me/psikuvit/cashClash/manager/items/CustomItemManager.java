@@ -460,10 +460,7 @@ public class CustomItemManager {
      * Remove all arrows from a player's body
      */
     private void removeArrowsFromPlayer(Player player) {
-        player.getLocation().getNearbyEntitiesByType(org.bukkit.entity.Arrow.class, 5.0).stream()
-                .filter(arrow -> arrow.getShooter() != player && arrow.isInBlock() ||
-                        (arrow.getAttachedBlock() != null && arrow.getPassengers().isEmpty()))
-                .forEach(Entity::remove);
+        player.setArrowsInBody(0);
     }
 
     // ==================== BAG OF POTATOES IMPLEMENTATION ====================

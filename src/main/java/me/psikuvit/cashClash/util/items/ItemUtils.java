@@ -31,6 +31,18 @@ public final class ItemUtils {
     }
 
 
+    public static void transferEnchants(ItemStack from, ItemStack to) {
+        if (from == null || to == null) return;
+        ItemMeta fromMeta = from.getItemMeta();
+        ItemMeta toMeta = to.getItemMeta();
+        if (fromMeta != null && toMeta != null) {
+            for (var e : fromMeta.getEnchants().entrySet()) {
+                toMeta.addEnchant(e.getKey(), e.getValue(), true);
+            }
+            to.setItemMeta(toMeta);
+        }
+    }
+
     /**
      * Equip armor or replace existing armor piece.
      * If there was an old armor piece that was purchased (has ITEM_ID), it will be returned.
@@ -43,31 +55,24 @@ public final class ItemUtils {
 
         ItemStack old = null;
         if (m.name().endsWith("HELMET")) {
-            old = inv.getHelmet() != null ? inv.getHelmet().clone() : null;
+            old = inv.getHelmet();
             inv.setHelmet(newArmor);
         } else if (m.name().endsWith("CHESTPLATE")) {
-            old = inv.getChestplate() != null ? inv.getChestplate().clone() : null;
+            old = inv.getChestplate();
             inv.setChestplate(newArmor);
         } else if (m.name().endsWith("LEGGINGS")) {
-            old = inv.getLeggings() != null ? inv.getLeggings().clone() : null;
+            old = inv.getLeggings();
             inv.setLeggings(newArmor);
         } else if (m.name().endsWith("BOOTS")) {
-            old = inv.getBoots() != null ? inv.getBoots().clone() : null;
+            old = inv.getBoots();
             inv.setBoots(newArmor);
         } else {
             inv.addItem(newArmor);
         }
 
-        if (old == null) return;
-        ItemMeta fromMeta = old.getItemMeta();
-        ItemMeta toMeta = newArmor.getItemMeta();
-
-        if (fromMeta != null) {
-            for (var e : fromMeta.getEnchants().entrySet()) {
-                toMeta.addEnchant(e.getKey(), e.getValue(), true);
-            }
+        if (old != null) {
+            transferEnchants(old, newArmor);
         }
-        newArmor.setItemMeta(toMeta);
     }
 
 
@@ -90,6 +95,22 @@ public final class ItemUtils {
         } else {
             inv.addItem(newItem);
         }
+    }
+
+    /**
+     * Gets the enchant level that would be applied to a specific item.
+     * Useful for showing in UI what level you'd get for the currently held item.
+     *
+     * @param item The target item to check
+     * @param ee The enchant entry
+     * @param nextLevel The next level being purchased
+     * @return The exact level that would be applied to this item
+     */
+    public static int getEffectiveEnchantLevel(ItemStack item, EnchantEntry ee, int nextLevel) {
+        if (item == null || !ee.getApplicableMaterials().contains(item.getType())) {
+            return 0;
+        }
+        return nextLevel;
     }
 
     public static boolean applyEnchant(Player player, EnchantEntry ee, int lvl) {
@@ -123,17 +144,31 @@ public final class ItemUtils {
 
         ItemStack held = player.getInventory().getItemInMainHand();
 
-        if (!ee.getApplicableMaterials().contains(held.getType())) {
-            Messages.send(player, "enchant.ineligible-item");
-            return false;
+        // Try to apply to held item first
+        if (ee.getApplicableMaterials().contains(held.getType())) {
+            ItemMeta meta = held.getItemMeta();
+            if (meta != null) {
+                meta.addEnchant(ee.getEnchantment(), lvl, true);
+                held.setItemMeta(meta);
+            }
+            return true;
         }
 
-        ItemMeta meta = held.getItemMeta();
-        if (meta != null) {
-            meta.addEnchant(ee.getEnchantment(), lvl, true);
-            held.setItemMeta(meta);
+        // If held item doesn't apply, try to find another applicable item in inventory
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType().isAir()) continue;
+            if (!ee.getApplicableMaterials().contains(item.getType())) continue;
+
+            ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                meta.addEnchant(ee.getEnchantment(), lvl, true);
+                item.setItemMeta(meta);
+            }
+            return true;
         }
-        return true;
+
+        Messages.send(player, "enchant.ineligible-item");
+        return false;
     }
 
     public static void applyOwnedEnchantsAfterPurchase(Player player, Purchasable si) {

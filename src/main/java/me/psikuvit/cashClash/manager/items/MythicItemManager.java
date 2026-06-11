@@ -1306,11 +1306,10 @@ public class MythicItemManager {
             for (Player caught : caughtPlayers) {
                 if (!caught.isOnline()) continue;
 
+                caught.setNoDamageTicks(0);
+                player.setNoDamageTicks(0);
                 caught.damage(damage, player);
                 caught.addPotionEffect(new PotionEffect(PotionEffectType.POISON, poisonDuration, poisonLevel, false, true));
-
-                // Remove any resistance effects (invincibility fix)
-                caught.removePotionEffect(PotionEffectType.RESISTANCE);
 
                 // Visual effects
                 ParticleUtils.damageIndicator(caught.getLocation().add(0, 1, 0), 20, 0.5);
@@ -1337,7 +1336,45 @@ public class MythicItemManager {
      * Check if player is currently charging with Goblin Spear.
      */
     public boolean isGoblinSpearCharging(UUID playerId) {
-        return goblinSpearCharging.containsKey(playerId);
+        if (goblinSpearCharging.containsKey(playerId)) {
+            return true;
+        }
+        for (List<Player> caught : goblinSpearCharging.values()) {
+            for (Player p : caught) {
+                if (p.getUniqueId().equals(playerId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if a player is caught in another player's Goblin Spear charge.
+     */
+    public boolean isCaughtInGoblinCharge(UUID playerId) {
+        for (List<Player> caught : goblinSpearCharging.values()) {
+            for (Player p : caught) {
+                if (p.getUniqueId().equals(playerId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get the charger who caught the given victim.
+     */
+    public UUID getGoblinChargerOf(UUID victimId) {
+        for (Map.Entry<UUID, List<Player>> entry : goblinSpearCharging.entrySet()) {
+            for (Player p : entry.getValue()) {
+                if (p.getUniqueId().equals(victimId)) {
+                    return entry.getKey();
+                }
+            }
+        }
+        return null;
     }
 
     // ==================== BLOODWRENCH_CROSSBOW ====================
@@ -1936,6 +1973,46 @@ public class MythicItemManager {
     }
 
     // ==================== CLEANUP ====================
+
+    /**
+     * Clean up all state for a specific player (on death or quit).
+     */
+    public void cleanup(Player player) {
+        UUID uuid = player.getUniqueId();
+        
+        // Clear tracking
+        blazebiteShotsRemaining.remove(uuid);
+        glacierFrozenPlayers.remove(uuid);
+        goblinSpearShotsRemaining.remove(uuid);
+        bloodwrenchRapidMode.remove(uuid);
+        bloodwrenchRapidShotsRemaining.remove(uuid);
+        bloodwrenchRapidFiring.remove(uuid);
+        wardenPunchCount.remove(uuid);
+        wardenBoxingActive.remove(uuid);
+        windBowShotsRemaining.remove(uuid);
+        spinningPlayers.remove(uuid);
+        coinCleaverChargedHits.remove(uuid);
+        coinCleaverNoKBUsesRemaining.remove(uuid);
+        coinCleaverNoKBActiveUntil.remove(uuid);
+
+        // Remove from caught lists
+        for (Map.Entry<UUID, List<Player>> entry : goblinSpearCharging.entrySet()) {
+            entry.getValue().removeIf(p -> p.getUniqueId().equals(uuid));
+        }
+
+        // End charge if active
+        if (goblinSpearCharging.containsKey(uuid)) {
+            endCharge(player, false);
+        }
+
+        // Cancel player tasks
+        List<BukkitTask> tasks = activeTasks.remove(uuid);
+        if (tasks != null) {
+            tasks.forEach(task -> {
+                if (task != null && !task.isCancelled()) task.cancel();
+            });
+        }
+    }
 
     /**
      * Clean up all state on plugin shutdown.

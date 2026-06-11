@@ -343,7 +343,7 @@ public class CustomArmorManager {
 
         // Check distance
         ItemsConfig cfg = ItemsConfig.getInstance();
-        double dashRange = cfg.getDragonDashRange();
+        double dashRange = 15.0; // Increased range to 15 blocks
         double distance = attacker.getLocation().distance(target.getLocation());
 
         if (distance > dashRange) {
@@ -353,11 +353,11 @@ public class CustomArmorManager {
 
         // Perform dash
         Vector direction = target.getLocation().toVector().subtract(attacker.getLocation().toVector()).normalize();
-        org.bukkit.Location targetLoc = target.getLocation().clone().add(direction.multiply(-0.5));
-        targetLoc.setYaw(target.getLocation().getYaw());
-        targetLoc.setPitch(target.getLocation().getPitch());
+        org.bukkit.Location targetLoc = target.getLocation().clone().add(direction.multiply(-1.0)); // Place attacker 1 block behind target direction
+        targetLoc.setYaw(attacker.getLocation().getYaw()); // Keep attacker's yaw
+        targetLoc.setPitch(attacker.getLocation().getPitch());
         attacker.teleport(targetLoc);
-        attacker.setVelocity(new Vector(0, 0.2, 0));
+        attacker.setVelocity(direction.multiply(1.2).setY(0.2));
 
         // Store damage boost for next hit
         dragonDamageBoost.put(attackerId, cfg.getDragonDamageBoost());
@@ -599,14 +599,17 @@ public class CustomArmorManager {
             // Track when this speed effect should end
             flamebringerSpeedEndTime.put(id, currentTime + (cfg.getFlamebringerSpeedDuration() * 1000L));
         } else {
-            // Player is no longer on fire, clear the speed
-            p.removePotionEffect(PotionEffectType.SPEED);
-            flamebringerSpeedEndTime.remove(id);
+            // Player is no longer on fire, check if speed should be cleared
+            Long endTime = flamebringerSpeedEndTime.get(id);
+            if (endTime != null && currentTime >= endTime) {
+                p.removePotionEffect(PotionEffectType.SPEED);
+                flamebringerSpeedEndTime.remove(id);
+            }
         }
     }
 
     /**
-     * Triggered when lava damages the player: grant Speed I for 6s, max 3 per game, 2s cooldown between procs.
+     * Triggered when lava damages the player: grant Speed for 12s, max 3 per game, 2s cooldown between procs.
      */
     public void onFlamebringerLavaDamage(Player p) {
         if (!hasFlamebringerSet(p)) return;
@@ -619,8 +622,9 @@ public class CustomArmorManager {
             return;
         }
 
+        ItemsConfig cfg = ItemsConfig.getInstance();
         p.removePotionEffect(PotionEffectType.SPEED);
-        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 6 * 20, 0, false, false, true));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, cfg.getFlamebringerSpeedDuration() * 20, cfg.getFlamebringerSpeedLevel(), false, false, true));
         flamebringerLavaUses.put(id, used + 1);
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, 2);
         Messages.send(p, "armor.flamebringer-speed", "remaining", String.valueOf(3 - (used + 1)));
