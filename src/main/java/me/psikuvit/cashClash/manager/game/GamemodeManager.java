@@ -19,6 +19,7 @@ public class GamemodeManager {
 
     private static GamemodeManager instance;
     private final Map<UUID, Gamemode> sessionGamemodes = new HashMap<>();
+    private final Map<UUID, GamemodeType> nextGamemode = new HashMap<>();
     private final Random random = new Random();
 
     public static synchronized GamemodeManager getInstance() {
@@ -29,12 +30,37 @@ public class GamemodeManager {
     }
 
     /**
+     * Set the next gamemode for a session
+     */
+    public void setNextGamemode(UUID sessionId, GamemodeType type) {
+        nextGamemode.put(sessionId, type);
+    }
+
+    /**
      * Create and select a random gamemode for a session
      */
     public Gamemode selectGamemode(GameSession session) {
-        Gamemode gamemode = createRandomGamemode(session);
+        Gamemode gamemode;
+        if (nextGamemode.containsKey(session.getSessionId())) {
+            GamemodeType type = nextGamemode.remove(session.getSessionId());
+            gamemode = createGamemode(session, type);
+        } else {
+            gamemode = createRandomGamemode(session);
+        }
         sessionGamemodes.put(session.getSessionId(), gamemode);
         return gamemode;
+    }
+
+    /**
+     * Create a specific gamemode
+     */
+    private Gamemode createGamemode(GameSession session, GamemodeType type) {
+        Messages.debug("GAMEMODE", "Selected " + type.getDisplayName() + " for session " + session.getSessionId());
+
+        return switch (type) {
+            case PROTECT_THE_PRESIDENT -> new ProtectThePresidentGamemode(session);
+            case CAPTURE_THE_FLAG -> new CaptureTheFlagGamemode(session);
+        };
     }
 
     /**
@@ -58,12 +84,7 @@ public class GamemodeManager {
         GamemodeType[] types = GamemodeType.values();
         GamemodeType selected = types[random.nextInt(types.length)];
 
-        Messages.debug("GAMEMODE", "Selected " + selected.getDisplayName() + " for session " + session.getSessionId());
-
-        return switch (selected) {
-            case PROTECT_THE_PRESIDENT -> new ProtectThePresidentGamemode(session);
-            case CAPTURE_THE_FLAG -> new CaptureTheFlagGamemode(session);
-        };
+        return createGamemode(session, selected);
     }
 
     /**

@@ -142,7 +142,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             case "sudden_death_timer" -> {
                 var gamemode = session.getGamemode();
                 var manager = gamemode == null ? null : gamemode.getSuddenDeathManager();
-                yield manager != null && manager.isInSuddenDeath() ? FormatUtils.formatTime(session.getTimeRemaining()) : "";
+                yield manager != null && manager.isInSuddenDeath() ? FormatUtils.formatTime(manager.getSuddenDeathCycleRemainingSeconds()) : "";
             }
             case "final_stand_timer" -> {
                 var gamemode = session.getGamemode();

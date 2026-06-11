@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
+import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
@@ -17,17 +18,19 @@ import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scoreboard.Scoreboard;
 
 import java.util.UUID;
 
@@ -36,7 +39,7 @@ import java.util.UUID;
  */
 public class RoundManager {
 
-    private static final int SUDDEN_DEATH_PHASE_SECONDS = 180;
+    private static final int SUDDEN_DEATH_PHASE_SECONDS = 180; // 3 minutes
 
     private final GameSession session;
     private BukkitTask phaseTask;
@@ -282,6 +285,9 @@ public class RoundManager {
             bonusManager.startRound();
         }
 
+        // Apply team outlines to all players (Feature #7-8)
+        applyTeamOutlinesToAllPlayers();
+
         // Start countdown
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
             boolean finalStandActive = session.getGamemode() != null && session.getGamemode().isFinalStandActive();
@@ -522,28 +528,69 @@ public class RoundManager {
         return timeRemaining;
     }
 
-    /**
-     * Refill all water buckets in a player's inventory during shopping phase.
-     */
-    private void refillWaterBuckets(Player player) {
-        int refilled = 0;
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item != null && item.getType() == Material.WATER_BUCKET && item.getAmount() == 0) {
-                item.setAmount(1);
-                refilled++;
-            }
-        }
+     /**
+      * Refill all water buckets in a player's inventory during shopping phase.
+      */
+     private void refillWaterBuckets(Player player) {
+           BlockListener.refillWaterBuckets(player);
+     }
 
-        // Also check armor contents
-        for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (item != null && item.getType() == Material.WATER_BUCKET && item.getAmount() == 0) {
-                item.setAmount(1);
-                refilled++;
-            }
-        }
+     /**
+      * Apply team outlines (glowing effect) to all players when combat starts (Feature #7-8).
+      * Teammates get a GREEN glowing effect visible through walls.
+      * Enemies have NO outline.
+      */
+     private void applyTeamOutlinesToAllPlayers() {
+         Team teamRed = session.getTeamRed();
+         Team teamBlue = session.getTeamBlue();
 
-        if (refilled > 0) {
-            Messages.send(player, "round.water-refilled-shopping");
-        }
-    }
+         // Apply glowing to Red team members' teammates
+         for (UUID uuid : teamRed.getPlayers()) {
+             applyGlowingToTeammates(uuid, teamRed);
+         }
+
+         // Apply glowing to Blue team members' teammates
+         for (UUID uuid : teamBlue.getPlayers()) {
+             applyGlowingToTeammates(uuid, teamBlue);
+         }
+     }
+
+     /**
+      * Apply glowing effect to a player's teammates (GREEN outline, visible through walls)
+      */
+     private void applyGlowingToTeammates(UUID playerUUID, Team playerTeam) {
+         Player player = Bukkit.getPlayer(playerUUID);
+         if (player == null || !player.isOnline()) return;
+
+         Scoreboard scoreboard = player.getScoreboard();
+
+         // Clear any existing glow state first so enemy outlines do not linger.
+         for (UUID sessionPlayerId : session.getPlayers()) {
+             Player sessionPlayer = Bukkit.getPlayer(sessionPlayerId);
+             if (sessionPlayer == null || !sessionPlayer.isOnline()) continue;
+
+             TeamColorUtils.removeFromGreenGlowTeam(scoreboard, sessionPlayer);
+             sessionPlayer.removePotionEffect(PotionEffectType.GLOWING);
+         }
+
+         // Apply glowing to all teammates (but not the player themselves)
+         for (UUID teamMateUUID : playerTeam.getPlayers()) {
+             if (teamMateUUID.equals(playerUUID)) continue;
+
+             Player teamMate = Bukkit.getPlayer(teamMateUUID);
+             if (teamMate != null && teamMate.isOnline()) {
+                 // Add teammate to green glow team (scoreboard team controls outline color)
+                 TeamColorUtils.addToGreenGlowTeam(scoreboard, teamMate);
+
+                 PotionEffect glowing = new PotionEffect(
+                     PotionEffectType.GLOWING,
+                     PotionEffect.INFINITE_DURATION,
+                     0,
+                     false,
+                     false
+                 );
+                 teamMate.addPotionEffect(glowing);
+             }
+         }
+     }
 }

@@ -703,8 +703,10 @@ public class GameSession {
             for (PotionEffect t : player.getActivePotionEffects()) player.removePotionEffect(t.getType());
 
             var attr = player.getAttribute(Attribute.MAX_HEALTH);
-            double maxHealth = attr != null ? attr.getValue() : 20.0;
-            player.setHealth(Math.clamp(maxHealth, 1.0, player.getHealth()));
+            if (attr != null) {
+                attr.setBaseValue(20.0);
+            }
+            player.setHealth(20.0);
 
         } catch (Exception t) {
             Messages.debug("GAME", "Failed to clear kit for player " + player.getName() + ": " + t.getMessage());
@@ -951,10 +953,7 @@ public class GameSession {
      */
     private void preparePlayerForGameEnd(Player player) {
         player.setGameMode(GameMode.SURVIVAL);
-        var attr = player.getAttribute(Attribute.MAX_HEALTH);
-        double maxHealth = attr != null ? attr.getValue() : 20.0;
-
-        player.setHealth(maxHealth);
+        getCashClashPlayer(player.getUniqueId()).resetHealthModifier();
         player.setFoodLevel(20);
         player.closeInventory();
     }
@@ -1116,6 +1115,11 @@ public class GameSession {
 
         // Reset health and food using centralized health system
         ccp.resetHealthModifier();
+        var attr = player.getAttribute(Attribute.MAX_HEALTH);
+        if (attr != null) {
+            attr.setBaseValue(20.0);
+        }
+        player.setHealth(20.0);
         player.setFoodLevel(20);
         player.setSaturation(20.0f);
         player.setGameMode(GameMode.SURVIVAL);

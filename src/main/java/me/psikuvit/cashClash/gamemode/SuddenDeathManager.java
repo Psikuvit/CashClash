@@ -312,15 +312,16 @@ public class SuddenDeathManager {
         return extraHeartExpiry.containsKey(playerUuid);
     }
 
-    private void restartCycle() {
+    public void restartCycle() {
         cycleNumber++;
         startCycle(repeatCycleDurationMs);
+
+        broadcastCycleRestartMessage();
 
         if (gamemode != null) {
             gamemode.onSuddenDeathCycleRestart();
         }
 
-        broadcastCycleRestartMessage();
         Messages.debug("[SuddenDeathManager] Sudden death tied - restarting cycle " + cycleNumber + " for " + repeatCycleDurationMs + "ms");
     }
 
@@ -330,8 +331,14 @@ public class SuddenDeathManager {
         }
 
         switch (gamemode.getType()) {
-            case CAPTURE_THE_FLAG -> Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
-            case PROTECT_THE_PRESIDENT -> Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
+            case CAPTURE_THE_FLAG -> {
+                Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
+                Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-timer-start");
+            }
+            case PROTECT_THE_PRESIDENT -> {
+                Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
+                Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
+            }
         }
     }
 
