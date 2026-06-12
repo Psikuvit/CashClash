@@ -565,9 +565,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null && p.isOnline()) {
                 ScoreboardManager.getInstance().updatePlayerScoreboard(p);
+                // Also send the timer start message to confirm cycle reset
+                Messages.send(p, "gamemode-ctf.sudden-death-timer-start");
             }
         }
         
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
         Messages.debug("[CTF] Sudden death capture counters and scoreboard indicators reset for next cycle");
     }
 

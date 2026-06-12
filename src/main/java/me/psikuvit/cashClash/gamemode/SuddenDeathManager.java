@@ -333,11 +333,9 @@ public class SuddenDeathManager {
         switch (gamemode.getType()) {
             case CAPTURE_THE_FLAG -> {
                 Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
-                Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-timer-start");
             }
             case PROTECT_THE_PRESIDENT -> {
                 Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
-                Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
             }
         }
     }

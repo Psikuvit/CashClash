@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
@@ -396,6 +397,17 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public void onSuddenDeathCycleRestart() {
         suddenDeathPresidentKills.put(1, 0);
         suddenDeathPresidentKills.put(2, 0);
+        
+        // Reset scoreboard indicators and show timer start
+        for (UUID uuid : session.getPlayers()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) {
+                ScoreboardManager.getInstance().updatePlayerScoreboard(p);
+                Messages.send(p, "gamemode-ptp.sudden-death-timer-start");
+            }
+        }
+        
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
         Messages.debug("[PTP] Sudden death president kill counters reset for next cycle");
     }
 
