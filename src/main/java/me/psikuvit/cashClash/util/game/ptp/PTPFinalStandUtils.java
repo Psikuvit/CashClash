@@ -47,8 +47,12 @@ public class PTPFinalStandUtils {
 
             int presTeam = presidentTeamLookup.applyAsInt(playerUuid);
             if (presTeam == 0) {
+                var ccp = session.getCashClashPlayer(playerUuid);
+                if (ccp != null) {
+                    ccp.setLives(0);
+                }
                 player.setHealth(0);
-                Messages.debug("[PTP] Eliminated non-president: " + player.getName());
+                Messages.debug("[PTP] Eliminated non-president (lives set to 0): " + player.getName());
             } else {
                 Messages.send(player, "gamemode-ptp.final-stand-president-survived",
                         "opponent", opponentNameLookup.apply(presTeam == 1 ? 2 : 1));
