@@ -143,6 +143,10 @@ public class InteractListener implements Listener {
         if (item != null) {
             // Check various item types and delegate
             if (item.getType() == Material.WIND_CHARGE) {
+                if (isPlayerDead(player)) {
+                    event.setCancelled(true);
+                    Messages.send(player, "listener.cannot-use-items-dead");
+                }
                 return;
             }
             if (handleEnderPearl(event, player, item)) return;
@@ -258,6 +262,10 @@ public class InteractListener implements Listener {
         if (type == CustomItem.TABLET_OF_HACKING) {
             if (action.isRightClick()) {
                 event.setCancelled(true);
+                if (isPlayerDead(player)) {
+                    Messages.send(player, "listener.cannot-use-items-dead");
+                    return true;
+                }
                 if (isInShoppingPhase(player)) {
                     customItemManager.useTabletOfHacking(player);
                 } else {
@@ -278,6 +286,17 @@ public class InteractListener implements Listener {
             return true;
         }
 
+        // Flag holder cannot use invisibility cloak
+        if (type == CustomItem.INVIS_CLOAK) {
+            GameSession session = GameManager.getInstance().getPlayerSession(player);
+            if (session != null && session.getGamemode() instanceof CaptureTheFlagGamemode ctf) {
+                if (ctf.isSilenced(player.getUniqueId())) {
+                    event.setCancelled(true);
+                    Messages.send(player, "gamemode-ctf.cannot-use-invis-with-flag");
+                    return true;
+                }
+            }
+        }
 
         switch (type) {
             case GRENADE -> {

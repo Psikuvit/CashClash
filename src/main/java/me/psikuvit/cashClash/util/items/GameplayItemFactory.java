@@ -43,22 +43,22 @@ public final class GameplayItemFactory {
     /**
      * Creates a tagged item from a Purchasable.
      * The item will have proper PDC tags for tracking and refund purposes.
-     * 
+     *
      * @param purchasable The purchasable item definition
      * @return The created ItemStack with proper tags, or null if purchasable is null
      */
     public ItemStack createTaggedItem(Purchasable purchasable) {
         if (purchasable == null) return null;
-        
+
         ItemStack item = new ItemStack(purchasable.getMaterial(), 1);
         ItemMeta meta = item.getItemMeta();
-        
+
         if (meta == null) return item;
-        
+
         // Set PDC tag for item identification
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, purchasable.name());
-        
+
         // Set display name
         meta.displayName(Messages.parse("<yellow>" + purchasable.getDisplayName() + "</yellow>"));
 
@@ -68,7 +68,7 @@ public final class GameplayItemFactory {
         if (!lore.isEmpty()) {
             meta.lore(lore);
         }
-        
+
         // Handle special item types
         if (purchasable instanceof FoodItem foodItem) {
             // Apply armor properties is not needed for food
@@ -80,26 +80,26 @@ public final class GameplayItemFactory {
             // Apply armor properties (unbreakable, hide flags)
             applyArmorProperties(meta, item.getType());
         }
-        
+
         item.setItemMeta(meta);
         return item;
     }
-    
+
     /**
      * Creates a custom item (grenades, bounce pads, etc.) with owner tracking.
-     * 
+     *
      * @param customItem The custom item type
      * @param owner The player who owns this item
      * @return The created custom item with owner tag
      */
     public ItemStack createCustomItem(CustomItem customItem, Player owner) {
         if (customItem == null || owner == null) return null;
-        
+
         ItemStack item = new ItemStack(customItem.getMaterial());
         ItemMeta meta = item.getItemMeta();
-        
+
         if (meta == null) return item;
-        
+
         // Set display name
         meta.displayName(Messages.parse("<yellow>" + customItem.getDisplayName() + "</yellow>"));
 
@@ -114,7 +114,7 @@ public final class GameplayItemFactory {
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, customItem.name());
         pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
-        
+
         // Apply special properties based on item type
         applyCustomItemProperties(meta, customItem, item);
 
@@ -123,31 +123,31 @@ public final class GameplayItemFactory {
 
         // Apply custom model data
         CustomModelDataMapper.applyCustomModel(item, customItem);
-        
+
         return item;
     }
-    
+
     /**
      * Creates and equips a custom armor piece for a player.
-     * 
+     *
      * @param player The player to equip the armor to
      * @param armor The custom armor item
      */
     public void createAndEquipCustomArmor(Player player, CustomArmorItem armor) {
         if (player == null || armor == null) return;
-        
+
         ItemStack item = new ItemStack(armor.getMaterial());
         ItemMeta meta = item.getItemMeta();
-        
+
         if (meta == null) return;
-        
+
         // Set PDC tag
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, armor.name());
-        
+
         // Set display name
         meta.displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
-        
+
         // Try to get lore from configuration first
         List<Component> lore = getConfiguredLore(armor);
 
@@ -162,21 +162,17 @@ public final class GameplayItemFactory {
         // Make unbreakable and hide flags
         meta.setUnbreakable(true);
         meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
-        
+
         item.setItemMeta(meta);
-        
-        // Apply custom model data
-        String modelKey = CustomModelDataMapper.getItemKey(armor);
-        if (modelKey != null) {
-            CustomModelDataMapper.applyStringModelData(item, modelKey);
-        }
-        
+
+        CustomModelDataMapper.applyArmorModel(item, armor);
+
         // Equip the armor
         ItemUtils.equipArmorOrReplace(player, item);
     }
-    
+
     // ==================== PRIVATE HELPER METHODS ====================
-    
+
     /**
      * Applies food properties to a food item.
      */
@@ -220,15 +216,15 @@ public final class GameplayItemFactory {
      */
     private void applyArmorProperties(ItemMeta meta, Material material) {
         String materialName = material.name();
-        if (materialName.endsWith("HELMET") || 
-            materialName.endsWith("CHESTPLATE") || 
-            materialName.endsWith("LEGGINGS") || 
+        if (materialName.endsWith("HELMET") ||
+            materialName.endsWith("CHESTPLATE") ||
+            materialName.endsWith("LEGGINGS") ||
             materialName.endsWith("BOOTS")) {
             meta.setUnbreakable(true);
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
         }
     }
-    
+
     /**
      * Applies special properties to custom items based on their type.
      */

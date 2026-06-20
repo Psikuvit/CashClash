@@ -56,16 +56,17 @@ public enum Kit {
      * @param rounds1to3HaveShields Whether rounds 1-3 have shields
      */
     public void apply(Player player, int round, boolean rounds1to3HaveShields) {
+        // Round 1 kits removed temporarily - all rounds get base items
         if (round == 1) {
-            // Round 1: Clear inventory and give everything
             player.getInventory().clear();
-            giveBaseItems(player, round, rounds1to3HaveShields);
-            giveKitSpecificItems(player);
-        } else {
-            // Round 2+: Remove kit items only (keep base items)
-            removeKitItems(player);
-            removeKitSpecificEnhancements(player);
         }
+        
+        // Remove kit items if they exist (clean up from previous versions)
+        removeKitItems(player);
+        removeKitSpecificEnhancements(player);
+
+        // Always give base items
+        giveBaseItems(player, round, rounds1to3HaveShields);
 
         // Always apply shield logic each round
         toggleShield(player, round, rounds1to3HaveShields);
@@ -424,16 +425,17 @@ public enum Kit {
      * @param rounds1to3HaveShields Whether rounds 1-3 have shields (rounds 4-6 will be opposite)
      */
     public void applyWithLayout(Player player, Map<Integer, String> layout, int round, boolean rounds1to3HaveShields) {
+        // Round 1 kits removed temporarily - all rounds get base items
         if (round == 1) {
-            // Round 1: Clear inventory and give everything with layout
             player.getInventory().clear();
-            giveBaseItemsWithLayout(player, layout);
-            giveKitSpecificItemsWithLayout(player, layout);
-        } else {
-            // Round 2+: Remove kit items only (keep base items), same as apply()
-            removeKitItems(player);
-            removeKitSpecificEnhancements(player);
         }
+        
+        // Remove kit items if they exist (clean up from previous versions)
+        removeKitItems(player);
+        removeKitSpecificEnhancements(player);
+
+        // Always give base items
+        giveBaseItemsWithLayout(player, layout);
 
         // Always apply shield logic each round
         toggleShield(player, round, rounds1to3HaveShields);
@@ -463,13 +465,6 @@ public enum Kit {
         itemMap.put("MATERIAL:STONE_SWORD", new ItemStack(Material.STONE_SWORD));
         itemMap.put("MATERIAL:STONE_AXE", new ItemStack(Material.STONE_AXE));
 
-        ItemStack pickaxe = new ItemStack(Material.DIAMOND_PICKAXE);
-        ItemMeta pickMeta = pickaxe.getItemMeta();
-        if (pickMeta != null) {
-            pickMeta.addEnchant(Enchantment.EFFICIENCY, 2, true);
-            pickaxe.setItemMeta(pickMeta);
-        }
-        itemMap.put("MATERIAL:DIAMOND_PICKAXE", pickaxe);
         itemMap.put("MATERIAL:SHEARS", new ItemStack(Material.SHEARS));
 
         // === FOOD ===

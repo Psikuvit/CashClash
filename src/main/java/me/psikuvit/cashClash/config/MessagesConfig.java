@@ -17,8 +17,6 @@ public class MessagesConfig {
 
     private static MessagesConfig instance;
     private final Map<String, String> messages;
-    private File messagesFile;
-    private FileConfiguration messagesConfig;
 
     private MessagesConfig() {
         this.messages = new HashMap<>();
@@ -39,13 +37,13 @@ public class MessagesConfig {
         messages.clear();
 
         // Get or create messages.yml
-        messagesFile = new File(CashClashPlugin.getInstance().getDataFolder(), "messages.yml");
+        File messagesFile = new File(CashClashPlugin.getInstance().getDataFolder(), "messages.yml");
 
         if (!messagesFile.exists()) {
             CashClashPlugin.getInstance().saveResource("messages.yml", false);
         }
 
-        messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
+        FileConfiguration messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
 
         // Load all messages from config
         if (messagesConfig.contains("messages")) {

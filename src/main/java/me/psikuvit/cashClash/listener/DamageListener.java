@@ -144,10 +144,11 @@ public class DamageListener implements Listener {
                 if (attackerId.equals(victimCharger)) {
                     return false; // Allow damage between charger and their victim
                 }
-                
-                // If it's the charger hitting someone NOT caught, or someone else hitting the charger,
-                // we should NOT return false here, we should continue to normal protection checks.
-                // UNLESS we want chargers to be invincible to others? The issue says they ARE invincible, which is bad.
+            }
+            
+            // Allow chargers to be hit
+            if (mythicManager.isGoblinSpearCharging(victimId)) {
+                return false;
             }
         }
 

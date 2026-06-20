@@ -28,7 +28,7 @@ public class PartyCommandHandler extends Command {
     }
 
     @Override
-    public boolean execute(@NotNull CommandSender sender, @NotNull String label, @NotNull @NonNull String[] args) {
+    public boolean execute(@NotNull CommandSender sender, @NotNull String label, @NotNull @NonNull String @NonNull [] args) {
         if (!(sender instanceof Player player)) {
             Messages.send(sender, "party.only-players");
             return true;
@@ -138,7 +138,7 @@ public class PartyCommandHandler extends Command {
     }
 
     @Override
-    public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull @NonNull String[] args) {
+    public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull @NonNull String @NonNull [] args) {
         if (!(sender instanceof Player)) {
             return Collections.emptyList();
         }

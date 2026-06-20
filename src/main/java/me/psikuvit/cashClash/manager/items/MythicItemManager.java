@@ -357,26 +357,30 @@ public class MythicItemManager {
     private void applyMythicAttributes(MythicItem mythic, ItemMeta meta) {
         switch (mythic) {
             case COIN_CLEAVER -> {
-                // Diamond axe base attack speed: 1.0
-                // Diamond sword attack speed: 1.6
-                // Need to add 0.6 to make it feel like a sword
+                // Netherite sword stats: 8 attack damage (+4 base = 12 total), 1.6 attack speed
+                NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "coin_cleaver_damage");
+                AttributeModifier damageMod = new AttributeModifier(
+                        damageKey,
+                        8.0, // Match Netherite Sword
+                        AttributeModifier.Operation.ADD_NUMBER,
+                        EquipmentSlotGroup.MAINHAND
+                );
+                meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, damageMod);
+                
                 NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "coin_cleaver_speed");
                 AttributeModifier speedMod = new AttributeModifier(
                         speedKey,
-                        0.6, // Increase from 1.0 to 1.6 (sword attack speed)
+                        -2.4,
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
                 meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedMod);
             }
             case GOBLIN_SPEAR -> {
-                // Netherite sword stats: 8 attack damage, 1.6 attack speed
-                // Trident base: 9 damage, 1.1 speed
-                // Need to adjust to match netherite sword
                 NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_damage");
                 AttributeModifier damageMod = new AttributeModifier(
                         damageKey,
-                        -1.0, // Reduce from 9 to 8 (netherite sword damage)
+                        8.0, 
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
@@ -385,31 +389,21 @@ public class MythicItemManager {
                 NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_speed");
                 AttributeModifier speedMod = new AttributeModifier(
                         speedKey,
-                        0.5, // Increase from 1.1 to 1.6 (netherite sword speed)
+                        -2.4, 
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
                 meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedMod);
 
-                // +1 block range
-                NamespacedKey rangeKey = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_range");
-                AttributeModifier rangeMod = new AttributeModifier(
-                        rangeKey,
-                        1.0,
-                        AttributeModifier.Operation.ADD_NUMBER,
-                        EquipmentSlotGroup.MAINHAND
-                );
-                meta.addAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, rangeMod);
+                // +1 block range removed
                 meta.addEnchant(Enchantment.LOYALTY, 3, true);
             }
             case WARDEN_GLOVES -> {
-                // Netherite axe stats: 10 attack damage, 1.0 attack speed
-                // Netherite sword base: 8 damage, 1.6 speed
-                // Need to adjust to match netherite axe
+                // Netherite sword stats: 8 attack damage (+4 base = 12 total), 1.6 attack speed
                 NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "warden_damage");
                 AttributeModifier damageMod = new AttributeModifier(
                         damageKey,
-                        2.0, // Increase from 8 to 10 (netherite axe damage)
+                        8.0, 
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
@@ -418,23 +412,14 @@ public class MythicItemManager {
                 NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "warden_speed");
                 AttributeModifier speedMod = new AttributeModifier(
                         speedKey,
-                        -0.6, // Reduce from 1.6 to 1.0 (netherite axe speed)
+                        -2.4, 
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
                 meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedMod);
                 
-                // +2 block reach for both hands (takes up main and off hand conceptually)
-                NamespacedKey reachKey = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach");
-                AttributeModifier reachMod = new AttributeModifier(
-                        reachKey,
-                        2.0,
-                        AttributeModifier.Operation.ADD_NUMBER,
-                        EquipmentSlotGroup.MAINHAND
-                );
-
+                // Extra reach removed
                 meta.removeAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE);
-                meta.addAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, reachMod);
             }
             case BLOODWRENCH_CROSSBOW -> {
                 // No enchantments - mode system handles functionality
@@ -890,52 +875,11 @@ public class MythicItemManager {
      * 10 second cooldown.
      */
     public void handleCarlsCriticalHit(Player attacker, Player victim) {
-        UUID uuid = attacker.getUniqueId();
-
-        Messages.debug(attacker, "CARLS_BATTLEAXE: Critical hit detected (falling)");
-
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_CRIT)) {
-            Messages.debug(attacker, "CARLS_BATTLEAXE: Crit launch on cooldown");
-            return;
-        }
-
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_CRIT, cfg.getCarlsCritCooldown() / 1000);
-
-        // Launch victim into the air with consistent velocity
-        double launchPower = cfg.getCarlsCritLaunchPower();
-
-        // Ensure minimum launch power for noticeable effect
-        if (launchPower < 1.5) {
-            launchPower = 1.5;
-        }
-
-        final double finalLaunchPower = launchPower;
-
-        // Create launch velocity - primarily upward with horizontal push
-        Vector direction = victim.getLocation().toVector().subtract(attacker.getLocation().toVector());
-        direction.setY(0);
-        if (direction.lengthSquared() > 0) {
-            direction.normalize().multiply(0.5);
-        } else {
-            direction = new Vector(0, 0, 0);
-        }
-
-        final Vector horizontalPush = direction;
-
-        // Apply velocity on next tick to ensure it takes effect after damage knockback
-        SchedulerUtils.runTaskLater(() -> {
-            if (victim.isOnline()) {
-                Vector launchVelocity = new Vector(horizontalPush.getX(), finalLaunchPower, horizontalPush.getZ());
-                victim.setVelocity(launchVelocity);
-                Messages.debug(attacker, "CARLS_BATTLEAXE: Applied velocity to " + victim.getName() + " - Y: " + finalLaunchPower);
-            }
-        }, 1L);
-
-        Messages.debug(attacker, "CARLS_BATTLEAXE: Launching " + victim.getName() + " with power " + launchPower);
-        SoundUtils.play(victim, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0f, 0.8f);
+        // Launch ability removed - now just deals normal critical damage
+        Messages.debug(attacker, "CARLS_BATTLEAXE: Critical hit detected (launch disabled)");
+        
         SoundUtils.play(attacker, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.8f);
         ParticleUtils.crit(victim.getLocation().add(0, 1, 0), 20, 0.5);
-        Messages.send(attacker, "mythic.wind-bow-critical");
     }
 
     // ==================== WIND BOW ====================

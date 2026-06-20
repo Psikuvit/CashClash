@@ -353,7 +353,7 @@ public class CustomArmorManager {
 
         // Perform dash
         Vector direction = target.getLocation().toVector().subtract(attacker.getLocation().toVector()).normalize();
-        org.bukkit.Location targetLoc = target.getLocation().clone().add(direction.multiply(-1.0)); // Place attacker 1 block behind target direction
+        org.bukkit.Location targetLoc = target.getLocation().clone(); // Teleport directly to target position
         targetLoc.setYaw(attacker.getLocation().getYaw()); // Keep attacker's yaw
         targetLoc.setPitch(attacker.getLocation().getPitch());
         attacker.teleport(targetLoc);

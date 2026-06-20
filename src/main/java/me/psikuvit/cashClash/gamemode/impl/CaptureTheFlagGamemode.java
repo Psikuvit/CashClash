@@ -697,11 +697,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (task != null) {
             cancelTask(task);
         }
-        cancelFlagReturnDisplayTask(teamNumber);
+        cancelFlagReturnDisplayTask();
         flagReturnExpiry.remove(teamNumber);
     }
 
-     private void cancelFlagReturnDisplayTask(int teamNumber) {
+     private void cancelFlagReturnDisplayTask() {
          TimerDisplayUtils.stopFlagReturnTimer(session.getPlayers());
      }
 
@@ -733,12 +733,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (task != null) {
             cancelTask(task);
         }
-        cancelFlagReturnDisplayTask(teamNumber);
+        cancelFlagReturnDisplayTask();
         Messages.debug("[CTF] Paused return timer for Team " + teamNumber + " flag because a player entered the circle");
     }
 
      private void scheduleFlagReturnDisplayTimer(int teamNumber) {
-         cancelFlagReturnDisplayTask(teamNumber);
+         cancelFlagReturnDisplayTask();
 
          Long expiry = flagReturnExpiry.get(teamNumber);
          if (expiry != null) {
