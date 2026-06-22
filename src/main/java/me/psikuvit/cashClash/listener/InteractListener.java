@@ -135,6 +135,15 @@ public class InteractListener implements Listener {
             handleReadyUp(event, player, block);
         }
 
+        if (isPlayerDead(player)) {
+            // Exceptions for dead players (if any)
+            if (block != null && block.getType().name().contains("SIGN")) return;
+
+            event.setCancelled(true);
+            Messages.send(player, "listener.cannot-use-items-dead");
+            return;
+        }
+
         if (action.isRightClick() && handleCustomArmor(player, action)) {
             event.setCancelled(true);
             return;
@@ -142,13 +151,6 @@ public class InteractListener implements Listener {
 
         if (item != null) {
             // Check various item types and delegate
-            if (item.getType() == Material.WIND_CHARGE) {
-                if (isPlayerDead(player)) {
-                    event.setCancelled(true);
-                    Messages.send(player, "listener.cannot-use-items-dead");
-                }
-                return;
-            }
             if (handleEnderPearl(event, player, item)) return;
             if (handleFireCharge(event, player, item)) return;
             if (handleSupplyDrop(event, player, item, action)) return;
@@ -262,10 +264,6 @@ public class InteractListener implements Listener {
         if (type == CustomItem.TABLET_OF_HACKING) {
             if (action.isRightClick()) {
                 event.setCancelled(true);
-                if (isPlayerDead(player)) {
-                    Messages.send(player, "listener.cannot-use-items-dead");
-                    return true;
-                }
                 if (isInShoppingPhase(player)) {
                     customItemManager.useTabletOfHacking(player);
                 } else {
@@ -278,13 +276,6 @@ public class InteractListener implements Listener {
 
         // All other custom items cannot be used during shopping
         if (isInShoppingPhase(player)) return false;
-
-        // Prevent dead players from using items
-        if (isPlayerDead(player)) {
-            event.setCancelled(true);
-            Messages.send(player, "listener.cannot-use-items-dead");
-            return true;
-        }
 
         // Flag holder cannot use invisibility cloak
         if (type == CustomItem.INVIS_CLOAK) {
@@ -364,14 +355,6 @@ public class InteractListener implements Listener {
             return true;
         }
 
-        // Prevent dead players from using mythic abilities
-        if (isPlayerDead(player)) {
-            event.setCancelled(true);
-            Messages.send(player, "listener.cannot-use-abilities-dead");
-            return true;
-        }
-
-
         switch (mythic) {
             case COIN_CLEAVER -> {
                 event.setCancelled(true);
@@ -444,12 +427,6 @@ public class InteractListener implements Listener {
         if (session == null) return false;
 
         if (isInShoppingPhase(player)) return false;
-
-        // Prevent dead players from using armor abilities
-        if (isPlayerDead(player)) {
-            Messages.send(player, "listener.cannot-use-armor-abilities-dead");
-            return true;
-        }
 
         // Dragon Set: Dash to marked target (right-click, no sneak required)
         if (armorManager.hasDragonSet(player)) {

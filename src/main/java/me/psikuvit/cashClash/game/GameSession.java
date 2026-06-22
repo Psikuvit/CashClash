@@ -439,8 +439,6 @@ public class GameSession {
     private void applyKitToPlayer(Player p, CashClashPlayer ccp, Kit kitToApply) {
         if (currentRound == 1) {
             applyKitWithLayout(p, ccp.getUuid(), kitToApply);
-            Messages.send(p, "round.kit-assigned",
-                    "kit_name", kitToApply.toString());
         } else {
             kitToApply.apply(p, currentRound, rounds1to3HaveShields);
         }

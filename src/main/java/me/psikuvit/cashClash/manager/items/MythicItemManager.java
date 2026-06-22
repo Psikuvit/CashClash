@@ -1120,14 +1120,24 @@ public class MythicItemManager {
     /**
      * Handle Goblin Spear hit.
      * Deals damage + Poison.
+     * @param shooter The attacker
+     * @param victim The victim
+     * @param isMelee Whether this is a melee hit (prevents double damage)
      */
-    public void handleGoblinSpearHit(Player shooter, LivingEntity victim) {
-        Messages.debug(shooter, "GOBLIN_SPEAR: Hit " + victim.getName());
+    public void handleGoblinSpearHit(Player shooter, LivingEntity victim, boolean isMelee) {
+        Messages.debug(shooter, "GOBLIN_SPEAR: Hit " + victim.getName() + " (Melee: " + isMelee + ")");
 
-        victim.damage(cfg.getGoblinSpearDamage(), shooter);
+        if (!isMelee) {
+            victim.damage(cfg.getGoblinSpearDamage(), shooter);
+        }
+
         victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true));
 
-        Messages.debug(shooter, "GOBLIN_SPEAR: Dealt " + cfg.getGoblinSpearDamage() + " damage + Poison " + (cfg.getGoblinPoisonLevel() + 1));
+        if (!isMelee) {
+            Messages.debug(shooter, "GOBLIN_SPEAR: Dealt " + cfg.getGoblinSpearDamage() + " damage + Poison " + (cfg.getGoblinPoisonLevel() + 1));
+        } else {
+            Messages.debug(shooter, "GOBLIN_SPEAR: Applied Poison " + (cfg.getGoblinPoisonLevel() + 1));
+        }
 
         ParticleUtils.slime(victim.getLocation().add(0, 1, 0), 20, 0.5);
     }
