@@ -160,19 +160,6 @@ public class GameListener implements Listener {
             bonusManager.onKill(killer.getUniqueId());
         }
 
-        long killReward = EconomyManager.getKillReward(session, killerCCP);
-        
-        // Apply investor set bonus (12.5% per piece)
-        double investorMultiplier = armorManager.getInvestorMultiplier(killer);
-        long finalReward = (long) (killReward * investorMultiplier);
-        
-        killerCCP.addCoins(finalReward);
-        
-        if (investorMultiplier > 1.0) {
-            Messages.send(killer, "bonus.bonus-investor", "multiplier_percent",
-                    String.format("%.1f", (investorMultiplier - 1.0) * 100));
-        }
-
         // Apply kill team split bonus to entire team
         applyKillTeamSplitBonus(session, killer);
 
@@ -578,8 +565,11 @@ public class GameListener implements Listener {
 
         MythicItem mythic = resolveTridentMythic(shooter, trident);
         if (mythic == MythicItem.GOBLIN_SPEAR && event.getHitEntity() instanceof LivingEntity target) {
-            mythicManager.handleGoblinSpearHit(shooter, target);
+            mythicManager.handleGoblinSpearHit(shooter, target, false);
             Messages.debug("GOBLIN_SPEAR hit handled for " + target.getName());
+            
+            // Remove the trident to prevent multi-hits
+            trident.remove();
         }
     }
 

@@ -12,6 +12,7 @@ import java.util.UUID;
 public class RoundData {
 
     private final Map<UUID, PlayerRoundStats> stats;
+    private int totalRoundKills;
     private UUID firstBloodPlayer;
 
     /**
@@ -35,6 +36,7 @@ public class RoundData {
         PlayerRoundStats s = getStats(player);
         if (s != null) {
             s.incrementKills();
+            totalRoundKills++;
         }
     }
 
@@ -85,6 +87,10 @@ public class RoundData {
 
     public UUID getFirstBloodPlayer() {
         return firstBloodPlayer;
+    }
+
+    public int getTotalRoundKills() {
+        return totalRoundKills;
     }
 
     public void addSurvivor(UUID player) {

@@ -2,26 +2,40 @@ package me.psikuvit.cashClash.manager.game;
  
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
+
+import java.util.UUID;
  
 /**
  * Manages economy and transactions
  */
 public class EconomyManager {
 
-    public static long getKillReward(GameSession session, CashClashPlayer killer) {
-        int round = session.getCurrentRound();
-        ConfigManager cfg = ConfigManager.getInstance();
+    public static void distributeRoundMoney(GameSession session) {
+        RoundData roundData = session.getCurrentRoundData();
+        if (roundData == null) return;
 
-        if (round == 1) return cfg.getRound1KillReward();
-        if (round == 2 || round == 3) {
-            int kills = session.getCurrentRoundData().getKills(killer.getUuid());
-            if (kills == 1) return cfg.getRound2Bonus() / 3; // approx (configurable if needed)
-            if (kills == 2) return cfg.getRound2Bonus() / 2;
-            return cfg.getRound2Bonus() / 2; // fallback
+        int totalKills = roundData.getTotalRoundKills();
+        long killPool = totalKills * 1000L;
+        
+        // Distribution per player
+        long perPlayerShare = killPool / 8; // Assumes 8 players as per requirement
+        
+        // Everyone gets at least 15k
+        long finalAmount = Math.max(perPlayerShare, 15000);
+
+        Messages.broadcast(session.getPlayers(), "economy.round-money-distributed",
+                "pool", String.format("%,d", killPool),
+                "amount", String.format("%,d", finalAmount));
+
+        for (UUID uuid : session.getPlayers()) {
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+            if (ccp != null) {
+                ccp.addCoins(finalAmount);
+            }
         }
-        return 0;
     }
 
     public static long calculateStealAmount(GameSession session, CashClashPlayer victim) {
@@ -71,18 +85,6 @@ public class EconomyManager {
     }
 
     public static void giveRoundStartMoney(GameSession session, CashClashPlayer player) {
-        int round = session.getCurrentRound();
-        ConfigManager cfg = ConfigManager.getInstance();
-        switch (round) {
-            case 1 -> player.addCoins(cfg.getRound1Start());
-            case 2 -> player.addCoins(cfg.getRound2Bonus());
-            case 3 -> player.addCoins(cfg.getRound3Bonus());
-            case 4 -> player.addCoins(cfg.getRound4Bonus());
-            case 5 -> {
-                if (player.getCoins() < cfg.getRound5Minimum()) {
-                    player.addCoins(cfg.getRound5Bonus());
-                }
-            }
-        }
+        // Obsolete: Money is now distributed at the end of the round via distributeRoundMoney
     }
 }

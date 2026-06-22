@@ -310,12 +310,11 @@ public class RoundManager {
                     "time_remaining", String.valueOf(timeRemaining));
             }
 
-            // Check armor effects for all players (Flamebringer fire, Tax Evasion tick)
+            // Check armor effects for all players (Flamebringer fire)
             for (UUID uuid : session.getPlayers()) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null && p.isOnline()) {
                     CustomArmorManager.getInstance().onFlamebringerFireTick(p);
-                    CustomArmorManager.getInstance().onTaxEvasionTick(p, session);
                 }
             }
 
@@ -341,6 +340,7 @@ public class RoundManager {
         }
 
         session.resolveRoundInvestments();
+        EconomyManager.distributeRoundMoney(session);
 
         // Move to next round or end game
         if (session.getCurrentRound() >= ConfigManager.getInstance().getTotalRounds()) {
