@@ -308,7 +308,7 @@ public class ShopService {
                         "price", String.format("%,d", setPrice));
                     SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
                 } else {
-                    // Individual custom armor piece (Magic Helmet, Bunny Shoes, Tax Evasion Pants, Guardian's Vest)
+                    // Individual custom armor piece (Magic Helmet, Bunny Shoes, Bullseye Pants, Guardian's Vest)
                     ArmorSlot slot = ItemUtils.getArmorSlot(customArmor.getMaterial());
                     ItemStack currentArmor = ItemUtils.getCurrentArmorInSlot(player, slot);
                     Messages.debug("Current armor in slot " + slot + ": " + currentArmor);

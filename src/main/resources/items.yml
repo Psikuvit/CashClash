@@ -175,11 +175,11 @@ custom-armor:
     pull-strength: 0.4
     kills-for-pull: 2
 
-  # Tax Evasion Pants
-  tax-evasion:
-    death-penalty-percentage: 0.075
-    survival-bonus: 3000
-    survival-interval-seconds: 60
+  # Bullseye Pants
+  bullseye-pants:
+    damage-boost: 0.3
+    aoe-damage-multiplier: 0.35
+    aoe-arrows-count: 6
 
   # Investor's Set
   investors:

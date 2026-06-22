@@ -323,7 +323,6 @@ public class CooldownManager {
         public static final String LAST_DAMAGE_DEALT = "LAST_DAMAGE_DEALT";
         public static final String SPAWN_TIME = "SPAWN_TIME";
         public static final String CLOSE_CALL_HEAL = "CLOSE_CALL_HEAL";
-        public static final String TAX_EVASION_MINUTE = "TAX_EVASION_MINUTE";
         public static final String DEATHMAULER_DAMAGE = "DEATHMAULER_DAMAGE";
         public static final String SANDSTORMER_CHARGE = "SANDSTORMER_CHARGE";
         public static final String LAST_MOVE = "LAST_MOVE";

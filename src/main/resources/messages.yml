@@ -794,7 +794,8 @@ messages:
     flamebringer-speed: "<gold>Flamebringer: Speed I from lava ({remaining} left)!</gold>"
     flamebringer-pull-activated: "<gold>🔥 Flamebringer Pull Activated!</gold>"
     flamebringer-pull-ended: "<gray>Flamebringer pull ended.</gray>"
-    tax-evasion-reward: "<green>Tax Evasion Pants: +3,000 coins for surviving 1 minute!</green>"
+  # Bullseye Pants
+  bullseye-storm-triggered: "<gold><bold>STORMING ARROW!</bold> +30% damage and arrow burst!</gold>"
 
   # ============================================
   # CUSTOM ITEM MESSAGES

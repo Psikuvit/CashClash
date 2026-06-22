@@ -99,7 +99,7 @@ public final class PDCDetection {
 
     /**
      * Check if an ItemStack is a custom armor item (any CustomArmorItem).
-     * This includes individual pieces (Magic Helmet, Bunny Shoes, Tax Evasion Pants, Guardian's Vest)
+     * This includes individual pieces (Magic Helmet, Bunny Shoes, Bullseye Pants, Guardian's Vest)
      * and set pieces (Deathmauler, Dragon, Flamebridger, Investor sets).
      * @return true if item is custom armor
      */

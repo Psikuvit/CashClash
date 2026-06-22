@@ -85,7 +85,6 @@ public final class CustomModelDataMapper {
         ARMOR_MODELS.put(CustomArmorItem.INVESTORS_CHESTPLATE,   new NamespacedKey("cc", "item/investors_chestplate"));
         ARMOR_MODELS.put(CustomArmorItem.INVESTORS_HELMET,       new NamespacedKey("cc", "item/investors_helmet"));
         ARMOR_MODELS.put(CustomArmorItem.INVESTORS_LEGGINGS,     new NamespacedKey("cc", "item/investors_leggings"));
-        ARMOR_MODELS.put(CustomArmorItem.TAX_EVASION_PANTS,      new NamespacedKey("cc", "item/taxevasion_leggings"));
     }
 
     public static String getItemKey(CustomItem item) {
