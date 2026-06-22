@@ -55,6 +55,9 @@ public class CustomArmorManager {
     private final Map<UUID, BukkitTask> dragonMarkTasks; // Marked player -> particle task
     private final Map<UUID, Double> dragonDamageBoost; // Attacker -> damage boost for next hit
 
+    // Bullseye Pants tracking
+    private final Map<UUID, Integer> bullseyeHitCount; // Attacker -> current hit count
+
     // Flamebringer Set tracking
     private final Map<UUID, Integer> flamebringerKills; // Player -> kill count this round
     private final Map<UUID, BukkitTask> flamebringerFireTask; // Player -> fire effect task
@@ -76,6 +79,8 @@ public class CustomArmorManager {
         this.dragonMarkedTargets = new ConcurrentHashMap<>();
         this.dragonMarkTasks = new ConcurrentHashMap<>();
         this.dragonDamageBoost = new ConcurrentHashMap<>();
+
+        this.bullseyeHitCount = new ConcurrentHashMap<>();
 
         this.flamebringerKills = new ConcurrentHashMap<>();
         this.flamebringerFireTask = new ConcurrentHashMap<>();
@@ -112,9 +117,9 @@ public class CustomArmorManager {
         return cnt;
     }
 
-    public boolean hasTaxEvasion(Player p) {
+    public boolean hasBullseyePants(Player p) {
         for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmorItem.TAX_EVASION_PANTS) return true;
+            if (ca == CustomArmorItem.BULLSEYE_PANTS) return true;
         }
         return false;
     }
@@ -697,38 +702,21 @@ public class CustomArmorManager {
         }
     }
 
-    // ==================== TAX EVASION PANTS ====================
+    // ==================== BULLSEYE PANTS ====================
 
-    public void onTaxEvasionTick(Player p, GameSession session) {
-        if (!hasTaxEvasion(p)) return;
-        if (p.isDead()) return; // Don't award coins to dead players
-        if (session == null) return;
-        
-        // Only trigger during combat phase
-        if (session.getState() != GameState.COMBAT) return;
-        
+    /**
+     * Increments the hit count for Bullseye Pants.
+     * @return true if it was the 3rd hit (triggering the effect)
+     */
+    public boolean incrementBullseyeHit(Player p) {
         UUID id = p.getUniqueId();
-
-        long lastCheck = cooldownManager.getTimestamp(id, CooldownManager.Keys.TAX_EVASION_MINUTE);
-        if (lastCheck == 0) {
-            cooldownManager.setTimestamp(id, CooldownManager.Keys.TAX_EVASION_MINUTE);
-            return;
+        int hits = bullseyeHitCount.getOrDefault(id, 0) + 1;
+        if (hits >= 3) {
+            bullseyeHitCount.put(id, 0);
+            return true;
         }
-
-        // Living for 1 minute grants 3k
-        if (cooldownManager.hasTimePassedSeconds(id, CooldownManager.Keys.TAX_EVASION_MINUTE, 60)) {
-            CashClashPlayer ccp = session.getCashClashPlayer(id);
-            if (ccp != null) {
-                ccp.addCoins(3000);
-                Messages.send(p, "armor.tax-evasion-reward");
-                SoundUtils.play(p, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-            }
-            cooldownManager.setTimestamp(id, CooldownManager.Keys.TAX_EVASION_MINUTE);
-        }
-    }
-
-    public double getTaxEvasionDeathPenalty() {
-        return 0.075; // Only lose 7.5% on death
+        bullseyeHitCount.put(id, hits);
+        return false;
     }
 
     // ==================== INVESTOR'S SET ====================
@@ -768,6 +756,8 @@ public class CustomArmorManager {
 
         deathmaulerExtraHearts.clear();
 
+        bullseyeHitCount.clear();
+
         // Cancel all dragon mark tasks
         dragonMarkTasks.values().forEach(BukkitTask::cancel);
         dragonMarkTasks.clear();
@@ -791,6 +781,7 @@ public class CustomArmorManager {
         magicHelmetActivated.clear();
         guardianUsesThisRound.clear();
         deathmaulerExtraHearts.clear();
+        bullseyeHitCount.clear();
 
         // Cancel all dragon mark tasks and clear dragon tracking
         dragonMarkTasks.values().forEach(BukkitTask::cancel);

@@ -68,7 +68,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     // Individual custom armor slots
     private static final int MAGIC_HELMET_SLOT = 40;
     private static final int GUARDIANS_VEST_SLOT = 41;
-    private static final int TAX_EVASION_PANTS_SLOT = 42;
+    private static final int BULLSEYE_PANTS_SLOT = 42;
     private static final int BUNNY_SHOES_SLOT = 43;
 
     public ArmorCategoryGui(Player viewer) {
@@ -264,7 +264,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     private void populateIndividualCustomArmor() {
         setButton(MAGIC_HELMET_SLOT, createCustomArmorButton(CustomArmorItem.MAGIC_HELMET));
         setButton(GUARDIANS_VEST_SLOT, createCustomArmorButton(CustomArmorItem.GUARDIANS_VEST));
-        setButton(TAX_EVASION_PANTS_SLOT, createCustomArmorButton(CustomArmorItem.TAX_EVASION_PANTS));
+        setButton(BULLSEYE_PANTS_SLOT, createCustomArmorButton(CustomArmorItem.BULLSEYE_PANTS));
         setButton(BUNNY_SHOES_SLOT, createCustomArmorButton(CustomArmorItem.BUNNY_SHOES));
     }
 

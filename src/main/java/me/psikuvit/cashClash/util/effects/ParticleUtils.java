@@ -311,6 +311,15 @@ public final class ParticleUtils {
     /**
      * Spawn dragon mark particles above marked player.
      */
+    public static void bullseyeStorm(Location location) {
+        // Red and White dust particles outward
+        spawnDust(location, Color.RED, 1.2f, 15, 0.3, 0.3, 0.3);
+        spawnDust(location, Color.WHITE, 1.2f, 15, 0.3, 0.3, 0.3);
+        
+        // Critical hit particles for impact feel
+        crit(location, 10, 0.5);
+    }
+
     public static void dragonMark(Location location) {
         spawnDust(location.clone().add(0, 2.5, 0), Color.fromRGB(138, 43, 226), 2.0f, 15, 0.3, 0.2, 0.3);
     }

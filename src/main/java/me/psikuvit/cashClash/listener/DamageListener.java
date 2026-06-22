@@ -16,6 +16,12 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
+import me.psikuvit.cashClash.util.effects.ParticleUtils;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
+import org.bukkit.Color;
+import org.bukkit.Sound;
+import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -416,8 +422,53 @@ public class DamageListener implements Listener {
             event.setDamage(event.getDamage() * damageMultiplier);
         }
 
+        // Bullseye Pants: Storming arrow
+        handleBullseyePantsEffect(event, attacker, victim);
+
         // Deathmauler: Soul Burst
         armorManager.tryDeathmaulerSoulBurst(attacker, victim, session);
+    }
+
+    /**
+     * Handle Bullseye Pants "Storming arrow" passive.
+     * Every 3rd landed arrow does 30% more damage and deals AOE damage.
+     */
+    private void handleBullseyePantsEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        if (!(event.getDamager() instanceof Arrow arrow)) {
+            return;
+        }
+
+        if (!armorManager.hasBullseyePants(attacker)) {
+            return;
+        }
+
+        if (armorManager.incrementBullseyeHit(attacker)) {
+            // 3rd hit triggered
+            double originalDamage = event.getDamage();
+            event.setDamage(originalDamage * 1.3); // +30% damage
+
+            org.bukkit.Location hitLoc = victim.getLocation().add(0, 1, 0);
+            ParticleUtils.bullseyeStorm(hitLoc);
+            SoundUtils.play(attacker, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0f, 1.2f);
+            Messages.send(attacker, "armor.bullseye-storm-triggered");
+
+            // AOE Arrows: 6 arrows firing outward
+            double aoeDamage = originalDamage * 0.35;
+            for (int i = 0; i < 6; i++) {
+                double angle = 2 * Math.PI * i / 6;
+                Vector direction = new Vector(Math.cos(angle), 0.2, Math.sin(angle)).normalize();
+                
+                Arrow aoeArrow = attacker.getWorld().spawn(hitLoc, Arrow.class);
+                aoeArrow.setShooter(attacker);
+                aoeArrow.setVelocity(direction.multiply(1.5));
+                aoeArrow.setCritical(true);
+                aoeArrow.setColor(i % 2 == 0 ? Color.RED : Color.WHITE);
+                
+                // Add metadata or tag to identify as AOE arrow if needed for damage scaling
+                // For now we'll just set it to a fixed damage if hit
+                aoeArrow.setDamage(aoeDamage / 2.0); // Vanilla damage is a bit complex, but this is a start
+            }
+        }
     }
 
     /**
@@ -618,7 +669,7 @@ public class DamageListener implements Listener {
      */
     private void applyGoblinSpearEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
         if (event.getDamager() instanceof Player) {
-            mythicManager.handleGoblinSpearHit(attacker, victim);
+            mythicManager.handleGoblinSpearHit(attacker, victim, true);
         }
     }
 
