@@ -372,9 +372,19 @@ public class GameSession {
     /**
      * Apply respawn protection to player
      */
-    private void applyRespawnProtection(CashClashPlayer ccp) {
+    public void applyRespawnProtection(CashClashPlayer ccp) {
         int protSec = ConfigManager.getInstance().getRespawnProtection();
         ccp.setRespawnProtection(protSec * 1000L);
+    }
+
+    /**
+     * Apply custom duration protection to player
+     */
+    public void applyRespawnProtection(UUID uuid, int seconds) {
+        CashClashPlayer ccp = players.get(uuid);
+        if (ccp != null) {
+            ccp.setRespawnProtection(seconds * 1000L);
+        }
     }
 
     /**

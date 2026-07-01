@@ -706,12 +706,12 @@ public class CustomArmorManager {
 
     /**
      * Increments the hit count for Bullseye Pants.
-     * @return true if it was the 3rd hit (triggering the effect)
+     * @return true if it was the 4th hit (triggering the effect)
      */
     public boolean incrementBullseyeHit(Player p) {
         UUID id = p.getUniqueId();
         int hits = bullseyeHitCount.getOrDefault(id, 0) + 1;
-        if (hits >= 3) {
+        if (hits >= 4) {
             bullseyeHitCount.put(id, 0);
             return true;
         }
@@ -795,10 +795,18 @@ public class CustomArmorManager {
     }
 
     /**
-     * Check if player is silenced (carrying enemy flag in CTF)
+     * Check if player is silenced (carrying enemy flag in CTF or dead)
      */
     private boolean isSilenced(Player player) {
+        // Dead players are silenced for all items
         GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session != null) {
+            me.psikuvit.cashClash.game.round.RoundData roundData = session.getCurrentRoundData();
+            if (roundData != null && !roundData.isAlive(player.getUniqueId())) {
+                return true;
+            }
+        }
+
         if (session == null || session.getGamemode() == null) return false;
         if (!(session.getGamemode() instanceof me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode gamemode)) return false;
         return gamemode.isSilenced(player.getUniqueId());

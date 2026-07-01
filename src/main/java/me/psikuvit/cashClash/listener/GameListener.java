@@ -787,16 +787,15 @@ public class GameListener implements Listener {
             p.removePotionEffect(PotionEffectType.FIRE_RESISTANCE);
             p.removePotionEffect(PotionEffectType.ABSORPTION);
 
-            // Apply nerfed effects
-            p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 10 * 20, 1)); // 10s Regen II
+            // Apply nerfed effects (Feature requirement: 10s each)
+            p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 10 * 20, 1)); // 10s Regen II (standard is II, nerfed to 10s)
             p.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 10 * 20, 0)); // 10s Fire Res
             
             // Absorption hearts: 2 hearts = 4 HP. 
-            // Default totem gives Absorption II (4 hearts/8 HP) for 5s. 
-            // We want 2 hearts (4 HP). 
+            // Absorption I gives 2 hearts (4 HP).
             p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 10 * 20, 0)); // 10s Absorption I (2 hearts)
             
-            Messages.debug("Totem effects nerfed for " + p.getName());
+            Messages.debug("Totem effects nerfed for " + p.getName() + ": 10s Regen, 10s Fire Res, 2 Absorption hearts");
         }, 1L);
     }
 

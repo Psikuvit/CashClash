@@ -20,15 +20,20 @@ public class EconomyManager {
         int totalKills = roundData.getTotalRoundKills();
         long killPool = totalKills * 1000L;
         
-        // Distribution per player
-        long perPlayerShare = killPool / 8; // Assumes 8 players as per requirement
+        // Total of this pool is given to all players (requirement says "all 8 players", we use session.getPlayers().size() but the logic should handle 8)
+        // Actually, the requirement says "The total of this pool is given to all 8 players".
+        // This could mean each player gets the total pool, OR the pool is divided.
+        // "Every kill adds 1000$ to a money pool. At the end of the round, the total of this pool is given to all 8 players."
+        // Usually, this means each player gets the total pool amount if it's over 15k.
+        // "Players are given a minimum of 15k per round. This 15k does not “add” to the pool. It is just the minimum players get if the pool is under 15k"
         
-        // Everyone gets at least 15k
-        long finalAmount = Math.max(perPlayerShare, 15000);
+        long finalAmount = Math.max(killPool, 15000);
 
         Messages.broadcast(session.getPlayers(), "economy.round-money-distributed",
                 "pool", String.format("%,d", killPool),
                 "amount", String.format("%,d", finalAmount));
+        
+        Messages.debug("ECONOMY: Round " + session.getCurrentRound() + " - Total Kills: " + totalKills + " Pool: " + killPool + " Final per player: " + finalAmount);
 
         for (UUID uuid : session.getPlayers()) {
             CashClashPlayer ccp = session.getCashClashPlayer(uuid);

@@ -14,6 +14,7 @@ import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.CooldownManager;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -228,6 +229,15 @@ public class DamageListener implements Listener {
             return;
         }
 
+        // Wind Charge Fall Damage Fix
+        if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
+            // Check if player recently used or was hit by a wind charge
+            if (CooldownManager.getInstance().getRemainingCooldownMs(player.getUniqueId(), "WIND_CHARGE_PROTECTION") > 0) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+
         // Flamebringer: Negate knockback from fire damage
         if ((event.getCause() == EntityDamageEvent.DamageCause.FIRE ||
              event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK ||
@@ -431,7 +441,7 @@ public class DamageListener implements Listener {
 
     /**
      * Handle Bullseye Pants "Storming arrow" passive.
-     * Every 3rd landed arrow does 30% more damage and deals AOE damage.
+     * Every 4th landed arrow does 30% more damage and deals AOE damage.
      */
     private void handleBullseyePantsEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
         if (!(event.getDamager() instanceof Arrow arrow)) {
@@ -443,7 +453,7 @@ public class DamageListener implements Listener {
         }
 
         if (armorManager.incrementBullseyeHit(attacker)) {
-            // 3rd hit triggered
+            // 4th hit triggered
             double originalDamage = event.getDamage();
             event.setDamage(originalDamage * 1.3); // +30% damage
 
@@ -451,6 +461,7 @@ public class DamageListener implements Listener {
             ParticleUtils.bullseyeStorm(hitLoc);
             SoundUtils.play(attacker, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0f, 1.2f);
             Messages.send(attacker, "armor.bullseye-storm-triggered");
+            Messages.debug(attacker, "BULLSEYE: 4th shot triggered! +30% damage and AOE.");
 
             // AOE Arrows: 6 arrows firing outward
             double aoeDamage = originalDamage * 0.35;

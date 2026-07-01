@@ -41,8 +41,29 @@ public class CooldownManager {
      */
     public void setCooldownSeconds(UUID playerId, String ability, long durationSeconds) {
         if (playerId == null || ability == null) return;
+        if (isPlayerDead(playerId)) return;
+        
         playerCooldowns.computeIfAbsent(playerId, k -> new ConcurrentHashMap<>())
                 .put(ability, System.currentTimeMillis() + durationSeconds * 1000L);
+    }
+
+    private boolean isPlayerDead(UUID playerId) {
+        try {
+            Class<?> gmClass = Class.forName("me.psikuvit.cashClash.manager.game.GameManager");
+            Object gmInstance = gmClass.getMethod("getInstance").invoke(null);
+            Object session = gmClass.getMethod("getPlayerSession", UUID.class).invoke(gmInstance, playerId);
+            if (session == null) return false;
+
+            Object state = session.getClass().getMethod("getState").invoke(session);
+            if (!state.toString().equals("COMBAT")) return false;
+
+            Object roundData = session.getClass().getMethod("getCurrentRoundData").invoke(session);
+            if (roundData == null) return false;
+
+            return !(boolean) roundData.getClass().getMethod("isAlive", UUID.class).invoke(roundData, playerId);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -137,6 +158,7 @@ public class CooldownManager {
      * @param key      The timestamp key (e.g., "LAST_DAMAGE", "SPAWN_TIME")
      */
     public void setTimestamp(UUID playerId, String key) {
+        if (isPlayerDead(playerId)) return;
         setTimestamp(playerId, key, System.currentTimeMillis());
     }
 
@@ -149,6 +171,7 @@ public class CooldownManager {
      */
     public void setTimestamp(UUID playerId, String key, long timestamp) {
         if (playerId == null || key == null) return;
+        if (isPlayerDead(playerId)) return;
         playerTimestamps.computeIfAbsent(playerId, k -> new ConcurrentHashMap<>())
                 .put(key, timestamp);
     }

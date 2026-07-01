@@ -17,6 +17,7 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.CooldownManager;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
@@ -493,6 +494,9 @@ public class InteractListener implements Listener {
     }
 
     private boolean isSilenced(Player player) {
+        if (isPlayerDead(player)) {
+            return true;
+        }
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null || session.getGamemode() == null) return false;
         if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return false;
