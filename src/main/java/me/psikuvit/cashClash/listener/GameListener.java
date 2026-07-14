@@ -160,9 +160,6 @@ public class GameListener implements Listener {
             bonusManager.onKill(killer.getUniqueId());
         }
 
-        // Apply kill team split bonus to entire team
-        applyKillTeamSplitBonus(session, killer);
-
         // Handle armor set kill effects
         armorManager.onPlayerKill(killer, session);
         armorManager.onDragonKill(killer);
@@ -413,12 +410,26 @@ public class GameListener implements Listener {
         if (session == null) return;
 
         if (session.getState() == GameState.SHOPPING) return;
-        if (armorManager.hasBunnyShoes(p) && isSilenced(session, p)) {
-            Messages.send(p, "listener.cannot-use-abilities-while-silenced");
-            return;
+
+        // Dead players cannot use Bunny Shoes or any abilities
+        if (armorManager.hasBunnyShoes(p)) {
+            if (isPlayerDead(session, p)) {
+                Messages.send(p, "listener.cannot-use-items-dead");
+                return;
+            }
+            if (isSilenced(session, p)) {
+                Messages.send(p, "listener.cannot-use-abilities-while-silenced");
+                return;
+            }
         }
 
         armorManager.onPlayerToggleSneak(p, event.isSneaking());
+    }
+
+    private boolean isPlayerDead(GameSession session, Player player) {
+        if (session == null || session.getState() != GameState.COMBAT) return false;
+        RoundData roundData = session.getCurrentRoundData();
+        return roundData != null && !roundData.isAlive(player.getUniqueId());
     }
 
     private boolean isSilenced(GameSession session, Player player) {
@@ -797,34 +808,6 @@ public class GameListener implements Listener {
             
             Messages.debug("Totem effects nerfed for " + p.getName() + ": 10s Regen, 10s Fire Res, 2 Absorption hearts");
         }, 1L);
-    }
-
-    /**
-     * Distribute the kill team split bonus to the entire team of the killer.
-     * Total bonus is split evenly among all team members.
-     */
-    private void applyKillTeamSplitBonus(GameSession session, Player killer) {
-        Team killerTeam = session.getTeamRed().hasPlayer(killer.getUniqueId()) ? session.getTeamRed() : session.getTeamBlue();
-        if (killerTeam == null) return;
-
-        long totalBonus = ConfigManager.getInstance().getKillTeamSplitBonus();
-        if (totalBonus <= 0) return;
-
-        int teamSize = killerTeam.getPlayers().size();
-        if (teamSize == 0) return;
-
-        long bonusPerPlayer = totalBonus / teamSize;
-
-        for (UUID uuid : killerTeam.getPlayers()) {
-            CashClashPlayer player = session.getCashClashPlayer(uuid);
-            if (player != null) {
-                player.addCoins(bonusPerPlayer);
-                Player bukkitPlayer = Bukkit.getPlayer(uuid);
-                if (bukkitPlayer != null && bukkitPlayer.isOnline()) {
-                    Messages.send(bukkitPlayer, "listener.team-kill-bonus", "bonus", String.format("%,d", bonusPerPlayer));
-                }
-            }
-        }
     }
 
     /**
