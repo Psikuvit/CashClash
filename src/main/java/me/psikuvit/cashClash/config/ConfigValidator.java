@@ -500,6 +500,9 @@ public class ConfigValidator {
         validateAndSet(config, "rejoin.restore-inventory", true, autoAdd);
         validateAndSet(config, "rejoin.restore-balance", true, autoAdd);
 
+        // Sequence settings
+        validateAndSet(config, "sequences.enabled", true, autoAdd);
+
         logResults("config.yml");
         return errors.isEmpty();
     }

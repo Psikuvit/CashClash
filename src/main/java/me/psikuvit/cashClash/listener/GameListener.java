@@ -106,23 +106,27 @@ public class GameListener implements Listener {
 
         PlayerDataManager.getInstance().incDeaths(player.getUniqueId());
 
-        victim.handleDeath();
-        session.getCurrentRoundData().removeLife(player.getUniqueId());
+        // A round-end/victory Sequence is holding the result on screen - deaths during
+        // this window must not affect lives, bonuses, or win conditions.
+        if (!session.isSequenceLocked()) {
+            victim.handleDeath();
+            session.getCurrentRoundData().removeLife(player.getUniqueId());
 
-        BonusManager bonusManager = session.getBonusManager();
-        if (bonusManager != null) {
-            bonusManager.onDeath(player.getUniqueId());
-        }
+            BonusManager bonusManager = session.getBonusManager();
+            if (bonusManager != null) {
+                bonusManager.onDeath(player.getUniqueId());
+            }
 
-        Player killer = player.getKiller();
-        if (killer != null) {
-            handleKillerRewards(session, killer);
-        }
+            Player killer = player.getKiller();
+            if (killer != null) {
+                handleKillerRewards(session, killer);
+            }
 
-        // Notify gamemode of death
-        Gamemode gamemode = session.getGamemode();
-        if (gamemode != null) {
-            gamemode.onPlayerDeath(player, killer);
+            // Notify gamemode of death
+            Gamemode gamemode = session.getGamemode();
+            if (gamemode != null) {
+                gamemode.onPlayerDeath(player, killer);
+            }
         }
 
         Location spectatorLocation = getSpectatorLocation(session);

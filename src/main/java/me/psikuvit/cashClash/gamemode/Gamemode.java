@@ -84,6 +84,12 @@ public abstract class Gamemode {
     public abstract String getBuyPhaseMessage();
 
     /**
+     * Short objective phrase (e.g. "Capture 2 Flags") used to fill the {objective}
+     * placeholder in round-start and sudden-death sequence subtitles.
+     */
+    public abstract String getObjectiveShort();
+
+    /**
      * Called when Final Stand is activated (3 minute initial sudden-death period elapses or gamemode triggers final stand)
      * Gamemodes can override this to handle final stand specific logic
      */

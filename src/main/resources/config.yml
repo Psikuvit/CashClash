@@ -363,3 +363,8 @@ rejoin:
   # Restore player balance on rejoin
   restore-balance: true
 
+sequences:
+  # Enable scripted title/freeze sequences (round start, president reveal, round end,
+  # round 4 shield transition, sudden death, victory)
+  enabled: true
+

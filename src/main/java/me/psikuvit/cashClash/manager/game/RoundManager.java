@@ -14,6 +14,7 @@ import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.sequence.Sequences;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -53,11 +54,28 @@ public class RoundManager {
         Messages.debug("GAME", "Starting shopping phase for round " + roundNumber + " in session " + session.getSessionId());
         prepareSuddenDeathRoundIfNeeded();
 
-        // For Protect the President, run buff selection phase first
+        // Round 4 plays the shield/shieldless half-transition sequence before anything else
+        if (roundNumber == 4) {
+            session.getSequenceManager().play(Sequences.round4ShieldTransition(), true,
+                    () -> beginBuyPhase(roundNumber));
+        } else {
+            beginBuyPhase(roundNumber);
+        }
+    }
+
+    /**
+     * Continues the buy phase after any round-4 transition sequence: for Protect the
+     * President, reveals the president to each team first, then starts the appropriate
+     * phase.
+     */
+    private void beginBuyPhase(int roundNumber) {
         if (session.getGamemode() instanceof ProtectThePresidentGamemode ptp) {
-            // Trigger buff selection in the gamemode
-            ptp.startRoundBuffSelection();
-            startPhase(roundNumber, GameState.BUFF_SELECTION);
+            // Selection happens now so the reveal sequence shows a settled name
+            ptp.selectPresidentsForRound();
+            session.getSequenceManager().play(Sequences.presidentReveal(ptp), true, () -> {
+                ptp.beginBuffSelectionPhase();
+                startPhase(roundNumber, GameState.BUFF_SELECTION);
+            });
             return;
         }
 
@@ -72,6 +90,7 @@ public class RoundManager {
 
         if (session.getRoundWins(1) == 3 && session.getRoundWins(2) == 3) {
             session.getGamemode().prepareSuddenDeathRound();
+            session.getSequenceManager().playUntracked(Sequences.suddenDeath(session.getGamemode()));
         }
     }
 
@@ -303,7 +322,8 @@ public class RoundManager {
                     if (startFinalStandDueToTimer()) {
                         return;
                     }
-                    endCombatPhase();
+                    int winningTeam = session.getGamemode() != null ? session.getGamemode().getWinningTeam() : 0;
+                    endCombatPhase(winningTeam);
                 }
             } else if (!finalStandActive && (timeRemaining <= 10 || timeRemaining % 60 == 0)) {
                 Messages.broadcast(session.getPlayers(), "round.combat-countdown",
@@ -323,7 +343,7 @@ public class RoundManager {
         }, 0, 20L);
     }
 
-    public void endCombatPhase() {
+    public void endCombatPhase(int winningTeam) {
         if (phaseTask != null) {
             phaseTask.cancel();
             phaseTask = null;
@@ -342,12 +362,15 @@ public class RoundManager {
         session.resolveRoundInvestments();
         EconomyManager.distributeRoundMoney(session);
 
-        // Move to next round or end game
-        if (session.getCurrentRound() >= ConfigManager.getInstance().getTotalRounds()) {
-            session.end();
-        } else {
-            SchedulerUtils.runTaskLater(session::nextRound, 20L);
-        }
+        // Hold the win/loss result on screen (freezes input + suppresses game-logic-
+        // affecting deaths) before moving to the next round or ending the game.
+        session.getSequenceManager().play(Sequences.roundEnd(winningTeam), true, () -> {
+            if (session.getCurrentRound() >= ConfigManager.getInstance().getTotalRounds()) {
+                session.end();
+            } else {
+                SchedulerUtils.runTaskLater(session::nextRound, 20L);
+            }
+        });
     }
 
     private void checkWinCondition() {
@@ -374,7 +397,7 @@ public class RoundManager {
                     return; // Game ends immediately
                 }
 
-                endCombatPhase();
+                endCombatPhase(winnerTeam);
                 return;
             }
         }
@@ -400,7 +423,7 @@ public class RoundManager {
                 return; // Game ends immediately
             }
 
-            endCombatPhase();
+            endCombatPhase(2);
         } else if (teamBlueAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcast(session.getPlayers(), "round.team-red-wins");
@@ -413,7 +436,7 @@ public class RoundManager {
                 return; // Game ends immediately
             }
 
-            endCombatPhase();
+            endCombatPhase(1);
         }
     }
 

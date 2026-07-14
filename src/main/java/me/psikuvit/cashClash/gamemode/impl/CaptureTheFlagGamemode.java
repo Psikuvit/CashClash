@@ -275,6 +275,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return "<yellow>Capture the enemy's flag! First team to " + WIN_CONDITION + " captures wins!</yellow>";
     }
 
+    @Override
+    public String getObjectiveShort() {
+        return "Capture " + WIN_CONDITION + " Flags";
+    }
+
     // ========= PUBLIC METHODS (non-overridden) =========
 
     /**

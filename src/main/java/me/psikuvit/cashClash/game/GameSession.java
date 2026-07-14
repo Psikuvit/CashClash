@@ -25,6 +25,8 @@ import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.Investment;
 import me.psikuvit.cashClash.player.PurchaseRecord;
+import me.psikuvit.cashClash.sequence.SequenceManager;
+import me.psikuvit.cashClash.sequence.Sequences;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.util.LocationUtils;
@@ -70,6 +72,8 @@ public class GameSession {
     private RoundManager roundManager;
     //private CashQuakeManager cashQuakeManager;
     private BonusManager bonusManager;
+    private final SequenceManager sequenceManager;
+    private boolean sequenceLocked;
     // Shield logic: rounds 1-3 are either shield or shieldless, rounds 4-6 is the other one
     // Determined at game start, consistent for the entire game
     private final boolean rounds1to3HaveShields;
@@ -96,6 +100,7 @@ public class GameSession {
         this.roundWins.put(2, 0);
 
         this.startingCountdown = false;
+        this.sequenceManager = new SequenceManager(this);
 
         // Determine shield preference for this game (50/50 chance)
         // If true, rounds 1-3 have shields, rounds 4-6 don't
@@ -167,6 +172,23 @@ public class GameSession {
 
     public Gamemode getGamemode() {
         return gamemode;
+    }
+
+    public SequenceManager getSequenceManager() {
+        return sequenceManager;
+    }
+
+    /**
+     * Whether a {@link me.psikuvit.cashClash.sequence.Sequence} is currently locking
+     * players (movement cancelled in MoveListener, game-affecting death handling
+     * suppressed in GameListener). Only {@link SequenceManager} should set this.
+     */
+    public boolean isSequenceLocked() {
+        return sequenceLocked;
+    }
+
+    public void setSequenceLocked(boolean sequenceLocked) {
+        this.sequenceLocked = sequenceLocked;
     }
 
     /**
@@ -242,12 +264,14 @@ public class GameSession {
 
         // Select a random gamemode for this session
         gamemode = GamemodeManager.getInstance().selectGamemode(this);
-        gamemode.onGameStart();
-
-        players.keySet().forEach(this::applyKit);
-        roundManager.startShoppingPhase(currentRound);
         ScoreboardManager.getInstance().createBoardForSession(this);
 
+        // Play the round-start reveal sequence, then continue into the game/shopping phase
+        sequenceManager.play(Sequences.roundStart(gamemode), true, () -> {
+            gamemode.onGameStart();
+            players.keySet().forEach(this::applyKit);
+            roundManager.startShoppingPhase(currentRound);
+        });
 
         Messages.debug("GAME", "GameSession " + sessionId + " started in Arena " + arenaNumber);
     }
@@ -552,15 +576,24 @@ public class GameSession {
         // Clear any pending rejoins for this session
         RejoinManager.getInstance().clearSessionRejoins(sessionId);
 
+        // Stop round/bonus timers immediately - the game is decided now. Gamemode
+        // cleanup is deferred (releaseGamemode below) since ScoreboardProvider still
+        // reads session.getGamemode() for players lingering through the victory sequence.
+        cleanupManagers();
+
         Team winner = calculateWinner();
         Location finalSpawn = determineFinalSpawn();
 
-        notifyGameEnd(winner, finalSpawn);
-        cleanupManagers();
-        cleanupPlayers();
-        cleanupArena();
+        // Show the victory sequence (win/loss title, then a lingering pause) before
+        // teleporting players away and tearing down the arena.
+        sequenceManager.play(Sequences.gameVictory(winner), true, () -> {
+            notifyGameEnd(winner, finalSpawn);
+            cleanupPlayers();
+            releaseGamemode();
+            cleanupArena();
 
-        Messages.debug("GAME", "Arena " + arenaNumber + " reset to WAITING state after game ended");
+            Messages.debug("GAME", "Arena " + arenaNumber + " reset to WAITING state after game ended");
+        });
     }
 
     /**
@@ -570,13 +603,21 @@ public class GameSession {
         cancelStartCountdown();
         if (roundManager != null) roundManager.cleanup();
         if (bonusManager != null) bonusManager.cleanup();
+        CustomArmorManager.getInstance().cleanup();
+        CustomItemManager.getInstance().cleanup();
+        MythicItemManager.getInstance().cleanup();
+    }
+
+    /**
+     * Release the gamemode instance (and its scheduled tasks via {@code Gamemode#cleanup}).
+     * Deferred until after the victory sequence completes since ScoreboardProvider still
+     * reads {@link #getGamemode()} for players lingering through it.
+     */
+    private void releaseGamemode() {
         if (gamemode != null) {
             GamemodeManager.getInstance().removeGamemode(sessionId);
             gamemode = null;
         }
-        CustomArmorManager.getInstance().cleanup();
-        CustomItemManager.getInstance().cleanup();
-        MythicItemManager.getInstance().cleanup();
     }
 
     /**
@@ -878,7 +919,7 @@ public class GameSession {
                 "team_color", forfeitingTeam.getColoredName(),
                 "other_team_color", other.getColoredName(),
                 "bonus", String.valueOf(bonus));
-        if (roundManager != null) roundManager.endCombatPhase();
+        if (roundManager != null) roundManager.endCombatPhase(other.getTeamNumber());
     }
 
     /**

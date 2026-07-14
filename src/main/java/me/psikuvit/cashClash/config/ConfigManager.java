@@ -335,4 +335,14 @@ public class ConfigManager {
     public boolean isRejoinRestoreBalance() {
         return config.getBoolean("rejoin.restore-balance", true);
     }
+
+    // ==================== SEQUENCE SETTINGS ====================
+
+    /**
+     * Check if scripted title/freeze sequences (round start, president reveal, round
+     * end, round 4 transition, sudden death, victory) are enabled.
+     */
+    public boolean isSequencesEnabled() {
+        return config.getBoolean("sequences.enabled", true);
+    }
 }

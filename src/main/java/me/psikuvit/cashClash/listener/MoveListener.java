@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -28,6 +29,17 @@ public class MoveListener implements Listener {
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
+
+        // A Sequence is locking players (title/reveal moments) - cancel positional
+        // movement but let players keep looking around.
+        if (session.isSequenceLocked()) {
+            Location from = event.getFrom();
+            Location to = event.getTo();
+            if (to != null && (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ())) {
+                event.setTo(new Location(to.getWorld(), from.getX(), from.getY(), from.getZ(), to.getYaw(), to.getPitch()));
+            }
+            return;
+        }
 
         // Skip if in shopping phase
         if (session.getState() == GameState.SHOPPING) return;

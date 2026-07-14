@@ -87,15 +87,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public void onGameStart() {
-        // Select a random president for each team
+        // Select a random president for each team - the reveal itself happens via the
+        // Protect the President sequence at the start of every buy phase, round 1 included.
         selectPresidents();
 
-        // Announce presidents
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.game-started");
-        Messages.broadcast(session.getPlayers(), "gamemode-ptp.red-president",
-                "president_name", getPresidentName(1));
-        Messages.broadcast(session.getPlayers(), "gamemode-ptp.blue-president",
-                "president_name", getPresidentName(2));
     }
 
     @Override
@@ -149,11 +145,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     /**
-     * Called when entering buff selection phase at the start of each round.
-     * This selects new presidents (except round 1) and starts the selection.
+     * Called at the start of each round's buy phase, before the president-reveal
+     * sequence plays. Selects new presidents (except round 1, already selected in
+     * {@link #onGameStart()}) and resets their deaths - selection only, no UI/phase
+     * start, so the sequence can reveal a name that's already settled.
      */
-    public void startRoundBuffSelection() {
-        Messages.debug("[PTP] Starting buff selection for round: " + session.getCurrentRound());
+    public void selectPresidentsForRound() {
+        Messages.debug("[PTP] Selecting presidents for round: " + session.getCurrentRound());
 
         selectedBuffs.clear();
 
@@ -164,8 +162,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         // Reset deaths for this round
         presidents.replaceAll((team, pres) -> pres.withResetDeaths());
+    }
 
-        // Start the buff selection UI
+    /**
+     * Starts the buff selection UI/phase, once the president-reveal sequence has
+     * finished showing each team their president.
+     */
+    public void beginBuffSelectionPhase() {
         startPresidentSelectionPhase();
     }
 
@@ -369,6 +372,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         return "<yellow>Best of 7 series - First to 2 assassinations wins each round! " +
                 "Every 2 kills the president's team gets a split 15k bonus!</yellow>";
+    }
+
+    @Override
+    public String getObjectiveShort() {
+        return "Kill the President Twice";
     }
 
     @Override
