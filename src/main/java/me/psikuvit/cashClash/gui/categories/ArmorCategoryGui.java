@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.gui.categories;
 
+
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
@@ -21,16 +22,20 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+
 
 /**
  * Shop category GUI for armor.
  */
 public class ArmorCategoryGui extends AbstractShopCategoryGui {
 
+
     private static final String GUI_ID = "shop_armor";
+
 
     // Standard armor column slots
     private static final int STANDARD_ARMOR_HELMET_SLOT = 10;
@@ -38,26 +43,38 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     private static final int STANDARD_ARMOR_LEGGINGS_SLOT = 28;
     private static final int STANDARD_ARMOR_BOOTS_SLOT = 37;
 
+
+    // Individual custom armor slots
+    private static final int TECTONIC_CAP = 11;
+    private static final int GUARDIANS_VEST_SLOT = 20;
+    private static final int BULLSEYE_PANTS_SLOT = 29;
+    private static final int BUNNY_SHOES_SLOT = 38;
+
+
     // Investor's set column slots
-    private static final int INVESTORS_HELMET_SLOT = 11;
-    private static final int INVESTORS_CHESTPLATE_SLOT = 20;
-    private static final int INVESTORS_LEGGINGS_SLOT = 29;
-    private static final int INVESTORS_BOOTS_SLOT = 38;
+    private static final int INVESTORS_HELMET_SLOT = 40;
+    private static final int INVESTORS_CHESTPLATE_SLOT = 41;
+    private static final int INVESTORS_LEGGINGS_SLOT = 42;
+    private static final int INVESTORS_BOOTS_SLOT = 43;
+
 
     // Separator column base slot
     private static final int SEPARATOR_COLUMN_BASE_SLOT = 12;
 
+
     // Deathmauler set slots
-    private static final int DEATHMAULER_BARRIER_LEFT_SLOT = 13;
-    private static final int DEATHMAULER_PIECE_1_SLOT = 14;
-    private static final int DEATHMAULER_PIECE_2_SLOT = 15;
-    private static final int DEATHMAULER_BARRIER_RIGHT_SLOT = 16;
+    private static final int DEATHMAULER_BARRIER_LEFT_SLOT = 22;
+    private static final int DEATHMAULER_PIECE_1_SLOT = 23;
+    private static final int DEATHMAULER_PIECE_2_SLOT = 24;
+    private static final int DEATHMAULER_BARRIER_RIGHT_SLOT = 25;
+
 
     // Dragon set slots
-    private static final int DRAGON_PIECE_1_SLOT = 22;
-    private static final int DRAGON_PIECE_2_SLOT = 23;
-    private static final int DRAGON_BARRIER_SLOT = 24;
-    private static final int DRAGON_PIECE_3_SLOT = 25;
+    private static final int DRAGON_PIECE_1_SLOT = 13;
+    private static final int DRAGON_PIECE_2_SLOT = 14;
+    private static final int DRAGON_BARRIER_SLOT = 15;
+    private static final int DRAGON_PIECE_3_SLOT = 16;
+
 
     // Flamebringer set slots
     private static final int FLAMEBRINGER_BARRIER_LEFT_SLOT = 31;
@@ -65,15 +82,11 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     private static final int FLAMEBRINGER_PIECE_2_SLOT = 34;
     private static final int FLAMEBRINGER_BARRIER_RIGHT_SLOT = 32;
 
-    // Individual custom armor slots
-    private static final int MAGIC_HELMET_SLOT = 40;
-    private static final int GUARDIANS_VEST_SLOT = 41;
-    private static final int BULLSEYE_PANTS_SLOT = 42;
-    private static final int BUNNY_SHOES_SLOT = 43;
 
     public ArmorCategoryGui(Player viewer) {
         super(GUI_ID, viewer, ShopCategory.ARMOR);
     }
+
 
     @Override
     protected void populateItems() {
@@ -81,6 +94,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         int currentRound = session != null ? session.getCurrentRound() : 1;
         int diamondPiecesOwned = countDiamondPieces();
         boolean canBuyDiamond = canBuyDiamondPiece(currentRound, diamondPiecesOwned);
+
 
         populateStandardArmorColumn(canBuyDiamond, currentRound);
         populateInvestorsColumn();
@@ -91,7 +105,9 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         populateIndividualCustomArmor();
     }
 
+
     // ==================== DIAMOND LIMIT LOGIC ====================
+
 
     /**
      * Counts the number of diamond armor pieces the player currently owns.
@@ -108,6 +124,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         return count;
     }
 
+
     /**
      * Determines if the player can purchase a diamond armor piece this round.
      * Diamond armor is limited in early rounds to prevent overpowered early-game builds.
@@ -122,7 +139,9 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
                 && diamondPiecesOwned >= cfg.getMaxDiamondPiecesEarly());
     }
 
+
     // ==================== STANDARD ARMOR COLUMN ====================
+
 
     /**
      * Populates the standard armor column (iron → diamond progression).
@@ -139,6 +158,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
                 ArmorItem.IRON_BOOTS, ArmorItem.DIAMOND_BOOTS, canBuyDiamond, currentRound);
     }
 
+
     /**
      * Places a progressive armor button that handles iron → diamond upgrades.
      * Shows locked state if diamond limit is reached, or upgrade button if available.
@@ -154,6 +174,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         boolean hasIron = hasItem(ironItem.getMaterial());
         boolean hasDiamond = hasItem(diamondItem.getMaterial());
 
+
         if (hasDiamond) {
             setButton(slot, createPurchasableButtonMaxed(diamondItem, true));
         } else if (hasIron) {
@@ -168,7 +189,9 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         }
     }
 
+
     // ==================== INVESTOR'S SET COLUMN ====================
+
 
     /**
      * Populates the Investor's set column with individual purchasable pieces.
@@ -180,7 +203,9 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         setButton(INVESTORS_BOOTS_SLOT, createCustomArmorButton(CustomArmorItem.INVESTORS_BOOTS));
     }
 
+
     // ==================== SEPARATOR COLUMN ====================
+
 
     /**
      * Populates the separator column with light blue glass panes.
@@ -191,7 +216,9 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         }
     }
 
+
     // ==================== ARMOR SET PLACEMENT ====================
+
 
     /**
      * Populates the Deathmauler set section.
@@ -202,8 +229,10 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         int[] pieceSlots = {DEATHMAULER_PIECE_1_SLOT, DEATHMAULER_PIECE_2_SLOT};
         int[] barrierSlots = {DEATHMAULER_BARRIER_LEFT_SLOT, DEATHMAULER_BARRIER_RIGHT_SLOT};
 
+
         placeArmorSetPiecesWithBarriers(CustomArmorItem.ArmorSet.DEATHMAULER, pieces, pieceSlots, barrierSlots);
     }
+
 
     /**
      * Populates the Dragon set section.
@@ -214,8 +243,10 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         int[] pieceSlots = {DRAGON_PIECE_1_SLOT, DRAGON_PIECE_2_SLOT, DRAGON_PIECE_3_SLOT};
         int[] barrierSlots = {DRAGON_BARRIER_SLOT};
 
+
         placeArmorSetPiecesWithBarriers(CustomArmorItem.ArmorSet.DRAGON, pieces, pieceSlots, barrierSlots);
     }
+
 
     /**
      * Populates the Flamebringer set section.
@@ -226,8 +257,10 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         int[] pieceSlots = {FLAMEBRINGER_PIECE_1_SLOT, FLAMEBRINGER_PIECE_2_SLOT};
         int[] barrierSlots = {FLAMEBRINGER_BARRIER_LEFT_SLOT, FLAMEBRINGER_BARRIER_RIGHT_SLOT};
 
+
         placeArmorSetPiecesWithBarriers(CustomArmorItem.ArmorSet.FLAMEBRINGER, pieces, pieceSlots, barrierSlots);
     }
+
 
     /**
      * Places armor set pieces with barriers in empty slots.
@@ -240,11 +273,12 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * @param barrierSlots Array of slot indices where barriers should be placed
      */
     private void placeArmorSetPiecesWithBarriers(CustomArmorItem.ArmorSet armorSet, ItemStack[] pieces,
-                                                  int[] pieceSlots, int[] barrierSlots) {
+                                                 int[] pieceSlots, int[] barrierSlots) {
         // Place barriers in all barrier slots
         for (int barrierSlot : barrierSlots) {
             setItem(barrierSlot, ItemStack.of(Material.BARRIER));
         }
+
 
         // Place pieces or barriers in piece slots
         for (int i = 0; i < pieceSlots.length; i++) {
@@ -256,19 +290,23 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         }
     }
 
+
     // ==================== INDIVIDUAL CUSTOM ARMOR ====================
+
 
     /**
      * Populates individual custom armor pieces that can be purchased separately.
      */
     private void populateIndividualCustomArmor() {
-        setButton(MAGIC_HELMET_SLOT, createCustomArmorButton(CustomArmorItem.MAGIC_HELMET));
+        setButton(TECTONIC_CAP, createCustomArmorButton(CustomArmorItem.TECTONIC_CAP));
         setButton(GUARDIANS_VEST_SLOT, createCustomArmorButton(CustomArmorItem.GUARDIANS_VEST));
         setButton(BULLSEYE_PANTS_SLOT, createCustomArmorButton(CustomArmorItem.BULLSEYE_PANTS));
         setButton(BUNNY_SHOES_SLOT, createCustomArmorButton(CustomArmorItem.BUNNY_SHOES));
     }
 
+
     // ==================== BUTTON CREATION ====================
+
 
     /**
      * Creates a button for a custom armor item that can be purchased individually.
@@ -278,6 +316,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         return GuiButton.of(itemStack).onClick((p, clickType) -> handlePurchasableClick(item, clickType));
     }
 
+
     /**
      * Creates a button for an armor set piece that triggers set purchase.
      */
@@ -285,7 +324,9 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         return GuiButton.of(itemStack).onClick(p -> handleArmorSetPurchase(p, set));
     }
 
+
     // ==================== ARMOR SET PURCHASE HANDLING ====================
+
 
     /**
      * Handles the purchase of a complete armor set.
@@ -298,14 +339,18 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         CashClashPlayer ccp = getCashClashPlayer();
         if (ccp == null) return;
 
+
         GameSession session = ensureInGame(player);
         if (session == null) return;
+
 
         long totalPrice = armorSet.getTotalPrice();
         if (!ensureCanAffordSet(player, totalPrice)) return;
 
+
         applySetPurchase(player, session, armorSet, totalPrice, ccp);
     }
+
 
     /**
      * Ensures the player is in a game session.
@@ -322,6 +367,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         }
         return session;
     }
+
 
     /**
      * Ensures the player can afford the armor set.
@@ -340,6 +386,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         return false;
     }
 
+
     /**
      * Applies the armor set purchase: deducts coins, replaces armor, creates purchase record, and sends success message.
      *
@@ -350,18 +397,22 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * @param ccp        The CashClashPlayer instance
      */
     private void applySetPurchase(Player player, GameSession session, CustomArmorItem.ArmorSet armorSet,
-                                   long totalPrice, CashClashPlayer ccp) {
+                                  long totalPrice, CashClashPlayer ccp) {
         ShopService.getInstance().deductCoins(player, totalPrice);
         int round = session.getCurrentRound();
+
 
         List<CustomArmorItem> setPieces = armorSet.getPieces();
         Map<ArmorSlot, ItemStack> replacedSetItems = collectAndReplaceSetPieces(player, setPieces);
 
+
         // Create a single set purchase record with all replaced items
         ccp.addPurchase(new PurchaseRecord(setPieces.getFirst(), totalPrice, round, replacedSetItems, setPieces));
 
+
         sendSetPurchaseSuccessMessage(player, armorSet, totalPrice);
     }
+
 
     /**
      * Collects and replaces armor pieces for the set purchase.
@@ -374,16 +425,18 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     private Map<ArmorSlot, ItemStack> collectAndReplaceSetPieces(Player player, List<CustomArmorItem> setPieces) {
         Map<ArmorSlot, ItemStack> replacedSetItems = new EnumMap<>(ArmorSlot.class);
 
+
         for (CustomArmorItem piece : setPieces) {
             ArmorSlot slot = ItemUtils.getArmorSlot(piece.getMaterial());
             if (slot == null) continue; // Skip if slot cannot be determined
-            
+
             ItemStack currentArmor = ItemUtils.getCurrentArmorInSlot(player, slot);
+
 
             if (currentArmor != null && currentArmor.getType() != Material.AIR) {
                 // Create a deep clone for tracking (preserves all metadata, enchantments, etc.)
                 ItemStack clonedArmor = currentArmor.clone();
-                
+
                 // Check if it's custom armor (purchased item with CustomArmorItem tag)
                 if (PDCDetection.isCustomArmorItem(currentArmor)) {
                     // Custom armor: store clone for refund tracking, return original to inventory
@@ -396,12 +449,15 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
                 }
             }
 
+
             // Equip the set piece (this replaces whatever was in the slot)
             ItemFactory.getInstance().createAndEquipCustomArmor(player, piece);
         }
 
+
         return replacedSetItems;
     }
+
 
     /**
      * Sends the success message and plays sound for a successful armor set purchase.
@@ -419,6 +475,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
     }
 
+
     /**
      * Returns a replaced item to the player's inventory, or drops it if inventory is full.
      *
@@ -433,5 +490,6 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
             player.getWorld().dropItemNaturally(player.getLocation(), item);
         }
     }
+
 
 }

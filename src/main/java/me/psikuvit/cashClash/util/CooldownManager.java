@@ -1,8 +1,10 @@
 package me.psikuvit.cashClash.util;
 
+
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * Centralized API for managing all cooldowns across the plugin.
@@ -11,18 +13,23 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class CooldownManager {
 
+
     private static CooldownManager instance;
+
 
     // Maps: playerUUID -> (abilityKey -> cooldownEndTimeMillis)
     private final Map<UUID, Map<String, Long>> playerCooldowns;
 
+
     // Maps: playerUUID -> (abilityKey -> lastActionTimeMillis) for tracking time since events
     private final Map<UUID, Map<String, Long>> playerTimestamps;
+
 
     private CooldownManager() {
         this.playerCooldowns = new ConcurrentHashMap<>();
         this.playerTimestamps = new ConcurrentHashMap<>();
     }
+
 
     public static CooldownManager getInstance() {
         if (instance == null) {
@@ -30,6 +37,7 @@ public class CooldownManager {
         }
         return instance;
     }
+
 
     // ==================== COOLDOWN METHODS ====================
     /**
@@ -42,10 +50,11 @@ public class CooldownManager {
     public void setCooldownSeconds(UUID playerId, String ability, long durationSeconds) {
         if (playerId == null || ability == null) return;
         if (isPlayerDead(playerId)) return;
-        
+
         playerCooldowns.computeIfAbsent(playerId, k -> new ConcurrentHashMap<>())
                 .put(ability, System.currentTimeMillis() + durationSeconds * 1000L);
     }
+
 
     private boolean isPlayerDead(UUID playerId) {
         try {
@@ -54,17 +63,21 @@ public class CooldownManager {
             Object session = gmClass.getMethod("getPlayerSession", UUID.class).invoke(gmInstance, playerId);
             if (session == null) return false;
 
+
             Object state = session.getClass().getMethod("getState").invoke(session);
             if (!state.toString().equals("COMBAT")) return false;
 
+
             Object roundData = session.getClass().getMethod("getCurrentRoundData").invoke(session);
             if (roundData == null) return false;
+
 
             return !(boolean) roundData.getClass().getMethod("isAlive", UUID.class).invoke(roundData, playerId);
         } catch (Exception e) {
             return false;
         }
     }
+
 
     /**
      * Check if a player's ability is currently on cooldown.
@@ -76,11 +89,14 @@ public class CooldownManager {
     public boolean isOnCooldown(UUID playerId, String ability) {
         if (playerId == null || ability == null) return false;
 
+
         Map<String, Long> abilities = playerCooldowns.get(playerId);
         if (abilities == null) return false;
 
+
         Long cooldownEnd = abilities.get(ability);
         if (cooldownEnd == null) return false;
+
 
         if (System.currentTimeMillis() >= cooldownEnd) {
             // Cooldown expired, clean it up
@@ -89,6 +105,7 @@ public class CooldownManager {
         }
         return true;
     }
+
 
     /**
      * Get the remaining cooldown time in milliseconds.
@@ -100,11 +117,14 @@ public class CooldownManager {
     public long getRemainingCooldownMs(UUID playerId, String ability) {
         if (playerId == null || ability == null) return 0;
 
+
         Map<String, Long> abilities = playerCooldowns.get(playerId);
         if (abilities == null) return 0;
 
+
         Long cooldownEnd = abilities.get(ability);
         if (cooldownEnd == null) return 0;
+
 
         long remaining = cooldownEnd - System.currentTimeMillis();
         if (remaining <= 0) {
@@ -113,6 +133,7 @@ public class CooldownManager {
         }
         return remaining;
     }
+
 
     /**
      * Get the remaining cooldown time in seconds.
@@ -125,6 +146,7 @@ public class CooldownManager {
         return getRemainingCooldownMs(playerId, ability) / 1000L;
     }
 
+
     /**
      * Clear a specific cooldown for a player.
      *
@@ -134,11 +156,13 @@ public class CooldownManager {
     public void clearCooldown(UUID playerId, String ability) {
         if (playerId == null || ability == null) return;
 
+
         Map<String, Long> abilities = playerCooldowns.get(playerId);
         if (abilities != null) {
             abilities.remove(ability);
         }
     }
+
 
     /**
      * Clear all cooldowns for a player.
@@ -151,6 +175,7 @@ public class CooldownManager {
     }
     // ==================== TIMESTAMP METHODS ====================
 
+
     /**
      * Record the current time as a timestamp for an event.
      *
@@ -161,6 +186,7 @@ public class CooldownManager {
         if (isPlayerDead(playerId)) return;
         setTimestamp(playerId, key, System.currentTimeMillis());
     }
+
 
     /**
      * Record a specific timestamp.
@@ -176,6 +202,7 @@ public class CooldownManager {
                 .put(key, timestamp);
     }
 
+
     /**
      * Get a recorded timestamp.
      *
@@ -186,11 +213,14 @@ public class CooldownManager {
     public long getTimestamp(UUID playerId, String key) {
         if (playerId == null || key == null) return 0;
 
+
         Map<String, Long> timestamps = playerTimestamps.get(playerId);
         if (timestamps == null) return 0;
 
+
         return timestamps.getOrDefault(key, 0L);
     }
+
 
     /**
      * Get the time elapsed since a timestamp was set.
@@ -205,6 +235,7 @@ public class CooldownManager {
         return System.currentTimeMillis() - timestamp;
     }
 
+
     /**
      * Get the time elapsed since a timestamp in seconds.
      *
@@ -216,6 +247,7 @@ public class CooldownManager {
         long ms = getTimeSince(playerId, key);
         return ms < 0 ? -1 : ms / 1000L;
     }
+
 
     /**
      * Check if enough time has passed since a timestamp.
@@ -231,6 +263,7 @@ public class CooldownManager {
         return System.currentTimeMillis() - timestamp >= durationMs;
     }
 
+
     /**
      * Check if enough time has passed since a timestamp (in seconds).
      *
@@ -243,6 +276,7 @@ public class CooldownManager {
         return hasTimePassed(playerId, key, durationSeconds * 1000L);
     }
 
+
     /**
      * Clear a specific timestamp for a player.
      *
@@ -252,11 +286,13 @@ public class CooldownManager {
     public void clearTimestamp(UUID playerId, String key) {
         if (playerId == null || key == null) return;
 
+
         Map<String, Long> timestamps = playerTimestamps.get(playerId);
         if (timestamps != null) {
             timestamps.remove(key);
         }
     }
+
 
     /**
      * Clear all timestamps for a player.
@@ -268,7 +304,9 @@ public class CooldownManager {
         playerTimestamps.remove(playerId);
     }
 
+
     // ==================== UTILITY METHODS ====================
+
 
     /**
      * Clear all data for a player (cooldowns and timestamps).
@@ -279,6 +317,7 @@ public class CooldownManager {
         clearAllCooldowns(playerId);
         clearAllTimestamps(playerId);
     }
+
 
     /**
      * Clear all data for a collection of players.
@@ -292,6 +331,7 @@ public class CooldownManager {
         }
     }
 
+
     /**
      * Clear all cooldowns and timestamps (full reset).
      */
@@ -300,7 +340,9 @@ public class CooldownManager {
         playerTimestamps.clear();
     }
 
+
     // ==================== COMMON ABILITY KEYS ====================
+
 
     /**
      * Pre-defined cooldown keys for consistency across the plugin.
@@ -316,30 +358,43 @@ public class CooldownManager {
         public static final String FLAMEBRINGER_LAVA_COOLDOWN = "FLAMEBRINGER_LAVA_COOLDOWN";
         public static final String DEATHMAULER_SOUL_BURST = "DEATHMAULER_SOUL_BURST";
 
+
         // Custom Items
         public static final String MEDIC_POUCH = "MEDIC_POUCH";
         public static final String INVIS_CLOAK = "INVIS_CLOAK";
         public static final String CONSUMABLE = "CONSUMABLE";
 
+
         // Mythic Items
-        public static final String COIN_CLEAVER_GRENADE = "COIN_CLEAVER_GRENADE";
         public static final String CARLS_BATTLEAXE_SLASH = "CARLS_BATTLEAXE_SLASH";
         public static final String CARLS_BATTLEAXE_CRIT = "CARLS_BATTLEAXE_CRIT";
         public static final String WIND_BOW_BOOST = "WIND_BOW_BOOST";
         public static final String WIND_BOW_RELOAD = "WIND_BOW_RELOAD";
-        public static final String BOBBY_DOG = "BOBBY_DOG";
         public static final String ELECTRIC_EEL_LIGHTNING = "ELECTRIC_EEL_LIGHTNING";
         public static final String ELECTRIC_EEL_CHAIN = "ELECTRIC_EEL_CHAIN";
         public static final String GOBLIN_SPEAR_THROW = "GOBLIN_SPEAR_THROW";
         public static final String GOBLIN_SPEAR_RELOAD = "GOBLIN_SPEAR_RELOAD";
         public static final String GOBLIN_SPEAR_CHARGE = "GOBLIN_SPEAR_CHARGE";
-        public static final String SANDSTORMER_RELOAD = "SANDSTORMER_RELOAD";
         public static final String BLOODWRENCH_MODE_TOGGLE = "BLOODWRENCH_MODE_TOGGLE";
         public static final String BLOODWRENCH_RAPID_RELOAD = "BLOODWRENCH_RAPID_RELOAD";
         public static final String BLOODWRENCH_SUPERCHARGE_COOLDOWN = "BLOODWRENCH_SUPERCHARGE_COOLDOWN";
         public static final String WARDEN_SHOCKWAVE = "WARDEN_SHOCKWAVE";
         public static final String WARDEN_BOXING = "WARDEN_BOXING";
         public static final String BLAZEBITE_RELOAD = "BLAZEBITE_RELOAD";
+        public static final String ALCHEMIST_BLINK_SWAP = "ALCHEMIST_BLINK_SWAP";
+        public static final String ALCHEMIST_TIDY_UP = "ALCHEMIST_TIDY_UP";
+        public static final String ALCHEMIST_TAUNT = "ALCHEMIST_TAUNT";
+        public static final String CRYSTAL_COUNTER = "CRYSTAL_COUNTER";
+        public static final String NAUTILUS_SHOT = "NAUTILUS_SHOT";
+        public static final String NAUTILUS_RELOAD = "NAUTILUS_RELOAD";
+        public static final String NAUTILUS_TIDES = "NAUTILUS_TIDES";
+
+
+        //Custom Weapons
+        public static final String CASH_BLASTER_VORTEX = "CASH_BLASTER_VORTEX";
+        public static final String CASH_BLASTER_TOGGLE = "CASH_BLASTER_TOGGLE";
+        public static final String SOUL_KATANA = "SOUL_KATANA";
+
 
         // Timestamps
         public static final String LAST_DAMAGE = "LAST_DAMAGE";
@@ -350,9 +405,9 @@ public class CooldownManager {
         public static final String SANDSTORMER_CHARGE = "SANDSTORMER_CHARGE";
         public static final String LAST_MOVE = "LAST_MOVE";
 
+
         private Keys() {
             throw new AssertionError("Nope.");
         } // Prevent instantiation
     }
 }
-

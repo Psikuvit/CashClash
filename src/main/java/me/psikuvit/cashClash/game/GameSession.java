@@ -525,7 +525,6 @@ public class GameSession {
     private void resetRoundState() {
         teamRed.resetForfeitVotes();
         teamBlue.resetForfeitVotes();
-        MythicItemManager.getInstance().resetCoinCleaverTrackingForSession(this);
         CustomArmorManager.getInstance().resetRoundTracking();
         BlockListener.cleanupRound(sessionId);
     }

@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.gui.categories;
 
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -15,38 +16,45 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+
 /**
  * Shop category GUI for custom items (grenades, bounce pads, etc.).
  */
 public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
 
+
     private static final String GUI_ID = "shop_custom_items";
+
 
     public CustomItemsCategoryGui(Player viewer) {
         super(GUI_ID, viewer, ShopCategory.CUSTOM_ITEMS);
     }
 
+
     @Override
     protected void populateItems() {
         // Row 3
-        setButton(20, createCustomItemButton(CustomItem.GRENADE));
-        setButton(21, createCustomItemButton(CustomItem.SMOKE_CLOUD_GRENADE));
-        setButton(22, createCustomItemButton(CustomItem.BAG_OF_POTATOES));
-        setButton(23, createCustomItemButton(CustomItem.CASH_BLASTER));
-        setButton(24, createCustomItemButton(CustomItem.BOUNCE_PAD));
+        setButton(20, createCustomItemButton(CustomItem.MEDIC_POUCH));
+        setButton(21, createCustomItemButton(CustomItem.DYNAMITE));
+        setButton(22, createCustomItemButton(CustomItem.TOTEM_OF_HAUNTING));
+        setButton(23, createCustomItemButton(CustomItem.ICY_FAN));
+        setButton(24, createCustomItemButton(CustomItem.BOOMBOX));
+
 
         // Row 4
-        setButton(29, createCustomItemButton(CustomItem.BOOMBOX));
-        setButton(30, createCustomItemButton(CustomItem.MEDIC_POUCH));
-        setButton(31, createCustomItemButton(CustomItem.INVIS_CLOAK));
-        setButton(32, createCustomItemButton(CustomItem.TABLET_OF_HACKING));
-        setButton(33, createCustomItemButton(CustomItem.RESPAWN_ANCHOR));
+        setButton(29, createCustomItemButton(CustomItem.OVERDRIVE_POTION));
+        setButton(30, createCustomItemButton(CustomItem.BOUNCE_PAD));
+        setButton(31, createCustomItemButton(CustomItem.RADIATING_LOTUS));
+        setButton(32, createCustomItemButton(CustomItem.INVIS_CLOAK));
+        setButton(33, createCustomItemButton(CustomItem.GRAVITATION_ORB));
     }
+
 
     private GuiButton createCustomItemButton(CustomItem item) {
         ItemStack itemStack = ItemFactory.getInstance().getGuiFactory().createCustomItemIcon(item);
         return GuiButton.of(itemStack).onClick(p -> handleCustomItemPurchase(item));
     }
+
 
     private void handleCustomItemPurchase(CustomItem type) {
         GameSession sess = getSession();
@@ -56,8 +64,10 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
+
         CashClashPlayer ccp = getCashClashPlayer();
         if (ccp == null) return;
+
 
         // Check if trying to buy more than 1 invisibility cloak per round
         if (type == CustomItem.INVIS_CLOAK) {
@@ -75,6 +85,7 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
             }
         }
 
+
         long price = type.getPrice();
         if (!ShopService.getInstance().canAfford(viewer, price)) {
             Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", price));
@@ -82,14 +93,18 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
+
         ItemStack customItem = ItemFactory.getInstance().createCustomItem(type, viewer);
         ccp.addPurchase(new PurchaseRecord(type, 1, price, sess.getCurrentRound()));
+
 
         ShopService.getInstance().deductCoins(viewer, price);
         viewer.getInventory().addItem(customItem);
 
+
         Messages.send(viewer, "shop.purchased", "item_name", type.getDisplayName(), "price", String.format("%,d", price));
         SoundUtils.play(viewer, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
+
 
         refresh();
     }

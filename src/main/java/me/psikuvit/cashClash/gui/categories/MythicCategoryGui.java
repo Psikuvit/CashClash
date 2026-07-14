@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.gui.categories;
 
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
@@ -17,7 +18,9 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+
 import java.util.UUID;
+
 
 /**
  * Utility class for handling mythic item purchases in the shop.
@@ -25,9 +28,11 @@ import java.util.UUID;
  */
 public final class MythicCategoryGui {
 
+
     private MythicCategoryGui() {
         // Utility class
     }
+
 
     /**
      * Handle the purchase of a mythic item.
@@ -44,10 +49,13 @@ public final class MythicCategoryGui {
             return;
         }
 
+
         CashClashPlayer ccp = sess.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return;
 
+
         UUID playerUuid = player.getUniqueId();
+
 
         if (MythicItemManager.getInstance().isUnavailable(sess, mythic)) {
             Messages.send(player, "shop.mythic-unavailable");
@@ -55,13 +63,15 @@ public final class MythicCategoryGui {
             return;
         }
 
+
         if (MythicItemManager.getInstance().isMythicPurchased(sess, mythic)) {
             UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(sess, mythic);
             Messages.send(player, "shop.mythic-already-purchased", "owner_name",
-                ownerUuid == null ? "Someone" : String.valueOf(Bukkit.getOfflinePlayer(ownerUuid).getName()));
+                    ownerUuid == null ? "Someone" : String.valueOf(Bukkit.getOfflinePlayer(ownerUuid).getName()));
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
+
 
         if (MythicItemManager.getInstance().hasPlayerPurchasedMythic(sess, playerUuid)) {
             MythicItem owned = MythicItemManager.getInstance().getPlayerMythic(sess, playerUuid);
@@ -70,6 +80,7 @@ public final class MythicCategoryGui {
             return;
         }
 
+
         long price = mythic.getPrice();
         if (!ShopService.getInstance().canAfford(player, price)) {
             Messages.send(player, "shop.not-enough-coins", "cost", String.format("%,d", price));
@@ -77,8 +88,10 @@ public final class MythicCategoryGui {
             return;
         }
 
+
         ShopService.getInstance().processPurchase(player, mythic, 1, price);
         MythicItemManager.getInstance().registerMythicPurchase(sess, playerUuid, mythic);
+
 
         // BlazeBite gives two crossbows (Glacier + Volcano)
         if (mythic == MythicItem.BLAZEBITE_CROSSBOWS) {
@@ -90,11 +103,14 @@ public final class MythicCategoryGui {
             player.getInventory().addItem(mythicItem);
         }
 
+
         ItemUtils.applyOwnedEnchantsAfterPurchase(player, mythic);
+
 
         if (mythic == MythicItem.WIND_BOW) {
             player.getInventory().addItem(new ItemStack(Material.ARROW, 20));
         }
+
 
         Messages.send(player, "bonus.announce-spacer");
         Messages.send(player, "shop.mythic-acquired-title");
@@ -102,6 +118,7 @@ public final class MythicCategoryGui {
         Messages.send(player, "shop.mythic-acquired-cost", "price", String.format("%,d", price));
         Messages.send(player, "bonus.announce-spacer");
         SoundUtils.play(player, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
+
 
         // Refresh the parent GUI
         if (parentGui != null) {
@@ -111,4 +128,3 @@ public final class MythicCategoryGui {
         }
     }
 }
-

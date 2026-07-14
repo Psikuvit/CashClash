@@ -124,4 +124,3 @@ public final class ShopItems {
         return item instanceof InvestmentType i ? i : null;
     }
 }
-

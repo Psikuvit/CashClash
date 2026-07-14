@@ -1,12 +1,15 @@
 package me.psikuvit.cashClash.shop.items;
 
+
 import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import org.bukkit.Material;
 
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 /**
  * Custom armor items (Cash Clash exclusives) with special abilities.
@@ -21,25 +24,31 @@ public enum CustomArmorItem implements Purchasable {
     INVESTORS_LEGGINGS(Material.IRON_LEGGINGS, "investors-leggings", "Investor's Leggings", null),
     INVESTORS_BOOTS(Material.IRON_BOOTS, "investors-boots", "Investor's Boots", null),
 
-    MAGIC_HELMET(Material.IRON_HELMET, "magic-helmet", "Magic Helmet", null),
+
+    TECTONIC_CAP(Material.IRON_HELMET, "tectonic-cap", "Tectonic Cap", null),
     GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, "guardians-vest", "Guardian's Vest", null),
     BULLSEYE_PANTS(Material.GOLDEN_LEGGINGS, "bullseye-pants", "Bullseye Pants", null),
     BUNNY_SHOES(Material.LEATHER_BOOTS, "bunny-shoes", "Bunny Shoes", null),
 
+
     FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, "flamebringer-leggings", "Flamebringer's Leggings", ArmorSet.FLAMEBRINGER),
     FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, "flamebringer-boots", "Flamebringer's Boots", ArmorSet.FLAMEBRINGER),
+
 
     DEATHMAULER_CHESTPLATE(Material.NETHERITE_CHESTPLATE, "deathmauler-chestplate", "Deathmauler's Chestplate", ArmorSet.DEATHMAULER),
     DEATHMAULER_LEGGINGS(Material.NETHERITE_LEGGINGS, "deathmauler-leggings", "Deathmauler's Leggings", ArmorSet.DEATHMAULER),
 
-    DRAGON_HELMET(Material.DIAMOND_HELMET, "dragon-head", "Dragon Helmet", ArmorSet.DRAGON),
+
+    DRAGON_HELMET(Material.IRON_HELMET, "dragon-head", "Dragon Helmet", ArmorSet.DRAGON),
     DRAGON_CHESTPLATE(Material.DIAMOND_CHESTPLATE, "dragon-chestplate", "Dragon Chestplate", ArmorSet.DRAGON),
     DRAGON_BOOTS(Material.DIAMOND_BOOTS, "dragon-boots", "Dragon Boots", ArmorSet.DRAGON);
+
 
     private final Material material;
     private final String configKey;
     private final String displayName;
     private final ArmorSet armorSet;
+
 
     CustomArmorItem(Material material, String configKey, String displayName , ArmorSet armorSet) {
         this.material = material;
@@ -48,20 +57,24 @@ public enum CustomArmorItem implements Purchasable {
         this.armorSet = armorSet;
     }
 
+
     @Override
     public Material getMaterial() {
         return material;
     }
+
 
     @Override
     public ShopCategory getCategory() {
         return ShopCategory.ARMOR;
     }
 
+
     @Override
     public long getPrice() {
         return ShopConfig.getInstance().getCustomArmorPrice(configKey);
     }
+
 
     /**
      * Gets the base price for this armor piece.
@@ -71,15 +84,18 @@ public enum CustomArmorItem implements Purchasable {
         return getPrice();
     }
 
+
     @Override
     public int getInitialAmount() {
         return 1;
     }
 
+
     @Override
     public String getDisplayName() {
         return displayName;
     }
+
 
     /**
      * Gets the configuration key for this armor piece.
@@ -89,6 +105,7 @@ public enum CustomArmorItem implements Purchasable {
         return configKey;
     }
 
+
     /**
      * Gets the armor set this piece belongs to, or null if it's an individual piece.
      */
@@ -96,12 +113,14 @@ public enum CustomArmorItem implements Purchasable {
         return armorSet;
     }
 
+
     /**
      * Checks if this armor piece requires buying the full set.
      */
     public boolean requiresFullSet() {
         return armorSet != null;
     }
+
 
     /**
      * Checks if this piece is an individual item (not part of a set).
@@ -111,6 +130,8 @@ public enum CustomArmorItem implements Purchasable {
     }
 
 
+
+
     /**
      * Checks if this armor piece is part of the Investor's set.
      */
@@ -118,12 +139,14 @@ public enum CustomArmorItem implements Purchasable {
         return armorSet == ArmorSet.INVESTORS;
     }
 
+
     /**
      * Checks if this armor piece is part of the Flamebringer set.
      */
     public boolean isFlamebringerSet() {
         return armorSet == ArmorSet.FLAMEBRINGER;
     }
+
 
     /**
      * Checks if this armor piece is part of any armor set (not including Investor's for this purpose).
@@ -133,6 +156,7 @@ public enum CustomArmorItem implements Purchasable {
         return armorSet != null;
     }
 
+
     /**
      * Checks if this armor piece is part of the Deathmauler set.
      */
@@ -140,12 +164,14 @@ public enum CustomArmorItem implements Purchasable {
         return armorSet == ArmorSet.DEATHMAULER;
     }
 
+
     /**
      * Checks if this armor piece is part of the Dragon set.
      */
     public boolean isDragonSet() {
         return armorSet == ArmorSet.DRAGON;
     }
+
 
     /**
      * Represents armor sets that must be purchased together.
@@ -156,21 +182,26 @@ public enum CustomArmorItem implements Purchasable {
         DEATHMAULER("Deathmauler Set", "Chestplate + Leggings heal on kill."),
         DRAGON("Dragon Set", "Helmet + Chestplate + Boots for full dragon power.");
 
+
         private final String displayName;
         private final String description;
+
 
         ArmorSet(String displayName, String description) {
             this.displayName = displayName;
             this.description = description;
         }
 
+
         public String getDisplayName() {
             return displayName;
         }
 
+
         public String getDescription() {
             return description;
         }
+
 
         /**
          * Gets all armor pieces that belong to this set.
@@ -180,6 +211,7 @@ public enum CustomArmorItem implements Purchasable {
                     .filter(item -> item.getArmorSet() == this)
                     .collect(Collectors.toList());
         }
+
 
         /**
          * Calculates the total price for the entire set.

@@ -5,11 +5,7 @@ import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.player.PurchaseRecord.ArmorSlot;
-import me.psikuvit.cashClash.shop.items.ArmorItem;
-import me.psikuvit.cashClash.shop.items.CustomArmorItem;
-import me.psikuvit.cashClash.shop.items.Purchasable;
-import me.psikuvit.cashClash.shop.items.WeaponItem;
-import me.psikuvit.cashClash.shop.items.UtilityItem;
+import me.psikuvit.cashClash.shop.items.*;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.ItemFactory;
@@ -358,12 +354,18 @@ public class ShopService {
 
                 cachePurchase(player, ccp, item, round, replacedItem);
             }
-            case WeaponItem ignored -> {
+            case WeaponItem weaponItemEnum -> {
                 ItemStack weaponItem = ItemFactory.getInstance().createGameplayItem(item);
-                ItemStack replacedItem = replaceWeaponInInventory(player, weaponItem);
-
-                cachePurchase(player, ccp, item, round, replacedItem);
+                if (weaponItemEnum == WeaponItem.CASH_BLASTER) {
+                    CustomWeapon.markCashBlaster(weaponItem);
+                }
+                if (weaponItemEnum == WeaponItem.SOUL_KATANA) {
+                    player.getInventory().remove(Material.IRON_SWORD);
+                    CustomWeapon.markSoulKatana(weaponItem);
+                }
+                player.getInventory().addItem(weaponItem);
             }
+
             default -> {
                 // Skip mythic items - they are handled by MythicCategoryGui
                 if (item instanceof me.psikuvit.cashClash.shop.items.MythicItem) {

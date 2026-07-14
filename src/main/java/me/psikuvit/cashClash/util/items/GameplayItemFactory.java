@@ -230,13 +230,6 @@ public final class GameplayItemFactory {
      */
     private void applyCustomItemProperties(ItemMeta meta, CustomItem customItem, ItemStack item) {
         switch (customItem) {
-            case BAG_OF_POTATOES -> {
-                if (meta instanceof Damageable damageable) {
-                    damageable.setDamage(item.getType().getMaxDurability() - 3);
-                }
-                meta.addEnchant(Enchantment.KNOCKBACK, 3, true);
-            }
-            case CASH_BLASTER -> meta.addEnchant(Enchantment.MULTISHOT, 1, true);
             case INVIS_CLOAK -> {
                 PersistentDataContainer pdc = meta.getPersistentDataContainer();
                 pdc.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);

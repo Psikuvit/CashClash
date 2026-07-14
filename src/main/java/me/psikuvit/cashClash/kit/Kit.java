@@ -123,14 +123,6 @@ public enum Kit {
         ItemFactory factory = ItemFactory.getInstance();
 
         switch (this) {
-            case ARCHER -> {
-                ItemStack bow = factory.createGameplayItem(UtilityItem.BOW);
-                ItemStack arrows = factory.createGameplayItem(UtilityItem.ARROWS);
-                arrows.setAmount(10);
-                markKitItem(bow);
-                markKitItem(arrows);
-                player.getInventory().addItem(bow, arrows);
-            }
             case HEALER -> {
                 ItemStack splash = new ItemStack(Material.SPLASH_POTION);
                 PotionMeta meta = (PotionMeta) splash.getItemMeta();
@@ -204,13 +196,6 @@ public enum Kit {
                 cobwebs.setAmount(2);
                 markKitItem(cobwebs);
                 player.getInventory().addItem(cobwebs);
-            }
-            case BOMBER -> {
-                for (int i = 0; i < 2; i++) {
-                    ItemStack grenade = factory.createCustomItem(CustomItem.GRENADE, player);
-                    markKitItem(grenade);
-                    player.getInventory().addItem(grenade);
-                }
             }
         }
     }
@@ -401,12 +386,6 @@ public enum Kit {
                 player.getInventory().addItem(new ItemStack(Material.FIRE_CHARGE, 2));
             }
             case SPIDER -> player.getInventory().addItem(new ItemStack(Material.COBWEB, 8));
-            case BOMBER -> {
-                for (int i = 0; i < 2; i++) {
-                    ItemStack grenade = factory.createCustomItem(CustomItem.GRENADE, player);
-                    player.getInventory().addItem(grenade);
-                }
-            }
             // TANK, LUMBERJACK, FIGHTER modify existing items - handled in apply()
             // GHOST, FIRE_FIGHTER only add potion effects - nothing to add here
             default -> {}
@@ -493,15 +472,6 @@ public enum Kit {
         ItemFactory factory = ItemFactory.getInstance();
 
         switch (this) {
-            case ARCHER -> {
-                ItemStack bow = factory.createGameplayItem(UtilityItem.BOW);
-                ItemStack arrows = factory.createGameplayItem(UtilityItem.ARROWS);
-                arrows.setAmount(10);
-                markKitItem(bow);
-                markKitItem(arrows);
-                itemMap.put("MATERIAL:BOW", bow);
-                itemMap.put("MATERIAL:ARROW", arrows);
-            }
             case HEALER -> {
                 ItemStack splash = new ItemStack(Material.SPLASH_POTION);
                 PotionMeta meta = (PotionMeta) splash.getItemMeta();
@@ -566,14 +536,6 @@ public enum Kit {
                 cobwebs.setAmount(2);
                 markKitItem(cobwebs);
                 itemMap.put("MATERIAL:COBWEB", cobwebs);
-            }
-            case BOMBER -> {
-                for (int i = 0; i < 2; i++) {
-                    ItemStack grenade = factory.createCustomItem(CustomItem.GRENADE, player);
-                    markKitItem(grenade);
-                    itemMap.put("CUSTOM:GRENADE_" + i, grenade);
-                    itemMap.put("CUSTOM:GRENADE", grenade); // Also map without number
-                }
             }
         }
 

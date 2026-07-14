@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
@@ -15,16 +16,14 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.CooldownManager;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Color;
 import org.bukkit.Sound;
-import org.bukkit.entity.Arrow;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -32,11 +31,14 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+
 import java.util.UUID;
+
 
 /**
  * Consolidated listener for all damage-related events.
@@ -50,15 +52,18 @@ import java.util.UUID;
  */
 public class DamageListener implements Listener {
 
+
     private static final double STRENGTH_NERF_MULTIPLIER = 0.5;
     private static final double POWER_NERF_MULTIPLIER = 0.2;
     private static final int MAX_POWER_LEVEL_REGULAR_BOW = 2;
     private static final double LEGENDARY_CROSSBOW_DAMAGE_BOOST = 1.3;
 
+
     private final GameManager gameManager;
     private final CustomArmorManager armorManager;
     private final CustomItemManager customItemManager;
     private final MythicItemManager mythicManager;
+
 
     public DamageListener() {
         this.gameManager = GameManager.getInstance();
@@ -67,7 +72,9 @@ public class DamageListener implements Listener {
         this.mythicManager = MythicItemManager.getInstance();
     }
 
+
     // ==================== MAIN DAMAGE HANDLER (EntityDamageEvent) ====================
+
 
     /**
      * Handles all damage events with high priority.
@@ -79,22 +86,27 @@ public class DamageListener implements Listener {
             return;
         }
 
+
         try {
             // 1. Check game phase protection (waiting/shopping)
             if (handleGamePhaseProtection(event, player)) {
                 return;
             }
 
+
             // 2. Handle custom armor defensive effects
             handleArmorDefenseEffects(event, player);
 
+
             // 3. Track damage for bonus calculations
             trackDamageForBonuses(event, player);
+
 
         } catch (Exception e) {
             logDamageError(player, e);
         }
     }
+
 
     /**
      * Log damage handling error
@@ -103,7 +115,9 @@ public class DamageListener implements Listener {
         Messages.debug("DAMAGE", "Error handling damage for " + player.getName() + ": " + e.getMessage());
     }
 
+
     // ==================== MAIN PVP DAMAGE HANDLER (EntityDamageByEntityEvent) ====================
+
 
     /**
      * Handles player vs player damage with high priority.
@@ -115,26 +129,28 @@ public class DamageListener implements Listener {
             return;
         }
 
+
         try {
             Player attacker = resolveAttacker(event);
             Player victim = event.getEntity() instanceof Player p ? p : null;
+
 
             // Apply protection checks
             if (applyProtectionChecks(event, attacker, victim)) {
                 return;
             }
 
-            // Process damage effects
+
             if (attacker != null && victim != null) {
-                processVictimDamageEffects(attacker, victim);
-                handleAttackerEffects(event, attacker, victim);
                 handleAttackerArmorEffects(event, attacker, victim);
             }
+
 
         } catch (Exception e) {
             logPvPDamageError(e);
         }
     }
+
 
     /**
      * Apply all protection checks (lobby, respawn, team damage)
@@ -144,6 +160,7 @@ public class DamageListener implements Listener {
             UUID attackerId = attacker.getUniqueId();
             UUID victimId = victim.getUniqueId();
 
+
             // Special case: Goblin Spear Charge
             // If attacker is charging and victim is caught by THIS attacker, allow damage (bypass protection)
             if (mythicManager.isGoblinSpearCharging(attackerId)) {
@@ -152,12 +169,13 @@ public class DamageListener implements Listener {
                     return false; // Allow damage between charger and their victim
                 }
             }
-            
+
             // Allow chargers to be hit
             if (mythicManager.isGoblinSpearCharging(victimId)) {
                 return false;
             }
         }
+
 
         if (handleLobbyProtection(event, attacker)) {
             return true;
@@ -168,6 +186,7 @@ public class DamageListener implements Listener {
         return handleRespawnProtection(event, attacker, victim);
     }
 
+
     /**
      * Process damage effects on victim
      */
@@ -175,12 +194,14 @@ public class DamageListener implements Listener {
         handleInvisibilityRemoval(attacker, victim);
     }
 
+
     /**
      * Log PvP damage error
      */
     private void logPvPDamageError(Exception e) {
         Messages.debug("DAMAGE", "Error handling PvP damage: " + e.getMessage());
     }
+
 
     /**
      * Resolves the actual attacker from a damage event.
@@ -196,28 +217,15 @@ public class DamageListener implements Listener {
         return null;
     }
 
+
     // ==================== KNOCKBACK IMMUNITY (Monitor Priority) ====================
+
 
     /**
      * Handles knockback immunity for Coin Cleaver mythic item.
      * Uses MONITOR priority to run after damage is processed.
      */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onDamageKnockbackImmunity(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof Player victim)) {
-            return;
-        }
 
-        try {
-            // Check if victim has Coin Cleaver (sturdy feet - no knockback)
-            if (mythicManager.hasCoinCleaverNoKnockback(victim)) {
-                Vector currentVelocity = victim.getVelocity().clone();
-                SchedulerUtils.runTaskLater(() -> victim.setVelocity(currentVelocity), 1L);
-            }
-        } catch (Exception e) {
-            Messages.debug("DAMAGE", "Error applying knockback immunity: " + e.getMessage());
-        }
-    }
 
     /**
      * Handle post-damage effects with MONITOR priority (after all damage modifications).
@@ -229,6 +237,7 @@ public class DamageListener implements Listener {
             return;
         }
 
+
         // Wind Charge Fall Damage Fix
         if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
             // Check if player recently used or was hit by a wind charge
@@ -238,11 +247,13 @@ public class DamageListener implements Listener {
             }
         }
 
+
         // Flamebringer: Negate knockback from fire damage
         if ((event.getCause() == EntityDamageEvent.DamageCause.FIRE ||
-             event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK ||
-             event.getCause() == EntityDamageEvent.DamageCause.LAVA) &&
-            armorManager.hasFlamebringerNoFireKb(player)) {
+                event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK ||
+                event.getCause() == EntityDamageEvent.DamageCause.LAVA) &&
+                armorManager.hasFlamebringerNoFireKb(player)) {
+
 
             // Schedule to reset velocity after knockback is applied
             SchedulerUtils.runTask(() -> {
@@ -253,7 +264,9 @@ public class DamageListener implements Listener {
         }
     }
 
+
     // ==================== HEALTH REGAIN ====================
+
 
     /**
      * Handles health regain tracking for bonus calculations.
@@ -264,6 +277,7 @@ public class DamageListener implements Listener {
             return;
         }
 
+
         try {
             handleHealthRegain(event, player);
         } catch (Exception e) {
@@ -271,70 +285,82 @@ public class DamageListener implements Listener {
         }
     }
 
+
     // ==================== PROTECTION HANDLERS ====================
+
 
     /**
      * Handle lobby protection - cancel PvP outside game sessions.
-     * @return true if damage was cancelled
+     * @return true if damage was canceled
      */
     private boolean handleLobbyProtection(EntityDamageByEntityEvent event, Player attacker) {
         if (attacker == null) {
             return false;
         }
 
+
         GameSession attackerSession = gameManager.getPlayerSession(attacker);
         if (attackerSession != null) {
             return false;
         }
+
 
         // Cancel PvP outside games
         event.setCancelled(true);
         return true;
     }
 
+
     /**
      * Handle team damage - prevent players from damaging teammates.
-     * @return true if damage was cancelled
+     * @return true if damage was canceled
      */
     private boolean handleTeamDamage(EntityDamageByEntityEvent event, Player attacker, Player victim) {
         if (attacker == null || victim == null) {
             return false;
         }
 
+
         GameSession session = gameManager.getPlayerSession(attacker);
         if (session == null) {
             return false;
         }
 
+
         // Check if victim is on the same team as attacker
         if (session.getTeamRed().hasPlayer(attacker.getUniqueId()) &&
-            session.getTeamRed().hasPlayer(victim.getUniqueId())) {
+                session.getTeamRed().hasPlayer(victim.getUniqueId())) {
             event.setCancelled(true);
             return true;
         }
 
+
         if (session.getTeamBlue().hasPlayer(attacker.getUniqueId()) &&
-            session.getTeamBlue().hasPlayer(victim.getUniqueId())) {
+                session.getTeamBlue().hasPlayer(victim.getUniqueId())) {
             event.setCancelled(true);
             return true;
         }
+
 
         return false;
     }
 
+
     /**
      * Handle respawn protection - cancel damage to protected players.
-     * @return true if damage was cancelled
+     * @return true if damage was canceled
      */
     private boolean handleRespawnProtection(EntityDamageByEntityEvent event, Player attacker, Player victim) {
         if (victim == null || attacker == null) {
             return false;
         }
 
+
         GameSession session = gameManager.getPlayerSession(victim);
         if (session == null) {
             return false;
         }
+
 
         // Allow attacker to deal damage even if they are protected
         if (attacker != null) {
@@ -343,6 +369,7 @@ public class DamageListener implements Listener {
                 return false;
             }
         }
+
 
         CashClashPlayer victimCcp = session.getCashClashPlayer(victim.getUniqueId());
         if (victimCcp != null && victimCcp.isRespawnProtected()) {
@@ -353,15 +380,17 @@ public class DamageListener implements Listener {
         return false;
     }
 
+
     /**
      * Handle game phase protection - cancel damage during waiting/shopping.
-     * @return true if damage was cancelled
+     * @return true if damage was canceled
      */
     private boolean handleGamePhaseProtection(EntityDamageEvent event, Player player) {
         GameSession session = gameManager.getPlayerSession(player);
         if (session == null) {
             return false;
         }
+
 
         GameState state = session.getState();
         if (state == GameState.WAITING || state == GameState.SHOPPING) {
@@ -373,7 +402,10 @@ public class DamageListener implements Listener {
     }
 
 
+
+
     // ==================== ARMOR EFFECTS ====================
+
 
     /**
      * Handle custom armor defensive effects.
@@ -384,27 +416,23 @@ public class DamageListener implements Listener {
             return;
         }
 
+
         double healthAfter = Math.max(0, player.getHealth() - event.getFinalDamage());
         EntityDamageEvent.DamageCause cause = event.getCause();
 
+
         // Dragon Set: no explosion immunity
-        
+
         // Guardian's Vest: resistance when low health
         armorManager.onPlayerDamaged(player, healthAfter);
 
-        // Deathmauler: track damage for absorption
-        armorManager.onDeathmaulerDamageTaken(player);
-
-        // Magic Helmet: activate on first melee damage
-        if (isMeleeDamage(event)) {
-            armorManager.onMagicHelmetMeleeDamage(player);
-        }
 
         // Flamebringer: lava trigger speed
         if (cause == EntityDamageEvent.DamageCause.LAVA) {
             armorManager.onFlamebringerLavaDamage(player);
         }
     }
+
 
     /**
      * Handle armor-based attack effects.
@@ -415,30 +443,22 @@ public class DamageListener implements Listener {
             return;
         }
 
-        // Handle all attack-based armor effects (marks targets for Dragon set)
-        armorManager.onPlayerAttack(attacker, victim);
 
-        // Dragon Set: Apply damage boost from dash
-        double dragonBoost = armorManager.getDragonDamageBoost(attacker);
-        if (dragonBoost > 0) {
-            double newDamage = event.getDamage() * (1.0 + dragonBoost);
-            event.setDamage(newDamage);
-            // No message - only show on initial mark
-        }
-
-        // Investor's Set: bonus damage in rounds 4/5
+        // Investor's Set damage reduction
         double damageMultiplier = armorManager.getInvestorMeleeDamageMultiplier(attacker, session.getCurrentRound());
-        if (damageMultiplier > 1.0) {
-            event.setDamage(event.getDamage() * damageMultiplier);
-        }
+        event.setDamage(event.getDamage() * damageMultiplier);
+
 
         // Bullseye Pants: Storming arrow
         handleBullseyePantsEffect(event, attacker, victim);
 
+
         // Deathmauler: Soul Burst
         armorManager.tryDeathmaulerSoulBurst(attacker, victim, session);
-    }
 
+        // Dragon Set: Charge dragon scales
+        armorManager.handleDragonHit(attacker);
+    }
     /**
      * Handle Bullseye Pants "Storming arrow" passive.
      * Every 4th landed arrow does 30% more damage and deals AOE damage.
@@ -447,59 +467,66 @@ public class DamageListener implements Listener {
         if (!(event.getDamager() instanceof Arrow arrow)) {
             return;
         }
+        UUID id = attacker.getUniqueId();
 
+
+        // ---------------- HEADSHOT CHECK ----------------
+        org.bukkit.Location hitLoc = arrow.getLocation();
+        double arrowY = hitLoc.getY();
+        double headY = victim.getLocation().getY() + victim.getEyeHeight();
+
+
+        boolean isHeadshot = Math.abs(arrowY - headY) <= 0.25;
+
+
+        if (isHeadshot) {
+            victim.getWorld().playSound(
+                    victim.getLocation(),
+                    Sound.ENTITY_PLAYER_ATTACK_CRIT,
+                    1f,
+                    1.4f
+            );
+            triggerStorm(attacker, victim, event.getDamage() * 1.3);
+            return;
+        }
         if (!armorManager.hasBullseyePants(attacker)) {
             return;
         }
 
+
         if (armorManager.incrementBullseyeHit(attacker)) {
             // 4th hit triggered
             double originalDamage = event.getDamage();
-            event.setDamage(originalDamage * 1.3); // +30% damage
+            event.setDamage(originalDamage * 1.3);
 
-            org.bukkit.Location hitLoc = victim.getLocation().add(0, 1, 0);
-            ParticleUtils.bullseyeStorm(hitLoc);
-            SoundUtils.play(attacker, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0f, 1.2f);
-            Messages.send(attacker, "armor.bullseye-storm-triggered");
-            Messages.debug(attacker, "BULLSEYE: 4th shot triggered! +30% damage and AOE.");
 
-            // AOE Arrows: 6 arrows firing outward
-            double aoeDamage = originalDamage * 0.35;
-            for (int i = 0; i < 6; i++) {
-                double angle = 2 * Math.PI * i / 6;
-                Vector direction = new Vector(Math.cos(angle), 0.2, Math.sin(angle)).normalize();
-                
-                Arrow aoeArrow = attacker.getWorld().spawn(hitLoc, Arrow.class);
-                aoeArrow.setShooter(attacker);
-                aoeArrow.setVelocity(direction.multiply(1.5));
-                aoeArrow.setCritical(true);
-                aoeArrow.setColor(i % 2 == 0 ? Color.RED : Color.WHITE);
-                
-                // Add metadata or tag to identify as AOE arrow if needed for damage scaling
-                // For now we'll just set it to a fixed damage if hit
-                aoeArrow.setDamage(aoeDamage / 2.0); // Vanilla damage is a bit complex, but this is a start
-            }
+            triggerStorm(attacker, victim, originalDamage);
         }
     }
+
 
     /**
      * Check if damage is from an explosion.
      */
     private boolean isExplosionDamage(EntityDamageEvent.DamageCause cause) {
         return cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION ||
-               cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION;
+                cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION;
     }
+
 
     /**
      * Check if damage is from melee attack.
      */
     private boolean isMeleeDamage(EntityDamageEvent event) {
         return event instanceof EntityDamageByEntityEvent damageByEntity &&
-               damageByEntity.getDamager() instanceof Player;
+                damageByEntity.getDamager() instanceof Player;
     }
 
 
+
+
     // ==================== DAMAGE TRACKING & BONUSES ====================
+
 
     /**
      * Track damage for bonus calculations.
@@ -510,27 +537,33 @@ public class DamageListener implements Listener {
             return;
         }
 
+
         RoundData currentRound = session.getCurrentRoundData();
         if (currentRound == null) {
             return;
         }
+
 
         CashClashPlayer ccPlayer = session.getCashClashPlayer(player.getUniqueId());
         if (ccPlayer == null) {
             return;
         }
 
+
         // Update last damage time
         currentRound.setLastDamageTime(player.getUniqueId(), System.currentTimeMillis());
+
 
         // Track damage received
         if (event.getDamage() > 0) {
             currentRound.addDamage(player.getUniqueId(), event.getFinalDamage());
         }
 
+
         // Update health tracking for close call bonus
         double healthAfter = Math.max(0, player.getHealth() - event.getFinalDamage());
         ccPlayer.updateLowestHealth(healthAfter);
+
 
         // Notify BonusManager of low health state
         BonusManager bonusManager = session.getBonusManager();
@@ -538,6 +571,18 @@ public class DamageListener implements Listener {
             bonusManager.onReachLowHealth(player.getUniqueId());
         }
     }
+
+
+    //Checks fall damage for tectonic cap
+    @EventHandler
+    public void onFall(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (event.getCause() != EntityDamageEvent.DamageCause.FALL) return;
+
+
+        armorManager.onTectonicCapFall(event, player);
+    }
+
 
     /**
      * Handle health regain tracking for bonuses.
@@ -548,16 +593,20 @@ public class DamageListener implements Listener {
             return;
         }
 
+
         CashClashPlayer ccPlayer = session.getCashClashPlayer(player.getUniqueId());
         if (ccPlayer == null) {
             return;
         }
 
+
         double healthBefore = player.getHealth();
         double maxHealth = ccPlayer.getMaxHealth();
         double healthAfter = Math.min(player.getHealth() + event.getAmount(), maxHealth);
 
+
         ccPlayer.updateLowestHealth(healthAfter);
+
 
         BonusManager bonusManager = session.getBonusManager();
         if (bonusManager != null) {
@@ -570,7 +619,10 @@ public class DamageListener implements Listener {
     }
 
 
+
+
     // ==================== ATTACKER EFFECTS ====================
+
 
     /**
      * Handle invisibility cloak removal when dealing or taking damage.
@@ -582,12 +634,14 @@ public class DamageListener implements Listener {
             Messages.send(attacker, "listener.invisibility-lost-attacker");
         }
 
+
         // Remove invisibility from victim when they take damage
         if (customItemManager.isInvisActive(victim.getUniqueId())) {
             customItemManager.toggleInvisCloak(victim, false);
             Messages.send(victim, "listener.invisibility-lost-victim");
         }
     }
+
 
     /**
      * Handle attacker-side effects (mythic items, custom items, combat modifiers).
@@ -596,15 +650,19 @@ public class DamageListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(attacker);
         ItemStack weapon = attacker.getInventory().getItemInMainHand();
 
+
         // Apply custom item effects
         handleCustomItemEffects(attacker, weapon, session);
+
 
         // Apply mythic item effects
         handleMythicItemEffects(event, attacker, victim, weapon);
 
+
         // Apply combat modifiers (strength/power nerfs)
         applyCombatModifiers(event, attacker, weapon);
     }
+
 
     /**
      * Handle custom item effects (e.g., Bag of Potatoes).
@@ -613,12 +671,8 @@ public class DamageListener implements Listener {
         if (!isValidWeapon(weapon)) {
             return;
         }
-
-        CustomItem customType = PDCDetection.getCustomItem(weapon);
-        if (customType == CustomItem.BAG_OF_POTATOES) {
-            customItemManager.handleBagOfPotatoesHit(attacker, weapon, session);
-        }
     }
+
 
     /**
      * Check if weapon is valid (has item meta)
@@ -626,6 +680,7 @@ public class DamageListener implements Listener {
     private boolean isValidWeapon(ItemStack weapon) {
         return weapon.hasItemMeta();
     }
+
 
     /**
      * Handle mythic item effects (legendary weapons and abilities).
@@ -635,20 +690,22 @@ public class DamageListener implements Listener {
             return;
         }
 
+
         MythicItem mythic = PDCDetection.getMythic(weapon);
         if (mythic == null) {
             return;
         }
 
+
         processMythicDamageEffects(event, attacker, victim, mythic);
     }
+
 
     /**
      * Process damage effects for specific mythic items
      */
     private void processMythicDamageEffects(EntityDamageByEntityEvent event, Player attacker, Player victim, MythicItem mythic) {
         switch (mythic) {
-            case COIN_CLEAVER -> applyMythicCoinCleaverEffect(event, attacker, victim);
             case CARLS_BATTLEAXE -> applyMythicCriticalEffect(event, attacker, victim, mythicManager::handleCarlsCriticalHit);
             case ELECTRIC_EEL_SWORD -> applyMythicCriticalEffect(event, attacker, victim, mythicManager::handleElectricEelChain);
             case WARDEN_GLOVES -> mythicManager.useWardenPunch(attacker, victim);
@@ -658,13 +715,6 @@ public class DamageListener implements Listener {
         }
     }
 
-    /**
-     * Apply Coin Cleaver damage effect
-     */
-    private void applyMythicCoinCleaverEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
-        double newDamage = mythicManager.handleCoinCleaverDamage(attacker, victim, event.getDamage(), event.isCritical());
-        event.setDamage(newDamage);
-    }
 
     /**
      * Apply mythic critical hit effect
@@ -675,6 +725,7 @@ public class DamageListener implements Listener {
         }
     }
 
+
     /**
      * Apply Goblin Spear melee effect
      */
@@ -683,6 +734,7 @@ public class DamageListener implements Listener {
             mythicManager.handleGoblinSpearHit(attacker, victim, true);
         }
     }
+
 
     /**
      * Apply legendary crossbow damage boost
@@ -696,6 +748,7 @@ public class DamageListener implements Listener {
         }
     }
 
+
     /**
      * Functional interface for mythic effect handlers
      */
@@ -705,6 +758,8 @@ public class DamageListener implements Listener {
     }
 
 
+
+
     /**
      * Apply combat modifiers (strength nerf, power enchantment nerf/cap).
      */
@@ -712,9 +767,11 @@ public class DamageListener implements Listener {
         // Nerf strength potion effect by 50%
         applyStrengthNerf(event, attacker);
 
+
         // Nerf/cap power enchantment on bows
         applyPowerNerf(event, attacker, weapon);
     }
+
 
     /**
      * Apply strength potion nerf (50% damage reduction).
@@ -724,10 +781,12 @@ public class DamageListener implements Listener {
             return;
         }
 
+
         PotionEffect strength = attacker.getPotionEffect(PotionEffectType.STRENGTH);
         if (strength == null || strength.getAmplifier() < 0) {
             return;
         }
+
 
         // Strength adds (level + 1) * 3 damage
         // Reduce the bonus by 50%
@@ -737,10 +796,12 @@ public class DamageListener implements Listener {
         double damageReduction = strengthBonus - nerfedStrengthBonus;
         double newDamage = Math.max(0, currentDamage - damageReduction);
 
+
         event.setDamage(newDamage);
         Messages.debug(attacker, "STRENGTH_NERF: Reduced damage from " + currentDamage + " to " + newDamage +
-                      " (strength level " + (strength.getAmplifier() + 1) + ")");
+                " (strength level " + (strength.getAmplifier() + 1) + ")");
     }
+
 
     /**
      * Apply power enchantment nerf (50% reduction) and cap (max level 2 for non-legendary bows).
@@ -751,24 +812,30 @@ public class DamageListener implements Listener {
             return;
         }
 
+
         if (!weapon.containsEnchantment(Enchantment.POWER)) {
             return;
         }
+
 
         int powerLevel = weapon.getEnchantmentLevel(Enchantment.POWER);
         if (powerLevel <= 0) {
             return;
         }
 
+
         // Check if it's a legendary bow (Wind Bow has Power 3)
         MythicItem mythic = PDCDetection.getMythic(weapon);
         boolean isLegendary = mythic == MythicItem.WIND_BOW;
 
+
         double currentDamage = event.getDamage();
+
 
         // Power formula: damage = base * (1 + level * 0.5)
         double originalMultiplier = 1.0 + (powerLevel * 0.5);
         double baseDamage = currentDamage / originalMultiplier;
+
 
         // Cap power at 2 for regular bows (legendary exception)
         if (!isLegendary && powerLevel > MAX_POWER_LEVEL_REGULAR_BOW) {
@@ -776,7 +843,7 @@ public class DamageListener implements Listener {
             double cappedDamage = baseDamage * cappedMultiplier;
             event.setDamage(cappedDamage);
             Messages.debug(attacker, "POWER_CAP: Reduced from power " + powerLevel + " to power " + MAX_POWER_LEVEL_REGULAR_BOW +
-                          " (damage " + currentDamage + " -> " + cappedDamage + ")");
+                    " (damage " + currentDamage + " -> " + cappedDamage + ")");
         } else {
             // Nerf power by 50%: reduce the power bonus multiplier by half
             // Nerfed: damage = base * (1 + level * 0.25)
@@ -784,7 +851,51 @@ public class DamageListener implements Listener {
             double nerfedDamage = baseDamage * nerfedMultiplier;
             event.setDamage(nerfedDamage);
             Messages.debug(attacker, "POWER_NERF: Reduced damage from " + currentDamage + " to " + nerfedDamage +
-                          " (power level " + powerLevel + ", legendary: " + isLegendary + ")");
+                    " (power level " + powerLevel + ", legendary: " + isLegendary + ")");
+        }
+    }
+    private void triggerStorm(Player attacker, Player victim, double originalDamage) {
+
+
+        org.bukkit.Location impact = victim.getLocation().add(0, 1, 0);
+
+
+        ParticleUtils.bullseyeStorm(impact);
+
+
+        attacker.getWorld().playSound(
+                impact,
+                Sound.ENTITY_WIND_CHARGE_WIND_BURST,
+                1.1f,
+                1.2f
+        );
+
+
+        double aoeDamage = originalDamage * 0.35;
+
+
+        for (int i = 0; i < 6; i++) {
+
+
+            double angle = 2 * Math.PI * i / 6;
+            Vector direction = new Vector(Math.cos(angle), 0.2, Math.sin(angle)).normalize();
+
+
+            Arrow aoeArrow = attacker.getWorld().spawn(impact, Arrow.class);
+            aoeArrow.setShooter(attacker);
+            aoeArrow.setVelocity(direction.multiply(1.5));
+            aoeArrow.setCritical(true);
+            aoeArrow.setDamage(aoeDamage);
+
+
+            aoeArrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+
+
+            Bukkit.getScheduler().runTaskLater(
+                    JavaPlugin.getProvidingPlugin(getClass()),
+                    aoeArrow::remove,
+                    40L
+            );
         }
     }
 }

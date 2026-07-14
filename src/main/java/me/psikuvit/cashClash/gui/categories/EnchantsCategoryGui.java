@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.gui.categories;
 
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
@@ -15,21 +16,25 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+
 /**
  * Shop category GUI for enchantments.
  */
 public class EnchantsCategoryGui extends AbstractShopCategoryGui {
 
+
     private static final String GUI_ID = "shop_enchants";
     private static final int[] ENCHANT_SLOTS = {
             3, 5, 10,
             16, 21, 23,
-            28, 34, 39
+            28, 34, 40
     };
+
 
     public EnchantsCategoryGui(Player viewer) {
         super(GUI_ID, viewer, ShopCategory.ENCHANTS);
     }
+
 
     @Override
     protected void populateItems() {
@@ -37,11 +42,14 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             EnchantEntry ee = EnchantEntry.values()[i];
             int slot = ENCHANT_SLOTS[i];
 
+
             CashClashPlayer ccp = getCashClashPlayer();
             int currentLevel = ccp != null ? ccp.getOwnedEnchantLevel(ee) : 0;
             int nextLevel = currentLevel + 1;
 
+
             final int level = nextLevel;
+
 
             if (nextLevel > ee.getMaxLevel()) {
                 setButton(slot, GuiButton.of(ItemFactory.getInstance().getGuiFactory().createMaxedEnchant(ee)));
@@ -53,6 +61,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
         }
     }
 
+
     private void handleEnchantPurchase(EnchantEntry ee, int nextLevel) {
         GameSession sess = getSession();
         if (sess == null) {
@@ -61,8 +70,10 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
+
         CashClashPlayer ccp = getCashClashPlayer();
         if (ccp == null) return;
+
 
         int currentLevel = ccp.getOwnedEnchantLevel(ee);
         if (nextLevel != currentLevel + 1) {
@@ -71,10 +82,12 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
+
         if (nextLevel > ee.getMaxLevel()) {
             Messages.send(viewer, "shop.max-enchant-level");
             return;
         }
+
 
         long price = ee.getPriceForLevel(nextLevel);
         if (!ShopService.getInstance().canAfford(viewer, price)) {
@@ -82,6 +95,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
+
 
         // Deathmauler restriction: Cannot buy both protection types
         CustomArmorManager armorManager = CustomArmorManager.getInstance();
@@ -100,6 +114,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             }
         }
 
+
         if (ItemUtils.applyEnchant(viewer, ee, nextLevel)) {
             ShopService.getInstance().deductCoins(viewer, price);
             ccp.setOwnedEnchantLevel(ee, nextLevel);
@@ -110,4 +125,3 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
         }
     }
 }
-

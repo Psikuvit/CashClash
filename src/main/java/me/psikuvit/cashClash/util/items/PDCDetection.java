@@ -1,12 +1,7 @@
 package me.psikuvit.cashClash.util.items;
 
 import me.psikuvit.cashClash.shop.EnchantEntry;
-import me.psikuvit.cashClash.shop.items.CustomArmorItem;
-import me.psikuvit.cashClash.shop.items.CustomItem;
-import me.psikuvit.cashClash.shop.items.FoodItem;
-import me.psikuvit.cashClash.shop.items.MythicItem;
-import me.psikuvit.cashClash.shop.items.Purchasable;
-import me.psikuvit.cashClash.shop.items.ShopItems;
+import me.psikuvit.cashClash.shop.items.*;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.enums.InvestmentType;
 import org.bukkit.NamespacedKey;
@@ -42,6 +37,14 @@ public final class PDCDetection {
     public static CustomItem getCustomItem(ItemStack stack) {
         String tag = readTag(stack, Keys.ITEM_ID);
         return tag != null ? ShopItems.getCustomItem(tag) : null;
+    }
+
+    public static CustomWeapon getCustomWeapon(ItemStack stack) {
+        String tag = readTag(stack, Keys.ITEM_ID);
+        if ("cash_blaster".equals(tag)) {
+            return CustomWeapon.CASH_BLASTER;
+        }
+        return null;
     }
 
     /**

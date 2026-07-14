@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -9,6 +10,7 @@ import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.CustomWeaponManager;
 import me.psikuvit.cashClash.manager.items.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -17,24 +19,25 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
-import me.psikuvit.cashClash.util.CooldownManager;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
-import org.bukkit.entity.EnderPearl;
-import org.bukkit.entity.Fireball;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Trident;
+import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+
+
+import java.util.UUID;
+
 
 /**
  * Consolidated listener for all PlayerInteractEvent handling.
@@ -42,15 +45,19 @@ import org.bukkit.persistence.PersistentDataType;
  */
 public class InteractListener implements Listener {
 
+
     private final CustomItemManager customItemManager = CustomItemManager.getInstance();
     private final CustomArmorManager armorManager = CustomArmorManager.getInstance();
     private final MythicItemManager mythicManager = MythicItemManager.getInstance();
 
+
     // ==================== ENDER PEARL RESTRICTIONS ====================
+
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onProjectileLaunch(ProjectileLaunchEvent event) {
         if (event.isCancelled()) return;
+
 
         // Handle Ender Pearl restrictions
         if (event.getEntity() instanceof EnderPearl pearl) {
@@ -58,12 +65,14 @@ public class InteractListener implements Listener {
                 GameSession session = GameManager.getInstance().getPlayerSession(player);
                 if (session == null) return;
 
+
                 CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
                 if (ccp != null && ccp.isRespawnProtected()) {
                     event.setCancelled(true);
                     Messages.send(player, "listener.no-enderpearl-after-spawn");
                     return;
                 }
+
 
                 Team team = session.getPlayerTeam(player);
                 if (team != null && team.isEnderPearlsDisabled()) {
@@ -73,11 +82,13 @@ public class InteractListener implements Listener {
             }
         }
 
+
         // Handle Trident (Goblin Spear) shot system
         if (event.getEntity() instanceof Trident trident) {
             if (trident.getShooter() instanceof Player player) {
                 GameSession session = GameManager.getInstance().getPlayerSession(player);
                 if (session == null) return;
+
 
                 // Check if player is dead - cannot use any abilities
                 if (session.getState() == GameState.COMBAT) {
@@ -88,6 +99,7 @@ public class InteractListener implements Listener {
                     }
                 }
 
+
                 // Check respawn protection
                 CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
                 if (ccp != null && ccp.isRespawnProtected()) {
@@ -96,8 +108,10 @@ public class InteractListener implements Listener {
                     return;
                 }
 
+
                 ItemStack mainHand = player.getInventory().getItemInMainHand();
                 MythicItem mythic = PDCDetection.getMythic(mainHand);
+
 
                 if (mythic == MythicItem.GOBLIN_SPEAR) {
                     // Check if player is charging - prevent throw during charge
@@ -106,11 +120,13 @@ public class InteractListener implements Listener {
                         return;
                     }
 
+
                     // Check shot system - if out of shots or reloading, cancel the throw
                     if (!mythicManager.handleGoblinSpearThrow(player)) {
                         event.setCancelled(true);
                         return;
                     }
+
 
                     // Tag the projectile with mythic id so hit detection works even when hand is empty
                     trident.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, mythic.getConfigKey());
@@ -119,36 +135,44 @@ public class InteractListener implements Listener {
         }
     }
 
+
     // ==================== MAIN INTERACT HANDLER ====================
+
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.useItemInHand() == Event.Result.DENY) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
 
+
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
         Block block = event.getClickedBlock();
         Action action = event.getAction();
+
 
         // Check for ready-up sign clicks FIRST, before item checks
         if (block != null && action.name().contains("RIGHT_CLICK")) {
             handleReadyUp(event, player, block);
         }
 
+
         if (isPlayerDead(player)) {
             // Exceptions for dead players (if any)
             if (block != null && block.getType().name().contains("SIGN")) return;
+
 
             event.setCancelled(true);
             Messages.send(player, "listener.cannot-use-items-dead");
             return;
         }
 
+
         if (action.isRightClick() && handleCustomArmor(player, action)) {
             event.setCancelled(true);
             return;
         }
+
 
         if (item != null) {
             // Check various item types and delegate
@@ -161,13 +185,16 @@ public class InteractListener implements Listener {
         }
     }
 
+
     private void handleReadyUp(PlayerInteractEvent event, Player player, Block block) {
         if (!block.getType().name().contains("SIGN")) return;
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
 
+
         Team team = session.getPlayerTeam(player);
         if (team == null) return;
+
 
         team.toggleReadyStatus(player.getUniqueId());
         Messages.send(player, "listener.ready-state",
@@ -175,14 +202,18 @@ public class InteractListener implements Listener {
         Messages.debug(Messages.DebugCategory.GAME, "Player " + player.getName() + " toggled ready status to " + team.isPlayerReady(player.getUniqueId()));
         event.setCancelled(true);
 
+
     }
+
 
     // ==================== ENDER PEARL ====================
     private boolean handleEnderPearl(PlayerInteractEvent event, Player player, ItemStack item) {
         if (item.getType() != Material.ENDER_PEARL) return false;
 
+
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return false;
+
 
         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
         if (ccp != null && ccp.isRespawnProtected()) {
@@ -191,6 +222,7 @@ public class InteractListener implements Listener {
             return true;
         }
 
+
         Team team = session.getPlayerTeam(player);
         if (team != null && team.isEnderPearlsDisabled()) {
             event.setCancelled(true);
@@ -198,10 +230,13 @@ public class InteractListener implements Listener {
             return true;
         }
 
+
         return false;
     }
 
+
     // ==================== FIRE CHARGE ====================
+
 
     private boolean handleFireCharge(PlayerInteractEvent event, Player player, ItemStack item) {
         if (item.getType() != Material.FIRE_CHARGE) return false;
@@ -213,9 +248,11 @@ public class InteractListener implements Listener {
                 return true;
             }
 
+
             Fireball fireball = player.launchProjectile(Fireball.class);
             fireball.setIsIncendiary(true);
             fireball.setYield(0f);
+
 
             item.setAmount(item.getAmount() - 1);
             event.setCancelled(true);
@@ -224,20 +261,26 @@ public class InteractListener implements Listener {
         return false;
     }
 
+
     // ==================== SUPPLY DROP ====================
+
 
     private boolean handleSupplyDrop(PlayerInteractEvent event, Player player, ItemStack item, Action action) {
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return false;
         if (item.getType() != Material.EMERALD) return false;
 
+
         Integer amount = PDCDetection.getSupplyDropAmount(item);
         if (amount == null) return false;
+
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return false;
 
+
         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return false;
+
 
         // Consume one from hand
         int left = item.getAmount() - 1;
@@ -248,6 +291,7 @@ public class InteractListener implements Listener {
             player.getInventory().setItemInMainHand(null);
         }
 
+
         ccp.addCoins(amount);
         Messages.send(player, "cashquake.supply-drop-reward", "amount", String.format("%,d", amount));
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
@@ -255,28 +299,18 @@ public class InteractListener implements Listener {
         return true;
     }
 
+
     // ==================== CUSTOM ITEMS ====================
+
 
     private boolean handleCustomItem(PlayerInteractEvent event, Player player, ItemStack item, Action action) {
         CustomItem type = PDCDetection.getCustomItem(item);
         if (type == null) return false;
 
-        // Tablet of Hacking is ONLY usable in shopping phase
-        if (type == CustomItem.TABLET_OF_HACKING) {
-            if (action.isRightClick()) {
-                event.setCancelled(true);
-                if (isInShoppingPhase(player)) {
-                    customItemManager.useTabletOfHacking(player);
-                } else {
-                    Messages.send(player, "listener.tablet-shopping-only");
-                }
-                return true;
-            }
-            return false;
-        }
 
         // All other custom items cannot be used during shopping
         if (isInShoppingPhase(player)) return false;
+
 
         // Flag holder cannot use invisibility cloak
         if (type == CustomItem.INVIS_CLOAK) {
@@ -290,21 +324,8 @@ public class InteractListener implements Listener {
             }
         }
 
+
         switch (type) {
-            case GRENADE -> {
-                if (action.isRightClick()) {
-                    event.setCancelled(true);
-                    customItemManager.throwGrenade(player, item, false);
-                    return true;
-                }
-            }
-            case SMOKE_CLOUD_GRENADE -> {
-                if (action.isRightClick()) {
-                    event.setCancelled(true);
-                    customItemManager.throwGrenade(player, item, true);
-                    return true;
-                }
-            }
             case MEDIC_POUCH -> {
                 if (action == Action.RIGHT_CLICK_AIR) {
                     event.setCancelled(true);
@@ -342,13 +363,17 @@ public class InteractListener implements Listener {
         return false;
     }
 
+
     // ==================== MYTHIC ITEMS ====================
+
 
     private boolean handleMythicItem(PlayerInteractEvent event, Player player, ItemStack item, Action action) {
         MythicItem mythic = PDCDetection.getMythic(item);
         if (mythic == null) return false;
 
+
         if (!action.isRightClick()) return false;
+
 
         if (isInShoppingPhase(player)) {
             event.setCancelled(true);
@@ -356,12 +381,8 @@ public class InteractListener implements Listener {
             return true;
         }
 
+
         switch (mythic) {
-            case COIN_CLEAVER -> {
-                event.setCancelled(true);
-                mythicManager.useCoinCleaverGrenade(player);
-                return true;
-            }
             case CARLS_BATTLEAXE -> {
                 event.setCancelled(true);
                 mythicManager.activateCarlsSpinAttack(player);
@@ -419,29 +440,27 @@ public class InteractListener implements Listener {
         return false;
     }
 
+
     // ==================== CUSTOM ARMOR (Magic Helmet) ====================
+
 
     private boolean handleCustomArmor(Player player, Action action) {
         if (!action.isRightClick()) return false;
 
+
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return false;
 
+
         if (isInShoppingPhase(player)) return false;
 
-        // Dragon Set: Dash to marked target (right-click, no sneak required)
-        if (armorManager.hasDragonSet(player)) {
-            if (isSilenced(player)) {
-                Messages.send(player, "listener.cannot-use-abilities-while-silenced");
-                return true;
-            }
-            return armorManager.tryDragonDash(player);
-        }
 
         return false;
     }
 
+
     // ==================== GAMEMODE SPECIFIC HANDLERS ====================
+
 
     /**
      * Handle Protect the President buff selection
@@ -450,33 +469,42 @@ public class InteractListener implements Listener {
     public void onPresidentBuffSelection(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        
+
+
         if (session == null || session.getGamemode() == null) return;
         if (!(session.getGamemode() instanceof ProtectThePresidentGamemode gamemode)) return;
-        
+
+
         // Check if this is a right-click and main hand
         if (event.getAction().name().contains("LEFT")) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
-        
+
+
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item.getType() == Material.AIR) return;
 
+
         int slot = player.getInventory().getHeldItemSlot();
-        
+
+
         // Only handle slots 1, 3, 5, 7 (buff selection slots)
         if (slot != 1 && slot != 3 && slot != 5 && slot != 7) return;
-        
+
+
         if (gamemode.handlePresidentBuffSelection(player, slot)) {
             event.setCancelled(true);
         }
     }
 
+
     // ==================== UTILITIES ====================
+
 
     private boolean isInShoppingPhase(Player player) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         return session != null && session.getState() == GameState.SHOPPING;
     }
+
 
     private boolean isRespawnProtected(Player player) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
@@ -485,6 +513,7 @@ public class InteractListener implements Listener {
         return ccp != null && ccp.isRespawnProtected();
     }
 
+
     private boolean isPlayerDead(Player player) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return false;
@@ -492,6 +521,7 @@ public class InteractListener implements Listener {
         RoundData roundData = session.getCurrentRoundData();
         return roundData != null && !roundData.isAlive(player.getUniqueId());
     }
+
 
     private boolean isSilenced(Player player) {
         if (isPlayerDead(player)) {
@@ -502,5 +532,57 @@ public class InteractListener implements Listener {
         if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return false;
         return gamemode.isSilenced(player.getUniqueId());
     }
-}
+    @EventHandler
+    public void onCashBlasterToggle(PlayerInteractEvent event) {
+        CustomWeaponManager.getInstance().onCashBlasterToggle(event);
+    }
+    @EventHandler
+    public void onCashBlasterShoot(EntityShootBowEvent event) {
+        CustomWeaponManager.getInstance().onCashBlasterShoot(event);
+    }
+    @EventHandler
+    public void onProfitVortexArrowHit(ProjectileHitEvent event) {
+        CustomWeaponManager.getInstance().onProfitVortexArrowHit(event);
+    }
+    @EventHandler
+    public void onProfitVortexDeath(PlayerDeathEvent event) {
+        CustomWeaponManager.getInstance().onProfitVortexDeath(event);
+    }
+    @EventHandler
+    public void onSoulKatanaUse(PlayerInteractEvent event) {
+        CustomWeaponManager.getInstance().onSoulKatanaUse(event);
+    }
 
+    @EventHandler
+    public void onSoulKatanaLand(PlayerMoveEvent event) {
+        CustomWeaponManager.getInstance().onSoulKatanaLand(event);
+    }
+
+    @EventHandler
+    public void onPlayerHeal(EntityRegainHealthEvent event) {
+
+        if (!(event.getEntity() instanceof Player player)) return;
+
+        UUID uuid = player.getUniqueId();
+
+        Long expiry = CustomWeaponManager.getInstance()
+                .getSoulKatanaHealingReduction()
+                .get(uuid);
+
+
+        if (expiry == null) return;
+
+
+        if (System.currentTimeMillis() > expiry) {
+            CustomWeaponManager.getInstance()
+                    .getSoulKatanaHealingReduction()
+                    .remove(uuid);
+            return;
+        }
+        event.setAmount(event.getAmount() * 0.7);
+    }
+    @EventHandler
+    public void onCashBlasterInteract(PlayerInteractEvent event) {
+        CustomWeaponManager.getInstance().onCashBlasterToggle(event);
+    }
+}

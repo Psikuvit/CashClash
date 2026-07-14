@@ -29,21 +29,6 @@ public final class CustomModelDataMapper {
     private static final Map<CustomArmorItem, NamespacedKey> ARMOR_MODELS = new HashMap<>();
 
     static {
-        // assets/minecraft/items/fire_charge.json      when: "dynamite"
-        CUSTOM_ITEM_KEYS.put(CustomItem.GRENADE,             "dynamite");
-        // assets/minecraft/items/gray_dye.json          when: "smokegrenade"
-        CUSTOM_ITEM_KEYS.put(CustomItem.SMOKE_CLOUD_GRENADE, "smokegrenade");
-        // assets/minecraft/items/wooden_sword.json      when: "bagofpotatoes"
-        CUSTOM_ITEM_KEYS.put(CustomItem.BAG_OF_POTATOES,     "bagofpotatoes");
-        // assets/minecraft/items/red_dye.json           when: "medicpouch"
-        CUSTOM_ITEM_KEYS.put(CustomItem.MEDIC_POUCH,         "medicpouch");
-        // assets/minecraft/items/map.json               when: "tabletofhacking"
-        CUSTOM_ITEM_KEYS.put(CustomItem.TABLET_OF_HACKING,   "tabletofhacking");
-        // assets/minecraft/items/phantom_membrane.json  when: "invisibilitycloak"
-        CUSTOM_ITEM_KEYS.put(CustomItem.INVIS_CLOAK,         "invisibilitycloak");
-
-        // assets/minecraft/items/diamond_axe.json       when: "coincleaver"
-        MYTHIC_KEYS.put(MythicItem.COIN_CLEAVER,       "coincleaver");
         // assets/minecraft/items/diamond_sword.json     when: "electriceelsword"
         MYTHIC_KEYS.put(MythicItem.ELECTRIC_EEL_SWORD, "electriceelsword");
         // assets/minecraft/items/bone.json              when: "carlsbattleaxe"

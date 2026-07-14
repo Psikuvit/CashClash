@@ -13,7 +13,6 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
-import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
@@ -23,6 +22,7 @@ import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.shop.items.CustomWeapon;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -165,7 +165,6 @@ public class GameListener implements Listener {
 
         // Handle armor set kill effects
         armorManager.onPlayerKill(killer, session);
-        armorManager.onDragonKill(killer);
         armorManager.onFlamebringerKill(killer);
     }
 
@@ -603,11 +602,6 @@ public class GameListener implements Listener {
             event.setCancelled(true);
             return;
         }
-
-        CustomItem type = PDCDetection.getCustomItem(item);
-        if (type == CustomItem.CASH_BLASTER) {
-            customItemManager.handleCashBlasterHit(attacker);
-        }
     }
 
     // ==================== ENTITY INTERACTIONS ====================
@@ -645,10 +639,6 @@ public class GameListener implements Listener {
             case MEDIC_POUCH -> {
                 event.setCancelled(true);
                 customItemManager.useMedicPouchAlly(player, target, item, session);
-            }
-            case RESPAWN_ANCHOR -> {
-                event.setCancelled(true);
-                customItemManager.useRespawnAnchor(player, target, item);
             }
         }
     }
