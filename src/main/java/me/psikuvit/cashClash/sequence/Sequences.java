@@ -28,7 +28,7 @@ public final class Sequences {
     private static final int REVEAL_BLINDNESS_TICKS = 300;
 
     private static final Title.Times SUDDEN_DEATH_TIMES = Title.Times.times(
-            Duration.ofMillis(500), Duration.ofSeconds(3), Duration.ofMillis(500));
+            Duration.ofMillis(500), Duration.ofSeconds(5), Duration.ofMillis(500));
 
     private static final Title.Times VICTORY_TIMES = Title.Times.times(
             Duration.ofMillis(500), Duration.ofSeconds(9), Duration.ofMillis(500));
@@ -55,7 +55,7 @@ public final class Sequences {
                 .then(20L, s -> SequenceEffects.showTitle(s.getPlayers(),
                         component(MSG.getMessage("round-start.selected-title", "gamemode", gamemodeName)),
                         component(MSG.getMessage("round-start.selected-subtitle", "objective", objective))))
-                .waitSeconds(2)
+                .waitSeconds(4)
                 .run(Sequences::clearLock);
     }
 
@@ -76,7 +76,7 @@ public final class Sequences {
                     revealPresidentToTeam(s.getTeamRed(), ptp.getPresident(1));
                     revealPresidentToTeam(s.getTeamBlue(), ptp.getPresident(2));
                 })
-                .waitSeconds(1.5)
+                .waitSeconds(3.5)
                 .run(Sequences::clearLock);
     }
 
@@ -125,10 +125,15 @@ public final class Sequences {
         return Sequence.create()
                 .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), REVEAL_BLINDNESS_TICKS))
                 .pause(40)
-                .run(s -> SequenceEffects.showTitle(s.getPlayers(),
-                        component(MSG.getRaw("round4.title")),
-                        component(MSG.getRaw("round4.subtitle"))))
-                .waitSeconds(3)
+                .run(s -> {
+                    SequenceEffects.showTitle(s.getPlayers(),
+                            component(MSG.getRaw("round4.title")),
+                            component(MSG.getRaw("round4.subtitle")));
+                    boolean round4HasShield = !s.hasShieldsInRounds1to3();
+                    Messages.broadcast(s.getPlayers(),
+                            round4HasShield ? "round.round4-shield-chat" : "round.round4-shieldless-chat");
+                })
+                .waitSeconds(5)
                 .run(Sequences::clearLock);
     }
 

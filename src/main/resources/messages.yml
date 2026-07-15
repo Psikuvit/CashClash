@@ -267,6 +267,8 @@ messages:
     buff-selection-time: "<gray>You have <yellow>15 seconds </yellow><gray>to select!</gray>"
     shopping-phase-title: "<yellow><bold>Round {round} - Shopping Phase!</bold></yellow>"
     shopping-phase-time: "<gray>You have <yellow>{time_remaining} seconds </yellow><gray>to shop!</gray>"
+    round4-shield-chat: "<gold>Shield</gold>"
+    round4-shieldless-chat: "<gold>shield-less</gold>"
     buff-selection-countdown: "<gold>{time_remaining} seconds to select buff!</gold>"
     both-teams-ready: "<green>Both teams are ready! Ending shopping phase early.</green>"
     shopping-countdown: "<yellow>{time_remaining} seconds remaining!</yellow>"

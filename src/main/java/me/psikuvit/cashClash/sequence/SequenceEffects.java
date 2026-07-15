@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 public final class SequenceEffects {
 
     private static final Title.Times DEFAULT_TIMES = Title.Times.times(
-            Duration.ofMillis(250), Duration.ofSeconds(2), Duration.ofMillis(250));
+            Duration.ofMillis(250), Duration.ofSeconds(5), Duration.ofMillis(250));
 
     private SequenceEffects() {
         throw new AssertionError("Nope.");
