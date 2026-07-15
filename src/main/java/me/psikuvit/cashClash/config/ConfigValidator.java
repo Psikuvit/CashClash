@@ -508,6 +508,44 @@ public class ConfigValidator {
     }
 
     /**
+     * Validate sequences.yml configuration.
+     * @param config The config to validate
+     * @param autoAdd If true, missing keys will be added with defaults
+     * @return true if valid, false if critical errors found
+     */
+    public boolean validateSequencesConfig(FileConfiguration config, boolean autoAdd) {
+        errors.clear();
+        warnings.clear();
+        added.clear();
+
+        validateAndSet(config, "schema-version", 1, autoAdd);
+
+        validateAndSet(config, "round-start.selecting", "<yellow>Selecting Gamemode...</yellow>", autoAdd);
+        validateAndSet(config, "round-start.selected-title", "<gold><bold>{gamemode}</bold></gold>", autoAdd);
+        validateAndSet(config, "round-start.selected-subtitle", "<yellow>{objective} to win the game!</yellow>", autoAdd);
+
+        validateAndSet(config, "president.selecting", "<yellow>Selecting President...</yellow>", autoAdd);
+        validateAndSet(config, "president.selected-title", "<gold><bold>{player_name}</bold></gold>", autoAdd);
+        validateAndSet(config, "president.selected-subtitle", "<yellow>Has been selected as your president.</yellow>", autoAdd);
+
+        validateAndSet(config, "round-end.win-title", "<green><bold>YOU WIN!</bold></green>", autoAdd);
+        validateAndSet(config, "round-end.lose-title", "<red><bold>YOU LOSE</bold></red>", autoAdd);
+        validateAndSet(config, "round-end.no-winner-title", "<gray><bold>Round Over</bold></gray>", autoAdd);
+
+        validateAndSet(config, "round4.title", "<gold><bold>1st Half Over</bold></gold>", autoAdd);
+        validateAndSet(config, "round4.subtitle", "<yellow>Now transitioning to Shield / Shieldless</yellow>", autoAdd);
+
+        validateAndSet(config, "sudden-death.title", "<red><bold>SUDDEN DEATH</bold></red>", autoAdd);
+        validateAndSet(config, "sudden-death.subtitle", "<yellow>{objective} to win the game!</yellow>", autoAdd);
+
+        validateAndSet(config, "victory.win-title", "<green><bold>VICTORY!</bold></green>", autoAdd);
+        validateAndSet(config, "victory.lose-title", "<red><bold>DEFEAT</bold></red>", autoAdd);
+
+        logResults("sequences.yml");
+        return errors.isEmpty();
+    }
+
+    /**
      * Validate messages.yml configuration.
      * @param config The config to validate
      * @param autoAdd If true, missing keys will be added with defaults

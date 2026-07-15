@@ -1,6 +1,6 @@
 package me.psikuvit.cashClash.sequence;
 
-import me.psikuvit.cashClash.config.MessagesConfig;
+import me.psikuvit.cashClash.config.SequencesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -21,7 +21,7 @@ import java.util.UUID;
  */
 public final class Sequences {
 
-    private static final MessagesConfig MSG = MessagesConfig.getInstance();
+    private static final SequencesConfig MSG = SequencesConfig.getInstance();
 
     // Generous blindness duration for "reveal"-style sequences; always cleared explicitly
     // at the end of the sequence, so it only needs to outlast the sequence itself.
@@ -49,12 +49,12 @@ public final class Sequences {
                 .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), REVEAL_BLINDNESS_TICKS))
                 .pause(40)
                 .run(s -> SequenceEffects.showTitle(s.getPlayers(),
-                        component(MSG.getRaw("sequence.round-start.selecting")), Component.empty()))
+                        component(MSG.getRaw("round-start.selecting")), Component.empty()))
                 .countdown(5, count -> s -> SequenceEffects.showTitle(s.getPlayers(),
                         Component.text(count), Component.empty()))
                 .then(20L, s -> SequenceEffects.showTitle(s.getPlayers(),
-                        component(MSG.getMessage("sequence.round-start.selected-title", "gamemode", gamemodeName)),
-                        component(MSG.getMessage("sequence.round-start.selected-subtitle", "objective", objective))))
+                        component(MSG.getMessage("round-start.selected-title", "gamemode", gamemodeName)),
+                        component(MSG.getMessage("round-start.selected-subtitle", "objective", objective))))
                 .waitSeconds(2)
                 .run(Sequences::clearLock);
     }
@@ -69,7 +69,7 @@ public final class Sequences {
                 .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), REVEAL_BLINDNESS_TICKS))
                 .pause(40)
                 .run(s -> SequenceEffects.showTitle(s.getPlayers(),
-                        component(MSG.getRaw("sequence.president.selecting")), Component.empty()))
+                        component(MSG.getRaw("president.selecting")), Component.empty()))
                 .countdown(5, count -> s -> SequenceEffects.showTitle(s.getPlayers(),
                         Component.text(count), Component.empty()))
                 .then(20L, s -> {
@@ -81,9 +81,9 @@ public final class Sequences {
     }
 
     private static void revealPresidentToTeam(Team team, UUID presidentUuid) {
-        Component title = component(MSG.getMessage("sequence.president.selected-title",
+        Component title = component(MSG.getMessage("president.selected-title",
                 "player_name", presidentName(presidentUuid)));
-        Component subtitle = component(MSG.getRaw("sequence.president.selected-subtitle"));
+        Component subtitle = component(MSG.getRaw("president.selected-subtitle"));
         SequenceEffects.showTitle(team.getPlayers(), title, subtitle);
     }
 
@@ -103,16 +103,16 @@ public final class Sequences {
                     if (winningTeam != 1 && winningTeam != 2) {
                         // No clear winner (e.g. combat timer expired with nobody eliminated)
                         SequenceEffects.showTitle(s.getPlayers(),
-                                component(MSG.getRaw("sequence.round-end.no-winner-title")), Component.empty());
+                                component(MSG.getRaw("round-end.no-winner-title")), Component.empty());
                         return;
                     }
 
                     Team winner = winningTeam == 1 ? s.getTeamRed() : s.getTeamBlue();
                     Team loser = s.getOpposingTeam(winner);
                     SequenceEffects.showTitle(winner.getPlayers(),
-                            component(MSG.getRaw("sequence.round-end.win-title")), Component.empty());
+                            component(MSG.getRaw("round-end.win-title")), Component.empty());
                     SequenceEffects.showTitle(loser.getPlayers(),
-                            component(MSG.getRaw("sequence.round-end.lose-title")), Component.empty());
+                            component(MSG.getRaw("round-end.lose-title")), Component.empty());
                 })
                 .waitSeconds(5)
                 .run(s -> SequenceEffects.clearTitle(s.getPlayers()));
@@ -126,8 +126,8 @@ public final class Sequences {
                 .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), REVEAL_BLINDNESS_TICKS))
                 .pause(40)
                 .run(s -> SequenceEffects.showTitle(s.getPlayers(),
-                        component(MSG.getRaw("sequence.round4.title")),
-                        component(MSG.getRaw("sequence.round4.subtitle"))))
+                        component(MSG.getRaw("round4.title")),
+                        component(MSG.getRaw("round4.subtitle"))))
                 .waitSeconds(3)
                 .run(Sequences::clearLock);
     }
@@ -141,8 +141,8 @@ public final class Sequences {
         return Sequence.create()
                 .waitSeconds(1)
                 .run(s -> SequenceEffects.showTitle(s.getPlayers(),
-                        component(MSG.getRaw("sequence.sudden-death.title")),
-                        component(MSG.getMessage("sequence.sudden-death.subtitle", "objective", objective)),
+                        component(MSG.getRaw("sudden-death.title")),
+                        component(MSG.getMessage("sudden-death.subtitle", "objective", objective)),
                         SUDDEN_DEATH_TIMES));
     }
 
@@ -155,9 +155,9 @@ public final class Sequences {
                 .run(s -> {
                     Team loser = s.getOpposingTeam(winner);
                     SequenceEffects.showTitle(winner.getPlayers(),
-                            component(MSG.getRaw("sequence.victory.win-title")), Component.empty(), VICTORY_TIMES);
+                            component(MSG.getRaw("victory.win-title")), Component.empty(), VICTORY_TIMES);
                     SequenceEffects.showTitle(loser.getPlayers(),
-                            component(MSG.getRaw("sequence.victory.lose-title")), Component.empty(), VICTORY_TIMES);
+                            component(MSG.getRaw("victory.lose-title")), Component.empty(), VICTORY_TIMES);
                 })
                 .waitSeconds(10)
                 .run(s -> SequenceEffects.clearTitle(s.getPlayers()))

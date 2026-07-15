@@ -377,32 +377,6 @@ messages:
     flag-drop-timer-reset: "<gold>{team_name} team has reset the dropped flag return timer!</gold>"
 
   # ============================================
-  # SEQUENCES (scripted title/subtitle moments)
-  # ============================================
-  sequence:
-    round-start:
-      selecting: "<yellow>Selecting Gamemode...</yellow>"
-      selected-title: "<gold><bold>{gamemode}</bold></gold>"
-      selected-subtitle: "<yellow>{objective} to win the game!</yellow>"
-    president:
-      selecting: "<yellow>Selecting President...</yellow>"
-      selected-title: "<gold><bold>{player_name}</bold></gold>"
-      selected-subtitle: "<yellow>Has been selected as your president.</yellow>"
-    round-end:
-      win-title: "<green><bold>YOU WIN!</bold></green>"
-      lose-title: "<red><bold>YOU LOSE</bold></red>"
-      no-winner-title: "<gray><bold>Round Over</bold></gray>"
-    round4:
-      title: "<gold><bold>1st Half Over</bold></gold>"
-      subtitle: "<yellow>Now transitioning to Shield / Shieldless</yellow>"
-    sudden-death:
-      title: "<red><bold>SUDDEN DEATH</bold></red>"
-      subtitle: "<yellow>{objective} to win the game!</yellow>"
-    victory:
-      win-title: "<green><bold>VICTORY!</bold></green>"
-      lose-title: "<red><bold>DEFEAT</bold></red>"
-
-  # ============================================
   # PARTY INFO MESSAGES
   # ============================================
   party-info:
@@ -635,10 +609,11 @@ messages:
     config-success: "<green>✓ Reloaded config.yml</green>"
     items-success: "<green>✓ Reloaded items.yml</green>"
     shop-success: "<green>✓ Reloaded shop.yml</green>"
+    sequences-success: "<green>✓ Reloaded sequences.yml</green>"
     mannequins-success: "<green>✓ Reloaded mannequins (respawned all NPCs)</green>"
     count-success: "<green>Successfully reloaded {count} configuration file(s)!</green>"
     invalid-target: "<red>Unknown config: {target}</red>"
-    usage: "<gray>Usage: /cc reload [config|shop|items|mannequins|all]</gray>"
+    usage: "<gray>Usage: /cc reload [config|shop|items|sequences|mannequins|all]</gray>"
 
   # ============================================
   # STATS COMMAND MESSAGES

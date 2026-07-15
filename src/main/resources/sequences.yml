@@ -1,0 +1,37 @@
+# ============================================
+# Cash Clash Sequence Messages
+# ============================================
+# Titles/subtitles for scripted round/game presentation moments (round start,
+# president reveal, round end, round 4 shield transition, sudden death, victory).
+# All messages use MiniMessage format.
+# Schema Version: 1 (for future migrations)
+# ============================================
+
+schema-version: 1
+
+round-start:
+  selecting: "<yellow>Selecting Gamemode...</yellow>"
+  selected-title: "<gold><bold>{gamemode}</bold></gold>"
+  selected-subtitle: "<yellow>{objective} to win the game!</yellow>"
+
+president:
+  selecting: "<yellow>Selecting President...</yellow>"
+  selected-title: "<gold><bold>{player_name}</bold></gold>"
+  selected-subtitle: "<yellow>Has been selected as your president.</yellow>"
+
+round-end:
+  win-title: "<green><bold>YOU WIN!</bold></green>"
+  lose-title: "<red><bold>YOU LOSE</bold></red>"
+  no-winner-title: "<gray><bold>Round Over</bold></gray>"
+
+round4:
+  title: "<gold><bold>1st Half Over</bold></gold>"
+  subtitle: "<yellow>Now transitioning to Shield / Shieldless</yellow>"
+
+sudden-death:
+  title: "<red><bold>SUDDEN DEATH</bold></red>"
+  subtitle: "<yellow>{objective} to win the game!</yellow>"
+
+victory:
+  win-title: "<green><bold>VICTORY!</bold></green>"
+  lose-title: "<red><bold>DEFEAT</bold></red>"
