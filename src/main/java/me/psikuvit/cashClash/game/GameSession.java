@@ -266,6 +266,9 @@ public class GameSession {
         gamemode = GamemodeManager.getInstance().selectGamemode(this);
         ScoreboardManager.getInstance().createBoardForSession(this);
 
+        // Get players to the shop area before the round-start sequence freezes/blinds them
+        roundManager.teleportToBuyPhase();
+
         // Play the round-start reveal sequence, then continue into the game/shopping phase
         sequenceManager.play(Sequences.roundStart(gamemode), true, () -> {
             gamemode.onGameStart();

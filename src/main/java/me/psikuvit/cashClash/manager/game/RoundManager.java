@@ -52,6 +52,12 @@ public class RoundManager {
 
     public void startShoppingPhase(int roundNumber) {
         Messages.debug("GAME", "Starting shopping phase for round " + roundNumber + " in session " + session.getSessionId());
+
+        // Get players to the shop area before any freeze/reveal sequence plays (round 4
+        // transition, PTP president reveal, sudden death) so they aren't blind/frozen
+        // wherever they happened to be standing.
+        teleportToBuyPhase();
+
         prepareSuddenDeathRoundIfNeeded();
 
         // Round 4 plays the shield/shieldless half-transition sequence before anything else
@@ -60,6 +66,52 @@ public class RoundManager {
                     () -> beginBuyPhase(roundNumber));
         } else {
             beginBuyPhase(roundNumber);
+        }
+    }
+
+    /**
+     * Physically teleport all players to their team's shop area. Safe to call multiple
+     * times per round (e.g. once up front before any freeze/reveal sequence, then again
+     * once the actual shopping/buff-selection phase begins) - re-teleporting a player who's
+     * already there is a no-op in practice.
+     */
+    public void teleportToBuyPhase() {
+        Team teamRed = session.getTeamRed();
+        Team teamBlue = session.getTeamBlue();
+
+        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
+        if (arena == null || session.getGameWorld() == null) return;
+
+        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        World copiedWorld = session.getGameWorld();
+
+        Location teamRedShopTpl = tpl.getTeamRedShopSpawn();
+        Location teamBlueShopTpl = tpl.getTeamBlueShopSpawn();
+
+        for (UUID uuid : session.getPlayers()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null || !p.isOnline()) continue;
+
+            int teamNum = teamRed.hasPlayer(uuid) ? 1 : (teamBlue.hasPlayer(uuid) ? 2 : 0);
+            Location destTemplate = null;
+
+            if (teamNum == 1 && teamRedShopTpl != null) {
+                destTemplate = teamRedShopTpl;
+            } else if (teamNum == 2 && teamBlueShopTpl != null) {
+                destTemplate = teamBlueShopTpl;
+            }
+
+            if (destTemplate == null) {
+                Messages.send(p, "round.shopping-area-missing");
+                destTemplate = tpl.getSpectatorSpawn();
+            }
+
+            if (destTemplate != null) {
+                Location dest = LocationUtils.copyToWorld(destTemplate, copiedWorld);
+                p.setGameMode(GameMode.SURVIVAL);
+                p.teleport(dest);
+                p.closeInventory();
+            }
         }
     }
 
@@ -130,56 +182,28 @@ public class RoundManager {
                 "time_remaining", String.valueOf(timeRemaining));
         }
 
-        // Teleport all players to their team's shop area
+        // Players are already teleported to their team's shop area by teleportToBuyPhase()
+        // (called before any freeze/reveal sequence up in startShoppingPhase()). Re-teleport
+        // here too in case a player wasn't online for that earlier call, then heal/refill for
+        // the shopping phase specifically.
+        teleportToBuyPhase();
+
         Team teamRed = session.getTeamRed();
         Team teamBlue = session.getTeamBlue();
 
-        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
-        if (arena != null && session.getGameWorld() != null) {
-            TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
-            World copiedWorld = session.getGameWorld();
-
-            Location teamRedShopTpl = tpl.getTeamRedShopSpawn();
-            Location teamBlueShopTpl = tpl.getTeamBlueShopSpawn();
-
+        if (phaseType == GameState.SHOPPING) {
             for (UUID uuid : session.getPlayers()) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p == null || !p.isOnline()) continue;
 
-                // For shopping phase: heal and refill
-                if (phaseType == GameState.SHOPPING) {
-                    AttributeInstance maxHealthAttr = p.getAttribute(Attribute.MAX_HEALTH);
-                    if (maxHealthAttr != null) {
-                        p.setHealth(maxHealthAttr.getValue());
-                    }
-                    p.setFoodLevel(20);
-                    p.setSaturation(20.0f);
-                    refillWaterBuckets(p);
+                AttributeInstance maxHealthAttr = p.getAttribute(Attribute.MAX_HEALTH);
+                if (maxHealthAttr != null) {
+                    p.setHealth(maxHealthAttr.getValue());
                 }
-
-                int teamNum = teamRed.hasPlayer(uuid) ? 1 : (teamBlue.hasPlayer(uuid) ? 2 : 0);
-                Location destTemplate = null;
-
-                if (teamNum == 1 && teamRedShopTpl != null) {
-                    destTemplate = teamRedShopTpl;
-                } else if (teamNum == 2 && teamBlueShopTpl != null) {
-                    destTemplate = teamBlueShopTpl;
-                }
-
-                if (destTemplate == null) {
-                    Messages.send(p, "round.shopping-area-missing");
-                    destTemplate = tpl.getSpectatorSpawn();
-                }
-
-                if (destTemplate != null) {
-                    Location dest = LocationUtils.copyToWorld(destTemplate, copiedWorld);
-                    p.setGameMode(GameMode.SURVIVAL);
-                    p.teleport(dest);
-                    p.closeInventory();
-                    if (phaseType == GameState.SHOPPING) {
-                        Messages.send(p, "round.shopping-area-teleported");
-                    }
-                }
+                p.setFoodLevel(20);
+                p.setSaturation(20.0f);
+                refillWaterBuckets(p);
+                Messages.send(p, "round.shopping-area-teleported");
             }
         }
 
