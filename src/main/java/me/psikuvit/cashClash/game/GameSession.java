@@ -74,6 +74,8 @@ public class GameSession {
     private BonusManager bonusManager;
     private final SequenceManager sequenceManager;
     private boolean sequenceLocked;
+    private boolean actionsRestricted;
+    private boolean damageDisabled;
     // Shield logic: rounds 1-3 are either shield or shieldless, rounds 4-6 is the other one
     // Determined at game start, consistent for the entire game
     private final boolean rounds1to3HaveShields;
@@ -189,6 +191,31 @@ public class GameSession {
 
     public void setSequenceLocked(boolean sequenceLocked) {
         this.sequenceLocked = sequenceLocked;
+    }
+
+    /**
+     * Whether a {@link me.psikuvit.cashClash.sequence.Sequence} wants shopping-phase-parity
+     * restrictions applied (no custom item use, no block placement, no damage, no scoreboard
+     * updates) without freezing movement. Set by {@link SequenceManager#playRestricted}.
+     */
+    public boolean isActionsRestricted() {
+        return actionsRestricted;
+    }
+
+    public void setActionsRestricted(boolean actionsRestricted) {
+        this.actionsRestricted = actionsRestricted;
+    }
+
+    /**
+     * Whether a {@link me.psikuvit.cashClash.sequence.Sequence} wants damage/PvP disabled
+     * without any other restriction. Set by {@link SequenceManager#playDamageDisabled}.
+     */
+    public boolean isDamageDisabled() {
+        return damageDisabled;
+    }
+
+    public void setDamageDisabled(boolean damageDisabled) {
+        this.damageDisabled = damageDisabled;
     }
 
     /**
@@ -588,8 +615,9 @@ public class GameSession {
         Location finalSpawn = determineFinalSpawn();
 
         // Show the victory sequence (win/loss title, then a lingering pause) before
-        // teleporting players away and tearing down the arena.
-        sequenceManager.play(Sequences.gameVictory(winner), true, () -> {
+        // teleporting players away and tearing down the arena. No restrictions except
+        // damage - the game is already decided.
+        sequenceManager.playDamageDisabled(Sequences.gameVictory(winner), () -> {
             notifyGameEnd(winner, finalSpawn);
             cleanupPlayers();
             releaseGamemode();

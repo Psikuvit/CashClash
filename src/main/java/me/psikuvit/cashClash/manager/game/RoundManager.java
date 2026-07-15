@@ -386,9 +386,9 @@ public class RoundManager {
         session.resolveRoundInvestments();
         EconomyManager.distributeRoundMoney(session);
 
-        // Hold the win/loss result on screen (freezes input + suppresses game-logic-
-        // affecting deaths) before moving to the next round or ending the game.
-        session.getSequenceManager().play(Sequences.roundEnd(winningTeam), true, () -> {
+        // Hold the win/loss result on screen (shopping-phase-parity restrictions + damage
+        // off, movement stays free) before moving to the next round or ending the game.
+        session.getSequenceManager().playRestricted(Sequences.roundEnd(winningTeam), () -> {
             if (session.getCurrentRound() >= ConfigManager.getInstance().getTotalRounds()) {
                 session.end();
             } else {

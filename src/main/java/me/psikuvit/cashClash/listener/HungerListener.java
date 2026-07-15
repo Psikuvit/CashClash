@@ -21,8 +21,9 @@ public class HungerListener implements Listener {
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
-        // Prevent hunger loss in lobby (no session) or shopping phase
-        if (session == null || session.getState() == GameState.WAITING || session.getState() == GameState.SHOPPING) {
+        // Prevent hunger loss in lobby (no session), shopping phase, or a restricted sequence
+        if (session == null || session.getState() == GameState.WAITING || session.getState() == GameState.SHOPPING
+                || session.isActionsRestricted()) {
             event.setCancelled(true);
         }
     }

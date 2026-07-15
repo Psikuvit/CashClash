@@ -108,7 +108,7 @@ public class GameListener implements Listener {
 
         // A round-end/victory Sequence is holding the result on screen - deaths during
         // this window must not affect lives, bonuses, or win conditions.
-        if (!session.isSequenceLocked()) {
+        if (!session.isSequenceLocked() && !session.isActionsRestricted()) {
             victim.handleDeath();
             session.getCurrentRoundData().removeLife(player.getUniqueId());
 
@@ -310,7 +310,7 @@ public class GameListener implements Listener {
         }
 
         // Prevent consumption in shopping phase
-        if (session.getState() == GameState.SHOPPING) {
+        if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) {
             FoodItem fi = PDCDetection.getFood(consumed);
             if (fi != null) {
                 event.setCancelled(true);
@@ -413,7 +413,7 @@ public class GameListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(p);
         if (session == null) return;
 
-        if (session.getState() == GameState.SHOPPING) return;
+        if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) return;
 
         // Dead players cannot use Bunny Shoes or any abilities
         if (armorManager.hasBunnyShoes(p)) {
@@ -614,7 +614,7 @@ public class GameListener implements Listener {
 
         // Prevent custom projectiles during shopping
         GameSession session = GameManager.getInstance().getPlayerSession(attacker);
-        if (session != null && session.getState() == GameState.SHOPPING) {
+        if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {
             event.setCancelled(true);
             return;
         }
@@ -654,7 +654,7 @@ public class GameListener implements Listener {
         if (!(event.getRightClicked() instanceof Player target)) return;
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session != null && session.getState() == GameState.SHOPPING) return;
+        if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) return;
 
         switch (type) {
             case MEDIC_POUCH -> {
@@ -756,7 +756,7 @@ public class GameListener implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session != null && session.getState() == GameState.SHOPPING) {
+        if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {
             Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
                 // Use centralized health system to get max health (respects modifiers)
                 var ccp = session.getCashClashPlayer(player.getUniqueId());

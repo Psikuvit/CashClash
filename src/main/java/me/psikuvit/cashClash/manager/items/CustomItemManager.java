@@ -534,7 +534,7 @@ public class CustomItemManager {
         Team team = session.getPlayerTeam(player);
         if (team == null) return;
 
-        if (session.getState() == GameState.SHOPPING) {
+        if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) {
             Messages.send(player, "customitem.cannot-place-during-shopping");
             return;
         }
@@ -599,7 +599,8 @@ public class CustomItemManager {
         Location placeLoc = clickedBlock.getRelative(BlockFace.UP).getLocation();
         Block placeBlock = placeLoc.getBlock();
 
-        if (GameManager.getInstance().getPlayerSession(player).getState() == GameState.SHOPPING) {
+        GameSession boomboxSession = GameManager.getInstance().getPlayerSession(player);
+        if (boomboxSession.getState() == GameState.SHOPPING || boomboxSession.isActionsRestricted()) {
             Messages.send(player, "customitem.cannot-place-during-shopping");
             return;
         }

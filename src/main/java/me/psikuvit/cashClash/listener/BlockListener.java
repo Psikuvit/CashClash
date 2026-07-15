@@ -208,6 +208,12 @@ public class BlockListener implements Listener {
             return false;
         }
 
+        if (session.isActionsRestricted()) {
+            Messages.debug("Block placement blocked during restricted sequence for player " + player.getName());
+            event.setCancelled(true);
+            return false;
+        }
+
         GameState state = session.getState();
         Material blockType = event.getBlockPlaced().getType();
 
@@ -356,7 +362,7 @@ public class BlockListener implements Listener {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
-        if (session != null && session.getState() == GameState.SHOPPING) {
+        if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {
             event.setCancelled(true);
         }
     }

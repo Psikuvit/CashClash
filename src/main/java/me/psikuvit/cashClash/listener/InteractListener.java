@@ -475,7 +475,7 @@ public class InteractListener implements Listener {
 
     private boolean isInShoppingPhase(Player player) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
-        return session != null && session.getState() == GameState.SHOPPING;
+        return session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted());
     }
 
     private boolean isRespawnProtected(Player player) {

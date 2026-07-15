@@ -212,6 +212,11 @@ public class ScoreboardManager {
             return;
         }
 
+        // A round-end Sequence is holding the result on screen - freeze the scoreboard too.
+        if (session.isActionsRestricted()) {
+            return;
+        }
+
         for (UUID playerUuid : session.getPlayers()) {
             Player player = Bukkit.getPlayer(playerUuid);
             if (player == null || !player.isOnline()) {

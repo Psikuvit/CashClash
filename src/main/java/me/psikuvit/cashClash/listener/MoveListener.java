@@ -42,7 +42,7 @@ public class MoveListener implements Listener {
         }
 
         // Skip if in shopping phase
-        if (session.getState() == GameState.SHOPPING) return;
+        if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) return;
 
         // Check block player is standing on for bounce pads
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
