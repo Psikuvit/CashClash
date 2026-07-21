@@ -346,6 +346,11 @@ public class DamageListener implements Listener {
 
         CashClashPlayer victimCcp = session.getCashClashPlayer(victim.getUniqueId());
         if (victimCcp != null && victimCcp.isRespawnProtected()) {
+            // Allow damage if victim is currently charging with Goblin Spear
+            if (mythicManager.isGoblinSpearCharging(victim.getUniqueId())) {
+                return false;
+            }
+
             event.setCancelled(true);
             Messages.debug(victim, "DAMAGE", "Damage cancelled due to respawn protection");
             return true;

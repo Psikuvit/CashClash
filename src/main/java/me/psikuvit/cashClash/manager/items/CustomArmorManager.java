@@ -362,6 +362,15 @@ public class CustomArmorManager {
         targetLoc.setYaw(attacker.getLocation().getYaw()); // Keep attacker's yaw
         targetLoc.setPitch(attacker.getLocation().getPitch());
         attacker.teleport(targetLoc);
+        
+        // Remove respawn protection from attacker when they use Dragon Dash
+        GameSession currentSession = GameManager.getInstance().getPlayerSession(attacker);
+        if (currentSession != null) {
+            CashClashPlayer attackerCcp = currentSession.getCashClashPlayer(attackerId);
+            if (attackerCcp != null) {
+                attackerCcp.setRespawnProtection(0L);
+            }
+        }
         attacker.setVelocity(direction.multiply(1.2).setY(0.2));
 
         // Store damage boost for next hit

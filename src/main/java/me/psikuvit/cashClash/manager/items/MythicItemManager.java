@@ -1149,6 +1149,15 @@ public class MythicItemManager {
     public void startGoblinSpearCharge(Player player) {
         UUID uuid = player.getUniqueId();
 
+        // Remove respawn protection when starting charge
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session != null) {
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+            if (ccp != null) {
+                ccp.setRespawnProtection(0L);
+            }
+        }
+
         // Check cooldown
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE);
@@ -1169,7 +1178,6 @@ public class MythicItemManager {
         goblinSpearCharging.put(uuid, new ArrayList<>());
 
         // Get session for team checking
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
         Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
 
         // Get charge direction
@@ -1257,12 +1265,6 @@ public class MythicItemManager {
             int poisonDuration = cfg.getGoblinChargePoisonDuration();
             int poisonLevel = cfg.getGoblinChargePoisonLevel();
 
-            // Feature requirement: charger and pinned players are invincible for 5s after dash
-            GameSession chargerSession = GameManager.getInstance().getPlayerSession(player);
-            if (chargerSession != null) {
-                chargerSession.applyRespawnProtection(player.getUniqueId(), 5);
-            }
-
             for (Player caught : caughtPlayers) {
                 if (!caught.isOnline()) continue;
 
@@ -1279,23 +1281,15 @@ public class MythicItemManager {
                     if (player.isOnline()) player.setMaximumNoDamageTicks(20);
                 }, 1L);
 
-                // Apply invincibility to caught players too
-                GameSession victimSession = GameManager.getInstance().getPlayerSession(caught);
-                if (victimSession != null) {
-                    victimSession.applyRespawnProtection(caught.getUniqueId(), 5);
-                }
-
                 // Visual effects
                 ParticleUtils.damageIndicator(caught.getLocation().add(0, 1, 0), 20, 0.5);
                 SoundUtils.play(caught, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
 
                 Messages.debug(player, "GOBLIN_SPEAR: Wall impact dealt " + damage + " damage + Poison to " + caught.getName());
-                Messages.debug(player, "GOBLIN_SPEAR: Applied 5s invincibility to " + caught.getName());
             }
 
             Messages.send(player, "mythic.wall-impact", "{damage}", String.valueOf((int) damage), "{enemy_count}", String.valueOf(caughtPlayers.size()));
             SoundUtils.play(player, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 1.0f, 0.8f);
-            Messages.debug(player, "GOBLIN_SPEAR: Applied 5s invincibility to charger " + player.getName());
         } else {
             Messages.debug(player, "GOBLIN_SPEAR: Charge ended without wall impact");
         }
