@@ -235,7 +235,7 @@ public class RoundManager {
 
             if (timeRemaining <= 0) {
                 endBuffSelectionPhase(roundNumber);
-            } else if (timeRemaining <= 10 || timeRemaining % 5 == 0) {
+            } else if (timeRemaining <= 3) {
                 Messages.broadcast(session.getPlayers(), "round.buff-selection-countdown",
                     "time_remaining", String.valueOf(timeRemaining));
             }
@@ -260,7 +260,7 @@ public class RoundManager {
 
             if (timeRemaining <= 0) {
                 endShoppingPhase();
-            } else if (timeRemaining <= 10 || timeRemaining % 30 == 0) {
+            } else if (timeRemaining <= 3) {
                 Messages.broadcast(session.getPlayers(), "round.shopping-countdown",
                     "time_remaining", String.valueOf(timeRemaining));
             }
@@ -349,7 +349,8 @@ public class RoundManager {
                     int winningTeam = session.getGamemode() != null ? session.getGamemode().getWinningTeam() : 0;
                     endCombatPhase(winningTeam);
                 }
-            } else if (!finalStandActive && (timeRemaining <= 10 || timeRemaining % 60 == 0)) {
+            } else if (!finalStandActive && timeRemaining <= 3) {
+                SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
                 Messages.broadcast(session.getPlayers(), "round.combat-countdown",
                     "time_remaining", String.valueOf(timeRemaining));
             }

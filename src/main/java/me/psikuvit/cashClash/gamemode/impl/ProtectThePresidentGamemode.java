@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.ptp.PTPFinalStandUtils;
 import me.psikuvit.cashClash.util.game.ptp.PTPInventoryUtils;
 import me.psikuvit.cashClash.util.game.ptp.PresidentialEffectsUtils;
@@ -459,8 +460,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
     
     private void updateSelectionCountdown() {
         if (selectionTimeRemaining > 0) {
-            if (selectionTimeRemaining == 15 || selectionTimeRemaining == 10 ||
-                selectionTimeRemaining == 5 || selectionTimeRemaining <= 3) {
+            if (selectionTimeRemaining <= 3) {
+                SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
                 Messages.broadcast(session.getPlayers(), "round.buff-selection-countdown-ptp",
                         "time_remaining", String.valueOf(selectionTimeRemaining));
             }
