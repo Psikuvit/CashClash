@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -363,11 +364,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         if (bonusEarned) {
             awardCaptureBonus(teamNumber);
-        } else {
+        }
+
+        else {
             // Award base points without bonus
             Messages.debug("[CTF] Flag captured after 45s - no bonus awarded to Team " + teamNumber);
         }
 
+        CustomArmorManager.getInstance().onInvestorObjectivectf(player);
+        Messages.debug("[INVESTOR] Capturer: " + player.getName());
         resetFlagsAfterCapture(teamNumber);
 
         // Check for 2-2 tie in sudden death to restart cycle

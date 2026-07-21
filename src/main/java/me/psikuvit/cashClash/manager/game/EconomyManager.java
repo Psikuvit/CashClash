@@ -88,8 +88,4 @@ public class EconomyManager {
             player.getCurrentInvestment().setDeathsToMax();
         }
     }
-
-    public static void giveRoundStartMoney(GameSession session, CashClashPlayer player) {
-        // Obsolete: Money is now distributed at the end of the round via distributeRoundMoney
-    }
 }

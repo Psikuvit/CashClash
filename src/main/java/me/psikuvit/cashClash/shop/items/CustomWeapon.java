@@ -12,6 +12,7 @@ import org.bukkit.persistence.PersistentDataType;
 public class CustomWeapon {
 
     public static final CustomWeapon CASH_BLASTER = new CustomWeapon();
+    public static final CustomWeapon SOUL_KATANA = new CustomWeapon();
 
     private static final NamespacedKey CASH_BLASTER_KEY =
             new NamespacedKey(CashClashPlugin.getInstance(), "cash_blaster");
@@ -21,11 +22,9 @@ public class CustomWeapon {
             new NamespacedKey(CashClashPlugin.getInstance(), "soul_katana");
 
 
-    public static boolean hasCashBlaster(Player player) {
+    public static boolean hasCashBlaster(ItemStack item) {
 
-        ItemStack item = player.getInventory().getItemInMainHand();
-
-        if (item.getType() != Material.BOW) return false;
+        if (item == null) return false;
         if (!item.hasItemMeta()) return false;
 
         return item.getItemMeta()
@@ -33,12 +32,7 @@ public class CustomWeapon {
                 .has(CASH_BLASTER_KEY, PersistentDataType.BYTE);
     }
 
-
-    public static boolean hasSoulKatana(Player player) {
-
-
-        ItemStack item = player.getInventory().getItemInMainHand();
-
+    public static boolean hasSoulKatana(ItemStack item) {
 
         if (item.getType() != Material.IRON_SWORD) return false;
         if (!item.hasItemMeta()) return false;
@@ -75,5 +69,27 @@ public class CustomWeapon {
 
 
         item.setItemMeta(meta);
+    }
+    public static boolean isCashBlaster(ItemStack item) {
+
+        if (item == null) return false;
+        if (item.getType() != Material.BOW) return false;
+        if (!item.hasItemMeta()) return false;
+
+        return item.getItemMeta()
+                .getPersistentDataContainer()
+                .has(CASH_BLASTER_KEY, PersistentDataType.BYTE);
+    }
+
+
+    public static boolean isSoulKatana(ItemStack item) {
+
+        if (item == null) return false;
+        if (item.getType() != Material.IRON_SWORD) return false;
+        if (!item.hasItemMeta()) return false;
+
+        return item.getItemMeta()
+                .getPersistentDataContainer()
+                .has(SOUL_KATANA_KEY, PersistentDataType.BYTE);
     }
 }

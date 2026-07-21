@@ -1210,14 +1210,6 @@ public class MythicItemManager {
             int poisonDuration = cfg.getGoblinChargePoisonDuration();
             int poisonLevel = cfg.getGoblinChargePoisonLevel();
 
-
-            // Feature requirement: charger and pinned players are invincible for 5s after dash
-            GameSession chargerSession = GameManager.getInstance().getPlayerSession(player);
-            if (chargerSession != null) {
-                chargerSession.applyRespawnProtection(player.getUniqueId(), 5);
-            }
-
-
             for (Player caught : caughtPlayers) {
                 if (!caught.isOnline()) continue;
 
@@ -1234,14 +1226,6 @@ public class MythicItemManager {
                     if (caught.isOnline()) caught.setMaximumNoDamageTicks(20);
                     if (player.isOnline()) player.setMaximumNoDamageTicks(20);
                 }, 1L);
-
-
-                // Apply invincibility to caught players too
-                GameSession victimSession = GameManager.getInstance().getPlayerSession(caught);
-                if (victimSession != null) {
-                    victimSession.applyRespawnProtection(caught.getUniqueId(), 5);
-                }
-
 
                 // Visual effects
                 ParticleUtils.damageIndicator(caught.getLocation().add(0, 1, 0), 20, 0.5);

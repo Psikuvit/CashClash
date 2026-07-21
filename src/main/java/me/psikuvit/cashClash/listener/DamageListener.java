@@ -107,7 +107,6 @@ public class DamageListener implements Listener {
         }
     }
 
-
     /**
      * Log damage handling error
      */
@@ -115,9 +114,7 @@ public class DamageListener implements Listener {
         Messages.debug("DAMAGE", "Error handling damage for " + player.getName() + ": " + e.getMessage());
     }
 
-
     // ==================== MAIN PVP DAMAGE HANDLER (EntityDamageByEntityEvent) ====================
-
 
     /**
      * Handles player vs player damage with high priority.
@@ -176,7 +173,6 @@ public class DamageListener implements Listener {
             }
         }
 
-
         if (handleLobbyProtection(event, attacker)) {
             return true;
         }
@@ -185,7 +181,6 @@ public class DamageListener implements Listener {
         }
         return handleRespawnProtection(event, attacker, victim);
     }
-
 
     /**
      * Process damage effects on victim
@@ -245,22 +240,6 @@ public class DamageListener implements Listener {
                 event.setCancelled(true);
                 return;
             }
-        }
-
-
-        // Flamebringer: Negate knockback from fire damage
-        if ((event.getCause() == EntityDamageEvent.DamageCause.FIRE ||
-                event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK ||
-                event.getCause() == EntityDamageEvent.DamageCause.LAVA) &&
-                armorManager.hasFlamebringerNoFireKb(player)) {
-
-
-            // Schedule to reset velocity after knockback is applied
-            SchedulerUtils.runTask(() -> {
-                if (player.isOnline()) {
-                    player.setVelocity(player.getVelocity().multiply(0));
-                }
-            });
         }
     }
 
@@ -448,7 +427,6 @@ public class DamageListener implements Listener {
         double damageMultiplier = armorManager.getInvestorMeleeDamageMultiplier(attacker, session.getCurrentRound());
         event.setDamage(event.getDamage() * damageMultiplier);
 
-
         // Bullseye Pants: Storming arrow
         handleBullseyePantsEffect(event, attacker, victim);
 
@@ -578,7 +556,6 @@ public class DamageListener implements Listener {
     public void onFall(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
         if (event.getCause() != EntityDamageEvent.DamageCause.FALL) return;
-
 
         armorManager.onTectonicCapFall(event, player);
     }

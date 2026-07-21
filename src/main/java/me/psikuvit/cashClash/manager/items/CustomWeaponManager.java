@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomWeapon;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -75,7 +76,7 @@ public class CustomWeaponManager implements Listener {
             return;
         }
 
-        if (!CustomWeapon.hasCashBlaster(player)) return;
+            if (!hasCashBlasterInHand(player)) return;
 
         UUID uuid = player.getUniqueId();
 
@@ -129,8 +130,7 @@ public class CustomWeaponManager implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
 
 
-        if (!CustomWeapon.hasCashBlaster(player)) return;
-
+        if (!hasCashBlasterInHand(player)) return;
 
         if (!(event.getProjectile() instanceof AbstractArrow arrow)) return;
 
@@ -405,53 +405,91 @@ public class CustomWeaponManager implements Listener {
     }
     public void onProfitVortexDeath(PlayerDeathEvent event) {
 
-
         Player victim = event.getEntity();
-
 
         if (!playersKilledInProfitVortex.containsKey(victim.getUniqueId())) {
             return;
         }
 
-
         Player killer = victim.getKiller();
-
 
         if (killer == null) {
             return;
         }
 
-
         Location vortexLocation = playersKilledInProfitVortex.get(
                 victim.getUniqueId()
         );
-
 
         if (vortexLocation.distance(victim.getLocation()) > 5) {
             return;
         }
         GameSession session = GameManager.getInstance().getPlayerSession(killer);
 
-
         if (session == null) return;
-
 
         Team killerTeam = session.getPlayerTeam(killer);
 
-
         if (killerTeam == null) return;
-
 
         for (UUID uuid : killerTeam.getPlayers()) {
 
-
             CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-
 
             if (ccp != null) {
                 ccp.addCoins(400);
+
+                Player teammate = Bukkit.getPlayer(uuid);
+
+                if (teammate != null && teammate.isOnline()) {
+
+                    SoundUtils.play(
+                            teammate,
+                            Sound.BLOCK_ENCHANTMENT_TABLE_USE,
+                            1.0f,
+                            0.5f
+                    );
+
+                    Particle.DustOptions darkGreen =
+                            new Particle.DustOptions(
+                                    Color.fromRGB(0, 120, 40),
+                                    1.3f
+                            );
+
+                    Location center = teammate.getLocation()
+                            .clone()
+                            .add(0, 0.6, 0);
+
+                    for (int i = 0; i < 18; i++) {
+
+                        int delay = i;
+
+                        Bukkit.getScheduler().runTaskLater(
+                                CashClashPlugin.getInstance(),
+                                () -> {
+
+                                    double angle =
+                                            (Math.PI * 2 / 18) * delay;
+
+                                    double x = Math.cos(angle) * 0.55;
+                                    double z = Math.sin(angle) * 0.55;
+
+                                    teammate.getWorld().spawnParticle(
+                                            Particle.DUST,
+                                            center.clone().add(x, 0, z),
+                                            2,
+                                            darkGreen
+                                    );
+
+
+                                },
+                                (int)(delay * 0.8)
+                        );
+                    }
+                }
             }
         }
+
         playersKilledInProfitVortex.remove(victim.getUniqueId());
     }
 
@@ -564,7 +602,9 @@ public class CustomWeaponManager implements Listener {
     private final Map<UUID, Boolean> soulKatanaDashing = new HashMap<>();
     private final Map<UUID, Boolean> soulKatanaLeftGround = new HashMap<>();
     private final Map<UUID, Long> soulKatanaHealingReduction = new HashMap<>();
-
+    private final Map<UUID, Location> soulKatanaLastLocations = new HashMap<>();
+    private final Map<UUID, BukkitTask> soulKatanaTrailTasks = new HashMap<>();
+    private final Map<UUID, BukkitTask> soulKatanaMarkTasks = new HashMap<>();
 
     public Map<UUID, Long> getSoulKatanaHealingReduction() {
         return soulKatanaHealingReduction;
@@ -586,7 +626,7 @@ public class CustomWeaponManager implements Listener {
         }
 
 
-        if (!CustomWeapon.hasSoulKatana(player)) return;
+        if (!hasSoulKatanaInHand(player)) return;
 
         if (CooldownManager.getInstance().isOnCooldown(
                 player.getUniqueId(),
@@ -604,13 +644,13 @@ public class CustomWeaponManager implements Listener {
         player.getWorld().playSound(
                 player.getLocation(),
                 Sound.ENTITY_ENDER_DRAGON_FLAP,
-                0.8f,
+                1.2f,
                 1.8f
         );
 
         soulKatanaDashing.put(player.getUniqueId(), true);
         soulKatanaLeftGround.put(player.getUniqueId(), false);
-
+        startSoulKatanaDashTrail(player);
 
         CooldownManager.getInstance().setCooldownSeconds(
                 player.getUniqueId(),
@@ -643,9 +683,6 @@ public class CustomWeaponManager implements Listener {
 
             if (target.equals(player)) continue;
 
-
-
-
             Vector directionToTarget = target.getLocation()
                     .toVector()
                     .subtract(player.getLocation().toVector())
@@ -675,7 +712,7 @@ public class CustomWeaponManager implements Listener {
                         target.getUniqueId(),
                         System.currentTimeMillis() + 3000
                 );
-            }
+                startSoulKatanaHealingMark(target);            }
         }
 
 
@@ -736,11 +773,218 @@ public class CustomWeaponManager implements Listener {
                 1.0f,
                 2.5f
         );
+
         soulKatanaDashing.remove(player.getUniqueId());
         soulKatanaLeftGround.remove(player.getUniqueId());
+
+        BukkitTask task = soulKatanaTrailTasks.remove(player.getUniqueId());
+
+        if (task != null) {
+            task.cancel();
+        }
+
+        soulKatanaLastLocations.remove(player.getUniqueId());
+
     }
     private void dealPhantomSliceDamage(Player target, Player attacker) {
         double damage = 6.0;
         target.setHealth(Math.max(0, target.getHealth() - damage));
+    }
+    private void startSoulKatanaDashTrail(Player player) {
+
+        UUID id = player.getUniqueId();
+
+        soulKatanaLastLocations.put(id, player.getLocation().clone());
+
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(
+                CashClashPlugin.getInstance(),
+                () -> {
+
+                    if (!player.isOnline() || !soulKatanaDashing.containsKey(id)) {
+                        BukkitTask oldTask = soulKatanaTrailTasks.remove(id);
+
+                        if (oldTask != null) {
+                            oldTask.cancel();
+                        }
+
+                        soulKatanaLastLocations.remove(id);
+                        return;
+                    }
+
+
+                    Location last = soulKatanaLastLocations.get(id);
+                    Location current = player.getLocation().clone();
+
+
+                    if (last != null) {
+
+                        Vector direction = current.toVector()
+                                .subtract(last.toVector())
+                                .normalize();
+
+
+                        Particle.DustOptions blue =
+                                new Particle.DustOptions(
+                                        Color.fromRGB(120, 220, 255),
+                                        1.3f
+                                );
+
+
+                        // particles shoot backward from movement
+                        Location particleLoc = last.clone()
+                                .add(0, 1, 0)
+                                .subtract(direction.multiply(0.5));
+
+
+                        player.getWorld().spawnParticle(
+                                Particle.DUST,
+                                particleLoc,
+                                8,
+                                0.15,
+                                0.15,
+                                0.15,
+                                0,
+                                blue
+                        );
+
+                        player.getWorld().spawnParticle(
+                                Particle.END_ROD,
+                                particleLoc,
+                                3,
+                                0.1,
+                                0.1,
+                                0.1,
+                                0.01
+                        );
+                    }
+
+                    soulKatanaLastLocations.put(id, current);
+
+                },
+                0L,
+                1L
+        );
+
+        soulKatanaTrailTasks.put(id, task);
+    }
+    private void startSoulKatanaHealingMark(Player target) {
+
+        UUID id = target.getUniqueId();
+
+        // Prevent duplicate marks
+        if (soulKatanaMarkTasks.containsKey(id)) {
+            return;
+        }
+
+        target.sendMessage("§9Your healing has been reduced by 30%!");
+
+        final int[] soundTick = {0};
+
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(
+                CashClashPlugin.getInstance(),
+                () -> {
+
+                    Long endTime = soulKatanaHealingReduction.get(id);
+
+                    if (endTime == null || System.currentTimeMillis() >= endTime || !target.isOnline()) {
+
+                        BukkitTask oldTask = soulKatanaMarkTasks.remove(id);
+
+                        if (oldTask != null) {
+                            oldTask.cancel();
+                        }
+
+                        soulKatanaHealingReduction.remove(id);
+                        return;
+                    }
+
+
+                    Location center = target.getLocation()
+                            .clone()
+                            .add(0, 2.4, 0);
+
+
+                    Particle.DustOptions darkBlue =
+                            new Particle.DustOptions(
+                                    Color.fromRGB(0, 50, 255),
+                                    1.2f
+                            );
+
+
+                    Particle.DustOptions lightBlue =
+                            new Particle.DustOptions(
+                                    Color.fromRGB(100, 200, 255),
+                                    1.0f
+                            );
+
+
+                    // Rotating soul mark
+                    long time = System.currentTimeMillis();
+
+                    for (int i = 0; i < 12; i++) {
+
+                        double angle =
+                                (Math.PI * 2 / 12 * i)
+                                        + (time % 1000) / 1000.0 * Math.PI * 2;
+
+
+                        double radius = 0.35;
+
+                        double x = Math.cos(angle) * radius;
+                        double z = Math.sin(angle) * radius;
+
+
+                        target.getWorld().spawnParticle(
+                                Particle.DUST,
+                                center.clone().add(x, 0, z),
+                                1,
+                                darkBlue
+                        );
+                    }
+
+                    // Play recurring mark sound every 15 ticks (1.5s)
+                    soundTick[0]++;
+
+                    if (soundTick[0] >= 15) {
+                        soundTick[0] = 0;
+
+                        target.getWorld().playSound(
+                                target.getLocation(),
+                                Sound.BLOCK_SCULK_SENSOR_CLICKING,
+                                0.8f,
+                                0.6f
+                        );
+                    }
+
+                    // Soul sparks falling downward
+                    target.getWorld().spawnParticle(
+                            Particle.DUST,
+                            center.clone().add(
+                                    (Math.random() - 0.5) * 0.4,
+                                    -0.3,
+                                    (Math.random() - 0.5) * 0.4
+                            ),
+                            2,
+                            lightBlue
+                    );
+
+
+                },
+                0L,
+                2L
+        );
+
+
+        soulKatanaMarkTasks.put(id, task);
+    }
+    private boolean hasCashBlasterInHand(Player player) {
+        return CustomWeapon.hasCashBlaster(
+                player.getInventory().getItemInMainHand()
+        );
+    }
+    boolean hasSoulKatanaInHand(Player player)
+    { return CustomWeapon.hasSoulKatana(
+            player.getInventory().getItemInMainHand()
+    );
     }
 }

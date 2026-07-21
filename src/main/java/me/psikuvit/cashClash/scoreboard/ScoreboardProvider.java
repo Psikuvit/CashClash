@@ -53,7 +53,8 @@ public class ScoreboardProvider {
         }
 
         // Check if in sudden death
-        boolean inSuddenDeath = session.getGamemode().getSuddenDeathManager().isInSuddenDeath();
+        boolean inSuddenDeath = session.getGamemode() != null &&
+                session.getGamemode().getSuddenDeathManager().isInSuddenDeath();
 
         return new ScoreboardContext() {
             @Override

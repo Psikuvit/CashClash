@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -229,7 +230,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
                         "win_condition", String.valueOf(WIN_CONDITION));
             }
 
-            addTeamKill(killerTeam);
+            addTeamKill(killerTeam, killer);
+            CustomArmorManager.getInstance().onInvestorKillptp(killer);
             if (suddenDeathManager.isInSuddenDeath()) {
                 suddenDeathPresidentKills.merge(killerTeam, 1, Integer::sum);
             }
@@ -241,7 +243,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             // Regular player died, award killer's team if killer is a president
             int killerPresidentTeam = findPresidentTeam(killer.getUniqueId());
             if (killerPresidentTeam != 0) {
-                addTeamKill(killerPresidentTeam);
+                addTeamKill(killerPresidentTeam, killer);
             }
 
             // Permanent deaths during Final Stand
@@ -535,7 +537,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     /**
      * Add a kill for the team and check for bonuses
      */
-    private void addTeamKill(int team) {
+    private void addTeamKill(int team, Player killer) {
         int killCount = teamKillCount.merge(team, 1, Integer::sum);
         Messages.debug("[PTP] Team " + team + " kill count: " + killCount);
 

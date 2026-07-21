@@ -267,7 +267,6 @@ public class ConfigValidator {
         validateAndSet(config, "custom-armor.flamebringer.ignite-chance", 0.30, autoAdd);
         validateAndSet(config, "custom-armor.tax-evasion.death-penalty-percentage", 0.075, autoAdd);
         validateAndSet(config, "custom-armor.tax-evasion.survival-bonus", 3000, autoAdd);
-        validateAndSet(config, "custom-armor.investors.money-bonus-per-piece", 0.125, autoAdd);
 
         // Custom items section
         validateAndSet(config, "custom-items.grenade.fuse-seconds", 3, autoAdd);

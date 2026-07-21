@@ -3,6 +3,10 @@ version: '2.4'
 main: me.psikuvit.cashClash.CashClashPlugin
 api-version: '1.21'
 description: A 4v4 PvP strategy minigame with economy mechanics
+depend:
+  - packetevents
+softdepend:
+  - packetevents
 author: psikuvit
 website: https://github.com/psikuvit/CashClash
 

@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager.items;
 
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
@@ -10,6 +11,8 @@ import org.bukkit.Color;
 import org.bukkit.Particle;
 import org.bukkit.entity.Entity;
 import me.psikuvit.cashClash.manager.items.CustomHealingManager;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
@@ -23,14 +26,15 @@ import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.*;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
-
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -68,9 +72,10 @@ public class CustomArmorManager {
 
 
     // Dragon Set tracking
-    private final Map<UUID, Integer> dragonScales = new HashMap<>();
-    private final Map<UUID, Integer> dragonHitCount = new HashMap<>();
-
+    private final Map<UUID, Integer> dragonScales = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> dragonHitCount = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> dragonRushDamageBuff = new HashMap<>();
+    private final Set<UUID> dragonRushInvincible = new HashSet<>();
 
     // Bullseye Pants tracking
     private final Map<UUID, Integer> bullseyeHitCount; // Attacker -> current hit count
@@ -215,7 +220,6 @@ public class CustomArmorManager {
         return hasBoots && hasLegs;
     }
 
-
     // ==================== TECTONIC CAP ====================
 
 
@@ -254,7 +258,7 @@ public class CustomArmorManager {
         }
 
 
-        double fallDamage = event.getFinalDamage(); // calculate FIRST
+        double fallDamage = event.getFinalDamage(); // calculate first
         event.setCancelled(true);
         double radius = 4.0 + (fallDamage * 0.3);
         World world = player.getWorld();
@@ -339,9 +343,7 @@ public class CustomArmorManager {
         }
     }
 
-
     // ==================== DRAGON SET ====================
-
 
     private int getDragonScales(Player player) {
         return dragonScales.getOrDefault(player.getUniqueId(), 0);
@@ -349,75 +351,54 @@ public class CustomArmorManager {
     private void setDragonScales(Player player, int amount) {
         dragonScales.put(player.getUniqueId(), Math.min(3, amount));
     }
+    public boolean consumeDragonScale(Player player) {
 
-
-    private boolean consumeDragonScale(Player player) {
-        int scales = getDragonScales(player);
-
-
-        if (scales <= 0) {
+        if (getDragonScales(player) <= 0) {
             return false;
         }
-        setDragonScales(player, scales - 1);
+
+        setDragonScales(
+                player,
+                getDragonScales(player) - 1
+        );
+
         return true;
     }
 
-
-    public boolean useDragonRushScale(Player player) {
-        return consumeDragonScale(player);
-    }
-
-
     public void handleDragonHit(Player player) {
-
 
         if (!hasDragonSet(player)) {
             return;
         }
-
-
-        if (!isFullyChargedMelee(player)) return;
-
-
+        if (!isFullyChargedMelee(player)) {
+            return;
+        }
         if (getDragonScales(player) >= 3) {
             return;
         }
-
 
         int hits = dragonHitCount.getOrDefault(
                 player.getUniqueId(),
                 0
         );
-
-
         hits++;
-
-
         if (hits >= 5) {
-
 
             setDragonScales(
                     player,
                     getDragonScales(player) + 1
             );
-
-
             dragonHitCount.put(
                     player.getUniqueId(),
                     0
             );
-
-
+            SoundUtils.play(player, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.6f, 1.6f);
             player.sendMessage(
                     "§5Dragon Scale charged! §d"
                             + getDragonScales(player)
                             + "/3"
             );
-
-
         } else {
-
-
             dragonHitCount.put(
                     player.getUniqueId(),
                     hits
@@ -425,13 +406,267 @@ public class CustomArmorManager {
         }
     }
 
+    public void onDragonRush(Player player) {
+
+        // Only activate when starting to crouch
+
+        // Must be wearing Dragon Armor
+        if (!hasDragonSet(player)) {
+            return;
+        }
+
+        Entity target = player.getTargetEntity(5);
+
+        if (!(target instanceof Player targetPlayer)) {
+            return;
+        }
+
+        // Must have line of sight
+        if (!player.hasLineOfSight(targetPlayer)) {
+            return;
+        }
+
+        if (!consumeDragonScale(player)) {
+            player.sendMessage("§cYou need a Dragon Scale!");
+            return;
+        }
+
+        Location destination = targetPlayer.getLocation();
+        Vector direction = destination.toVector()
+                .subtract(player.getLocation().toVector())
+                .normalize();
+
+        player.sendMessage(
+                "§5Dragon Scale §d"
+                        + getDragonScales(player)
+                        + "/3"
+        );
+
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+
+        if (session == null) {
+            return;
+        }
+
+        Team playerTeam = session.getPlayerTeam(player);
+        Team targetTeam = session.getPlayerTeam(targetPlayer);
+
+        if (playerTeam == null || targetTeam == null) {
+            return;
+        }
+
+        if (playerTeam.getTeamNumber() == targetTeam.getTeamNumber()) {
+
+            Location startLocation = player.getLocation().clone();
+
+            destination.subtract(direction.multiply(1.5));
+
+            // Dragon Rush teammate visual
+            Particle.DustOptions lightPurple = new Particle.DustOptions(Color.fromRGB(200, 150, 255), 1.2f);
+
+            // Departure circle
+            for (int i = 0; i < 24; i++) {
+                double angle = 2 * Math.PI * i / 24;
+                double x = Math.cos(angle) * 1.2;
+                double z = Math.sin(angle) * 1.2;
+
+                player.getWorld().spawnParticle(
+                        Particle.DUST,
+                        startLocation.clone().add(x, 0.2, z),
+                        1,
+                        lightPurple
+                );
+            }
+            player.setFlying(false);
+            player.setAllowFlight(false);
+            player.teleport(destination);
+
+            // Arrival circle
+            for (int i = 0; i < 24; i++) {
+                double angle = 2 * Math.PI * i / 24;
+                double x = Math.cos(angle) * 1.2;
+                double z = Math.sin(angle) * 1.2;
+
+                player.getWorld().spawnParticle(
+                        Particle.DUST,
+                        destination.clone().add(x, 0.2, z),
+                        1,
+                        lightPurple
+                );
+            }
+
+            // Higher pitched teleport sound
+            SoundUtils.play(player, Sound.ENTITY_ENDERMAN_TELEPORT, 2.5f, 1.5f);
+
+            Bukkit.getScheduler().runTaskLater(
+                    CashClashPlugin.getInstance(),
+                    () -> {
+                        player.sendMessage("§cDragon Rush invincibility ended!");
+                        targetPlayer.sendMessage("§cDragon Rush invincibility ended!");
+
+                        dragonRushInvincible.remove(player.getUniqueId());
+                        dragonRushInvincible.remove(targetPlayer.getUniqueId());
+                    }, 10L);
+        }
+
+        else {
+
+            // Dragon Rush visual - departure circle
+            Particle.DustOptions purple = new Particle.DustOptions(Color.fromRGB(140, 0, 255), 1.5f);
+
+            for (int i = 0; i < 24; i++) {
+                double angle = 2 * Math.PI * i / 24;
+                double x = Math.cos(angle) * 1.2;
+                double z = Math.sin(angle) * 1.2;
+
+                player.getWorld().spawnParticle(
+                        Particle.DUST,
+                        player.getLocation().add(x, 0.2, z),
+                        1,
+                        purple
+                );
+            }
+            player.setFlying(false);
+            player.setAllowFlight(false);
+            player.teleport(destination);
+
+            // Arrival circle
+            for (int i = 0; i < 24; i++) {
+                double angle = 2 * Math.PI * i / 24;
+                double x = Math.cos(angle) * 1.2;
+                double z = Math.sin(angle) * 1.2;
+                player.getWorld().spawnParticle(
+                        Particle.DUST,
+                        destination.clone().add(x, 0.2, z),
+                        1,
+                        purple
+                );
+            }
+            // Teleport sound
+            SoundUtils.play(player, Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.1f);
+
+            dragonRushDamageBuff.put(
+                    player.getUniqueId(),
+                    System.currentTimeMillis() + 3000
+            );
+            player.sendMessage("§5Dragon Rush empowered!");
+        }
+    }
+
+    public void onDragonRushHit(EntityDamageByEntityEvent event) {
+
+        Player player = (Player) event.getDamager();
+
+        UUID uuid = player.getUniqueId();
+
+        if (!dragonRushDamageBuff.containsKey(uuid)) {
+            return;
+        }
+
+        long expireTime = dragonRushDamageBuff.get(uuid);
+
+        // Buff expired
+        if (System.currentTimeMillis() > expireTime) {
+            dragonRushDamageBuff.remove(uuid);
+            return;
+        }
+
+        // Apply +25% damage
+        event.setDamage(event.getDamage() * 1.25);
+        player.sendMessage("§5Dragon Fury empowered strike!");
+
+        // Remove after one hit
+        dragonRushDamageBuff.remove(uuid);
+    }
+
+    public void onPlayerKillDragon(PlayerDeathEvent event) {
+
+        Player victim = event.getEntity();
+
+        Player killer = victim.getKiller();
+
+        if (killer == null) {
+            return;
+        }
+
+        // Check if killer has Dragon Armor
+        if (!hasDragonSet(killer)) {
+            return;
+        }
+
+        // Give Strength I for 4 seconds
+        killer.addPotionEffect(
+                new PotionEffect(
+                        PotionEffectType.STRENGTH,
+                        20 * 5,
+                        0
+                )
+        );
+        killer.playSound(
+                killer.getLocation(),
+                Sound.ENTITY_ENDER_DRAGON_GROWL,
+                0.4f,
+                1.6f
+        );
+
+        // Dragon Fury veil
+        Particle.DustOptions purple = new Particle.DustOptions(Color.fromRGB(160, 40, 255), 1.4f);
+
+        for (int tick = 0; tick < 10; tick++) {
+            final int currentTick = tick;
+
+            Bukkit.getScheduler().runTaskLater(
+                    CashClashPlugin.getInstance(),
+                    () -> {
+
+                        double progress = currentTick / 9.0;
+
+                        // Rise from feet to head
+                        double y = progress * 1.8;
+
+                        // Swirl around player
+                        for (int i = 0; i < 12; i++) {
+
+                            double angle = (Math.PI * 2 * i / 12.0) + (progress * Math.PI * 6);
+
+                            double radius = 0.45;
+
+                            double x = Math.cos(angle) * radius;
+                            double z = Math.sin(angle) * radius;
+
+                            Location particleLoc = killer.getLocation().clone().add(x, y, z);
+
+                            killer.getWorld().spawnParticle(
+                                    Particle.DUST,
+                                    particleLoc,
+                                    1,
+                                    purple
+                            );
+
+                            killer.getWorld().spawnParticle(
+                                    Particle.PORTAL,
+                                    particleLoc,
+                                    1,
+                                    0,
+                                    0,
+                                    0,
+                                    0.01
+                            );
+                        }
+                    },
+                    tick
+            );
+        }
+    }
 
     // ==================== BUNNY SHOES ====================
 
-
     public void onPlayerToggleSneak(Player p, boolean sneaking) {
         if (!hasBunnyShoes(p)) return;
-        if (p.isDead()) return; // Don't apply effects to dead players
+        if (!p.isOnline()) return;
+        if (p.getGameMode() == GameMode.SPECTATOR) return;
+        if (p.isDead()) return;
+        if (p.getHealth() <= 0) return;
         UUID id = p.getUniqueId();
 
 
@@ -446,16 +681,17 @@ public class CustomArmorManager {
         }
     }
 
-
-    private void tryActivateBunnyShoes(Player p) {
+    public void tryActivateBunnyShoes(Player p) {
+        if (!p.isOnline()) return;
+        if (p.getGameMode() == GameMode.SPECTATOR) return;
+        if (p.isDead()) return;
+        if (p.getHealth() <= 0) return;
         UUID id = p.getUniqueId();
         ItemsConfig cfg = ItemsConfig.getInstance();
-
 
         //Check if player is using a mythic ability
         if (mythicShiftLock.contains(id)) return;
         Messages.debug(p, "SHIFT LOCK: " + mythicShiftLock.contains(p.getUniqueId()));
-
 
         // Check if player is silenced (carrying enemy flag in CTF)
         if (isSilenced(p)) {
@@ -463,23 +699,64 @@ public class CustomArmorManager {
             return;
         }
 
-
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.BUNNY_SHOES)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES);
             Messages.send(p, "armor.bunny-shoes-cooldown", "remaining", String.valueOf(remaining));
             return;
         }
 
-
         int duration = cfg.getBunnyShoesDuration();
         p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, duration * 20, 1));
+
+        Particle.DustOptions white = new Particle.DustOptions(Color.WHITE, 1.2f);
+        Particle.DustOptions blue = new Particle.DustOptions(Color.fromRGB(120, 200, 255), 1.2f);
+
+        Location center = p.getLocation().clone().add(0, 0.08, 0);
+
+        double[][] diamond = {
+                { 0.0,  0.65},
+                { 0.22, 0.44},
+                { 0.44, 0.22},
+                { 0.65, 0.0},
+                { 0.44,-0.22},
+                { 0.22,-0.44},
+                { 0.0, -0.65},
+                {-0.22,-0.44},
+                {-0.44,-0.22},
+                {-0.65, 0.0},
+                {-0.44, 0.22},
+                {-0.22, 0.44}
+        };
+
+        for (double[] point : diamond) {
+
+            Location particleLoc = center.clone().add(point[0], 0, point[1]);
+
+            p.getWorld().spawnParticle(
+                    Particle.DUST,
+                    particleLoc,
+                    1,
+                    white
+            );
+
+            p.getWorld().spawnParticle(
+                    Particle.DUST,
+                    particleLoc.clone().add(0, 0.08, 0),
+                    1,
+                    blue
+            );
+        }
+
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES, cfg.getBunnyShoesCooldown());
 
-
         Messages.send(p, "armor.bunny-shoes-activated", "duration", String.valueOf(duration));
-        SoundUtils.play(p, Sound.ENTITY_RABBIT_JUMP, 1.0f, 1.5f);
+        SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
+
     }
 
+    public Map<UUID, Boolean> getBunnyToggleReady() {
+        return bunnyToggleReady;
+    }
 
     // ==================== GUARDIAN'S VEST ====================
 
@@ -488,21 +765,37 @@ public class CustomArmorManager {
         if (!hasGuardianVest(p)) return;
         UUID id = p.getUniqueId();
 
-
         if (healthAfter > 8.0) return; // 4 hearts = 8 HP
-
 
         int used = guardianUsesThisRound.getOrDefault(id, 0);
         if (used >= 3) return;
 
-
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.GUARDIAN_VEST)) return;
 
-
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 15 * 20, 1));
+
+        Particle.DustOptions turquoise = new Particle.DustOptions(Color.fromRGB(40, 220, 180), 1.8f);
+        Particle.DustOptions orange = new Particle.DustOptions(Color.fromRGB(255, 140, 40), 1.8f);
+
+        for (int i = 0; i < 3; i++) {
+            double radius = 0.8 + (i * 0.25);
+
+            for (int j = 0; j < 28; j++) {
+                double angle = 2 * Math.PI * j / 28;
+                double x = Math.cos(angle) * radius;
+                double z = Math.sin(angle) * radius;
+                Particle.DustOptions color = (j % 7 == 0) ? orange : turquoise;
+                p.getWorld().spawnParticle(
+                        Particle.DUST,
+                        p.getLocation().add(x, 1.8, z),
+                        1,
+                        color
+                );
+            }
+        }
+
         guardianUsesThisRound.put(id, used + 1);
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.GUARDIAN_VEST, 20);
-
 
         Messages.send(p, "armor.guardian-vest-activated", "uses", String.valueOf(used + 1));
         SoundUtils.play(p, Sound.ITEM_TOTEM_USE, 0.5f, 1.5f);
@@ -523,13 +816,38 @@ public class CustomArmorManager {
         double newHealth = Math.min(maxHealth, killer.getHealth() + 6.0);
         killer.setHealth(newHealth);
 
-
         Messages.send(killer, "armor.deathmauler-heal");
 
+        // Deathmauler healing pulse effect
+        Particle.DustOptions dark = new Particle.DustOptions(Color.fromRGB(10, 10, 10), 1.8f);
 
-        // Show small healing particle effect on normal kills
-        ParticleUtils.deathmaulerHeal(killer.getLocation());
-        SoundUtils.play(killer, Sound.ENTITY_ZOMBIE_VILLAGER_CURE, 0.5f, 1.5f);
+        for (int i = 0; i < 3; i++) {
+            Bukkit.getScheduler().runTaskLater(
+                    CashClashPlugin.getInstance(),
+                    () -> {
+                        Location loc = killer.getLocation().add(0, 1, 0);
+                        // Dark hearts rising
+                        killer.getWorld().spawnParticle(
+                                Particle.HEART,
+                                loc,
+                                6,
+                                0.4, 0.5, 0.4,
+                                0
+                        );
+                        // Dark smoke aura
+                        killer.getWorld().spawnParticle(
+                                Particle.DUST,
+                                loc,
+                                15,
+                                0.35, 0.5, 0.35,
+                                0,
+                                dark
+                        );
+                    },
+                    i * 8L
+            );
+            SoundUtils.play(killer, Sound.ENTITY_WITHER_HURT, 0.6f, 0.6f);
+        }
     }
 
 
@@ -559,7 +877,6 @@ public class CustomArmorManager {
         if (!hasDeathmaulerSet(attacker) || victim == null) return;
         UUID id = attacker.getUniqueId();
 
-
         // Use centralized health system for correct max health
         var attackerCCP = session != null ? session.getCashClashPlayer(id) : null;
         double max = attackerCCP != null ? attackerCCP.getMaxHealth() : 20.0;
@@ -568,12 +885,9 @@ public class CustomArmorManager {
 
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST)) return;
 
-
         if (!isFullyChargedMelee(attacker)) return;
 
-
         playDeathmaulerSoulBurst(attacker, session);
-
 
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST, 35);
         Messages.send(attacker, "armor.soul-burst");
@@ -690,63 +1004,6 @@ public class CustomArmorManager {
 
     // ==================== FLAMEBRINGER SET ====================
 
-
-    /**
-     * Flamebringer Furnace Blood: If player is on fire, take no fire tick KB and gain Speed I for 12s.
-     */
-    public void onFlamebringerFireTick(Player p) {
-        if (!hasFlamebringerSet(p)) return;
-        if (p.isDead()) return; // Don't apply effects to dead players
-
-
-        UUID id = p.getUniqueId();
-        long currentTime = System.currentTimeMillis();
-
-
-        if (p.getFireTicks() > 0) {
-            // Check if speed was already applied and is still active
-            Long endTime = flamebringerSpeedEndTime.get(id);
-            if (endTime != null && currentTime < endTime) {
-                // Speed effect is still active, don't reapply
-                return;
-            }
-
-
-            // Apply speed for 12 seconds
-            ItemsConfig cfg = ItemsConfig.getInstance();
-            p.removePotionEffect(PotionEffectType.SPEED);
-            p.addPotionEffect(new PotionEffect(
-                    PotionEffectType.SPEED,
-                    cfg.getFlamebringerSpeedDuration() * 20,
-                    cfg.getFlamebringerSpeedLevel(),
-                    false,
-                    false,
-                    true
-            ));
-
-
-            startFlamebringerTrail(p);
-
-
-            flamebringerTrailEndTime.put(
-                    id,
-                    System.currentTimeMillis() + (cfg.getFlamebringerSpeedDuration() * 1000L)
-            );
-
-
-            // Track when this speed effect should end
-            flamebringerSpeedEndTime.put(id, currentTime + (cfg.getFlamebringerSpeedDuration() * 1000L));
-        } else {
-            // Player is no longer on fire, check if speed should be cleared
-            Long endTime = flamebringerSpeedEndTime.get(id);
-            if (endTime != null && currentTime >= endTime) {
-                p.removePotionEffect(PotionEffectType.SPEED);
-                flamebringerSpeedEndTime.remove(id);
-            }
-        }
-    }
-
-
     private void startFlamebringerTrail(Player p) {
         UUID id = p.getUniqueId();
 
@@ -766,31 +1023,25 @@ public class CustomArmorManager {
 
             Long endTime = flamebringerTrailEndTime.get(id);
 
-
             if (endTime == null || System.currentTimeMillis() >= endTime || !hasFlamebringerSet(p)) {
                 stopFlamebringerTrail(p);
                 return;
             }
 
-
             Location loc = p.getLocation().clone();
-
 
             List<Location> trail = flamebringerTrailLocations.computeIfAbsent(
                     id,
                     k -> new ArrayList<>()
             );
 
-
             // Save current position
             trail.add(loc);
-
 
             // Remove locations older than 1s
             if (trail.size() > 6) {
                 trail.remove(0);
             }
-
 
             // Spawn particles behind player
             for (Location trailLoc : trail) {
@@ -806,18 +1057,14 @@ public class CustomArmorManager {
                 );
             }
 
-
             // Ignite enemies touching trail
             for (Entity entity : p.getNearbyEntities(1.2, 1.0, 1.2)) {
-
 
                 if (!(entity instanceof Player target)) continue;
                 if (target.equals(p)) continue;
 
-
                 target.setFireTicks(60); // 3s of fire
             }
-
 
         }, 0L, 2L);
 
@@ -829,16 +1076,15 @@ public class CustomArmorManager {
     private void stopFlamebringerTrail(Player p) {
         UUID id = p.getUniqueId();
 
-
         BukkitTask task = flamebringerTrailTasks.remove(id);
-
 
         if (task != null) {
             task.cancel();
         }
 
-
         flamebringerTrailLocations.remove(id);
+        flamebringerTrailEndTime.remove(id);
+        flamebringerSpeedEndTime.remove(id);
     }
 
 
@@ -869,29 +1115,19 @@ public class CustomArmorManager {
                 false,
                 true
         ));
+        SoundUtils.play(p, Sound.ITEM_FIRECHARGE_USE, 1.5f, 1.0f);
 
-
-        startFlamebringerTrail(p);
         flamebringerTrailEndTime.put(
                 id,
                 System.currentTimeMillis() + (cfg.getFlamebringerSpeedDuration() * 1000L)
         );
+        startFlamebringerTrail(p);
 
 
         flamebringerLavaUses.put(id, used + 1);
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, 2);
         Messages.send(p, "armor.flamebringer-speed", "remaining", String.valueOf(3 - (used + 1)));
     }
-
-
-    /**
-     * Check if player should have fire tick knockback negation.
-     */
-    public boolean hasFlamebringerNoFireKb(Player p) {
-        if (!hasFlamebringerSet(p)) return false;
-        return p.getFireTicks() > 0 && ItemsConfig.getInstance().getFlamebringerNoFireKb();
-    }
-
 
     /**
      * Handle Flamebringer kill tracking and gravitational pull on 2nd kill.
@@ -965,7 +1201,6 @@ public class CustomArmorManager {
         }
     }
 
-
     // ==================== BULLSEYE PANTS ====================
 
 
@@ -985,33 +1220,194 @@ public class CustomArmorManager {
     }
 
 
-    // ==================== INVESTOR'S SET ====================
+// ==================== INVESTOR'S SET ====================
 
+    public void onInvestorKill(PlayerDeathEvent event) {
 
-    public double getInvestorMultiplier(Player p) {
-        int pieces = countInvestorsPieces(p);
-        if (pieces <= 0) return 1.0;
-        return 1.0 + (0.125 * pieces); // +12.5% per piece
+        Player killer = event.getEntity().getKiller();
+
+        if (killer == null) {
+            return;
+        }
+
+        GameSession session = GameManager.getInstance()
+                .getPlayerSession(killer);
+
+        if (session == null) {
+            return;
+        }
+
+        int pieces = countInvestorsPieces(killer);
+
+        if (pieces <= 0) {
+            return;
+        }
+
+        Team team = session.getPlayerTeam(killer);
+
+        if (team == null) {
+            return;
+        }
+
+        int reward = 200 * pieces;
+
+        for (UUID uuid : team.getPlayers()) {
+
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+
+            if (ccp != null) {
+                ccp.addCoins(reward);
+            }
+
+            Player teammate = Bukkit.getPlayer(uuid);
+
+            if (teammate != null && teammate.isOnline()) {
+                playInvestorRewardEffect(teammate, reward);
+            }
+        }
     }
 
+    public void onInvestorObjectivectf(Player player) {
+
+        Messages.debug("[INVESTOR] CTF objective triggered");
+
+        int pieces = countInvestorsPieces(player);
+
+        if (pieces <= 0) {
+            return;
+        }
+
+        Messages.debug(
+                "[INVESTOR] " + player.getName() + " has " + pieces + " pieces"
+        );
+
+        GameSession session = GameManager.getInstance()
+                .getPlayerSession(player);
+
+        if (session == null) {
+            return;
+        }
+
+        Team team = session.getPlayerTeam(player);
+
+        if (team == null) {
+            return;
+        }
+
+        int reward = 200 * pieces;
+
+        for (UUID uuid : team.getPlayers()) {
+
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+
+            if (ccp != null) {
+                ccp.addCoins(reward);
+            }
+
+            Player teammate = Bukkit.getPlayer(uuid);
+
+            if (teammate != null && teammate.isOnline()) {
+                playInvestorRewardEffect(teammate, reward);
+            }
+        }
+    }
+
+    public void onInvestorKillptp(Player killer) {
+
+        if (killer == null) return;
+
+        int pieces = countInvestorsPieces(killer);
+
+        if (pieces <= 0) return;
+
+        GameSession session = GameManager.getInstance()
+                .getPlayerSession(killer);
+
+        if (session == null) return;
+
+        Team team = session.getPlayerTeam(killer);
+
+        if (team == null) return;
+
+        int reward = 200 * pieces;
+
+        for (UUID uuid : team.getPlayers()) {
+
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+
+            if (ccp != null) {
+                ccp.addCoins(reward);
+            }
+            Player teammate = Bukkit.getPlayer(uuid);
+
+            if (teammate != null && teammate.isOnline()) {
+                playInvestorRewardEffect(teammate, reward);
+
+            }
+        }
+    }
+
+    private void playInvestorRewardEffect(Player player, int reward) {
+
+        SoundUtils.play(
+                player,
+                Sound.BLOCK_ENCHANTMENT_TABLE_USE,
+                1.7f,
+                1.5f
+        );
+
+        Messages.send(
+                player,
+                "Investor's Set earned you an extra $" + reward
+        );
+
+        Particle.DustOptions lightGreen =
+                new Particle.DustOptions(
+                        Color.fromRGB(120, 255, 120),
+                        1.3f
+                );
+
+        Location center = player.getLocation()
+                .clone()
+                .add(0, 0.6, 0);
+
+        for (int i = 0; i < 18; i++) {
+
+            int delay = i;
+
+            Bukkit.getScheduler().runTaskLater(
+                    CashClashPlugin.getInstance(),
+                    () -> {
+
+                        double angle =
+                                (Math.PI * 2 / 18) * delay;
+
+                        double x = Math.cos(angle) * 0.55;
+                        double z = Math.sin(angle) * 0.55;
+
+                        player.getWorld().spawnParticle(
+                                Particle.DUST,
+                                center.clone().add(x, 0, z),
+                                2,
+                                lightGreen
+                        );
+
+                    },
+                    (int)(delay * 0.8)
+            );
+        }
+    }
 
     public double getInvestorMeleeDamageMultiplier(Player p, int currentRound) {
+
         int pieces = countInvestorsPieces(p);
-        if (pieces <= 0) return 1.0;
-        return 1.0 - (0.05 * pieces); //5% less damage per piece
+
+        if (pieces <= 0) {
+            return 1.0;
+        }
+
+        return 1.0 - (0.05 * pieces);
     }
-
-
-    /**
-     * Calculate the price for an investor piece based on how many are already owned.
-     */
-    public long getInvestorPrice(CustomArmorItem armor, int piecesOwned) {
-        if (!armor.isInvestorsSet()) return armor.getBasePrice();
-        // Each piece increases price by 25%
-        double multiplier = Math.pow(1.25, piecesOwned);
-        return Math.round(armor.getBasePrice() * multiplier);
-    }
-
 
     // ==================== RESET ====================
 
@@ -1021,15 +1417,11 @@ public class CustomArmorManager {
 
         bunnyToggleReady.clear();
 
-
         guardianUsesThisRound.clear();
-
 
         deathmaulerExtraHearts.clear();
 
-
         bullseyeHitCount.clear();
-
 
         // Cancel all flamebringer tasks
         flamebringerFireTask.values().forEach(BukkitTask::cancel);
@@ -1070,7 +1462,6 @@ public class CustomArmorManager {
             }
         }
 
-
         if (session == null || session.getGamemode() == null) return false;
         if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return false;
         return gamemode.isSilenced(player.getUniqueId());
@@ -1078,9 +1469,7 @@ public class CustomArmorManager {
     public void lockMythicShift(Player player) {
         UUID id = player.getUniqueId();
 
-
         mythicShiftLock.add(id);
-
 
         Bukkit.getScheduler().runTaskLater(
                 JavaPlugin.getProvidingPlugin(getClass()),

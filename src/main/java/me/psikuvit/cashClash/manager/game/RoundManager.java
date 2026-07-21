@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.game;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
@@ -19,11 +20,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Sound;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
@@ -85,7 +82,6 @@ public class RoundManager {
             phaseTask.cancel();
             phaseTask = null;
         }
-
         // Set duration based on phase type
         if (phaseType == GameState.BUFF_SELECTION) {
             timeRemaining = 15; // 15 seconds for buff selection
@@ -101,6 +97,7 @@ public class RoundManager {
             Messages.broadcast(session.getPlayers(), "round.buff-selection-prompt");
             Messages.broadcast(session.getPlayers(), "round.buff-selection-time");
         } else {
+
             // Apply loss streak bonuses at start of shopping phase (round 2+)
             if (roundNumber > 1) {
                 applyLossStreakBonuses();
@@ -129,6 +126,22 @@ public class RoundManager {
 
                 // For shopping phase: heal and refill
                 if (phaseType == GameState.SHOPPING) {
+
+                    // Testing only: Give everyone $500,000 at start of buy phase
+                    // Make time day
+                    for (UUID playerUUID  : session.getPlayers()) {
+                        CashClashPlayer ccp = session.getCashClashPlayer(playerUUID);
+
+                        if (ccp != null) {
+                            ccp.addCoins(500_000);
+                            for (World world : Bukkit.getWorlds()) {
+                                world.setStorm(false);
+                                world.setThundering(false);
+                                world.setTime(6000);
+                            }
+                        }
+                    }
+
                     AttributeInstance maxHealthAttr = p.getAttribute(Attribute.MAX_HEALTH);
                     if (maxHealthAttr != null) {
                         p.setHealth(maxHealthAttr.getValue());
@@ -308,14 +321,6 @@ public class RoundManager {
             } else if (!finalStandActive && (timeRemaining <= 10 || timeRemaining % 60 == 0)) {
                 Messages.broadcast(session.getPlayers(), "round.combat-countdown",
                     "time_remaining", String.valueOf(timeRemaining));
-            }
-
-            // Check armor effects for all players (Flamebringer fire)
-            for (UUID uuid : session.getPlayers()) {
-                Player p = Bukkit.getPlayer(uuid);
-                if (p != null && p.isOnline()) {
-                    CustomArmorManager.getInstance().onFlamebringerFireTick(p);
-                }
             }
 
             // Check win conditions

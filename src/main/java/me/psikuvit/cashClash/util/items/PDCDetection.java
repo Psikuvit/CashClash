@@ -40,10 +40,28 @@ public final class PDCDetection {
     }
 
     public static CustomWeapon getCustomWeapon(ItemStack stack) {
-        String tag = readTag(stack, Keys.ITEM_ID);
-        if ("cash_blaster".equals(tag)) {
+
+        if (stack == null || !stack.hasItemMeta()) {
+            return null;
+        }
+
+        PersistentDataContainer pdc =
+                stack.getItemMeta().getPersistentDataContainer();
+
+        if (pdc.has(
+                new NamespacedKey(me.psikuvit.cashClash.CashClashPlugin.getInstance(), "cash_blaster"),
+                PersistentDataType.BYTE)) {
+
             return CustomWeapon.CASH_BLASTER;
         }
+
+        if (pdc.has(
+                new NamespacedKey(me.psikuvit.cashClash.CashClashPlugin.getInstance(), "soul_katana"),
+                PersistentDataType.BYTE)) {
+
+            return CustomWeapon.SOUL_KATANA;
+        }
+
         return null;
     }
 

@@ -41,14 +41,13 @@ public enum CustomArmorItem implements Purchasable {
 
     DRAGON_HELMET(Material.IRON_HELMET, "dragon-head", "Dragon Helmet", ArmorSet.DRAGON),
     DRAGON_CHESTPLATE(Material.DIAMOND_CHESTPLATE, "dragon-chestplate", "Dragon Chestplate", ArmorSet.DRAGON),
-    DRAGON_BOOTS(Material.DIAMOND_BOOTS, "dragon-boots", "Dragon Boots", ArmorSet.DRAGON);
+    DRAGON_BOOTS(Material.IRON_BOOTS, "dragon-boots", "Dragon Boots", ArmorSet.DRAGON);
 
 
     private final Material material;
     private final String configKey;
     private final String displayName;
     private final ArmorSet armorSet;
-
 
     CustomArmorItem(Material material, String configKey, String displayName , ArmorSet armorSet) {
         this.material = material;
@@ -57,24 +56,20 @@ public enum CustomArmorItem implements Purchasable {
         this.armorSet = armorSet;
     }
 
-
     @Override
     public Material getMaterial() {
         return material;
     }
-
 
     @Override
     public ShopCategory getCategory() {
         return ShopCategory.ARMOR;
     }
 
-
     @Override
     public long getPrice() {
         return ShopConfig.getInstance().getCustomArmorPrice(configKey);
     }
-
 
     /**
      * Gets the base price for this armor piece.
@@ -83,7 +78,6 @@ public enum CustomArmorItem implements Purchasable {
     public long getBasePrice() {
         return getPrice();
     }
-
 
     @Override
     public int getInitialAmount() {

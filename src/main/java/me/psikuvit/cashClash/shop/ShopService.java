@@ -45,6 +45,7 @@ public class ShopService {
     }
 
     public void processPurchase(Player player, Purchasable item, int quantity, long totalPrice) {
+
         CashClashPlayer ccp = getCashClashPlayer(player);
         if (ccp == null) return;
 
@@ -363,7 +364,7 @@ public class ShopService {
                     player.getInventory().remove(Material.IRON_SWORD);
                     CustomWeapon.markSoulKatana(weaponItem);
                 }
-                player.getInventory().addItem(weaponItem);
+                replaceWeaponInInventory(player, weaponItem);
             }
 
             default -> {

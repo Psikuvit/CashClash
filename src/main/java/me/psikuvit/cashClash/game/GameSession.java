@@ -330,13 +330,11 @@ public class GameSession {
 
         ArenaManager.getInstance().setArenaState(arenaNumber, state);
         //if (cashQuakeManager != null) cashQuakeManager.startEventScheduler();
-
         if (gamemode != null) {
             gamemode.onCombatPhaseStart();
         }
-
-        // Prepare all players for combat
-        preparePlayers();
+         //Prepare all players for combat
+         preparePlayers();
     }
 
     /**

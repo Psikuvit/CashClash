@@ -196,11 +196,12 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     /**
      * Populates the Investor's set column with individual purchasable pieces.
      */
+
     private void populateInvestorsColumn() {
-        setButton(INVESTORS_HELMET_SLOT, createCustomArmorButton(CustomArmorItem.INVESTORS_HELMET));
-        setButton(INVESTORS_CHESTPLATE_SLOT, createCustomArmorButton(CustomArmorItem.INVESTORS_CHESTPLATE));
-        setButton(INVESTORS_LEGGINGS_SLOT, createCustomArmorButton(CustomArmorItem.INVESTORS_LEGGINGS));
-        setButton(INVESTORS_BOOTS_SLOT, createCustomArmorButton(CustomArmorItem.INVESTORS_BOOTS));
+        setButton(INVESTORS_HELMET_SLOT, createArmorButton(CustomArmorItem.INVESTORS_HELMET));
+        setButton(INVESTORS_CHESTPLATE_SLOT, createArmorButton(CustomArmorItem.INVESTORS_CHESTPLATE));
+        setButton(INVESTORS_LEGGINGS_SLOT, createArmorButton(CustomArmorItem.INVESTORS_LEGGINGS));
+        setButton(INVESTORS_BOOTS_SLOT, createArmorButton(CustomArmorItem.INVESTORS_BOOTS));
     }
 
 
@@ -298,12 +299,11 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Populates individual custom armor pieces that can be purchased separately.
      */
     private void populateIndividualCustomArmor() {
-        setButton(TECTONIC_CAP, createCustomArmorButton(CustomArmorItem.TECTONIC_CAP));
-        setButton(GUARDIANS_VEST_SLOT, createCustomArmorButton(CustomArmorItem.GUARDIANS_VEST));
-        setButton(BULLSEYE_PANTS_SLOT, createCustomArmorButton(CustomArmorItem.BULLSEYE_PANTS));
-        setButton(BUNNY_SHOES_SLOT, createCustomArmorButton(CustomArmorItem.BUNNY_SHOES));
+        setButton(TECTONIC_CAP, createArmorButton(CustomArmorItem.TECTONIC_CAP));
+        setButton(GUARDIANS_VEST_SLOT, createArmorButton(CustomArmorItem.GUARDIANS_VEST));
+        setButton(BULLSEYE_PANTS_SLOT, createArmorButton(CustomArmorItem.BULLSEYE_PANTS));
+        setButton(BUNNY_SHOES_SLOT, createArmorButton(CustomArmorItem.BUNNY_SHOES));
     }
-
 
     // ==================== BUTTON CREATION ====================
 
@@ -491,5 +491,73 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         }
     }
 
+    private void handleArmorPurchase(CustomArmorItem type) {
+
+        // Prevent duplicate copies
+        for (ItemStack item : viewer.getInventory().getContents()) {
+
+            if (item != null && PDCDetection.isCustomArmorItem(item)) {
+
+                CustomArmorItem owned = PDCDetection.getCustomArmor(item);
+
+                if (owned == type) {
+                    Messages.send(viewer, "You already own " + type.getDisplayName() + "!");
+                    SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                    return;
+                }
+            }
+        }
+
+        long price = type.getPrice();
+
+        if (!ShopService.getInstance().canAfford(viewer, price)) {
+            Messages.send(viewer, "shop.not-enough-coins",
+                    "cost",
+                    String.format("%,d", price));
+            SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        GameSession sess = getSession();
+        if (sess == null) return;
+
+        CashClashPlayer ccp = getCashClashPlayer();
+        if (ccp == null) return;
+
+        ShopService.getInstance().deductCoins(viewer, price);
+
+        ItemFactory.getInstance()
+                .createAndEquipCustomArmor(viewer, type);
+
+        ccp.addPurchase(
+                new PurchaseRecord(type, 1, price, sess.getCurrentRound())
+        );
+
+        Messages.send(viewer,
+                "shop.purchased",
+                "item_name",
+                type.getDisplayName(),
+                "price",
+                String.format("%,d", price));
+
+        SoundUtils.play(
+                viewer,
+                Sound.ENTITY_PLAYER_LEVELUP,
+                0.5f,
+                1.5f
+        );
+
+        refresh();
+    }
+    private GuiButton createArmorButton(CustomArmorItem item) {
+
+        ItemStack itemStack = ItemFactory.getInstance()
+                .getGuiFactory()
+                .createShopItem(viewer, item);
+
+
+        return GuiButton.of(itemStack)
+                .onClick((p, clickType) -> handleArmorPurchase(item));
+    }
 
 }

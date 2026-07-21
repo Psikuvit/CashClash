@@ -85,7 +85,6 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
             }
         }
 
-
         long price = type.getPrice();
         if (!ShopService.getInstance().canAfford(viewer, price)) {
             Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", price));
@@ -104,7 +103,6 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
 
         Messages.send(viewer, "shop.purchased", "item_name", type.getDisplayName(), "price", String.format("%,d", price));
         SoundUtils.play(viewer, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
-
 
         refresh();
     }

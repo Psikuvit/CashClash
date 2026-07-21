@@ -43,6 +43,7 @@ public final class CashClashPlugin extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
+
         try {
             ConfigManager.getInstance();
             MessagesConfig.getInstance();
@@ -204,6 +205,7 @@ public final class CashClashPlugin extends JavaPlugin {
         for (Listener listener : listeners) {
             getServer().getPluginManager().registerEvents(listener, this);
         }
+
         getLogger().info("Registered " + listeners.length + " event listeners");
     }
 

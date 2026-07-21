@@ -31,6 +31,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -584,5 +586,60 @@ public class InteractListener implements Listener {
     @EventHandler
     public void onCashBlasterInteract(PlayerInteractEvent event) {
         CustomWeaponManager.getInstance().onCashBlasterToggle(event);
+    }
+    @EventHandler
+    public void onPlayerKillDragon(PlayerDeathEvent event) {
+        CustomArmorManager.getInstance().onPlayerKillDragon(event);
+    }
+    @EventHandler
+    public void onDragonRushHit(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player player)) {
+            return;
+        }
+        CustomArmorManager.getInstance().onDragonRushHit(event);
+    }
+    @EventHandler
+    public void onPlayerDeathBunnyBoots(PlayerDeathEvent event) {
+        CustomArmorManager.getInstance().getBunnyToggleReady().remove(event.getEntity().getUniqueId());
+    }
+    @EventHandler
+    public void onDragonRush(PlayerToggleFlightEvent event) {
+        Player player = event.getPlayer();
+
+        if (!CustomArmorManager.getInstance().hasDragonSet(player)) {
+            return;
+        }
+
+        if (player.isOnGround()) {
+            return;
+        }
+
+        event.setCancelled(true);
+
+        player.setFlying(false);
+        player.setAllowFlight(false);
+
+        CustomArmorManager.getInstance().onDragonRush(player);
+    }
+    @EventHandler
+    public void onDragonAirCheck(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+
+        if (!CustomArmorManager.getInstance().hasDragonSet(player)) {
+            return;
+        }
+
+        if (!player.isOnGround() && !player.getAllowFlight()) {
+            player.setAllowFlight(true);
+        }
+
+        if (player.isOnGround() && player.getAllowFlight()) {
+            player.setAllowFlight(false);
+            player.setFlying(false);
+        }
+    }
+    @EventHandler
+    public void onInvestorKill(PlayerDeathEvent event) {
+        CustomArmorManager.getInstance().onInvestorKill(event);
     }
 }
