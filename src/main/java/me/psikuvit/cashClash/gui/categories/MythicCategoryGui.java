@@ -87,7 +87,7 @@ public final class MythicCategoryGui {
             player.getInventory().addItem(crossbows[1]); // Volcano
         } else {
             ItemStack mythicItem = MythicItemManager.getInstance().createMythicItem(mythic, player);
-            player.getInventory().addItem(mythicItem);
+            ItemUtils.replaceBestMatchingTool(player, mythicItem);
         }
 
         ItemUtils.applyOwnedEnchantsAfterPurchase(player, mythic);
