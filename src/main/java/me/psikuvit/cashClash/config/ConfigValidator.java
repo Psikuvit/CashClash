@@ -494,6 +494,25 @@ public class ConfigValidator {
                 ""
         ), autoAdd);
 
+        // Scoreboard - Kill Confirm
+        validateAndSet(config, "scoreboard.kill-confirm.enabled", true, autoAdd);
+        validateAndSet(config, "scoreboard.kill-confirm.title", "<gold><bold>Kill Confirm</bold></gold>", autoAdd);
+        validateAndSetList(config, "scoreboard.kill-confirm.lines", List.of(
+                "",
+                "<red>Team Red</red>",
+                "Score: {teamRed_kc_progress}",
+                "Coins: {teamRed_coins}",
+                "",
+                "<blue>Team Blue</blue>",
+                "Score: {teamBlue_kc_progress}",
+                "Coins: {teamBlue_coins}",
+                "",
+                "{player_heart_timer}",
+                "<yellow>Phase</yellow>: {phase}",
+                "Time: {time}",
+                ""
+        ), autoAdd);
+
         // NPC settings
         validateAndSet(config, "npc.arena.display-name", "<gold><bold>Arena Selector</bold></gold>", autoAdd);
         validateAndSet(config, "npc.arena.skin-url", "https://textures.minecraft.net/texture/c2e93825cdc4c7ec014143f170ff05ef7ca5f3606716eb5429eb427bb05b7e17", autoAdd);

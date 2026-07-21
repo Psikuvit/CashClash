@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
+import me.psikuvit.cashClash.gamemode.impl.KillConfirmGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.util.Messages;
 
@@ -60,6 +61,7 @@ public class GamemodeManager {
         return switch (type) {
             case PROTECT_THE_PRESIDENT -> new ProtectThePresidentGamemode(session);
             case CAPTURE_THE_FLAG -> new CaptureTheFlagGamemode(session);
+            case KILL_CONFIRM -> new KillConfirmGamemode(session);
         };
     }
 

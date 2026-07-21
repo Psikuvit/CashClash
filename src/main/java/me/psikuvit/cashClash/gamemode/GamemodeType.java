@@ -5,7 +5,8 @@ package me.psikuvit.cashClash.gamemode;
  */
 public enum GamemodeType {
     PROTECT_THE_PRESIDENT("Protect the President"),
-    CAPTURE_THE_FLAG("Capture the Flag");
+    CAPTURE_THE_FLAG("Capture the Flag"),
+    KILL_CONFIRM("Kill Confirm");
 
     private final String displayName;
 

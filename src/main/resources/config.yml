@@ -343,6 +343,46 @@ scoreboard:
       - "Time: {time}"
       - ""
 
+  # Kill Confirm gamemode scoreboard
+  kill-confirm:
+    enabled: true
+    title: "<gold><bold>Kill Confirm</bold></gold>"
+    lines:
+      - ""
+      - "<red>Team Red</red>"
+      - "Score: {teamRed_kc_progress}"
+      - "Coins: {teamRed_coins}"
+      - ""
+      - "<blue>Team Blue</blue>"
+      - "Score: {teamBlue_kc_progress}"
+      - "Coins: {teamBlue_coins}"
+      - ""
+      - "{player_heart_timer}"
+      - "<yellow>Phase</yellow>: {phase}"
+      - "Time: {time}"
+      - ""
+
+  # Kill Confirm - Sudden Death scoreboard
+  kill-confirm-sudden-death:
+    enabled: true
+    title: "<gold><bold>⚡ SUDDEN DEATH ⚡</bold></gold>"
+    lines:
+      - ""
+      - "<gold><bold>SUDDEN DEATH ACTIVATED!</bold></gold>"
+      - ""
+      - "<red>Team Red</red>"
+      - "Score: {teamRed_kc_score}"
+      - "Coins: {teamRed_coins}"
+      - ""
+      - "<blue>Team Blue</blue>"
+      - "Score: {teamBlue_kc_score}"
+      - "Coins: {teamBlue_coins}"
+      - ""
+      - "{player_heart_timer}"
+      - "<yellow>Round {round}</yellow>"
+      - "Time: {time}"
+      - ""
+
 # ============================================
 # NPC CONFIGURATION
 # ============================================

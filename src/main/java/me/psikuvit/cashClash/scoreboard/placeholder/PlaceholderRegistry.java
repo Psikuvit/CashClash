@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.scoreboard.placeholder;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
+import me.psikuvit.cashClash.gamemode.impl.KillConfirmGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import org.bukkit.entity.Player;
 
@@ -30,6 +31,8 @@ public class PlaceholderRegistry {
             registry.registerProvider(new CTFPlaceholderProvider(ctf));
         } else if (session.getGamemode() instanceof ProtectThePresidentGamemode ptp) {
             registry.registerProvider(new PTPPlaceholderProvider(ptp));
+        } else if (session.getGamemode() instanceof KillConfirmGamemode kc) {
+            registry.registerProvider(new KCPlaceholderProvider(kc));
         }
 
         return registry;
@@ -109,6 +112,8 @@ public class PlaceholderRegistry {
                 addCTFPlaceholders(supported);
             } else if (provider instanceof PTPPlaceholderProvider) {
                 addPTPPlaceholders(supported);
+            } else if (provider instanceof KCPlaceholderProvider) {
+                addKCPlaceholders(supported);
             } else if (provider instanceof LobbyPlaceholderProvider) {
                 addLobbyPlaceholders(supported);
             }
@@ -145,6 +150,13 @@ public class PlaceholderRegistry {
             "{red_assassinations}", "{blue_assassinations}",
             "{red_buff}", "{blue_buff}",
             "{red_assassination_circles}", "{blue_assassination_circles}"
+        ));
+    }
+
+    private void addKCPlaceholders(List<String> list) {
+        list.addAll(List.of(
+            "{teamRed_kc_score}", "{teamBlue_kc_score}",
+            "{teamRed_kc_progress}", "{teamBlue_kc_progress}"
         ));
     }
 

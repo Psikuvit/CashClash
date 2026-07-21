@@ -289,6 +289,22 @@ public class ConfigManager {
         return config.getStringList("scoreboard.protect-the-president-sudden-death.lines");
     }
 
+    public String getKCScoreboardTitle() {
+        return config.getString("scoreboard.kill-confirm.title", "<gold><bold>Kill Confirm</bold></gold>");
+    }
+
+    public List<String> getKCScoreboardLines() {
+        return config.getStringList("scoreboard.kill-confirm.lines");
+    }
+
+    public String getKCSuddenDeathScoreboardTitle() {
+        return config.getString("scoreboard.kill-confirm-sudden-death.title", "<gold><bold>⚡ SUDDEN DEATH ⚡</bold></gold>");
+    }
+
+    public List<String> getKCSuddenDeathScoreboardLines() {
+        return config.getStringList("scoreboard.kill-confirm-sudden-death.lines");
+    }
+
     // ==================== NPC SETTINGS ====================
 
     /**

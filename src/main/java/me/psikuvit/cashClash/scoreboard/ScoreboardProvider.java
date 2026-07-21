@@ -63,11 +63,13 @@ public class ScoreboardProvider {
                     configTitle = switch (session.getGamemode().getType()) {
                         case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFSuddenDeathScoreboardTitle();
                         case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPSuddenDeathScoreboardTitle();
+                        case KILL_CONFIRM -> ConfigManager.getInstance().getKCSuddenDeathScoreboardTitle();
                     };
                 } else {
                     configTitle = switch (session.getGamemode().getType()) {
                         case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFScoreboardTitle();
                         case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPScoreboardTitle();
+                        case KILL_CONFIRM -> ConfigManager.getInstance().getKCScoreboardTitle();
                     };
                 }
                 String filled = fillPlaceholders(configTitle, player, session);
@@ -80,11 +82,13 @@ public class ScoreboardProvider {
                     return switch (session.getGamemode().getType()) {
                         case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFSuddenDeathScoreboardLines();
                         case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPSuddenDeathScoreboardLines();
+                        case KILL_CONFIRM -> ConfigManager.getInstance().getKCSuddenDeathScoreboardLines();
                     };
                 } else {
                     return switch (session.getGamemode().getType()) {
                         case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFScoreboardLines();
                         case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPScoreboardLines();
+                        case KILL_CONFIRM -> ConfigManager.getInstance().getKCScoreboardLines();
                     };
                 }
             }
@@ -104,11 +108,13 @@ public class ScoreboardProvider {
                     return switch (session.getGamemode().getType()) {
                         case CAPTURE_THE_FLAG -> ContextType.CTF_SUDDEN_DEATH;
                         case PROTECT_THE_PRESIDENT -> ContextType.PTP_SUDDEN_DEATH;
+                        case KILL_CONFIRM -> ContextType.KILL_CONFIRM_SUDDEN_DEATH;
                     };
                 } else {
                     return switch (session.getGamemode().getType()) {
                         case CAPTURE_THE_FLAG -> ContextType.CTF;
                         case PROTECT_THE_PRESIDENT -> ContextType.PTP;
+                        case KILL_CONFIRM -> ContextType.KILL_CONFIRM;
                     };
                 }
             }

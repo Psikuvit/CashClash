@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.command.subcommands.ForceNextRoundCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceStartCommand;
 import me.psikuvit.cashClash.command.subcommands.ForfeitCommand;
 import me.psikuvit.cashClash.command.subcommands.JoinCommand;
+import me.psikuvit.cashClash.command.subcommands.KCCommand;
 import me.psikuvit.cashClash.command.subcommands.LayoutCommand;
 import me.psikuvit.cashClash.command.subcommands.LeaveCommand;
 import me.psikuvit.cashClash.command.subcommands.MythicsCommand;
@@ -76,6 +77,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new SuddenDeathCommand());
         registerSubcommand(new CTFCommand());
         registerSubcommand(new PTPCommand());
+        registerSubcommand(new KCCommand());
         registerSubcommand(new SelectKitCommand());
         registerSubcommand(new SetLobbyCommand());
         registerSubcommand(new ReloadCommand());
