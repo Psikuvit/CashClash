@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.config.SequencesConfig;
 import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.manager.lobby.MannequinManager;
@@ -57,6 +58,11 @@ public class ReloadCommand extends AbstractArgCommand {
                     reloaded = 1;
                     Messages.send(sender, "reload.sequences-success");
                 }
+                case "messages" -> {
+                    MessagesConfig.getInstance().reload();
+                    reloaded = 1;
+                    Messages.send(sender, "reload.messages-success");
+                }
                 case "mannequins", "npcs" -> {
                     MannequinManager.getInstance().reload();
                     reloaded = 1;
@@ -68,8 +74,9 @@ public class ReloadCommand extends AbstractArgCommand {
                     ShopConfig.getInstance().reload();
                     ItemsConfig.getInstance().reload();
                     SequencesConfig.getInstance().reload();
+                    MessagesConfig.getInstance().reload();
                     MannequinManager.getInstance().reload();
-                    reloaded = 5;
+                    reloaded = 6;
                     Messages.send(sender, "reload.all-success");
                 }
                 default -> {
@@ -98,7 +105,7 @@ public class ReloadCommand extends AbstractArgCommand {
         if (args.length == 1) {
             List<String> completions = new ArrayList<>();
             String input = args[0].toLowerCase();
-            for (String option : List.of("all", "config", "shop", "items", "sequences", "mannequins", "npcs")) {
+            for (String option : List.of("all", "config", "shop", "items", "sequences", "messages", "mannequins", "npcs")) {
                 if (option.startsWith(input)) {
                     completions.add(option);
                 }

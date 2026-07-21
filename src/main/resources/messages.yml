@@ -612,10 +612,11 @@ messages:
     items-success: "<green>✓ Reloaded items.yml</green>"
     shop-success: "<green>✓ Reloaded shop.yml</green>"
     sequences-success: "<green>✓ Reloaded sequences.yml</green>"
+    messages-success: "<green>✓ Reloaded messages.yml</green>"
     mannequins-success: "<green>✓ Reloaded mannequins (respawned all NPCs)</green>"
     count-success: "<green>Successfully reloaded {count} configuration file(s)!</green>"
     invalid-target: "<red>Unknown config: {target}</red>"
-    usage: "<gray>Usage: /cc reload [config|shop|items|sequences|mannequins|all]</gray>"
+    usage: "<gray>Usage: /cc reload [config|shop|items|sequences|messages|mannequins|all]</gray>"
 
   # ============================================
   # STATS COMMAND MESSAGES
