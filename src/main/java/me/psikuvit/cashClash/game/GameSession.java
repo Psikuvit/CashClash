@@ -794,7 +794,7 @@ public class GameSession {
     }
 
     private Team calculateWinner() {
-        return getTeamRedCoins() > getTeamBlueCoins() ? teamRed : teamBlue;
+        return getRoundWins(1) > getRoundWins(2) ? teamRed : teamBlue;
     }
 
     public long getTeamRedCoins() {
