@@ -388,7 +388,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
                 if (PDCDetection.isCustomArmorItem(currentArmor)) {
                     // Custom armor: store clone for refund tracking, return original to inventory
                     replacedSetItems.put(slot, clonedArmor);
-                    returnReplacedItemToInventory(player, currentArmor.clone());
+                    ItemUtils.returnItemToInventoryOrDrop(player, currentArmor.clone());
                 } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
                     // Purchased vanilla armor (iron/diamond): track for refund but don't return to inventory
                     // The refund system will directly equip this from the map
@@ -417,21 +417,6 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         Messages.send(player, "shop.set-purchased-cost", "price", String.format("%,d", totalPrice));
         Messages.send(player, "");
         SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
-    }
-
-    /**
-     * Returns a replaced item to the player's inventory, or drops it if inventory is full.
-     *
-     * @param player The player receiving the item
-     * @param item   The item to return (may be null or air)
-     */
-    private void returnReplacedItemToInventory(Player player, ItemStack item) {
-        if (item == null || item.getType() == Material.AIR) return;
-        if (player.getInventory().firstEmpty() != -1) {
-            player.getInventory().addItem(item);
-        } else {
-            player.getWorld().dropItemNaturally(player.getLocation(), item);
-        }
     }
 
 }

@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.ItemFactory;
+import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
@@ -106,6 +107,11 @@ public enum Kit {
         boolean shouldGiveShield = shouldGiveShield(round, rounds1to3HaveShields);
 
         if (shouldGiveShield) {
+            ItemStack existingOffhand = player.getInventory().getItemInOffHand();
+            if (existingOffhand != null && existingOffhand.getType() != Material.AIR
+                    && existingOffhand.getType() != Material.SHIELD) {
+                ItemUtils.returnItemToInventoryOrDrop(player, existingOffhand);
+            }
             player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
         } else {
             // Remove shield from offhand
@@ -302,6 +308,11 @@ public enum Kit {
         // Shield logic based on round number
         boolean shouldGiveShield = shouldGiveShield(round, rounds1to3HaveShields);
         if (shouldGiveShield) {
+            ItemStack existingOffhand = player.getInventory().getItemInOffHand();
+            if (existingOffhand != null && existingOffhand.getType() != Material.AIR
+                    && existingOffhand.getType() != Material.SHIELD) {
+                ItemUtils.returnItemToInventoryOrDrop(player, existingOffhand);
+            }
             player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
         }
     }

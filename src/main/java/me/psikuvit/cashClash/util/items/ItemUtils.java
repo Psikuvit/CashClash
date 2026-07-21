@@ -31,6 +31,19 @@ public final class ItemUtils {
     }
 
 
+    /**
+     * Return a displaced item to the player's inventory, or drop it at their feet if the
+     * inventory is full.
+     */
+    public static void returnItemToInventoryOrDrop(Player player, ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) return;
+        if (player.getInventory().firstEmpty() != -1) {
+            player.getInventory().addItem(item);
+        } else {
+            player.getWorld().dropItemNaturally(player.getLocation(), item);
+        }
+    }
+
     public static void transferEnchants(ItemStack from, ItemStack to) {
         if (from == null || to == null) return;
         ItemMeta fromMeta = from.getItemMeta();

@@ -283,7 +283,7 @@ public class ShopService {
                             if (PDCDetection.isCustomArmorItem(currentArmor)) {
                                 // Custom armor goes to inventory
                                 replacedSetItems.put(slot, currentArmor.clone());
-                                returnReplacedItemToInventory(player, currentArmor.clone());
+                                ItemUtils.returnItemToInventoryOrDrop(player, currentArmor.clone());
                             } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
                                 // Purchased vanilla armor (iron/diamond) - track but don't return to inventory
                                 replacedSetItems.put(slot, currentArmor.clone());
@@ -319,7 +319,7 @@ public class ShopService {
                         if (PDCDetection.isCustomArmorItem(currentArmor)) {
                             Messages.debug("Replacing custom armor in slot " + slot + ": " + currentArmor);
                             replacedItem = currentArmor;
-                            returnReplacedItemToInventory(player, currentArmor.clone());
+                            ItemUtils.returnItemToInventoryOrDrop(player, currentArmor.clone());
                         } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
                             // Purchased vanilla armor - track but don't return (disappears)
                             Messages.debug("Replacing vanilla armor in slot " + slot + ": " + currentArmor);
@@ -349,7 +349,7 @@ public class ShopService {
 
                     // If replacing custom armor piece with normal armor, return it to inventory
                     if (PDCDetection.isCustomArmorItem(currentArmor)) {
-                        returnReplacedItemToInventory(player, replacedItem);
+                        ItemUtils.returnItemToInventoryOrDrop(player, replacedItem);
                     }
                 }
 
@@ -383,18 +383,6 @@ public class ShopService {
                     "price", String.format("%,d", totalPrice));
                 SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
             }
-        }
-    }
-
-    /**
-     * Return a replaced item to player's inventory, or drop if full.
-     */
-    private void returnReplacedItemToInventory(Player player, ItemStack item) {
-        if (item == null || item.getType() == Material.AIR) return;
-        if (player.getInventory().firstEmpty() != -1) {
-            player.getInventory().addItem(item);
-        } else {
-            player.getWorld().dropItemNaturally(player.getLocation(), item);
         }
     }
 
