@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.manager.items.CustomItemManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -44,12 +45,35 @@ public class MoveListener implements Listener {
         // Skip if in shopping phase
         if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) return;
 
-        // Check block player is standing on for bounce pads
+        // Check block player is standing on for floor-mounted bounce pads
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
         if (blockBelow.getType() == Material.SLIME_BLOCK) {
             if (customItemManager.isBouncePad(blockBelow)) {
                 customItemManager.handleBouncePad(player, blockBelow);
             }
+        }
+
+        // Check the four horizontal neighbors for wall-mounted bounce pads
+        Location loc = player.getLocation();
+        Block currentBlock = loc.getBlock();
+        double fracX = loc.getX() - currentBlock.getX();
+        double fracZ = loc.getZ() - currentBlock.getZ();
+
+        checkWallBouncePad(player, currentBlock, BlockFace.WEST, fracX < TOUCH_THRESHOLD);
+        checkWallBouncePad(player, currentBlock, BlockFace.EAST, fracX > 1 - TOUCH_THRESHOLD);
+        checkWallBouncePad(player, currentBlock, BlockFace.NORTH, fracZ < TOUCH_THRESHOLD);
+        checkWallBouncePad(player, currentBlock, BlockFace.SOUTH, fracZ > 1 - TOUCH_THRESHOLD);
+    }
+
+    // How close (in blocks, 0-1 within the current block) a player must be to a shared
+    // face before a wall-mounted bounce pad on the other side is considered touched.
+    private static final double TOUCH_THRESHOLD = 0.35;
+
+    private void checkWallBouncePad(Player player, Block currentBlock, BlockFace face, boolean nearFace) {
+        if (!nearFace) return;
+        Block neighbor = currentBlock.getRelative(face);
+        if (neighbor.getType() == Material.SLIME_BLOCK && customItemManager.isBouncePad(neighbor)) {
+            customItemManager.handleBouncePad(player, neighbor);
         }
     }
 }

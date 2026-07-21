@@ -327,7 +327,7 @@ public class InteractListener implements Listener {
                         return true;
                     }
                     event.setCancelled(true);
-                    customItemManager.placeBouncePad(player, item, event.getClickedBlock());
+                    customItemManager.placeBouncePad(player, item, event.getClickedBlock(), event.getBlockFace());
                     return true;
                 }
             }

@@ -60,8 +60,15 @@ public class CustomItemManager {
     // Grenade tracking
     private final Set<Item> activeGrenades;
 
-    // Bounce pad tracking - stores location -> owner team
-    private final Map<Location, Integer> bouncePadTeams;
+    // Bounce pad tracking - stores location -> owner team + the face it's attached to
+    private final Map<Location, BouncePadInfo> bouncePadTeams;
+
+    /**
+     * @param attachedFace The block face the pad was placed against (UP for a floor pad,
+     *                      a horizontal face for a wall-mounted pad); also the direction
+     *                      players are launched when they touch it.
+     */
+    private record BouncePadInfo(int teamNumber, BlockFace attachedFace) {}
 
     // Boombox tracking
     private final Set<Location> activeBoomboxes;
@@ -527,7 +534,7 @@ public class CustomItemManager {
 
     // ==================== BOUNCE PAD IMPLEMENTATION ====================
 
-    public void placeBouncePad(Player player, ItemStack item, Block clickedBlock) {
+    public void placeBouncePad(Player player, ItemStack item, Block clickedBlock, BlockFace face) {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
 
@@ -539,7 +546,7 @@ public class CustomItemManager {
             return;
         }
 
-        Block placeBlock = clickedBlock.getRelative(BlockFace.UP);
+        Block placeBlock = clickedBlock.getRelative(face);
 
         if (!placeBlock.getType().isAir()) {
             Messages.send(player, "customitem.cannot-place-bounce-pad");
@@ -549,7 +556,7 @@ public class CustomItemManager {
         // Use a full block so players can reliably trigger it
         placeBlock.setType(Material.SLIME_BLOCK);
         Location blockLoc = placeBlock.getLocation();
-        bouncePadTeams.put(blockLoc, team.getTeamNumber());
+        bouncePadTeams.put(blockLoc, new BouncePadInfo(team.getTeamNumber(), face));
 
         consumeItem(player, item);
         Messages.send(player, "customitem.bounce-pad-placed");
@@ -565,8 +572,8 @@ public class CustomItemManager {
 
     public void handleBouncePad(Player player, Block block) {
         Location blockLoc = block.getLocation();
-        Integer padTeam = bouncePadTeams.get(blockLoc);
-        if (padTeam == null) return;
+        BouncePadInfo pad = bouncePadTeams.get(blockLoc);
+        if (pad == null) return;
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
@@ -574,13 +581,19 @@ public class CustomItemManager {
         Team playerTeam = session.getPlayerTeam(player);
         if (playerTeam == null) return;
 
-        if (playerTeam.getTeamNumber() != padTeam) {
+        if (playerTeam.getTeamNumber() != pad.teamNumber()) {
             Messages.send(player, "customitem.bounce-pad-enemy-team");
             return;
         }
 
         ItemsConfig cfg = ItemsConfig.getInstance();
-        Vector direction = player.getLocation().getDirection();
+        Vector direction;
+        if (pad.attachedFace() != BlockFace.UP && pad.attachedFace() != BlockFace.DOWN) {
+            // Wall-mounted pad: launch outward along the wall's face instead of the player's look direction
+            direction = pad.attachedFace().getDirection();
+        } else {
+            direction = player.getLocation().getDirection();
+        }
         direction.setY(0).normalize();
         Vector velocity = direction.multiply(cfg.getBouncePadForwardVelocity()).setY(cfg.getBouncePadUpwardVelocity());
         player.setVelocity(velocity);
