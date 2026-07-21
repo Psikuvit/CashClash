@@ -268,6 +268,7 @@ public enum Kit {
             swordMeta.setUnbreakable(true);
             stoneSword.setItemMeta(swordMeta);
         }
+        markKitItem(stoneSword);
         player.getInventory().addItem(stoneSword);
 
         ItemStack stoneAxe = new ItemStack(Material.STONE_AXE);
@@ -276,6 +277,7 @@ public enum Kit {
             axeMeta.setUnbreakable(true);
             stoneAxe.setItemMeta(axeMeta);
         }
+        markKitItem(stoneAxe);
         player.getInventory().addItem(stoneAxe);
 
         ItemStack shears = new ItemStack(Material.SHEARS);
@@ -284,20 +286,25 @@ public enum Kit {
             shearsMeta.setUnbreakable(true);
             shears.setItemMeta(shearsMeta);
         }
+        markKitItem(shears);
         player.getInventory().addItem(shears);
 
         // === FOOD ===
         ItemFactory factory = ItemFactory.getInstance();
         ItemStack steak = factory.createGameplayItem(FoodItem.STEAK);
         steak.setAmount(8);
+        markKitItem(steak);
         player.getInventory().addItem(steak);
 
         ItemStack bread = factory.createGameplayItem(FoodItem.BREAD);
         bread.setAmount(16);
+        markKitItem(bread);
         player.getInventory().addItem(bread);
 
         // === UTILITY ===
-        player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
+        ItemStack waterBucket = new ItemStack(Material.WATER_BUCKET);
+        markKitItem(waterBucket);
+        player.getInventory().addItem(waterBucket);
 
         ItemStack cobwebs = factory.createGameplayItem(UtilityItem.COBWEB);
         cobwebs.setAmount(8);
