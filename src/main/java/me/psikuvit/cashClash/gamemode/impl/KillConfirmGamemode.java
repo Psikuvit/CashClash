@@ -390,6 +390,7 @@ public class KillConfirmGamemode extends Gamemode {
             if (!KCZoneValidator.isPlayerInZone(player, zone.getCenter())) {
                 if (occupants.remove(uuid) != null) {
                     ActionBarQueue.get().stopDisplay(player);
+                    Messages.send(player, "gamemode-kc.zone-capture-cancelled", "victim_name", zone.getVictimName());
                 }
                 continue;
             }
@@ -398,6 +399,7 @@ public class KillConfirmGamemode extends Gamemode {
             if (entry == null) {
                 entry = now;
                 occupants.put(uuid, now);
+                Messages.send(player, "gamemode-kc.zone-capturing", "victim_name", zone.getVictimName());
             }
 
             long elapsed = now - entry;
