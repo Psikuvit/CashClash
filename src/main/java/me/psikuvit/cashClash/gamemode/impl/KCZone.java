@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 import org.bukkit.Location;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.TextDisplay;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +36,15 @@ public class KCZone {
 
     private BlockDisplay platformDisplay;
     private Entity iconDisplay;
+    private TextDisplay timerDisplay;
+
+    // Whether the 0.5s grey "pending activation" visuals have already been swapped to the
+    // lit, kind-colored state. Guards KCZoneUtils#activateZoneEntities from re-running per tick.
+    private boolean activated;
+
+    // Last whole-second value written to timerDisplay, so KCZoneUtils#updateTimerDisplay only
+    // touches the entity when the displayed number actually needs to change.
+    private int lastDisplayedTimerSeconds = -1;
 
     public KCZone(Location center, int killerTeam, String victimName, ZoneKind kind, long activatesAtMs, long expiresAtMs) {
         this.center = center;
@@ -87,6 +97,30 @@ public class KCZone {
 
     public void setIconDisplay(Entity iconDisplay) {
         this.iconDisplay = iconDisplay;
+    }
+
+    public TextDisplay getTimerDisplay() {
+        return timerDisplay;
+    }
+
+    public void setTimerDisplay(TextDisplay timerDisplay) {
+        this.timerDisplay = timerDisplay;
+    }
+
+    public boolean isActivated() {
+        return activated;
+    }
+
+    public void setActivated(boolean activated) {
+        this.activated = activated;
+    }
+
+    public int getLastDisplayedTimerSeconds() {
+        return lastDisplayedTimerSeconds;
+    }
+
+    public void setLastDisplayedTimerSeconds(int lastDisplayedTimerSeconds) {
+        this.lastDisplayedTimerSeconds = lastDisplayedTimerSeconds;
     }
 
     public boolean isPendingActivation(long now) {

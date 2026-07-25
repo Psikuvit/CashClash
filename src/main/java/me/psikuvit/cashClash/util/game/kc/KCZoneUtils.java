@@ -21,32 +21,49 @@ import java.util.Collection;
 
 /**
  * Spawns and despawns the temporary display entities that make up a Kill Confirm capture zone:
- * a flat glowing 3x3 platform plus a nametag/emerald/heart marker floating above it. Mirrors
- * CTF's flag-banner convention (util.game.ctf.FlagBannerUtils) of using BlockDisplay/ItemDisplay
- * entities rather than real placed blocks, so nothing needs to be reverted in the world.
+ * a flat glowing 3x3 platform, a nametag/emerald/heart marker floating above it, and (for
+ * NAMETAG/MONEY zones) a countdown timer above that. Mirrors CTF's flag-banner convention
+ * (util.game.ctf.FlagBannerUtils) of using BlockDisplay/ItemDisplay entities rather than real
+ * placed blocks, so nothing needs to be reverted in the world.
  */
 public final class KCZoneUtils {
 
     private static final Vector3f PLATFORM_SCALE = new Vector3f(3f, 0.15f, 3f);
     private static final Color GOLD_GLOW = Color.fromRGB(255, 215, 0);
     private static final Color GREEN_GLOW = Color.fromRGB(0, 220, 90);
+    private static final Color RED_GLOW = Color.fromRGB(220, 40, 40);
+
+    // Dim/uncolored look used for the first ZONE_ACTIVATION_DELAY_MS while a zone is still
+    // "pending" (spawned but not yet capturable), swapped for ACTIVE_BRIGHTNESS + the kind's
+    // glow color once it lights up.
+    private static final Display.Brightness PENDING_BRIGHTNESS = new Display.Brightness(3, 3);
+    private static final Display.Brightness ACTIVE_BRIGHTNESS = new Display.Brightness(15, 15);
 
     private KCZoneUtils() {
         throw new AssertionError("Utility class");
     }
 
     /**
-     * Spawn the platform + marker entities for a zone and attach them to it.
+     * Spawn the platform + marker (+ timer, for NAMETAG/MONEY) entities for a zone and attach
+     * them to it, in the dim "pending activation" look. Call {@link #activateZoneEntities} once
+     * the zone's activation delay elapses to light them up.
      */
     public static void spawnZoneEntities(KCZone zone) {
         Location center = zone.getCenter();
         if (center == null || center.getWorld() == null) return;
 
-        boolean isNametag = zone.getKind() == KCZone.ZoneKind.NAMETAG;
-        Material platformMaterial = isNametag ? Material.GOLD_BLOCK : Material.EMERALD_BLOCK;
-        Color glowColor = isNametag ? GOLD_GLOW : GREEN_GLOW;
+        // Zone centers are victim death locations, so their yaw/pitch is whatever direction the
+        // victim happened to be looking when they died. BlockDisplay entities inherit their own
+        // spawn rotation into rendering (see FlagBannerUtils#createCarryingTask, which relies on
+        // exactly this to orient the CTF banner) - without flattening it here, the platform would
+        // spawn tilted whenever a player died looking up/down instead of lying flat on the ground.
+        Location flatCenter = center.clone();
+        flatCenter.setYaw(0f);
+        flatCenter.setPitch(0f);
 
-        BlockDisplay platform = center.getWorld().spawn(center, BlockDisplay.class, display -> {
+        Material platformMaterial = platformMaterialFor(zone.getKind());
+
+        BlockDisplay platform = flatCenter.getWorld().spawn(flatCenter, BlockDisplay.class, display -> {
             display.setBlock(platformMaterial.createBlockData());
             display.setTransformation(new Transformation(
                     new Vector3f(-1.5f, -0.05f, -1.5f),
@@ -54,26 +71,112 @@ public final class KCZoneUtils {
                     PLATFORM_SCALE,
                     new AxisAngle4f(0, 0, 0, 1)
             ));
-            display.setGlowing(true);
-            display.setGlowColorOverride(glowColor);
-            display.setBrightness(new Display.Brightness(15, 15));
+            display.setGlowing(false);
+            display.setBrightness(PENDING_BRIGHTNESS);
         });
         zone.setPlatformDisplay(platform);
 
-        Location iconLoc = center.clone().add(0, 1.2, 0);
+        Location iconLoc = flatCenter.clone().add(0, 1.2, 0);
         Entity icon = switch (zone.getKind()) {
             case NAMETAG -> spawnNametag(iconLoc, zone.getVictimName());
             case MONEY -> spawnIconItem(iconLoc, Material.EMERALD);
             case HEART -> spawnIconItem(iconLoc, Material.TOTEM_OF_UNDYING);
         };
         zone.setIconDisplay(icon);
+
+        if (zone.getKind() != KCZone.ZoneKind.HEART) {
+            Location timerLoc = flatCenter.clone().add(0, 1.7, 0);
+            long lifespanSeconds = Math.round((zone.getExpiresAtMs() - zone.getActivatesAtMs()) / 1000.0);
+            zone.setTimerDisplay(spawnTimerDisplay(timerLoc, lifespanSeconds));
+        }
+    }
+
+    /**
+     * Swap a zone's entities from the dim "pending" look to the lit, kind-colored look. Call
+     * once, the first tick after {@link KCZone#isPendingActivation} goes false.
+     */
+    public static void activateZoneEntities(KCZone zone) {
+        Color glowColor = glowColorFor(zone.getKind());
+        String colorTag = colorTagFor(zone.getKind());
+
+        BlockDisplay platform = zone.getPlatformDisplay();
+        if (platform != null && !platform.isDead()) {
+            platform.setGlowing(true);
+            platform.setGlowColorOverride(glowColor);
+            platform.setBrightness(ACTIVE_BRIGHTNESS);
+        }
+
+        Entity icon = zone.getIconDisplay();
+        if (icon instanceof TextDisplay nametag && !nametag.isDead()) {
+            nametag.text(Messages.parse("<" + colorTag + "><bold>" + zone.getVictimName() + "'s Tag</bold></" + colorTag + ">"));
+            nametag.setBrightness(ACTIVE_BRIGHTNESS);
+        } else if (icon instanceof Display displayIcon && !icon.isDead()) {
+            displayIcon.setBrightness(ACTIVE_BRIGHTNESS);
+        }
+
+        TextDisplay timer = zone.getTimerDisplay();
+        if (timer != null && !timer.isDead()) {
+            timer.setBrightness(ACTIVE_BRIGHTNESS);
+        }
+    }
+
+    /**
+     * Refresh a zone's countdown timer text (NAMETAG/MONEY only) to the whole seconds remaining
+     * until expiry. No-ops for zones without a timer, or when the displayed number hasn't
+     * changed since the last call.
+     */
+    public static void updateTimerDisplay(KCZone zone, long now) {
+        TextDisplay timer = zone.getTimerDisplay();
+        if (timer == null || timer.isDead()) return;
+
+        long remainingMs = Math.max(0, zone.getExpiresAtMs() - now);
+        int secondsRemaining = (int) Math.ceil(remainingMs / 1000.0);
+        if (secondsRemaining == zone.getLastDisplayedTimerSeconds()) return;
+        zone.setLastDisplayedTimerSeconds(secondsRemaining);
+
+        String colorTag = colorTagFor(zone.getKind());
+        timer.text(Messages.parse("<" + colorTag + "><bold>" + secondsRemaining + "s</bold></" + colorTag + ">"));
+    }
+
+    private static Material platformMaterialFor(KCZone.ZoneKind kind) {
+        return switch (kind) {
+            case NAMETAG -> Material.GOLD_BLOCK;
+            case MONEY -> Material.EMERALD_BLOCK;
+            case HEART -> Material.REDSTONE_BLOCK;
+        };
+    }
+
+    private static Color glowColorFor(KCZone.ZoneKind kind) {
+        return switch (kind) {
+            case NAMETAG -> GOLD_GLOW;
+            case MONEY -> GREEN_GLOW;
+            case HEART -> RED_GLOW;
+        };
+    }
+
+    private static String colorTagFor(KCZone.ZoneKind kind) {
+        return switch (kind) {
+            case NAMETAG -> "gold";
+            case MONEY -> "green";
+            case HEART -> "red";
+        };
     }
 
     private static TextDisplay spawnNametag(Location iconLoc, String victimName) {
         return iconLoc.getWorld().spawn(iconLoc, TextDisplay.class, display -> {
-            display.text(Messages.parse("<gold><bold>" + victimName + "'s Tag</bold></gold>"));
+            display.text(Messages.parse("<gray><bold>" + victimName + "'s Tag</bold></gray>"));
             display.setBillboard(Display.Billboard.CENTER);
-            display.setBrightness(new Display.Brightness(15, 15));
+            display.setBrightness(PENDING_BRIGHTNESS);
+            display.setSeeThrough(true);
+            display.setShadowed(false);
+        });
+    }
+
+    private static TextDisplay spawnTimerDisplay(Location loc, long lifespanSeconds) {
+        return loc.getWorld().spawn(loc, TextDisplay.class, display -> {
+            display.text(Messages.parse("<gray><bold>" + lifespanSeconds + "s</bold></gray>"));
+            display.setBillboard(Display.Billboard.CENTER);
+            display.setBrightness(PENDING_BRIGHTNESS);
             display.setSeeThrough(true);
             display.setShadowed(false);
         });
@@ -83,7 +186,7 @@ public final class KCZoneUtils {
         return iconLoc.getWorld().spawn(iconLoc, ItemDisplay.class, display -> {
             display.setItemStack(new ItemStack(material));
             display.setBillboard(Display.Billboard.CENTER);
-            display.setBrightness(new Display.Brightness(15, 15));
+            display.setBrightness(PENDING_BRIGHTNESS);
             Transformation t = display.getTransformation();
             display.setTransformation(new Transformation(
                     t.getTranslation(),
@@ -95,7 +198,7 @@ public final class KCZoneUtils {
     }
 
     /**
-     * Remove a zone's platform and marker entities.
+     * Remove a zone's platform, marker, and timer entities.
      */
     public static void despawnZoneEntities(KCZone zone) {
         if (zone == null) return;
@@ -104,6 +207,9 @@ public final class KCZoneUtils {
         }
         if (zone.getIconDisplay() != null && !zone.getIconDisplay().isDead()) {
             zone.getIconDisplay().remove();
+        }
+        if (zone.getTimerDisplay() != null && !zone.getTimerDisplay().isDead()) {
+            zone.getTimerDisplay().remove();
         }
     }
 
