@@ -179,11 +179,96 @@ Example: "Time Remaining: {time} seconds"
   - Default: "0"
   - Use Case: CTF gamemode only
 
+{teamRed_capture_circles} / {teamBlue_capture_circles}
+  - Visual progress indicator toward the flag captures needed to win the round
+  - Returns: Filled/empty circle glyphs, one per capture needed (e.g., "<green>●</green> <gray>○</gray>")
+  - Default: All-empty circles
+  - Use Case: CTF gamemode only
+
+{red_flag_holder} / {blue_flag_holder}
+  - Shows who is currently carrying that team's flag
+  - Returns: Carrier's player name, or "At Base" if not taken
+  - Default: "At Base"
+  - Use Case: CTF gamemode only
+
+{red_flag_status} / {blue_flag_status}
+  - Shows whether that team's flag is safe or taken
+  - Returns: "<green>Safe</green>" or "<red>Taken by <name></red>"
+  - Default: "<green>Safe</green>"
+  - Use Case: CTF gamemode only
+
+{money_bonus_timer}
+  - Shows the remaining time on a player's active Money Bonus extra heart (from
+    confirming a triple-kill Money Tag in Kill Confirm's sudden death)
+  - Returns: "Money Bonus: 0:45" etc., or "" (empty) when no bonus is active
+  - Default: ""
+  - Use Case: Kill Confirm gamemode, sudden death only
+
 {player_heart_timer}
   - Shows the remaining time for extra heart bonuses in sudden death
   - Returns: "0:45", "0:30", etc. (in MM:SS format)
   - Default: "0:00"
-  - Use Case: Sudden death phase, CTF gamemode
+  - Use Case: Sudden death phase, any gamemode
+
+================================================================================
+             PROTECT THE PRESIDENT (PTP) SPECIFIC PLACEHOLDERS
+================================================================================
+
+{red_president} / {blue_president}
+  - Shows the name of that team's current president
+  - Returns: Player name, "Unknown" if offline, or "None" if not yet selected
+  - Default: "None"
+  - Use Case: PTP gamemode only
+
+{red_president_status} / {blue_president_status}
+  - Shows whether that team's president is alive and online
+  - Returns: "<green>Active (<name>)</green>", "<red>Offline</red>", or "<red>No President</red>"
+  - Default: "<red>No President</red>"
+  - Use Case: PTP gamemode only
+
+{red_assassinations} / {blue_assassinations}
+  - Shows how many times that team's president has been assassinated this round
+  - Returns: Numeric value (e.g., "1")
+  - Default: "0"
+  - Use Case: PTP gamemode only
+
+{red_assassination_circles} / {blue_assassination_circles}
+  - Visual progress indicator toward the assassinations needed to win the round
+  - Updates the same way {teamRed_capture_circles}/{teamBlue_capture_circles} do in CTF
+  - Returns: Filled/empty circle glyphs, one per assassination needed (e.g., "<green>●</green> <gray>○</gray>")
+  - Default: All-empty circles
+  - Use Case: PTP gamemode only
+
+{red_buff} / {blue_buff}
+  - Shows the presidential buff(s) that team's president selected (or was randomly
+    given if they didn't pick in time): Strength, Resistance, Speed, or Extra Hearts.
+    In sudden death a president may hold 2 buffs, shown comma-separated.
+  - Returns: Buff name(s) (e.g., "Strength" or "Strength, Speed"), or "None"
+  - Default: "None"
+  - Use Case: PTP gamemode only
+
+{sudden_heart_team}
+  - Shows which team most recently earned the sudden-death extra-heart kill bonus
+    (every 2 kills toward the enemy president). Clears itself after 3 minutes.
+  - Returns: "<red>Red</red>", "<blue>Blue</blue>", or "None"
+  - Default: "None"
+  - Use Case: PTP gamemode, sudden death only
+
+================================================================================
+                   KILL CONFIRM (KC) SPECIFIC PLACEHOLDERS
+================================================================================
+
+{teamRed_kc_score} / {teamBlue_kc_score}
+  - Shows that team's combined kill/confirm score
+  - Returns: Numeric value (e.g., "9")
+  - Default: "0"
+  - Use Case: KC gamemode only
+
+{teamRed_kc_progress} / {teamBlue_kc_progress}
+  - Shows that team's score against the win condition
+  - Returns: "score/target" (e.g., "9/16")
+  - Default: "0/16"
+  - Use Case: KC gamemode only
 
 ================================================================================
                         EXAMPLE SCOREBOARD LAYOUTS
@@ -222,6 +307,20 @@ Line 4: "Time Remaining: {time}"
 Line 5: ""
 Line 6: "❤ Heart Timer: {player_heart_timer}"
 
+EXAMPLE 4 - Protect the President:
+Line 1: "<bold>Protect the President</bold>"
+Line 2: ""
+Line 3: "<red>Red President: {red_president}</red>"
+Line 4: "Buff: {red_buff}"
+Line 5: "Progress: {red_assassination_circles}"
+Line 6: ""
+Line 7: "<blue>Blue President: {blue_president}</blue>"
+Line 8: "Buff: {blue_buff}"
+Line 9: "Progress: {blue_assassination_circles}"
+Line 10: ""
+Line 11: "Time: {time}"
+Line 12: "Round: {round}"
+
 ================================================================================
                             NOTES & TIPS
 ================================================================================
@@ -248,6 +347,10 @@ Line 6: "❤ Heart Timer: {player_heart_timer}"
    - Example: "2 - 1" means Red has 2 captures, Blue has 1
 
 8. During sudden death, use {player_heart_timer} to show when bonuses expire
+
+9. {red_assassination_circles}/{blue_assassination_circles} (PTP) update the same
+   way {teamRed_capture_circles}/{teamBlue_capture_circles} do in CTF - one filled
+   circle per assassination/capture already scored toward that round's win condition
 
 ================================================================================
 
