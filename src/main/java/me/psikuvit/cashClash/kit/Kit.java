@@ -48,8 +48,9 @@ public enum Kit {
 
     /**
      * Apply kit to a player. This is the main method to give kit items.
-     * Round 1: Base items + kit-specific items
-     * Round 2+: Remove kit items, keep base items
+     * Round 1: Clear inventory and give base items (kit-specific items disabled for now)
+     * Round 2+: Don't reissue base items - the player already has (or has spent/upgraded)
+     *   whatever they were given in round 1, so only the shield toggle re-runs
      * Always: Apply shield logic
      *
      * @param player The player to give the kit to
@@ -57,17 +58,16 @@ public enum Kit {
      * @param rounds1to3HaveShields Whether rounds 1-3 have shields
      */
     public void apply(Player player, int round, boolean rounds1to3HaveShields) {
-        // Round 1 kits removed temporarily - all rounds get base items
         if (round == 1) {
+            // Round 1 kits removed temporarily - all rounds get base items
             player.getInventory().clear();
-        }
-        
-        // Remove kit items if they exist (clean up from previous versions)
-        removeKitItems(player);
-        removeKitSpecificEnhancements(player);
 
-        // Always give base items
-        giveBaseItems(player, round, rounds1to3HaveShields);
+            // Remove kit items if they exist (clean up from previous versions)
+            removeKitItems(player);
+            removeKitSpecificEnhancements(player);
+
+            giveBaseItems(player, round, rounds1to3HaveShields);
+        }
 
         // Always apply shield logic each round
         toggleShield(player, round, rounds1to3HaveShields);
@@ -434,8 +434,8 @@ public enum Kit {
     /**
      * Apply kit with a custom layout and round number.
      * Items are placed according to the slot -> item identifier mapping.
-     * Round 1: Clear inventory, place base items + kit items with layout, apply shield
-     * Round 2+: Remove kit items only, apply shield logic (same as apply())
+     * Round 1: Clear inventory, place base items with layout, apply shield
+     * Round 2+: Don't reissue base items (see {@link #apply}), just re-run the shield toggle
      *
      * @param player The player to give the kit to
      * @param layout Map of slot -> item identifier
@@ -443,17 +443,16 @@ public enum Kit {
      * @param rounds1to3HaveShields Whether rounds 1-3 have shields (rounds 4-6 will be opposite)
      */
     public void applyWithLayout(Player player, Map<Integer, String> layout, int round, boolean rounds1to3HaveShields) {
-        // Round 1 kits removed temporarily - all rounds get base items
         if (round == 1) {
+            // Round 1 kits removed temporarily - all rounds get base items
             player.getInventory().clear();
-        }
-        
-        // Remove kit items if they exist (clean up from previous versions)
-        removeKitItems(player);
-        removeKitSpecificEnhancements(player);
 
-        // Always give base items
-        giveBaseItemsWithLayout(player, layout);
+            // Remove kit items if they exist (clean up from previous versions)
+            removeKitItems(player);
+            removeKitSpecificEnhancements(player);
+
+            giveBaseItemsWithLayout(player, layout);
+        }
 
         // Always apply shield logic each round
         toggleShield(player, round, rounds1to3HaveShields);
