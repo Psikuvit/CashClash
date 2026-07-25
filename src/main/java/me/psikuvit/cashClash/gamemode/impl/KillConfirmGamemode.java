@@ -22,7 +22,6 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +40,7 @@ public class KillConfirmGamemode extends Gamemode {
 
     private static final int WIN_CONDITION = 16;
     private static final int TRIPLE_KILL_STREAK = 3;
-    private static final long ZONE_ACTIVATION_DELAY_MS = 500;
+    private static final long ZONE_ACTIVATION_DELAY_MS = 1000;
     private static final long ZONE_LIFESPAN_MS = 9000;
     private static final long MONEY_ZONE_LIFESPAN_MS = 13000;
     private static final long CAPTURE_DURATION_MS = 4000;
@@ -52,7 +51,6 @@ public class KillConfirmGamemode extends Gamemode {
     private final Map<Integer, Integer> teamScore;
     private final Map<Integer, Integer> suddenDeathCycleScore;
     private final List<KCZone> activeZones;
-    private final Set<UUID> tripleKillAwarded; // guards the streak-3 zone firing more than once per streak
 
     private final SuddenDeathManager suddenDeathManager;
     private final FinalStandManager finalStandManager;
@@ -65,7 +63,6 @@ public class KillConfirmGamemode extends Gamemode {
         this.teamScore = new HashMap<>(2);
         this.suddenDeathCycleScore = new HashMap<>(2);
         this.activeZones = new ArrayList<>();
-        this.tripleKillAwarded = new HashSet<>();
         this.suddenDeathManager = new SuddenDeathManager(session, this);
         this.finalStandManager = new FinalStandManager(session, this);
         this.zoneTickTask = null;
@@ -96,7 +93,6 @@ public class KillConfirmGamemode extends Gamemode {
             Messages.debug("[KC] Sudden death cycle started - score counters reset");
         }
 
-        tripleKillAwarded.clear();
         zoneTickTask = SchedulerUtils.runTaskTimer(this::tickCaptureZones, 0, 5);
     }
 
@@ -113,7 +109,6 @@ public class KillConfirmGamemode extends Gamemode {
         suddenDeathCycleScore.put(1, 0);
         suddenDeathCycleScore.put(2, 0);
         suddenDeathWinningTeam = 0;
-        tripleKillAwarded.clear();
     }
 
     @Override
@@ -131,12 +126,10 @@ public class KillConfirmGamemode extends Gamemode {
             return;
         }
 
-        boolean tripleKill = false;
+        // Fires on every multiple of the streak (3, 6, 9, ...) - each kill only ever reports
+        // one streak value here, so no extra dedup guard is needed to avoid double-firing.
         CashClashPlayer killerCcp = session.getCashClashPlayer(killer.getUniqueId());
-        if (killerCcp != null && killerCcp.getKillStreak() == TRIPLE_KILL_STREAK
-                && tripleKillAwarded.add(killer.getUniqueId())) {
-            tripleKill = true;
-        }
+        boolean tripleKill = killerCcp != null && killerCcp.getKillStreak() % TRIPLE_KILL_STREAK == 0;
 
         KCZone.ZoneKind kind;
         if (tripleKill) {
@@ -207,7 +200,6 @@ public class KillConfirmGamemode extends Gamemode {
 
         teamScore.clear();
         suddenDeathCycleScore.clear();
-        tripleKillAwarded.clear();
     }
 
     @Override
@@ -350,6 +342,9 @@ public class KillConfirmGamemode extends Gamemode {
     /**
      * Poll every active zone: track each occupant's own hold time, resolve the zone the moment
      * any single player finishes their hold (first of either team to do so wins the zone).
+     * A zone that reaches its normal expiry while a killer-team member is still standing in it
+     * is "contested" instead of despawning - it stays alive (showing "Contested!" on its timer)
+     * until it's captured or the killer's team steps off it.
      */
     private void tickCaptureZones() {
         if (activeZones.isEmpty()) return;
@@ -366,18 +361,38 @@ public class KillConfirmGamemode extends Gamemode {
                 KCZoneUtils.activateZoneEntities(zone);
                 zone.setActivated(true);
             }
-            KCZoneUtils.updateTimerDisplay(zone, now);
 
             if (zone.isExpired(now)) {
-                resolveZoneExpired(zone);
-                it.remove();
-                continue;
+                if (isKillerTeamInZone(zone)) {
+                    KCZoneUtils.showContested(zone);
+                } else {
+                    resolveZoneExpired(zone);
+                    it.remove();
+                    continue;
+                }
+            } else {
+                KCZoneUtils.updateTimerDisplay(zone, now);
             }
 
             if (tickZoneOccupants(zone, now)) {
                 it.remove();
             }
         }
+    }
+
+    /**
+     * Whether any online member of the zone's killer team (the killer themselves included -
+     * they're part of their own team's player set) is currently standing in the zone.
+     */
+    private boolean isKillerTeamInZone(KCZone zone) {
+        Team killerTeamObj = zone.getKillerTeam() == 1 ? session.getTeamRed() : session.getTeamBlue();
+        for (UUID uuid : killerTeamObj.getPlayers()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline() && KCZoneValidator.isPlayerInZone(p, zone.getCenter())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

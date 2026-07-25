@@ -39,6 +39,10 @@ public final class KCZoneUtils {
     private static final Display.Brightness PENDING_BRIGHTNESS = new Display.Brightness(3, 3);
     private static final Display.Brightness ACTIVE_BRIGHTNESS = new Display.Brightness(15, 15);
 
+    // Sentinel stored in KCZone#lastDisplayedTimerSeconds while showing "Contested!" instead of
+    // a countdown number - distinct from the -1 "not yet displayed" default and any real second count.
+    private static final int CONTESTED_SENTINEL = -2;
+
     private KCZoneUtils() {
         throw new AssertionError("Utility class");
     }
@@ -136,6 +140,20 @@ public final class KCZoneUtils {
 
         String colorTag = colorTagFor(zone.getKind());
         timer.text(Messages.parse("<" + colorTag + "><bold>" + secondsRemaining + "s</bold></" + colorTag + ">"));
+    }
+
+    /**
+     * Swap a zone's timer text (NAMETAG/MONEY only) to "Contested!" once it's past its normal
+     * expiry but a killer-team member is still standing in it. No-ops for zones without a timer,
+     * or if "Contested!" is already showing.
+     */
+    public static void showContested(KCZone zone) {
+        TextDisplay timer = zone.getTimerDisplay();
+        if (timer == null || timer.isDead()) return;
+        if (zone.getLastDisplayedTimerSeconds() == CONTESTED_SENTINEL) return;
+        zone.setLastDisplayedTimerSeconds(CONTESTED_SENTINEL);
+
+        timer.text(Messages.parse("<red><bold>Contested!</bold></red>"));
     }
 
     private static Material platformMaterialFor(KCZone.ZoneKind kind) {
