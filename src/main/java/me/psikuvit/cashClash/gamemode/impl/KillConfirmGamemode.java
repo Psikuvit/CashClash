@@ -319,7 +319,8 @@ public class KillConfirmGamemode extends Gamemode {
         long lifespanMs = kind == KCZone.ZoneKind.MONEY ? MONEY_ZONE_LIFESPAN_MS : ZONE_LIFESPAN_MS;
         long expiresAt = activatesAt + lifespanMs;
 
-        KCZone zone = new KCZone(deathLoc.clone(), killerTeam, victimName, kind, activatesAt, expiresAt);
+        Location safeCenter = KCZoneValidator.findSafeCenter(deathLoc);
+        KCZone zone = new KCZone(safeCenter.clone(), killerTeam, victimName, kind, activatesAt, expiresAt);
         KCZoneUtils.spawnZoneEntities(zone);
         activeZones.add(zone);
 
