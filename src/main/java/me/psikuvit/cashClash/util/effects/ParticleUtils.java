@@ -211,14 +211,14 @@ public final class ParticleUtils {
      * Spawn a one-shot vertical column of colored dust particles straight up from a base
      * location - used for the KC zone activation/halfway beam pulse.
      */
-    public static void verticalBeam(Location base, Color color, double height, int pointsPerBlock) {
+    public static void verticalBeam(Location base, Color color, double height, int pointsPerBlock, float size, int particlesPerPoint) {
         if (base == null || base.getWorld() == null || color == null) return;
         int totalPoints = Math.max(1, (int) Math.round(height * pointsPerBlock));
-        Particle.DustOptions dustOptions = new Particle.DustOptions(color, 1.0f);
+        Particle.DustOptions dustOptions = new Particle.DustOptions(color, size);
         for (int i = 0; i <= totalPoints; i++) {
             double y = base.getY() + (height * i / totalPoints);
             Location point = new Location(base.getWorld(), base.getX(), y, base.getZ());
-            base.getWorld().spawnParticle(Particle.DUST, point, 1, 0, 0, 0, dustOptions);
+            base.getWorld().spawnParticle(Particle.DUST, point, particlesPerPoint, 0.05, 0, 0.05, dustOptions);
         }
     }
 

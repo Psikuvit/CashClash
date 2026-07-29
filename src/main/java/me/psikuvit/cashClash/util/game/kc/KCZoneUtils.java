@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.util.game.kc;
 
 import me.psikuvit.cashClash.gamemode.impl.KCZone;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Color;
@@ -45,9 +46,14 @@ public final class KCZoneUtils {
     // a countdown number - distinct from the -1 "not yet displayed" default and any real second count.
     private static final int CONTESTED_SENTINEL = -2;
 
-    private static final Color BEAM_COLOR = Color.YELLOW;
     private static final double BEAM_HEIGHT = 6.0;
-    private static final int BEAM_POINTS_PER_BLOCK = 4;
+    private static final int BEAM_POINTS_PER_BLOCK = 8;
+    private static final float BEAM_PARTICLE_SIZE = 2.0f;
+    private static final int BEAM_PARTICLES_PER_POINT = 3;
+    // "Lasting" for the beam is simulated by redrawing it a few times in quick succession -
+    // DUST particles are otherwise a single-tick burst with no built-in lifetime control.
+    private static final int BEAM_DURATION_TICKS = 10; // 0.5s
+    private static final int BEAM_REFRESH_INTERVAL_TICKS = 2;
 
     private KCZoneUtils() {
         throw new AssertionError("Utility class");
@@ -236,12 +242,23 @@ public final class KCZoneUtils {
     }
 
     /**
-     * A brief yellow beam pulsing straight up from a zone - shown once when it activates and
-     * again when its countdown timer reaches the halfway point.
+     * A beam pulsing straight up from a zone, colored to match its kind, shown once when it
+     * activates and again when its countdown timer reaches the halfway point. Redrawn every
+     * {@value #BEAM_REFRESH_INTERVAL_TICKS} ticks for {@value #BEAM_DURATION_TICKS} ticks
+     * (0.5s) so the pulse reads as a lasting beam rather than an instant flash.
      */
-    public static void spawnActivationBeam(Location center) {
+    public static void spawnActivationBeam(KCZone zone) {
+        Location center = zone.getCenter();
         if (center == null || center.getWorld() == null) return;
-        ParticleUtils.verticalBeam(center.clone().add(0, 0.2, 0), BEAM_COLOR, BEAM_HEIGHT, BEAM_POINTS_PER_BLOCK);
+
+        Color color = glowColorFor(zone.getKind());
+        Location base = center.clone().add(0, 0.2, 0);
+
+        for (int delay = 0; delay < BEAM_DURATION_TICKS; delay += BEAM_REFRESH_INTERVAL_TICKS) {
+            SchedulerUtils.runTaskLater(() ->
+                    ParticleUtils.verticalBeam(base, color, BEAM_HEIGHT, BEAM_POINTS_PER_BLOCK, BEAM_PARTICLE_SIZE, BEAM_PARTICLES_PER_POINT),
+                    delay);
+        }
     }
 
     private static TextDisplay spawnTimerDisplay(Location loc, long pendingSeconds) {
