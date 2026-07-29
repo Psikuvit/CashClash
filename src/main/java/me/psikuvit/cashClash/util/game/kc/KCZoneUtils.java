@@ -101,7 +101,7 @@ public final class KCZoneUtils {
         };
         zone.setIconDisplay(icon);
 
-        Location timerLoc = flatCenter.clone().add(0, 1.7, 0);
+        Location timerLoc = flatCenter.clone().add(0, timerYOffsetFor(zone.getKind()), 0);
         zone.setTimerDisplay(spawnTimerDisplay(timerLoc, pendingSeconds));
 
         SoundUtils.playAt(flatCenter, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
@@ -209,6 +209,14 @@ public final class KCZoneUtils {
         };
     }
 
+    /**
+     * Height above the platform for the timer display. Raised for MONEY/HEART so it doesn't
+     * crowd the item icon underneath it.
+     */
+    private static double timerYOffsetFor(KCZone.ZoneKind kind) {
+        return kind == KCZone.ZoneKind.NAMETAG ? 1.7 : 2.1;
+    }
+
     private static TextDisplay spawnNametag(Location iconLoc, long pendingSeconds) {
         return iconLoc.getWorld().spawn(iconLoc, TextDisplay.class, display -> {
             display.text(Messages.parse(pendingActivationText(pendingSeconds)));
@@ -224,20 +232,29 @@ public final class KCZoneUtils {
     }
 
     /**
-     * Refresh a zone's "Activating... Ns" text while it's still in its activation delay - on
-     * the NAMETAG icon (the only icon that's text-capable; MONEY/HEART use an item icon) and on
-     * the timer display, which every zone kind has.
+     * Plain "Ns" pending text (no "Activating..." wording) for the timer display, which sits
+     * above the icon and doubles as a countdown once the zone lights up.
+     */
+    private static String pendingTimerText(long pendingSeconds) {
+        return "<gray><bold>" + pendingSeconds + "s</bold></gray>";
+    }
+
+    /**
+     * Refresh a zone's pending-activation text while it's still in its activation delay - the
+     * NAMETAG icon (the only icon that's text-capable; MONEY/HEART use an item icon) shows
+     * "Activating... Ns", while the timer display above it (every zone kind has one) shows a
+     * plain "Ns" countdown.
      */
     public static void updatePendingActivationDisplay(KCZone zone, long now) {
-        String text = pendingActivationText(pendingSecondsRemaining(zone, now));
+        long pendingSeconds = pendingSecondsRemaining(zone, now);
 
         if (zone.getIconDisplay() instanceof TextDisplay nametag && !nametag.isDead()) {
-            nametag.text(Messages.parse(text));
+            nametag.text(Messages.parse(pendingActivationText(pendingSeconds)));
         }
 
         TextDisplay timer = zone.getTimerDisplay();
         if (timer != null && !timer.isDead()) {
-            timer.text(Messages.parse(text));
+            timer.text(Messages.parse(pendingTimerText(pendingSeconds)));
         }
     }
 
@@ -263,7 +280,7 @@ public final class KCZoneUtils {
 
     private static TextDisplay spawnTimerDisplay(Location loc, long pendingSeconds) {
         return loc.getWorld().spawn(loc, TextDisplay.class, display -> {
-            display.text(Messages.parse(pendingActivationText(pendingSeconds)));
+            display.text(Messages.parse(pendingTimerText(pendingSeconds)));
             display.setBillboard(Display.Billboard.CENTER);
             display.setBrightness(PENDING_BRIGHTNESS);
             display.setSeeThrough(true);
