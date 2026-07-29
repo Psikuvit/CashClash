@@ -42,7 +42,8 @@ public class KillConfirmGamemode extends Gamemode {
     private static final int TRIPLE_KILL_STREAK = 3;
     private static final long ZONE_ACTIVATION_DELAY_MS = 1000;
     private static final long ZONE_LIFESPAN_MS = 9000;
-    private static final long MONEY_ZONE_LIFESPAN_MS = 13000;
+    // Shared by MONEY and HEART zones - both are triple-kill bonus tags.
+    private static final long BONUS_ZONE_LIFESPAN_MS = 13000;
     private static final long CAPTURE_DURATION_MS = 4000;
     private static final long FINAL_STAND_CAPTURE_DURATION_MS = 2000;
     private static final long MONEY_BONUS = 15000;
@@ -316,7 +317,7 @@ public class KillConfirmGamemode extends Gamemode {
 
         long now = System.currentTimeMillis();
         long activatesAt = now + ZONE_ACTIVATION_DELAY_MS;
-        long lifespanMs = kind == KCZone.ZoneKind.MONEY ? MONEY_ZONE_LIFESPAN_MS : ZONE_LIFESPAN_MS;
+        long lifespanMs = kind == KCZone.ZoneKind.NAMETAG ? ZONE_LIFESPAN_MS : BONUS_ZONE_LIFESPAN_MS;
         long expiresAt = activatesAt + lifespanMs;
 
         Location safeCenter = KCZoneValidator.findSafeCenter(deathLoc);
@@ -356,7 +357,10 @@ public class KillConfirmGamemode extends Gamemode {
         while (it.hasNext()) {
             KCZone zone = it.next();
 
-            if (zone.isPendingActivation(now)) continue;
+            if (zone.isPendingActivation(now)) {
+                KCZoneUtils.updatePendingActivationDisplay(zone, now);
+                continue;
+            }
 
             if (!zone.isActivated()) {
                 KCZoneUtils.activateZoneEntities(zone);

@@ -23,10 +23,10 @@ import java.util.Collection;
 
 /**
  * Spawns and despawns the temporary display entities that make up a Kill Confirm capture zone:
- * a flat glowing 3x3 platform, a nametag/emerald/heart marker floating above it, and (for
- * NAMETAG/MONEY zones) a countdown timer above that. Mirrors CTF's flag-banner convention
- * (util.game.ctf.FlagBannerUtils) of using BlockDisplay/ItemDisplay entities rather than real
- * placed blocks, so nothing needs to be reverted in the world.
+ * a flat glowing 3x3 platform, a nametag/emerald/heart marker floating above it, and a countdown
+ * timer above that. Mirrors CTF's flag-banner convention (util.game.ctf.FlagBannerUtils) of using
+ * BlockDisplay/ItemDisplay entities rather than real placed blocks, so nothing needs to be
+ * reverted in the world.
  */
 public final class KCZoneUtils {
 
@@ -54,9 +54,9 @@ public final class KCZoneUtils {
     }
 
     /**
-     * Spawn the platform + marker (+ timer, for NAMETAG/MONEY) entities for a zone and attach
-     * them to it, in the dim "pending activation" look. Call {@link #activateZoneEntities} once
-     * the zone's activation delay elapses to light them up.
+     * Spawn the platform + marker + timer entities for a zone and attach them to it, in the dim
+     * "pending activation" look. Call {@link #activateZoneEntities} once the zone's activation
+     * delay elapses to light them up.
      */
     public static void spawnZoneEntities(KCZone zone) {
         Location center = zone.getCenter();
@@ -87,20 +87,27 @@ public final class KCZoneUtils {
         zone.setPlatformDisplay(platform);
 
         Location iconLoc = flatCenter.clone().add(0, 1.2, 0);
+        long pendingSeconds = pendingSecondsRemaining(zone, System.currentTimeMillis());
         Entity icon = switch (zone.getKind()) {
-            case NAMETAG -> spawnNametag(iconLoc, zone.getVictimName());
+            case NAMETAG -> spawnNametag(iconLoc, pendingSeconds);
             case MONEY -> spawnIconItem(iconLoc, Material.EMERALD);
             case HEART -> spawnIconItem(iconLoc, Material.TOTEM_OF_UNDYING);
         };
         zone.setIconDisplay(icon);
 
-        if (zone.getKind() != KCZone.ZoneKind.HEART) {
-            Location timerLoc = flatCenter.clone().add(0, 1.7, 0);
-            long lifespanSeconds = Math.round((zone.getExpiresAtMs() - zone.getActivatesAtMs()) / 1000.0);
-            zone.setTimerDisplay(spawnTimerDisplay(timerLoc, lifespanSeconds));
-        }
+        Location timerLoc = flatCenter.clone().add(0, 1.7, 0);
+        zone.setTimerDisplay(spawnTimerDisplay(timerLoc, pendingSeconds));
 
         SoundUtils.playAt(flatCenter, Sound.BLOCK_CONDUIT_ACTIVATE, 1.0f, 1.0f);
+    }
+
+    /**
+     * Whole seconds remaining until a zone's activation delay elapses (always at least 1 while
+     * still pending), used for the "Activating... Ns" text shown in place of the victim's name.
+     */
+    private static long pendingSecondsRemaining(KCZone zone, long now) {
+        long remainingMs = Math.max(0, zone.getActivatesAtMs() - now);
+        return Math.max(1, Math.round(remainingMs / 1000.0));
     }
 
     /**
@@ -141,9 +148,9 @@ public final class KCZoneUtils {
     }
 
     /**
-     * Refresh a zone's countdown timer text (NAMETAG/MONEY only) to the whole seconds remaining
-     * until expiry. No-ops for zones without a timer, or when the displayed number hasn't
-     * changed since the last call.
+     * Refresh a zone's countdown timer text to the whole seconds remaining until expiry.
+     * No-ops for zones without a timer, or when the displayed number hasn't changed since the
+     * last call.
      */
     public static void updateTimerDisplay(KCZone zone, long now) {
         TextDisplay timer = zone.getTimerDisplay();
@@ -159,9 +166,9 @@ public final class KCZoneUtils {
     }
 
     /**
-     * Swap a zone's timer text (NAMETAG/MONEY only) to "Contested!" once it's past its normal
-     * expiry but a killer-team member is still standing in it. No-ops for zones without a timer,
-     * or if "Contested!" is already showing.
+     * Swap a zone's timer text to "Contested!" once it's past its normal expiry but a
+     * killer-team member is still standing in it. No-ops for zones without a timer, or if
+     * "Contested!" is already showing.
      */
     public static void showContested(KCZone zone) {
         TextDisplay timer = zone.getTimerDisplay();
@@ -170,15 +177,6 @@ public final class KCZoneUtils {
         zone.setLastDisplayedTimerSeconds(CONTESTED_SENTINEL);
 
         timer.text(Messages.parse("<red><bold>Contested!</bold></red>"));
-    }
-
-    /**
-     * A brief yellow beam pulsing straight up from a zone - shown once when it activates and
-     * again when its countdown timer reaches the halfway point.
-     */
-    public static void spawnActivationBeam(Location center) {
-        if (center == null || center.getWorld() == null) return;
-        ParticleUtils.verticalBeam(center.clone().add(0, 0.2, 0), BEAM_COLOR, BEAM_HEIGHT, BEAM_POINTS_PER_BLOCK);
     }
 
     private static Material platformMaterialFor(KCZone.ZoneKind kind) {
@@ -205,9 +203,9 @@ public final class KCZoneUtils {
         };
     }
 
-    private static TextDisplay spawnNametag(Location iconLoc, String victimName) {
+    private static TextDisplay spawnNametag(Location iconLoc, long pendingSeconds) {
         return iconLoc.getWorld().spawn(iconLoc, TextDisplay.class, display -> {
-            display.text(Messages.parse("<gray><bold>" + victimName + "'s Tag</bold></gray>"));
+            display.text(Messages.parse(pendingActivationText(pendingSeconds)));
             display.setBillboard(Display.Billboard.CENTER);
             display.setBrightness(PENDING_BRIGHTNESS);
             display.setSeeThrough(true);
@@ -215,9 +213,40 @@ public final class KCZoneUtils {
         });
     }
 
-    private static TextDisplay spawnTimerDisplay(Location loc, long lifespanSeconds) {
+    private static String pendingActivationText(long pendingSeconds) {
+        return "<gray><bold>Activating... " + pendingSeconds + "s</bold></gray>";
+    }
+
+    /**
+     * Refresh a zone's "Activating... Ns" text while it's still in its activation delay - on
+     * the NAMETAG icon (the only icon that's text-capable; MONEY/HEART use an item icon) and on
+     * the timer display, which every zone kind has.
+     */
+    public static void updatePendingActivationDisplay(KCZone zone, long now) {
+        String text = pendingActivationText(pendingSecondsRemaining(zone, now));
+
+        if (zone.getIconDisplay() instanceof TextDisplay nametag && !nametag.isDead()) {
+            nametag.text(Messages.parse(text));
+        }
+
+        TextDisplay timer = zone.getTimerDisplay();
+        if (timer != null && !timer.isDead()) {
+            timer.text(Messages.parse(text));
+        }
+    }
+
+    /**
+     * A brief yellow beam pulsing straight up from a zone - shown once when it activates and
+     * again when its countdown timer reaches the halfway point.
+     */
+    public static void spawnActivationBeam(Location center) {
+        if (center == null || center.getWorld() == null) return;
+        ParticleUtils.verticalBeam(center.clone().add(0, 0.2, 0), BEAM_COLOR, BEAM_HEIGHT, BEAM_POINTS_PER_BLOCK);
+    }
+
+    private static TextDisplay spawnTimerDisplay(Location loc, long pendingSeconds) {
         return loc.getWorld().spawn(loc, TextDisplay.class, display -> {
-            display.text(Messages.parse("<gray><bold>" + lifespanSeconds + "s</bold></gray>"));
+            display.text(Messages.parse(pendingActivationText(pendingSeconds)));
             display.setBillboard(Display.Billboard.CENTER);
             display.setBrightness(PENDING_BRIGHTNESS);
             display.setSeeThrough(true);
