@@ -370,6 +370,7 @@ public class KillConfirmGamemode extends Gamemode {
 
             if (!zone.isHalfwayPulseFired() && now >= zone.getHalfwayAtMs()) {
                 KCZoneUtils.spawnActivationBeam(zone.getCenter());
+                SoundUtils.playAt(zone.getCenter(), Sound.BLOCK_CONDUIT_DEACTIVATE, 1.0f, 1.0f);
                 zone.setHalfwayPulseFired(true);
             }
 

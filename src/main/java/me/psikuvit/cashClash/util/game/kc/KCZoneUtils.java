@@ -98,7 +98,7 @@ public final class KCZoneUtils {
         Location timerLoc = flatCenter.clone().add(0, 1.7, 0);
         zone.setTimerDisplay(spawnTimerDisplay(timerLoc, pendingSeconds));
 
-        SoundUtils.playAt(flatCenter, Sound.BLOCK_CONDUIT_ACTIVATE, 1.0f, 1.0f);
+        SoundUtils.playAt(flatCenter, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
     }
 
     /**
@@ -284,7 +284,7 @@ public final class KCZoneUtils {
             zone.getTimerDisplay().remove();
         }
 
-        SoundUtils.playAt(zone.getCenter(), Sound.BLOCK_CONDUIT_DEACTIVATE, 1.0f, 1.0f);
+        SoundUtils.playAt(zone.getCenter(), Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 1.0f);
     }
 
     /**
