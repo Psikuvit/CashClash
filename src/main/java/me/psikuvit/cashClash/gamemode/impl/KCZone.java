@@ -42,6 +42,10 @@ public class KCZone {
     // lit, kind-colored state. Guards KCZoneUtils#activateZoneEntities from re-running per tick.
     private boolean activated;
 
+    // Whether the halfway-point beam pulse has already fired. Guards against re-firing every
+    // tick once the zone's countdown crosses its midpoint.
+    private boolean halfwayPulseFired;
+
     // Last whole-second value written to timerDisplay, so KCZoneUtils#updateTimerDisplay only
     // touches the entity when the displayed number actually needs to change.
     private int lastDisplayedTimerSeconds = -1;
@@ -123,11 +127,27 @@ public class KCZone {
         this.lastDisplayedTimerSeconds = lastDisplayedTimerSeconds;
     }
 
+    public boolean isHalfwayPulseFired() {
+        return halfwayPulseFired;
+    }
+
+    public void setHalfwayPulseFired(boolean halfwayPulseFired) {
+        this.halfwayPulseFired = halfwayPulseFired;
+    }
+
     public boolean isPendingActivation(long now) {
         return now < activatesAtMs;
     }
 
     public boolean isExpired(long now) {
         return now >= expiresAtMs;
+    }
+
+    /**
+     * Midpoint between activation and expiry - when the countdown timer reaches this instant,
+     * the halfway beam pulse fires (see KCZoneUtils#spawnActivationBeam).
+     */
+    public long getHalfwayAtMs() {
+        return activatesAtMs + (expiresAtMs - activatesAtMs) / 2;
     }
 }

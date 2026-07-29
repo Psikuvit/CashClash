@@ -360,7 +360,13 @@ public class KillConfirmGamemode extends Gamemode {
 
             if (!zone.isActivated()) {
                 KCZoneUtils.activateZoneEntities(zone);
+                KCZoneUtils.spawnActivationBeam(zone.getCenter());
                 zone.setActivated(true);
+            }
+
+            if (!zone.isHalfwayPulseFired() && now >= zone.getHalfwayAtMs()) {
+                KCZoneUtils.spawnActivationBeam(zone.getCenter());
+                zone.setHalfwayPulseFired(true);
             }
 
             if (zone.isExpired(now)) {

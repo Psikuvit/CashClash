@@ -45,6 +45,10 @@ public final class KCZoneUtils {
     // a countdown number - distinct from the -1 "not yet displayed" default and any real second count.
     private static final int CONTESTED_SENTINEL = -2;
 
+    private static final Color BEAM_COLOR = Color.YELLOW;
+    private static final double BEAM_HEIGHT = 6.0;
+    private static final int BEAM_POINTS_PER_BLOCK = 4;
+
     private KCZoneUtils() {
         throw new AssertionError("Utility class");
     }
@@ -166,6 +170,15 @@ public final class KCZoneUtils {
         zone.setLastDisplayedTimerSeconds(CONTESTED_SENTINEL);
 
         timer.text(Messages.parse("<red><bold>Contested!</bold></red>"));
+    }
+
+    /**
+     * A brief yellow beam pulsing straight up from a zone - shown once when it activates and
+     * again when its countdown timer reaches the halfway point.
+     */
+    public static void spawnActivationBeam(Location center) {
+        if (center == null || center.getWorld() == null) return;
+        ParticleUtils.verticalBeam(center.clone().add(0, 0.2, 0), BEAM_COLOR, BEAM_HEIGHT, BEAM_POINTS_PER_BLOCK);
     }
 
     private static Material platformMaterialFor(KCZone.ZoneKind kind) {
