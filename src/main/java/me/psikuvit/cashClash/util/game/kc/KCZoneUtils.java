@@ -3,10 +3,12 @@ package me.psikuvit.cashClash.util.game.kc;
 import me.psikuvit.cashClash.gamemode.impl.KCZone;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
@@ -93,6 +95,8 @@ public final class KCZoneUtils {
             long lifespanSeconds = Math.round((zone.getExpiresAtMs() - zone.getActivatesAtMs()) / 1000.0);
             zone.setTimerDisplay(spawnTimerDisplay(timerLoc, lifespanSeconds));
         }
+
+        SoundUtils.playAt(flatCenter, Sound.BLOCK_CONDUIT_ACTIVATE, 1.0f, 1.0f);
     }
 
     /**
@@ -110,12 +114,20 @@ public final class KCZoneUtils {
             platform.setBrightness(ACTIVE_BRIGHTNESS);
         }
 
+        // Glowing renders through walls independent of the model's own depth test - the only
+        // way to make an ItemDisplay (money/heart icon) visible through walls at all, and it
+        // reinforces the TextDisplay nametag's setSeeThrough(true) with the same colored outline
+        // the platform gets.
         Entity icon = zone.getIconDisplay();
         if (icon instanceof TextDisplay nametag && !nametag.isDead()) {
             nametag.text(Messages.parse("<" + colorTag + "><bold>" + zone.getVictimName() + "'s Tag</bold></" + colorTag + ">"));
             nametag.setBrightness(ACTIVE_BRIGHTNESS);
+            nametag.setGlowing(true);
+            nametag.setGlowColorOverride(glowColor);
         } else if (icon instanceof Display displayIcon && !icon.isDead()) {
             displayIcon.setBrightness(ACTIVE_BRIGHTNESS);
+            displayIcon.setGlowing(true);
+            displayIcon.setGlowColorOverride(glowColor);
         }
 
         TextDisplay timer = zone.getTimerDisplay();
@@ -229,6 +241,8 @@ public final class KCZoneUtils {
         if (zone.getTimerDisplay() != null && !zone.getTimerDisplay().isDead()) {
             zone.getTimerDisplay().remove();
         }
+
+        SoundUtils.playAt(zone.getCenter(), Sound.BLOCK_CONDUIT_DEACTIVATE, 1.0f, 1.0f);
     }
 
     /**
