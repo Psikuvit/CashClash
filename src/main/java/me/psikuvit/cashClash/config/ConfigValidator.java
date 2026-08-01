@@ -107,6 +107,7 @@ public class ConfigValidator {
         customItemDefaults.put("radiating-lotus", 2000L);
         customItemDefaults.put("ice-fan", 1750L);
         customItemDefaults.put("overdrive-potion", 5000L);
+        customItemDefaults.put("hunters-mark", 7000L);
         validateSection(config, "custom-items", customItemDefaults, autoAdd);
 
         // Validate custom armor section
@@ -325,6 +326,13 @@ public class ConfigValidator {
         // Overdrive Potion
         validateAndSet(config, "custom-items.overdrive-potion.invincibility-seconds", 4, autoAdd);
         validateAndSet(config, "custom-items.overdrive-potion.speed-boost-percent", 25, autoAdd);
+
+        // Hunter's Mark
+        validateAndSet(config, "custom-items.hunters-mark.charge-seconds", 3, autoAdd);
+        validateAndSet(config, "custom-items.hunters-mark.range", 2, autoAdd);
+        validateAndSet(config, "custom-items.hunters-mark.duration-seconds", 8, autoAdd);
+        validateAndSet(config, "custom-items.hunters-mark.base-vulnerability-percent", 15, autoAdd);
+        validateAndSet(config, "custom-items.hunters-mark.vulnerability-per-missing-heart", 2, autoAdd);
 
         // Consumables section
         validateAndSet(config, "consumables.effect-cooldown-seconds", 2, autoAdd);

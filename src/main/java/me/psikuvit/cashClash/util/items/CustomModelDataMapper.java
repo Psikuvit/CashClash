@@ -49,6 +49,8 @@ public final class CustomModelDataMapper {
         CUSTOM_ITEM_KEYS.put(CustomItem.ICE_FAN,             "icefan");
         // assets/minecraft/items/potion.json            when: "overdrivepotion"
         CUSTOM_ITEM_KEYS.put(CustomItem.OVERDRIVE_POTION,    "overdrivepotion");
+        // assets/minecraft/items/feather.json           when: "huntersmark"
+        CUSTOM_ITEM_KEYS.put(CustomItem.HUNTERS_MARK,        "huntersmark");
 
         // assets/minecraft/items/diamond_axe.json       when: "coincleaver"
         MYTHIC_KEYS.put(MythicItem.COIN_CLEAVER,       "coincleaver");

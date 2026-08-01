@@ -290,6 +290,14 @@ custom-items:
     invincibility-seconds: 4
     speed-boost-percent: 25
 
+  # Hunter's Mark
+  hunters-mark:
+    charge-seconds: 3
+    range: 2
+    duration-seconds: 8
+    base-vulnerability-percent: 15
+    vulnerability-per-missing-heart: 2
+
 
 # ============================================
 # CONSUMABLES
@@ -592,6 +600,11 @@ item-lore:
         - "<yellow>+25% speed while active</yellow>"
         - "<dark_gray>Right-click again to cancel early</dark_gray>"
         - "<dark_gray>Cannot be used while holding the flag</dark_gray>"
+    hunters-mark:
+      lore:
+        - "<gray>Hold right-click to mark an enemy</gray>"
+        - "<gray>Stand within 2 blocks for 3s</gray>"
+        - "<yellow>Marked enemies take extra damage</yellow>"
 
   # ==================== CUSTOM ARMOR ====================
   custom-armor:

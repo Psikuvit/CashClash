@@ -869,6 +869,9 @@ messages:
     overdrive-activated: "<light_purple><bold>OVERDRIVE!</bold> You are invincible!</light_purple>"
     overdrive-ended: "<light_purple>Overdrive ended.</light_purple>"
     overdrive-cancelled: "<light_purple>Overdrive invincibility cancelled. Speed boost remains!</light_purple>"
+    hunters-mark-applied: "<red><bold>Marked {player_name}!</bold></red>"
+    hunters-mark-target: "<red><bold>You have been marked! You take extra damage.</bold></red>"
+    hunters-mark-no-target: "<red>No enemy close enough to mark! (Stand within 2 blocks)</red>"
 
   # ============================================
   # ERROR & VALIDATION MESSAGES

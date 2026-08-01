@@ -478,6 +478,27 @@ public class ItemsConfig {
         return config.getInt("custom-items.overdrive-potion.speed-boost-percent", 25);
     }
 
+    // Hunter's Mark
+    public int getHuntersMarkChargeSeconds() {
+        return config.getInt("custom-items.hunters-mark.charge-seconds", 3);
+    }
+
+    public double getHuntersMarkRange() {
+        return config.getDouble("custom-items.hunters-mark.range", 2);
+    }
+
+    public int getHuntersMarkDurationSeconds() {
+        return config.getInt("custom-items.hunters-mark.duration-seconds", 8);
+    }
+
+    public int getHuntersMarkBaseVulnerabilityPercent() {
+        return config.getInt("custom-items.hunters-mark.base-vulnerability-percent", 15);
+    }
+
+    public int getHuntersMarkVulnerabilityPerMissingHeart() {
+        return config.getInt("custom-items.hunters-mark.vulnerability-per-missing-heart", 2);
+    }
+
     // ==================== CUSTOM ARMOR ====================
 
     // Deathmauler

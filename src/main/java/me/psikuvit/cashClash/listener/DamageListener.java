@@ -97,6 +97,12 @@ public class DamageListener implements Listener {
                 return;
             }
 
+            // 1b. Hunter's Mark - marked players take extra damage (base + per missing heart)
+            double vulnerability = customItemManager.getVulnerabilityMultiplier(player.getUniqueId());
+            if (vulnerability > 1.0) {
+                event.setDamage(event.getDamage() * vulnerability);
+            }
+
             // 2. Handle custom armor defensive effects
             handleArmorDefenseEffects(event, player);
 

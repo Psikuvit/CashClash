@@ -286,6 +286,21 @@ public final class GameplayItemFactory {
                 // component so the interaction fires instantly through InteractListener instead.
                 item.unsetData(DataComponentTypes.CONSUMABLE);
             }
+            case HUNTERS_MARK -> {
+                // Food-eligible so right-click raises the hand, letting us poll isHandRaised()
+                // to detect "hold to mark an enemy" - the item is never actually eaten
+                // (InteractListener cancels PlayerItemConsumeEvent for this item).
+                item.setData(DataComponentTypes.FOOD, FoodProperties.food()
+                        .canAlwaysEat(true)
+                        .nutrition(0)
+                        .saturation(0f)
+                        .build());
+                item.unsetData(DataComponentTypes.CONSUMABLE);
+                item.setData(DataComponentTypes.CONSUMABLE, Consumable.consumable()
+                        .animation(ItemUseAnimation.EAT)
+                        .consumeSeconds(5f) // > charge-seconds so we always finish the mark first
+                        .build());
+            }
             default -> {
                 // No special data components
             }

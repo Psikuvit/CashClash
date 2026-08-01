@@ -30,9 +30,12 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -41,6 +44,8 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
+import org.bukkit.util.Transformation;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -116,6 +121,13 @@ public class CustomItemManager {
     private final Map<UUID, BukkitTask> overdrivePulseTasks;
     private static final NamespacedKey OVERDRIVE_SPEED_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "overdrive_speed");
 
+    // Hunter's Mark - hold-to-charge state (per attacker) and active marks (per target). The
+    // target's damage-in multiplier is derived live from their missing hearts.
+    private final Map<UUID, Integer> hunterMarkChargeTicks;
+    private final Map<UUID, BukkitTask> hunterMarkChargeTasks;
+    private final Map<UUID, HunterMarkInfo> hunterMarks;
+    private final Map<UUID, Long> markedUntil;
+
     private CustomItemManager() {
         this.cooldownManager = CooldownManager.getInstance();
         this.invisCloakUsesRemaining = new HashMap<>();
@@ -140,6 +152,10 @@ public class CustomItemManager {
         this.iceFanAbilityDamageActive = new HashSet<>();
         this.overdriveInvincible = new HashSet<>();
         this.overdrivePulseTasks = new HashMap<>();
+        this.hunterMarkChargeTicks = new HashMap<>();
+        this.hunterMarkChargeTasks = new HashMap<>();
+        this.hunterMarks = new HashMap<>();
+        this.markedUntil = new HashMap<>();
     }
 
     public static CustomItemManager getInstance() {
@@ -1392,6 +1408,179 @@ public class CustomItemManager {
         speed.removeModifier(OVERDRIVE_SPEED_KEY);
     }
 
+    // ==================== HUNTER'S MARK IMPLEMENTATION ====================
+
+    /**
+     * Active mark on a target: the tracking/rotation task plus its two display entities
+     * (a rotating coal block on the head and a floating vulnerability % above it).
+     */
+    private record HunterMarkInfo(BukkitTask task, UUID targetUuid, ItemDisplay coalDisplay, TextDisplay textDisplay, long expiresAt) {
+    }
+
+    /**
+     * Starts the "hold right-click within range of an enemy" charge. The item is food-eligible so
+     * right-click raises the hand (see GameplayItemFactory), letting us poll isHandRaised() every
+     * tick like Radiating Lotus - release before the timer completes, or an out-of-range/no-target
+     * tick, cancels the charge.
+     */
+    public void startHunterMarkCharge(Player player, ItemStack item) {
+        UUID uuid = player.getUniqueId();
+        if (hunterMarkChargeTasks.containsKey(uuid)) return; // already charging
+
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        hunterMarkChargeTicks.put(uuid, 0);
+        int requiredTicks = cfg.getHuntersMarkChargeSeconds() * 20;
+
+        BukkitTask[] taskHolder = new BukkitTask[1];
+        taskHolder[0] = SchedulerUtils.runTaskTimer(() -> {
+            Integer ticks = hunterMarkChargeTicks.get(uuid);
+            boolean stillCharging = ticks != null && player.isOnline() && player.isHandRaised()
+                    && PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.HUNTERS_MARK;
+
+            if (!stillCharging) {
+                cancelHunterMarkCharge(uuid);
+                if (taskHolder[0] != null) taskHolder[0].cancel();
+                return;
+            }
+
+            Player target = findNearestMarkTarget(player, cfg.getHuntersMarkRange());
+            if (target == null) {
+                cancelHunterMarkCharge(uuid);
+                if (taskHolder[0] != null) taskHolder[0].cancel();
+                Messages.send(player, "customitem.hunters-mark-no-target");
+                return;
+            }
+
+            int next = ticks + 1;
+            hunterMarkChargeTicks.put(uuid, next);
+            ParticleUtils.spawnDust(target.getLocation().add(0, 1, 0), Color.fromRGB(230, 40, 40), 0.8f, 3, 0.2);
+
+            if (next >= requiredTicks) {
+                applyHunterMark(player, target, item);
+                cancelHunterMarkCharge(uuid);
+                if (taskHolder[0] != null) taskHolder[0].cancel();
+            }
+        }, 0L, 1L);
+        hunterMarkChargeTasks.put(uuid, taskHolder[0]);
+    }
+
+    private void cancelHunterMarkCharge(UUID uuid) {
+        hunterMarkChargeTicks.remove(uuid);
+        hunterMarkChargeTasks.remove(uuid);
+    }
+
+    private void applyHunterMark(Player hunter, Player target, ItemStack item) {
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        consumeItem(hunter, item);
+
+        clearHunterMark(target.getUniqueId());
+
+        long durationMillis = cfg.getHuntersMarkDurationSeconds() * 1000L;
+        markedUntil.put(target.getUniqueId(), System.currentTimeMillis() + durationMillis);
+
+        Messages.send(hunter, "customitem.hunters-mark-applied", "player_name", target.getName());
+        Messages.send(target, "customitem.hunters-mark-target");
+        SoundUtils.play(target, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 1.4f);
+
+        spawnHunterMarkDisplay(target, durationMillis);
+    }
+
+    /**
+     * Tears down an active mark: cancels its task and removes its display entities. Safe to call
+     * even when the target has no mark.
+     */
+    public void clearHunterMark(UUID targetUuid) {
+        HunterMarkInfo info = hunterMarks.remove(targetUuid);
+        if (info != null) {
+            info.task().cancel();
+            if (!info.coalDisplay().isDead()) info.coalDisplay().remove();
+            if (!info.textDisplay().isDead()) info.textDisplay().remove();
+        }
+        markedUntil.remove(targetUuid);
+    }
+
+    /**
+     * @return damage-in multiplier for the target: 1.0 when not marked, otherwise 1 + the live
+     * vulnerability % (base + 2% per missing heart), clamped so a dead-health target can't exceed
+     * the display's cap.
+     */
+    public double getVulnerabilityMultiplier(UUID targetUuid) {
+        Long until = markedUntil.get(targetUuid);
+        if (until == null || System.currentTimeMillis() >= until) {
+            markedUntil.remove(targetUuid);
+            return 1.0;
+        }
+        Player target = Bukkit.getPlayer(targetUuid);
+        if (target == null) return 1.0;
+        return 1.0 + hunterMarkPercent(target, ItemsConfig.getInstance()) / 100.0;
+    }
+
+    private void spawnHunterMarkDisplay(Player target, long durationMillis) {
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        long expiresAt = System.currentTimeMillis() + durationMillis;
+        World world = target.getWorld();
+
+        ItemDisplay coalDisplay = world.spawn(target.getEyeLocation(), ItemDisplay.class, display -> {
+            display.setItemStack(new ItemStack(Material.COAL_BLOCK));
+            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+            display.setBillboard(Display.Billboard.FIXED);
+            display.setBrightness(new Display.Brightness(15, 15));
+            Transformation t = display.getTransformation();
+            display.setTransformation(new Transformation(t.getTranslation(), t.getLeftRotation(), new Vector3f(0.6f, 0.6f, 0.6f), t.getRightRotation()));
+        });
+
+        TextDisplay textDisplay = world.spawn(target.getEyeLocation(), TextDisplay.class, display -> {
+            display.setBillboard(Display.Billboard.CENTER);
+            display.setSeeThrough(true);
+            display.setShadowed(false);
+        });
+
+        UUID targetUuid = target.getUniqueId();
+        BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
+            if (!target.isOnline() || target.isDead() || System.currentTimeMillis() >= expiresAt) {
+                clearHunterMark(targetUuid);
+                return;
+            }
+            Location eye = target.getEyeLocation();
+            coalDisplay.teleport(eye.clone().add(0, 0.25, 0));
+            coalDisplay.setRotation(coalDisplay.getYaw() + 12f, 0f);
+            textDisplay.teleport(eye.clone().add(0, 0.7, 0));
+            textDisplay.text(Messages.parse("<red><bold>+" + hunterMarkPercent(target, cfg) + "%</bold></red>"));
+        }, 0L, 1L);
+
+        hunterMarks.put(targetUuid, new HunterMarkInfo(task, targetUuid, coalDisplay, textDisplay, expiresAt));
+    }
+
+    private int hunterMarkPercent(Player target, ItemsConfig cfg) {
+        GameSession session = GameManager.getInstance().getPlayerSession(target);
+        CashClashPlayer ccp = session != null ? session.getCashClashPlayer(target.getUniqueId()) : null;
+        double maxHealth = ccp != null ? ccp.getMaxHealth() : 20.0;
+        double missingHearts = Math.max(0, (maxHealth - target.getHealth()) / 2.0);
+        return cfg.getHuntersMarkBaseVulnerabilityPercent()
+                + (int) Math.round(missingHearts * cfg.getHuntersMarkVulnerabilityPerMissingHeart());
+    }
+
+    private Player findNearestMarkTarget(Player player, double range) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        Team team = session != null ? session.getPlayerTeam(player) : null;
+
+        Player nearest = null;
+        double best = range;
+        for (Entity entity : player.getWorld().getNearbyEntities(player.getLocation(), range, range, range)) {
+            if (!(entity instanceof Player target) || target.equals(player)) continue;
+            if (team != null) {
+                Team targetTeam = session.getPlayerTeam(target);
+                if (targetTeam == null || targetTeam.getTeamNumber() == team.getTeamNumber()) continue;
+            }
+            double distance = target.getLocation().distance(player.getLocation());
+            if (distance <= best) {
+                best = distance;
+                nearest = target;
+            }
+        }
+        return nearest;
+    }
+
     // ==================== UTILITY METHODS ====================
 
     public void consumeItem(Player player, ItemStack item) {
@@ -1462,6 +1651,14 @@ public class CustomItemManager {
         });
         overdrivePulseTasks.clear();
         overdriveInvincible.clear();
+
+        hunterMarkChargeTasks.values().forEach(BukkitTask::cancel);
+        hunterMarkChargeTasks.clear();
+        hunterMarkChargeTicks.clear();
+
+        new ArrayList<>(hunterMarks.keySet()).forEach(this::clearHunterMark);
+        hunterMarks.clear();
+        markedUntil.clear();
     }
 
     /**
