@@ -30,6 +30,7 @@ messages:
     help-forcestart: "<yellow>/cc forcestart <gray>- Force start a game immediately</gray>"
     help-forcenextround: "<yellow>/cc forcenextround <gray>- Force the next round to start</gray>"
     help-selectkit: "<yellow>/cc selectkit <gray>- Select a kit for all players</gray>"
+    help-shield: "<yellow>/cc shield <gray>- Force shields on/off for a player (testing)</gray>"
     help-setlobby: "<yellow>/cc setlobby <gray>- Set the lobby spawn point</gray>"
     help-reload: "<yellow>/cc reload [config|shop|items|all] <gray>- Reload configs</gray>"
     help-debug: "<yellow>/cc debug <gray>- Toggle debug mode</gray>"
@@ -731,6 +732,20 @@ messages:
     rejoin-available: "<yellow>You have a game in progress! Rejoining...</yellow>"
     rejoin-time-remaining: "<gray>Time remaining to rejoin: <gold>{time_remaining}s</gold></gray>"
     rejoin-failed: "<red>Failed to rejoin game. Starting fresh.</red>"
+    afk-kick-warning: "<yellow>You are AFK! You will be kicked in <gold>{seconds}s</gold>.</yellow>"
+    afk-kick: "<red>You were kicked for being AFK in the lobby.</red>"
+    afk-kick-reason: "<red>AFK in lobby</red>"
+
+  # ============================================
+  # SHIELD MESSAGES
+  # ============================================
+  shield:
+    usage: "<red>Usage: /cc shield <on|off> [player]</red>"
+    player-not-found: "<red>Player '{player}' not found.</red>"
+    need-player-or-target: "<red>You must specify a target player.</red>"
+    target-not-in-game: "<red>{player_name} is not in a game.</red>"
+    success: "<green>Shield preference set to <gold>{state}</gold> for this game.</green>"
+    success-other: "<green>Shield preference set to <gold>{state}</gold> for {player_name}.</green>"
 
   # ============================================
   # REJOIN MESSAGES

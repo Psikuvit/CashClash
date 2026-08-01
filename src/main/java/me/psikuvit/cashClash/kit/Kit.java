@@ -104,18 +104,24 @@ public enum Kit {
      * @param rounds1to3HaveShields Whether rounds 1-3 have shields
      */
     public void toggleShield(Player player, int round, boolean rounds1to3HaveShields) {
-        boolean shouldGiveShield = shouldGiveShield(round, rounds1to3HaveShields);
+        setShield(player, shouldGiveShield(round, rounds1to3HaveShields));
+    }
 
-        if (shouldGiveShield) {
-            ItemStack existingOffhand = player.getInventory().getItemInOffHand();
-            if (existingOffhand != null && existingOffhand.getType() != Material.AIR
-                    && existingOffhand.getType() != Material.SHIELD) {
-                ItemUtils.returnItemToInventoryOrDrop(player, existingOffhand);
+    /**
+     * Give or remove a shield from a player's offhand.
+     * Used by the round-based shield toggle and the admin shield override command.
+     *
+     * @param player The player to update
+     * @param give True to equip a shield, false to remove one
+     */
+    public static void setShield(Player player, boolean give) {
+        ItemStack offHand = player.getInventory().getItemInOffHand();
+        if (give) {
+            if (offHand != null && offHand.getType() != Material.AIR && offHand.getType() != Material.SHIELD) {
+                ItemUtils.returnItemToInventoryOrDrop(player, offHand);
             }
             player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
         } else {
-            // Remove shield from offhand
-            ItemStack offHand = player.getInventory().getItemInOffHand();
             if (offHand.getType() == Material.SHIELD) {
                 player.getInventory().setItemInOffHand(null);
             }
@@ -308,15 +314,7 @@ public enum Kit {
 
         // === SHIELD ===
         // Shield logic based on round number
-        boolean shouldGiveShield = shouldGiveShield(round, rounds1to3HaveShields);
-        if (shouldGiveShield) {
-            ItemStack existingOffhand = player.getInventory().getItemInOffHand();
-            if (existingOffhand != null && existingOffhand.getType() != Material.AIR
-                    && existingOffhand.getType() != Material.SHIELD) {
-                ItemUtils.returnItemToInventoryOrDrop(player, existingOffhand);
-            }
-            player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
-        }
+        setShield(player, shouldGiveShield(round, rounds1to3HaveShields));
     }
     
     /**

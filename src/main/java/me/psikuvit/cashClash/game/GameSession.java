@@ -88,6 +88,10 @@ public class GameSession {
     // Track round wins for each team (incremented when team wins a round)
     private final Map<Integer, Integer> roundWins; // 1 = Red, 2 = Blue
 
+    // Admin shield overrides for testing (UUID -> give shield). Takes precedence over the
+    // per-game random shield pattern. A null/absent value means "no override".
+    private final Map<UUID, Boolean> shieldOverrides;
+
     public GameSession(int arenaNumber) {
         this.sessionId = UUID.randomUUID();
         this.arenaNumber = arenaNumber;
@@ -99,6 +103,7 @@ public class GameSession {
         this.roundWins = new HashMap<>();
         this.roundWins.put(1, 0);
         this.roundWins.put(2, 0);
+        this.shieldOverrides = new HashMap<>();
 
         this.startingCountdown = false;
         this.sequenceManager = new SequenceManager(this);
@@ -262,6 +267,24 @@ public class GameSession {
      */
     public boolean hasShieldsInRounds1to3() {
         return rounds1to3HaveShields;
+    }
+
+    /**
+     * Set an admin shield override for a player (testing). Pass null to clear the override.
+     */
+    public void setShieldOverride(UUID uuid, Boolean give) {
+        if (give == null) {
+            shieldOverrides.remove(uuid);
+        } else {
+            shieldOverrides.put(uuid, give);
+        }
+    }
+
+    /**
+     * Get the admin shield override for a player, or null if none is set.
+     */
+    public Boolean getShieldOverride(UUID uuid) {
+        return shieldOverrides.get(uuid);
     }
 
     /**
@@ -504,6 +527,12 @@ public class GameSession {
             applyKitWithLayout(p, ccp.getUuid(), kitToApply);
         } else {
             kitToApply.apply(p, currentRound, rounds1to3HaveShields);
+        }
+
+        // Admin shield override (testing) takes precedence over the round pattern
+        Boolean override = shieldOverrides.get(p.getUniqueId());
+        if (override != null) {
+            Kit.setShield(p, override);
         }
     }
 
