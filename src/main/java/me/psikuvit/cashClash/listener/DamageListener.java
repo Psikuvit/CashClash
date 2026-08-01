@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
@@ -158,6 +159,12 @@ public class DamageListener implements Listener {
                 return;
             }
 
+            // Soul Katana Phantom Slice: zero armor/effect-based damage modifiers so the flat
+            // ability strike lands untouched (transient flag set only around the direct damage call)
+            if (attacker != null && victim != null && customItemManager.isPhantomSliceDamage(attacker.getUniqueId())) {
+                applyPhantomSliceDamageModifiers(event);
+            }
+
             // Process damage effects
             if (attacker != null && victim != null) {
                 processVictimDamageEffects(attacker, victim);
@@ -207,6 +214,28 @@ public class DamageListener implements Listener {
      */
     private void processVictimDamageEffects(Player attacker, Player victim) {
         handleInvisibilityRemoval(attacker, victim);
+    }
+
+    /**
+     * Soul Katana Phantom Slice: zeroes the ARMOR/MAGIC/RESISTANCE/ABSORPTION damage modifiers
+     * and pins BASE to the flat strike damage so armor and active effects on both sides are
+     * ignored. All calls are guarded by {@link EntityDamageEvent#isApplicable(DamageModifier)}
+     * before modifying a modifier.
+     */
+    private void applyPhantomSliceDamageModifiers(EntityDamageByEntityEvent event) {
+        for (EntityDamageEvent.DamageModifier modifier : new EntityDamageEvent.DamageModifier[]{
+                EntityDamageEvent.DamageModifier.ARMOR,
+                EntityDamageEvent.DamageModifier.MAGIC,
+                EntityDamageEvent.DamageModifier.RESISTANCE,
+                EntityDamageEvent.DamageModifier.ABSORPTION}) {
+            if (event.isApplicable(modifier)) {
+                event.setDamage(modifier, 0);
+            }
+        }
+        if (event.isApplicable(EntityDamageEvent.DamageModifier.BASE)) {
+            event.setDamage(EntityDamageEvent.DamageModifier.BASE,
+                    ItemsConfig.getInstance().getSoulKatanaStrikeDamage());
+        }
     }
 
     /**

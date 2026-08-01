@@ -541,6 +541,31 @@ public class ItemsConfig {
         return config.getInt("custom-items.orb-of-gravitation.hits-to-destroy", 4);
     }
 
+    // Soul Katana
+    public double getSoulKatanaLeapDistance() {
+        return config.getDouble("custom-items.soul-katana.leap-distance", 3);
+    }
+
+    public double getSoulKatanaStrikeDamage() {
+        return config.getDouble("custom-items.soul-katana.strike-damage", 6.0);
+    }
+
+    public int getSoulKatanaHealingReductionPercent() {
+        return config.getInt("custom-items.soul-katana.healing-reduction-percent", 30);
+    }
+
+    public int getSoulKatanaHealingReductionDurationSeconds() {
+        return config.getInt("custom-items.soul-katana.healing-reduction-duration-seconds", 3);
+    }
+
+    public int getSoulKatanaCooldownSeconds() {
+        return config.getInt("custom-items.soul-katana.cooldown-seconds", 18);
+    }
+
+    public double getSoulKatanaStrikeRadius() {
+        return config.getDouble("custom-items.soul-katana.strike-radius", 3);
+    }
+
     // ==================== CUSTOM ARMOR ====================
 
     // Deathmauler

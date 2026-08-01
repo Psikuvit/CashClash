@@ -55,6 +55,8 @@ public final class CustomModelDataMapper {
         CUSTOM_ITEM_KEYS.put(CustomItem.BLOOMING_ROSE,       "bloomingrose");
         // assets/minecraft/items/magma_cream.json        when: "orbofgravitation"
         CUSTOM_ITEM_KEYS.put(CustomItem.ORB_OF_GRAVITATION,  "orbofgravitation");
+        // assets/minecraft/items/iron_sword.json         when: "soulkatana"
+        CUSTOM_ITEM_KEYS.put(CustomItem.SOUL_KATANA,         "soulkatana");
 
         // assets/minecraft/items/diamond_axe.json       when: "coincleaver"
         MYTHIC_KEYS.put(MythicItem.COIN_CLEAVER,       "coincleaver");

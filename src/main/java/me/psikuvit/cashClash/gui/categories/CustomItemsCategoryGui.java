@@ -50,6 +50,7 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
         setButton(40, createCustomItemButton(CustomItem.HUNTERS_MARK));
         setButton(41, createCustomItemButton(CustomItem.BLOOMING_ROSE));
         setButton(42, createCustomItemButton(CustomItem.ORB_OF_GRAVITATION));
+        setButton(43, createCustomItemButton(CustomItem.SOUL_KATANA));
     }
 
     private GuiButton createCustomItemButton(CustomItem item) {

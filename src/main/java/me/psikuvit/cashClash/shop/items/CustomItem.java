@@ -25,7 +25,8 @@ public enum CustomItem implements Purchasable {
     OVERDRIVE_POTION(Material.POTION, "overdrive-potion", 1, 0, "Overdrive Potion"),
     HUNTERS_MARK(Material.FEATHER, "hunters-mark", 1, 0, "Hunter's Mark"),
     BLOOMING_ROSE(Material.CHERRY_SAPLING, "blooming-rose", 1, 0, "Blooming Rose"),
-    ORB_OF_GRAVITATION(Material.MAGMA_CREAM, "orb-of-gravitation", 1, 0, "Orb of Gravitation");
+    ORB_OF_GRAVITATION(Material.MAGMA_CREAM, "orb-of-gravitation", 1, 0, "Orb of Gravitation"),
+    SOUL_KATANA(Material.IRON_SWORD, "soul-katana", 1, 1, "Soul Katana");
 
     private final Material material;
     private final String configKey;

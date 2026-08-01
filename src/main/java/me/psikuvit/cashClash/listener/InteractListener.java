@@ -420,6 +420,13 @@ public class InteractListener implements Listener {
                     return true;
                 }
             }
+            case SOUL_KATANA -> {
+                if (action.isRightClick() && player.isSneaking()) {
+                    event.setCancelled(true);
+                    customItemManager.usePhantomSlice(player, item);
+                    return true;
+                }
+            }
         }
         return false;
     }

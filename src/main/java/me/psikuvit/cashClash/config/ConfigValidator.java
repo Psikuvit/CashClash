@@ -110,6 +110,7 @@ public class ConfigValidator {
         customItemDefaults.put("hunters-mark", 7000L);
         customItemDefaults.put("blooming-rose", 6500L);
         customItemDefaults.put("orb-of-gravitation", 7000L);
+        customItemDefaults.put("soul-katana", 30000L);
         validateSection(config, "custom-items", customItemDefaults, autoAdd);
 
         // Validate custom armor section
@@ -349,6 +350,14 @@ public class ConfigValidator {
         validateAndSet(config, "custom-items.orb-of-gravitation.pull-duration-ticks", 40, autoAdd);
         validateAndSet(config, "custom-items.orb-of-gravitation.slowness-duration-seconds", 5, autoAdd);
         validateAndSet(config, "custom-items.orb-of-gravitation.hits-to-destroy", 4, autoAdd);
+
+        // Soul Katana
+        validateAndSet(config, "custom-items.soul-katana.leap-distance", 3, autoAdd);
+        validateAndSet(config, "custom-items.soul-katana.strike-damage", 6.0, autoAdd);
+        validateAndSet(config, "custom-items.soul-katana.healing-reduction-percent", 30, autoAdd);
+        validateAndSet(config, "custom-items.soul-katana.healing-reduction-duration-seconds", 3, autoAdd);
+        validateAndSet(config, "custom-items.soul-katana.cooldown-seconds", 18, autoAdd);
+        validateAndSet(config, "custom-items.soul-katana.strike-radius", 3, autoAdd);
 
         // Consumables section
         validateAndSet(config, "consumables.effect-cooldown-seconds", 2, autoAdd);

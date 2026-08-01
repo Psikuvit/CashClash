@@ -321,6 +321,7 @@ public class CooldownManager {
         public static final String INVIS_CLOAK = "INVIS_CLOAK";
         public static final String CONSUMABLE = "CONSUMABLE";
         public static final String ICE_FAN_BURST = "ICE_FAN_BURST";
+        public static final String SOUL_KATANA_PHANTOM_SLICE = "SOUL_KATANA_PHANTOM_SLICE";
 
         // Mythic Items
         public static final String COIN_CLEAVER_GRENADE = "COIN_CLEAVER_GRENADE";

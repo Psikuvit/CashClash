@@ -314,6 +314,16 @@ custom-items:
     slowness-duration-seconds: 5
     hits-to-destroy: 4
 
+  # Soul Katana
+  soul-katana:
+    leap-distance: 3
+    strike-damage: 6.0
+    healing-reduction-percent: 30
+    healing-reduction-duration-seconds: 3
+    cooldown-seconds: 18
+    strike-radius: 3
+
+
 # ============================================
 # CONSUMABLES
 # ============================================
@@ -632,6 +642,12 @@ item-lore:
         - "<gray>or let it impact to pull enemies in</gray>"
         - "<gray>Pulled enemies take Slowness I for 5s</gray>"
         - "<gray>Destroyed by 4 fully-charged bow shots</gray>"
+    soul-katana:
+      lore:
+        - "<gray>Shift + right-click: Phantom Slice</gray>"
+        - "<gray>Leap forward and strike all nearby</gray>"
+        - "<gray>Damage ignores armor and effects</gray>"
+        - "<gray>Struck enemies heal 30% less for 3s</gray>"
 
   # ==================== CUSTOM ARMOR ====================
   custom-armor:

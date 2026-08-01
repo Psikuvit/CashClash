@@ -877,6 +877,8 @@ messages:
     orb-thrown: "<dark_yellow>Orb thrown! Right-click again or let it impact to pull.</dark_yellow>"
     orb-activated: "<dark_yellow>The orb erupts and pulls enemies in!</dark_yellow>"
     orb-destroyed: "<dark_yellow>The orb shatters!</dark_yellow>"
+    soul-katana-slice: "<light_purple><bold>PHANTOM SLICE!</bold></light_purple>"
+    soul-katana-cooldown: "<red>Soul Katana is on cooldown! ({remaining}s)</red>"
 
   # ============================================
   # ERROR & VALIDATION MESSAGES

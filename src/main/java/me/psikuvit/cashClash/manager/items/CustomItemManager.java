@@ -151,6 +151,10 @@ public class CustomItemManager {
     private final Map<UUID, UUID> orbOwners;
     private final Map<UUID, BukkitTask> orbTrailTasks;
 
+    // Soul Katana - Phantom Slice: attackers whose damage call is the flat ability strike (set
+    // only around the direct damage call so DamageListener zeroes armor/effect modifiers there)
+    private final Set<UUID> phantomSliceDamageActive;
+
     private CustomItemManager() {
         this.cooldownManager = CooldownManager.getInstance();
         this.invisCloakUsesRemaining = new HashMap<>();
@@ -183,6 +187,7 @@ public class CustomItemManager {
         this.orbHitsRemaining = new HashMap<>();
         this.orbOwners = new HashMap<>();
         this.orbTrailTasks = new HashMap<>();
+        this.phantomSliceDamageActive = new HashSet<>();
     }
 
     public static CustomItemManager getInstance() {
@@ -2059,6 +2064,71 @@ public class CustomItemManager {
                 (int) (from.getBlue() + (to.getBlue() - from.getBlue()) * t));
     }
 
+    // ==================== SOUL KATANA IMPLEMENTATION ====================
+
+    /**
+     * Shift + right-click Phantom Slice: launches the player forward, then ~4 ticks later (the
+     * approximated "end of the leap") strikes every enemy within the strike radius with flat
+     * damage, bypassing armor and active effects, and applies the healing-reduction debuff.
+     */
+    public void usePhantomSlice(Player player, ItemStack item) {
+        UUID uuid = player.getUniqueId();
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.SOUL_KATANA_PHANTOM_SLICE)) {
+            double remaining = cooldownManager.getRemainingCooldownMs(uuid, CooldownManager.Keys.SOUL_KATANA_PHANTOM_SLICE) / 1000.0;
+            Messages.send(player, "customitem.soul-katana-cooldown", "remaining", String.valueOf((int) Math.ceil(remaining)));
+            return;
+        }
+
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.SOUL_KATANA_PHANTOM_SLICE, cfg.getSoulKatanaCooldownSeconds());
+
+        double leap = cfg.getSoulKatanaLeapDistance();
+        Vector dir = player.getLocation().getDirection().clone().setY(0).normalize();
+        player.setVelocity(dir.multiply(leap * 0.4).setY(0.2));
+
+        Messages.send(player, "customitem.soul-katana-slice");
+        SoundUtils.play(player, Sound.ENTITY_PHANTOM_FLAP, 1.0f, 1.6f);
+
+        SchedulerUtils.runTaskLater(() -> strikePhantomSlice(player, cfg), 4L);
+    }
+
+    private void strikePhantomSlice(Player player, ItemsConfig cfg) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        Team team = session != null ? session.getPlayerTeam(player) : null;
+        double radius = cfg.getSoulKatanaStrikeRadius();
+        double damage = cfg.getSoulKatanaStrikeDamage();
+        int debuffDuration = cfg.getSoulKatanaHealingReductionDurationSeconds();
+        double healingMultiplier = 1.0 - cfg.getSoulKatanaHealingReductionPercent() / 100.0;
+
+        Location loc = player.getLocation();
+        ParticleUtils.spawnDust(loc.clone().add(0, 1, 0), Color.fromRGB(150, 60, 220), 1.6f, 30, 0.5);
+        SoundUtils.playAt(loc, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.0f, 1.1f);
+
+        for (Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius, radius)) {
+            if (!(entity instanceof Player target) || target.equals(player)) continue;
+            if (team != null) {
+                Team targetTeam = session.getPlayerTeam(target);
+                if (targetTeam != null && targetTeam.getTeamNumber() == team.getTeamNumber()) continue;
+            }
+            // Direct damage call still fires a real EntityDamageByEntityEvent for kill attribution;
+            // the transient flag lets DamageListener zero this hit's armor/effect modifiers.
+            phantomSliceDamageActive.add(player.getUniqueId());
+            try {
+                target.damage(damage, player);
+            } finally {
+                phantomSliceDamageActive.remove(player.getUniqueId());
+            }
+            applyHealingReduction(target.getUniqueId(), healingMultiplier, debuffDuration);
+        }
+    }
+
+    /**
+     * @return true while the player's Phantom Slice strike damage is being applied (transient)
+     */
+    public boolean isPhantomSliceDamage(UUID attackerUuid) {
+        return phantomSliceDamageActive.contains(attackerUuid);
+    }
+
     // ==================== UTILITY METHODS ====================
 
     public void consumeItem(Player player, ItemStack item) {
@@ -2156,6 +2226,8 @@ public class CustomItemManager {
         });
         orbHitsRemaining.clear();
         orbOwners.clear();
+
+        phantomSliceDamageActive.clear();
     }
 
     /**
