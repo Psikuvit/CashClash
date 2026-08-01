@@ -281,6 +281,11 @@ public final class GameplayItemFactory {
                         .consumeSeconds(3.5f) // > max-charge-seconds + grace-seconds so we always release first
                         .build());
             }
+            case OVERDRIVE_POTION -> {
+                // Vanilla potions start a "drink" sequence on right-click; strip the consumable
+                // component so the interaction fires instantly through InteractListener instead.
+                item.unsetData(DataComponentTypes.CONSUMABLE);
+            }
             default -> {
                 // No special data components
             }

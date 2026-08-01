@@ -866,6 +866,9 @@ messages:
     lotus-detonated: "<green>Radiating Lotus healed nearby allies!</green>"
     ice-fan-broken: "<red>Your Ice Fan has broken!</red>"
     ice-fan-not-enough-durability: "<red>Not enough durability for a burst! (Need 25)</red>"
+    overdrive-activated: "<light_purple><bold>OVERDRIVE!</bold> You are invincible!</light_purple>"
+    overdrive-ended: "<light_purple>Overdrive ended.</light_purple>"
+    overdrive-cancelled: "<light_purple>Overdrive invincibility cancelled. Speed boost remains!</light_purple>"
 
   # ============================================
   # ERROR & VALIDATION MESSAGES

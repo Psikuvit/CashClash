@@ -146,6 +146,17 @@ public class InteractListener implements Listener {
             return;
         }
 
+        // Overdrive Potion: while invincible the player cannot use ANY inventory item except
+        // the Overdrive Potion itself (to cancel early). Left-clicks (block breaking, melee)
+        // are untouched.
+        if (action.isRightClick() && customItemManager.isOverdriveInvincible(player.getUniqueId())) {
+            CustomItem inHand = item != null ? PDCDetection.getCustomItem(item) : null;
+            if (inHand != CustomItem.OVERDRIVE_POTION) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+
         if (action.isRightClick() && handleCustomArmor(player, action)) {
             event.setCancelled(true);
             return;
@@ -359,6 +370,24 @@ public class InteractListener implements Listener {
                 } else if (action.isRightClick()) {
                     event.setCancelled(true);
                     customItemManager.handleIceFanRightClick(player, item);
+                    return true;
+                }
+            }
+            case OVERDRIVE_POTION -> {
+                if (action.isRightClick()) {
+                    // Already active: right-click again cancels the invincibility early
+                    if (customItemManager.isOverdriveInvincible(player.getUniqueId())) {
+                        event.setCancelled(true);
+                        customItemManager.cancelOverdriveEarly(player);
+                        return true;
+                    }
+                    if (isSilenced(player)) {
+                        event.setCancelled(true);
+                        Messages.send(player, "gamemode-ctf.cannot-use-while-carrying-flag");
+                        return true;
+                    }
+                    event.setCancelled(true);
+                    customItemManager.useOverdrivePotion(player, item);
                     return true;
                 }
             }

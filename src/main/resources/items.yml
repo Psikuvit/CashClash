@@ -285,6 +285,11 @@ custom-items:
     burst-damage: 4.0
     burst-min-durability: 25
 
+  # Overdrive Potion
+  overdrive-potion:
+    invincibility-seconds: 4
+    speed-boost-percent: 25
+
 
 # ============================================
 # CONSUMABLES
@@ -581,6 +586,12 @@ item-lore:
         - "<gray>Left-click: continuous cold gust</gray>"
         - "<gray>Right-click: burst of cold wind</gray>"
         - "<yellow>Both freeze enemies over time</yellow>"
+    overdrive-potion:
+      lore:
+        - "<gray>Drink to become invincible</gray>"
+        - "<yellow>+25% speed while active</yellow>"
+        - "<dark_gray>Right-click again to cancel early</dark_gray>"
+        - "<dark_gray>Cannot be used while holding the flag</dark_gray>"
 
   # ==================== CUSTOM ARMOR ====================
   custom-armor:

@@ -469,6 +469,15 @@ public class ItemsConfig {
         return config.getInt("custom-items.ice-fan.burst-min-durability", 25);
     }
 
+    // Overdrive Potion
+    public int getOverdriveInvincibilitySeconds() {
+        return config.getInt("custom-items.overdrive-potion.invincibility-seconds", 4);
+    }
+
+    public int getOverdriveSpeedPercent() {
+        return config.getInt("custom-items.overdrive-potion.speed-boost-percent", 25);
+    }
+
     // ==================== CUSTOM ARMOR ====================
 
     // Deathmauler

@@ -106,6 +106,7 @@ public class ConfigValidator {
         customItemDefaults.put("totem-of-haunting", 7500L);
         customItemDefaults.put("radiating-lotus", 2000L);
         customItemDefaults.put("ice-fan", 1750L);
+        customItemDefaults.put("overdrive-potion", 5000L);
         validateSection(config, "custom-items", customItemDefaults, autoAdd);
 
         // Validate custom armor section
@@ -320,6 +321,10 @@ public class ConfigValidator {
         validateAndSet(config, "custom-items.ice-fan.burst-durability-cost", 25, autoAdd);
         validateAndSet(config, "custom-items.ice-fan.burst-damage", 4.0, autoAdd);
         validateAndSet(config, "custom-items.ice-fan.burst-min-durability", 25, autoAdd);
+
+        // Overdrive Potion
+        validateAndSet(config, "custom-items.overdrive-potion.invincibility-seconds", 4, autoAdd);
+        validateAndSet(config, "custom-items.overdrive-potion.speed-boost-percent", 25, autoAdd);
 
         // Consumables section
         validateAndSet(config, "consumables.effect-cooldown-seconds", 2, autoAdd);

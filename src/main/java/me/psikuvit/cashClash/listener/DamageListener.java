@@ -86,6 +86,12 @@ public class DamageListener implements Listener {
                 return;
             }
 
+            // 0b. Overdrive Potion - total invincibility while active
+            if (customItemManager.isOverdriveInvincible(player.getUniqueId())) {
+                event.setCancelled(true);
+                return;
+            }
+
             // 1. Check game phase protection (waiting/shopping)
             if (handleGamePhaseProtection(event, player)) {
                 return;

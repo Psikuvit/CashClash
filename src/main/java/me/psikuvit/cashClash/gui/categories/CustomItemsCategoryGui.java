@@ -46,6 +46,7 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
         setButton(36, createCustomItemButton(CustomItem.TOTEM_OF_HAUNTING));
         setButton(37, createCustomItemButton(CustomItem.RADIATING_LOTUS));
         setButton(38, createCustomItemButton(CustomItem.ICE_FAN));
+        setButton(39, createCustomItemButton(CustomItem.OVERDRIVE_POTION));
     }
 
     private GuiButton createCustomItemButton(CustomItem item) {
