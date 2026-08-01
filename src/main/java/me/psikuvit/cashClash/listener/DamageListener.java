@@ -103,6 +103,16 @@ public class DamageListener implements Listener {
                 event.setDamage(event.getDamage() * vulnerability);
             }
 
+            // 1c. Blooming Rose - same-team zone: reduce damage and clamp so health never drops
+            // below the 2-heart floor (the base clamp guarantees final damage can't exceed it)
+            double roseReduction = customItemManager.getBloomingRoseDamageReduction(player);
+            if (roseReduction > 0) {
+                event.setDamage(event.getDamage() * (1.0 - roseReduction / 100.0));
+                double floor = customItemManager.getBloomingRoseMinHealth(player);
+                double maxDamage = Math.max(0, player.getHealth() - floor);
+                event.setDamage(Math.min(event.getDamage(), maxDamage));
+            }
+
             // 2. Handle custom armor defensive effects
             handleArmorDefenseEffects(event, player);
 

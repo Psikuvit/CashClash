@@ -127,6 +127,21 @@ public class CustomItemManager {
     private final Map<UUID, HunterMarkInfo> hunterMarks;
     private final Map<UUID, Long> markedUntil;
 
+    // Blooming Rose - placed sakura zones keyed by trunk location
+    private final Map<Location, BloomingRoseZone> bloomingRoseZones;
+    private boolean bloomingRoseHpLoopStarted;
+
+    /**
+     * @param session    the game session the rose was placed in (used for team lookups on expiry)
+     * @param teamNumber the team the placer belongs to - only same-team players get protection/regen
+     * @param center     the trunk location (zone centre)
+     * @param expiresAt  epoch millis the zone naturally expires
+     * @param blocks     every block the structure occupies (log + leaves), tracked for counterplay
+     * @param task       the zone upkeep task (drift particles + floor heal + expiry)
+     */
+    private record BloomingRoseZone(GameSession session, int teamNumber, Location center, long expiresAt,
+                                    Set<Block> blocks, BukkitTask task) {}
+
     private CustomItemManager() {
         this.cooldownManager = CooldownManager.getInstance();
         this.invisCloakUsesRemaining = new HashMap<>();
@@ -155,6 +170,7 @@ public class CustomItemManager {
         this.hunterMarkChargeTasks = new HashMap<>();
         this.hunterMarks = new HashMap<>();
         this.markedUntil = new HashMap<>();
+        this.bloomingRoseZones = new HashMap<>();
     }
 
     public static CustomItemManager getInstance() {
@@ -1581,6 +1597,265 @@ public class CustomItemManager {
         return nearest;
     }
 
+    // ==================== BLOOMING ROSE IMPLEMENTATION ====================
+
+    public void placeBloomingRose(Player player, ItemStack item, Location loc) {
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        Team team = session != null ? session.getPlayerTeam(player) : null;
+        if (session == null || team == null) return;
+
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        consumeItem(player, item);
+
+        Block origin = loc.getBlock();
+        Set<Block> blocks = new HashSet<>();
+        buildRoseStructure(origin, blocks);
+
+        Location center = origin.getLocation();
+        long expiresAt = System.currentTimeMillis() + cfg.getBloomingRoseZoneDurationSeconds() * 1000L;
+        BukkitTask upkeepTask = startRoseZoneTask(center, blocks, expiresAt, session, team.getTeamNumber());
+        bloomingRoseZones.put(center, new BloomingRoseZone(session, team.getTeamNumber(), center, expiresAt, blocks, upkeepTask));
+
+        Messages.send(player, "customitem.blooming-rose-placed");
+        SoundUtils.playAt(center, Sound.BLOCK_CHERRY_WOOD_PLACE, 1.0f, 1.0f);
+
+        spawnRoseFormationVisual(center, cfg);
+        startBloomingRoseHpRevealLoop();
+    }
+
+    /**
+     * Builds the 6-high CHERRY_LOG trunk with a small CHERRY_LEAVES canopy at the top and two
+     * single-log branch offshoots, tracking every block placed so it can be torn down on expiry
+     * or by manual destruction (the intended counterplay).
+     */
+    private void buildRoseStructure(Block origin, Set<Block> blocks) {
+        World world = origin.getWorld();
+        int baseX = origin.getX();
+        int baseY = origin.getY();
+        int baseZ = origin.getZ();
+
+        for (int i = 0; i < 6; i++) {
+            Block b = world.getBlockAt(baseX, baseY + i, baseZ);
+            b.setType(Material.CHERRY_LOG, false);
+            blocks.add(b);
+        }
+
+        int canopyY = baseY + 6;
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                if (Math.abs(dx) == 2 && Math.abs(dz) == 2) continue; // rounded canopy
+                Block b = world.getBlockAt(baseX + dx, canopyY, baseZ + dz);
+                b.setType(Material.CHERRY_LEAVES, false);
+                blocks.add(b);
+            }
+        }
+        Block crown = world.getBlockAt(baseX, canopyY + 1, baseZ);
+        crown.setType(Material.CHERRY_LEAVES, false);
+        blocks.add(crown);
+
+        Block branchA = world.getBlockAt(baseX + 1, baseY + 3, baseZ);
+        branchA.setType(Material.CHERRY_LOG, false);
+        blocks.add(branchA);
+        Block branchB = world.getBlockAt(baseX - 1, baseY + 3, baseZ);
+        branchB.setType(Material.CHERRY_LOG, false);
+        blocks.add(branchB);
+    }
+
+    /**
+     * Zone upkeep: every second it drifts sakura dust off the leaves, heals same-team members
+     * below the health floor back up to it, and tears the structure down once it expires.
+     */
+    private BukkitTask startRoseZoneTask(Location center, Set<Block> blocks, long expiresAt,
+                                         GameSession session, int teamNumber) {
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        BukkitTask[] holder = new BukkitTask[1];
+        holder[0] = SchedulerUtils.runTaskTimer(() -> {
+            if (System.currentTimeMillis() >= expiresAt) {
+                destroyBloomingRose(center);
+                if (holder[0] != null) holder[0].cancel();
+                return;
+            }
+            for (Block block : blocks) {
+                if (block.getType() == Material.CHERRY_LEAVES) {
+                    ParticleUtils.spawnDust(block.getLocation().add(0.5, 0.5, 0.5),
+                            Color.fromRGB(255, 150, 190), 0.6f, 1, 0.15);
+                }
+            }
+            healRoseMembersToFloor(center, session, teamNumber);
+        }, 20L, 20L);
+        return holder[0];
+    }
+
+    /**
+     * Heals any same-team player inside the zone whose health has fallen below the 2-heart floor
+     * back up to it (scaled through the shared healing-reduction hook).
+     */
+    private void healRoseMembersToFloor(Location center, GameSession session, int teamNumber) {
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        double floor = cfg.getBloomingRoseMinHealthFloor();
+        double radius = cfg.getBloomingRoseZoneRadius();
+
+        for (Entity entity : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
+            if (!(entity instanceof Player target)) continue;
+            if (!isSameTeam(session, teamNumber, target)) continue;
+            if (target.getHealth() >= floor) continue;
+
+            double maxHealth = getMaxHealth(target, session);
+            double heal = (floor - target.getHealth()) * getHealingMultiplier(target.getUniqueId());
+            target.setHealth(Math.min(maxHealth, target.getHealth() + heal));
+        }
+    }
+
+    /**
+     * Tears down an active zone (expiry or manual destruction): removes the structure blocks and
+     * grants teammates inside the radius Regen I for the configured duration.
+     */
+    private void destroyBloomingRose(Location center) {
+        BloomingRoseZone zone = bloomingRoseZones.remove(center);
+        if (zone == null) return;
+
+        if (zone.task() != null) zone.task().cancel();
+        for (Block block : zone.blocks()) {
+            if (block.getType() == Material.CHERRY_LOG || block.getType() == Material.CHERRY_LEAVES) {
+                block.setType(Material.AIR, false);
+            }
+        }
+        triggerRoseRegen(zone);
+    }
+
+    /**
+     * Detects manual destruction of a tracked structure block (GameListener's BlockBreakEvent) -
+     * the intended counterplay - collapsing the whole zone.
+     */
+    public void onRoseStructureBroken(Block block) {
+        for (Map.Entry<Location, BloomingRoseZone> entry : new ArrayList<>(bloomingRoseZones.entrySet())) {
+            if (entry.getValue().blocks().contains(block)) {
+                destroyBloomingRose(entry.getKey());
+                return;
+            }
+        }
+    }
+
+    private void triggerRoseRegen(BloomingRoseZone zone) {
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        double radius = cfg.getBloomingRoseZoneRadius();
+        int durationTicks = cfg.getBloomingRoseRegenDurationSeconds() * 20;
+
+        for (Entity entity : zone.center().getWorld().getNearbyEntities(zone.center(), radius, radius, radius)) {
+            if (!(entity instanceof Player target)) continue;
+            if (!isSameTeam(zone.session(), zone.teamNumber(), target)) continue;
+            target.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, durationTicks, 0, false, false));
+            Messages.send(target, "customitem.blooming-rose-teammates-regen");
+        }
+    }
+
+    /**
+     * @return the active same-team zone reduction % for a player standing inside one, else 0
+     */
+    public double getBloomingRoseDamageReduction(Player player) {
+        BloomingRoseZone zone = findRoseZone(player);
+        if (zone == null) return 0.0;
+        return ItemsConfig.getInstance().getBloomingRoseDamageReductionPercent();
+    }
+
+    /**
+     * @return the active same-team zone health floor for a player standing inside one, else -1
+     */
+    public double getBloomingRoseMinHealth(Player player) {
+        BloomingRoseZone zone = findRoseZone(player);
+        if (zone == null) return -1.0;
+        return ItemsConfig.getInstance().getBloomingRoseMinHealthFloor();
+    }
+
+    private BloomingRoseZone findRoseZone(Player player) {
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        double radius = cfg.getBloomingRoseZoneRadius();
+        for (BloomingRoseZone zone : bloomingRoseZones.values()) {
+            if (zone.blocks().isEmpty()) continue;
+            if (zone.center().getWorld().equals(player.getWorld())
+                    && zone.center().distance(player.getLocation()) <= radius
+                    && isSameTeam(zone.session(), zone.teamNumber(), player)) {
+                return zone;
+            }
+        }
+        return null;
+    }
+
+    private boolean isSameTeam(GameSession session, int teamNumber, Player target) {
+        if (session == null) return false;
+        Team targetTeam = session.getPlayerTeam(target);
+        return targetTeam != null && targetTeam.getTeamNumber() == teamNumber;
+    }
+
+    private double getMaxHealth(Player target, GameSession session) {
+        CashClashPlayer ccp = session != null ? session.getCashClashPlayer(target.getUniqueId()) : null;
+        return ccp != null ? ccp.getMaxHealth() : 20.0;
+    }
+
+    /**
+     * Sakura formation visual: a red formingRing (zone radius) that draws in while two figure-eight
+     * cursors converge from opposite ends around the trunk.
+     */
+    private void spawnRoseFormationVisual(Location center, ItemsConfig cfg) {
+        double radius = cfg.getBloomingRoseZoneRadius();
+        Color pink = Color.fromRGB(255, 150, 190);
+
+        BukkitTask[] ringHolder = new BukkitTask[1];
+        final int[] formed = {0};
+        ringHolder[0] = SchedulerUtils.runTaskTimer(() -> {
+            formed[0] += 6;
+            if (formed[0] >= 90) {
+                ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, 90, pink, 0.12f);
+                if (ringHolder[0] != null) ringHolder[0].cancel();
+                return;
+            }
+            ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, formed[0], pink, 0.12f);
+        }, 0L, 1L);
+        BukkitTask[] figHolder = new BukkitTask[1];
+        final int[] fig = {0};
+        figHolder[0] = SchedulerUtils.runTaskTimer(() -> {
+            fig[0] += 4;
+            if (fig[0] >= 60) {
+                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, 60, false);
+                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, 60, true);
+                if (figHolder[0] != null) figHolder[0].cancel();
+                return;
+            }
+            ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig[0], false);
+            ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig[0], true);
+        }, 0L, 1L);
+    }
+
+    /**
+     * Lazy once-per-plugin-life actionbar loop (started on first rose placement): every 10 ticks,
+     * players holding a Blooming Rose see their teammates' current HP.
+     */
+    private void startBloomingRoseHpRevealLoop() {
+        if (bloomingRoseHpLoopStarted) return;
+        bloomingRoseHpLoopStarted = true;
+
+        SchedulerUtils.runTaskTimer(() -> {
+            for (Player holder : Bukkit.getOnlinePlayers()) {
+                if (PDCDetection.getCustomItem(holder.getInventory().getItemInMainHand()) != CustomItem.BLOOMING_ROSE) continue;
+                GameSession session = GameManager.getInstance().getPlayerSession(holder);
+                if (session == null) continue;
+                Team team = session.getPlayerTeam(holder);
+                if (team == null) continue;
+
+                StringBuilder sb = new StringBuilder("<white>Rose HP:</white> <aqua>You <red>❤")
+                        .append(String.format("%.1f", holder.getHealth())).append("</red>");
+                for (Player teammate : Bukkit.getOnlinePlayers()) {
+                    if (teammate.equals(holder)) continue;
+                    Team t = session.getPlayerTeam(teammate);
+                    if (t == null || t.getTeamNumber() != team.getTeamNumber()) continue;
+                    sb.append(" <aqua>").append(teammate.getName()).append(" <red>❤")
+                            .append(String.format("%.1f", teammate.getHealth())).append("</red>");
+                }
+                holder.sendActionBar(Messages.parse(sb.toString()));
+            }
+        }, 0L, 10L);
+    }
+
     // ==================== UTILITY METHODS ====================
 
     public void consumeItem(Player player, ItemStack item) {
@@ -1659,6 +1934,16 @@ public class CustomItemManager {
         new ArrayList<>(hunterMarks.keySet()).forEach(this::clearHunterMark);
         hunterMarks.clear();
         markedUntil.clear();
+
+        bloomingRoseZones.values().forEach(zone -> {
+            if (zone.task() != null) zone.task().cancel();
+            for (Block block : zone.blocks()) {
+                if (block.getType() == Material.CHERRY_LOG || block.getType() == Material.CHERRY_LEAVES) {
+                    block.setType(Material.AIR, false);
+                }
+            }
+        });
+        bloomingRoseZones.clear();
     }
 
     /**

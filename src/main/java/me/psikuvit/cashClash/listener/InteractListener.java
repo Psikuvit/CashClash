@@ -20,6 +20,7 @@ import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.CooldownManager;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Fireball;
@@ -395,6 +396,16 @@ public class InteractListener implements Listener {
                 if (action.isRightClick()) {
                     event.setCancelled(true);
                     customItemManager.startHunterMarkCharge(player, item);
+                    return true;
+                }
+            }
+            case BLOOMING_ROSE -> {
+                if (action.isRightClick()) {
+                    event.setCancelled(true);
+                    Location loc = event.getClickedBlock() != null
+                            ? event.getClickedBlock().getLocation()
+                            : player.getLocation();
+                    customItemManager.placeBloomingRose(player, item, loc);
                     return true;
                 }
             }

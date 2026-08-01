@@ -298,6 +298,14 @@ custom-items:
     base-vulnerability-percent: 15
     vulnerability-per-missing-heart: 2
 
+  # Blooming Rose
+  blooming-rose:
+    zone-radius: 5
+    zone-duration-seconds: 6
+    damage-reduction-percent: 25
+    min-health-floor: 4.0
+    regen-duration-seconds: 5
+
 
 # ============================================
 # CONSUMABLES
@@ -605,6 +613,12 @@ item-lore:
         - "<gray>Hold right-click to mark an enemy</gray>"
         - "<gray>Stand within 2 blocks for 3s</gray>"
         - "<yellow>Marked enemies take extra damage</yellow>"
+    blooming-rose:
+      lore:
+        - "<gray>Right-click to plant a blooming sakura</gray>"
+        - "<gray>5-block zone for 6s: -25% damage taken</gray>"
+        - "<gray>Health cannot drop below 2 hearts inside</gray>"
+        - "<gray>Hold the item to reveal teammate HP</gray>"
 
   # ==================== CUSTOM ARMOR ====================
   custom-armor:

@@ -412,12 +412,30 @@ public final class ParticleUtils {
      */
     public static void formingRing(Location center, double radius, int totalPoints, int formedCount, Color color, float size) {
         if (center == null || center.getWorld() == null) return;
-        int clampedFormed = Math.min(totalPoints, Math.max(0, formedCount));
+        int clampedFormed = Math.clamp(formedCount, 0, totalPoints);
         for (int i = 0; i < clampedFormed; i++) {
             double angle = 2 * Math.PI * i / totalPoints;
             double x = center.getX() + radius * Math.cos(angle);
             double z = center.getZ() + radius * Math.sin(angle);
             spawnDust(new Location(center.getWorld(), x, center.getY(), z), color, size, 1, 0);
+        }
+    }
+
+    /**
+     * Draws only the first {@code formedCount} points of a figure-8 (Lemniscate of Gerono) on
+     * the ground. Two simultaneous calls with {@code reverse=false}/{@code true} walk the
+     * parameter from opposite ends so the cursors converge - used by Blooming Rose's sakura
+     * formation.
+     */
+    public static void figureEight(Location center, double size, Color color, int totalPoints, int formedCount, boolean reverse) {
+        if (center == null || center.getWorld() == null) return;
+        int clampedFormed = Math.clamp(formedCount, 0, totalPoints);
+        for (int i = 0; i < clampedFormed; i++) {
+            int step = reverse ? totalPoints - 1 - i : i;
+            double t = 2 * Math.PI * step / totalPoints;
+            double x = center.getX() + size * Math.sin(t);
+            double z = center.getZ() + size * Math.sin(2 * t) / 2.0;
+            spawnDust(new Location(center.getWorld(), x, center.getY(), z), color, 1.2f, 1, 0);
         }
     }
 

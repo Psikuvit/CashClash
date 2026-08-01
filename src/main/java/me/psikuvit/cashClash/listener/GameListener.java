@@ -46,6 +46,7 @@ import org.bukkit.entity.Trident;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
@@ -440,6 +441,17 @@ public class GameListener implements Listener {
         if (session == null || session.getGamemode() == null) return false;
         if (!(session.getGamemode() instanceof CaptureTheFlagGamemode ctf)) return false;
         return ctf.isSilenced(player.getUniqueId());
+    }
+
+    // ==================== BLOOMING ROSE COUNTERPLAY ====================
+
+    /**
+     * Breaking any block of a tracked Blooming Rose structure collapses the whole zone (the
+     * intended counterplay) and triggers the same teammate Regen as natural expiry.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onRoseStructureBreak(BlockBreakEvent event) {
+        customItemManager.onRoseStructureBroken(event.getBlock());
     }
 
 

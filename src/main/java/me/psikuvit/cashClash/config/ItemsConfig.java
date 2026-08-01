@@ -499,6 +499,27 @@ public class ItemsConfig {
         return config.getInt("custom-items.hunters-mark.vulnerability-per-missing-heart", 2);
     }
 
+    // Blooming Rose
+    public double getBloomingRoseZoneRadius() {
+        return config.getDouble("custom-items.blooming-rose.zone-radius", 5);
+    }
+
+    public int getBloomingRoseZoneDurationSeconds() {
+        return config.getInt("custom-items.blooming-rose.zone-duration-seconds", 6);
+    }
+
+    public int getBloomingRoseDamageReductionPercent() {
+        return config.getInt("custom-items.blooming-rose.damage-reduction-percent", 25);
+    }
+
+    public double getBloomingRoseMinHealthFloor() {
+        return config.getDouble("custom-items.blooming-rose.min-health-floor", 4.0);
+    }
+
+    public int getBloomingRoseRegenDurationSeconds() {
+        return config.getInt("custom-items.blooming-rose.regen-duration-seconds", 5);
+    }
+
     // ==================== CUSTOM ARMOR ====================
 
     // Deathmauler

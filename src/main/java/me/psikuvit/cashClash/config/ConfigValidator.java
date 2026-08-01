@@ -108,6 +108,7 @@ public class ConfigValidator {
         customItemDefaults.put("ice-fan", 1750L);
         customItemDefaults.put("overdrive-potion", 5000L);
         customItemDefaults.put("hunters-mark", 7000L);
+        customItemDefaults.put("blooming-rose", 6500L);
         validateSection(config, "custom-items", customItemDefaults, autoAdd);
 
         // Validate custom armor section
@@ -333,6 +334,13 @@ public class ConfigValidator {
         validateAndSet(config, "custom-items.hunters-mark.duration-seconds", 8, autoAdd);
         validateAndSet(config, "custom-items.hunters-mark.base-vulnerability-percent", 15, autoAdd);
         validateAndSet(config, "custom-items.hunters-mark.vulnerability-per-missing-heart", 2, autoAdd);
+
+        // Blooming Rose
+        validateAndSet(config, "custom-items.blooming-rose.zone-radius", 5, autoAdd);
+        validateAndSet(config, "custom-items.blooming-rose.zone-duration-seconds", 6, autoAdd);
+        validateAndSet(config, "custom-items.blooming-rose.damage-reduction-percent", 25, autoAdd);
+        validateAndSet(config, "custom-items.blooming-rose.min-health-floor", 4.0, autoAdd);
+        validateAndSet(config, "custom-items.blooming-rose.regen-duration-seconds", 5, autoAdd);
 
         // Consumables section
         validateAndSet(config, "consumables.effect-cooldown-seconds", 2, autoAdd);
