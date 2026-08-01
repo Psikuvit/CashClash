@@ -109,6 +109,7 @@ public class ConfigValidator {
         customItemDefaults.put("overdrive-potion", 5000L);
         customItemDefaults.put("hunters-mark", 7000L);
         customItemDefaults.put("blooming-rose", 6500L);
+        customItemDefaults.put("orb-of-gravitation", 7000L);
         validateSection(config, "custom-items", customItemDefaults, autoAdd);
 
         // Validate custom armor section
@@ -341,6 +342,13 @@ public class ConfigValidator {
         validateAndSet(config, "custom-items.blooming-rose.damage-reduction-percent", 25, autoAdd);
         validateAndSet(config, "custom-items.blooming-rose.min-health-floor", 4.0, autoAdd);
         validateAndSet(config, "custom-items.blooming-rose.regen-duration-seconds", 5, autoAdd);
+
+        // Orb of Gravitation
+        validateAndSet(config, "custom-items.orb-of-gravitation.throw-speed", 0.6, autoAdd);
+        validateAndSet(config, "custom-items.orb-of-gravitation.pull-radius", 4, autoAdd);
+        validateAndSet(config, "custom-items.orb-of-gravitation.pull-duration-ticks", 40, autoAdd);
+        validateAndSet(config, "custom-items.orb-of-gravitation.slowness-duration-seconds", 5, autoAdd);
+        validateAndSet(config, "custom-items.orb-of-gravitation.hits-to-destroy", 4, autoAdd);
 
         // Consumables section
         validateAndSet(config, "consumables.effect-cooldown-seconds", 2, autoAdd);

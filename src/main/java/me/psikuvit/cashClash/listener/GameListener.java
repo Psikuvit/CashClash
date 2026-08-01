@@ -39,9 +39,11 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Snowball;
 import org.bukkit.entity.Trident;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -462,6 +464,12 @@ public class GameListener implements Listener {
         if (event.isCancelled()) return;
         if (!(event.getEntity() instanceof Player player)) return;
 
+        // Orb of Gravitation's bow-destroy mechanic needs to know about every fully-charged
+        // shot regardless of which bow it came from, so tag it before the mythic check.
+        if (event.getProjectile() instanceof Arrow arrow && event.getForce() >= 0.95f) {
+            arrow.getPersistentDataContainer().set(Keys.FULLY_CHARGED_ARROW, PersistentDataType.BYTE, (byte) 1);
+        }
+
         ItemStack bow = event.getBow();
         if (bow == null) return;
 
@@ -525,9 +533,17 @@ public class GameListener implements Listener {
         if (event.isCancelled()) return;
 
         if (event.getEntity() instanceof Arrow arrow) {
+            // Orb of Gravitation: a fully-charged bow shot hitting a live orb decrements its
+            // hits-remaining counter (4 hits destroys it) - projectile-vs-projectile collisions
+            // surface here via getHitEntity(), not EntityDamageByEntityEvent.
+            if (event.getHitEntity() instanceof Snowball orb) {
+                customItemManager.handleOrbHitByChargedArrow(arrow, orb);
+            }
             handleArrowHit(arrow, event);
         } else if (event.getEntity() instanceof Trident trident) {
             handleTridentHit(trident, event);
+        } else if (event.getEntity() instanceof Snowball snowball && customItemManager.isOrbEntity(snowball)) {
+            customItemManager.activateOrb(snowball);
         }
 
         handleCustomProjectileHit(event);

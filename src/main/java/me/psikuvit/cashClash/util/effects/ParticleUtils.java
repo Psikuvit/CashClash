@@ -412,7 +412,7 @@ public final class ParticleUtils {
      */
     public static void formingRing(Location center, double radius, int totalPoints, int formedCount, Color color, float size) {
         if (center == null || center.getWorld() == null) return;
-        int clampedFormed = Math.clamp(formedCount, 0, totalPoints);
+        int clampedFormed = Math.min(totalPoints, Math.max(0, formedCount));
         for (int i = 0; i < clampedFormed; i++) {
             double angle = 2 * Math.PI * i / totalPoints;
             double x = center.getX() + radius * Math.cos(angle);
@@ -429,13 +429,32 @@ public final class ParticleUtils {
      */
     public static void figureEight(Location center, double size, Color color, int totalPoints, int formedCount, boolean reverse) {
         if (center == null || center.getWorld() == null) return;
-        int clampedFormed = Math.clamp(formedCount, 0, totalPoints);
+        int clampedFormed = Math.min(totalPoints, Math.max(0, formedCount));
         for (int i = 0; i < clampedFormed; i++) {
             int step = reverse ? totalPoints - 1 - i : i;
             double t = 2 * Math.PI * step / totalPoints;
             double x = center.getX() + size * Math.sin(t);
             double z = center.getZ() + size * Math.sin(2 * t) / 2.0;
             spawnDust(new Location(center.getWorld(), x, center.getY(), z), color, 1.2f, 1, 0);
+        }
+    }
+
+    /**
+     * Colored dust along the line from {@code from} to {@code to}. Callers re-call each tick
+     * with an updated {@code to} so the beam visually shrinks as a target is pulled closer -
+     * used by Orb of Gravitation.
+     */
+    public static void beam(Location from, Location to, Color color, float size, int pointsPerBlock) {
+        if (from == null || to == null || from.getWorld() == null || to.getWorld() == null) return;
+        double distance = from.distance(to);
+        if (distance < 0.1) return;
+        int points = Math.max(1, (int) Math.ceil(distance * pointsPerBlock));
+        for (int i = 0; i <= points; i++) {
+            double f = i / (double) points;
+            double x = from.getX() + (to.getX() - from.getX()) * f;
+            double y = from.getY() + (to.getY() - from.getY()) * f;
+            double z = from.getZ() + (to.getZ() - from.getZ()) * f;
+            spawnDust(new Location(from.getWorld(), x, y, z), color, size, 1, 0);
         }
     }
 

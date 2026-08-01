@@ -520,6 +520,27 @@ public class ItemsConfig {
         return config.getInt("custom-items.blooming-rose.regen-duration-seconds", 5);
     }
 
+    // Orb of Gravitation
+    public double getOrbThrowSpeed() {
+        return config.getDouble("custom-items.orb-of-gravitation.throw-speed", 0.6);
+    }
+
+    public double getOrbPullRadius() {
+        return config.getDouble("custom-items.orb-of-gravitation.pull-radius", 4);
+    }
+
+    public int getOrbPullDurationTicks() {
+        return config.getInt("custom-items.orb-of-gravitation.pull-duration-ticks", 40);
+    }
+
+    public int getOrbSlownessDurationSeconds() {
+        return config.getInt("custom-items.orb-of-gravitation.slowness-duration-seconds", 5);
+    }
+
+    public int getOrbHitsToDestroy() {
+        return config.getInt("custom-items.orb-of-gravitation.hits-to-destroy", 4);
+    }
+
     // ==================== CUSTOM ARMOR ====================
 
     // Deathmauler

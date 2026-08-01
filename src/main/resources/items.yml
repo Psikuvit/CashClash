@@ -306,6 +306,13 @@ custom-items:
     min-health-floor: 4.0
     regen-duration-seconds: 5
 
+  # Orb of Gravitation
+  orb-of-gravitation:
+    throw-speed: 0.6
+    pull-radius: 4
+    pull-duration-ticks: 40
+    slowness-duration-seconds: 5
+    hits-to-destroy: 4
 
 # ============================================
 # CONSUMABLES
@@ -619,6 +626,12 @@ item-lore:
         - "<gray>5-block zone for 6s: -25% damage taken</gray>"
         - "<gray>Health cannot drop below 2 hearts inside</gray>"
         - "<gray>Hold the item to reveal teammate HP</gray>"
+    orb-of-gravitation:
+      lore:
+        - "<gray>Throw the orb, then right-click again</gray>"
+        - "<gray>or let it impact to pull enemies in</gray>"
+        - "<gray>Pulled enemies take Slowness I for 5s</gray>"
+        - "<gray>Destroyed by 4 fully-charged bow shots</gray>"
 
   # ==================== CUSTOM ARMOR ====================
   custom-armor:

@@ -30,15 +30,18 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Snowball;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -142,6 +145,12 @@ public class CustomItemManager {
     private record BloomingRoseZone(GameSession session, int teamNumber, Location center, long expiresAt,
                                     Set<Block> blocks, BukkitTask task) {}
 
+    // Orb of Gravitation - live orb tracking (Snowball entity UUID -> hits remaining, owner UUID,
+    // and the orb's dust-trail task, cancelled when the orb resolves)
+    private final Map<UUID, Integer> orbHitsRemaining;
+    private final Map<UUID, UUID> orbOwners;
+    private final Map<UUID, BukkitTask> orbTrailTasks;
+
     private CustomItemManager() {
         this.cooldownManager = CooldownManager.getInstance();
         this.invisCloakUsesRemaining = new HashMap<>();
@@ -171,6 +180,9 @@ public class CustomItemManager {
         this.hunterMarks = new HashMap<>();
         this.markedUntil = new HashMap<>();
         this.bloomingRoseZones = new HashMap<>();
+        this.orbHitsRemaining = new HashMap<>();
+        this.orbOwners = new HashMap<>();
+        this.orbTrailTasks = new HashMap<>();
     }
 
     public static CustomItemManager getInstance() {
@@ -1856,6 +1868,197 @@ public class CustomItemManager {
         }, 0L, 10L);
     }
 
+    // ==================== ORB OF GRAVITATION IMPLEMENTATION ====================
+
+    public boolean isOrbEntity(Entity entity) {
+        return entity instanceof Snowball && orbHitsRemaining.containsKey(entity.getUniqueId());
+    }
+
+    /**
+     * @return true if the player has at least one live orb still in flight (right-click again
+     * then detonates it manually instead of throwing another)
+     */
+    public boolean hasLiveOrb(Player player) {
+        UUID owner = player.getUniqueId();
+        for (UUID stored : orbOwners.values()) {
+            if (owner.equals(stored)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Detonates the player's live orb (manual right-click while one is in flight).
+     */
+    public void activateOrbByOwner(Player player) {
+        UUID owner = player.getUniqueId();
+        for (Map.Entry<UUID, UUID> entry : new ArrayList<>(orbOwners.entrySet())) {
+            if (owner.equals(entry.getValue())) {
+                Entity entity = Bukkit.getEntity(entry.getKey());
+                if (entity instanceof Snowball orb && !orb.isDead()) {
+                    activateOrb(orb);
+                }
+                return;
+            }
+        }
+    }
+
+    /**
+     * Launches the orb as a Snowball tagged with its owner. The item is NOT consumed yet - it is
+     * only consumed once the orb fully resolves (destroyed, pulled-and-expired, or detonated).
+     */
+    public void throwOrbOfGravitation(Player player) {
+        ItemsConfig cfg = ItemsConfig.getInstance();
+
+        Snowball orb = player.launchProjectile(Snowball.class);
+        orb.setVelocity(player.getLocation().getDirection().multiply(cfg.getOrbThrowSpeed()));
+
+        PersistentDataContainer pdc = orb.getPersistentDataContainer();
+        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.ORB_OF_GRAVITATION.name());
+        pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
+
+        UUID orbUuid = orb.getUniqueId();
+        orbHitsRemaining.put(orbUuid, cfg.getOrbHitsToDestroy());
+        orbOwners.put(orbUuid, player.getUniqueId());
+
+        BukkitTask[] trailHolder = new BukkitTask[1];
+        trailHolder[0] = SchedulerUtils.runTaskTimer(() -> {
+            if (orb.isDead() || !orbHitsRemaining.containsKey(orbUuid)) {
+                if (trailHolder[0] != null) trailHolder[0].cancel();
+                return;
+            }
+            ParticleUtils.spawnDust(orb.getLocation(), Color.fromRGB(180, 140, 40), 0.8f, 2, 0.1);
+        }, 0L, 2L);
+        orbTrailTasks.put(orbUuid, trailHolder[0]);
+
+        Messages.send(player, "customitem.orb-thrown");
+        SoundUtils.play(player, Sound.ENTITY_SNOWBALL_THROW, 1.0f, 0.8f);
+    }
+
+    /**
+     * Detonates a live orb (manual right-click, natural impact, or 4th charged-arrow hit):
+     * removes it and pulls all enemies within range toward its centre for the pull duration,
+     * applying Slowness I and shrinking light-yellow->red beams as each target closes in.
+     */
+    public void activateOrb(Snowball orb) {
+        UUID orbUuid = orb.getUniqueId();
+        if (!orbHitsRemaining.containsKey(orbUuid) || orb.isDead()) return;
+
+        UUID ownerUuid = orbOwners.get(orbUuid);
+        cleanupOrbTracking(orbUuid);
+
+        Location center = orb.getLocation().clone();
+        orb.remove();
+
+        Player owner = ownerUuid != null ? Bukkit.getPlayer(ownerUuid) : null;
+        if (owner != null) {
+            consumeOrbItem(owner);
+            Messages.send(owner, "customitem.orb-activated");
+            SoundUtils.play(owner, Sound.ENTITY_ENDERMAN_TELEPORT, 0.8f, 0.6f);
+        }
+        SoundUtils.playAt(center, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.6f);
+
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        double radius = cfg.getOrbPullRadius();
+        int durationTicks = cfg.getOrbPullDurationTicks();
+        int slownessTicks = cfg.getOrbSlownessDurationSeconds() * 20;
+
+        GameSession session = owner != null ? GameManager.getInstance().getPlayerSession(owner) : null;
+        Team team = session != null ? session.getPlayerTeam(owner) : null;
+
+        // Slowness I once + a colour progress marker for the beam lerp
+        List<Player> pulled = new ArrayList<>();
+        for (Entity entity : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
+            if (!(entity instanceof Player target) || target.equals(owner)) continue;
+            if (!target.hasLineOfSight(center)) continue;
+            if (team != null) {
+                Team targetTeam = session.getPlayerTeam(target);
+                if (targetTeam != null && targetTeam.getTeamNumber() == team.getTeamNumber()) continue;
+            }
+            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slownessTicks, 0, false, false));
+            pulled.add(target);
+        }
+
+        BukkitTask[] pullHolder = new BukkitTask[1];
+        final int[] tick = {0};
+        pullHolder[0] = SchedulerUtils.runTaskTimer(() -> {
+            tick[0]++;
+            float progress = Math.min(1.0f, tick[0] / (float) durationTicks);
+            Color beamColor = lerpColor(Color.fromRGB(255, 230, 150), Color.fromRGB(200, 40, 40), progress);
+
+            for (Player target : new ArrayList<>(pulled)) {
+                if (!target.isOnline() || target.isDead()) continue;
+                Vector toCenter = center.toVector().subtract(target.getLocation().toVector());
+                if (toCenter.lengthSquared() < 0.25) continue; // arrived
+                target.setVelocity(toCenter.normalize().multiply(0.55));
+                ParticleUtils.beam(center.clone().add(0, 1, 0), target.getLocation().add(0, 1, 0), beamColor, 0.15f, 2);
+            }
+            ParticleUtils.spawnDust(center.clone().add(0, 1, 0), beamColor, 1.0f, 3, 0.3);
+
+            if (tick[0] >= durationTicks) {
+                if (pullHolder[0] != null) pullHolder[0].cancel();
+            }
+        }, 0L, 1L);
+    }
+
+    /**
+     * A fully-charged bow shot hitting a live orb decrements its hits-remaining counter; on the
+     * configured final hit the orb shatters (destroyed = fully resolved, so the item is consumed).
+     */
+    public void handleOrbHitByChargedArrow(Arrow arrow, Snowball orb) {
+        UUID orbUuid = orb.getUniqueId();
+        if (!orbHitsRemaining.containsKey(orbUuid)) return;
+        if (arrow.getPersistentDataContainer().get(Keys.FULLY_CHARGED_ARROW, PersistentDataType.BYTE) == null) return;
+
+        int left = orbHitsRemaining.get(orbUuid) - 1;
+        if (left <= 0) {
+            Location loc = orb.getLocation();
+            UUID ownerUuid = orbOwners.get(orbUuid);
+            cleanupOrbTracking(orbUuid);
+            orb.remove();
+            arrow.remove();
+            Player owner = ownerUuid != null ? Bukkit.getPlayer(ownerUuid) : null;
+            if (owner != null) {
+                consumeOrbItem(owner);
+                Messages.send(owner, "customitem.orb-destroyed");
+            }
+            SoundUtils.playAt(loc, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.2f);
+        } else {
+            orbHitsRemaining.put(orbUuid, left);
+        }
+    }
+
+    private void cleanupOrbTracking(UUID orbUuid) {
+        orbHitsRemaining.remove(orbUuid);
+        orbOwners.remove(orbUuid);
+        BukkitTask trail = orbTrailTasks.remove(orbUuid);
+        if (trail != null) trail.cancel();
+    }
+
+    /**
+     * Consumes a single orb item wherever it sits in the owner's inventory (they may have
+     * switched items since throwing, and the item is not consumed until the orb resolves).
+     */
+    private void consumeOrbItem(Player player) {
+        ItemStack main = player.getInventory().getItemInMainHand();
+        if (PDCDetection.getCustomItem(main) == CustomItem.ORB_OF_GRAVITATION) {
+            consumeItem(player, main);
+            return;
+        }
+        for (ItemStack slot : player.getInventory().getContents()) {
+            if (slot != null && PDCDetection.getCustomItem(slot) == CustomItem.ORB_OF_GRAVITATION) {
+                slot.setAmount(slot.getAmount() - 1);
+                return;
+            }
+        }
+    }
+
+    private Color lerpColor(Color from, Color to, float t) {
+        return Color.fromRGB(
+                (int) (from.getRed() + (to.getRed() - from.getRed()) * t),
+                (int) (from.getGreen() + (to.getGreen() - from.getGreen()) * t),
+                (int) (from.getBlue() + (to.getBlue() - from.getBlue()) * t));
+    }
+
     // ==================== UTILITY METHODS ====================
 
     public void consumeItem(Player player, ItemStack item) {
@@ -1944,6 +2147,15 @@ public class CustomItemManager {
             }
         });
         bloomingRoseZones.clear();
+
+        orbTrailTasks.values().forEach(BukkitTask::cancel);
+        orbTrailTasks.clear();
+        orbHitsRemaining.keySet().forEach(uuid -> {
+            Entity entity = Bukkit.getEntity(uuid);
+            if (entity != null) entity.remove();
+        });
+        orbHitsRemaining.clear();
+        orbOwners.clear();
     }
 
     /**

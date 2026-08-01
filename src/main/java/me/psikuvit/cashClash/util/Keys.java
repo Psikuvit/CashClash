@@ -62,6 +62,12 @@ public class Keys {
      */
     public static final NamespacedKey BUFF_SELECTION_POTION;
 
+    /**
+     * Byte marker on arrows shot with full draw strength (force >= 0.95).
+     * Used by Orb of Gravitation's "destroyed by 4 fully-charged bow shots" mechanic.
+     */
+    public static final NamespacedKey FULLY_CHARGED_ARROW;
+
 
     static {
         ITEM_ID = new NamespacedKey(CashClashPlugin.getInstance(), "item_id");
@@ -74,6 +80,7 @@ public class Keys {
         BLOODWRENCH_MODE = new NamespacedKey(CashClashPlugin.getInstance(), "bloodwrench_mode");
         ARENA_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "arena_npc");
         BUFF_SELECTION_POTION = new NamespacedKey(CashClashPlugin.getInstance(), "buff_selection_potion");
+        FULLY_CHARGED_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "fully_charged_arrow");
     }
 
     private Keys() {

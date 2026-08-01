@@ -409,6 +409,17 @@ public class InteractListener implements Listener {
                     return true;
                 }
             }
+            case ORB_OF_GRAVITATION -> {
+                if (action.isRightClick()) {
+                    event.setCancelled(true);
+                    if (customItemManager.hasLiveOrb(player)) {
+                        customItemManager.activateOrbByOwner(player);
+                    } else {
+                        customItemManager.throwOrbOfGravitation(player);
+                    }
+                    return true;
+                }
+            }
         }
         return false;
     }

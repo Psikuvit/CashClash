@@ -874,6 +874,9 @@ messages:
     hunters-mark-no-target: "<red>No enemy close enough to mark! (Stand within 2 blocks)</red>"
     blooming-rose-placed: "<green>Blooming Rose planted!</green>"
     blooming-rose-teammates-regen: "<green>Recovering from the rose's energy!</green>"
+    orb-thrown: "<dark_yellow>Orb thrown! Right-click again or let it impact to pull.</dark_yellow>"
+    orb-activated: "<dark_yellow>The orb erupts and pulls enemies in!</dark_yellow>"
+    orb-destroyed: "<dark_yellow>The orb shatters!</dark_yellow>"
 
   # ============================================
   # ERROR & VALIDATION MESSAGES
