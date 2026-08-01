@@ -402,4 +402,28 @@ public final class ParticleUtils {
             spawnDust(point, Color.fromRGB(70, 70, 70), 1.2f, 1, 0.05); // grey hint
         }
     }
+
+    /**
+     * Draws a diamond/rhombus outline on the ground - used by Radiating Lotus to mark its
+     * heal radius.
+     */
+    public static void groundDiamond(Location center, double radius, Color color) {
+        if (center == null || center.getWorld() == null) return;
+        Location[] corners = {
+                center.clone().add(radius, 0, 0),
+                center.clone().add(0, 0, radius),
+                center.clone().add(-radius, 0, 0),
+                center.clone().add(0, 0, -radius)
+        };
+        int pointsPerEdge = Math.max(2, (int) (radius * 4));
+        for (int edge = 0; edge < corners.length; edge++) {
+            Location from = corners[edge];
+            Location to = corners[(edge + 1) % corners.length];
+            Vector edgeVector = to.toVector().subtract(from.toVector());
+            for (int i = 0; i <= pointsPerEdge; i++) {
+                Location point = from.clone().add(edgeVector.clone().multiply((double) i / pointsPerEdge));
+                spawnDust(point, color, 1.3f, 1, 0);
+            }
+        }
+    }
 }

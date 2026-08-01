@@ -124,6 +124,11 @@ public final class GameplayItemFactory {
         // Apply custom model data
         CustomModelDataMapper.applyCustomModel(item, customItem);
 
+        // Apply data-component overrides (food/consumable animation, etc.) - must run after
+        // setItemMeta, since data components live outside ItemMeta and would otherwise be
+        // clobbered by it (see applyFoodProperties for the same ordering requirement).
+        applyCustomItemDataComponents(customItem, item);
+
         return item;
     }
 
@@ -243,6 +248,33 @@ public final class GameplayItemFactory {
             }
             default -> {
                 // No special properties
+            }
+        }
+    }
+
+    /**
+     * Applies data-component overrides that must be set after {@link ItemStack#setItemMeta}
+     * (food/consumable animation data lives outside ItemMeta).
+     */
+    private void applyCustomItemDataComponents(CustomItem customItem, ItemStack item) {
+        switch (customItem) {
+            case RADIATING_LOTUS -> {
+                // Food-eligible so right-click raises the hand, letting us poll isHandRaised()
+                // to detect "hold to charge, release to activate" - the item is never actually
+                // eaten (InteractListener cancels PlayerItemConsumeEvent for this item).
+                item.setData(DataComponentTypes.FOOD, FoodProperties.food()
+                        .canAlwaysEat(true)
+                        .nutrition(0)
+                        .saturation(0f)
+                        .build());
+                item.unsetData(DataComponentTypes.CONSUMABLE);
+                item.setData(DataComponentTypes.CONSUMABLE, Consumable.consumable()
+                        .animation(ItemUseAnimation.EAT)
+                        .consumeSeconds(3.5f) // > max-charge-seconds + grace-seconds so we always release first
+                        .build());
+            }
+            default -> {
+                // No special data components
             }
         }
     }

@@ -43,6 +43,8 @@ public final class CustomModelDataMapper {
         CUSTOM_ITEM_KEYS.put(CustomItem.INVIS_CLOAK,         "invisibilitycloak");
         // assets/minecraft/items/nether_star.json       when: "totemofhaunting"
         CUSTOM_ITEM_KEYS.put(CustomItem.TOTEM_OF_HAUNTING,   "totemofhaunting");
+        // assets/minecraft/items/glow_berries.json      when: "radiatinglotus"
+        CUSTOM_ITEM_KEYS.put(CustomItem.RADIATING_LOTUS,     "radiatinglotus");
 
         // assets/minecraft/items/diamond_axe.json       when: "coincleaver"
         MYTHIC_KEYS.put(MythicItem.COIN_CLEAVER,       "coincleaver");

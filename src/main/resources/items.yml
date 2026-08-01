@@ -265,6 +265,15 @@ custom-items:
     debuff-duration-seconds: 6
     revive-health: 1.0
 
+  # Radiating Lotus
+  radiating-lotus:
+    max-charge-seconds: 2
+    grace-seconds: 1
+    knockback-per-second: 3.0
+    heal-radius-per-second: 1.5
+    heal-amount: 4.0
+    slow-percent-while-charging: 80
+
 
 # ============================================
 # CONSUMABLES
@@ -551,6 +560,11 @@ item-lore:
         - "<gray>Cheats death when held</gray>"
         - "<yellow>Weakens nearby enemies</yellow>"
         - "<dark_gray>Consumed on trigger</dark_gray>"
+    radiating-lotus:
+      lore:
+        - "<gray>Hold right-click to charge</gray>"
+        - "<yellow>Release to knock back and heal!</yellow>"
+        - "<dark_gray>Cannot be used while holding the flag</dark_gray>"
 
   # ==================== CUSTOM ARMOR ====================
   custom-armor:

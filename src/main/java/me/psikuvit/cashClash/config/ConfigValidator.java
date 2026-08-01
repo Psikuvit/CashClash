@@ -104,6 +104,7 @@ public class ConfigValidator {
         customItemDefaults.put("cash-blaster", 30000L);
         customItemDefaults.put("respawn-anchor", 50000L);
         customItemDefaults.put("totem-of-haunting", 7500L);
+        customItemDefaults.put("radiating-lotus", 2000L);
         validateSection(config, "custom-items", customItemDefaults, autoAdd);
 
         // Validate custom armor section
@@ -298,6 +299,14 @@ public class ConfigValidator {
         validateAndSet(config, "custom-items.totem-of-haunting.debuff-radius", 6, autoAdd);
         validateAndSet(config, "custom-items.totem-of-haunting.debuff-duration-seconds", 6, autoAdd);
         validateAndSet(config, "custom-items.totem-of-haunting.revive-health", 1.0, autoAdd);
+
+        // Radiating Lotus
+        validateAndSet(config, "custom-items.radiating-lotus.max-charge-seconds", 2, autoAdd);
+        validateAndSet(config, "custom-items.radiating-lotus.knockback-per-second", 3.0, autoAdd);
+        validateAndSet(config, "custom-items.radiating-lotus.heal-radius-per-second", 1.5, autoAdd);
+        validateAndSet(config, "custom-items.radiating-lotus.heal-amount", 4.0, autoAdd);
+        validateAndSet(config, "custom-items.radiating-lotus.slow-percent-while-charging", 80, autoAdd);
+        validateAndSet(config, "custom-items.radiating-lotus.grace-seconds", 1, autoAdd);
 
         // Consumables section
         validateAndSet(config, "consumables.effect-cooldown-seconds", 2, autoAdd);

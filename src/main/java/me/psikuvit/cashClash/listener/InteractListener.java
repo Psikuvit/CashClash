@@ -32,6 +32,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -338,8 +339,32 @@ public class InteractListener implements Listener {
                     return true;
                 }
             }
+            case RADIATING_LOTUS -> {
+                if (action.isRightClick()) {
+                    if (isSilenced(player)) {
+                        event.setCancelled(true);
+                        Messages.send(player, "gamemode-ctf.cannot-use-while-carrying-flag");
+                        return true;
+                    }
+                    event.setCancelled(true);
+                    customItemManager.startRadiatingLotusCharge(player, item);
+                    return true;
+                }
+            }
         }
         return false;
+    }
+
+    /**
+     * Prevents "fake consumable" items (used only to leverage the vanilla hand-raise/use
+     * animation for hold-to-charge abilities) from ever actually being eaten.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onCustomItemConsumeCancel(PlayerItemConsumeEvent event) {
+        CustomItem type = PDCDetection.getCustomItem(event.getItem());
+        if (type == CustomItem.RADIATING_LOTUS) {
+            event.setCancelled(true);
+        }
     }
 
     // ==================== MYTHIC ITEMS ====================

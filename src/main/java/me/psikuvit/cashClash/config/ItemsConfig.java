@@ -403,6 +403,31 @@ public class ItemsConfig {
         return config.getDouble("custom-items.totem-of-haunting.revive-health", 1.0);
     }
 
+    // Radiating Lotus
+    public int getLotusMaxChargeSeconds() {
+        return config.getInt("custom-items.radiating-lotus.max-charge-seconds", 2);
+    }
+
+    public int getLotusGraceSeconds() {
+        return config.getInt("custom-items.radiating-lotus.grace-seconds", 1);
+    }
+
+    public double getLotusKnockbackPerSecond() {
+        return config.getDouble("custom-items.radiating-lotus.knockback-per-second", 3.0);
+    }
+
+    public double getLotusHealRadiusPerSecond() {
+        return config.getDouble("custom-items.radiating-lotus.heal-radius-per-second", 1.5);
+    }
+
+    public double getLotusHealAmount() {
+        return config.getDouble("custom-items.radiating-lotus.heal-amount", 4.0);
+    }
+
+    public int getLotusSlowPercentWhileCharging() {
+        return config.getInt("custom-items.radiating-lotus.slow-percent-while-charging", 80);
+    }
+
     // ==================== CUSTOM ARMOR ====================
 
     // Deathmauler

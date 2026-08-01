@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.items;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -7,18 +8,24 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gui.PlayerSelectorGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -85,6 +92,15 @@ public class CustomItemManager {
     // Totem of Haunting - active death-save invincibility window
     private final Set<UUID> totemInvincible;
 
+    // Shared: healing-reduction hook (e.g. Soul Katana's debuff), consumed by any item's heals
+    private final Map<UUID, Long> healingReducedUntil;
+    private final Map<UUID, Double> healingReductionMultiplier;
+
+    // Radiating Lotus - charge-hold state
+    private final Map<UUID, Integer> lotusChargeTicks;
+    private final Map<UUID, BukkitTask> lotusChargeTasks;
+    private static final NamespacedKey LOTUS_SLOW_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "radiating_lotus_slow");
+
     private CustomItemManager() {
         this.cooldownManager = CooldownManager.getInstance();
         this.invisCloakUsesRemaining = new HashMap<>();
@@ -100,6 +116,10 @@ public class CustomItemManager {
         this.playersRevivedThisRound = new HashSet<>();
         this.cashBlasterEarningsThisRound = new HashMap<>();
         this.totemInvincible = new HashSet<>();
+        this.healingReducedUntil = new HashMap<>();
+        this.healingReductionMultiplier = new HashMap<>();
+        this.lotusChargeTicks = new HashMap<>();
+        this.lotusChargeTasks = new HashMap<>();
     }
 
     public static CustomItemManager getInstance() {
@@ -939,6 +959,131 @@ public class CustomItemManager {
         }, 0L, 1L);
     }
 
+    // ==================== SHARED EFFECT HOOKS ====================
+
+    /**
+     * Applies a temporary healing-reduction debuff to a target (e.g. Soul Katana's Phantom
+     * Slice). Any item's heal application should multiply its heal amount by
+     * {@link #getHealingMultiplier(UUID)} before applying it.
+     */
+    public void applyHealingReduction(UUID target, double multiplier, long durationSeconds) {
+        healingReducedUntil.put(target, System.currentTimeMillis() + durationSeconds * 1000L);
+        healingReductionMultiplier.put(target, multiplier);
+    }
+
+    /**
+     * @return 1.0 if the target has no active healing-reduction debuff, else the active multiplier
+     */
+    public double getHealingMultiplier(UUID target) {
+        Long until = healingReducedUntil.get(target);
+        if (until == null || System.currentTimeMillis() >= until) {
+            healingReducedUntil.remove(target);
+            healingReductionMultiplier.remove(target);
+            return 1.0;
+        }
+        return healingReductionMultiplier.getOrDefault(target, 1.0);
+    }
+
+    // ==================== RADIATING LOTUS IMPLEMENTATION ====================
+
+    /**
+     * Starts the "hold right-click to charge" window. The item is food-eligible so right-click
+     * raises the hand (see GameplayItemFactory), letting us poll isHandRaised() every tick to
+     * detect when the player releases - there is no generic held-right-click event in Bukkit.
+     */
+    public void startRadiatingLotusCharge(Player player, ItemStack item) {
+        UUID uuid = player.getUniqueId();
+        if (lotusChargeTasks.containsKey(uuid)) return; // already charging
+
+        lotusChargeTicks.put(uuid, 0);
+        applyLotusSlow(player);
+
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        int maxTicks = cfg.getLotusMaxChargeSeconds() * 20;
+        int hardCapTicks = maxTicks + cfg.getLotusGraceSeconds() * 20;
+
+        BukkitTask[] taskHolder = new BukkitTask[1];
+        taskHolder[0] = SchedulerUtils.runTaskTimer(() -> {
+            Integer ticks = lotusChargeTicks.get(uuid);
+            boolean stillCharging = ticks != null && player.isOnline() && player.isHandRaised()
+                    && PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.RADIATING_LOTUS;
+
+            if (!stillCharging) {
+                finishLotusCharge(player, item, ticks == null ? 0 : Math.min(ticks, maxTicks));
+                if (taskHolder[0] != null) taskHolder[0].cancel();
+                return;
+            }
+
+            int next = ticks + 1;
+            lotusChargeTicks.put(uuid, next);
+            if (next >= hardCapTicks) {
+                finishLotusCharge(player, item, maxTicks); // hard timeout at cap - auto-fires per spec's grace period
+                if (taskHolder[0] != null) taskHolder[0].cancel();
+            }
+        }, 0L, 1L);
+        lotusChargeTasks.put(uuid, taskHolder[0]);
+    }
+
+    /**
+     * Detonates the lotus: knocks the player back, heals self + teammates, and plays the
+     * knockback/heal visuals - only at detonation, never during the charge-up.
+     */
+    private void finishLotusCharge(Player player, ItemStack item, int chargeTicks) {
+        UUID uuid = player.getUniqueId();
+        lotusChargeTicks.remove(uuid);
+        lotusChargeTasks.remove(uuid);
+        removeLotusSlow(player);
+        consumeItem(player, item);
+
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        double chargeSeconds = chargeTicks / 20.0;
+
+        double knockbackDistance = chargeSeconds * cfg.getLotusKnockbackPerSecond();
+        Vector back = player.getLocation().getDirection().clone().setY(0).normalize().multiply(-knockbackDistance * 0.35);
+        back.setY(0.4);
+        player.setVelocity(back);
+        cooldownManager.setCooldownSeconds(uuid, "WIND_CHARGE_PROTECTION", 2);
+
+        Messages.send(player, "customitem.lotus-detonated");
+        SoundUtils.playAt(player.getLocation(), Sound.ITEM_TRIDENT_RETURN, 1.0f, 1.4f);
+
+        Location loc = player.getLocation();
+        double healRadius = Math.max(1.0, chargeSeconds * cfg.getLotusHealRadiusPerSecond());
+        double healAmount = cfg.getLotusHealAmount();
+
+        ParticleUtils.spawnDust(loc.clone().add(0, 1, 0), Color.fromRGB(60, 200, 60), 2.0f, 40, 0.5);
+        ParticleUtils.groundDiamond(loc, healRadius, Color.fromRGB(255, 105, 180));
+
+        World world = loc.getWorld();
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        Team team = session != null ? session.getPlayerTeam(player) : null;
+        if (team == null || world == null) return;
+
+        for (Entity entity : world.getNearbyEntities(loc, healRadius, healRadius, healRadius)) {
+            if (!(entity instanceof Player target)) continue;
+            Team targetTeam = session.getPlayerTeam(target);
+            if (targetTeam == null || targetTeam.getTeamNumber() != team.getTeamNumber()) continue;
+
+            CashClashPlayer targetCcp = session.getCashClashPlayer(target.getUniqueId());
+            double maxHealth = targetCcp != null ? targetCcp.getMaxHealth() : 20.0;
+            double heal = healAmount * getHealingMultiplier(target.getUniqueId());
+            target.setHealth(Math.min(maxHealth, target.getHealth() + heal));
+        }
+    }
+
+    private void applyLotusSlow(Player player) {
+        AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (speed == null) return;
+        double reduction = ItemsConfig.getInstance().getLotusSlowPercentWhileCharging() / 100.0;
+        speed.addModifier(new AttributeModifier(LOTUS_SLOW_KEY, -reduction, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+    }
+
+    private void removeLotusSlow(Player player) {
+        AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (speed == null) return;
+        speed.removeModifier(LOTUS_SLOW_KEY);
+    }
+
     // ==================== UTILITY METHODS ====================
 
     public void consumeItem(Player player, ItemStack item) {
@@ -985,6 +1130,17 @@ public class CustomItemManager {
         cashBlasterEarningsThisRound.clear();
 
         totemInvincible.clear();
+
+        healingReducedUntil.clear();
+        healingReductionMultiplier.clear();
+
+        lotusChargeTasks.forEach((uuid, task) -> {
+            task.cancel();
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) removeLotusSlow(player);
+        });
+        lotusChargeTasks.clear();
+        lotusChargeTicks.clear();
     }
 
     /**

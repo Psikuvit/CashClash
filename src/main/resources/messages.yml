@@ -377,6 +377,7 @@ messages:
     capture-bonus-team-broadcast: "<yellow>Team {team_name} earned a 45-second capture bonus!</yellow>"
     both-flags-held: "<red>You must kill the other flag holder in order to score!</red>"
     flag-drop-timer-reset: "<gold>{team_name} team has reset the dropped flag return timer!</gold>"
+    cannot-use-while-carrying-flag: "<red>You cannot use this while carrying the flag!</red>"
 
   gamemode-kc:
     game-started: "<gold>Kill Confirm has been selected as the gamemode!</gold>"
@@ -862,6 +863,7 @@ messages:
     revive-success-target: "<green>You have been revived by {player_name}! +2 bonus hearts!</green>"
     totem-haunting-triggered: "<dark_red><bold>Totem of Haunting</bold> saved you from death!</dark_red>"
     totem-haunting-witness: "<red>{player_name}'s Totem of Haunting weakened you!</red>"
+    lotus-detonated: "<green>Radiating Lotus healed nearby allies!</green>"
 
   # ============================================
   # ERROR & VALIDATION MESSAGES
