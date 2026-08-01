@@ -1,10 +1,10 @@
 package me.psikuvit.cashClash.listener.lobby;
 
+import io.papermc.paper.event.player.AsyncChatEvent;
 import me.psikuvit.cashClash.manager.player.AfkManager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -43,7 +43,7 @@ public class AfkListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onChat(AsyncPlayerChatEvent event) {
+    public void onChat(AsyncChatEvent event) {
         afkManager.markActivity(event.getPlayer());
     }
 }
