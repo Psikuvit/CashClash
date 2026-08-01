@@ -404,6 +404,24 @@ public final class ParticleUtils {
     }
 
     /**
+     * Draws only the first {@code formedCount} of {@code totalPoints} evenly-spaced points
+     * around a circle - callers stagger {@code formedCount} from 1 up to {@code totalPoints}
+     * via successive delayed calls so the ring visually forms over time rather than popping in
+     * all at once (see KCZoneUtils.spawnActivationBeam for the same staggering idiom). Used by
+     * Boombox's speed-buff ring.
+     */
+    public static void formingRing(Location center, double radius, int totalPoints, int formedCount, Color color, float size) {
+        if (center == null || center.getWorld() == null) return;
+        int clampedFormed = Math.min(totalPoints, Math.max(0, formedCount));
+        for (int i = 0; i < clampedFormed; i++) {
+            double angle = 2 * Math.PI * i / totalPoints;
+            double x = center.getX() + radius * Math.cos(angle);
+            double z = center.getZ() + radius * Math.sin(angle);
+            spawnDust(new Location(center.getWorld(), x, center.getY(), z), color, size, 1, 0);
+        }
+    }
+
+    /**
      * Draws a diamond/rhombus outline on the ground - used by Radiating Lotus to mark its
      * heal radius.
      */

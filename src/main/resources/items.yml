@@ -237,7 +237,8 @@ custom-items:
     pulse-interval-seconds: 3
     total-duration-seconds: 12
     radius: 5
-    knockback-power: 1.5
+    speed-boost-percent: 20
+    speed-boost-duration-seconds: 8
 
   # Invisibility Cloak
   invis-cloak:
@@ -541,8 +542,8 @@ item-lore:
         - "<yellow>Knockback on hit</yellow>"
     boombox:
       lore:
-        - "<gray>Makes loud noise</gray>"
-        - "<yellow>Pushes nearby enemies</yellow>"
+        - "<gray>Plays music for a short time</gray>"
+        - "<yellow>Boosts nearby allies' speed</yellow>"
     invis-cloak:
       lore:
         - "<gray>Grants invisibility</gray>"

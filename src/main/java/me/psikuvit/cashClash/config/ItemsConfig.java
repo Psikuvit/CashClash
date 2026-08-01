@@ -363,6 +363,18 @@ public class ItemsConfig {
         return config.getInt("custom-items.boombox.total-duration-seconds", 12);
     }
 
+    public double getBoomboxRadius() {
+        return config.getDouble("custom-items.boombox.radius", 5);
+    }
+
+    public int getBoomboxSpeedBoostPercent() {
+        return config.getInt("custom-items.boombox.speed-boost-percent", 20);
+    }
+
+    public int getBoomboxSpeedBoostDuration() {
+        return config.getInt("custom-items.boombox.speed-boost-duration-seconds", 8);
+    }
+
     // Invis Cloak
     public int getInvisCloakCostPerSecond() {
         return config.getInt("custom-items.invis-cloak.cost-per-second", 100);

@@ -288,6 +288,9 @@ public class ConfigValidator {
         validateAndSet(config, "custom-items.bag-of-potatoes.durability", 3, autoAdd);
         validateAndSet(config, "custom-items.boombox.pulse-interval-seconds", 3, autoAdd);
         validateAndSet(config, "custom-items.boombox.total-duration-seconds", 12, autoAdd);
+        validateAndSet(config, "custom-items.boombox.radius", 5, autoAdd);
+        validateAndSet(config, "custom-items.boombox.speed-boost-percent", 20, autoAdd);
+        validateAndSet(config, "custom-items.boombox.speed-boost-duration-seconds", 8, autoAdd);
         validateAndSet(config, "custom-items.invis-cloak.cost-per-second", 100, autoAdd);
         validateAndSet(config, "custom-items.invis-cloak.uses-per-round", 5, autoAdd);
         validateAndSet(config, "custom-items.cash-blaster.coins-per-hit", 500, autoAdd);
