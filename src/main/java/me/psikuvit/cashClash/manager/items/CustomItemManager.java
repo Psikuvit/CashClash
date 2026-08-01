@@ -45,6 +45,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import org.bukkit.util.Transformation;
@@ -1035,31 +1036,33 @@ public class CustomItemManager {
         Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
 
         int[] tick = {0};
-        BukkitTask[] taskHolder = new BukkitTask[1];
-        taskHolder[0] = SchedulerUtils.runTaskTimer(() -> {
-            tick[0]++;
-            double currentRadius = maxRadius * tick[0] / totalTicks;
-            for (int arm = 0; arm < arms; arm++) {
-                ParticleUtils.smokeSpiralFrame(origin, currentRadius, arm, arms);
-            }
-
-            World world = origin.getWorld();
-            if (world != null) {
-                for (Entity entity : world.getNearbyEntities(origin, maxRadius, maxRadius, maxRadius)) {
-                    if (!(entity instanceof Player target) || target.equals(player)) continue;
-                    if (alreadyDebuffed.contains(target.getUniqueId())) continue;
-                    if (playerTeam != null && session.getPlayerTeam(target) == playerTeam) continue;
-                    if (target.getLocation().distance(origin) > currentRadius + 1.0) continue;
-
-                    alreadyDebuffed.add(target.getUniqueId());
-                    target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, debuffDurationTicks, 0, false, true));
-                    target.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, debuffDurationTicks, 0, false, true));
-                    Messages.send(target, "customitem.totem-haunting-witness", "player_name", player.getName());
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            @Override
+            public void run() {
+                tick[0]++;
+                double currentRadius = maxRadius * tick[0] / totalTicks;
+                for (int arm = 0; arm < arms; arm++) {
+                    ParticleUtils.smokeSpiralFrame(origin, currentRadius, arm, arms);
                 }
-            }
 
-            if (tick[0] >= totalTicks && taskHolder[0] != null) {
-                taskHolder[0].cancel();
+                World world = origin.getWorld();
+                if (world != null) {
+                    for (Entity entity : world.getNearbyEntities(origin, maxRadius, maxRadius, maxRadius)) {
+                        if (!(entity instanceof Player target) || target.equals(player)) continue;
+                        if (alreadyDebuffed.contains(target.getUniqueId())) continue;
+                        if (playerTeam != null && session.getPlayerTeam(target) == playerTeam) continue;
+                        if (target.getLocation().distance(origin) > currentRadius + 1.0) continue;
+
+                        alreadyDebuffed.add(target.getUniqueId());
+                        target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, debuffDurationTicks, 0, false, true));
+                        target.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, debuffDurationTicks, 0, false, true));
+                        Messages.send(target, "customitem.totem-haunting-witness", "player_name", player.getName());
+                    }
+                }
+
+                if (tick[0] >= totalTicks) {
+                    cancel();
+                }
             }
         }, 0L, 1L);
     }
@@ -1107,26 +1110,28 @@ public class CustomItemManager {
         int maxTicks = cfg.getLotusMaxChargeSeconds() * 20;
         int hardCapTicks = maxTicks + cfg.getLotusGraceSeconds() * 20;
 
-        BukkitTask[] taskHolder = new BukkitTask[1];
-        taskHolder[0] = SchedulerUtils.runTaskTimer(() -> {
-            Integer ticks = lotusChargeTicks.get(uuid);
-            boolean stillCharging = ticks != null && player.isOnline() && player.isHandRaised()
-                    && PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.RADIATING_LOTUS;
+        BukkitTask task = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            @Override
+            public void run() {
+                Integer ticks = lotusChargeTicks.get(uuid);
+                boolean stillCharging = ticks != null && player.isOnline() && player.isHandRaised()
+                        && PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.RADIATING_LOTUS;
 
-            if (!stillCharging) {
-                finishLotusCharge(player, item, ticks == null ? 0 : Math.min(ticks, maxTicks));
-                if (taskHolder[0] != null) taskHolder[0].cancel();
-                return;
-            }
+                if (!stillCharging) {
+                    finishLotusCharge(player, item, ticks == null ? 0 : Math.min(ticks, maxTicks));
+                    cancel();
+                    return;
+                }
 
-            int next = ticks + 1;
-            lotusChargeTicks.put(uuid, next);
-            if (next >= hardCapTicks) {
-                finishLotusCharge(player, item, maxTicks); // hard timeout at cap - auto-fires per spec's grace period
-                if (taskHolder[0] != null) taskHolder[0].cancel();
+                int next = ticks + 1;
+                lotusChargeTicks.put(uuid, next);
+                if (next >= hardCapTicks) {
+                    finishLotusCharge(player, item, maxTicks); // hard timeout at cap - auto-fires per spec's grace period
+                    cancel();
+                }
             }
         }, 0L, 1L);
-        lotusChargeTasks.put(uuid, taskHolder[0]);
+        lotusChargeTasks.put(uuid, task);
     }
 
     /**
@@ -1464,37 +1469,39 @@ public class CustomItemManager {
         hunterMarkChargeTicks.put(uuid, 0);
         int requiredTicks = cfg.getHuntersMarkChargeSeconds() * 20;
 
-        BukkitTask[] taskHolder = new BukkitTask[1];
-        taskHolder[0] = SchedulerUtils.runTaskTimer(() -> {
-            Integer ticks = hunterMarkChargeTicks.get(uuid);
-            boolean stillCharging = ticks != null && player.isOnline() && player.isHandRaised()
-                    && PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.HUNTERS_MARK;
+        BukkitTask task = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            @Override
+            public void run() {
+                Integer ticks = hunterMarkChargeTicks.get(uuid);
+                boolean stillCharging = ticks != null && player.isOnline() && player.isHandRaised()
+                        && PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.HUNTERS_MARK;
 
-            if (!stillCharging) {
-                cancelHunterMarkCharge(uuid);
-                if (taskHolder[0] != null) taskHolder[0].cancel();
-                return;
-            }
+                if (!stillCharging) {
+                    cancelHunterMarkCharge(uuid);
+                    cancel();
+                    return;
+                }
 
-            Player target = findNearestMarkTarget(player, cfg.getHuntersMarkRange());
-            if (target == null) {
-                cancelHunterMarkCharge(uuid);
-                if (taskHolder[0] != null) taskHolder[0].cancel();
-                Messages.send(player, "customitem.hunters-mark-no-target");
-                return;
-            }
+                Player target = findNearestMarkTarget(player, cfg.getHuntersMarkRange());
+                if (target == null) {
+                    cancelHunterMarkCharge(uuid);
+                    cancel();
+                    Messages.send(player, "customitem.hunters-mark-no-target");
+                    return;
+                }
 
-            int next = ticks + 1;
-            hunterMarkChargeTicks.put(uuid, next);
-            ParticleUtils.spawnDust(target.getLocation().add(0, 1, 0), Color.fromRGB(230, 40, 40), 0.8f, 3, 0.2);
+                int next = ticks + 1;
+                hunterMarkChargeTicks.put(uuid, next);
+                ParticleUtils.spawnDust(target.getLocation().add(0, 1, 0), Color.fromRGB(230, 40, 40), 0.8f, 3, 0.2);
 
-            if (next >= requiredTicks) {
-                applyHunterMark(player, target, item);
-                cancelHunterMarkCharge(uuid);
-                if (taskHolder[0] != null) taskHolder[0].cancel();
+                if (next >= requiredTicks) {
+                    applyHunterMark(player, target, item);
+                    cancelHunterMarkCharge(uuid);
+                    cancel();
+                }
             }
         }, 0L, 1L);
-        hunterMarkChargeTasks.put(uuid, taskHolder[0]);
+        hunterMarkChargeTasks.put(uuid, task);
     }
 
     private void cancelHunterMarkCharge(UUID uuid) {
@@ -1685,22 +1692,24 @@ public class CustomItemManager {
     private BukkitTask startRoseZoneTask(Location center, Set<Block> blocks, long expiresAt,
                                          GameSession session, int teamNumber) {
         ItemsConfig cfg = ItemsConfig.getInstance();
-        BukkitTask[] holder = new BukkitTask[1];
-        holder[0] = SchedulerUtils.runTaskTimer(() -> {
-            if (System.currentTimeMillis() >= expiresAt) {
-                destroyBloomingRose(center);
-                if (holder[0] != null) holder[0].cancel();
-                return;
-            }
-            for (Block block : blocks) {
-                if (block.getType() == Material.CHERRY_LEAVES) {
-                    ParticleUtils.spawnDust(block.getLocation().add(0.5, 0.5, 0.5),
-                            Color.fromRGB(255, 150, 190), 0.6f, 1, 0.15);
+        BukkitTask task = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (System.currentTimeMillis() >= expiresAt) {
+                    destroyBloomingRose(center);
+                    cancel();
+                    return;
                 }
+                for (Block block : blocks) {
+                    if (block.getType() == Material.CHERRY_LEAVES) {
+                        ParticleUtils.spawnDust(block.getLocation().add(0.5, 0.5, 0.5),
+                                Color.fromRGB(255, 150, 190), 0.6f, 1, 0.15);
+                    }
+                }
+                healRoseMembersToFloor(center, session, teamNumber);
             }
-            healRoseMembersToFloor(center, session, teamNumber);
         }, 20L, 20L);
-        return holder[0];
+        return task;
     }
 
     /**
@@ -1817,29 +1826,33 @@ public class CustomItemManager {
         double radius = cfg.getBloomingRoseZoneRadius();
         Color pink = Color.fromRGB(255, 150, 190);
 
-        BukkitTask[] ringHolder = new BukkitTask[1];
         final int[] formed = {0};
-        ringHolder[0] = SchedulerUtils.runTaskTimer(() -> {
-            formed[0] += 6;
-            if (formed[0] >= 90) {
-                ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, 90, pink, 0.12f);
-                if (ringHolder[0] != null) ringHolder[0].cancel();
-                return;
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            @Override
+            public void run() {
+                formed[0] += 6;
+                if (formed[0] >= 90) {
+                    ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, 90, pink, 0.12f);
+                    cancel();
+                    return;
+                }
+                ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, formed[0], pink, 0.12f);
             }
-            ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, formed[0], pink, 0.12f);
         }, 0L, 1L);
-        BukkitTask[] figHolder = new BukkitTask[1];
         final int[] fig = {0};
-        figHolder[0] = SchedulerUtils.runTaskTimer(() -> {
-            fig[0] += 4;
-            if (fig[0] >= 60) {
-                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, 60, false);
-                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, 60, true);
-                if (figHolder[0] != null) figHolder[0].cancel();
-                return;
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            @Override
+            public void run() {
+                fig[0] += 4;
+                if (fig[0] >= 60) {
+                    ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, 60, false);
+                    ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, 60, true);
+                    cancel();
+                    return;
+                }
+                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig[0], false);
+                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig[0], true);
             }
-            ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig[0], false);
-            ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig[0], true);
         }, 0L, 1L);
     }
 
@@ -1925,15 +1938,17 @@ public class CustomItemManager {
         orbHitsRemaining.put(orbUuid, cfg.getOrbHitsToDestroy());
         orbOwners.put(orbUuid, player.getUniqueId());
 
-        BukkitTask[] trailHolder = new BukkitTask[1];
-        trailHolder[0] = SchedulerUtils.runTaskTimer(() -> {
-            if (orb.isDead() || !orbHitsRemaining.containsKey(orbUuid)) {
-                if (trailHolder[0] != null) trailHolder[0].cancel();
-                return;
+        BukkitTask trailTask = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (orb.isDead() || !orbHitsRemaining.containsKey(orbUuid)) {
+                    cancel();
+                    return;
+                }
+                ParticleUtils.spawnDust(orb.getLocation(), Color.fromRGB(180, 140, 40), 0.8f, 2, 0.1);
             }
-            ParticleUtils.spawnDust(orb.getLocation(), Color.fromRGB(180, 140, 40), 0.8f, 2, 0.1);
         }, 0L, 2L);
-        orbTrailTasks.put(orbUuid, trailHolder[0]);
+        orbTrailTasks.put(orbUuid, trailTask);
 
         Messages.send(player, "customitem.orb-thrown");
         SoundUtils.play(player, Sound.ENTITY_SNOWBALL_THROW, 1.0f, 0.8f);
@@ -1983,24 +1998,26 @@ public class CustomItemManager {
             pulled.add(target);
         }
 
-        BukkitTask[] pullHolder = new BukkitTask[1];
         final int[] tick = {0};
-        pullHolder[0] = SchedulerUtils.runTaskTimer(() -> {
-            tick[0]++;
-            float progress = Math.min(1.0f, tick[0] / (float) durationTicks);
-            Color beamColor = lerpColor(Color.fromRGB(255, 230, 150), Color.fromRGB(200, 40, 40), progress);
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            @Override
+            public void run() {
+                tick[0]++;
+                float progress = Math.min(1.0f, tick[0] / (float) durationTicks);
+                Color beamColor = lerpColor(Color.fromRGB(255, 230, 150), Color.fromRGB(200, 40, 40), progress);
 
-            for (Player target : new ArrayList<>(pulled)) {
-                if (!target.isOnline() || target.isDead()) continue;
-                Vector toCenter = center.toVector().subtract(target.getLocation().toVector());
-                if (toCenter.lengthSquared() < 0.25) continue; // arrived
-                target.setVelocity(toCenter.normalize().multiply(0.55));
-                ParticleUtils.beam(center.clone().add(0, 1, 0), target.getLocation().add(0, 1, 0), beamColor, 0.15f, 2);
-            }
-            ParticleUtils.spawnDust(center.clone().add(0, 1, 0), beamColor, 1.0f, 3, 0.3);
+                for (Player target : new ArrayList<>(pulled)) {
+                    if (!target.isOnline() || target.isDead()) continue;
+                    Vector toCenter = center.toVector().subtract(target.getLocation().toVector());
+                    if (toCenter.lengthSquared() < 0.25) continue; // arrived
+                    target.setVelocity(toCenter.normalize().multiply(0.55));
+                    ParticleUtils.beam(center.clone().add(0, 1, 0), target.getLocation().add(0, 1, 0), beamColor, 0.15f, 2);
+                }
+                ParticleUtils.spawnDust(center.clone().add(0, 1, 0), beamColor, 1.0f, 3, 0.3);
 
-            if (tick[0] >= durationTicks) {
-                if (pullHolder[0] != null) pullHolder[0].cancel();
+                if (tick[0] >= durationTicks) {
+                    cancel();
+                }
             }
         }, 0L, 1L);
     }

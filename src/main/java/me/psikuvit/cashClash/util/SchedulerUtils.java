@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.util;
 import me.psikuvit.cashClash.CashClashPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.IllegalPluginAccessException;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
@@ -48,6 +49,21 @@ public class SchedulerUtils {
         if (!CashClashPlugin.getInstance().isEnabled()) return null;
         try {
             return Bukkit.getScheduler().runTaskTimer(CashClashPlugin.getInstance(), runnable, delay, period);
+        } catch (IllegalPluginAccessException ex) {
+            Messages.debug("SYSTEM", "Scheduler prevented runTaskTimer: " + ex.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Runs a repeating task. Unlike {@link #runTaskTimer(Runnable, long, long)}, the runnable
+     * is a {@link BukkitRunnable}, so it can cancel itself from inside its own {@code run()}
+     * via {@code cancel()} - no need to hold the task reference in an array.
+     */
+    public static BukkitTask runTaskTimer(BukkitRunnable runnable, long delay, long period) {
+        if (!CashClashPlugin.getInstance().isEnabled()) return null;
+        try {
+            return runnable.runTaskTimer(CashClashPlugin.getInstance(), delay, period);
         } catch (IllegalPluginAccessException ex) {
             Messages.debug("SYSTEM", "Scheduler prevented runTaskTimer: " + ex.getMessage());
             return null;
