@@ -270,8 +270,9 @@ public class GameListener implements Listener {
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
-        // During active game session, prevent all item drops
-        if (session != null) {
+        // During a game, only shop items are locked - items that aren't given by the shop
+        // (base kit gear, vanilla materials) may be dropped freely.
+        if (session != null && PDCDetection.hasPurchaseTag(event.getItemDrop().getItemStack())) {
             event.setCancelled(true);
             Messages.send(player, "listener.item-cannot-drop");
         }

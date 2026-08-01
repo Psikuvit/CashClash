@@ -306,11 +306,6 @@ public enum Kit {
         markKitItem(waterBucket);
         player.getInventory().addItem(waterBucket);
 
-        ItemStack cobwebs = factory.createGameplayItem(UtilityItem.COBWEB);
-        cobwebs.setAmount(8);
-        markKitItem(cobwebs);
-        player.getInventory().addItem(cobwebs);
-
         // === SHIELD ===
         // Shield logic based on round number
         boolean shouldGiveShield = shouldGiveShield(round, rounds1to3HaveShields);
