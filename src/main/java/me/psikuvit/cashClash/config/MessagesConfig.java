@@ -7,10 +7,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,12 +52,13 @@ public class MessagesConfig {
         // ConfigValidator, so a pre-existing on-disk file silently misses new keys added to
         // the resource in later plugin versions (saveResource above only runs when the file
         // doesn't exist at all).
-        int addedCount = mergeMissingKeys(messagesConfig);
-        if (addedCount > 0) {
+        FileConfiguration resource = ConfigMergeUtil.loadBundledResource("messages.yml");
+        List<String> addedPaths = ConfigMergeUtil.mergeAllMissing(messagesConfig, resource);
+        if (!addedPaths.isEmpty()) {
             try {
                 messagesConfig.save(messagesFile);
                 CashClashPlugin.getInstance().getLogger().info(
-                        "[CashClash] Added " + addedCount + " missing message keys to messages.yml");
+                        "[CashClash] Added " + addedPaths.size() + " missing message keys to messages.yml");
             } catch (IOException e) {
                 CashClashPlugin.getInstance().getLogger().severe("Failed to save messages.yml: " + e.getMessage());
             }
@@ -68,49 +67,6 @@ public class MessagesConfig {
         // Load all messages from config
         if (messagesConfig.contains("messages")) {
             loadMessagesFromSection(messagesConfig.getConfigurationSection("messages"), "");
-        }
-    }
-
-    /**
-     * Merge message keys present in the bundled resource but missing from {@code messagesConfig},
-     * writing defaults in-place. Returns the number of keys added.
-     */
-    private int mergeMissingKeys(FileConfiguration messagesConfig) {
-        try (InputStream resourceStream = CashClashPlugin.getInstance().getResource("messages.yml")) {
-            if (resourceStream == null) return 0;
-
-            FileConfiguration defaults = YamlConfiguration.loadConfiguration(
-                    new InputStreamReader(resourceStream, StandardCharsets.UTF_8));
-
-            if (!defaults.contains("messages")) return 0;
-
-            int[] addedCount = {0};
-            mergeSection(defaults.getConfigurationSection("messages"), messagesConfig, "messages", addedCount);
-            return addedCount[0];
-        } catch (IOException e) {
-            CashClashPlugin.getInstance().getLogger().warning(
-                    "[CashClash] Failed to merge default messages.yml keys: " + e.getMessage());
-            return 0;
-        }
-    }
-
-    /**
-     * Recursively copy leaf keys from {@code defaultsSection} into {@code target} at
-     * {@code path} wherever {@code target} doesn't already have them.
-     */
-    private void mergeSection(ConfigurationSection defaultsSection, FileConfiguration target, String path, int[] addedCount) {
-        if (defaultsSection == null) return;
-
-        for (String key : defaultsSection.getKeys(false)) {
-            String fullPath = path + "." + key;
-            Object value = defaultsSection.get(key);
-
-            if (value instanceof ConfigurationSection) {
-                mergeSection(defaultsSection.getConfigurationSection(key), target, fullPath, addedCount);
-            } else if (!target.contains(fullPath)) {
-                target.set(fullPath, value);
-                addedCount[0]++;
-            }
         }
     }
 

@@ -1,17 +1,20 @@
 package me.psikuvit.cashClash.config;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * Validates configuration files and ensures all required keys exist.
- * Logs warnings for missing keys and can auto-add defaults.
+ * Validates configuration files against the bundled (jar) resource files.
+ * <p>
+ * The bundled resources ({@code config.yml}, {@code items.yml}, {@code shop.yml},
+ * {@code sequences.yml}) are the single source of truth for defaults. Any key the
+ * resource contains but the on-disk file lacks is added automatically, so new feature
+ * settings always appear on existing installs after a reload.
  */
 public class ConfigValidator {
 
@@ -32,143 +35,7 @@ public class ConfigValidator {
      * @return true if valid, false if critical errors found
      */
     public boolean validateShopConfig(FileConfiguration config, boolean autoAdd) {
-        errors.clear();
-        warnings.clear();
-        added.clear();
-
-        // Check schema version
-        validateAndSet(config, "schema-version", 1, autoAdd);
-
-        // Validate armor section
-        Map<String, Object> armorDefaults = new HashMap<>();
-        armorDefaults.put("iron-boots", 2250L);
-        armorDefaults.put("iron-helmet", 2500L);
-        armorDefaults.put("iron-leggings", 2750L);
-        armorDefaults.put("iron-chestplate", 3000L);
-        armorDefaults.put("diamond-boots", 4500L);
-        armorDefaults.put("diamond-helmet", 5000L);
-        armorDefaults.put("diamond-leggings", 5500L);
-        armorDefaults.put("diamond-chestplate", 6000L);
-        validateSection(config, "armor", armorDefaults, autoAdd);
-
-        // Validate weapons section
-        Map<String, Object> weaponDefaults = new HashMap<>();
-        weaponDefaults.put("iron-sword", 1250L);
-        weaponDefaults.put("iron-axe", 1250L);
-        weaponDefaults.put("diamond-sword", 3000L);
-        weaponDefaults.put("diamond-axe", 3000L);
-        weaponDefaults.put("netherite-sword", 10000L);
-        weaponDefaults.put("netherite-axe", 10000L);
-        validateSection(config, "weapons", weaponDefaults, autoAdd);
-
-        // Validate food section
-        Map<String, Object> foodDefaults = new HashMap<>();
-        foodDefaults.put("bread", 25L);
-        foodDefaults.put("cooked-mutton", 50L);
-        foodDefaults.put("steak", 75L);
-        foodDefaults.put("porkchop", 100L);
-        foodDefaults.put("golden-carrot", 150L);
-        foodDefaults.put("golden-apple", 500L);
-        foodDefaults.put("speed-carrot", 1000L);
-        foodDefaults.put("golden-chicken", 1500L);
-        foodDefaults.put("cookie-of-life", 2000L);
-        foodDefaults.put("sunscreen", 2500L);
-        foodDefaults.put("can-of-spinach", 3000L);
-        foodDefaults.put("enchanted-golden-apple", 10000L);
-        validateSection(config, "food", foodDefaults, autoAdd);
-
-        // Validate utility section
-        Map<String, Object> utilityDefaults = new HashMap<>();
-        utilityDefaults.put("lava-bucket", 500L);
-        utilityDefaults.put("fishing-rod", 750L);
-        utilityDefaults.put("cobweb", 1000L);
-        utilityDefaults.put("crossbow", 1500L);
-        utilityDefaults.put("water-bucket", 2000L);
-        utilityDefaults.put("wind-charge", 3000L);
-        utilityDefaults.put("bow", 3500L);
-        utilityDefaults.put("arrow", 500L);
-        utilityDefaults.put("leaves", 750L);
-        utilityDefaults.put("soul-sand", 1000L);
-        validateSection(config, "utility", utilityDefaults, autoAdd);
-
-        // Validate custom items section
-        Map<String, Object> customItemDefaults = new HashMap<>();
-        customItemDefaults.put("grenade", 5000L);
-        customItemDefaults.put("smoke-grenade", 7500L);
-        customItemDefaults.put("bounce-pad", 10000L);
-        customItemDefaults.put("medic-pouch", 12500L);
-        customItemDefaults.put("tablet-of-hacking", 15000L);
-        customItemDefaults.put("bag-of-potatoes", 17500L);
-        customItemDefaults.put("boombox", 20000L);
-        customItemDefaults.put("invis-cloak", 25000L);
-        customItemDefaults.put("cash-blaster", 30000L);
-        customItemDefaults.put("respawn-anchor", 50000L);
-        customItemDefaults.put("totem-of-haunting", 7500L);
-        customItemDefaults.put("radiating-lotus", 2000L);
-        customItemDefaults.put("ice-fan", 1750L);
-        customItemDefaults.put("overdrive-potion", 5000L);
-        customItemDefaults.put("hunters-mark", 7000L);
-        customItemDefaults.put("blooming-rose", 6500L);
-        customItemDefaults.put("orb-of-gravitation", 7000L);
-        customItemDefaults.put("soul-katana", 30000L);
-        validateSection(config, "custom-items", customItemDefaults, autoAdd);
-
-        // Validate custom armor section
-        Map<String, Object> customArmorDefaults = new HashMap<>();
-        customArmorDefaults.put("magic-helmet", 15000L);
-        customArmorDefaults.put("guardians-vest", 20000L);
-        customArmorDefaults.put("tax-evasion-pants", 25000L);
-        customArmorDefaults.put("bunny-shoes", 30000L);
-        customArmorDefaults.put("investors-helmet", 35000L);
-        customArmorDefaults.put("investors-chestplate", 40000L);
-        customArmorDefaults.put("investors-leggings", 45000L);
-        customArmorDefaults.put("investors-boots", 50000L);
-        customArmorDefaults.put("flamebringer-leggings", 65000L);
-        customArmorDefaults.put("flamebringer-boots", 70000L);
-        customArmorDefaults.put("deathmauler-chestplate", 80000L);
-        customArmorDefaults.put("deathmauler-leggings", 85000L);
-        customArmorDefaults.put("dragon-head", 95000L);
-        customArmorDefaults.put("dragon-chestplate", 100000L);
-        customArmorDefaults.put("dragon-boots", 110000L);
-        validateSection(config, "custom-armor", customArmorDefaults, autoAdd);
-
-        // Validate mythic items section
-        Map<String, Object> mythicDefaults = new HashMap<>();
-        mythicDefaults.put("coin-cleaver", 75000L);
-        mythicDefaults.put("carls-battleaxe", 100000L);
-        mythicDefaults.put("wind-bow", 100000L);
-        mythicDefaults.put("electric-eel-sword", 125000L);
-        mythicDefaults.put("goblin-spear", 125000L);
-        mythicDefaults.put("bloodwrench-crossbow", 125000L);
-        mythicDefaults.put("warden-gloves", 150000L);
-        mythicDefaults.put("blazebite-crossbows", 150000L);
-        validateSection(config, "mythic-items", mythicDefaults, autoAdd);
-
-        // Validate enchantments section
-        validateEnchantSection(config, "enchants.protection", 3, 10000, autoAdd);
-        validateEnchantSection(config, "enchants.sharpness", 5, 5000, autoAdd);
-        validateEnchantSection(config, "enchants.power", 5, 5000, autoAdd);
-        validateEnchantSection(config, "enchants.knockback", 2, 3000, autoAdd);
-        validateEnchantSection(config, "enchants.punch", 2, 3000, autoAdd);
-        validateEnchantSection(config, "enchants.fire-aspect", 2, 8000, autoAdd);
-        validateEnchantSection(config, "enchants.flame", 1, 10000, autoAdd);
-        validateEnchantSection(config, "enchants.projectile_protection", 4, 8000, autoAdd);
-        validateEnchantSection(config, "enchants.soul-speed", 3, 5000, autoAdd);
-        validateEnchantSection(config, "enchants.piercing", 4, 3000, autoAdd);
-
-        // Validate investments section
-        validateAndSet(config, "investments.wallet.cost", 10000, autoAdd);
-        validateAndSet(config, "investments.wallet.bonus-return", 30000, autoAdd);
-        validateAndSet(config, "investments.wallet.negative-return", 5000, autoAdd);
-        validateAndSet(config, "investments.purse.cost", 30000, autoAdd);
-        validateAndSet(config, "investments.purse.bonus-return", 60000, autoAdd);
-        validateAndSet(config, "investments.purse.negative-return", 10000, autoAdd);
-        validateAndSet(config, "investments.ender-bag.cost", 50000, autoAdd);
-        validateAndSet(config, "investments.ender-bag.bonus-return", 100000, autoAdd);
-        validateAndSet(config, "investments.ender-bag.negative-return", 20000, autoAdd);
-
-        logResults("shop.yml");
-        return errors.isEmpty();
+        return validateAgainstResource(config, "shop.yml", autoAdd);
     }
 
     /**
@@ -178,200 +45,7 @@ public class ConfigValidator {
      * @return true if valid, false if critical errors found
      */
     public boolean validateItemsConfig(FileConfiguration config, boolean autoAdd) {
-        errors.clear();
-        warnings.clear();
-        added.clear();
-
-        // Check schema version
-        validateAndSet(config, "schema-version", 1, autoAdd);
-
-        // Mythic items section
-        validateAndSet(config, "mythic-items.legendaries-per-game", 5, autoAdd);
-
-        // Coin Cleaver
-        validateAndSet(config, "mythic-items.coin-cleaver.damage-bonus-multiplier", 1.25, autoAdd);
-        validateAndSet(config, "mythic-items.coin-cleaver.grenade.cooldown-seconds", 3, autoAdd);
-        validateAndSet(config, "mythic-items.coin-cleaver.grenade.cost", 2000, autoAdd);
-        validateAndSet(config, "mythic-items.coin-cleaver.grenade.damage", 4.0, autoAdd);
-        validateAndSet(config, "mythic-items.coin-cleaver.grenade.radius", 5, autoAdd);
-
-        // Carl's Battleaxe
-        validateAndSet(config, "mythic-items.carls-battleaxe.spin-attack.cooldown-seconds", 30, autoAdd);
-        validateAndSet(config, "mythic-items.carls-battleaxe.spin-attack.duration-ticks", 80, autoAdd);
-        validateAndSet(config, "mythic-items.carls-battleaxe.spin-attack.damage", 6.0, autoAdd);
-        validateAndSet(config, "mythic-items.carls-battleaxe.spin-attack.radius", 2.5, autoAdd);
-        validateAndSet(config, "mythic-items.carls-battleaxe.spin-attack.hit-interval-ticks", 10, autoAdd);
-        validateAndSet(config, "mythic-items.carls-battleaxe.critical-hit.cooldown-milliseconds", 10000, autoAdd);
-        validateAndSet(config, "mythic-items.carls-battleaxe.critical-hit.launch-power", 1.2, autoAdd);
-
-        // Wind Bow
-        validateAndSet(config, "mythic-items.wind-bow.shots-per-magazine", 10, autoAdd);
-        validateAndSet(config, "mythic-items.wind-bow.reload-cooldown-seconds", 30, autoAdd);
-        validateAndSet(config, "mythic-items.wind-bow.boost.cooldown-seconds", 30, autoAdd);
-        validateAndSet(config, "mythic-items.wind-bow.boost.power", 2.0, autoAdd);
-        validateAndSet(config, "mythic-items.wind-bow.arrow-push.radius", 3, autoAdd);
-        validateAndSet(config, "mythic-items.wind-bow.arrow-push.power", 1.5, autoAdd);
-
-        // Electric Eel Sword
-        validateAndSet(config, "mythic-items.electric-eel.chain-damage.cooldown-seconds", 1, autoAdd);
-        validateAndSet(config, "mythic-items.electric-eel.chain-damage.damage", 1.0, autoAdd);
-        validateAndSet(config, "mythic-items.electric-eel.chain-damage.radius", 5, autoAdd);
-        validateAndSet(config, "mythic-items.electric-eel.teleport.cooldown-seconds", 15, autoAdd);
-        validateAndSet(config, "mythic-items.electric-eel.teleport.distance", 4.0, autoAdd);
-
-        // Goblin Spear
-        validateAndSet(config, "mythic-items.goblin-spear.throw.shots-per-magazine", 8, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.throw.reload-cooldown-seconds", 15, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.throw.damage", 9.0, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.poison.duration-seconds", 3, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.poison.level", 1, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.charge.cooldown-seconds", 30, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.charge.speed", 1.5, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.charge.max-duration-ticks", 60, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.charge.wall-impact-damage", 12.0, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.charge.poison-duration-seconds", 3, autoAdd);
-        validateAndSet(config, "mythic-items.goblin-spear.charge.poison-level", 1, autoAdd);
-
-        // Bloodwrench Crossbow
-        validateAndSet(config, "mythic-items.bloodwrench.mode-toggle-cooldown-seconds", 1, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.rapid.shots", 3, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.rapid.reload-cooldown-seconds", 14, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.rapid.sphere-radius", 3.0, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.rapid.sphere-duration-ticks", 60, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.rapid.sphere-burst-damage", 4.0, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.supercharge.cooldown-seconds", 25, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.supercharge.vortex-radius", 4.0, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.supercharge.vortex-duration-ticks", 80, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.supercharge.vortex-damage-per-tick", 2.0, autoAdd);
-        validateAndSet(config, "mythic-items.bloodwrench.supercharge.vortex-levitation-level", 3, autoAdd);
-
-        // Warden Gloves
-        validateAndSet(config, "mythic-items.warden-gloves.shockwave.cooldown-seconds", 41, autoAdd);
-        validateAndSet(config, "mythic-items.warden-gloves.shockwave.damage", 12.0, autoAdd);
-        validateAndSet(config, "mythic-items.warden-gloves.shockwave.range", 8, autoAdd);
-        validateAndSet(config, "mythic-items.warden-gloves.melee.cooldown-seconds", 22, autoAdd);
-
-        // BlazeBite Crossbows
-        validateAndSet(config, "mythic-items.blazebite-crossbows.shots-per-magazine", 8, autoAdd);
-        validateAndSet(config, "mythic-items.blazebite-crossbows.reload-cooldown-seconds", 25, autoAdd);
-        validateAndSet(config, "mythic-items.blazebite-crossbows.glacier.slowness-duration-seconds", 3, autoAdd);
-        validateAndSet(config, "mythic-items.blazebite-crossbows.glacier.frostbite-duration-seconds", 3, autoAdd);
-        validateAndSet(config, "mythic-items.blazebite-crossbows.glacier.max-slowness-duration-seconds", 5, autoAdd);
-        validateAndSet(config, "mythic-items.blazebite-crossbows.volcano.direct-damage", 4.0, autoAdd);
-        validateAndSet(config, "mythic-items.blazebite-crossbows.volcano.fire-duration-seconds", 5, autoAdd);
-
-        // Custom armor section
-        validateAndSet(config, "custom-armor.magic-helmet.stand-still-delay-seconds", 3, autoAdd);
-        validateAndSet(config, "custom-armor.magic-helmet.cooldown-seconds", 30, autoAdd);
-        validateAndSet(config, "custom-armor.bunny-shoes.duration-seconds", 15, autoAdd);
-        validateAndSet(config, "custom-armor.bunny-shoes.cooldown-seconds", 25, autoAdd);
-        validateAndSet(config, "custom-armor.guardians-vest.trigger-health", 8.0, autoAdd);
-        validateAndSet(config, "custom-armor.guardians-vest.uses-per-round", 3, autoAdd);
-        validateAndSet(config, "custom-armor.deathmauler.kill-heal-amount", 8.0, autoAdd);
-        validateAndSet(config, "custom-armor.deathmauler.absorption.no-damage-delay-seconds", 8, autoAdd);
-        validateAndSet(config, "custom-armor.dragon.double-jump.cooldown-seconds", 10, autoAdd);
-        validateAndSet(config, "custom-armor.dragon.double-jump.forward-velocity", 1.2, autoAdd);
-        validateAndSet(config, "custom-armor.dragon.double-jump.upward-velocity", 0.8, autoAdd);
-        validateAndSet(config, "custom-armor.flamebringer.ignite-chance", 0.30, autoAdd);
-        validateAndSet(config, "custom-armor.tax-evasion.death-penalty-percentage", 0.075, autoAdd);
-        validateAndSet(config, "custom-armor.tax-evasion.survival-bonus", 3000, autoAdd);
-        validateAndSet(config, "custom-armor.investors.money-bonus-per-piece", 0.125, autoAdd);
-
-        // Custom items section
-        validateAndSet(config, "custom-items.grenade.fuse-seconds", 3, autoAdd);
-        validateAndSet(config, "custom-items.grenade.damage.inner-radius", 4, autoAdd);
-        validateAndSet(config, "custom-items.grenade.damage.inner-damage", 8.0, autoAdd);
-        validateAndSet(config, "custom-items.grenade.damage.outer-radius", 6, autoAdd);
-        validateAndSet(config, "custom-items.grenade.damage.outer-damage", 2.0, autoAdd);
-        validateAndSet(config, "custom-items.smoke-grenade.fuse-seconds", 3, autoAdd);
-        validateAndSet(config, "custom-items.smoke-grenade.cloud-duration-seconds", 8, autoAdd);
-        validateAndSet(config, "custom-items.bounce-pad.forward-velocity", 1.4, autoAdd);
-        validateAndSet(config, "custom-items.bounce-pad.upward-velocity", 1.0, autoAdd);
-        validateAndSet(config, "custom-items.medic-pouch.cooldown-seconds", 10, autoAdd);
-        validateAndSet(config, "custom-items.medic-pouch.self-heal", 6.0, autoAdd);
-        validateAndSet(config, "custom-items.medic-pouch.ally-heal", 10.0, autoAdd);
-        validateAndSet(config, "custom-items.bag-of-potatoes.knockback-level", 3, autoAdd);
-        validateAndSet(config, "custom-items.bag-of-potatoes.durability", 3, autoAdd);
-        validateAndSet(config, "custom-items.boombox.pulse-interval-seconds", 3, autoAdd);
-        validateAndSet(config, "custom-items.boombox.total-duration-seconds", 12, autoAdd);
-        validateAndSet(config, "custom-items.boombox.radius", 5, autoAdd);
-        validateAndSet(config, "custom-items.boombox.speed-boost-percent", 20, autoAdd);
-        validateAndSet(config, "custom-items.boombox.speed-boost-duration-seconds", 8, autoAdd);
-        validateAndSet(config, "custom-items.invis-cloak.cost-per-second", 100, autoAdd);
-        validateAndSet(config, "custom-items.invis-cloak.uses-per-round", 5, autoAdd);
-        validateAndSet(config, "custom-items.cash-blaster.coins-per-hit", 500, autoAdd);
-        validateAndSet(config, "custom-items.respawn-anchor.revive-duration-seconds", 10, autoAdd);
-        validateAndSet(config, "custom-items.respawn-anchor.max-uses-per-round", 2, autoAdd);
-
-        // Totem of Haunting
-        validateAndSet(config, "custom-items.totem-of-haunting.invincibility-seconds", 2, autoAdd);
-        validateAndSet(config, "custom-items.totem-of-haunting.debuff-radius", 6, autoAdd);
-        validateAndSet(config, "custom-items.totem-of-haunting.debuff-duration-seconds", 6, autoAdd);
-        validateAndSet(config, "custom-items.totem-of-haunting.revive-health", 1.0, autoAdd);
-
-        // Radiating Lotus
-        validateAndSet(config, "custom-items.radiating-lotus.max-charge-seconds", 2, autoAdd);
-        validateAndSet(config, "custom-items.radiating-lotus.knockback-per-second", 3.0, autoAdd);
-        validateAndSet(config, "custom-items.radiating-lotus.heal-radius-per-second", 1.5, autoAdd);
-        validateAndSet(config, "custom-items.radiating-lotus.heal-amount", 4.0, autoAdd);
-        validateAndSet(config, "custom-items.radiating-lotus.slow-percent-while-charging", 80, autoAdd);
-        validateAndSet(config, "custom-items.radiating-lotus.grace-seconds", 1, autoAdd);
-
-        // Ice Fan
-        validateAndSet(config, "custom-items.ice-fan.max-durability", 75, autoAdd);
-        validateAndSet(config, "custom-items.ice-fan.gust-durability-per-second", 5, autoAdd);
-        validateAndSet(config, "custom-items.ice-fan.gust-damage-per-tick", 1.0, autoAdd);
-        validateAndSet(config, "custom-items.ice-fan.gust-freeze-seconds-required", 3, autoAdd);
-        validateAndSet(config, "custom-items.ice-fan.burst-durability-cost", 25, autoAdd);
-        validateAndSet(config, "custom-items.ice-fan.burst-damage", 4.0, autoAdd);
-        validateAndSet(config, "custom-items.ice-fan.burst-min-durability", 25, autoAdd);
-
-        // Overdrive Potion
-        validateAndSet(config, "custom-items.overdrive-potion.invincibility-seconds", 4, autoAdd);
-        validateAndSet(config, "custom-items.overdrive-potion.speed-boost-percent", 25, autoAdd);
-
-        // Hunter's Mark
-        validateAndSet(config, "custom-items.hunters-mark.charge-seconds", 3, autoAdd);
-        validateAndSet(config, "custom-items.hunters-mark.range", 2, autoAdd);
-        validateAndSet(config, "custom-items.hunters-mark.duration-seconds", 8, autoAdd);
-        validateAndSet(config, "custom-items.hunters-mark.base-vulnerability-percent", 15, autoAdd);
-        validateAndSet(config, "custom-items.hunters-mark.vulnerability-per-missing-heart", 2, autoAdd);
-
-        // Blooming Rose
-        validateAndSet(config, "custom-items.blooming-rose.zone-radius", 5, autoAdd);
-        validateAndSet(config, "custom-items.blooming-rose.zone-duration-seconds", 6, autoAdd);
-        validateAndSet(config, "custom-items.blooming-rose.damage-reduction-percent", 25, autoAdd);
-        validateAndSet(config, "custom-items.blooming-rose.min-health-floor", 4.0, autoAdd);
-        validateAndSet(config, "custom-items.blooming-rose.regen-duration-seconds", 5, autoAdd);
-
-        // Orb of Gravitation
-        validateAndSet(config, "custom-items.orb-of-gravitation.throw-speed", 0.6, autoAdd);
-        validateAndSet(config, "custom-items.orb-of-gravitation.pull-radius", 4, autoAdd);
-        validateAndSet(config, "custom-items.orb-of-gravitation.pull-duration-ticks", 40, autoAdd);
-        validateAndSet(config, "custom-items.orb-of-gravitation.slowness-duration-seconds", 5, autoAdd);
-        validateAndSet(config, "custom-items.orb-of-gravitation.hits-to-destroy", 4, autoAdd);
-
-        // Soul Katana
-        validateAndSet(config, "custom-items.soul-katana.leap-distance", 3, autoAdd);
-        validateAndSet(config, "custom-items.soul-katana.strike-damage", 6.0, autoAdd);
-        validateAndSet(config, "custom-items.soul-katana.healing-reduction-percent", 30, autoAdd);
-        validateAndSet(config, "custom-items.soul-katana.healing-reduction-duration-seconds", 3, autoAdd);
-        validateAndSet(config, "custom-items.soul-katana.cooldown-seconds", 18, autoAdd);
-        validateAndSet(config, "custom-items.soul-katana.strike-radius", 3, autoAdd);
-
-        // Consumables section
-        validateAndSet(config, "consumables.effect-cooldown-seconds", 2, autoAdd);
-
-        // Lobby items section
-        validateAndSet(config, "lobby-items.stats.material", "PAPER", autoAdd);
-        validateAndSet(config, "lobby-items.stats.slot", 0, autoAdd);
-        validateAndSet(config, "lobby-items.arena-selector.material", "COMPASS", autoAdd);
-        validateAndSet(config, "lobby-items.arena-selector.slot", 4, autoAdd);
-        validateAndSet(config, "lobby-items.layout-configurator.material", "ANVIL", autoAdd);
-        validateAndSet(config, "lobby-items.layout-configurator.slot", 8, autoAdd);
-
-        logResults("items.yml");
-        return errors.isEmpty();
+        return validateAgainstResource(config, "items.yml", autoAdd);
     }
 
     /**
@@ -381,220 +55,7 @@ public class ConfigValidator {
      * @return true if valid, false if critical errors found
      */
     public boolean validateMainConfig(FileConfiguration config, boolean autoAdd) {
-        errors.clear();
-        warnings.clear();
-        added.clear();
-
-        // Note: Don't use Messages.debug() here as ConfigManager may not be initialized yet
-
-        // Debug
-        validateAndSet(config, "debug", false, autoAdd);
-
-        // Game settings
-        validateAndSet(config, "game.min-players", 8, autoAdd);
-        validateAndSet(config, "game.max-players", 8, autoAdd);
-        validateAndSet(config, "game.total-rounds", 5, autoAdd);
-        validateAndSet(config, "game.first-round", 1, autoAdd);
-        validateAndSet(config, "game.combat-phase-duration", 360, autoAdd);
-        validateAndSet(config, "game.shopping-phase-duration", 90, autoAdd);
-        validateAndSet(config, "game.first-round-shopping-duration", 120, autoAdd);
-        validateAndSet(config, "game.respawn-delay", 5, autoAdd);
-        validateAndSet(config, "game.respawn-protection", 15, autoAdd);
-        validateAndSet(config, "game.forfeit-enabled", true, autoAdd);
-        validateAndSet(config, "game.forfeit-delay", 10, autoAdd);
-        validateAndSet(config, "game.forfeit-combat-grace", 5, autoAdd);
-
-        // Round settings
-        validateAndSet(config, "rounds.early-round-lives", 3, autoAdd);
-        validateAndSet(config, "rounds.late-round-lives", 1, autoAdd);
-        validateAndSet(config, "rounds.forfeit-bonus", 10000, autoAdd);
-
-        // Armor restrictions
-        validateAndSet(config, "armor.diamond-unlock-round", 4, autoAdd);
-        validateAndSet(config, "armor.max-diamond-pieces-early", 2, autoAdd);
-
-        // Economy settings
-        validateAndSet(config, "economy.round-1-start", 10000, autoAdd);
-        validateAndSet(config, "economy.round-2-bonus", 30000, autoAdd);
-        validateAndSet(config, "economy.round-3-bonus", 50000, autoAdd);
-        validateAndSet(config, "economy.round-4-bonus", 100000, autoAdd);
-        validateAndSet(config, "economy.round-5-minimum", 20000, autoAdd);
-        validateAndSet(config, "economy.round-5-bonus", 10000, autoAdd);
-        validateAndSet(config, "economy.round-1-kill-reward", 3000, autoAdd);
-        validateAndSet(config, "economy.round-1-transfer-fee", 0.50, autoAdd);
-        validateAndSet(config, "economy.round-2-3-transfer-fee", 0.10, autoAdd);
-        validateAndSet(config, "economy.round-4-5-transfer-fee", 0.05, autoAdd);
-        validateAndSet(config, "economy.late-round-steal-percentage", 0.25, autoAdd);
-
-        // Cash Quake settings
-        validateAndSet(config, "cash-quake.min-guaranteed-events", 2, autoAdd);
-        validateAndSet(config, "cash-quake.max-events-per-game", 10, autoAdd);
-        validateAndSet(config, "cash-quake.max-events-per-round", 2, autoAdd);
-        validateAndSet(config, "cash-quake.event-check-interval-ticks", 600L, autoAdd);
-        validateAndSet(config, "cash-quake.event-base-chance", 0.30, autoAdd);
-
-        // Cash Quake - Lottery
-        validateAndSet(config, "cash-quake.lottery.entry-cost", 5000, autoAdd);
-        validateAndSet(config, "cash-quake.lottery.prize", 10000, autoAdd);
-        validateAndSet(config, "cash-quake.lottery.duration-seconds", 30, autoAdd);
-
-        // Cash Quake - Weight of Wealth
-        validateAndSet(config, "cash-quake.weight-of-wealth.tax-cost", 5000, autoAdd);
-        validateAndSet(config, "cash-quake.weight-of-wealth.duration-seconds", 20, autoAdd);
-
-        // Cash Quake - Life Steal
-        validateAndSet(config, "cash-quake.life-steal.duration-minutes", 2, autoAdd);
-        validateAndSet(config, "cash-quake.life-steal.health-per-kill", 4.0, autoAdd);
-        validateAndSet(config, "cash-quake.life-steal.max-health", 40.0, autoAdd);
-
-        // Cash Quake - Check Up
-        validateAndSet(config, "cash-quake.check-up.duration-minutes", 2, autoAdd);
-        validateAndSet(config, "cash-quake.check-up.min-hearts", 1, autoAdd);
-        validateAndSet(config, "cash-quake.check-up.max-hearts", 5, autoAdd);
-
-        // Cash Quake - Broken Gear
-        validateAndSet(config, "cash-quake.broken-gear.duration-seconds", 30, autoAdd);
-
-        // Cash Quake - Supply Drop
-        validateAndSet(config, "cash-quake.supply-drop.min-chests", 3, autoAdd);
-        validateAndSet(config, "cash-quake.supply-drop.max-extra-chests", 4, autoAdd);
-        validateAndSet(config, "cash-quake.supply-drop.min-coins", 1000, autoAdd);
-        validateAndSet(config, "cash-quake.supply-drop.max-extra-coins", 1001, autoAdd);
-
-        // Player defaults
-        validateAndSet(config, "player.default-health", 20.0, autoAdd);
-        validateAndSet(config, "player.max-health-cap", 40.0, autoAdd);
-
-        // Gamemode settings - Capture the Flag
-        validateAndSet(config, "gamemodes.capture-the-flag.plate-activation-time-ms", 3000, autoAdd);
-        validateAndSet(config, "gamemodes.capture-the-flag.normal-captures-to-win", 2, autoAdd);
-        validateAndSet(config, "gamemodes.capture-the-flag.sudden-death-captures-to-win", 4, autoAdd);
-        validateAndSet(config, "gamemodes.capture-the-flag.capture-bonus-coins", 15000, autoAdd);
-        validateAndSet(config, "gamemodes.capture-the-flag.capture-bonus-timer-ms", 45000, autoAdd);
-
-
-        // Scoreboard - Lobby
-        validateAndSet(config, "scoreboard.lobby.enabled", true, autoAdd);
-        validateAndSet(config, "scoreboard.lobby.title", "<gold><bold>Cash Clash</bold></gold>", autoAdd);
-        validateAndSetList(config, "scoreboard.lobby.lines", List.of(
-                "",
-                "<gray>Player:</gray> <white>{player}",
-                "",
-                "<yellow>Your Stats:</yellow>",
-                "<gray>Wins:</gray> <green>{wins}",
-                "<gray>Losses:</gray> <red>{losses}",
-                "<gray>K/D:</gray> <white>{kdr}",
-                "",
-                "<gray>Kills:</gray> <white>{kills}",
-                "<gray>Deaths:</gray> <white>{deaths}",
-                "",
-                "<gray>Online:</gray> <white>{online}/{max_online}",
-                "",
-                "<yellow>play.cashclash.net</yellow>"
-        ), autoAdd);
-
-        // Scoreboard - Game
-        validateAndSet(config, "scoreboard.game.enabled", true, autoAdd);
-        validateAndSet(config, "scoreboard.game.title", "<gold><bold>Round {round} - {phase}</bold></gold>", autoAdd);
-        validateAndSetList(config, "scoreboard.game.lines", List.of(
-                "",
-                "<yellow>Time:</yellow> <white>{time}",
-                "<yellow>Phase:</yellow> <white>{phase}",
-                "",
-                "<green>Your Team ({your_team}):</green>",
-                "<gray>Coins:</gray> <white>${your_team_coins}",
-                "<gray>Alive:</gray> <white>{your_team_alive}/4",
-                "",
-                "<red>Enemy Team ({enemy_team}):</red>",
-                "<gray>Coins:</gray> <white>${enemy_team_coins}",
-                "<gray>Alive:</gray> <white>{enemy_team_alive}/4",
-                "",
-                "<aqua>You:</aqua>",
-                "<gray>Coins:</gray> <gold>${player_coins}",
-                "<gray>Lives:</gray> <white>{player_lives}",
-                "<gray>Kills:</gray> <white>{player_kills}",
-                "",
-                "<yellow>play.cashclash.net</yellow>"
-        ), autoAdd);
-
-        // Scoreboard - Capture the Flag
-        validateAndSet(config, "scoreboard.capture-the-flag.enabled", true, autoAdd);
-        validateAndSet(config, "scoreboard.capture-the-flag.title", "<gold><bold>Capture the Flag</bold></gold>", autoAdd);
-        validateAndSetList(config, "scoreboard.capture-the-flag.lines", List.of(
-                "",
-                "<red>Team Red</red>",
-                "Captures: {teamRed_captures}/2",
-                "Progress: {teamRed_capture_circles}",
-                "Coins: {teamRed_coins}",
-                "",
-                "<blue>Team Blue</blue>",
-                "Captures: {teamBlue_captures}/2",
-                "Progress: {teamBlue_capture_circles}",
-                "Coins: {teamBlue_coins}",
-                "",
-                "<yellow>Phase</yellow>: {phase}",
-                "Time: {time}",
-                ""
-        ), autoAdd);
-
-        // Scoreboard - Protect the President
-        validateAndSet(config, "scoreboard.protect-the-president.enabled", true, autoAdd);
-        validateAndSet(config, "scoreboard.protect-the-president.title", "<gold><bold>Protect the President</bold></gold>", autoAdd);
-        validateAndSetList(config, "scoreboard.protect-the-president.lines", List.of(
-                "",
-                "<red>Team Red</red>",
-                "President: {red_president}",
-                "Buff: {red_buff}",
-                "Assassinations: {red_assassinations}/4",
-                "Progress: {red_assassination_circles}",
-                "Coins: {teamRed_coins}",
-                "",
-                "<blue>Team Blue</blue>",
-                "President: {blue_president}",
-                "Buff: {blue_buff}",
-                "Assassinations: {blue_assassinations}/4",
-                "Progress: {blue_assassination_circles}",
-                "Coins: {teamBlue_coins}",
-                "",
-                "<yellow>Phase</yellow>: {phase}",
-                "Time: {time}",
-                ""
-        ), autoAdd);
-
-        // Scoreboard - Kill Confirm
-        validateAndSet(config, "scoreboard.kill-confirm.enabled", true, autoAdd);
-        validateAndSet(config, "scoreboard.kill-confirm.title", "<gold><bold>Kill Confirm</bold></gold>", autoAdd);
-        validateAndSetList(config, "scoreboard.kill-confirm.lines", List.of(
-                "",
-                "<red>Team Red</red>",
-                "Score: {teamRed_kc_progress}",
-                "Coins: {teamRed_coins}",
-                "",
-                "<blue>Team Blue</blue>",
-                "Score: {teamBlue_kc_progress}",
-                "Coins: {teamBlue_coins}",
-                "",
-                "{player_heart_timer}",
-                "<yellow>Phase</yellow>: {phase}",
-                "Time: {time}",
-                ""
-        ), autoAdd);
-
-        // NPC settings
-        validateAndSet(config, "npc.arena.display-name", "<gold><bold>Arena Selector</bold></gold>", autoAdd);
-        validateAndSet(config, "npc.arena.skin-url", "https://textures.minecraft.net/texture/c2e93825cdc4c7ec014143f170ff05ef7ca5f3606716eb5429eb427bb05b7e17", autoAdd);
-
-        // Rejoin settings
-        validateAndSet(config, "rejoin.enabled", true, autoAdd);
-        validateAndSet(config, "rejoin.timeout-seconds", 120, autoAdd);
-        validateAndSet(config, "rejoin.restore-inventory", true, autoAdd);
-        validateAndSet(config, "rejoin.restore-balance", true, autoAdd);
-
-        // Sequence settings
-        validateAndSet(config, "sequences.enabled", true, autoAdd);
-
-        logResults("config.yml");
-        return errors.isEmpty();
+        return validateAgainstResource(config, "config.yml", autoAdd);
     }
 
     /**
@@ -604,122 +65,66 @@ public class ConfigValidator {
      * @return true if valid, false if critical errors found
      */
     public boolean validateSequencesConfig(FileConfiguration config, boolean autoAdd) {
+        return validateAgainstResource(config, "sequences.yml", autoAdd);
+    }
+
+    private boolean validateAgainstResource(FileConfiguration config, String resourcePath, boolean autoAdd) {
         errors.clear();
         warnings.clear();
         added.clear();
 
-        validateAndSet(config, "schema-version", 1, autoAdd);
+        FileConfiguration resource = ConfigMergeUtil.loadBundledResource(resourcePath);
+        if (resource == null) {
+            errors.add("Bundled resource '" + resourcePath + "' not found - cannot auto-add defaults");
+            logResults(resourcePath);
+            return false;
+        }
 
-        validateAndSet(config, "round-start.selecting", "<yellow>Selecting Gamemode...</yellow>", autoAdd);
-        validateAndSet(config, "round-start.selected-title", "<gold><bold>{gamemode}</bold></gold>", autoAdd);
-        validateAndSet(config, "round-start.selected-subtitle", "<yellow>{objective} to win the game!</yellow>", autoAdd);
+        if (autoAdd) {
+            for (String path : ConfigMergeUtil.mergeAllMissing(config, resource)) {
+                added.add("Added: " + path);
+            }
+        } else {
+            collectMissing(config, resource, "");
+        }
 
-        validateAndSet(config, "president.selecting", "<yellow>Selecting President...</yellow>", autoAdd);
-        validateAndSet(config, "president.selected-title", "<gold><bold>{player_name}</bold></gold>", autoAdd);
-        validateAndSet(config, "president.selected-subtitle", "<yellow>Has been selected as your president.</yellow>", autoAdd);
-
-        validateAndSet(config, "round-end.win-title", "<green><bold>YOU WIN!</bold></green>", autoAdd);
-        validateAndSet(config, "round-end.lose-title", "<red><bold>YOU LOSE</bold></red>", autoAdd);
-        validateAndSet(config, "round-end.no-winner-title", "<gray><bold>Round Over</bold></gray>", autoAdd);
-
-        validateAndSet(config, "round4.title", "<gold><bold>1st Half Over</bold></gold>", autoAdd);
-        validateAndSet(config, "round4.subtitle", "<yellow>Now transitioning to Shield / Shieldless</yellow>", autoAdd);
-
-        validateAndSet(config, "sudden-death.title", "<red><bold>SUDDEN DEATH</bold></red>", autoAdd);
-        validateAndSet(config, "sudden-death.subtitle", "<yellow>{objective} to win the game!</yellow>", autoAdd);
-
-        validateAndSet(config, "victory.win-title", "<green><bold>VICTORY!</bold></green>", autoAdd);
-        validateAndSet(config, "victory.lose-title", "<red><bold>DEFEAT</bold></red>", autoAdd);
-
-        logResults("sequences.yml");
+        logResults(resourcePath);
         return errors.isEmpty();
+    }
+
+    private void collectMissing(FileConfiguration config, ConfigurationSection section, String path) {
+        if (section == null) return;
+
+        for (String key : section.getKeys(false)) {
+            String fullPath = path.isEmpty() ? key : path + "." + key;
+            Object value = section.get(key);
+
+            if (value instanceof ConfigurationSection) {
+                collectMissing(config, section.getConfigurationSection(key), fullPath);
+            } else if (!config.contains(fullPath)) {
+                warnings.add("Missing key: " + fullPath + " (default: " + value + ")");
+            }
+        }
     }
 
     /**
-     * Validate messages.yml configuration.
-     * @param config The config to validate
-     * @param autoAdd If true, missing keys will be added with defaults
-     * @return true if valid, false if critical errors found
+     * Get the number of fields that were added.
      */
-    public boolean validateMessagesConfig(FileConfiguration config, boolean autoAdd) {
-        errors.clear();
-        warnings.clear();
-        added.clear();
-
-        // Note: Simply check if messages section exists
-        // Individual message keys are not required - the system handles missing keys gracefully
-        if (!config.contains("messages")) {
-            warnings.add("'messages' section not found - using internal defaults");
-        }
-
-        logResults("messages.yml");
-        return errors.isEmpty();
+    public int getAddedCount() {
+        return added.size();
     }
 
-    private void validateSection(FileConfiguration config, String section, Map<String, Object> defaults, boolean autoAdd) {
-        if (!config.isConfigurationSection(section)) {
-            if (autoAdd) {
-                for (Map.Entry<String, Object> entry : defaults.entrySet()) {
-                    String path = section + "." + entry.getKey();
-                    config.set(path, entry.getValue());
-                    added.add("Added missing section: " + section + " with " + defaults.size() + " keys");
-                }
-            } else {
-                errors.add("Missing section: " + section);
-            }
-            return;
-        }
-
-        for (Map.Entry<String, Object> entry : defaults.entrySet()) {
-            String path = section + "." + entry.getKey();
-            if (!config.contains(path)) {
-                if (autoAdd) {
-                    config.set(path, entry.getValue());
-                    added.add("Added: " + path + " = " + entry.getValue());
-                } else {
-                    warnings.add("Missing key: " + path + " (default: " + entry.getValue() + ")");
-                }
-            }
-        }
-    }
-
-    private void validateEnchantSection(FileConfiguration config, String path, int maxTier, int basePrice, boolean autoAdd) {
-        for (int tier = 1; tier <= maxTier; tier++) {
-            String tierPath = path + ".tier-" + tier;
-            if (!config.contains(tierPath)) {
-                int defaultPrice = basePrice * tier;
-                if (autoAdd) {
-                    config.set(tierPath, defaultPrice);
-                    added.add("Added: " + tierPath + " = " + defaultPrice);
-                } else {
-                    warnings.add("Missing key: " + tierPath + " (default: " + defaultPrice + ")");
-                }
-            }
-        }
-    }
-
-    private void validateAndSet(FileConfiguration config, String path, Object defaultValue, boolean autoAdd) {
-        boolean exists = config.contains(path);
-        if (!exists) {
-            if (autoAdd) {
-                config.set(path, defaultValue);
-                added.add("Added: " + path + " = " + defaultValue);
-                CashClashPlugin.getInstance().getLogger().info("[CashClash] [VALIDATOR] Added missing key: " + path);
-            } else {
-                warnings.add("Missing key: " + path + " (default: " + defaultValue + ")");
-            }
-        }
-    }
-
-    private void validateAndSetList(FileConfiguration config, String path, List<String> defaultValue, boolean autoAdd) {
-        if (!config.contains(path) || config.getStringList(path).isEmpty()) {
-            if (autoAdd) {
-                config.set(path, defaultValue);
-                added.add("Added: " + path + " = [" + defaultValue.size() + " items]");
-                CashClashPlugin.getInstance().getLogger().info("[CashClash] [VALIDATOR] Added missing list: " + path);
-            } else {
-                warnings.add("Missing key: " + path + " (default: [" + defaultValue.size() + " items])");
-            }
+    /**
+     * Log configuration differences after reload.
+     */
+    public void logConfigDiff(String configName, int keysChanged) {
+        // Use Bukkit logger directly to avoid circular dependency with ConfigManager
+        Logger logger = CashClashPlugin.getInstance().getLogger();
+        String prefix = "[CashClash] ";
+        if (keysChanged > 0) {
+            logger.info(prefix + "↻ Reloaded " + configName + " (" + keysChanged + " values changed)");
+        } else {
+            logger.info(prefix + "↻ Reloaded " + configName + " (no changes)");
         }
     }
 
@@ -752,26 +157,4 @@ public class ConfigValidator {
             }
         }
     }
-
-    /**
-     * Get the number of fields that were added.
-     */
-    public int getAddedCount() {
-        return added.size();
-    }
-
-    /**
-     * Log configuration differences after reload.
-     */
-    public void logConfigDiff(String configName, int keysChanged) {
-        // Use Bukkit logger directly to avoid circular dependency with ConfigManager
-        Logger logger = CashClashPlugin.getInstance().getLogger();
-        String prefix = "[CashClash] ";
-        if (keysChanged > 0) {
-            logger.info(prefix + "↻ Reloaded " + configName + " (" + keysChanged + " values changed)");
-        } else {
-            logger.info(prefix + "↻ Reloaded " + configName + " (no changes)");
-        }
-    }
 }
-
