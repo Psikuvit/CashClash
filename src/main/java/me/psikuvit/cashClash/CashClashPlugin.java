@@ -20,17 +20,21 @@ import me.psikuvit.cashClash.listener.MoveListener;
 import me.psikuvit.cashClash.listener.PlayerConnectionListener;
 import me.psikuvit.cashClash.listener.TransferInputListener;
 import me.psikuvit.cashClash.listener.lobby.ArenaNPCListener;
+import me.psikuvit.cashClash.listener.lobby.AfkListener;
 import me.psikuvit.cashClash.listener.lobby.LobbyListener;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
 import me.psikuvit.cashClash.manager.lobby.MannequinManager;
+import me.psikuvit.cashClash.manager.player.AfkManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.party.PartyManager;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -39,6 +43,7 @@ public final class CashClashPlugin extends JavaPlugin {
 
     private static CashClashPlugin instance;
     private boolean initialized = false;
+    private BukkitTask afkTask;
 
     @Override
     public void onEnable() {
@@ -63,6 +68,10 @@ public final class CashClashPlugin extends JavaPlugin {
             // Step 4: Register events and commands
             registerEvents();
             registerCommands();
+
+            // Step 4.5: Start the periodic AFK lobby kicker
+            AfkManager.getInstance();
+            afkTask = SchedulerUtils.runTaskTimer(AfkManager.getInstance()::checkAndKick, 20L * 30, 20L * 30);
 
             // Step 5: Spawn persistent mannequins
             MannequinManager.getInstance().spawnAll();
@@ -97,6 +106,16 @@ public final class CashClashPlugin extends JavaPlugin {
         getLogger().info("Shutting down Cash Clash...");
 
         // Shutdown in reverse initialization order
+        try {
+            // Step 0: Stop the AFK lobby kicker
+            if (afkTask != null) {
+                afkTask.cancel();
+                afkTask = null;
+            }
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error cancelling AFK task", e);
+        }
+
         try {
             // Step 1: Stop all active games
             if (GameManager.getInstance() != null) {
@@ -198,6 +217,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new HungerListener(),
                 new PlayerConnectionListener(),
                 new LobbyListener(),
+                new AfkListener(),
                 new ArenaNPCListener(),
                 new ChatListener(),
                 TransferInputListener.getInstance()

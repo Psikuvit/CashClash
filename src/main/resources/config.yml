@@ -409,6 +409,15 @@ rejoin:
   # Restore player balance on rejoin
   restore-balance: true
 
+# ============================================
+# AFK SETTINGS
+# ============================================
+afk:
+  # How long (minutes) a player can stay idle in the lobby before being kicked (0 = disabled)
+  lobby-kick-minutes: 5
+  # Seconds before the timeout at which the player is warned (0 = no warning)
+  warning-seconds: 15
+
 sequences:
   # Enable scripted title/freeze sequences (round start, president reveal, round end,
   # round 4 shield transition, sudden death, victory)

@@ -322,6 +322,23 @@ public class ConfigManager {
         return config.getString("npc.arena.skin-url", "");
     }
 
+    // ==================== AFK SETTINGS ====================
+
+    /**
+     * How long (minutes) a player can stay idle in the lobby before being kicked.
+     * 0 disables the AFK kick.
+     */
+    public int getAfkLobbyKickMinutes() {
+        return config.getInt("afk.lobby-kick-minutes", 5);
+    }
+
+    /**
+     * Seconds before the AFK timeout at which the player is warned. 0 disables the warning.
+     */
+    public int getAfkWarningSeconds() {
+        return config.getInt("afk.warning-seconds", 15);
+    }
+
     // ==================== REJOIN SETTINGS ====================
 
     /**
