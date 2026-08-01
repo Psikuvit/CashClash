@@ -65,6 +65,7 @@ The plugin uses several YAML files for deep customization:
 *   `/cc leave` - Leave the current game.
 *   `/cc shop` - Open the in-game shop.
 *   `/cc stats` - View your player statistics.
+*   `/cc leaderboard [wins|playtime|coins]` - View top players.
 *   `/cc forfeit` - Vote to forfeit the current round.
 *   `/cc layout` - Customize your kit item layout.
 *   `/party <create|invite|join|leave|info|chat>` - Manage your player party.
@@ -75,6 +76,7 @@ The plugin uses several YAML files for deep customization:
 *   `/cc stop` - Stop the current game session.
 *   `/cc setlobby` - Set the main lobby spawn.
 *   `/cc arena <tp|assign>` - Manage arena assignments.
+*   `/cc shield <on|off> [player]` - Force shields on/off for a player (testing).
 *   `/cc debug` - Toggle debug logging.
 
 **Permission:** `cashclash.admin` is required for all admin subcommands.
