@@ -422,6 +422,22 @@ public final class ParticleUtils {
     }
 
     /**
+     * Light-blue, chaotically-scattered gust particles - used by Ice Fan's continuous
+     * left-click gust.
+     */
+    public static void iceFanGust(Location location) {
+        spawnDust(location, Color.fromRGB(173, 216, 230), 1.2f, 12, 0.5, 0.4, 0.5);
+        spawn(Particle.SNOWFLAKE, location, 6, 0.4, 0.3, 0.4, 0.02);
+    }
+
+    /**
+     * Dark-blue, tightly-condensed burst particles - used by Ice Fan's right-click burst.
+     */
+    public static void iceFanBurst(Location location) {
+        spawnDust(location, Color.fromRGB(0, 0, 139), 1.6f, 25, 0.2, 0.15, 0.2);
+    }
+
+    /**
      * Draws a diamond/rhombus outline on the ground - used by Radiating Lotus to mark its
      * heal radius.
      */

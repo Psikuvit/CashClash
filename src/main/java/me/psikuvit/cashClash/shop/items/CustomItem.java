@@ -20,7 +20,8 @@ public enum CustomItem implements Purchasable {
     CASH_BLASTER(Material.CROSSBOW, "cash-blaster", 1, 1, "Cash Blaster"),
     RESPAWN_ANCHOR(Material.RESPAWN_ANCHOR, "respawn-anchor", 1, 2, "Respawn Anchor"),
     TOTEM_OF_HAUNTING(Material.NETHER_STAR, "totem-of-haunting", 1, 0, "Totem of Haunting"),
-    RADIATING_LOTUS(Material.GLOW_BERRIES, "radiating-lotus", 1, 0, "Radiating Lotus");
+    RADIATING_LOTUS(Material.GLOW_BERRIES, "radiating-lotus", 1, 0, "Radiating Lotus"),
+    ICE_FAN(Material.SHEARS, "ice-fan", 1, 0, "Ice Fan");
 
     private final Material material;
     private final String configKey;

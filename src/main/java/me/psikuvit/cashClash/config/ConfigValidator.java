@@ -105,6 +105,7 @@ public class ConfigValidator {
         customItemDefaults.put("respawn-anchor", 50000L);
         customItemDefaults.put("totem-of-haunting", 7500L);
         customItemDefaults.put("radiating-lotus", 2000L);
+        customItemDefaults.put("ice-fan", 1750L);
         validateSection(config, "custom-items", customItemDefaults, autoAdd);
 
         // Validate custom armor section
@@ -310,6 +311,15 @@ public class ConfigValidator {
         validateAndSet(config, "custom-items.radiating-lotus.heal-amount", 4.0, autoAdd);
         validateAndSet(config, "custom-items.radiating-lotus.slow-percent-while-charging", 80, autoAdd);
         validateAndSet(config, "custom-items.radiating-lotus.grace-seconds", 1, autoAdd);
+
+        // Ice Fan
+        validateAndSet(config, "custom-items.ice-fan.max-durability", 75, autoAdd);
+        validateAndSet(config, "custom-items.ice-fan.gust-durability-per-second", 5, autoAdd);
+        validateAndSet(config, "custom-items.ice-fan.gust-damage-per-tick", 1.0, autoAdd);
+        validateAndSet(config, "custom-items.ice-fan.gust-freeze-seconds-required", 3, autoAdd);
+        validateAndSet(config, "custom-items.ice-fan.burst-durability-cost", 25, autoAdd);
+        validateAndSet(config, "custom-items.ice-fan.burst-damage", 4.0, autoAdd);
+        validateAndSet(config, "custom-items.ice-fan.burst-min-durability", 25, autoAdd);
 
         // Consumables section
         validateAndSet(config, "consumables.effect-cooldown-seconds", 2, autoAdd);

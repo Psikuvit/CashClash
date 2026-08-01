@@ -125,6 +125,12 @@ public class DamageListener implements Listener {
             Player attacker = resolveAttacker(event);
             Player victim = event.getEntity() instanceof Player p ? p : null;
 
+            // Ice Fan is a pure ability-tool (gust/burst) - suppress vanilla melee swings from
+            // it entirely, only letting through damage explicitly dealt via its abilities
+            if (onIceFanMeleeSuppression(event, attacker)) {
+                return;
+            }
+
             // Apply protection checks
             if (applyProtectionChecks(event, attacker, victim)) {
                 return;
@@ -235,6 +241,19 @@ public class DamageListener implements Listener {
 
         event.setCancelled(true);
         customItemManager.triggerTotemOfHaunting(victim, totem);
+    }
+
+    /**
+     * Cancels vanilla melee damage from Ice Fan (a pure ability-tool - its own gust/burst hits
+     * flow through {@link CustomItemManager#isIceFanAbilityDamage(UUID)} and are let through).
+     */
+    private boolean onIceFanMeleeSuppression(EntityDamageByEntityEvent event, Player attacker) {
+        if (attacker == null) return false;
+        if (PDCDetection.getCustomItem(attacker.getInventory().getItemInMainHand()) != CustomItem.ICE_FAN) return false;
+        if (customItemManager.isIceFanAbilityDamage(attacker.getUniqueId())) return false;
+
+        event.setCancelled(true);
+        return true;
     }
 
     // ==================== KNOCKBACK IMMUNITY (Monitor Priority) ====================

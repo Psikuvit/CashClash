@@ -45,6 +45,8 @@ public final class CustomModelDataMapper {
         CUSTOM_ITEM_KEYS.put(CustomItem.TOTEM_OF_HAUNTING,   "totemofhaunting");
         // assets/minecraft/items/glow_berries.json      when: "radiatinglotus"
         CUSTOM_ITEM_KEYS.put(CustomItem.RADIATING_LOTUS,     "radiatinglotus");
+        // assets/minecraft/items/shears.json            when: "icefan"
+        CUSTOM_ITEM_KEYS.put(CustomItem.ICE_FAN,             "icefan");
 
         // assets/minecraft/items/diamond_axe.json       when: "coincleaver"
         MYTHIC_KEYS.put(MythicItem.COIN_CLEAVER,       "coincleaver");

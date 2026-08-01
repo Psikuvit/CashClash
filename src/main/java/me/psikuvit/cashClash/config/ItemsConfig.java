@@ -440,6 +440,35 @@ public class ItemsConfig {
         return config.getInt("custom-items.radiating-lotus.slow-percent-while-charging", 80);
     }
 
+    // Ice Fan
+    public int getIceFanMaxDurability() {
+        return config.getInt("custom-items.ice-fan.max-durability", 75);
+    }
+
+    public int getIceFanGustDurabilityPerSecond() {
+        return config.getInt("custom-items.ice-fan.gust-durability-per-second", 5);
+    }
+
+    public double getIceFanGustDamagePerTick() {
+        return config.getDouble("custom-items.ice-fan.gust-damage-per-tick", 1.0);
+    }
+
+    public int getIceFanGustFreezeSecondsRequired() {
+        return config.getInt("custom-items.ice-fan.gust-freeze-seconds-required", 3);
+    }
+
+    public int getIceFanBurstDurabilityCost() {
+        return config.getInt("custom-items.ice-fan.burst-durability-cost", 25);
+    }
+
+    public double getIceFanBurstDamage() {
+        return config.getDouble("custom-items.ice-fan.burst-damage", 4.0);
+    }
+
+    public int getIceFanBurstMinDurability() {
+        return config.getInt("custom-items.ice-fan.burst-min-durability", 25);
+    }
+
     // ==================== CUSTOM ARMOR ====================
 
     // Deathmauler

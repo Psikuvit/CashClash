@@ -351,6 +351,17 @@ public class InteractListener implements Listener {
                     return true;
                 }
             }
+            case ICE_FAN -> {
+                if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
+                    event.setCancelled(true);
+                    customItemManager.handleIceFanLeftClick(player, item);
+                    return true;
+                } else if (action.isRightClick()) {
+                    event.setCancelled(true);
+                    customItemManager.handleIceFanRightClick(player, item);
+                    return true;
+                }
+            }
         }
         return false;
     }

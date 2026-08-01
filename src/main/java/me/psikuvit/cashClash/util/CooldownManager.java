@@ -320,6 +320,7 @@ public class CooldownManager {
         public static final String MEDIC_POUCH = "MEDIC_POUCH";
         public static final String INVIS_CLOAK = "INVIS_CLOAK";
         public static final String CONSUMABLE = "CONSUMABLE";
+        public static final String ICE_FAN_BURST = "ICE_FAN_BURST";
 
         // Mythic Items
         public static final String COIN_CLEAVER_GRENADE = "COIN_CLEAVER_GRENADE";

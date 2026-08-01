@@ -275,6 +275,16 @@ custom-items:
     heal-amount: 4.0
     slow-percent-while-charging: 80
 
+  # Ice Fan
+  ice-fan:
+    max-durability: 75
+    gust-durability-per-second: 5
+    gust-damage-per-tick: 1.0
+    gust-freeze-seconds-required: 3
+    burst-durability-cost: 25
+    burst-damage: 4.0
+    burst-min-durability: 25
+
 
 # ============================================
 # CONSUMABLES
@@ -566,6 +576,11 @@ item-lore:
         - "<gray>Hold right-click to charge</gray>"
         - "<yellow>Release to knock back and heal!</yellow>"
         - "<dark_gray>Cannot be used while holding the flag</dark_gray>"
+    ice-fan:
+      lore:
+        - "<gray>Left-click: continuous cold gust</gray>"
+        - "<gray>Right-click: burst of cold wind</gray>"
+        - "<yellow>Both freeze enemies over time</yellow>"
 
   # ==================== CUSTOM ARMOR ====================
   custom-armor:
