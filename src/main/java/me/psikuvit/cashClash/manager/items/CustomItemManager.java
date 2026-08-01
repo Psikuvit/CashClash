@@ -53,7 +53,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -260,8 +259,9 @@ public class CustomItemManager {
         }
 
         double currentHealth = player.getHealth();
-        var attr = player.getAttribute(Attribute.MAX_HEALTH);
-        double maxHealth = attr != null ? attr.getValue() : 20.0;
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        CashClashPlayer ccp = session != null ? session.getCashClashPlayer(player.getUniqueId()) : null;
+        double maxHealth = ccp != null ? ccp.getMaxHealth() : 20.0;
         double healAmount = cfg.getMedicPouchSelfHeal();
 
         if (currentHealth >= maxHealth) {
@@ -888,11 +888,8 @@ public class CustomItemManager {
         targetCcp.setLives(targetCcp.getLives() + 1);
         playersRevivedThisRound.add(targetUuid);
 
-        // Grant +2 bonus hearts (4 max health increase)
-        var attr = target.getAttribute(Attribute.MAX_HEALTH);
-        if (attr != null) {
-            attr.setBaseValue(attr.getValue() + 4.0);
-        }
+        // Grant +2 bonus hearts (4 max health increase) via the centralized health system
+        targetCcp.addHealthModifier(4.0);
 
         // Get spawn location for the revived player
         Location spawnLocation = session.getSpawnForPlayer(targetUuid);
@@ -905,7 +902,7 @@ public class CustomItemManager {
         target.setGameMode(GameMode.SURVIVAL);
 
         // Set health to full after teleport
-        target.setHealth(Objects.requireNonNull(target.getAttribute(Attribute.MAX_HEALTH)).getValue());
+        target.setHealth(targetCcp.getMaxHealth());
         target.setFoodLevel(20);
 
         // 3 seconds of invincibility
@@ -955,7 +952,10 @@ public class CustomItemManager {
         ItemsConfig cfg = ItemsConfig.getInstance();
 
         consumeTotem(player, totemItem);
-        player.setHealth(Math.min(cfg.getTotemRevivalHealth(), Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getValue()));
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        CashClashPlayer ccp = session != null ? session.getCashClashPlayer(player.getUniqueId()) : null;
+        double maxHealth = ccp != null ? ccp.getMaxHealth() : 20.0;
+        player.setHealth(Math.min(cfg.getTotemRevivalHealth(), maxHealth));
 
         totemInvincible.add(uuid);
         int invincibilitySeconds = cfg.getTotemInvincibilitySeconds();

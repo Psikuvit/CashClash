@@ -38,7 +38,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
@@ -782,9 +781,9 @@ public class GameSession {
 
             for (PotionEffect t : player.getActivePotionEffects()) player.removePotionEffect(t.getType());
 
-            var attr = player.getAttribute(Attribute.MAX_HEALTH);
-            if (attr != null) {
-                attr.setBaseValue(20.0);
+            CashClashPlayer ccp = getCashClashPlayer(player.getUniqueId());
+            if (ccp != null) {
+                ccp.resetHealthModifier();
             }
             player.setHealth(20.0);
 
@@ -1042,8 +1041,8 @@ public class GameSession {
         for (UUID uuid : players.keySet()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
-                var attr = player.getAttribute(Attribute.MAX_HEALTH);
-                double maxHealth = attr != null ? attr.getValue() : 20.0;
+                CashClashPlayer ccp = getCashClashPlayer(uuid);
+                double maxHealth = ccp != null ? ccp.getMaxHealth() : 20.0;
                 player.setHealth(maxHealth);
                 player.setFoodLevel(20);
             }
@@ -1195,10 +1194,6 @@ public class GameSession {
 
         // Reset health and food using centralized health system
         ccp.resetHealthModifier();
-        var attr = player.getAttribute(Attribute.MAX_HEALTH);
-        if (attr != null) {
-            attr.setBaseValue(20.0);
-        }
         player.setHealth(20.0);
         player.setFoodLevel(20);
         player.setSaturation(20.0f);

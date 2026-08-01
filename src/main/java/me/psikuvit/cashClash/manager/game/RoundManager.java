@@ -25,8 +25,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -196,10 +194,9 @@ public class RoundManager {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p == null || !p.isOnline()) continue;
 
-                AttributeInstance maxHealthAttr = p.getAttribute(Attribute.MAX_HEALTH);
-                if (maxHealthAttr != null) {
-                    p.setHealth(maxHealthAttr.getValue());
-                }
+                CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+                double maxHealth = ccp != null ? ccp.getMaxHealth() : 20.0;
+                p.setHealth(maxHealth);
                 p.setFoodLevel(20);
                 p.setSaturation(20.0f);
                 refillWaterBuckets(p);

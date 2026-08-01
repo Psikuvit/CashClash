@@ -255,6 +255,19 @@ public class CashClashPlayer {
     }
 
     /**
+     * Reset a player's max health back to the vanilla default (20) and heal them to full.
+     * Used outside a game session (e.g. the lobby), where no CashClashPlayer exists, so all
+     * max-health resets still go through this class instead of touching the attribute directly.
+     */
+    public static void resetToDefaultHealth(Player player) {
+        var maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            maxHealthAttr.setBaseValue(20.0);
+        }
+        player.setHealth(20.0);
+    }
+
+    /**
      * Get current health modifier amount
      */
     public double getHealthModifier() {

@@ -10,9 +10,9 @@ import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.manager.player.TabListManager;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.GameMode;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -63,11 +63,7 @@ public class PlayerConnectionListener implements Listener {
     private void setupLobbyState(Player player) {
         player.setGameMode(GameMode.SURVIVAL);
         player.getInventory().clear();
-        var attr = player.getAttribute(Attribute.MAX_HEALTH);
-        if (attr != null) {
-            attr.setBaseValue(20.0);
-        }
-        player.setHealth(20.0);
+        CashClashPlayer.resetToDefaultHealth(player);
         player.setFoodLevel(20);
         player.setSaturation(20.0f);
 
