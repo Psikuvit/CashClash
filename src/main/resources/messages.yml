@@ -860,6 +860,8 @@ messages:
     revive-failed-generic: "<red>{reason}</red>"
     revive-success-reviver: "<green>Successfully revived {player_name}!</green>"
     revive-success-target: "<green>You have been revived by {player_name}! +2 bonus hearts!</green>"
+    totem-haunting-triggered: "<dark_red><bold>Totem of Haunting</bold> saved you from death!</dark_red>"
+    totem-haunting-witness: "<red>{player_name}'s Totem of Haunting weakened you!</red>"
 
   # ============================================
   # ERROR & VALIDATION MESSAGES

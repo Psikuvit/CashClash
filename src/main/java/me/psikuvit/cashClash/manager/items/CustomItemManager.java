@@ -82,6 +82,9 @@ public class CustomItemManager {
     // Cash Blaster earnings tracking per round
     private final Map<UUID, Long> cashBlasterEarningsThisRound;
 
+    // Totem of Haunting - active death-save invincibility window
+    private final Set<UUID> totemInvincible;
+
     private CustomItemManager() {
         this.cooldownManager = CooldownManager.getInstance();
         this.invisCloakUsesRemaining = new HashMap<>();
@@ -96,6 +99,7 @@ public class CustomItemManager {
         this.respawnAnchorsUsedThisRound = new HashMap<>();
         this.playersRevivedThisRound = new HashSet<>();
         this.cashBlasterEarningsThisRound = new HashMap<>();
+        this.totemInvincible = new HashSet<>();
     }
 
     public static CustomItemManager getInstance() {
@@ -844,6 +848,97 @@ public class CustomItemManager {
         return !playersRevivedThisRound.contains(target.getUniqueId());
     }
 
+    // ==================== TOTEM OF HAUNTING IMPLEMENTATION ====================
+
+    public boolean isTotemInvincible(UUID uuid) {
+        return totemInvincible.contains(uuid);
+    }
+
+    /**
+     * Called from DamageListener when a would-be-lethal hit from another player is detected
+     * on a player holding the Totem of Haunting (main or off hand).
+     */
+    public void triggerTotemOfHaunting(Player player, ItemStack totemItem) {
+        UUID uuid = player.getUniqueId();
+        ItemsConfig cfg = ItemsConfig.getInstance();
+
+        consumeTotem(player, totemItem);
+        player.setHealth(Math.min(cfg.getTotemRevivalHealth(), Objects.requireNonNull(player.getAttribute(Attribute.MAX_HEALTH)).getValue()));
+
+        totemInvincible.add(uuid);
+        int invincibilitySeconds = cfg.getTotemInvincibilitySeconds();
+        SchedulerUtils.runTaskLater(() -> totemInvincible.remove(uuid), invincibilitySeconds * 20L);
+
+        Messages.send(player, "customitem.totem-haunting-triggered");
+        SoundUtils.play(player, Sound.ITEM_TOTEM_USE, 1.0f, 0.6f);
+        SoundUtils.play(player, Sound.ENTITY_WITHER_AMBIENT, 0.4f, 0.5f);
+
+        spawnHauntingSpiral(player);
+    }
+
+    /**
+     * Removes one Totem of Haunting from whichever hand held it (main or off hand).
+     */
+    private void consumeTotem(Player player, ItemStack totemItem) {
+        ItemStack main = player.getInventory().getItemInMainHand();
+        if (main.equals(totemItem)) {
+            consumeItem(player, main);
+            return;
+        }
+        ItemStack off = player.getInventory().getItemInOffHand();
+        if (off.getAmount() > 1) {
+            off.setAmount(off.getAmount() - 1);
+        } else {
+            player.getInventory().setItemInOffHand(null);
+        }
+    }
+
+    /**
+     * Expanding black smoke spiral - applies Slowness I + Weakness I to enemy players the first
+     * moment the expanding smoke reaches them, rather than as an instant flat-radius check.
+     */
+    private void spawnHauntingSpiral(Player player) {
+        ItemsConfig cfg = ItemsConfig.getInstance();
+        Location origin = player.getLocation();
+        double maxRadius = cfg.getTotemDebuffRadius();
+        int debuffDurationTicks = cfg.getTotemDebuffDurationSeconds() * 20;
+        int totalTicks = 20; // ~1s spiral formation
+        int arms = 3;
+        Set<UUID> alreadyDebuffed = new HashSet<>();
+
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
+
+        int[] tick = {0};
+        BukkitTask[] taskHolder = new BukkitTask[1];
+        taskHolder[0] = SchedulerUtils.runTaskTimer(() -> {
+            tick[0]++;
+            double currentRadius = maxRadius * tick[0] / totalTicks;
+            for (int arm = 0; arm < arms; arm++) {
+                ParticleUtils.smokeSpiralFrame(origin, currentRadius, arm, arms);
+            }
+
+            World world = origin.getWorld();
+            if (world != null) {
+                for (Entity entity : world.getNearbyEntities(origin, maxRadius, maxRadius, maxRadius)) {
+                    if (!(entity instanceof Player target) || target.equals(player)) continue;
+                    if (alreadyDebuffed.contains(target.getUniqueId())) continue;
+                    if (playerTeam != null && session.getPlayerTeam(target) == playerTeam) continue;
+                    if (target.getLocation().distance(origin) > currentRadius + 1.0) continue;
+
+                    alreadyDebuffed.add(target.getUniqueId());
+                    target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, debuffDurationTicks, 0, false, true));
+                    target.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, debuffDurationTicks, 0, false, true));
+                    Messages.send(target, "customitem.totem-haunting-witness", "player_name", player.getName());
+                }
+            }
+
+            if (tick[0] >= totalTicks && taskHolder[0] != null) {
+                taskHolder[0].cancel();
+            }
+        }, 0L, 1L);
+    }
+
     // ==================== UTILITY METHODS ====================
 
     public void consumeItem(Player player, ItemStack item) {
@@ -888,6 +983,8 @@ public class CustomItemManager {
         playersRevivedThisRound.clear();
 
         cashBlasterEarningsThisRound.clear();
+
+        totemInvincible.clear();
     }
 
     /**

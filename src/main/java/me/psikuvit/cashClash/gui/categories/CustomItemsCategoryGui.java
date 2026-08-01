@@ -41,6 +41,9 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
         setButton(31, createCustomItemButton(CustomItem.INVIS_CLOAK));
         setButton(32, createCustomItemButton(CustomItem.TABLET_OF_HACKING));
         setButton(33, createCustomItemButton(CustomItem.RESPAWN_ANCHOR));
+
+        // Row 5
+        setButton(36, createCustomItemButton(CustomItem.TOTEM_OF_HAUNTING));
     }
 
     private GuiButton createCustomItemButton(CustomItem item) {

@@ -18,7 +18,8 @@ public enum CustomItem implements Purchasable {
     BOOMBOX(Material.JUKEBOX, "boombox", 1, 0, "Boombox"),
     INVIS_CLOAK(Material.PHANTOM_MEMBRANE, "invis-cloak", 1, 5, "Invisibility Cloak"),
     CASH_BLASTER(Material.CROSSBOW, "cash-blaster", 1, 1, "Cash Blaster"),
-    RESPAWN_ANCHOR(Material.RESPAWN_ANCHOR, "respawn-anchor", 1, 2, "Respawn Anchor");
+    RESPAWN_ANCHOR(Material.RESPAWN_ANCHOR, "respawn-anchor", 1, 2, "Respawn Anchor"),
+    TOTEM_OF_HAUNTING(Material.NETHER_STAR, "totem-of-haunting", 1, 0, "Totem of Haunting");
 
     private final Material material;
     private final String configKey;

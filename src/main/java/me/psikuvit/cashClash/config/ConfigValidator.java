@@ -103,6 +103,7 @@ public class ConfigValidator {
         customItemDefaults.put("invis-cloak", 25000L);
         customItemDefaults.put("cash-blaster", 30000L);
         customItemDefaults.put("respawn-anchor", 50000L);
+        customItemDefaults.put("totem-of-haunting", 7500L);
         validateSection(config, "custom-items", customItemDefaults, autoAdd);
 
         // Validate custom armor section
@@ -291,6 +292,12 @@ public class ConfigValidator {
         validateAndSet(config, "custom-items.cash-blaster.coins-per-hit", 500, autoAdd);
         validateAndSet(config, "custom-items.respawn-anchor.revive-duration-seconds", 10, autoAdd);
         validateAndSet(config, "custom-items.respawn-anchor.max-uses-per-round", 2, autoAdd);
+
+        // Totem of Haunting
+        validateAndSet(config, "custom-items.totem-of-haunting.invincibility-seconds", 2, autoAdd);
+        validateAndSet(config, "custom-items.totem-of-haunting.debuff-radius", 6, autoAdd);
+        validateAndSet(config, "custom-items.totem-of-haunting.debuff-duration-seconds", 6, autoAdd);
+        validateAndSet(config, "custom-items.totem-of-haunting.revive-health", 1.0, autoAdd);
 
         // Consumables section
         validateAndSet(config, "consumables.effect-cooldown-seconds", 2, autoAdd);

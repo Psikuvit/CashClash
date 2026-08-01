@@ -386,6 +386,23 @@ public class ItemsConfig {
         return config.getInt("custom-items.respawn-anchor.max-distance", 5);
     }
 
+    // Totem of Haunting
+    public int getTotemInvincibilitySeconds() {
+        return config.getInt("custom-items.totem-of-haunting.invincibility-seconds", 2);
+    }
+
+    public double getTotemDebuffRadius() {
+        return config.getDouble("custom-items.totem-of-haunting.debuff-radius", 6);
+    }
+
+    public int getTotemDebuffDurationSeconds() {
+        return config.getInt("custom-items.totem-of-haunting.debuff-duration-seconds", 6);
+    }
+
+    public double getTotemRevivalHealth() {
+        return config.getDouble("custom-items.totem-of-haunting.revive-health", 1.0);
+    }
+
     // ==================== CUSTOM ARMOR ====================
 
     // Deathmauler

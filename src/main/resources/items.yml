@@ -258,6 +258,13 @@ custom-items:
     invincibility-duration-seconds: 3
     resistance-level: 4
 
+  # Totem of Haunting
+  totem-of-haunting:
+    invincibility-seconds: 2
+    debuff-radius: 6
+    debuff-duration-seconds: 6
+    revive-health: 1.0
+
 
 # ============================================
 # CONSUMABLES
@@ -539,6 +546,11 @@ item-lore:
       lore:
         - "<gray>Revives fallen allies</gray>"
         - "<yellow>Limited uses</yellow>"
+    totem-of-haunting:
+      lore:
+        - "<gray>Cheats death when held</gray>"
+        - "<yellow>Weakens nearby enemies</yellow>"
+        - "<dark_gray>Consumed on trigger</dark_gray>"
 
   # ==================== CUSTOM ARMOR ====================
   custom-armor:

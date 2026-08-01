@@ -380,4 +380,26 @@ public final class ParticleUtils {
         spawnDust(location.clone().add(0, 1, 0), Color.BLACK, 1.0f, 20, 0.5);
         spawn(Particle.HEART, location.clone().add(0, 1, 0), 5, 0.5);
     }
+
+    // ==================== CUSTOM ITEM EFFECTS ====================
+
+    /**
+     * Spawn one frame of an expanding black smoke spiral (grey/red hints) - used by Totem of
+     * Haunting. Unlike {@link #helix}, the radius grows call-to-call rather than the height,
+     * so callers drive the expansion by incrementing {@code currentRadius} once per tick.
+     */
+    public static void smokeSpiralFrame(Location center, double currentRadius, int armIndex, int totalArms) {
+        if (center == null || center.getWorld() == null) return;
+        double angle = currentRadius * 2.5 + armIndex * (2 * Math.PI / Math.max(1, totalArms));
+        double x = center.getX() + currentRadius * Math.cos(angle);
+        double z = center.getZ() + currentRadius * Math.sin(angle);
+        Location point = new Location(center.getWorld(), x, center.getY() + 0.2, z);
+
+        spawn(Particle.SMOKE, point, 2, 0.05, 0.05, 0.05, 0.01);
+        if (Math.random() < 0.35) {
+            spawnDust(point, Color.fromRGB(120, 20, 20), 1.2f, 1, 0.05); // red hint
+        } else {
+            spawnDust(point, Color.fromRGB(70, 70, 70), 1.2f, 1, 0.05); // grey hint
+        }
+    }
 }

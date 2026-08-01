@@ -80,6 +80,12 @@ public class DamageListener implements Listener {
         }
 
         try {
+            // 0. Totem of Haunting - brief invincibility window after triggering
+            if (customItemManager.isTotemInvincible(player.getUniqueId())) {
+                event.setCancelled(true);
+                return;
+            }
+
             // 1. Check game phase protection (waiting/shopping)
             if (handleGamePhaseProtection(event, player)) {
                 return;
@@ -194,6 +200,41 @@ public class DamageListener implements Listener {
             return shooter;
         }
         return null;
+    }
+
+    // ==================== TOTEM OF HAUNTING ====================
+
+    /**
+     * Cancels a would-be-lethal hit from another player when the victim holds a Totem of
+     * Haunting, triggering its death-save instead. Runs at HIGHEST (after the main HIGH-priority
+     * handlers have applied their damage modifiers) so the lethality check reflects final damage.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onLethalDamageTotemCheck(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) {
+            return;
+        }
+        Player attacker = resolveAttacker(event);
+        if (attacker == null) {
+            return;
+        }
+        if (victim.getHealth() - event.getFinalDamage() > 0) {
+            return;
+        }
+
+        ItemStack main = victim.getInventory().getItemInMainHand();
+        ItemStack off = victim.getInventory().getItemInOffHand();
+        ItemStack totem;
+        if (PDCDetection.getCustomItem(main) == CustomItem.TOTEM_OF_HAUNTING) {
+            totem = main;
+        } else if (PDCDetection.getCustomItem(off) == CustomItem.TOTEM_OF_HAUNTING) {
+            totem = off;
+        } else {
+            return;
+        }
+
+        event.setCancelled(true);
+        customItemManager.triggerTotemOfHaunting(victim, totem);
     }
 
     // ==================== KNOCKBACK IMMUNITY (Monitor Priority) ====================
