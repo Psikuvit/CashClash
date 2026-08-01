@@ -13,6 +13,9 @@ public class PlayerData {
     private int kills;
     private long totalCoinsInvested;
     private long totalCoinsEarned;
+    private long playtimeMillis;
+    // Session-only marker for playtime accumulation (never persisted)
+    private transient long lastSeen;
     // Kit name -> (slot -> item identifier) for custom layouts
     private Map<String, Map<Integer, String>> kitLayouts;
 
@@ -27,6 +30,8 @@ public class PlayerData {
         this.kills = 0;
         this.totalCoinsInvested = 0L;
         this.totalCoinsEarned = 0L;
+        this.playtimeMillis = 0L;
+        this.lastSeen = 0L;
         this.kitLayouts = new HashMap<>();
     }
 
@@ -108,6 +113,26 @@ public class PlayerData {
 
     public void addEarnedCoins(long amount) {
         this.totalCoinsEarned += amount;
+    }
+
+    public long getPlaytimeMillis() {
+        return playtimeMillis;
+    }
+
+    public void setPlaytimeMillis(long playtimeMillis) {
+        this.playtimeMillis = playtimeMillis;
+    }
+
+    public void addPlaytimeMillis(long amount) {
+        this.playtimeMillis += amount;
+    }
+
+    public long getLastSeen() {
+        return lastSeen;
+    }
+
+    public void setLastSeen(long lastSeen) {
+        this.lastSeen = lastSeen;
     }
 
     public Map<String, Map<Integer, String>> getKitLayouts() {

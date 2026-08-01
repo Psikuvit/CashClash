@@ -60,7 +60,7 @@ public class ShopService {
     public void refund(Player player, long amount) {
         CashClashPlayer ccp = getCashClashPlayer(player);
         if (ccp != null) {
-            ccp.addCoins(amount);
+            ccp.addCoinsSilently(amount);
             Messages.send(player, "shop.refunded",
                 "amount", String.format("%,d", amount));
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_YES, 1.0f, 1.0f);

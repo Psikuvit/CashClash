@@ -45,7 +45,7 @@ public class CoinsCommand extends AbstractArgCommand {
             return true;
         }
 
-        session.getCashClashPlayer(player.getUniqueId()).addCoins(amount);
+        session.getCashClashPlayer(player.getUniqueId()).addCoinsSilently(amount);
 
 
         return true;

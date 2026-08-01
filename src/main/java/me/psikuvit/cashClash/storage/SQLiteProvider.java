@@ -12,6 +12,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -69,6 +71,19 @@ public class SQLiteProvider implements DatabaseProvider {
             ps.setString(2, json);
             ps.executeUpdate();
         }
+    }
+
+    @Override
+    public List<PlayerData> loadAllPlayers() throws SQLException {
+        List<PlayerData> players = new ArrayList<>();
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("SELECT json FROM players")) {
+            while (rs.next()) {
+                PlayerData p = gson.fromJson(rs.getString(1), PlayerData.class);
+                if (p != null && p.getUuid() != null) players.add(p);
+            }
+        }
+        return players;
     }
 
     @Override

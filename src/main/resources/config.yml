@@ -418,6 +418,15 @@ afk:
   # Seconds before the timeout at which the player is warned (0 = no warning)
   warning-seconds: 15
 
+# ============================================
+# LEADERBOARD SETTINGS
+# ============================================
+leaderboard:
+  # How many entries to show per board
+  size: 10
+  # How often (minutes) the leaderboards are recomputed (async worker)
+  refresh-minutes: 5
+
 sequences:
   # Enable scripted title/freeze sequences (round start, president reveal, round end,
   # round 4 shield transition, sudden death, victory)

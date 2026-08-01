@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.player;
  
 import me.psikuvit.cashClash.kit.Kit;
+import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.util.Messages;
@@ -108,7 +109,19 @@ public class CashClashPlayer {
 
     public void addCoins(long amount) {
         coins += amount;
+        // Track lifetime coins earned for the leaderboard (excludes refunds/admin grants)
+        PlayerDataManager manager = PlayerDataManager.getInstance();
+        if (manager != null) manager.addEarnedCoins(uuid, amount);
         Messages.debug(player, "ECONOMY", "Added $" + amount + " (Total: $" + this.coins + ")");
+    }
+
+    /**
+     * Adds coins without counting them as "earned" for the leaderboard.
+     * Used for refunds and admin coin grants.
+     */
+    public void addCoinsSilently(long amount) {
+        coins += amount;
+        Messages.debug(player, "ECONOMY", "Added $" + amount + " silently (Total: $" + this.coins + ")");
     }
 
     public void handleDeath() {

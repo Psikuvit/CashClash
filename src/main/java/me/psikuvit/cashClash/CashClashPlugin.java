@@ -27,6 +27,7 @@ import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
 import me.psikuvit.cashClash.manager.lobby.MannequinManager;
 import me.psikuvit.cashClash.manager.player.AfkManager;
+import me.psikuvit.cashClash.manager.player.LeaderboardManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.party.PartyManager;
@@ -73,6 +74,9 @@ public final class CashClashPlugin extends JavaPlugin {
             AfkManager.getInstance();
             afkTask = SchedulerUtils.runTaskTimer(AfkManager.getInstance()::checkAndKick, 20L * 30, 20L * 30);
 
+            // Step 4.6: Start the async leaderboard worker
+            LeaderboardManager.getInstance().start();
+
             // Step 5: Spawn persistent mannequins
             MannequinManager.getInstance().spawnAll();
             getLogger().info("Mannequin NPCs spawned");
@@ -114,6 +118,13 @@ public final class CashClashPlugin extends JavaPlugin {
             }
         } catch (Exception e) {
             getLogger().log(Level.WARNING, "Error cancelling AFK task", e);
+        }
+
+        try {
+            // Step 0.5: Stop the async leaderboard worker
+            LeaderboardManager.getInstance().stop();
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error stopping LeaderboardManager", e);
         }
 
         try {

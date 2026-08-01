@@ -13,6 +13,7 @@ import me.psikuvit.cashClash.command.subcommands.ForfeitCommand;
 import me.psikuvit.cashClash.command.subcommands.JoinCommand;
 import me.psikuvit.cashClash.command.subcommands.KCCommand;
 import me.psikuvit.cashClash.command.subcommands.LayoutCommand;
+import me.psikuvit.cashClash.command.subcommands.LeaderboardCommand;
 import me.psikuvit.cashClash.command.subcommands.LeaveCommand;
 import me.psikuvit.cashClash.command.subcommands.MythicsCommand;
 import me.psikuvit.cashClash.command.subcommands.PTPCommand;
@@ -63,6 +64,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new StatsCommand());
         registerSubcommand(new ForfeitCommand());
         registerSubcommand(new LayoutCommand());
+        registerSubcommand(new LeaderboardCommand());
 
         //chat commands
         registerSubcommand(new ChatCommand());
@@ -157,6 +159,7 @@ public class CommandHandler extends Command {
         Messages.send(sender, "command.help-forfeit");
         Messages.send(sender, "command.help-transfer");
         Messages.send(sender, "command.help-layout");
+        Messages.send(sender, "command.help-leaderboard");
         if (sender.hasPermission("cashclash.admin")) {
             Messages.send(sender, "command.help-admin-section");
             Messages.send(sender, "command.help-arena");

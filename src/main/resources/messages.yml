@@ -21,6 +21,7 @@ messages:
     help-forfeit: "<yellow>/cc forfeit <gray>- Vote to forfeit the round</gray>"
     help-transfer: "<yellow>/cc transfer <gray>- Transfer money to a teammate</gray>"
     help-layout: "<yellow>/cc layout <gray>- Customize your kit item layout</gray>"
+    help-leaderboard: "<yellow>/cc leaderboard [wins|playtime|coins] <gray>- View top players</gray>"
     help-shop: "<yellow>/cc shop <gray>- Open the in-game shop</gray>"
     help-admin-section: "<gray>--- Admin Commands ---</gray>"
     help-arena: "<yellow>/cc arena <gray>- Arena admin actions (tp,assign)</gray>"
@@ -746,6 +747,16 @@ messages:
     target-not-in-game: "<red>{player_name} is not in a game.</red>"
     success: "<green>Shield preference set to <gold>{state}</gold> for this game.</green>"
     success-other: "<green>Shield preference set to <gold>{state}</gold> for {player_name}.</green>"
+
+  # ============================================
+  # LEADERBOARD MESSAGES
+  # ============================================
+  leaderboard:
+    usage: "<red>Usage: /cc leaderboard [wins|playtime|coins]</red>"
+    header-all: "<gold><bold>===== Leaderboards =====</bold></gold>"
+    header: "<gold><bold>===== {board} Leaderboard =====</bold></gold>"
+    entry: "<gray>#{rank} <white>{player_name}</white> - <yellow>{value}</yellow></gray>"
+    empty: "<gray>No data for the {board} leaderboard yet.</gray>"
 
   # ============================================
   # REJOIN MESSAGES

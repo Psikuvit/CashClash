@@ -32,6 +32,7 @@ public class PlayerConnectionListener implements Listener {
 
         // Load player data first
         PlayerDataManager.getInstance().getOrLoadData(player.getUniqueId());
+        PlayerDataManager.getInstance().markJoined(player.getUniqueId(), System.currentTimeMillis());
         Messages.debug(player, "SYSTEM", "Player joined and data loaded");
 
         // Check for pending rejoin
@@ -95,6 +96,9 @@ public class PlayerConnectionListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+
+        // Accumulate playtime and persist player data
+        PlayerDataManager.getInstance().markLeft(player.getUniqueId(), System.currentTimeMillis());
 
         // Clean up layout editing state
         LayoutManager.getInstance().handleDisconnect(player.getUniqueId());

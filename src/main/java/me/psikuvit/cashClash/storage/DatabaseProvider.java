@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.storage;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,6 +21,9 @@ public interface DatabaseProvider extends Closeable {
 
     /** Save or update a player into the database. */
     void savePlayer(PlayerData player) throws SQLException;
+
+    /** Load all stored players, used by the leaderboard worker. */
+    List<PlayerData> loadAllPlayers() throws SQLException;
 
     @Override
     void close() throws IOException;

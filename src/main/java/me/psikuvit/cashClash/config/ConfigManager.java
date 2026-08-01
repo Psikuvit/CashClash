@@ -322,6 +322,23 @@ public class ConfigManager {
         return config.getString("npc.arena.skin-url", "");
     }
 
+    // ==================== LEADERBOARD SETTINGS ====================
+
+    /**
+     * How many entries are shown per leaderboard board.
+     */
+    public int getLeaderboardSize() {
+        return config.getInt("leaderboard.size", 10);
+    }
+
+    /**
+     * How often (minutes) the leaderboards are recomputed by the async worker.
+     * 0 disables automatic refresh (boards are only computed on startup).
+     */
+    public int getLeaderboardRefreshMinutes() {
+        return config.getInt("leaderboard.refresh-minutes", 5);
+    }
+
     // ==================== AFK SETTINGS ====================
 
     /**
