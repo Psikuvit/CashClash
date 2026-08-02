@@ -595,6 +595,19 @@ public class ItemsConfig {
         return config.getInt("custom-armor.bunny-shoes.cooldown-seconds", 25);
     }
 
+    // Tectonic Cap
+    public int getTectonicCapRechargeSeconds() {
+        return config.getInt("custom-armor.tectonic-cap.recharge-seconds", 22);
+    }
+
+    public double getTectonicCapDamage() {
+        return config.getDouble("custom-armor.tectonic-cap.base-damage", 4.0);
+    }
+
+    public double getTectonicCapRadius() {
+        return config.getDouble("custom-armor.tectonic-cap.radius", 4.0);
+    }
+
     // Dragon Set
     public int getDragonMarkDuration() {
         return config.getInt("custom-armor.dragon.mark-duration-seconds", 4);

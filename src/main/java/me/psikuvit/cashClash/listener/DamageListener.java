@@ -310,6 +310,19 @@ public class DamageListener implements Listener {
     // ==================== KNOCKBACK IMMUNITY (Monitor Priority) ====================
 
     /**
+     * Checks fall damage for the Tectonic Cap. Runs at NORMAL priority so the final
+     * damage reflects all modifiers while still being cancellable by the cap.
+     */
+    @EventHandler
+    public void onFall(EntityDamageEvent event) {
+        if (event.isCancelled()) return;
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (event.getCause() != EntityDamageEvent.DamageCause.FALL) return;
+
+        armorManager.onTectonicCapFall(event, player);
+    }
+
+    /**
      * Handles knockback immunity for Coin Cleaver mythic item.
      * Uses MONITOR priority to run after damage is processed.
      */

@@ -14,8 +14,10 @@ import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -60,6 +62,10 @@ public class CustomArmorManager {
     // Bullseye Pants tracking
     private final Map<UUID, Integer> bullseyeHitCount; // Attacker -> current hit count
 
+    // Tectonic Cap tracking
+    private final Map<UUID, Long> tectonicCharge1Cooldown;
+    private final Map<UUID, Long> tectonicCharge2Cooldown;
+
     // Flamebringer Set tracking
     private final Map<UUID, Integer> flamebringerKills; // Player -> kill count this round
     private final Map<UUID, BukkitTask> flamebringerFireTask; // Player -> fire effect task
@@ -84,6 +90,9 @@ public class CustomArmorManager {
         this.dragonDamageBoost = new ConcurrentHashMap<>();
 
         this.bullseyeHitCount = new ConcurrentHashMap<>();
+
+        this.tectonicCharge1Cooldown = new ConcurrentHashMap<>();
+        this.tectonicCharge2Cooldown = new ConcurrentHashMap<>();
 
         this.flamebringerKills = new ConcurrentHashMap<>();
         this.flamebringerFireTask = new ConcurrentHashMap<>();
@@ -167,6 +176,13 @@ public class CustomArmorManager {
         return false;
     }
 
+    public boolean hasTectonicCap(Player p) {
+        for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
+            if (ca == CustomArmorItem.TECTONIC_CAP) return true;
+        }
+        return false;
+    }
+
     public boolean hasFlamebringerSet(Player p) {
         boolean hasBoots = false, hasLegs = false;
         for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
@@ -174,6 +190,75 @@ public class CustomArmorManager {
             if (ca == CustomArmorItem.FLAMEBRINGER_LEGGINGS) hasLegs = true;
         }
         return hasBoots && hasLegs;
+    }
+
+    // ==================== TECTONIC CAP ====================
+
+    /**
+     * Tectonic Cap: negates fall damage and slams the ground, damaging nearby enemies.
+     * Two charges with a shared recharge; each charge recharges independently after the
+     * configured recharge time. The slam radius scales with the negated fall damage.
+     */
+    public void onTectonicCapFall(EntityDamageEvent event, Player player) {
+        if (!hasTectonicCap(player)) return;
+
+        UUID id = player.getUniqueId();
+        long now = System.currentTimeMillis();
+
+        boolean charge1Ready = !tectonicCharge1Cooldown.containsKey(id) || tectonicCharge1Cooldown.get(id) <= now;
+        boolean charge2Ready = !tectonicCharge2Cooldown.containsKey(id) || tectonicCharge2Cooldown.get(id) <= now;
+
+        if (!charge1Ready && !charge2Ready) return;
+
+        Location impact = player.getLocation().clone().add(0, 0.1, 0);
+        Material feet = player.getLocation().getBlock().getType();
+
+        if (feet == Material.WATER || feet == Material.LAVA || feet == Material.COBWEB) {
+            return;
+        }
+
+        double fallDamage = event.getFinalDamage();
+        event.setCancelled(true);
+        double radius = cfg.getTectonicCapRadius() + (fallDamage * 0.3);
+        org.bukkit.World world = player.getWorld();
+
+        ParticleUtils.spawnDust(impact, org.bukkit.Color.fromRGB(180, 120, 60), 2.5f, 75, 1.1, 0.1, 1.1);
+        ParticleUtils.spawnDust(impact, org.bukkit.Color.fromRGB(80, 45, 20), 2.5f, 60, 1.1, 0.1, 1.1);
+
+        world.playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.9f);
+
+        for (org.bukkit.entity.Entity entity : player.getNearbyEntities(radius, radius, radius)) {
+            if (!(entity instanceof Player target)) continue;
+            if (target.equals(player)) continue;
+
+            target.damage(cfg.getTectonicCapDamage() + fallDamage, player);
+
+            Vector knockback = target.getLocation()
+                    .toVector()
+                    .subtract(impact.toVector())
+                    .normalize()
+                    .setY(0.25)
+                    .multiply(0.7);
+
+            target.setVelocity(knockback);
+            if (target.getLocation().distance(impact) <= 2.0) {
+                target.addPotionEffect(new PotionEffect(
+                        PotionEffectType.SLOWNESS,
+                        20 * 4, // 4 seconds
+                        1,      // Slowness II
+                        false,
+                        true,
+                        true
+                ));
+            }
+        }
+
+        long cooldownEnd = System.currentTimeMillis() + (cfg.getTectonicCapRechargeSeconds() * 1000L);
+        if (charge1Ready) {
+            tectonicCharge1Cooldown.put(id, cooldownEnd);
+        } else {
+            tectonicCharge2Cooldown.put(id, cooldownEnd);
+        }
     }
 
     // ==================== MAGIC HELMET ====================
@@ -759,6 +844,9 @@ public class CustomArmorManager {
         deathmaulerExtraHearts.clear();
 
         bullseyeHitCount.clear();
+
+        tectonicCharge1Cooldown.clear();
+        tectonicCharge2Cooldown.clear();
 
         // Cancel all dragon mark tasks
         dragonMarkTasks.values().forEach(BukkitTask::cancel);

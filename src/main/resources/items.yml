@@ -138,6 +138,12 @@ custom-armor:
     duration-seconds: 15
     cooldown-seconds: 25
 
+  # Tectonic Cap
+  tectonic-cap:
+    recharge-seconds: 22
+    base-damage: 4.0
+    radius: 4.0
+
   # Guardian's Vest
   guardians-vest:
     trigger-health: 8.0

@@ -25,6 +25,7 @@ public enum CustomArmorItem implements Purchasable {
     GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, "guardians-vest", "Guardian's Vest", null),
     BULLSEYE_PANTS(Material.GOLDEN_LEGGINGS, "bullseye-pants", "Bullseye Pants", null),
     BUNNY_SHOES(Material.LEATHER_BOOTS, "bunny-shoes", "Bunny Shoes", null),
+    TECTONIC_CAP(Material.IRON_HELMET, "tectonic-cap", "Tectonic Cap", null),
 
     FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, "flamebringer-leggings", "Flamebringer's Leggings", ArmorSet.FLAMEBRINGER),
     FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, "flamebringer-boots", "Flamebringer's Boots", ArmorSet.FLAMEBRINGER),

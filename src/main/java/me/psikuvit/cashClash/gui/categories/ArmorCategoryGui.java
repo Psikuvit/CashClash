@@ -70,6 +70,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     private static final int GUARDIANS_VEST_SLOT = 41;
     private static final int BULLSEYE_PANTS_SLOT = 42;
     private static final int BUNNY_SHOES_SLOT = 43;
+    private static final int TECTONIC_CAP_SLOT = 44;
 
     public ArmorCategoryGui(Player viewer) {
         super(GUI_ID, viewer, ShopCategory.ARMOR);
@@ -266,6 +267,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         setButton(GUARDIANS_VEST_SLOT, createCustomArmorButton(CustomArmorItem.GUARDIANS_VEST));
         setButton(BULLSEYE_PANTS_SLOT, createCustomArmorButton(CustomArmorItem.BULLSEYE_PANTS));
         setButton(BUNNY_SHOES_SLOT, createCustomArmorButton(CustomArmorItem.BUNNY_SHOES));
+        setButton(TECTONIC_CAP_SLOT, createCustomArmorButton(CustomArmorItem.TECTONIC_CAP));
     }
 
     // ==================== BUTTON CREATION ====================
