@@ -13,9 +13,12 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
@@ -220,14 +223,14 @@ public class CustomArmorManager {
         double fallDamage = event.getFinalDamage();
         event.setCancelled(true);
         double radius = cfg.getTectonicCapRadius() + (fallDamage * 0.3);
-        org.bukkit.World world = player.getWorld();
+        World world = player.getWorld();
 
-        ParticleUtils.spawnDust(impact, org.bukkit.Color.fromRGB(180, 120, 60), 2.5f, 75, 1.1, 0.1, 1.1);
-        ParticleUtils.spawnDust(impact, org.bukkit.Color.fromRGB(80, 45, 20), 2.5f, 60, 1.1, 0.1, 1.1);
+        ParticleUtils.spawnDust(impact, Color.fromRGB(180, 120, 60), 2.5f, 75, 1.1, 0.1, 1.1);
+        ParticleUtils.spawnDust(impact, Color.fromRGB(80, 45, 20), 2.5f, 60, 1.1, 0.1, 1.1);
 
         world.playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.9f);
 
-        for (org.bukkit.entity.Entity entity : player.getNearbyEntities(radius, radius, radius)) {
+        for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
             if (!(entity instanceof Player target)) continue;
             if (target.equals(player)) continue;
 
