@@ -2,11 +2,11 @@ package me.psikuvit.cashClash.gamemode.impl;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
+import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
@@ -747,11 +747,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * @return true if the buff selection was successful
      */
     public boolean handlePresidentBuffSelection(Player player, int slot) {
-        if (!selectionPhaseActive) {
-            Messages.debug("[PTP] Buff selection attempted but phase is not active");
-            return false;
-        }
-
         UUID playerUuid = player.getUniqueId();
         if (isNotPresident(playerUuid)) {
             Messages.debug("[PTP] Non-president " + player.getName() + " tried to select buff");
@@ -844,6 +839,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
         long elapsed = System.currentTimeMillis() - recentHeartBonusAwardMs;
         long remaining = 3 * 60 * 1000L - elapsed;
         return Math.max(0L, remaining);
+    }
+
+    public boolean isInBuffSelectionPhase() {
+        return selectionPhaseActive;
     }
 
     @Override

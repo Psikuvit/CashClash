@@ -554,7 +554,10 @@ public class InteractListener implements Listener {
         
         if (session == null || session.getGamemode() == null) return;
         if (!(session.getGamemode() instanceof ProtectThePresidentGamemode gamemode)) return;
-        
+
+        // Check if in selection phase
+        if (!gamemode.isInBuffSelectionPhase()) return;
+
         // Check if this is a right-click and main hand
         if (event.getAction().name().contains("LEFT")) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
