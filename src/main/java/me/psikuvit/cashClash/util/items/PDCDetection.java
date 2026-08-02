@@ -87,6 +87,17 @@ public final class PDCDetection {
         return tag != null ? EnchantEntry.valueOf(tag) : null;
     }
 
+    public static EnchantEntry getRune(ItemStack stack) {
+        String tag = readTag(stack, Keys.ITEM_ID);
+        if (tag == null) return null;
+
+        try {
+            return EnchantEntry.valueOf(tag);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
     // ==================== ITEM TAG CHECKS ====================
 
     /**

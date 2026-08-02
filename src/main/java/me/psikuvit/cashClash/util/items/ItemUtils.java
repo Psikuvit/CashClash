@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.util.items;
 
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
@@ -8,6 +9,7 @@ import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -16,8 +18,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -210,6 +214,48 @@ public final class ItemUtils {
                 is.setItemMeta(meta);
             });
         }
+    }
+
+    public static void removeRune(Player player, EnchantEntry ee) {
+        if (player == null || ee == null) return;
+
+        ItemStack[] contents = player.getInventory().getContents();
+
+        for (int i = 0; i < contents.length; i++) {
+            ItemStack item = contents[i];
+
+            if (item == null || item.getType().isAir()) continue;
+
+            EnchantEntry rune = PDCDetection.getRune(item);
+
+            if (rune == ee) {
+                contents[i] = null;
+                player.getInventory().setContents(contents);
+                return;
+            }
+        }
+    }
+
+    public static ItemStack createRune(EnchantEntry ee, int level) {
+        ItemStack rune = new ItemStack(ee.getRuneMaterial(), 1);
+
+        ItemMeta meta = rune.getItemMeta();
+        if (meta == null) return rune;
+
+        meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, ee.name());
+        meta.getPersistentDataContainer().set(Keys.RUNE_LEVEL, PersistentDataType.INTEGER, level);
+
+        meta.displayName(Messages.parse("<yellow>" + ee.getDisplayName() + " Rune " + level + "</yellow>"));
+        meta.lore(List.of(
+                Messages.parse("<gray>Enhances: " + ee.getDisplayName() + "</gray>"),
+                Messages.parse("<gray>Level: " + level + "</gray>")
+        ));
+
+        rune.setItemMeta(meta);
+
+        RuneManager.initializeRuneDurability(rune, ee);
+
+        return rune;
     }
 
     public static boolean removeItemFromPlayer(Player player, String itemTag, int quantity) {

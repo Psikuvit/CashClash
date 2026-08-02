@@ -261,6 +261,23 @@ messages:
     ineligible-item: "<red>The item in your main hand is not eligible for this enchantment. It will be saved for future purchases.</red>"
 
   # ============================================
+  # RUNE MESSAGES
+  # ============================================
+  rune:
+    broken-cannot-use: "<red>This rune is broken and cannot be used yet!</red>"
+    toggle-cooldown: "<red>You cannot toggle this rune for {seconds}s!</red>"
+    max-active: "<red>You can only have 2 runes active!</red>"
+    active-cannot-switch: "<red>Active runes cannot switch links!</red>"
+    no-valid-item: "<red>No valid item found for this rune!</red>"
+    broken: "<red>Your {rune} rune has broken!</red>"
+    recharged: "<green>Your {rune} rune is fully recharged!</green>"
+    unlinked: "<yellow>Rune unlinked!</yellow>"
+    linked: "<green>Rune linked to {target}!</green>"
+    auto-linked: "<red>These items are automatically linked!</red>"
+    ineligible-target: "<red>This item can't be enchanted with {enchant}!</red>"
+    max-level: "<yellow>You've already upgraded this rune to the max level</yellow>"
+
+  # ============================================
   # ROUND/GAME MESSAGES
   # ============================================
   round:

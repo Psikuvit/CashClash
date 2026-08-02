@@ -187,7 +187,7 @@ public final class GuiItemFactory {
      * @return The configured ItemStack for display
      */
     public ItemStack createEnchantItem(EnchantEntry enchant, int level, long price) {
-        ShopItemBuilder builder = ShopItemBuilder.of(Material.ENCHANTED_BOOK)
+        ShopItemBuilder builder = ShopItemBuilder.of(enchant.getRuneMaterial())
                 .name("<yellow>" + enchant.getDisplayName() + " " + level + "</yellow>")
                 .price(price)
                 .maxLevel(enchant.getMaxLevel());
@@ -216,7 +216,7 @@ public final class GuiItemFactory {
         ItemStack heldItem = player.getInventory().getItemInMainHand();
         int effectiveLevel = ItemUtils.getEffectiveEnchantLevel(heldItem, enchant, level);
 
-        ShopItemBuilder builder = ShopItemBuilder.of(Material.ENCHANTED_BOOK)
+        ShopItemBuilder builder = ShopItemBuilder.of(enchant.getRuneMaterial())
                 .name("<yellow>" + enchant.getDisplayName() + " " + level + "</yellow>")
                 .price(price)
                 .maxLevel(enchant.getMaxLevel());
@@ -257,7 +257,8 @@ public final class GuiItemFactory {
      * @return The configured ItemStack for display
      */
     public ItemStack createMaxedEnchant(EnchantEntry enchant) {
-        return ShopItemBuilder.of(Material.ENCHANTED_BOOK)
+        return ShopItemBuilder.of(enchant.getRuneMaterial())
+                .enchant(enchant.getEnchantment(), enchant.getMaxLevel())
                 .name("<green>" + enchant.getDisplayName() + " <gray>(Max)</gray></green>")
                 .maxed("<gray>Maximum level reached!</gray>")
                 .itemId(enchant.name())

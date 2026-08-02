@@ -18,10 +18,12 @@ import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
@@ -51,20 +53,22 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
-import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scoreboard.Scoreboard;
@@ -745,9 +749,113 @@ public class GameListener implements Listener {
             }
         }
 
-        // --- Handle Cobweb Limit ---
+        // --- Handle Rune Linking ---
         ItemStack cursor = event.getCursor();
-        if (cursor.getType() == Material.COBWEB) {
+        if (RuneManager.isRune(cursor)) {
+
+            if (RuneManager.isRuneActive(cursor)) {
+                event.setCancelled(true);
+                Messages.send(p, "rune.active-cannot-switch");
+                SoundUtils.play(
+                        p,
+                        Sound.ENTITY_VILLAGER_NO,
+                        1.0f,
+                        1.0f
+                );
+                return;
+            }
+
+            if (CooldownManager.getInstance().isOnCooldown(
+                    p.getUniqueId(),
+                    CooldownManager.Keys.RUNE_LINK
+            )) {
+                event.setCancelled(true);
+                return;
+            }
+            ItemStack target = event.getCurrentItem();
+            if (target == null || target.getType().isAir()) return;
+            EnchantEntry enchant = PDCDetection.getRune(cursor);
+            if (enchant == null) return;
+            boolean isArmor = target.getType().name().endsWith("_HELMET")
+                    || target.getType().name().endsWith("_CHESTPLATE")
+                    || target.getType().name().endsWith("_LEGGINGS")
+                    || target.getType().name().endsWith("_BOOTS");
+            if (isArmor &&
+                    (enchant == EnchantEntry.PROTECTION
+                            || enchant == EnchantEntry.PROJECTILE_PROTECTION)) {
+
+                Messages.send(p, "rune.auto-linked");
+                SoundUtils.play(
+                        p,
+                        Sound.ENTITY_VILLAGER_NO,
+                        1.0f,
+                        1.0f
+                );
+                return;
+            }
+            if (!enchant.canApplyTo(target)) {
+                event.setCancelled(true);
+                Messages.send(p, "rune.ineligible-target",
+                        "enchant", enchant.getDisplayName());
+                SoundUtils.play(
+                        p,
+                        Sound.ENTITY_VILLAGER_NO,
+                        1.0f,
+                        1.0f
+                );
+                return;
+            }
+
+            ItemStack linked = RuneManager.getLinkedItem(p, cursor);
+            if (linked != null && linked.isSimilar(target)) {
+                RuneManager.clearRuneLink(cursor);
+                CooldownManager.getInstance().setCooldownSeconds(
+                        p.getUniqueId(),
+                        CooldownManager.Keys.RUNE_LINK,
+                        1
+                );
+
+                event.setCancelled(true);
+                p.setItemOnCursor(null);
+                p.getInventory().addItem(cursor);
+
+                SoundUtils.play(
+                        p,
+                        Sound.BLOCK_ENCHANTMENT_TABLE_USE,
+                        1.0f,
+                        0.85f
+                );
+
+                Messages.send(p, "rune.unlinked");
+                return;
+            }
+
+            RuneManager.setRuneLink(cursor, target);
+            CooldownManager.getInstance().setCooldownSeconds(
+                    p.getUniqueId(),
+                    CooldownManager.Keys.RUNE_LINK,
+                    1
+            );
+
+            event.setCancelled(true);
+            p.setItemOnCursor(null);
+            p.getInventory().addItem(cursor);
+
+            SoundUtils.play(
+                    p,
+                    Sound.BLOCK_ENCHANTMENT_TABLE_USE,
+                    1.0f,
+                    1.0f
+            );
+
+            Messages.send(p, "rune.linked",
+                    "target", target.getType().name().toLowerCase().replace("_", " "));
+            return;
+        }
+
+        // --- Handle Cobweb Limit ---
+        ItemStack cursorWeb = event.getCursor();
+        if (cursorWeb.getType() == Material.COBWEB) {
             // Player is trying to put cobwebs into their inventory
             int currentWebs = 0;
             for (ItemStack is : p.getInventory().getContents()) {
@@ -760,6 +868,39 @@ public class GameListener implements Listener {
                 Messages.send(p, "listener.max-webs-reached");
             }
         }
+
+        SchedulerUtils.runTask(
+                () -> RuneManager.updateArmorRunes(p)
+        );
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onItemSwap(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+
+        SchedulerUtils.runTask(
+                () -> RuneManager.updateArmorRunes(player)
+        );
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onInventoryDrag(InventoryDragEvent event) {
+
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        SchedulerUtils.runTask(
+                () -> RuneManager.updateArmorRunes(player)
+        );
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onInventoryArmorChange(InventoryClickEvent event) {
+
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        SchedulerUtils.runTask(
+                () -> RuneManager.updateArmorRunes(player)
+        );
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
