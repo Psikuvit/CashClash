@@ -389,6 +389,22 @@ public class ItemsConfig {
         return config.getInt("custom-items.cash-blaster.coins-per-hit", 500);
     }
 
+    public int getCashBlasterVortexCooldown() {
+        return config.getInt("custom-items.cash-blaster.vortex-cooldown-seconds", 10);
+    }
+
+    public double getCashBlasterVortexRadius() {
+        return config.getDouble("custom-items.cash-blaster.vortex-radius", 3.5);
+    }
+
+    public int getCashBlasterVortexDurationTicks() {
+        return config.getInt("custom-items.cash-blaster.vortex-duration-ticks", 80);
+    }
+
+    public int getCashBlasterVortexKillReward() {
+        return config.getInt("custom-items.cash-blaster.vortex-kill-reward", 400);
+    }
+
     // Respawn Anchor
     public int getRespawnAnchorDuration() {
         return config.getInt("custom-items.respawn-anchor.revive-duration-seconds", 10);

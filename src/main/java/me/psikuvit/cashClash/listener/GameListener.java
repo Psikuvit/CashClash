@@ -95,6 +95,10 @@ public class GameListener implements Listener {
         CashClashPlayer victim = session.getCashClashPlayer(player.getUniqueId());
         if (victim == null) return;
 
+        // Profit Vortex: a death inside a vortex credits the killer's team even though the
+        // fatal blow may not be credited to the vortex owner.
+        customItemManager.onProfitVortexDeath(event);
+
         // Prevent item drops and experience loss
         event.setKeepInventory(true);
         event.getDrops().clear();
@@ -474,6 +478,12 @@ public class GameListener implements Listener {
         ItemStack bow = event.getBow();
         if (bow == null) return;
 
+        // Cash Blaster: supercharge toggle + Profit Vortex shots (custom item, not mythic)
+        if (PDCDetection.getCustomItem(bow) == CustomItem.CASH_BLASTER) {
+            customItemManager.onCashBlasterShoot(event);
+            return;
+        }
+
         MythicItem mythic = PDCDetection.getMythic(bow);
         if (mythic == null) return;
 
@@ -534,6 +544,9 @@ public class GameListener implements Listener {
         if (event.isCancelled()) return;
 
         if (event.getEntity() instanceof Arrow arrow) {
+            // Profit Vortex: a tagged Cash Blaster arrow spawns its vortex on any impact
+            // (world or entity), so handle it before the orb/charged-arrow branch.
+            customItemManager.onProfitVortexArrowHit(arrow);
             // Orb of Gravitation: a fully-charged bow shot hitting a live orb decrements its
             // hits-remaining counter (4 hits destroys it) - projectile-vs-projectile collisions
             // surface here via getHitEntity(), not EntityDamageByEntityEvent.

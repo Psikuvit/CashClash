@@ -68,6 +68,17 @@ public class Keys {
      */
     public static final NamespacedKey FULLY_CHARGED_ARROW;
 
+    /**
+     * Byte marker on Cash Blaster Profit Vortex arrows (1 = this arrow spawns a vortex on impact).
+     */
+    public static final NamespacedKey PROFIT_VORTEX_ARROW;
+
+    /**
+     * Byte marker on Profit Vortex arrows indicating a spectral vortex (1 = spectral, 0 = normal).
+     * Spectral vortices glow enemies and mark them before applying the slowness.
+     */
+    public static final NamespacedKey SPECTRAL_VORTEX;
+
 
     static {
         ITEM_ID = new NamespacedKey(CashClashPlugin.getInstance(), "item_id");
@@ -81,6 +92,8 @@ public class Keys {
         ARENA_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "arena_npc");
         BUFF_SELECTION_POTION = new NamespacedKey(CashClashPlugin.getInstance(), "buff_selection_potion");
         FULLY_CHARGED_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "fully_charged_arrow");
+        PROFIT_VORTEX_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "profit_vortex_arrow");
+        SPECTRAL_VORTEX = new NamespacedKey(CashClashPlugin.getInstance(), "spectral_vortex");
     }
 
     private Keys() {

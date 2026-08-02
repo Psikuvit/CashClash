@@ -331,6 +331,13 @@ public class InteractListener implements Listener {
                     return true;
                 }
             }
+            case CASH_BLASTER -> {
+                if (player.isSneaking() && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK)) {
+                    event.setCancelled(true);
+                    customItemManager.onCashBlasterToggle(player);
+                    return true;
+                }
+            }
             case BOUNCE_PAD -> {
                 if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
                     if (isSilenced(player)) {

@@ -30,6 +30,7 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
@@ -38,6 +39,8 @@ import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
 import org.bukkit.entity.TextDisplay;
+import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -158,6 +161,18 @@ public class CustomItemManager {
     // only around the direct damage call so DamageListener zeroes armor/effect modifiers there)
     private final Set<UUID> phantomSliceDamageActive;
 
+    // Cash Blaster supercharge toggle state
+    private final Map<UUID, Boolean> cashBlasterSupercharged;
+
+    // Profit Vortex tracking: arrows tagged to spawn a vortex, vortex locations owned by the
+    // shooter, players currently inside a vortex (credited to the owner's team on death), and
+    // the spectral-vortex variant that glows enemies before slowing them
+    private final Map<UUID, Location> playersInProfitVortex;
+    private final Map<Location, UUID> profitVortexOwners;
+    private final Map<UUID, Location> playersKilledInProfitVortex;
+    private final Map<Location, Boolean> spectralProfitVortices;
+    private final Map<Location, Set<UUID>> spectralVortexMarkedPlayers;
+
     private CustomItemManager() {
         this.cooldownManager = CooldownManager.getInstance();
         this.cfg = ItemsConfig.getInstance();
@@ -192,6 +207,12 @@ public class CustomItemManager {
         this.orbOwners = new HashMap<>();
         this.orbTrailTasks = new HashMap<>();
         this.phantomSliceDamageActive = new HashSet<>();
+        this.cashBlasterSupercharged = new HashMap<>();
+        this.playersInProfitVortex = new HashMap<>();
+        this.profitVortexOwners = new HashMap<>();
+        this.playersKilledInProfitVortex = new HashMap<>();
+        this.spectralProfitVortices = new HashMap<>();
+        this.spectralVortexMarkedPlayers = new HashMap<>();
     }
 
     public static CustomItemManager getInstance() {
@@ -622,6 +643,253 @@ public class CustomItemManager {
             Messages.send(attacker, "customitem.cash-blaster-hit", "amount", String.valueOf(coinsPerHit));
             SoundUtils.play(attacker, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
         }
+    }
+
+    // ==================== CASH BLASTER SUPERCHARGE / PROFIT VORTEX ====================
+
+    /**
+     * Cash Blaster supercharge toggle: sneak + right-click while holding the Cash Blaster.
+     * Toggles the supercharged state with a short cooldown and feedback sound.
+     */
+    public void onCashBlasterToggle(Player player) {
+        if (!hasCashBlasterInHand(player)) return;
+
+        UUID uuid = player.getUniqueId();
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CASH_BLASTER_TOGGLE)) {
+            return;
+        }
+
+        boolean enabled = !cashBlasterSupercharged.getOrDefault(uuid, false);
+        cashBlasterSupercharged.put(uuid, enabled);
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.CASH_BLASTER_TOGGLE, 1);
+
+        if (enabled) {
+            Messages.send(player, "customitem.cash-blaster-supercharged");
+            SoundUtils.play(player, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
+        } else {
+            Messages.send(player, "customitem.cash-blaster-supercharge-disabled");
+            SoundUtils.play(player, Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 1.0f);
+        }
+    }
+
+    public boolean hasCashBlasterInHand(Player player) {
+        return PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.CASH_BLASTER;
+    }
+
+    /**
+     * Handle a Cash Blaster shot. Normal mode: +10% arrow damage.
+     * Supercharged mode: requires a fully charged shot, consumes 4 arrows and launches a
+     * Profit Vortex arrow that spawns a damaging/levitating vortex on impact.
+     */
+    public void onCashBlasterShoot(EntityShootBowEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (!hasCashBlasterInHand(player)) return;
+        if (!(event.getProjectile() instanceof AbstractArrow arrow)) return;
+
+        // Normal mode: +10% arrow damage
+        if (!cashBlasterSupercharged.getOrDefault(player.getUniqueId(), false)) {
+            arrow.setDamage(arrow.getDamage() * 1.10);
+            return;
+        }
+
+        event.setCancelled(true);
+        if (event.getForce() < 0.99f) {
+            Messages.send(player, "customitem.cash-blaster-vortex-full-charge");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        if (cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.CASH_BLASTER_VORTEX)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(player.getUniqueId(), CooldownManager.Keys.CASH_BLASTER_VORTEX);
+            Messages.send(player, "customitem.cash-blaster-vortex-cooldown", "remaining", String.valueOf(remaining));
+            return;
+        }
+
+        if (getProfitVortexArrowCount(player) < 4) {
+            Messages.send(player, "customitem.cash-blaster-vortex-need-arrows");
+            return;
+        }
+
+        SchedulerUtils.runTaskLater(() -> removeProfitVortexArrows(player, 4), 1L);
+        boolean spectralVortex = isSpectralProfitVortex(player);
+        Arrow vortexArrow = player.launchProjectile(Arrow.class);
+        vortexArrow.setDamage(vortexArrow.getDamage() * 1.10);
+        vortexArrow.getPersistentDataContainer().set(Keys.PROFIT_VORTEX_ARROW, PersistentDataType.BYTE, (byte) 1);
+        vortexArrow.getPersistentDataContainer().set(Keys.SPECTRAL_VORTEX, PersistentDataType.BYTE, spectralVortex ? (byte) 1 : (byte) 0);
+
+        cooldownManager.setCooldownSeconds(player.getUniqueId(), CooldownManager.Keys.CASH_BLASTER_VORTEX, cfg.getCashBlasterVortexCooldown());
+    }
+
+    /**
+     * A tagged Profit Vortex arrow hit the ground/wall: spawn the vortex at the impact point.
+     * Runs a particle spiral for the vortex duration, slowing and crediting enemies inside it.
+     */
+    public void onProfitVortexArrowHit(Arrow arrow) {
+        if (!arrow.getPersistentDataContainer().has(Keys.PROFIT_VORTEX_ARROW, PersistentDataType.BYTE)) {
+            return;
+        }
+        if (!(arrow.getShooter() instanceof Player shooter)) return;
+
+        Location vortexLocation = arrow.getLocation();
+        vortexLocation.getWorld().playSound(vortexLocation, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.5f, 1.5f);
+
+        profitVortexOwners.put(vortexLocation, shooter.getUniqueId());
+
+        boolean isSpectral = arrow.getPersistentDataContainer().getOrDefault(
+                Keys.SPECTRAL_VORTEX, PersistentDataType.BYTE, (byte) 0) == (byte) 1;
+        spectralProfitVortices.put(vortexLocation, isSpectral);
+        spectralVortexMarkedPlayers.put(vortexLocation, new HashSet<>());
+
+        arrow.remove();
+
+        double radius = cfg.getCashBlasterVortexRadius();
+        int durationTicks = cfg.getCashBlasterVortexDurationTicks();
+
+        BukkitTask vortexTask = SchedulerUtils.runTaskTimer(() -> {
+            for (double angle = 0; angle < Math.PI * 2; angle += Math.PI / 24) {
+                double x = Math.cos(angle) * radius;
+                double z = Math.sin(angle) * radius;
+
+                Location particleLocation = vortexLocation.clone().add(x, 0.2, z);
+
+                if (isSpectral && ((int) (angle * 10) % 6 == 0)) {
+                    ParticleUtils.spawnDust(particleLocation, Color.fromRGB(255, 255, 255), 1.5f, 5, 0.05);
+                    ParticleUtils.spawnDust(particleLocation, Color.fromRGB(255, 215, 0), 1.5f, 4, 0.05);
+                } else {
+                    ParticleUtils.spawnDust(particleLocation, Color.fromRGB(120, 255, 120), 1.2f, 3, 0.05);
+                }
+                ParticleUtils.spawnDust(particleLocation, Color.fromRGB(0, 120, 0), 1.2f, 2, 0.05);
+            }
+
+            for (Player target : vortexLocation.getWorld().getPlayers()) {
+                if (target.getLocation().distanceSquared(vortexLocation) > radius * radius) continue;
+                if (target.getUniqueId().equals(profitVortexOwners.get(vortexLocation))) continue;
+
+                if (isSpectral && !spectralVortexMarkedPlayers.get(vortexLocation).contains(target.getUniqueId())) {
+                    target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 200, 0, false, true));
+                    spectralVortexMarkedPlayers.get(vortexLocation).add(target.getUniqueId());
+                }
+                target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 20, 0, false, false));
+                playersKilledInProfitVortex.put(target.getUniqueId(), vortexLocation);
+            }
+        }, 0L, 5L);
+
+        SchedulerUtils.runTaskLater(() -> {
+            vortexTask.cancel();
+            profitVortexOwners.remove(vortexLocation);
+            spectralVortexMarkedPlayers.remove(vortexLocation);
+            playersKilledInProfitVortex.entrySet().removeIf(entry -> entry.getValue().equals(vortexLocation));
+            vortexLocation.getWorld().playSound(vortexLocation, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.5f, 1.2f);
+        }, durationTicks);
+    }
+
+    /**
+     * Player died while inside a Profit Vortex: award 400 coins to the vortex owner's team.
+     */
+    public void onProfitVortexDeath(PlayerDeathEvent event) {
+        Player victim = event.getEntity();
+        if (!playersKilledInProfitVortex.containsKey(victim.getUniqueId())) return;
+
+        Player killer = victim.getKiller();
+        if (killer == null) return;
+
+        Location vortexLocation = playersKilledInProfitVortex.get(victim.getUniqueId());
+        if (vortexLocation.distance(victim.getLocation()) > 5) return;
+
+        GameSession session = GameManager.getInstance().getPlayerSession(killer);
+        if (session == null) return;
+
+        Team killerTeam = session.getPlayerTeam(killer);
+        if (killerTeam == null) return;
+
+        int coins = cfg.getCashBlasterVortexKillReward();
+        for (UUID uuid : killerTeam.getPlayers()) {
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+            if (ccp == null) continue;
+            ccp.addCoins(coins);
+
+            Player teammate = Bukkit.getPlayer(uuid);
+            if (teammate == null || !teammate.isOnline()) continue;
+
+            SoundUtils.play(teammate, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 0.5f);
+            Location center = teammate.getLocation().clone().add(0, 0.6, 0);
+            for (int i = 0; i < 18; i++) {
+                int delay = i;
+                SchedulerUtils.runTaskLater(() -> {
+                    double angle = (Math.PI * 2 / 18) * delay;
+                    double x = Math.cos(angle) * 0.55;
+                    double z = Math.sin(angle) * 0.55;
+                    ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(0, 120, 40), 1.3f, 2, 0.05);
+                }, (long) (delay * 0.8));
+            }
+        }
+
+        playersKilledInProfitVortex.remove(victim.getUniqueId());
+    }
+
+    /**
+     * Counts the total arrows (normal + spectral) in the player's inventory.
+     */
+    private int getProfitVortexArrowCount(Player player) {
+        int count = 0;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null) continue;
+            if (item.getType() == Material.ARROW || item.getType() == Material.SPECTRAL_ARROW) {
+                count += item.getAmount();
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Removes arrows from the player's inventory (normal arrows first, then spectral).
+     */
+    private void removeProfitVortexArrows(Player player, int amount) {
+        int needed = amount;
+
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null) continue;
+            if (item.getType() != Material.ARROW) continue;
+
+            int itemAmount = item.getAmount();
+            if (itemAmount <= needed) {
+                needed -= itemAmount;
+                item.setAmount(0);
+            } else {
+                item.setAmount(itemAmount - needed);
+                needed = 0;
+            }
+            if (needed <= 0) return;
+        }
+
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null) continue;
+            if (item.getType() != Material.SPECTRAL_ARROW) continue;
+
+            int itemAmount = item.getAmount();
+            if (itemAmount <= needed) {
+                needed -= itemAmount;
+                item.setAmount(0);
+            } else {
+                item.setAmount(itemAmount - needed);
+                needed = 0;
+            }
+            if (needed <= 0) return;
+        }
+    }
+
+    /**
+     * A vortex is spectral only when the player has NO normal arrows but at least 4 spectral ones.
+     */
+    private boolean isSpectralProfitVortex(Player player) {
+        int normalArrows = 0;
+        int spectralArrows = 0;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null) continue;
+            if (item.getType() == Material.ARROW) normalArrows += item.getAmount();
+            if (item.getType() == Material.SPECTRAL_ARROW) spectralArrows += item.getAmount();
+        }
+        return normalArrows == 0 && spectralArrows >= 4;
     }
 
     // ==================== BOUNCE PAD IMPLEMENTATION ====================
@@ -2168,6 +2436,12 @@ public class CustomItemManager {
         playersRevivedThisRound.clear();
 
         cashBlasterEarningsThisRound.clear();
+        cashBlasterSupercharged.clear();
+        playersInProfitVortex.clear();
+        profitVortexOwners.clear();
+        playersKilledInProfitVortex.clear();
+        spectralProfitVortices.clear();
+        spectralVortexMarkedPlayers.clear();
 
         totemInvincible.clear();
 
