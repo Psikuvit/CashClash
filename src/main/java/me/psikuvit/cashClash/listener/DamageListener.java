@@ -329,27 +329,6 @@ public class DamageListener implements Listener {
     }
 
     /**
-     * Handles knockback immunity for Coin Cleaver mythic item.
-     * Uses MONITOR priority to run after damage is processed.
-     */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onDamageKnockbackImmunity(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof Player victim)) {
-            return;
-        }
-
-        try {
-            // Check if victim has Coin Cleaver (sturdy feet - no knockback)
-            if (mythicManager.hasCoinCleaverNoKnockback(victim)) {
-                Vector currentVelocity = victim.getVelocity().clone();
-                SchedulerUtils.runTaskLater(() -> victim.setVelocity(currentVelocity), 1L);
-            }
-        } catch (Exception e) {
-            Messages.debug("DAMAGE", "Error applying knockback immunity: " + e.getMessage());
-        }
-    }
-
-    /**
      * Handle post-damage effects with MONITOR priority (after all damage modifications).
      * Processes: Flamebringer fire KB immunity.
      */
@@ -784,7 +763,6 @@ public class DamageListener implements Listener {
      */
     private void processMythicDamageEffects(EntityDamageByEntityEvent event, Player attacker, Player victim, MythicItem mythic) {
         switch (mythic) {
-            case COIN_CLEAVER -> applyMythicCoinCleaverEffect(event, attacker, victim);
             case CARLS_BATTLEAXE -> applyMythicCriticalEffect(event, attacker, victim, mythicManager::handleCarlsCriticalHit);
             case ELECTRIC_EEL_SWORD -> applyMythicCriticalEffect(event, attacker, victim, mythicManager::handleElectricEelChain);
             case WARDEN_GLOVES -> mythicManager.useWardenPunch(attacker, victim);
@@ -792,14 +770,6 @@ public class DamageListener implements Listener {
             case BLOODWRENCH_CROSSBOW, BLAZEBITE_CROSSBOWS -> applyLegendaryCrossbowBoost(event, attacker);
             default -> { /* No special handling */ }
         }
-    }
-
-    /**
-     * Apply Coin Cleaver damage effect
-     */
-    private void applyMythicCoinCleaverEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
-        double newDamage = mythicManager.handleCoinCleaverDamage(attacker, victim, event.getDamage(), event.isCritical());
-        event.setDamage(newDamage);
     }
 
     /**

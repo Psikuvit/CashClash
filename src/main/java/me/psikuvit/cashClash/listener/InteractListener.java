@@ -464,11 +464,6 @@ public class InteractListener implements Listener {
         }
 
         switch (mythic) {
-            case COIN_CLEAVER -> {
-                event.setCancelled(true);
-                mythicManager.useCoinCleaverGrenade(player);
-                return true;
-            }
             case CARLS_BATTLEAXE -> {
                 event.setCancelled(true);
                 mythicManager.activateCarlsSpinAttack(player);

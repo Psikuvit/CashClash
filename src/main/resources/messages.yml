@@ -442,15 +442,6 @@ messages:
   # MYTHIC ITEM MESSAGES
   # ============================================
   mythic:
-     coin-cleaver-charge: "<yellow>Coin Cleaver: {remaining_hits} more charged hits for No KB!</yellow>"
-     coin-cleaver-activated: "<gold><bold>COIN CLEAVER: NO KNOCKBACK ACTIVATED!</bold></gold>"
-     coin-cleaver-duration: "<yellow>Duration: {duration}s | Uses remaining: {uses_left}/{max_uses}</yellow>"
-     coin-cleaver-expired: "<gray>Coin Cleaver No KB expired.</gray>"
-     coin-cleaver-hits-needed: "<gray>Land {required_hits} more charged hits for another use.</gray>"
-     coin-cleaver-no-uses: "<red>No more No KB uses available this round.</red>"
-     coin-cleaver-grenade-cooldown: "<red>Grenade on cooldown! ({cooldown_seconds}s)</red>"
-     coin-cleaver-insufficient-coins: "<red>Not enough coins! (Costs ${cost})</red>"
-     coin-cleaver-grenade-cost: "<gold>-${cost} for grenade!</gold>"
      carls-battleaxe-cooldown: "<red>Spin attack on cooldown! ({cooldown_seconds}s)</red>"
      carls-battleaxe-already-spinning: "<red>You're already spinning!</red>"
      carls-battleaxe-activated: "<gold>Carl's Battleaxe: SPIN ATTACK!</gold>"

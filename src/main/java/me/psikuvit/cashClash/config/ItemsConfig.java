@@ -70,27 +70,6 @@ public class ItemsConfig {
         return config.getInt("mythic-items.legendaries-per-game", 5);
     }
 
-    // Coin Cleaver
-    public double getCoinCleaverDamageBonus() {
-        return config.getDouble("mythic-items.coin-cleaver.damage-bonus-multiplier", 1.25);
-    }
-
-    public int getCoinCleaverGrenadeCooldown() {
-        return config.getInt("mythic-items.coin-cleaver.grenade.cooldown-seconds", 3);
-    }
-
-    public int getCoinCleaverGrenadeCost() {
-        return config.getInt("mythic-items.coin-cleaver.grenade.cost", 2000);
-    }
-
-    public double getCoinCleaverGrenadeDamage() {
-        return config.getDouble("mythic-items.coin-cleaver.grenade.damage", 4.0);
-    }
-
-    public int getCoinCleaverGrenadeRadius() {
-        return config.getInt("mythic-items.coin-cleaver.grenade.radius", 5);
-    }
-
     // Carl's Battleaxe
     public int getCarlsSpinCooldown() {
         return config.getInt("mythic-items.carls-battleaxe.spin-attack.cooldown-seconds", 30);

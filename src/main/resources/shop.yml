@@ -121,7 +121,6 @@ custom-armor:
 # MYTHIC/LEGENDARY ITEM PRICES
 # ============================================
 mythic-items:
-  coin-cleaver: 75000
   carls-battleaxe: 100000
   wind-bow: 100000
   electric-eel-sword: 125000

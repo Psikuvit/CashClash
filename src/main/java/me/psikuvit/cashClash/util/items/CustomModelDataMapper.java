@@ -58,8 +58,6 @@ public final class CustomModelDataMapper {
         // assets/minecraft/items/iron_sword.json         when: "soulkatana"
         CUSTOM_ITEM_KEYS.put(CustomItem.SOUL_KATANA,         "soulkatana");
 
-        // assets/minecraft/items/diamond_axe.json       when: "coincleaver"
-        MYTHIC_KEYS.put(MythicItem.COIN_CLEAVER,       "coincleaver");
         // assets/minecraft/items/diamond_sword.json     when: "electriceelsword"
         MYTHIC_KEYS.put(MythicItem.ELECTRIC_EEL_SWORD, "electriceelsword");
         // assets/minecraft/items/bone.json              when: "carlsbattleaxe"

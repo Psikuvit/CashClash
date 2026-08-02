@@ -330,7 +330,6 @@ public class CooldownManager {
         public static final String RUNE_LINK = "rune_link";
 
         // Mythic Items
-        public static final String COIN_CLEAVER_GRENADE = "COIN_CLEAVER_GRENADE";
         public static final String CARLS_BATTLEAXE_SLASH = "CARLS_BATTLEAXE_SLASH";
         public static final String CARLS_BATTLEAXE_CRIT = "CARLS_BATTLEAXE_CRIT";
         public static final String WIND_BOW_BOOST = "WIND_BOW_BOOST";

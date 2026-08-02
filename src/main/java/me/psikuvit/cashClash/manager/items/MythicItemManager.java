@@ -121,13 +121,8 @@ public class MythicItemManager {
     private final Map<UUID, Long> alchemistTauntExpiry;
     private final Map<UUID, List<ItemDisplay>> alchemistTauntDisplays;
 
-    private static final int COIN_CLEAVER_MAX_USES_PER_ROUND = 3;
     // Carl's spinning players
     private final Set<UUID> spinningPlayers;
-    // Coin Cleaver charge tracking
-    private final Map<UUID, Integer> coinCleaverChargedHits;
-    private final Map<UUID, Integer> coinCleaverNoKBUsesRemaining;
-    private final Map<UUID, Long> coinCleaverNoKBActiveUntil;
 
     private MythicItemManager() {
         cfg = ItemsConfig.getInstance();
@@ -150,9 +145,6 @@ public class MythicItemManager {
         glacierFrostbiteParticleTasks = new ConcurrentHashMap<>();
         windBowShotsRemaining = new ConcurrentHashMap<>();
         spinningPlayers = ConcurrentHashMap.newKeySet();
-        coinCleaverChargedHits = new ConcurrentHashMap<>();
-        coinCleaverNoKBUsesRemaining = new ConcurrentHashMap<>();
-        coinCleaverNoKBActiveUntil = new ConcurrentHashMap<>();
         alchemistBlinkProtection = new ConcurrentHashMap<>();
         alchemistBlinkProtectionExpiry = new ConcurrentHashMap<>();
         alchemistTauntChains = new ConcurrentHashMap<>();
@@ -271,8 +263,6 @@ public class MythicItemManager {
         return sessionAvailableMythics.getOrDefault(sessionId, Collections.emptyList());
     }
 
-    private static final int COIN_CLEAVER_HITS_REQUIRED = 10;
-
     /**
      * Create the mythic item with proper tags and appearance.
      * For BlazeBite, use createBlazebiteBundle() instead to get both crossbows.
@@ -372,26 +362,6 @@ public class MythicItemManager {
 
     private void applyMythicAttributes(MythicItem mythic, ItemMeta meta) {
         switch (mythic) {
-            case COIN_CLEAVER -> {
-                // Netherite sword stats: 8 attack damage (+4 base = 12 total), 1.6 attack speed
-                NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "coin_cleaver_damage");
-                AttributeModifier damageMod = new AttributeModifier(
-                        damageKey,
-                        8.0, // Match Netherite Sword
-                        AttributeModifier.Operation.ADD_NUMBER,
-                        EquipmentSlotGroup.MAINHAND
-                );
-                meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, damageMod);
-                
-                NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "coin_cleaver_speed");
-                AttributeModifier speedMod = new AttributeModifier(
-                        speedKey,
-                        -2.4,
-                        AttributeModifier.Operation.ADD_NUMBER,
-                        EquipmentSlotGroup.MAINHAND
-                );
-                meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedMod);
-            }
             case GOBLIN_SPEAR -> {
                 NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_damage");
                 AttributeModifier damageMod = new AttributeModifier(
@@ -450,9 +420,6 @@ public class MythicItemManager {
         }
     }
 
-    // ==================== COIN CLEAVER ====================
-    private static final int COIN_CLEAVER_NO_KB_DURATION_SECONDS = 15;
-
     /**
      * Check if a specific mythic is available in this session.
      */
@@ -462,254 +429,7 @@ public class MythicItemManager {
         return !available.contains(mythic);
     }
 
-    /**
-     * Handle Coin Cleaver damage bonus against richer players.
-     * +25% damage if victim has more coins than attacker.
-     * Also tracks fully charged hits for the No KB ability.
-     */
-    public double handleCoinCleaverDamage(Player attacker, Player victim, double baseDamage, boolean isFullyCharged) {
-        Messages.debug(attacker, "COIN_CLEAVER: Checking damage bonus...");
-
-        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
-        if (session == null) {
-            Messages.debug(attacker, "COIN_CLEAVER: No session found");
-            return baseDamage;
-        }
-
-        CashClashPlayer attackerCcp = session.getCashClashPlayer(attacker.getUniqueId());
-        CashClashPlayer victimCcp = session.getCashClashPlayer(victim.getUniqueId());
-
-        if (attackerCcp == null || victimCcp == null) {
-            Messages.debug(attacker, "COIN_CLEAVER: Missing player data");
-            return baseDamage;
-        }
-
-        // Track fully charged hits for No KB ability
-        if (isFullyCharged) {
-            trackCoinCleaverChargedHit(attacker);
-        }
-
-        if (victimCcp.getCoins() > attackerCcp.getCoins()) {
-            double newDamage = baseDamage * ItemsConfig.getInstance().getCoinCleaverDamageBonus();
-            Messages.debug(attacker, "COIN_CLEAVER: +25% damage! (" + baseDamage + " -> " + newDamage + ") Victim has more coins");
-            return newDamage;
-        }
-        Messages.debug(attacker, "COIN_CLEAVER: No bonus - you have more coins");
-        return baseDamage;
-    }
-
-    /**
-     * Track a fully charged hit with Coin Cleaver.
-     * After 10 hits, grants No KB for 15 seconds (max 3 uses per round).
-     */
-    private void trackCoinCleaverChargedHit(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        // Check if player has uses remaining this round
-        int usesRemaining = coinCleaverNoKBUsesRemaining.getOrDefault(uuid, COIN_CLEAVER_MAX_USES_PER_ROUND);
-        if (usesRemaining <= 0) {
-            Messages.debug(player, "COIN_CLEAVER: No KB uses exhausted for this round");
-            return;
-        }
-
-        // Check if already has active No KB
-        if (hasCoinCleaverNoKBActive(uuid)) {
-            Messages.debug(player, "COIN_CLEAVER: Already has active No KB buff");
-            return;
-        }
-
-        // Increment hit count
-        int hits = coinCleaverChargedHits.getOrDefault(uuid, 0) + 1;
-        coinCleaverChargedHits.put(uuid, hits);
-
-        Messages.debug(player, "COIN_CLEAVER: Charged hit! " + hits + "/" + COIN_CLEAVER_HITS_REQUIRED);
-
-        // Check if reached threshold
-        if (hits >= COIN_CLEAVER_HITS_REQUIRED) {
-            activateCoinCleaverNoKB(player);
-        } else if (hits == COIN_CLEAVER_HITS_REQUIRED - 3) {
-            // Warn player they're close
-            Messages.send(player, "mythic.coin-cleaver-charge",
-                    "remaining_hits", String.valueOf(COIN_CLEAVER_HITS_REQUIRED - hits));
-        }
-    }
-
-    /**
-     * Activate the No KB buff for a player.
-     */
-    private void activateCoinCleaverNoKB(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        // Reset hit counter
-        coinCleaverChargedHits.put(uuid, 0);
-
-        // Decrement uses remaining
-        int usesRemaining = coinCleaverNoKBUsesRemaining.getOrDefault(uuid, COIN_CLEAVER_MAX_USES_PER_ROUND);
-        coinCleaverNoKBUsesRemaining.put(uuid, usesRemaining - 1);
-
-        // Set active until timestamp
-        long activeUntil = System.currentTimeMillis() + (COIN_CLEAVER_NO_KB_DURATION_SECONDS * 1000L);
-        coinCleaverNoKBActiveUntil.put(uuid, activeUntil);
-
-        int usesLeft = usesRemaining - 1;
-        Messages.send(player, "mythic.coin-cleaver-activated");
-        Messages.send(player, "mythic.coin-cleaver-duration",
-                "duration", String.valueOf(COIN_CLEAVER_NO_KB_DURATION_SECONDS),
-                "uses_left", String.valueOf(usesLeft),
-                "max_uses", String.valueOf(COIN_CLEAVER_MAX_USES_PER_ROUND));
-
-        SoundUtils.play(player, Sound.BLOCK_ANVIL_LAND, 1.0f, 0.5f);
-        ParticleUtils.totem(player.getLocation().add(0, 1, 0), 30, 0.5);
-
-        Messages.debug(player, "COIN_CLEAVER: No KB activated! " + COIN_CLEAVER_NO_KB_DURATION_SECONDS + "s, " + usesLeft + " uses left this round");
-
-        // Schedule expiration message
-        SchedulerUtils.runTaskLater(() -> {
-            if (player.isOnline()) {
-                Messages.send(player, "mythic.coin-cleaver-expired");
-                if (usesLeft > 0) {
-                    Messages.send(player, "mythic.coin-cleaver-hits-needed", "required_hits", String.valueOf(COIN_CLEAVER_HITS_REQUIRED));
-                } else {
-                    Messages.send(player, "mythic.coin-cleaver-no-uses");
-                }
-            }
-        }, COIN_CLEAVER_NO_KB_DURATION_SECONDS * 20L);
-    }
-
-    /**
-     * Check if player currently has active No KB from charged hits.
-     */
-    private boolean hasCoinCleaverNoKBActive(UUID uuid) {
-        Long activeUntil = coinCleaverNoKBActiveUntil.get(uuid);
-        if (activeUntil == null) return false;
-        return System.currentTimeMillis() < activeUntil;
-    }
-
-    /**
-     * Check if player should have no knockback.
-     * Returns true if player has earned No KB buff from 10 charged hits.
-     */
-    public boolean hasCoinCleaverNoKnockback(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        // Check if player has Coin Cleaver equipped
-        ItemStack mainHand = player.getInventory().getItemInMainHand();
-        ItemStack offHand = player.getInventory().getItemInOffHand();
-
-        boolean hasCleaver = PDCDetection.getMythic(mainHand) == MythicItem.COIN_CLEAVER ||
-               PDCDetection.getMythic(offHand) == MythicItem.COIN_CLEAVER;
-
-        if (!hasCleaver) {
-            return false;
-        }
-
-        // Check if has active No KB buff
-        if (hasCoinCleaverNoKBActive(uuid)) {
-            Messages.debug(player, "COIN_CLEAVER: No KB active - knockback prevented");
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Reset Coin Cleaver tracking for a player (call on round start/end).
-     */
-    public void resetCoinCleaverTracking(UUID playerId) {
-        coinCleaverChargedHits.remove(playerId);
-        coinCleaverNoKBUsesRemaining.remove(playerId);
-        coinCleaverNoKBActiveUntil.remove(playerId);
-        Messages.debug("COIN_CLEAVER: Reset tracking for " + playerId);
-    }
-
-    /**
-     * Reset Coin Cleaver tracking for all players in a session (call on round end).
-     */
-    public void resetCoinCleaverTrackingForSession(GameSession session) {
-        for (UUID playerId : session.getPlayers()) {
-            resetCoinCleaverTracking(playerId);
-        }
-    }
-
-    /**
-     * Get the current charged hit count for a player.
-     */
-    public int getCoinCleaverChargedHits(UUID playerId) {
-        return coinCleaverChargedHits.getOrDefault(playerId, 0);
-    }
-
-    /**
-     * Coin Cleaver right-click grenade.
-     * Instant grenade at feet dealing 2 hearts in 5 block radius.
-     * Costs $2,000, 3 second cooldown.
-     */
-    public void useCoinCleaverGrenade(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        Messages.debug(player, "COIN_CLEAVER: Grenade ability triggered");
-
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE)) {
-            Messages.debug(player, "COIN_CLEAVER: On cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE) + "s remaining");
-            Messages.send(player, "mythic.coin-cleaver-grenade-cooldown", "cooldown_seconds", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE)));
-            return;
-        }
-
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) {
-            Messages.debug(player, "COIN_CLEAVER: No session found");
-            return;
-        }
-
-        CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-        if (ccp == null || ccp.getCoins() < cfg.getCoinCleaverGrenadeCost()) {
-            Messages.debug(player, "COIN_CLEAVER: Not enough coins - need " + cfg.getCoinCleaverGrenadeCost());
-            Messages.send(player, "mythic.coin-cleaver-insufficient-coins", "cost", String.format("%,d", cfg.getCoinCleaverGrenadeCost()));
-            return;
-        }
-
-        ccp.deductCoins(cfg.getCoinCleaverGrenadeCost());
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.COIN_CLEAVER_GRENADE, cfg.getCoinCleaverGrenadeCooldown());
-
-        Messages.debug(player, "COIN_CLEAVER: Grenade fired! Cost: $" + cfg.getCoinCleaverGrenadeCost() + ", Cooldown: " + cfg.getCoinCleaverGrenadeCooldown() + "s");
-
-        Location loc = player.getLocation();
-        World world = loc.getWorld();
-        if (world == null) return;
-
-        // Instant explosion at feet
-        ParticleUtils.explosion(loc);
-        SoundUtils.playAt(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
-
-        Team playerTeam = session.getPlayerTeam(player);
-        int radius = cfg.getCoinCleaverGrenadeRadius();
-        int hitCount = 0;
-
-        // Damage enemies in radius (does NOT hurt player or teammates)
-        for (Entity entity : world.getNearbyEntities(loc, radius, radius, radius)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(player)) continue;
-
-            Team targetTeam = session.getPlayerTeam(target);
-            if (targetTeam != null && playerTeam != null &&
-                targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) continue;
-
-            target.damage(cfg.getCoinCleaverGrenadeDamage(), player);
-            hitCount++;
-        }
-
-        Messages.debug(player, "COIN_CLEAVER: Grenade hit " + hitCount + " enemies");
-
-        Messages.send(player, "mythic.coin-cleaver-grenade-cost", "cost", String.format("%,d", cfg.getCoinCleaverGrenadeCost()));
-    }
-
     // ==================== CARL'S BATTLEAXE ====================
-
-    /**
-     * Get the remaining No KB uses for a player this round.
-     */
-    public int getCoinCleaverNoKBUsesRemaining(UUID playerId) {
-        return coinCleaverNoKBUsesRemaining.getOrDefault(playerId, COIN_CLEAVER_MAX_USES_PER_ROUND);
-    }
 
     /**
      * Activate Carl's Battleaxe spinning attack.
@@ -2386,9 +2106,6 @@ public class MythicItemManager {
         wardenBoxingActive.remove(uuid);
         windBowShotsRemaining.remove(uuid);
         spinningPlayers.remove(uuid);
-        coinCleaverChargedHits.remove(uuid);
-        coinCleaverNoKBUsesRemaining.remove(uuid);
-        coinCleaverNoKBActiveUntil.remove(uuid);
 
         alchemistBlinkProtection.remove(uuid);
         alchemistBlinkProtectionExpiry.remove(uuid);
@@ -2439,9 +2156,6 @@ public class MythicItemManager {
         wardenBoxingActive.clear();
         windBowShotsRemaining.clear();
         spinningPlayers.clear();
-        coinCleaverChargedHits.clear();
-        coinCleaverNoKBUsesRemaining.clear();
-        coinCleaverNoKBActiveUntil.clear();
 
         alchemistBlinkProtection.clear();
         alchemistBlinkProtectionExpiry.clear();

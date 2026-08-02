@@ -14,15 +14,6 @@ mythic-items:
   # Number of legendaries available per game
   legendaries-per-game: 5
 
-  # Coin Cleaver
-  coin-cleaver:
-    damage-bonus-multiplier: 1.25
-    grenade:
-      cooldown-seconds: 3
-      cost: 2000
-      damage: 4.0
-      radius: 5
-
   # Carl's Battleaxe
   carls-battleaxe:
     # Spin Attack - Right-click to spin the axe around you, dealing damage to nearby enemies
@@ -744,12 +735,6 @@ item-lore:
 
   # ==================== MYTHIC ITEMS ====================
   mythic-items:
-    coin-cleaver:
-      lore:
-        - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
-        - "<dark_purple>A cleaver that showers coins</dark_purple>"
-        - "<yellow>Damage Bonus: +25%</yellow>"
-        - "<yellow>Grenade Ability: Throw coins</yellow>"
     carls-battleaxe:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"

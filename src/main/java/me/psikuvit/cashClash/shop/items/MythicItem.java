@@ -9,7 +9,6 @@ import org.bukkit.Material;
  * These are powerful unique weapons with special abilities.
  */
 public enum MythicItem implements Purchasable {
-    COIN_CLEAVER(Material.DIAMOND_AXE, "coin-cleaver", "Coin Cleaver"),
     CARLS_BATTLEAXE(Material.NETHERITE_AXE, "carls-battleaxe", "Carl's Battleaxe"),
     WIND_BOW(Material.BOW, "wind-bow", "Wind Bow"),
     ELECTRIC_EEL_SWORD(Material.DIAMOND_SWORD, "electric-eel-sword", "Electric Eel Sword"),
@@ -63,7 +62,7 @@ public enum MythicItem implements Purchasable {
      * Check if this mythic is a melee weapon.
      */
     public boolean isMelee() {
-        return this == COIN_CLEAVER || this == CARLS_BATTLEAXE ||
+        return this == CARLS_BATTLEAXE ||
                this == ELECTRIC_EEL_SWORD || this == GOBLIN_SPEAR || this == WARDEN_GLOVES;
     }
 
