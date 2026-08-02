@@ -11,7 +11,6 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -148,9 +147,7 @@ public class PlayerDataManager {
         } catch (SQLException e) {
             Messages.debug("Failed to load all players from DB: " + e.getMessage());
         }
-        for (Map.Entry<UUID, PlayerData> entry : cache.entrySet()) {
-            merged.put(entry.getKey(), entry.getValue());
-        }
+        merged.putAll(cache);
         return new ArrayList<>(merged.values());
     }
 

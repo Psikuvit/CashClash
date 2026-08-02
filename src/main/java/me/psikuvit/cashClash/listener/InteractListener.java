@@ -17,10 +17,9 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
-import me.psikuvit.cashClash.util.CooldownManager;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Fireball;
@@ -423,7 +422,7 @@ public class InteractListener implements Listener {
             case SOUL_KATANA -> {
                 if (action.isRightClick() && player.isSneaking()) {
                     event.setCancelled(true);
-                    customItemManager.usePhantomSlice(player, item);
+                    customItemManager.usePhantomSlice(player);
                     return true;
                 }
             }

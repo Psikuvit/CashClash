@@ -2067,7 +2067,7 @@ public class CustomItemManager {
      * approximated "end of the leap") strikes every enemy within the strike radius with flat
      * damage, bypassing armor and active effects, and applies the healing-reduction debuff.
      */
-    public void usePhantomSlice(Player player, ItemStack item) {
+    public void usePhantomSlice(Player player) {
         UUID uuid = player.getUniqueId();
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.SOUL_KATANA_PHANTOM_SLICE)) {
             double remaining = cooldownManager.getRemainingCooldownMs(uuid, CooldownManager.Keys.SOUL_KATANA_PHANTOM_SLICE) / 1000.0;
