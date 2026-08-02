@@ -2,9 +2,9 @@ package me.psikuvit.cashClash.sequence;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import java.time.Duration;
@@ -40,11 +40,11 @@ public final class SequenceEffects {
     }
 
     public static void applyBlindness(Collection<UUID> players, int ticks) {
-        forEachOnline(players, p -> p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, ticks, 0, false, false)));
+        forEachOnline(players, p -> CashClashPlayer.applyEffect(p, PotionEffectType.BLINDNESS, ticks, 0, false, false));
     }
 
     public static void clearBlindness(Collection<UUID> players) {
-        forEachOnline(players, p -> p.removePotionEffect(PotionEffectType.BLINDNESS));
+        forEachOnline(players, p -> CashClashPlayer.removeEffect(p, PotionEffectType.BLINDNESS));
     }
 
     private static void forEachOnline(Collection<UUID> players, Consumer<Player> action) {

@@ -6,7 +6,6 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -126,7 +125,7 @@ public class SuddenDeathManager {
         UUID uuid = player.getUniqueId();
         long expiryTime = System.currentTimeMillis() + durationMs;
         extraHeartExpiry.put(uuid, expiryTime);
-        player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, (int) (durationMs / 50), 0, false, false));
+        CashClashPlayer.applyEffect(player, PotionEffectType.GLOWING, (int) (durationMs / 50), 0, false, false);
 
         Messages.debug("[SuddenDeathManager] Applied extra heart to: " + player.getName() + " for " + durationMs + "ms");
 

@@ -1,11 +1,11 @@
 package me.psikuvit.cashClash.util.game.ctf;
 
 import me.psikuvit.cashClash.gamemode.impl.FlagState;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -58,7 +58,7 @@ public class FlagEffectsUtils {
         if (flag != null && flag.isHeld()) {
             Player carrier = Bukkit.getPlayer(flag.holder());
             if (carrier != null && carrier.isOnline()) {
-                carrier.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, GLOW_DURATION_TICKS, GLOW_AMPLIFIER, false, false));
+                CashClashPlayer.applyEffect(carrier, PotionEffectType.GLOWING, GLOW_DURATION_TICKS, GLOW_AMPLIFIER, false, false);
             }
         }
     }

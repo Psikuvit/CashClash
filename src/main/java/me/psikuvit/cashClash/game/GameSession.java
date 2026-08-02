@@ -470,9 +470,8 @@ public class GameSession {
         if (kit == null) return;
 
         switch (kit) {
-            case GHOST -> player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 60 * 20, 0, false, false));
-            case PYROMANIAC ->
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 60 * 20, 0, false, false));
+            case GHOST -> CashClashPlayer.applyEffect(player, PotionEffectType.SPEED, 60 * 20, 0);
+            case PYROMANIAC -> CashClashPlayer.applyEffect(player, PotionEffectType.FIRE_RESISTANCE, 60 * 20, 0);
             default -> {
             } // Other kits don't have potion effects
         }
@@ -807,11 +806,14 @@ public class GameSession {
             player.getInventory().setArmorContents(new ItemStack[4]);
             player.getInventory().setItemInOffHand(null);
 
-            for (PotionEffect t : player.getActivePotionEffects()) player.removePotionEffect(t.getType());
-
             CashClashPlayer ccp = getCashClashPlayer(player.getUniqueId());
             if (ccp != null) {
                 ccp.resetHealthModifier();
+                ccp.clearPluginEffects();
+            } else {
+                player.getActivePotionEffects().stream()
+                        .map(PotionEffect::getType)
+                        .forEach(player::removePotionEffect);
             }
             player.setHealth(20.0);
 
@@ -1227,10 +1229,8 @@ public class GameSession {
         player.setSaturation(20.0f);
         player.setGameMode(GameMode.SURVIVAL);
 
-        // Clear potion effects
-        player.getActivePotionEffects().stream()
-                .map(PotionEffect::getType)
-                .forEach(player::removePotionEffect);
+        // Clear plugin-applied potion effects (selective; vanilla effects preserved)
+        ccp.clearPluginEffects();
     }
 
     /**

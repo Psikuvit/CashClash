@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.game.ptp;
 
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -22,7 +23,7 @@ public class PresidentialEffectsUtils {
      */
     public static void applyGlowEffect(Player player) {
         if (player != null && player.isOnline()) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, PotionEffect.INFINITE_DURATION, 0, false, false));
+            CashClashPlayer.applyEffect(player, PotionEffectType.GLOWING, PotionEffect.INFINITE_DURATION, 0, false, false);
             Messages.debug("[PTP] Applied glowing to president: " + player.getName());
         }
     }
@@ -36,10 +37,10 @@ public class PresidentialEffectsUtils {
         if (player == null) {
             return;
         }
-        player.removePotionEffect(PotionEffectType.GLOWING);
-        player.removePotionEffect(PotionEffectType.STRENGTH);
-        player.removePotionEffect(PotionEffectType.RESISTANCE);
-        player.removePotionEffect(PotionEffectType.SPEED);
+        CashClashPlayer.removeEffect(player, PotionEffectType.GLOWING);
+        CashClashPlayer.removeEffect(player, PotionEffectType.STRENGTH);
+        CashClashPlayer.removeEffect(player, PotionEffectType.RESISTANCE);
+        CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
     }
 
     /**
@@ -50,7 +51,7 @@ public class PresidentialEffectsUtils {
      */
     public static void applyPotionEffect(Player player, PotionEffectType effect) {
         if (player != null && effect != null) {
-            player.addPotionEffect(new PotionEffect(effect, PotionEffect.INFINITE_DURATION, 0, false, false));
+            CashClashPlayer.applyEffect(player, effect, PotionEffect.INFINITE_DURATION, 0, false, false);
             Messages.debug("[PTP] Applied " + effect.getName() + " to president: " + player.getName());
         }
     }
@@ -74,7 +75,7 @@ public class PresidentialEffectsUtils {
      */
     public static void removeStrengthEffect(Player player) {
         if (player != null) {
-            player.removePotionEffect(PotionEffectType.STRENGTH);
+            CashClashPlayer.removeEffect(player, PotionEffectType.STRENGTH);
         }
     }
 
@@ -85,7 +86,7 @@ public class PresidentialEffectsUtils {
      */
     public static void removeResistanceEffect(Player player) {
         if (player != null) {
-            player.removePotionEffect(PotionEffectType.RESISTANCE);
+            CashClashPlayer.removeEffect(player, PotionEffectType.RESISTANCE);
         }
     }
 
@@ -96,7 +97,7 @@ public class PresidentialEffectsUtils {
      */
     public static void removeSpeedEffect(Player player) {
         if (player != null) {
-            player.removePotionEffect(PotionEffectType.SPEED);
+            CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
         }
     }
 
@@ -107,7 +108,7 @@ public class PresidentialEffectsUtils {
      */
     public static void removeGlowEffect(Player player) {
         if (player != null) {
-            player.removePotionEffect(PotionEffectType.GLOWING);
+            CashClashPlayer.removeEffect(player, PotionEffectType.GLOWING);
         }
     }
 }

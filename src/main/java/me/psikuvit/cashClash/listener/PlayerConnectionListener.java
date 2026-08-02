@@ -19,7 +19,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.potion.PotionEffect;
 
 /**
  * Handles player connection events
@@ -68,9 +67,7 @@ public class PlayerConnectionListener implements Listener {
         player.setFoodLevel(20);
         player.setSaturation(20.0f);
 
-        player.getActivePotionEffects().stream()
-                .map(PotionEffect::getType)
-                .forEach(player::removePotionEffect);
+        CashClashPlayer.clearAllEffects(player);
 
         // Teleport to configured server lobby spawn if present
         var lobbyLoc = ArenaManager.getInstance().getServerLobbySpawn();

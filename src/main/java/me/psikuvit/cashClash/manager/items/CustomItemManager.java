@@ -46,7 +46,6 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -258,7 +257,7 @@ public class CustomItemManager {
         if (world == null) return;
 
         ParticleUtils.explosion(loc);
-        world.playSound(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
+        SoundUtils.playAt(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
 
         for (Entity entity : world.getNearbyEntities(loc, 6, 6, 6)) {
             if (!(entity instanceof Player target)) continue;
@@ -283,7 +282,7 @@ public class CustomItemManager {
         World world = loc.getWorld();
         if (world == null) return;
 
-        world.playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 0.5f);
+        SoundUtils.playAt(loc, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 0.5f);
 
         BukkitTask cloudTask = SchedulerUtils.runTaskTimer(() -> {
             ParticleUtils.campfireSmoke(loc, 20, 2.5, 1, 2.5);
@@ -291,8 +290,8 @@ public class CustomItemManager {
             for (Entity entity : world.getNearbyEntities(loc, 5, 5, 5)) {
                 if (!(entity instanceof Player target)) continue;
 
-                target.addPotionEffect(new PotionEffect(PotionEffectType.POISON, 60, 0, false, true));
-                target.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 60, 0, false, true));
+                CashClashPlayer.applyEffect(target, PotionEffectType.POISON, 60, 0, false, true);
+                CashClashPlayer.applyEffect(target, PotionEffectType.BLINDNESS, 60, 0, false, true);
             }
         }, 0L, 20L);
 
@@ -321,7 +320,7 @@ public class CustomItemManager {
         double healAmount = cfg.getMedicPouchSelfHeal();
 
         if (currentHealth >= maxHealth) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 20 * 30, 0, false, true));
+            CashClashPlayer.applyEffect(player, PotionEffectType.ABSORPTION, 20 * 30, 0, false, true);
             Messages.send(player, "customitem.healing-converted");
         } else {
             double newHealth = Math.min(maxHealth, currentHealth + healAmount);
@@ -330,7 +329,7 @@ public class CustomItemManager {
             player.setHealth(newHealth);
 
             if (excess > 0) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 20 * 30, 0, false, true));
+                CashClashPlayer.applyEffect(player, PotionEffectType.ABSORPTION, 20 * 30, 0, false, true);
                 Messages.send(player, "customitem.healed-full");
             } else {
                 Messages.send(player, "customitem.healed-three-hearts");
@@ -367,7 +366,7 @@ public class CustomItemManager {
         double healAmount = cfg.getMedicPouchAllyHeal();
 
         if (currentHealth >= maxHealth) {
-            target.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 20 * 30, 1, false, true));
+            CashClashPlayer.applyEffect(target, PotionEffectType.ABSORPTION, 20 * 30, 1, false, true);
             Messages.send(target, "customitem.ally-gave-absorption", "player_name", player.getName());
         } else {
             double newHealth = Math.min(maxHealth, currentHealth + healAmount);
@@ -376,7 +375,7 @@ public class CustomItemManager {
             target.setHealth(newHealth);
 
             if (excess > 0) {
-                target.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 20 * 30, 1, false, true));
+                CashClashPlayer.applyEffect(target, PotionEffectType.ABSORPTION, 20 * 30, 1, false, true);
             }
             Messages.send(target, "customitem.ally-healed-you", "player_name", player.getName());
         }
@@ -465,7 +464,7 @@ public class CustomItemManager {
             player.getInventory().setArmorContents(new ItemStack[4]); // Clear visible armor
             player.getInventory().setItemInOffHand(null); // Clear shield if any
 
-            player.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+            CashClashPlayer.applyEffect(player, PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0);
 
             // Remove all arrows from the player (arrows stuck in them)
             removeArrowsFromPlayer(player);
@@ -493,7 +492,7 @@ public class CustomItemManager {
 
         } else if (!turnOn && invisCloakActive.contains(uuid)) {
             invisCloakActive.remove(uuid);
-            player.removePotionEffect(PotionEffectType.INVISIBILITY);
+            CashClashPlayer.removeEffect(player, PotionEffectType.INVISIBILITY);
 
             // Restore armor
             List<ItemStack> storedArmor = invisCloakStoredArmor.remove(uuid);
@@ -551,7 +550,7 @@ public class CustomItemManager {
         if (!invisCloakActive.contains(uuid)) return;
 
         invisCloakActive.remove(uuid);
-        player.removePotionEffect(PotionEffectType.INVISIBILITY);
+        CashClashPlayer.removeEffect(player, PotionEffectType.INVISIBILITY);
 
         // Restore armor that was hidden during invisibility
         List<ItemStack> storedArmor = invisCloakStoredArmor.remove(uuid);
@@ -731,7 +730,7 @@ public class CustomItemManager {
         if (!(arrow.getShooter() instanceof Player shooter)) return;
 
         Location vortexLocation = arrow.getLocation();
-        vortexLocation.getWorld().playSound(vortexLocation, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.5f, 1.5f);
+        SoundUtils.playAt(vortexLocation, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.5f, 1.5f);
 
         profitVortexOwners.put(vortexLocation, shooter.getUniqueId());
 
@@ -766,10 +765,10 @@ public class CustomItemManager {
                 if (target.getUniqueId().equals(profitVortexOwners.get(vortexLocation))) continue;
 
                 if (isSpectral && !spectralVortexMarkedPlayers.get(vortexLocation).contains(target.getUniqueId())) {
-                    target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 200, 0, false, true));
+                    CashClashPlayer.applyEffect(target, PotionEffectType.GLOWING, 200, 0, false, true);
                     spectralVortexMarkedPlayers.get(vortexLocation).add(target.getUniqueId());
                 }
-                target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 20, 0, false, false));
+                CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, 20, 0);
                 playersKilledInProfitVortex.put(target.getUniqueId(), vortexLocation);
             }
         }, 0L, 5L);
@@ -779,7 +778,7 @@ public class CustomItemManager {
             profitVortexOwners.remove(vortexLocation);
             spectralVortexMarkedPlayers.remove(vortexLocation);
             playersKilledInProfitVortex.entrySet().removeIf(entry -> entry.getValue().equals(vortexLocation));
-            vortexLocation.getWorld().playSound(vortexLocation, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.5f, 1.2f);
+            SoundUtils.playAt(vortexLocation, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.5f, 1.2f);
         }, durationTicks);
     }
 
@@ -1001,7 +1000,7 @@ public class CustomItemManager {
                 World world = boomLoc.getWorld();
                 if (world == null) return;
 
-                world.playSound(boomLoc, Sound.BLOCK_NOTE_BLOCK_BASS, 2.0f, 0.5f);
+                SoundUtils.playAt(boomLoc, Sound.BLOCK_NOTE_BLOCK_BASS, 2.0f, 0.5f);
                 spawnBoomboxRing(boomLoc, radius);
                 applyBoomboxSpeedBoost(player, boomLoc, world, radius);
             }, delay);
@@ -1049,7 +1048,7 @@ public class CustomItemManager {
             if (targetTeam == null || targetTeam.getTeamNumber() != placerTeam.getTeamNumber()) continue;
             if (session.getGamemode() instanceof CaptureTheFlagGamemode ctf && ctf.isSilenced(target.getUniqueId())) continue;
 
-            target.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, durationTicks, amplifier, false, true));
+            CashClashPlayer.applyEffect(target, PotionEffectType.SPEED, durationTicks, amplifier, false, true);
         }
     }
 
@@ -1204,8 +1203,8 @@ public class CustomItemManager {
         target.setFoodLevel(20);
 
         // 3 seconds of invincibility
-        target.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 3 * 20, 4, false, true)); // Resistance V = invincible
-        target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 3 * 20, 0, false, true));
+        CashClashPlayer.applyEffect(target, PotionEffectType.RESISTANCE, 3 * 20, 4, false, true); // Resistance V = invincible
+        CashClashPlayer.applyEffect(target, PotionEffectType.GLOWING, 3 * 20, 0, false, true);
 
         Messages.send(reviver, "customitem.revive-success-reviver", "player_name", target.getName());
         Messages.send(target, "customitem.revive-success-target", "player_name", reviver.getName());
@@ -1316,8 +1315,8 @@ public class CustomItemManager {
                         if (target.getLocation().distance(origin) > currentRadius + 1.0) continue;
 
                         alreadyDebuffed.add(target.getUniqueId());
-                        target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, debuffDurationTicks, 0, false, true));
-                        target.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, debuffDurationTicks, 0, false, true));
+                        CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, debuffDurationTicks, 0, false, true);
+                        CashClashPlayer.applyEffect(target, PotionEffectType.WEAKNESS, debuffDurationTicks, 0, false, true);
                         Messages.send(target, "customitem.totem-haunting-witness", "player_name", player.getName());
                     }
                 }
@@ -2020,7 +2019,7 @@ public class CustomItemManager {
         for (Entity entity : zone.center().getWorld().getNearbyEntities(zone.center(), radius, radius, radius)) {
             if (!(entity instanceof Player target)) continue;
             if (!isSameTeam(zone.session(), zone.teamNumber(), target)) continue;
-            target.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, durationTicks, 0, false, false));
+            CashClashPlayer.applyEffect(target, PotionEffectType.REGENERATION, durationTicks, 0);
             Messages.send(target, "customitem.blooming-rose-teammates-regen");
         }
     }
@@ -2241,7 +2240,7 @@ public class CustomItemManager {
                 Team targetTeam = session.getPlayerTeam(target);
                 if (targetTeam != null && targetTeam.getTeamNumber() == team.getTeamNumber()) continue;
             }
-            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slownessTicks, 0, false, false));
+            CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, slownessTicks, 0);
             pulled.add(target);
         }
 

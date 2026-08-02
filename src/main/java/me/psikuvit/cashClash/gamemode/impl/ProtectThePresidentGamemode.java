@@ -788,7 +788,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             presidents.put(presTeam, updatedPres);
             Messages.debug("[PTP] " + player.getName() + " deselected buff: " + buff.getName());
             Messages.send(player, "gamemode-ptp.buff-deselected");
-            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
+            SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
             return true;
         }
         
@@ -804,7 +804,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         presidents.put(presTeam, updatedPres);
         Messages.debug("[PTP] " + player.getName() + " selected buff: " + buff.getName());
         Messages.send(player, "gamemode-ptp.buff-selected-player", "buff_name", buff.getName());
-        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
+        SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
         return true;
     }
 

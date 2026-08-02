@@ -615,7 +615,7 @@ public class RoundManager {
              if (sessionPlayer == null || !sessionPlayer.isOnline()) continue;
 
              TeamColorUtils.removeFromGreenGlowTeam(scoreboard, sessionPlayer);
-             sessionPlayer.removePotionEffect(PotionEffectType.GLOWING);
+             CashClashPlayer.removeEffect(sessionPlayer, PotionEffectType.GLOWING);
          }
 
          // Apply glowing to all teammates (but not the player themselves)
@@ -634,7 +634,7 @@ public class RoundManager {
                      false,
                      false
                  );
-                 teamMate.addPotionEffect(glowing);
+                 CashClashPlayer.applyEffect(teamMate, glowing);
              }
          }
      }

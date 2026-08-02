@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.kit;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
@@ -15,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
 import java.util.HashMap;
@@ -89,8 +91,8 @@ public enum Kit {
 
         // Remove kit-specific potion effects
         switch (this) {
-            case GHOST -> player.removePotionEffect(org.bukkit.potion.PotionEffectType.SPEED);
-            case PYROMANIAC -> player.removePotionEffect(org.bukkit.potion.PotionEffectType.FIRE_RESISTANCE);
+            case GHOST -> CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
+            case PYROMANIAC -> CashClashPlayer.removeEffect(player, PotionEffectType.FIRE_RESISTANCE);
             default -> {}
         }
     }

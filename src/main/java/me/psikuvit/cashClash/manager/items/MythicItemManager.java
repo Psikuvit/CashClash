@@ -456,7 +456,7 @@ public class MythicItemManager {
         spinningPlayers.add(uuid);
 
         // Apply slowness during spin
-        attacker.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, cfg.getCarlsSpinDuration(), 1, false, false));
+        CashClashPlayer.applyEffect(attacker, PotionEffectType.SLOWNESS, cfg.getCarlsSpinDuration(), 1);
 
         Messages.send(attacker, "mythic.carls-battleaxe-activated");
         SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.5f);
@@ -558,7 +558,7 @@ public class MythicItemManager {
                 if (axeDisplay.isValid()) {
                     axeDisplay.remove();
                 }
-                attacker.removePotionEffect(PotionEffectType.SLOWNESS);
+                CashClashPlayer.removeEffect(attacker, PotionEffectType.SLOWNESS);
                 Messages.send(attacker, "mythic.carls-battleaxe-ended");
                 cancel();
             }
@@ -867,7 +867,11 @@ public class MythicItemManager {
             victim.damage(cfg.getGoblinSpearDamage(), shooter);
         }
 
-        victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true));
+        if (victim instanceof Player victimPlayer) {
+            CashClashPlayer.applyEffect(victimPlayer, PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true);
+        } else {
+            victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true));
+        }
 
         if (!isMelee) {
             Messages.debug(shooter, "GOBLIN_SPEAR: Dealt " + cfg.getGoblinSpearDamage() + " damage + Poison " + (cfg.getGoblinPoisonLevel() + 1));
@@ -1009,7 +1013,7 @@ public class MythicItemManager {
                 caught.setMaximumNoDamageTicks(0); // Ensure they can be damaged immediately
                 player.setMaximumNoDamageTicks(0);
                 caught.damage(damage, player);
-                caught.addPotionEffect(new PotionEffect(PotionEffectType.POISON, poisonDuration, poisonLevel, false, true));
+                CashClashPlayer.applyEffect(caught, PotionEffectType.POISON, poisonDuration, poisonLevel, false, true);
                 
                 // Reset to default after damage is applied (vanilla is 20)
                 Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
@@ -1260,7 +1264,7 @@ public class MythicItemManager {
                 }
 
                 // Slowness I while inside sphere
-                target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 0, false, false));
+                CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, 40, 0);
             }
         }, 0L, 10L);
 
@@ -1315,7 +1319,7 @@ public class MythicItemManager {
                     }
 
                     // Levitation and damage while inside vortex (30% boost for legendary crossbow)
-                    target.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 30, cfg.getBloodwrenchVortexLevitationLevel() - 1, false, false));
+                    CashClashPlayer.applyEffect(target, PotionEffectType.LEVITATION, 30, cfg.getBloodwrenchVortexLevitationLevel() - 1);
                     double boostedDamage = damagePerTick * 1.3;
                     target.damage(boostedDamage, shooter);
                     Messages.debug(shooter, "BLOODWRENCH: Vortex affecting " + target.getName() + " for " + boostedDamage + " damage");
@@ -1380,13 +1384,7 @@ public class MythicItemManager {
 
         // Maintain Speed I every punch to avoid ramping
         int durationTicks = cfg.getWardenBoxingDuration() * 20;
-        player.addPotionEffect(new PotionEffect(
-                PotionEffectType.SPEED,
-                durationTicks,
-                0,
-                false,
-                true
-        ));
+        CashClashPlayer.applyEffect(player, PotionEffectType.SPEED, durationTicks, 0, false, true);
 
         // Punch sound effect
         SoundUtils.play(victim, Sound.ENTITY_WARDEN_ATTACK_IMPACT, 1.0f, 1.0f);
@@ -1406,13 +1404,7 @@ public class MythicItemManager {
 
         // Start with Speed I immediately and keep it at Speed I
         int durationTicks = cfg.getWardenBoxingDuration() * 20;
-        player.addPotionEffect(new PotionEffect(
-                PotionEffectType.SPEED,
-                durationTicks,
-                0,
-                false,
-                true
-        ));
+        CashClashPlayer.applyEffect(player, PotionEffectType.SPEED, durationTicks, 0, false, true);
 
         Messages.send(player, "mythic.boxing-gloves-activated");
         Messages.send(player, "mythic.genericitem-punch");
@@ -1438,7 +1430,7 @@ public class MythicItemManager {
         wardenPunchCount.remove(uuid);
 
         // Remove speed effect
-        player.removePotionEffect(PotionEffectType.SPEED);
+        CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
 
         // Start cooldown
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING, cfg.getWardenBoxingCooldown());
@@ -1577,8 +1569,8 @@ public class MythicItemManager {
                 if (alreadyFrozen) {
                     // FREEZE IN PLACE - Apply max slowness (level 255 = completely frozen) for 3 seconds
                     int freezeInPlaceDuration = cfg.getBlazebiteMaxSlownessDuration();
-                    victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, freezeInPlaceDuration, 255, false, true));
-                    victim.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, freezeInPlaceDuration, 128, false, true));
+                    CashClashPlayer.applyEffect(victim, PotionEffectType.SLOWNESS, freezeInPlaceDuration, 255, false, true);
+                    CashClashPlayer.applyEffect(victim, PotionEffectType.JUMP_BOOST, freezeInPlaceDuration, 128, false, true);
 
                     Messages.debug(shooter, "BLAZEBITE: Glacier DOUBLE HIT on " + victim.getName() + " - FROZEN IN PLACE for " + (freezeInPlaceDuration / 20) + "s");
                     Messages.send(shooter, "mythic.target-frozen");
@@ -1608,7 +1600,7 @@ public class MythicItemManager {
                 } else {
                     // FIRST HIT - Apply frostbite for 5 seconds
                     int frostbiteDuration = cfg.getBlazebiteFreezeDuration();
-                    victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, frostbiteDuration, 0, false, true));
+                    CashClashPlayer.applyEffect(victim, PotionEffectType.SLOWNESS, frostbiteDuration, 0, false, true);
 
                     Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - Frostbite for " + (frostbiteDuration / 20) + "s");
                     ParticleUtils.glacierFrost(victim.getLocation());

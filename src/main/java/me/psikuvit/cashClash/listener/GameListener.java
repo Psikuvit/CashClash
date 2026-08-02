@@ -999,17 +999,17 @@ public class GameListener implements Listener {
             if (!p.isOnline()) return;
             
             // Remove default totem effects
-            p.removePotionEffect(PotionEffectType.REGENERATION);
-            p.removePotionEffect(PotionEffectType.FIRE_RESISTANCE);
-            p.removePotionEffect(PotionEffectType.ABSORPTION);
+            CashClashPlayer.removeEffect(p, PotionEffectType.REGENERATION);
+            CashClashPlayer.removeEffect(p, PotionEffectType.FIRE_RESISTANCE);
+            CashClashPlayer.removeEffect(p, PotionEffectType.ABSORPTION);
 
             // Apply nerfed effects (Feature requirement: 10s each)
-            p.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 10 * 20, 1)); // 10s Regen II (standard is II, nerfed to 10s)
-            p.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 10 * 20, 0)); // 10s Fire Res
+            CashClashPlayer.applyEffect(p, PotionEffectType.REGENERATION, 10 * 20, 1); // 10s Regen II (standard is II, nerfed to 10s)
+            CashClashPlayer.applyEffect(p, PotionEffectType.FIRE_RESISTANCE, 10 * 20, 0); // 10s Fire Res
             
             // Absorption hearts: 2 hearts = 4 HP. 
             // Absorption I gives 2 hearts (4 HP).
-            p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 10 * 20, 0)); // 10s Absorption I (2 hearts)
+            CashClashPlayer.applyEffect(p, PotionEffectType.ABSORPTION, 10 * 20, 0); // 10s Absorption I (2 hearts)
             
             Messages.debug("Totem effects nerfed for " + p.getName() + ": 10s Regen, 10s Fire Res, 2 Absorption hearts");
         }, 1L);
@@ -1032,7 +1032,7 @@ public class GameListener implements Listener {
             if (sessionPlayer == null || !sessionPlayer.isOnline()) continue;
 
             TeamColorUtils.removeFromGreenGlowTeam(scoreboard, sessionPlayer);
-            sessionPlayer.removePotionEffect(PotionEffectType.GLOWING);
+            CashClashPlayer.removeEffect(sessionPlayer, PotionEffectType.GLOWING);
         }
 
         // Apply glowing effect to all teammates (visible through walls)
@@ -1051,7 +1051,7 @@ public class GameListener implements Listener {
                     false,
                     false
                 );
-                teamMate.addPotionEffect(glowing);
+                CashClashPlayer.applyEffect(teamMate, glowing);
             }
         }
     }

@@ -23,7 +23,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
@@ -231,7 +230,7 @@ public class CustomArmorManager {
         ParticleUtils.spawnDust(impact, Color.fromRGB(180, 120, 60), 2.5f, 75, 1.1, 0.1, 1.1);
         ParticleUtils.spawnDust(impact, Color.fromRGB(80, 45, 20), 2.5f, 60, 1.1, 0.1, 1.1);
 
-        world.playSound(impact, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.9f);
+        SoundUtils.playAt(impact, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.9f);
 
         for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
             if (!(entity instanceof Player target)) continue;
@@ -248,14 +247,7 @@ public class CustomArmorManager {
 
             target.setVelocity(knockback);
             if (target.getLocation().distance(impact) <= 2.0) {
-                target.addPotionEffect(new PotionEffect(
-                        PotionEffectType.SLOWNESS,
-                        20 * 4, // 4 seconds
-                        1,      // Slowness II
-                        false,
-                        true,
-                        true
-                ));
+                CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, 20 * 4, 1, false, true, true);
             }
         }
 
@@ -403,12 +395,8 @@ public class CustomArmorManager {
     public void onPlayerKillDragon(Player killer) {
         if (!hasDragonSet(killer)) return;
 
-        killer.addPotionEffect(new PotionEffect(
-                PotionEffectType.STRENGTH,
-                cfg.getDragonKillStrengthDuration() * 20,
-                cfg.getDragonKillStrengthLevel()
-        ));
-        killer.playSound(killer.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.4f, 1.6f);
+        CashClashPlayer.applyEffect(killer, PotionEffectType.STRENGTH, cfg.getDragonKillStrengthDuration() * 20, cfg.getDragonKillStrengthLevel());
+        SoundUtils.play(killer, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.4f, 1.6f);
 
         Color purple = Color.fromRGB(160, 40, 255);
         for (int tick = 0; tick < 10; tick++) {
@@ -466,8 +454,8 @@ public class CustomArmorManager {
         }
 
         int duration = cfg.getBunnyShoesDuration();
-        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, duration * 20, 1));
-        p.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, duration * 20, 0));
+        CashClashPlayer.applyEffect(p, PotionEffectType.SPEED, duration * 20, 1);
+        CashClashPlayer.applyEffect(p, PotionEffectType.JUMP_BOOST, duration * 20, 0);
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES, cfg.getBunnyShoesCooldown());
 
         Messages.send(p, "armor.bunny-shoes-activated", "duration", String.valueOf(duration));
@@ -487,7 +475,7 @@ public class CustomArmorManager {
 
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.GUARDIAN_VEST)) return;
 
-        p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 15 * 20, 1));
+        CashClashPlayer.applyEffect(p, PotionEffectType.RESISTANCE, 15 * 20, 1);
         guardianUsesThisRound.put(id, used + 1);
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.GUARDIAN_VEST, 20);
 
@@ -525,7 +513,7 @@ public class CustomArmorManager {
             if (!cooldownManager.hasTimePassedSeconds(id, CooldownManager.Keys.DEATHMAULER_DAMAGE, delaySeconds)) {
                 return;
             }
-            p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 60 * 20, 0));
+            CashClashPlayer.applyEffect(p, PotionEffectType.ABSORPTION, 60 * 20, 0);
             Messages.send(p, "armor.deathmauler-absorption");
         }, delaySeconds * 20L);
     }
@@ -605,22 +593,14 @@ public class CustomArmorManager {
             }
 
             // Apply speed for 12 seconds
-            p.removePotionEffect(PotionEffectType.SPEED);
-            p.addPotionEffect(new PotionEffect(
-                PotionEffectType.SPEED,
-                cfg.getFlamebringerSpeedDuration() * 20,
-                cfg.getFlamebringerSpeedLevel(),
-                false,
-                false,
-                true
-            ));
+            CashClashPlayer.applyEffect(p, PotionEffectType.SPEED, cfg.getFlamebringerSpeedDuration() * 20, cfg.getFlamebringerSpeedLevel(), false, false, true);
             // Track when this speed effect should end
             flamebringerSpeedEndTime.put(id, currentTime + (cfg.getFlamebringerSpeedDuration() * 1000L));
         } else {
             // Player is no longer on fire, check if speed should be cleared
             Long endTime = flamebringerSpeedEndTime.get(id);
             if (endTime != null && currentTime >= endTime) {
-                p.removePotionEffect(PotionEffectType.SPEED);
+                CashClashPlayer.removeEffect(p, PotionEffectType.SPEED);
                 flamebringerSpeedEndTime.remove(id);
             }
         }
@@ -640,8 +620,7 @@ public class CustomArmorManager {
             return;
         }
 
-        p.removePotionEffect(PotionEffectType.SPEED);
-        p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, cfg.getFlamebringerSpeedDuration() * 20, cfg.getFlamebringerSpeedLevel(), false, false, true));
+        CashClashPlayer.applyEffect(p, PotionEffectType.SPEED, cfg.getFlamebringerSpeedDuration() * 20, cfg.getFlamebringerSpeedLevel(), false, false, true);
         SoundUtils.play(p, Sound.ITEM_FIRECHARGE_USE, 1.5f, 1.0f);
         flamebringerTrailEndTime.put(id, System.currentTimeMillis() + (cfg.getFlamebringerSpeedDuration() * 1000L));
         startFlamebringerTrail(p);

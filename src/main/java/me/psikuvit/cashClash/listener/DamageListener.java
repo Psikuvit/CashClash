@@ -813,11 +813,11 @@ public class DamageListener implements Listener {
      * Apply strength potion nerf (50% damage reduction).
      */
     private void applyStrengthNerf(EntityDamageByEntityEvent event, Player attacker) {
-        if (!attacker.hasPotionEffect(PotionEffectType.STRENGTH)) {
+        if (!CashClashPlayer.hasEffect(attacker, PotionEffectType.STRENGTH)) {
             return;
         }
 
-        PotionEffect strength = attacker.getPotionEffect(PotionEffectType.STRENGTH);
+        PotionEffect strength = CashClashPlayer.getEffect(attacker, PotionEffectType.STRENGTH);
         if (strength == null || strength.getAmplifier() < 0) {
             return;
         }

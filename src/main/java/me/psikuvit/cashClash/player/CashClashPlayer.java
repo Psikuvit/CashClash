@@ -1,6 +1,8 @@
 package me.psikuvit.cashClash.player;
  
+import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.kit.Kit;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
@@ -8,6 +10,8 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.BonusType;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -53,6 +57,9 @@ public class CashClashPlayer {
 
     // Health management
     private double healthModifier = 0.0; // Tracks additional health from buffs (e.g. +2 for +1 heart)
+
+    // Potion effect tracking
+    private final Map<PotionEffectType, PotionEffect> trackedEffects = new HashMap<>();
 
     public CashClashPlayer(Player player) {
         this.uuid = player.getUniqueId();
@@ -295,6 +302,188 @@ public class CashClashPlayer {
     public void setHealthModifier(double amount) {
         this.healthModifier = Math.max(0.0, amount); // Don't allow negative modifiers
         applyHealth();
+    }
+
+    // ================= Potion Effect Management =================
+
+    /**
+     * Apply a potion effect and track it as plugin-applied so it can be
+     * selectively cleared later via {@link #clearPluginEffects()}.
+     */
+    public void applyEffect(PotionEffect effect) {
+        if (effect == null || player == null) return;
+        player.addPotionEffect(effect);
+        trackedEffects.put(effect.getType(), effect);
+    }
+
+    /**
+     * Apply a potion effect with default flags (no ambient, shows particles).
+     */
+    public void applyEffect(PotionEffectType type, int durationTicks, int amplifier) {
+        applyEffect(new PotionEffect(type, durationTicks, amplifier, false, false));
+    }
+
+    /**
+     * Apply a potion effect with explicit ambient/particle flags.
+     */
+    public void applyEffect(PotionEffectType type, int durationTicks, int amplifier, boolean ambient, boolean particles) {
+        applyEffect(new PotionEffect(type, durationTicks, amplifier, ambient, particles));
+    }
+
+    /**
+     * Apply a potion effect with explicit ambient/particle/icon flags.
+     */
+    public void applyEffect(PotionEffectType type, int durationTicks, int amplifier, boolean ambient, boolean particles, boolean icon) {
+        applyEffect(new PotionEffect(type, durationTicks, amplifier, ambient, particles, icon));
+    }
+
+    /**
+     * Remove a potion effect (tracked or not) and stop tracking it.
+     */
+    public void removeEffect(PotionEffectType type) {
+        if (type == null || player == null) return;
+        player.removePotionEffect(type);
+        trackedEffects.remove(type);
+    }
+
+    /**
+     * Whether the player currently has an active potion effect of this type.
+     */
+    public boolean hasEffect(PotionEffectType type) {
+        return player != null && player.hasPotionEffect(type);
+    }
+
+    /**
+     * Get the active potion effect of this type, or null.
+     */
+    public PotionEffect getEffect(PotionEffectType type) {
+        return player == null ? null : player.getPotionEffect(type);
+    }
+
+    /**
+     * Clear only the effects the plugin has applied (tracked), leaving
+     * vanilla/other effects untouched. Used on death/round reset.
+     */
+    public void clearPluginEffects() {
+        if (player == null) return;
+        for (PotionEffectType type : trackedEffects.keySet()) {
+            player.removePotionEffect(type);
+        }
+        trackedEffects.clear();
+    }
+
+    /**
+     * Clear every active potion effect on the player (full wipe) and stop tracking.
+     */
+    public void clearAllEffects() {
+        if (player == null) return;
+        player.getActivePotionEffects().stream()
+                .map(PotionEffect::getType)
+                .forEach(player::removePotionEffect);
+        trackedEffects.clear();
+    }
+
+    /**
+     * Types currently tracked as plugin-applied.
+     */
+    public Map<PotionEffectType, PotionEffect> getTrackedEffects() {
+        return Map.copyOf(trackedEffects);
+    }
+
+    // ---------- Static convenience (resolve the session's CashClashPlayer) ----------
+
+    /**
+     * Resolve the CashClashPlayer wrapper for a Bukkit player, or null if they are
+     * not currently inside a game session.
+     */
+    public static CashClashPlayer from(Player player) {
+        if (player == null) return null;
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        return session == null ? null : session.getCashClashPlayer(player.getUniqueId());
+    }
+
+    /**
+     * Apply a tracked potion effect to a player if they are in a session;
+     * otherwise fall back to a direct, untracked application.
+     */
+    public static void applyEffect(Player player, PotionEffect effect) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.applyEffect(effect);
+        else if (player != null) player.addPotionEffect(effect);
+    }
+
+    /**
+     * Apply a tracked potion effect (default flags) to a player if they are in a session.
+     */
+    public static void applyEffect(Player player, PotionEffectType type, int durationTicks, int amplifier) {
+        applyEffect(player, new PotionEffect(type, durationTicks, amplifier, false, false));
+    }
+
+    /**
+     * Apply a tracked potion effect with explicit ambient/particle flags.
+     */
+    public static void applyEffect(Player player, PotionEffectType type, int durationTicks, int amplifier, boolean ambient, boolean particles) {
+        applyEffect(player, new PotionEffect(type, durationTicks, amplifier, ambient, particles));
+    }
+
+    /**
+     * Apply a tracked potion effect with explicit ambient/particle/icon flags.
+     */
+    public static void applyEffect(Player player, PotionEffectType type, int durationTicks, int amplifier, boolean ambient, boolean particles, boolean icon) {
+        applyEffect(player, new PotionEffect(type, durationTicks, amplifier, ambient, particles, icon));
+    }
+
+    /**
+     * Remove a potion effect from a player, tracked if in a session.
+     */
+    public static void removeEffect(Player player, PotionEffectType type) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.removeEffect(type);
+        else if (player != null) player.removePotionEffect(type);
+    }
+
+    /**
+     * Whether a player currently has an active potion effect of this type.
+     */
+    public static boolean hasEffect(Player player, PotionEffectType type) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) return ccp.hasEffect(type);
+        return player != null && player.hasPotionEffect(type);
+    }
+
+    /**
+     * Get a player's active potion effect of this type, or null.
+     */
+    public static PotionEffect getEffect(Player player, PotionEffectType type) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) return ccp.getEffect(type);
+        return player == null ? null : player.getPotionEffect(type);
+    }
+
+    /**
+     * Clear plugin-applied effects for a player, tracked if in a session.
+     */
+    public static void clearPluginEffects(Player player) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.clearPluginEffects();
+        else if (player != null) {
+            player.getActivePotionEffects().stream()
+                    .map(PotionEffect::getType)
+                    .forEach(player::removePotionEffect);
+        }
+    }
+
+    /**
+     * Clear all active effects for a player, tracked if in a session.
+     */
+    public static void clearAllEffects(Player player) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.clearAllEffects();
+        else if (player != null) {
+            player.getActivePotionEffects().stream()
+                    .map(PotionEffect::getType)
+                    .forEach(player::removePotionEffect);
+        }
     }
 
     public UUID getUuid() {
