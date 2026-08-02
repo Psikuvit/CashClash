@@ -309,8 +309,6 @@ public class CooldownManager {
         // Custom Armor
         public static final String BUNNY_SHOES = "BUNNY_SHOES";
         public static final String GUARDIAN_VEST = "GUARDIAN_VEST";
-        public static final String DRAGON_DASH = "DRAGON_DASH";
-        public static final String DRAGON_MARK_EXPIRE = "DRAGON_MARK_EXPIRE";
         public static final String FLAMEBRINGER_ON_FIRE = "FLAMEBRINGER_ON_FIRE";
         public static final String FLAMEBRINGER_LAVA_COOLDOWN = "FLAMEBRINGER_LAVA_COOLDOWN";
         public static final String DEATHMAULER_SOUL_BURST = "DEATHMAULER_SOUL_BURST";

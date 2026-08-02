@@ -591,20 +591,24 @@ public class ItemsConfig {
     }
 
     // Dragon Set
-    public int getDragonMarkDuration() {
-        return config.getInt("custom-armor.dragon.mark-duration-seconds", 4);
+    public int getDragonHitsForScale() {
+        return config.getInt("custom-armor.dragon.hits-for-scale", 5);
     }
 
-    public int getDragonDashRange() {
-        return config.getInt("custom-armor.dragon.dash-range", 5);
+    public int getDragonMaxScales() {
+        return config.getInt("custom-armor.dragon.max-scales", 3);
     }
 
-    public double getDragonDamageBoost() {
-        return config.getDouble("custom-armor.dragon.damage-boost-percentage", 0.25);
+    public int getDragonRushRange() {
+        return config.getInt("custom-armor.dragon.rush-range", 5);
     }
 
-    public int getDragonCooldown() {
-        return config.getInt("custom-armor.dragon.cooldown-seconds", 40);
+    public double getDragonRushDamagePercent() {
+        return config.getDouble("custom-armor.dragon.rush-damage-percentage", 0.25);
+    }
+
+    public int getDragonRushBuffSeconds() {
+        return config.getInt("custom-armor.dragon.rush-buff-seconds", 3);
     }
 
     public int getDragonKillStrengthLevel() {
@@ -613,10 +617,6 @@ public class ItemsConfig {
 
     public int getDragonKillStrengthDuration() {
         return config.getInt("custom-armor.dragon.kill-strength-duration-seconds", 4);
-    }
-
-    public int getDragonKillGlowDuration() {
-        return config.getInt("custom-armor.dragon.kill-glow-duration-seconds", 1);
     }
 
     // Flamebringer Set

@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -347,6 +348,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
         int captures = flagCaptures.get(teamNumber);
         int targetCaptures = WIN_CONDITION;
+
+        // Investor's Set: reward the capturing player's team on objective completion
+        CustomArmorManager.getInstance().onInvestorObjectivectf(player);
 
         Messages.debug("[CTF] Team " + teamNumber + " captured a flag! Total captures: " + captures + "/" + targetCaptures);
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-captured-by-player",

@@ -112,6 +112,9 @@ public class GameListener implements Listener {
         // Clear invisibility cloak state on death (armor is preserved by keepInventory)
         customItemManager.clearInvisCloakOnDeath(player);
 
+        // Clear bunny shoes sneak-toggle ready state on death
+        armorManager.getBunnyToggleReady().remove(player.getUniqueId());
+
         // Cleanup mythic state (like Goblin Spear charge)
         mythicManager.cleanup(player);
 
@@ -177,8 +180,9 @@ public class GameListener implements Listener {
 
         // Handle armor set kill effects
         armorManager.onPlayerKill(killer, session);
-        armorManager.onDragonKill(killer);
+        armorManager.onPlayerKillDragon(killer);
         armorManager.onFlamebringerKill(killer);
+        armorManager.onInvestorKill(killer, session);
     }
 
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {
@@ -437,6 +441,20 @@ public class GameListener implements Listener {
                 Messages.send(p, "listener.cannot-use-abilities-while-silenced");
                 return;
             }
+        }
+
+        // Dragon Set: sneak-start triggers a Dragon Rush to the targeted player
+        if (event.isSneaking() && armorManager.hasDragonSet(p)) {
+            if (isPlayerDead(session, p)) {
+                Messages.send(p, "listener.cannot-use-items-dead");
+                return;
+            }
+            if (isSilenced(session, p)) {
+                Messages.send(p, "listener.cannot-use-abilities-while-silenced");
+                return;
+            }
+            armorManager.onDragonRush(p);
+            return;
         }
 
         armorManager.onPlayerToggleSneak(p, event.isSneaking());

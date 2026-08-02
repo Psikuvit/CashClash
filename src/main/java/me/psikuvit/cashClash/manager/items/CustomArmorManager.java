@@ -20,6 +20,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -54,9 +56,10 @@ public class CustomArmorManager {
     private final Map<UUID, Integer> deathmaulerExtraHearts;
 
     // Dragon Set tracking
-    private final Map<UUID, UUID> dragonMarkedTargets; // Attacker -> Marked Target
-    private final Map<UUID, BukkitTask> dragonMarkTasks; // Marked player -> particle task
-    private final Map<UUID, Double> dragonDamageBoost; // Attacker -> damage boost for next hit
+    private final Map<UUID, Integer> dragonScales; // Player -> charged scales (max 3)
+    private final Map<UUID, Integer> dragonHitCount; // Player -> fully-charged melee hits toward next scale
+    private final Map<UUID, Long> dragonRushDamageBuff; // Player -> expiry of +25% rush damage buff
+    private final Set<UUID> dragonRushInvincible; // Players invincible during teammate Dragon Rush
 
     // Bullseye Pants tracking
     private final Map<UUID, Integer> bullseyeHitCount; // Attacker -> current hit count
@@ -70,6 +73,12 @@ public class CustomArmorManager {
     private final Map<UUID, BukkitTask> flamebringerFireTask; // Player -> fire effect task
     private final Map<UUID, Integer> flamebringerLavaUses; // Player -> lava speed procs this game
     private final Map<UUID, Long> flamebringerSpeedEndTime; // Player -> time when speed effect should end
+    private final Map<UUID, BukkitTask> flamebringerTrailTasks; // Player -> fire trail task
+    private final Map<UUID, Long> flamebringerTrailEndTime; // Player -> time when fire trail should end
+    private final Map<UUID, List<Location>> flamebringerTrailLocations; // Player -> recent positions for trail
+
+    // Mythic shift lock: players blocked from activating bunny shoes while a mythic shift ability is active
+    private final Set<UUID> mythicShiftLock;
 
     private final Random random;
 
@@ -83,9 +92,10 @@ public class CustomArmorManager {
 
         this.deathmaulerExtraHearts = new ConcurrentHashMap<>();
 
-        this.dragonMarkedTargets = new ConcurrentHashMap<>();
-        this.dragonMarkTasks = new ConcurrentHashMap<>();
-        this.dragonDamageBoost = new ConcurrentHashMap<>();
+        this.dragonScales = new ConcurrentHashMap<>();
+        this.dragonHitCount = new ConcurrentHashMap<>();
+        this.dragonRushDamageBuff = new ConcurrentHashMap<>();
+        this.dragonRushInvincible = ConcurrentHashMap.newKeySet();
 
         this.bullseyeHitCount = new ConcurrentHashMap<>();
 
@@ -96,6 +106,11 @@ public class CustomArmorManager {
         this.flamebringerFireTask = new ConcurrentHashMap<>();
         this.flamebringerLavaUses = new ConcurrentHashMap<>();
         this.flamebringerSpeedEndTime = new ConcurrentHashMap<>();
+        this.flamebringerTrailTasks = new ConcurrentHashMap<>();
+        this.flamebringerTrailEndTime = new ConcurrentHashMap<>();
+        this.flamebringerTrailLocations = new ConcurrentHashMap<>();
+
+        this.mythicShiftLock = ConcurrentHashMap.newKeySet();
 
         this.random = new Random();
     }
@@ -252,183 +267,167 @@ public class CustomArmorManager {
         }
     }
 
-    public void onPlayerAttack(Player attacker, Player target) {
-        // Dragon Set: Mark target on first hit
-        if (hasDragonSet(attacker)) {
-            handleDragonMarkOnHit(attacker, target);
-        }
-    }
-
     // ==================== DRAGON SET ====================
 
     /**
-     * Dragon Set: Mark target for 4 seconds on hit.
-     * Allows dash to marked target within 5 blocks.
-     * Next hit on marked target deals 25% more damage.
+     * Dragon Set: fully-charged melee hits charge Dragon Scales (up to the configured max).
+     * Sneaking while looking at a target consumes one scale to Dragon Rush:
+     * - teammate: both players become briefly invincible
+     * - enemy: next melee hit deals bonus damage
+     * Killing with the set grants Strength for a few seconds.
      */
-    private void handleDragonMarkOnHit(Player attacker, Player target) {
-        UUID attackerId = attacker.getUniqueId();
-        UUID targetId = target.getUniqueId();
-
-        // If already have an active mark, do not re-mark
-        if (dragonMarkedTargets.containsKey(attackerId) && cooldownManager.isOnCooldown(attackerId, CooldownManager.Keys.DRAGON_MARK_EXPIRE)) {
-            return;
-        }
-
-        // Check if on cooldown
-        if (cooldownManager.isOnCooldown(attackerId, CooldownManager.Keys.DRAGON_DASH)) {
-            return;
-        }
-
-        // Mark the target
-        dragonMarkedTargets.put(attackerId, targetId);
-
-        // Cancel any existing mark particle task for this target
-        BukkitTask existingTask = dragonMarkTasks.remove(targetId);
-        if (existingTask != null) {
-            existingTask.cancel();
-        }
-
-        // Show particles above marked target
-        BukkitTask markTask = SchedulerUtils.runTaskTimer(() -> {
-            Player markedPlayer = org.bukkit.Bukkit.getPlayer(targetId);
-            if (markedPlayer != null && markedPlayer.isOnline()) {
-                ParticleUtils.dragonMark(markedPlayer.getLocation());
-            }
-        }, 0L, 10L); // Every 0.5 seconds
-
-        dragonMarkTasks.put(targetId, markTask);
-
-        // Set mark expiration
-        int markDuration = cfg.getDragonMarkDuration();
-        cooldownManager.setCooldownSeconds(attackerId, CooldownManager.Keys.DRAGON_MARK_EXPIRE, markDuration);
-
-        Messages.send(attacker, "armor.dragon-target-marked");
-        SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.5f);
-
-        // Clear mark after duration
-        SchedulerUtils.runTaskLater(() -> {
-            if (dragonMarkedTargets.get(attackerId) != null && dragonMarkedTargets.get(attackerId).equals(targetId)) {
-                dragonMarkedTargets.remove(attackerId);
-                BukkitTask task = dragonMarkTasks.remove(targetId);
-                if (task != null) {
-                    task.cancel();
-                }
-            }
-        }, markDuration * 20L);
+    public int getDragonScales(Player player) {
+        return dragonScales.getOrDefault(player.getUniqueId(), 0);
     }
 
-    /**
-     * Try to dash to marked target (triggered by right-click).
-     */
-    public boolean tryDragonDash(Player attacker) {
-        if (!hasDragonSet(attacker)) return false;
+    private void setDragonScales(Player player, int amount) {
+        dragonScales.put(player.getUniqueId(), Math.min(cfg.getDragonMaxScales(), amount));
+    }
 
-        UUID attackerId = attacker.getUniqueId();
-        UUID targetId = dragonMarkedTargets.get(attackerId);
-
-        if (targetId == null) {
-            // No marked target - silently fail
+    public boolean consumeDragonScale(Player player) {
+        if (getDragonScales(player) <= 0) {
             return false;
         }
-
-        // Check if mark expired
-        if (!cooldownManager.isOnCooldown(attackerId, CooldownManager.Keys.DRAGON_MARK_EXPIRE)) {
-            dragonMarkedTargets.remove(attackerId);
-            BukkitTask task = dragonMarkTasks.remove(targetId);
-            if (task != null) {
-                task.cancel();
-            }
-            // Silently fail - no message
-            return false;
-        }
-
-        Player target = org.bukkit.Bukkit.getPlayer(targetId);
-        if (target == null || !target.isOnline()) {
-            // Silently fail - no message
-            dragonMarkedTargets.remove(attackerId);
-            BukkitTask task = dragonMarkTasks.remove(targetId);
-            if (task != null) {
-                task.cancel();
-            }
-            return false;
-        }
-
-        // Check distance
-        double dashRange = 15.0; // Increased range to 15 blocks
-        double distance = attacker.getLocation().distance(target.getLocation());
-
-        if (distance > dashRange) {
-            // Silently fail - no message
-            return false;
-        }
-
-        // Perform dash
-        Vector direction = target.getLocation().toVector().subtract(attacker.getLocation().toVector()).normalize();
-        org.bukkit.Location targetLoc = target.getLocation().clone(); // Teleport directly to target position
-        targetLoc.setYaw(attacker.getLocation().getYaw()); // Keep attacker's yaw
-        targetLoc.setPitch(attacker.getLocation().getPitch());
-        attacker.teleport(targetLoc);
-        
-        // Remove respawn protection from attacker when they use Dragon Dash
-        GameSession currentSession = GameManager.getInstance().getPlayerSession(attacker);
-        if (currentSession != null) {
-            CashClashPlayer attackerCcp = currentSession.getCashClashPlayer(attackerId);
-            if (attackerCcp != null) {
-                attackerCcp.setRespawnProtection(0L);
-            }
-        }
-        attacker.setVelocity(direction.multiply(1.2).setY(0.2));
-
-        // Store damage boost for next hit
-        dragonDamageBoost.put(attackerId, cfg.getDragonDamageBoost());
-
-        // Remove mark and start cooldown
-        dragonMarkedTargets.remove(attackerId);
-        BukkitTask task = dragonMarkTasks.remove(targetId);
-        if (task != null) {
-            task.cancel();
-        }
-
-        cooldownManager.setCooldownSeconds(attackerId, CooldownManager.Keys.DRAGON_DASH, cfg.getDragonCooldown());
-
-        // Effects only - no chat messages
-        ParticleUtils.dragonDashTrail(attacker.getLocation());
-        SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.2f);
-
+        setDragonScales(player, getDragonScales(player) - 1);
         return true;
     }
 
     /**
-     * Get and consume the dragon damage boost for an attacker.
+     * Charge a Dragon Scale on fully-charged melee hits.
      */
-    public double getDragonDamageBoost(Player attacker) {
-        Double boost = dragonDamageBoost.remove(attacker.getUniqueId());
-        return boost != null ? boost : 0.0;
+    public void handleDragonHit(Player player) {
+        if (!hasDragonSet(player)) return;
+        if (!isFullyChargedMelee(player)) return;
+        if (getDragonScales(player) >= cfg.getDragonMaxScales()) return;
+
+        int hits = dragonHitCount.getOrDefault(player.getUniqueId(), 0) + 1;
+        if (hits >= cfg.getDragonHitsForScale()) {
+            setDragonScales(player, getDragonScales(player) + 1);
+            dragonHitCount.put(player.getUniqueId(), 0);
+            SoundUtils.play(player, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.6f, 1.6f);
+            Messages.send(player, "armor.dragon-scale-charged", "scales", String.valueOf(getDragonScales(player)));
+        } else {
+            dragonHitCount.put(player.getUniqueId(), hits);
+        }
     }
 
     /**
-     * Handle dragon set kill effect: Strength I for 4 seconds + orange glow for 1 second.
+     * Dragon Rush: consume a scale to dash to a target in line of sight.
      */
-    public void onDragonKill(Player killer) {
+    public void onDragonRush(Player player) {
+        if (!hasDragonSet(player)) return;
+
+        Entity target = player.getTargetEntity(cfg.getDragonRushRange());
+        if (!(target instanceof Player targetPlayer)) return;
+        if (!player.hasLineOfSight(targetPlayer)) return;
+
+        if (!consumeDragonScale(player)) {
+            Messages.send(player, "armor.dragon-need-scale");
+            return;
+        }
+
+        Messages.send(player, "armor.dragon-scale-used", "scales", String.valueOf(getDragonScales(player)));
+
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) return;
+
+        Team playerTeam = session.getPlayerTeam(player);
+        Team targetTeam = session.getPlayerTeam(targetPlayer);
+        if (playerTeam == null || targetTeam == null) return;
+
+        Location destination = targetPlayer.getLocation();
+        Vector direction = destination.toVector().subtract(player.getLocation().toVector()).normalize();
+
+        player.setFlying(false);
+        player.setAllowFlight(false);
+
+        if (playerTeam.getTeamNumber() == targetTeam.getTeamNumber()) {
+            // Teammate rush: land just short of the target, both invincible briefly
+            Location startLocation = player.getLocation().clone();
+            destination.subtract(direction.multiply(1.5));
+            ParticleUtils.dragonRushCircle(startLocation, Color.fromRGB(200, 150, 255), 1.2f);
+            player.teleport(destination);
+            ParticleUtils.dragonRushCircle(destination, Color.fromRGB(200, 150, 255), 1.2f);
+            SoundUtils.play(player, Sound.ENTITY_ENDERMAN_TELEPORT, 2.5f, 1.5f);
+
+            dragonRushInvincible.add(player.getUniqueId());
+            dragonRushInvincible.add(targetPlayer.getUniqueId());
+            SchedulerUtils.runTaskLater(() -> {
+                dragonRushInvincible.remove(player.getUniqueId());
+                dragonRushInvincible.remove(targetPlayer.getUniqueId());
+                Messages.send(player, "armor.dragon-rush-invincibility-ended");
+                Messages.send(targetPlayer, "armor.dragon-rush-invincibility-ended");
+            }, 10L);
+        } else {
+            // Enemy rush: teleport onto the target and empower the next melee hit
+            ParticleUtils.dragonRushCircle(player.getLocation(), Color.fromRGB(140, 0, 255), 1.5f);
+            player.teleport(destination);
+            ParticleUtils.dragonRushCircle(destination, Color.fromRGB(140, 0, 255), 1.5f);
+            SoundUtils.play(player, Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.1f);
+
+            dragonRushDamageBuff.put(player.getUniqueId(), System.currentTimeMillis() + (cfg.getDragonRushBuffSeconds() * 1000L));
+            Messages.send(player, "armor.dragon-rush-empowered");
+        }
+    }
+
+    /**
+     * Apply the empowered Dragon Rush strike if the damage buff is active.
+     */
+    public void onDragonRushHit(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player player)) return;
+
+        UUID uuid = player.getUniqueId();
+        if (!dragonRushDamageBuff.containsKey(uuid)) return;
+
+        long expireTime = dragonRushDamageBuff.get(uuid);
+        if (System.currentTimeMillis() > expireTime) {
+            dragonRushDamageBuff.remove(uuid);
+            return;
+        }
+
+        event.setDamage(event.getDamage() * (1.0 + cfg.getDragonRushDamagePercent()));
+        Messages.send(player, "armor.dragon-rush-empowered-strike");
+        dragonRushDamageBuff.remove(uuid);
+    }
+
+    /**
+     * Check if a player is invincible from a teammate Dragon Rush.
+     */
+    public boolean isDragonRushInvincible(UUID uuid) {
+        return dragonRushInvincible.contains(uuid);
+    }
+
+    /**
+     * Dragon kill effect: Strength + a swirling Dragon Fury veil.
+     */
+    public void onPlayerKillDragon(Player killer) {
         if (!hasDragonSet(killer)) return;
 
-        // Grant Strength I
         killer.addPotionEffect(new PotionEffect(
-            PotionEffectType.STRENGTH,
-            cfg.getDragonKillStrengthDuration() * 20,
-            cfg.getDragonKillStrengthLevel()
+                PotionEffectType.STRENGTH,
+                cfg.getDragonKillStrengthDuration() * 20,
+                cfg.getDragonKillStrengthLevel()
         ));
+        killer.playSound(killer.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 0.4f, 1.6f);
 
-        // Grant Glowing (orange)
-        killer.addPotionEffect(new PotionEffect(
-            PotionEffectType.GLOWING,
-            cfg.getDragonKillGlowDuration() * 20,
-            0
-        ));
+        Color purple = Color.fromRGB(160, 40, 255);
+        for (int tick = 0; tick < 10; tick++) {
+            final int currentTick = tick;
+            SchedulerUtils.runTaskLater(() -> {
+                if (!killer.isOnline()) return;
+                double progress = currentTick / 9.0;
+                double y = progress * 1.8;
+                for (int i = 0; i < 12; i++) {
+                    double angle = (Math.PI * 2 * i / 12.0) + (progress * Math.PI * 6);
+                    double x = Math.cos(angle) * 0.45;
+                    double z = Math.sin(angle) * 0.45;
+                    Location particleLoc = killer.getLocation().clone().add(x, y, z);
+                    ParticleUtils.dragonFuryVeil(particleLoc, purple);
+                }
+            }, tick);
+        }
 
         Messages.send(killer, "armor.dragon-kill-buff");
-        SoundUtils.play(killer, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.8f);
     }
 
     // ==================== BUNNY SHOES ====================
@@ -450,6 +449,9 @@ public class CustomArmorManager {
 
     private void tryActivateBunnyShoes(Player p) {
         UUID id = p.getUniqueId();
+
+        // Blocked while a mythic shift ability is active
+        if (mythicShiftLock.contains(id)) return;
 
         // Check if player is silenced (carrying enemy flag in CTF)
         if (isSilenced(p)) {
@@ -640,9 +642,62 @@ public class CustomArmorManager {
 
         p.removePotionEffect(PotionEffectType.SPEED);
         p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, cfg.getFlamebringerSpeedDuration() * 20, cfg.getFlamebringerSpeedLevel(), false, false, true));
+        SoundUtils.play(p, Sound.ITEM_FIRECHARGE_USE, 1.5f, 1.0f);
+        flamebringerTrailEndTime.put(id, System.currentTimeMillis() + (cfg.getFlamebringerSpeedDuration() * 1000L));
+        startFlamebringerTrail(p);
         flamebringerLavaUses.put(id, used + 1);
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, 2);
         Messages.send(p, "armor.flamebringer-speed", "remaining", String.valueOf(3 - (used + 1)));
+    }
+
+    /**
+     * Start the Flamebringer fire trail (dust particles + ignites enemies in the path).
+     */
+    private void startFlamebringerTrail(Player p) {
+        UUID id = p.getUniqueId();
+        if (flamebringerTrailTasks.containsKey(id)) return;
+
+        BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
+            if (!p.isOnline() || p.isDead()) {
+                stopFlamebringerTrail(p);
+                return;
+            }
+
+            Long endTime = flamebringerTrailEndTime.get(id);
+            if (endTime == null || System.currentTimeMillis() >= endTime || !hasFlamebringerSet(p)) {
+                stopFlamebringerTrail(p);
+                return;
+            }
+
+            List<Location> trail = flamebringerTrailLocations.computeIfAbsent(id, k -> new ArrayList<>());
+            Location loc = p.getLocation().clone();
+            trail.add(loc);
+            if (trail.size() > 6) {
+                trail.removeFirst();
+            }
+
+            for (Location trailLoc : trail) {
+                ParticleUtils.spawnDust(trailLoc.clone().add(0, 0.2, 0), Color.RED, 1.0f, 3, 0.15, 0.05, 0.15);
+            }
+
+            for (Entity entity : p.getNearbyEntities(1.2, 1.0, 1.2)) {
+                if (!(entity instanceof Player target)) continue;
+                if (target.equals(p)) continue;
+                target.setFireTicks(60);
+            }
+        }, 0L, 2L);
+
+        flamebringerTrailTasks.put(id, task);
+    }
+
+    private void stopFlamebringerTrail(Player p) {
+        UUID id = p.getUniqueId();
+        BukkitTask task = flamebringerTrailTasks.remove(id);
+        if (task != null) {
+            task.cancel();
+        }
+        flamebringerTrailLocations.remove(id);
+        flamebringerTrailEndTime.remove(id);
     }
 
     /**
@@ -752,6 +807,93 @@ public class CustomArmorManager {
         return Math.round(armor.getBasePrice() * multiplier);
     }
 
+    /**
+     * Investor's Set: reward the killer's team coins on every kill.
+     */
+    public void onInvestorKill(Player killer, GameSession session) {
+        if (killer == null || session == null) return;
+        int pieces = countInvestorsPieces(killer);
+        if (pieces <= 0) return;
+
+        Team team = session.getPlayerTeam(killer);
+        if (team == null) return;
+
+        int reward = 200 * pieces;
+        for (UUID uuid : team.getPlayers()) {
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+            if (ccp != null) {
+                ccp.addCoins(reward);
+            }
+            Player teammate = org.bukkit.Bukkit.getPlayer(uuid);
+            if (teammate != null && teammate.isOnline()) {
+                playInvestorRewardEffect(teammate, reward);
+            }
+        }
+    }
+
+    /**
+     * Investor's Set: reward the capturing player's team coins on a CTF flag capture.
+     */
+    public void onInvestorObjectivectf(Player player) {
+        if (player == null) return;
+        int pieces = countInvestorsPieces(player);
+        if (pieces <= 0) return;
+
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        if (session == null) return;
+
+        Team team = session.getPlayerTeam(player);
+        if (team == null) return;
+
+        int reward = 200 * pieces;
+        for (UUID uuid : team.getPlayers()) {
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+            if (ccp != null) {
+                ccp.addCoins(reward);
+            }
+            Player teammate = org.bukkit.Bukkit.getPlayer(uuid);
+            if (teammate != null && teammate.isOnline()) {
+                playInvestorRewardEffect(teammate, reward);
+            }
+        }
+    }
+
+    /**
+     * Play the coin reward particle/sound effect for an investor reward recipient.
+     */
+    private void playInvestorRewardEffect(Player player, int reward) {
+        SoundUtils.play(player, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.7f, 1.5f);
+        Messages.send(player, "armor.investor-reward", "reward", String.valueOf(reward));
+
+        Color lightGreen = Color.fromRGB(120, 255, 120);
+        Location center = player.getLocation().clone().add(0, 0.6, 0);
+        for (int i = 0; i < 18; i++) {
+            int delay = i;
+            SchedulerUtils.runTaskLater(() -> {
+                double angle = (Math.PI * 2 / 18) * delay;
+                double x = Math.cos(angle) * 0.55;
+                double z = Math.sin(angle) * 0.55;
+                ParticleUtils.spawnDust(center.clone().add(x, 0, z), lightGreen, 1.3f, 2);
+            }, (int) (delay * 0.8));
+        }
+    }
+
+    /**
+     * Temporarily block mythic shift activations for a player (used while a shift ability runs).
+     */
+    public void lockMythicShift(Player player) {
+        UUID id = player.getUniqueId();
+        mythicShiftLock.add(id);
+        SchedulerUtils.runTaskLater(() -> mythicShiftLock.remove(id), 10L);
+    }
+
+    /**
+     * Expose the bunny shoes toggle-ready state so it can be cleared on death.
+     */
+    public Map<UUID, Boolean> getBunnyToggleReady() {
+        return bunnyToggleReady;
+    }
+
     // ==================== RESET ====================
 
     public void cleanup() {
@@ -766,11 +908,10 @@ public class CustomArmorManager {
         tectonicCharge1Cooldown.clear();
         tectonicCharge2Cooldown.clear();
 
-        // Cancel all dragon mark tasks
-        dragonMarkTasks.values().forEach(BukkitTask::cancel);
-        dragonMarkTasks.clear();
-        dragonMarkedTargets.clear();
-        dragonDamageBoost.clear();
+        dragonScales.clear();
+        dragonHitCount.clear();
+        dragonRushDamageBuff.clear();
+        dragonRushInvincible.clear();
 
         // Cancel all flamebringer tasks
         flamebringerFireTask.values().forEach(BukkitTask::cancel);
@@ -778,6 +919,12 @@ public class CustomArmorManager {
         flamebringerKills.clear();
         flamebringerLavaUses.clear();
         flamebringerSpeedEndTime.clear();
+        flamebringerTrailTasks.values().forEach(BukkitTask::cancel);
+        flamebringerTrailTasks.clear();
+        flamebringerTrailEndTime.clear();
+        flamebringerTrailLocations.clear();
+
+        mythicShiftLock.clear();
 
         // Note: cooldowns are managed by CooldownManager and will be cleared when players are cleared
     }
@@ -790,15 +937,18 @@ public class CustomArmorManager {
         deathmaulerExtraHearts.clear();
         bullseyeHitCount.clear();
 
-        // Cancel all dragon mark tasks and clear dragon tracking
-        dragonMarkTasks.values().forEach(BukkitTask::cancel);
-        dragonMarkTasks.clear();
-        dragonMarkedTargets.clear();
-        dragonDamageBoost.clear();
+        dragonScales.clear();
+        dragonHitCount.clear();
+        dragonRushDamageBuff.clear();
+        dragonRushInvincible.clear();
 
         // Reset flamebringer kill counters
         flamebringerKills.clear();
         flamebringerSpeedEndTime.clear();
+        flamebringerTrailTasks.values().forEach(BukkitTask::cancel);
+        flamebringerTrailTasks.clear();
+        flamebringerTrailEndTime.clear();
+        flamebringerTrailLocations.clear();
     }
 
     /**

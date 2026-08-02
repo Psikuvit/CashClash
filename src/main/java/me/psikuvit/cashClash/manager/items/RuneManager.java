@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
@@ -952,28 +953,9 @@ public class RuneManager {
 
         Color runeColor = getRuneColor(enchant);
 
-        player.getWorld().spawnParticle(
-                Particle.ENCHANT,
-                center,
-                40,
-                0.6,
-                0.6,
-                0.6,
-                0.15
-        );
+        ParticleUtils.spawn(Particle.ENCHANT, center, 40, 0.6, 0.6, 0.6, 0.15);
 
-        player.getWorld().spawnParticle(
-                Particle.DUST,
-                center,
-                25,
-                0.6,
-                0.6,
-                0.6,
-                new Particle.DustOptions(
-                        runeColor,
-                        1.2f
-                )
-        );
+        ParticleUtils.spawnDust(center, runeColor, 1.2f, 25, 0.6, 0.6, 0.6);
     }
 
     private static Color getRuneColor(EnchantEntry enchant) {
@@ -1071,18 +1053,7 @@ public class RuneManager {
 
                     Color runeColor = getRuneColor(enchant);
 
-                    player.getWorld().spawnParticle(
-                            Particle.DUST,
-                            center,
-                            12,
-                            0.25,
-                            0.25,
-                            0.25,
-                            new Particle.DustOptions(
-                                    runeColor,
-                                    1.1f
-                            )
-                    );
+                    ParticleUtils.spawnDust(center, runeColor, 1.1f, 12, 0.25, 0.25, 0.25);
 
                     cancel();
                 }

@@ -93,6 +93,12 @@ public class DamageListener implements Listener {
                 return;
             }
 
+            // 0c. Dragon Rush teammate rush - brief invincibility window
+            if (armorManager.isDragonRushInvincible(player.getUniqueId())) {
+                event.setCancelled(true);
+                return;
+            }
+
             // 1. Check game phase protection (waiting/shopping)
             if (handleGamePhaseProtection(event, player)) {
                 return;
@@ -525,16 +531,11 @@ public class DamageListener implements Listener {
             return;
         }
 
-        // Handle all attack-based armor effects (marks targets for Dragon set)
-        armorManager.onPlayerAttack(attacker, victim);
+        // Dragon Set: charge a scale on fully-charged melee hits
+        armorManager.handleDragonHit(attacker);
 
-        // Dragon Set: Apply damage boost from dash
-        double dragonBoost = armorManager.getDragonDamageBoost(attacker);
-        if (dragonBoost > 0) {
-            double newDamage = event.getDamage() * (1.0 + dragonBoost);
-            event.setDamage(newDamage);
-            // No message - only show on initial mark
-        }
+        // Dragon Set: apply empowered Dragon Rush strike
+        armorManager.onDragonRushHit(event);
 
         // Investor's Set: bonus damage in rounds 4/5
         double damageMultiplier = armorManager.getInvestorMeleeDamageMultiplier(attacker, session.getCurrentRound());

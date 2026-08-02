@@ -61,6 +61,13 @@ public final class ParticleUtils {
         spawnDust(location, color, size, count, offset, offset, offset);
     }
 
+    /**
+     * Spawn a colored dust particle with no offset.
+     */
+    public static void spawnDust(Location location, Color color, float size, int count) {
+        spawnDust(location, color, size, count, 0, 0, 0);
+    }
+
     public static void spawnForPlayer(Player player, Particle particle, Location location, int count, double offsetX, double offsetY, double offsetZ, double extra) {
         if (player == null || !player.isOnline() || particle == null || location == null) return;
         player.spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra);
@@ -188,7 +195,7 @@ public final class ParticleUtils {
             double z = center.getZ() + radius * Math.sin(angle);
 
             Location spawn = new Location(center.getWorld(), x, center.getY() + height, z);
-            center.getWorld().spawnParticle(particle, spawn, 1, 0, 0, 0, extra);
+            spawn(particle, spawn, 1, 0, 0, 0, extra);
         }
     }
 
@@ -340,7 +347,30 @@ public final class ParticleUtils {
     }
 
     /**
-     * Spawn dragon dash trail particles.
+     * Spawn a circle of dust particles (Dragon Rush departure/arrival).
+     */
+    public static void dragonRushCircle(Location center, Color color, float size) {
+        if (center == null || center.getWorld() == null) return;
+        Particle.DustOptions options = new Particle.DustOptions(color, size);
+        for (int i = 0; i < 24; i++) {
+            double angle = 2 * Math.PI * i / 24;
+            double x = Math.cos(angle) * 1.2;
+            double z = Math.sin(angle) * 1.2;
+            center.getWorld().spawnParticle(Particle.DUST, center.clone().add(x, 0.2, z), 1, options);
+        }
+    }
+
+    /**
+     * Spawn a single Dragon Fury veil particle (swirl built up over time by the caller).
+     */
+    public static void dragonFuryVeil(Location location, Color color) {
+        if (location == null || location.getWorld() == null) return;
+        location.getWorld().spawnParticle(Particle.DUST, location, 1, new Particle.DustOptions(color, 1.4f));
+        spawn(Particle.PORTAL, location, 1, 0, 0, 0, 0.01);
+    }
+
+    /**
+     * Spawn a dragon dash trail particles.
      */
     public static void dragonDashTrail(Location location) {
         spawnDust(location, Color.fromRGB(138, 43, 226), 1.5f, 20, 0.5);

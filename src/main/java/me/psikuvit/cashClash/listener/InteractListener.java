@@ -7,7 +7,6 @@ import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -44,7 +43,6 @@ import org.bukkit.persistence.PersistentDataType;
 public class InteractListener implements Listener {
 
     private final CustomItemManager customItemManager = CustomItemManager.getInstance();
-    private final CustomArmorManager armorManager = CustomArmorManager.getInstance();
     private final MythicItemManager mythicManager = MythicItemManager.getInstance();
 
     // ==================== ENDER PEARL RESTRICTIONS ====================
@@ -157,11 +155,6 @@ public class InteractListener implements Listener {
             }
         }
 
-        if (action.isRightClick() && handleCustomArmor(player, action)) {
-            event.setCancelled(true);
-            return;
-        }
-
         if (item != null) {
             // Check various item types and delegate
             if (handleEnderPearl(event, player, item)) return;
@@ -169,7 +162,6 @@ public class InteractListener implements Listener {
             if (handleSupplyDrop(event, player, item, action)) return;
             if (handleCustomItem(event, player, item, action)) return;
             if (handleMythicItem(event, player, item, action)) return;
-            handleCustomArmor(player, action);
         }
     }
 
@@ -528,28 +520,6 @@ public class InteractListener implements Listener {
                 }
             }
         }
-        return false;
-    }
-
-    // ==================== CUSTOM ARMOR ====================
-
-    private boolean handleCustomArmor(Player player, Action action) {
-        if (!action.isRightClick()) return false;
-
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) return false;
-
-        if (isInShoppingPhase(player)) return false;
-
-        // Dragon Set: Dash to marked target (right-click, no sneak required)
-        if (armorManager.hasDragonSet(player)) {
-            if (isSilenced(player)) {
-                Messages.send(player, "listener.cannot-use-abilities-while-silenced");
-                return true;
-            }
-            return armorManager.tryDragonDash(player);
-        }
-
         return false;
     }
 

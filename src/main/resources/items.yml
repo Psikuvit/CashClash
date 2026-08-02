@@ -148,13 +148,13 @@ custom-armor:
 
   # Dragon Set
   dragon:
-    mark-duration-seconds: 4
-    dash-range: 5
-    damage-boost-percentage: 0.25
-    cooldown-seconds: 40
+    hits-for-scale: 5
+    max-scales: 3
+    rush-range: 5
+    rush-damage-percentage: 0.25
+    rush-buff-seconds: 3
     kill-strength-level: 0
     kill-strength-duration-seconds: 4
-    kill-glow-duration-seconds: 1
 
   # Flamebringer Set
   flamebringer:
