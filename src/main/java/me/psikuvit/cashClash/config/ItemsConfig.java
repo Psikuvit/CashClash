@@ -568,19 +568,6 @@ public class ItemsConfig {
         return config.getInt("custom-armor.deathmauler.absorption.no-damage-delay-seconds", 8);
     }
 
-    // Magic Helmet
-    public int getMagicHelmetStandDelay() {
-        return config.getInt("custom-armor.magic-helmet.stand-still-delay-seconds", 3);
-    }
-
-    public int getMagicHelmetInvisDuration() {
-        return config.getInt("custom-armor.magic-helmet.invisibility-duration-seconds", 10);
-    }
-
-    public int getMagicHelmetCooldown() {
-        return config.getInt("custom-armor.magic-helmet.cooldown-seconds", 30);
-    }
-
     // Bunny Shoes
     public int getBunnyShoesDuration() {
         return config.getInt("custom-armor.bunny-shoes.duration-seconds", 15);

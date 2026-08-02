@@ -837,10 +837,6 @@ messages:
   # CUSTOM ARMOR MESSAGES
   # ============================================
   armor:
-    magic-helmet-absorption: "<gold>Magic Helmet: Absorption I activated! (4s)</gold>"
-    magic-helmet-resistance: "<aqua>Magic Helmet: Resistance I activated! (4s)</aqua>"
-    magic-helmet-speed: "<green>Magic Helmet: Speed I activated! (4s)</green>"
-    magic-helmet-cooldown: "<gray>Magic Helmet: 25s cooldown started</gray>"
     dragon-target-marked: "<light_purple>🐉 Target marked! Right-click to dash within 5 blocks!</light_purple>"
     dragon-kill-buff: "<light_purple>🐉 Dragon power surges! Strength I (4s)</light_purple>"
     bunny-shoes-cooldown: "<red>Bunny Shoes on cooldown: {remaining}s</red>"

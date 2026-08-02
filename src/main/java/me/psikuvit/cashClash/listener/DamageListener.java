@@ -510,11 +510,6 @@ public class DamageListener implements Listener {
         // Deathmauler: track damage for absorption
         armorManager.onDeathmaulerDamageTaken(player);
 
-        // Magic Helmet: activate on first melee damage
-        if (isMeleeDamage(event)) {
-            armorManager.onMagicHelmetMeleeDamage(player);
-        }
-
         // Flamebringer: lava trigger speed
         if (cause == EntityDamageEvent.DamageCause.LAVA) {
             armorManager.onFlamebringerLavaDamage(player);
@@ -604,15 +599,6 @@ public class DamageListener implements Listener {
         return cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION ||
                cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION;
     }
-
-    /**
-     * Check if damage is from melee attack.
-     */
-    private boolean isMeleeDamage(EntityDamageEvent event) {
-        return event instanceof EntityDamageByEntityEvent damageByEntity &&
-               damageByEntity.getDamager() instanceof Player;
-    }
-
 
     // ==================== DAMAGE TRACKING & BONUSES ====================
 

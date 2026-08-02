@@ -531,7 +531,7 @@ public class InteractListener implements Listener {
         return false;
     }
 
-    // ==================== CUSTOM ARMOR (Magic Helmet) ====================
+    // ==================== CUSTOM ARMOR ====================
 
     private boolean handleCustomArmor(Player player, Action action) {
         if (!action.isRightClick()) return false;

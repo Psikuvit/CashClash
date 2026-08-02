@@ -307,7 +307,6 @@ public class CooldownManager {
      */
     public static final class Keys {
         // Custom Armor
-        public static final String MAGIC_HELMET = "MAGIC_HELMET";
         public static final String BUNNY_SHOES = "BUNNY_SHOES";
         public static final String GUARDIAN_VEST = "GUARDIAN_VEST";
         public static final String DRAGON_DASH = "DRAGON_DASH";

@@ -116,12 +116,6 @@ mythic-items:
 # CUSTOM ARMOR SETS
 # ============================================
 custom-armor:
-  # Magic Helmet
-  magic-helmet:
-    stand-still-delay-seconds: 3
-    invisibility-duration-seconds: 10
-    cooldown-seconds: 30
-
   # Bunny Shoes
   bunny-shoes:
     speed-level: 1
@@ -652,10 +646,6 @@ item-lore:
 
   # ==================== CUSTOM ARMOR ====================
   custom-armor:
-    magic-helmet:
-      lore:
-        - "<gray>Grants invisibility</gray>"
-        - "<yellow>When standing still</yellow>"
     bunny-shoes:
       lore:
         - "<gray>Increases speed</gray>"

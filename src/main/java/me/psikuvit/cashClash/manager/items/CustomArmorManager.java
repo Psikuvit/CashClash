@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,9 +45,6 @@ public class CustomArmorManager {
 
     private final ItemsConfig cfg;
 
-    private final Map<UUID, Integer> magicHelmetEffectIndex;
-
-    // Bunny Shoes tracking
     private final Map<UUID, Boolean> bunnyToggleReady;
 
     // Guardian's Vest tracking
@@ -80,7 +76,6 @@ public class CustomArmorManager {
     private CustomArmorManager() {
         this.cooldownManager = CooldownManager.getInstance();
         this.cfg = ItemsConfig.getInstance();
-        this.magicHelmetEffectIndex = new ConcurrentHashMap<>();
 
         this.bunnyToggleReady = new ConcurrentHashMap<>();
 
@@ -135,13 +130,6 @@ public class CustomArmorManager {
     public boolean hasBullseyePants(Player p) {
         for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
             if (ca == CustomArmorItem.BULLSEYE_PANTS) return true;
-        }
-        return false;
-    }
-
-    public boolean hasMagicHelmet(Player p) {
-        for (CustomArmorItem ca : getEquippedCustomArmor(p)) {
-            if (ca == CustomArmorItem.MAGIC_HELMET) return true;
         }
         return false;
     }
@@ -262,76 +250,6 @@ public class CustomArmorManager {
         } else {
             tectonicCharge2Cooldown.put(id, cooldownEnd);
         }
-    }
-
-    // ==================== MAGIC HELMET ====================
-    
-    // Track if magic helmet has been activated this round (reset on round start)
-    private final Set<UUID> magicHelmetActivated = ConcurrentHashMap.newKeySet();
-
-    /**
-     * Magic Helmet activates on first melee damage taken:
-     * Plays all three effects sequentially in order:
-     * 1. Resistance I (4s)
-     * 2. Absorption I (4s) 
-     * 3. Speed I (4s)
-     * 25 second cooldown after speed wears off
-     */
-    public void onMagicHelmetMeleeDamage(Player p) {
-        if (!hasMagicHelmet(p)) return;
-
-        UUID id = p.getUniqueId();
-        
-        // Only activate once per round (until cooldown ends)
-        if (magicHelmetActivated.contains(id)) return;
-        
-        // Check if on cooldown
-        if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.MAGIC_HELMET)) {
-            return;
-        }
-
-        // Mark as activated
-        magicHelmetActivated.add(id);
-        
-        // Play effects sequentially
-        // 1. Resistance I (4s)
-        p.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, 4 * 20, 0, false, true, true));
-        Messages.send(p, "armor.magic-helmet-absorption");
-        SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.4f);
-        
-        // 2. Absorption I after 4 seconds
-        SchedulerUtils.runTaskLater(() -> {
-            if (p.isOnline() && hasMagicHelmet(p)) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 4 * 20, 0, false, true, true));
-                Messages.send(p, "armor.magic-helmet-resistance");
-                SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.2f);
-            }
-        }, 4 * 20L);
-        
-        // 3. Speed I after 8 seconds (4s resistance + 4s absorption)
-        SchedulerUtils.runTaskLater(() -> {
-            if (p.isOnline() && hasMagicHelmet(p)) {
-                p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 4 * 20, 0, false, true, true));
-                Messages.send(p, "armor.magic-helmet-speed");
-                SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.6f);
-                
-                // Start 25 second cooldown after speed wears off (4 seconds)
-                SchedulerUtils.runTaskLater(() -> {
-                    if (p.isOnline()) {
-                        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.MAGIC_HELMET, 25);
-                        magicHelmetActivated.remove(id); // Reset activation flag after cooldown starts
-                        Messages.send(p, "armor.magic-helmet-cooldown");
-                    }
-                }, 4 * 20L);
-            }
-        }, 8 * 20L);
-    }
-    
-    /**
-     * Reset magic helmet activation tracking for a new round.
-     */
-    public void resetMagicHelmetForRound(UUID playerId) {
-        magicHelmetActivated.remove(playerId);
     }
 
     public void onPlayerAttack(Player attacker, Player target) {
@@ -837,9 +755,6 @@ public class CustomArmorManager {
     // ==================== RESET ====================
 
     public void cleanup() {
-        magicHelmetEffectIndex.clear();
-        magicHelmetActivated.clear();
-
         bunnyToggleReady.clear();
 
         guardianUsesThisRound.clear();
@@ -871,7 +786,6 @@ public class CustomArmorManager {
      * Reset per-round tracking for all players (called at round start).
      */
     public void resetRoundTracking() {
-        magicHelmetActivated.clear();
         guardianUsesThisRound.clear();
         deathmaulerExtraHearts.clear();
         bullseyeHitCount.clear();

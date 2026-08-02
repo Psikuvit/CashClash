@@ -66,7 +66,6 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     private static final int FLAMEBRINGER_BARRIER_RIGHT_SLOT = 32;
 
     // Individual custom armor slots
-    private static final int MAGIC_HELMET_SLOT = 40;
     private static final int GUARDIANS_VEST_SLOT = 41;
     private static final int BULLSEYE_PANTS_SLOT = 42;
     private static final int BUNNY_SHOES_SLOT = 43;
@@ -263,7 +262,6 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Populates individual custom armor pieces that can be purchased separately.
      */
     private void populateIndividualCustomArmor() {
-        setButton(MAGIC_HELMET_SLOT, createCustomArmorButton(CustomArmorItem.MAGIC_HELMET));
         setButton(GUARDIANS_VEST_SLOT, createCustomArmorButton(CustomArmorItem.GUARDIANS_VEST));
         setButton(BULLSEYE_PANTS_SLOT, createCustomArmorButton(CustomArmorItem.BULLSEYE_PANTS));
         setButton(BUNNY_SHOES_SLOT, createCustomArmorButton(CustomArmorItem.BUNNY_SHOES));

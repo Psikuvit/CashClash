@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  * This is the unified class for custom armor - handles both shop functionality and armor abilities.
  *
  * SET ITEMS: Deathmauler, Dragon, Flamebringer, and Investors sets MUST be bought as complete sets.
- * INDIVIDUAL ITEMS: Tax Evasion Pants, Magic Helmet, Bunny Shoes, Guardian's Vest can be bought separately.
+ * INDIVIDUAL ITEMS: Tax Evasion Pants, Bunny Shoes, Guardian's Vest can be bought separately.
  */
 public enum CustomArmorItem implements Purchasable {
     INVESTORS_HELMET(Material.IRON_HELMET, "investors-helmet", "Investor's Helmet", null),
@@ -21,12 +21,10 @@ public enum CustomArmorItem implements Purchasable {
     INVESTORS_LEGGINGS(Material.IRON_LEGGINGS, "investors-leggings", "Investor's Leggings", null),
     INVESTORS_BOOTS(Material.IRON_BOOTS, "investors-boots", "Investor's Boots", null),
 
-    MAGIC_HELMET(Material.IRON_HELMET, "magic-helmet", "Magic Helmet", null),
     GUARDIANS_VEST(Material.DIAMOND_CHESTPLATE, "guardians-vest", "Guardian's Vest", null),
     BULLSEYE_PANTS(Material.GOLDEN_LEGGINGS, "bullseye-pants", "Bullseye Pants", null),
     BUNNY_SHOES(Material.LEATHER_BOOTS, "bunny-shoes", "Bunny Shoes", null),
     TECTONIC_CAP(Material.IRON_HELMET, "tectonic-cap", "Tectonic Cap", null),
-
     FLAMEBRINGER_LEGGINGS(Material.DIAMOND_LEGGINGS, "flamebringer-leggings", "Flamebringer's Leggings", ArmorSet.FLAMEBRINGER),
     FLAMEBRINGER_BOOTS(Material.DIAMOND_BOOTS, "flamebringer-boots", "Flamebringer's Boots", ArmorSet.FLAMEBRINGER),
 

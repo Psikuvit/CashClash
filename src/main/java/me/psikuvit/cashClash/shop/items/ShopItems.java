@@ -52,7 +52,7 @@ public final class ShopItems {
     /**
      * Gets a purchasable item by its enum name.
      *
-     * @param name The name of the item (e.g., "IRON_SWORD", "MAGIC_HELMET")
+     * @param name The name of the item (e.g., "IRON_SWORD", "TECTONIC_CAP")
      * @return The item, or null if not found
      */
     public static Purchasable valueOf(String name) {
