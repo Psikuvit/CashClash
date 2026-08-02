@@ -39,6 +39,8 @@ public class CustomArmorManager {
 
     private final CooldownManager cooldownManager;
 
+    private final ItemsConfig cfg;
+
     private final Map<UUID, Integer> magicHelmetEffectIndex;
 
     // Bunny Shoes tracking
@@ -68,6 +70,7 @@ public class CustomArmorManager {
 
     private CustomArmorManager() {
         this.cooldownManager = CooldownManager.getInstance();
+        this.cfg = ItemsConfig.getInstance();
         this.magicHelmetEffectIndex = new ConcurrentHashMap<>();
 
         this.bunnyToggleReady = new ConcurrentHashMap<>();
@@ -260,7 +263,6 @@ public class CustomArmorManager {
     private void handleDragonMarkOnHit(Player attacker, Player target) {
         UUID attackerId = attacker.getUniqueId();
         UUID targetId = target.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         // If already have an active mark, do not re-mark
         if (dragonMarkedTargets.containsKey(attackerId) && cooldownManager.isOnCooldown(attackerId, CooldownManager.Keys.DRAGON_MARK_EXPIRE)) {
@@ -347,7 +349,6 @@ public class CustomArmorManager {
         }
 
         // Check distance
-        ItemsConfig cfg = ItemsConfig.getInstance();
         double dashRange = 15.0; // Increased range to 15 blocks
         double distance = attacker.getLocation().distance(target.getLocation());
 
@@ -406,8 +407,6 @@ public class CustomArmorManager {
     public void onDragonKill(Player killer) {
         if (!hasDragonSet(killer)) return;
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
-
         // Grant Strength I
         killer.addPotionEffect(new PotionEffect(
             PotionEffectType.STRENGTH,
@@ -445,7 +444,6 @@ public class CustomArmorManager {
 
     private void tryActivateBunnyShoes(Player p) {
         UUID id = p.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         // Check if player is silenced (carrying enemy flag in CTF)
         if (isSilenced(p)) {
@@ -511,7 +509,6 @@ public class CustomArmorManager {
     public void onDeathmaulerDamageTaken(Player p) {
         if (!hasDeathmaulerSet(p)) return;
         UUID id = p.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
         cooldownManager.setTimestamp(id, CooldownManager.Keys.DEATHMAULER_DAMAGE);
 
         int delaySeconds = cfg.getDeathmaulerAbsorptionDelay();
@@ -600,7 +597,6 @@ public class CustomArmorManager {
             }
 
             // Apply speed for 12 seconds
-            ItemsConfig cfg = ItemsConfig.getInstance();
             p.removePotionEffect(PotionEffectType.SPEED);
             p.addPotionEffect(new PotionEffect(
                 PotionEffectType.SPEED,
@@ -636,7 +632,6 @@ public class CustomArmorManager {
             return;
         }
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
         p.removePotionEffect(PotionEffectType.SPEED);
         p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, cfg.getFlamebringerSpeedDuration() * 20, cfg.getFlamebringerSpeedLevel(), false, false, true));
         flamebringerLavaUses.put(id, used + 1);
@@ -649,7 +644,7 @@ public class CustomArmorManager {
      */
     public boolean hasFlamebringerNoFireKb(Player p) {
         if (!hasFlamebringerSet(p)) return false;
-        return p.getFireTicks() > 0 && ItemsConfig.getInstance().getFlamebringerNoFireKb();
+        return p.getFireTicks() > 0 && cfg.getFlamebringerNoFireKb();
     }
 
     /**
@@ -661,8 +656,6 @@ public class CustomArmorManager {
         UUID id = killer.getUniqueId();
         int kills = flamebringerKills.getOrDefault(id, 0) + 1;
         flamebringerKills.put(id, kills);
-
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         if (kills >= cfg.getFlamebringerKillsForPull()) {
             flamebringerKills.put(id, 0);

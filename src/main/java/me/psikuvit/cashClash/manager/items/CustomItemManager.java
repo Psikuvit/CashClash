@@ -69,6 +69,8 @@ public class CustomItemManager {
 
     private final CooldownManager cooldownManager;
 
+    private final ItemsConfig cfg;
+
     // Invis Cloak state tracking
     private final Map<UUID, Integer> invisCloakUsesRemaining;
     private final Set<UUID> invisCloakActive;
@@ -158,6 +160,7 @@ public class CustomItemManager {
 
     private CustomItemManager() {
         this.cooldownManager = CooldownManager.getInstance();
+        this.cfg = ItemsConfig.getInstance();
         this.invisCloakUsesRemaining = new HashMap<>();
         this.invisCloakActive = new HashSet<>();
         this.invisCloakTasks = new HashMap<>();
@@ -202,7 +205,6 @@ public class CustomItemManager {
 
     public void throwGrenade(Player player, ItemStack item, boolean isSmoke) {
         consumeItem(player, item);
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         Item thrownItem = player.getWorld().dropItem(
                 player.getEyeLocation(),
@@ -284,7 +286,6 @@ public class CustomItemManager {
 
     public void useMedicPouchSelf(Player player, ItemStack item) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.MEDIC_POUCH)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH);
@@ -322,7 +323,6 @@ public class CustomItemManager {
 
     public void useMedicPouchAlly(Player player, Player target, ItemStack item, GameSession session) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.MEDIC_POUCH)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH);
@@ -414,7 +414,6 @@ public class CustomItemManager {
 
     public void toggleInvisCloak(Player player, boolean turnOn) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         if (turnOn && !invisCloakActive.contains(uuid)) {
             if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.INVIS_CLOAK)) {
@@ -554,7 +553,7 @@ public class CustomItemManager {
         if (task != null) task.cancel();
 
         // Reset cooldown
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK, ItemsConfig.getInstance().getInvisCloakCooldown());
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK, cfg.getInvisCloakCooldown());
     }
 
     /**
@@ -595,7 +594,6 @@ public class CustomItemManager {
     public void handleCashBlasterHit(Player attacker) {
         GameSession session = GameManager.getInstance().getPlayerSession(attacker);
         if (session == null) return;
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         CashClashPlayer ccp = session.getCashClashPlayer(attacker.getUniqueId());
         if (ccp != null) {
@@ -680,7 +678,6 @@ public class CustomItemManager {
             return;
         }
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
         Vector direction;
         if (pad.attachedFace() != BlockFace.UP && pad.attachedFace() != BlockFace.DOWN) {
             // Wall-mounted pad: launch outward along the wall's face instead of the player's look direction
@@ -725,7 +722,7 @@ public class CustomItemManager {
         SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
 
         final Location boomLoc = placeBlock.getLocation().clone().add(0.5, 0.5, 0.5);
-        double radius = ItemsConfig.getInstance().getBoomboxRadius();
+        double radius = cfg.getBoomboxRadius();
 
         // Pulse every 3 seconds (0, 3, 6, 9 seconds = 4 pulses total)
         for (int i = 0; i < 4; i++) {
@@ -775,7 +772,6 @@ public class CustomItemManager {
         Team placerTeam = session != null ? session.getPlayerTeam(placer) : null;
         if (placerTeam == null) return;
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
         int durationTicks = cfg.getBoomboxSpeedBoostDuration() * 20;
         int amplifier = speedPercentToAmplifier(cfg.getBoomboxSpeedBoostPercent());
 
@@ -983,7 +979,6 @@ public class CustomItemManager {
      */
     public void triggerTotemOfHaunting(Player player, ItemStack totemItem) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         consumeTotem(player, totemItem);
         GameSession session = GameManager.getInstance().getPlayerSession(player);
@@ -1024,7 +1019,6 @@ public class CustomItemManager {
      * moment the expanding smoke reaches them, rather than as an instant flat-radius check.
      */
     private void spawnHauntingSpiral(Player player) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
         Location origin = player.getLocation();
         double maxRadius = cfg.getTotemDebuffRadius();
         int debuffDurationTicks = cfg.getTotemDebuffDurationSeconds() * 20;
@@ -1106,7 +1100,6 @@ public class CustomItemManager {
         lotusChargeTicks.put(uuid, 0);
         applyLotusSlow(player);
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
         int maxTicks = cfg.getLotusMaxChargeSeconds() * 20;
         int hardCapTicks = maxTicks + cfg.getLotusGraceSeconds() * 20;
 
@@ -1145,7 +1138,6 @@ public class CustomItemManager {
         removeLotusSlow(player);
         consumeItem(player, item);
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
         double chargeSeconds = chargeTicks / 20.0;
 
         double knockbackDistance = chargeSeconds * cfg.getLotusKnockbackPerSecond();
@@ -1184,7 +1176,7 @@ public class CustomItemManager {
     private void applyLotusSlow(Player player) {
         AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speed == null) return;
-        double reduction = ItemsConfig.getInstance().getLotusSlowPercentWhileCharging() / 100.0;
+        double reduction = cfg.getLotusSlowPercentWhileCharging() / 100.0;
         speed.addModifier(new AttributeModifier(LOTUS_SLOW_KEY, -reduction, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
     }
 
@@ -1210,7 +1202,6 @@ public class CustomItemManager {
      * left mouse button - sustained rapid clicking approximates "continuous").
      */
     public void handleIceFanLeftClick(Player player, ItemStack item) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
         int remaining = getIceFanDurability(item);
         if (remaining <= 0) {
             Messages.send(player, "customitem.ice-fan-broken");
@@ -1242,7 +1233,6 @@ public class CustomItemManager {
         UUID uuid = player.getUniqueId();
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ICE_FAN_BURST)) return;
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
         int remaining = getIceFanDurability(item);
         if (remaining < cfg.getIceFanBurstMinDurability()) {
             Messages.send(player, "customitem.ice-fan-not-enough-durability");
@@ -1332,7 +1322,7 @@ public class CustomItemManager {
 
     private int getIceFanDurability(ItemStack item) {
         Integer remaining = PDCDetection.getItemUses(item);
-        return remaining != null ? remaining : ItemsConfig.getInstance().getIceFanMaxDurability();
+        return remaining != null ? remaining : cfg.getIceFanMaxDurability();
     }
 
     /**
@@ -1343,7 +1333,7 @@ public class CustomItemManager {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return;
 
-        int max = ItemsConfig.getInstance().getIceFanMaxDurability();
+        int max = cfg.getIceFanMaxDurability();
         int clamped = Math.max(0, Math.min(max, remaining));
         meta.getPersistentDataContainer().set(Keys.ITEM_USES, PersistentDataType.INTEGER, clamped);
 
@@ -1379,7 +1369,6 @@ public class CustomItemManager {
      */
     public void useOverdrivePotion(Player player, ItemStack item) {
         UUID uuid = player.getUniqueId();
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         consumeItem(player, item);
 
@@ -1436,7 +1425,7 @@ public class CustomItemManager {
     private void applyOverdriveSpeed(Player player) {
         AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speed == null) return;
-        double boost = ItemsConfig.getInstance().getOverdriveSpeedPercent() / 100.0;
+        double boost = cfg.getOverdriveSpeedPercent() / 100.0;
         speed.addModifier(new AttributeModifier(OVERDRIVE_SPEED_KEY, boost, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
     }
 
@@ -1465,7 +1454,6 @@ public class CustomItemManager {
         UUID uuid = player.getUniqueId();
         if (hunterMarkChargeTasks.containsKey(uuid)) return; // already charging
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
         hunterMarkChargeTicks.put(uuid, 0);
         int requiredTicks = cfg.getHuntersMarkChargeSeconds() * 20;
 
@@ -1510,7 +1498,6 @@ public class CustomItemManager {
     }
 
     private void applyHunterMark(Player hunter, Player target, ItemStack item) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
         consumeItem(hunter, item);
 
         clearHunterMark(target.getUniqueId());
@@ -1552,11 +1539,10 @@ public class CustomItemManager {
         }
         Player target = Bukkit.getPlayer(targetUuid);
         if (target == null) return 1.0;
-        return 1.0 + hunterMarkPercent(target, ItemsConfig.getInstance()) / 100.0;
+        return 1.0 + hunterMarkPercent(target, cfg) / 100.0;
     }
 
     private void spawnHunterMarkDisplay(Player target, long durationMillis) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
         long expiresAt = System.currentTimeMillis() + durationMillis;
         World world = target.getWorld();
 
@@ -1628,7 +1614,6 @@ public class CustomItemManager {
         Team team = session != null ? session.getPlayerTeam(player) : null;
         if (session == null || team == null) return;
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
         consumeItem(player, item);
 
         Block origin = loc.getBlock();
@@ -1691,7 +1676,6 @@ public class CustomItemManager {
      */
     private BukkitTask startRoseZoneTask(Location center, Set<Block> blocks, long expiresAt,
                                          GameSession session, int teamNumber) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
         BukkitTask task = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             @Override
             public void run() {
@@ -1717,7 +1701,6 @@ public class CustomItemManager {
      * back up to it (scaled through the shared healing-reduction hook).
      */
     private void healRoseMembersToFloor(Location center, GameSession session, int teamNumber) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
         double floor = cfg.getBloomingRoseMinHealthFloor();
         double radius = cfg.getBloomingRoseZoneRadius();
 
@@ -1763,7 +1746,6 @@ public class CustomItemManager {
     }
 
     private void triggerRoseRegen(BloomingRoseZone zone) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
         double radius = cfg.getBloomingRoseZoneRadius();
         int durationTicks = cfg.getBloomingRoseRegenDurationSeconds() * 20;
 
@@ -1781,7 +1763,7 @@ public class CustomItemManager {
     public double getBloomingRoseDamageReduction(Player player) {
         BloomingRoseZone zone = findRoseZone(player);
         if (zone == null) return 0.0;
-        return ItemsConfig.getInstance().getBloomingRoseDamageReductionPercent();
+        return cfg.getBloomingRoseDamageReductionPercent();
     }
 
     /**
@@ -1790,11 +1772,10 @@ public class CustomItemManager {
     public double getBloomingRoseMinHealth(Player player) {
         BloomingRoseZone zone = findRoseZone(player);
         if (zone == null) return -1.0;
-        return ItemsConfig.getInstance().getBloomingRoseMinHealthFloor();
+        return cfg.getBloomingRoseMinHealthFloor();
     }
 
     private BloomingRoseZone findRoseZone(Player player) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
         double radius = cfg.getBloomingRoseZoneRadius();
         for (BloomingRoseZone zone : bloomingRoseZones.values()) {
             if (zone.blocks().isEmpty()) continue;
@@ -1925,7 +1906,6 @@ public class CustomItemManager {
      * only consumed once the orb fully resolves (destroyed, pulled-and-expired, or detonated).
      */
     public void throwOrbOfGravitation(Player player) {
-        ItemsConfig cfg = ItemsConfig.getInstance();
 
         Snowball orb = player.launchProjectile(Snowball.class);
         orb.setVelocity(player.getLocation().getDirection().multiply(cfg.getOrbThrowSpeed()));
@@ -1977,7 +1957,6 @@ public class CustomItemManager {
         }
         SoundUtils.playAt(center, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.6f);
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
         double radius = cfg.getOrbPullRadius();
         int durationTicks = cfg.getOrbPullDurationTicks();
         int slownessTicks = cfg.getOrbSlownessDurationSeconds() * 20;
@@ -2096,7 +2075,6 @@ public class CustomItemManager {
             return;
         }
 
-        ItemsConfig cfg = ItemsConfig.getInstance();
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.SOUL_KATANA_PHANTOM_SLICE, cfg.getSoulKatanaCooldownSeconds());
 
         double leap = cfg.getSoulKatanaLeapDistance();
