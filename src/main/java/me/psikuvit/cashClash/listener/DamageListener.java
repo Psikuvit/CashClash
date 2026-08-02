@@ -120,6 +120,12 @@ public class DamageListener implements Listener {
             // 3. Track damage for bonus calculations
             trackDamageForBonuses(event, player);
 
+            // 4. Alchemist Wand Blink Swap protection
+            if (mythicManager.handleAlchemistBlinkProtection(player)) {
+                event.setCancelled(true);
+                return;
+            }
+
         } catch (Exception e) {
             logDamageError(player, e);
         }

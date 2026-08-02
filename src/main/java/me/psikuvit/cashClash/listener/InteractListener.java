@@ -514,6 +514,16 @@ public class InteractListener implements Listener {
                 mythicManager.useWardenShockwave(player);
                 return true;
             }
+            case ALCHEMIST_WAND -> {
+                event.setCancelled(true);
+
+                if (player.isSneaking()) {
+                    mythicManager.useAlchemistTaunt(player);
+                } else {
+                    mythicManager.useAlchemistBlinkSwap(player);
+                }
+                return true;
+            }
             case BLOODWRENCH_CROSSBOW -> {
                 // Shift + Right-click to toggle mode
                 if (player.isSneaking()) {

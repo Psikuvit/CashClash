@@ -16,7 +16,8 @@ public enum MythicItem implements Purchasable {
     GOBLIN_SPEAR(Material.TRIDENT, "goblin-spear", "Goblin Spear"),
     BLOODWRENCH_CROSSBOW(Material.CROSSBOW, "bloodwrench-crossbow", "BloodWrench Crossbow"),
     WARDEN_GLOVES(Material.NETHERITE_SWORD, "warden-gloves", "Warden Gloves"),
-    BLAZEBITE_CROSSBOWS(Material.CROSSBOW, "blazebite-crossbows", "BlazeBite Crossbows");
+    BLAZEBITE_CROSSBOWS(Material.CROSSBOW, "blazebite-crossbows", "BlazeBite Crossbows"),
+    ALCHEMIST_WAND(Material.BLAZE_ROD, "alchemist-wand", "Alchemist Wand");
 
     private final Material material;
     private final String configKey;

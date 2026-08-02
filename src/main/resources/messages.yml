@@ -485,8 +485,9 @@ messages:
      shockwave-activated: "<dark_aqua>SHOCKWAVE!</dark_aqua>"
      blazebite-reloading: "<red>BlazeBite reloading! ({cooldown_seconds}s)</red>"
      blazebite-reload-start: "<yellow>BlazeBite reloading...</yellow>"
-     target-frozen: "<aqua>Target frozen solid!</aqua>"
-     you-are-frozen: "<aqua>You are frozen in place!</aqua>"
+      target-frozen: "<aqua>Target frozen solid!</aqua>"
+      you-are-frozen: "<aqua>You are frozen in place!</aqua>"
+      alchemist-taunt-activated: "<gold>Alchemist Wand: TAUNT! Teammates chained together.</gold>"
 
   # ============================================
   # CASHQUAKE/LOTTERY MESSAGES
