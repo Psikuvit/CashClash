@@ -38,38 +38,38 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
     private static final int STANDARD_ARMOR_LEGGINGS_SLOT = 28;
     private static final int STANDARD_ARMOR_BOOTS_SLOT = 37;
 
+    // Individual custom armor slots
+    private static final int TECTONIC_CAP_SLOT = 11;
+    private static final int GUARDIANS_VEST_SLOT = 20;
+    private static final int BULLSEYE_PANTS_SLOT = 29;
+    private static final int BUNNY_SHOES_SLOT = 38;
+
     // Investor's set column slots
-    private static final int INVESTORS_HELMET_SLOT = 11;
-    private static final int INVESTORS_CHESTPLATE_SLOT = 20;
-    private static final int INVESTORS_LEGGINGS_SLOT = 29;
-    private static final int INVESTORS_BOOTS_SLOT = 38;
+    private static final int INVESTORS_HELMET_SLOT = 40;
+    private static final int INVESTORS_CHESTPLATE_SLOT = 41;
+    private static final int INVESTORS_LEGGINGS_SLOT = 42;
+    private static final int INVESTORS_BOOTS_SLOT = 43;
 
     // Separator column base slot
     private static final int SEPARATOR_COLUMN_BASE_SLOT = 12;
 
     // Deathmauler set slots
-    private static final int DEATHMAULER_BARRIER_LEFT_SLOT = 13;
-    private static final int DEATHMAULER_PIECE_1_SLOT = 14;
-    private static final int DEATHMAULER_PIECE_2_SLOT = 15;
-    private static final int DEATHMAULER_BARRIER_RIGHT_SLOT = 16;
+    private static final int DEATHMAULER_BARRIER_LEFT_SLOT = 22;
+    private static final int DEATHMAULER_PIECE_1_SLOT = 23;
+    private static final int DEATHMAULER_PIECE_2_SLOT = 24;
+    private static final int DEATHMAULER_BARRIER_RIGHT_SLOT = 25;
 
     // Dragon set slots
-    private static final int DRAGON_PIECE_1_SLOT = 22;
-    private static final int DRAGON_PIECE_2_SLOT = 23;
-    private static final int DRAGON_BARRIER_SLOT = 24;
-    private static final int DRAGON_PIECE_3_SLOT = 25;
+    private static final int DRAGON_PIECE_1_SLOT = 13;
+    private static final int DRAGON_PIECE_2_SLOT = 14;
+    private static final int DRAGON_BARRIER_SLOT = 15;
+    private static final int DRAGON_PIECE_3_SLOT = 16;
 
     // Flamebringer set slots
     private static final int FLAMEBRINGER_BARRIER_LEFT_SLOT = 31;
     private static final int FLAMEBRINGER_PIECE_1_SLOT = 33;
     private static final int FLAMEBRINGER_PIECE_2_SLOT = 34;
     private static final int FLAMEBRINGER_BARRIER_RIGHT_SLOT = 32;
-
-    // Individual custom armor slots
-    private static final int GUARDIANS_VEST_SLOT = 41;
-    private static final int BULLSEYE_PANTS_SLOT = 42;
-    private static final int BUNNY_SHOES_SLOT = 43;
-    private static final int TECTONIC_CAP_SLOT = 44;
 
     public ArmorCategoryGui(Player viewer) {
         super(GUI_ID, viewer, ShopCategory.ARMOR);

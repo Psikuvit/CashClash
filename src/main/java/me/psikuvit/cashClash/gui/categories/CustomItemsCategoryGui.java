@@ -29,26 +29,28 @@ public class CustomItemsCategoryGui extends AbstractShopCategoryGui {
     @Override
     protected void populateItems() {
         // Row 3
-        setButton(20, createCustomItemButton(CustomItem.GRENADE));
-        setButton(21, createCustomItemButton(CustomItem.SMOKE_CLOUD_GRENADE));
-        setButton(22, createCustomItemButton(CustomItem.BAG_OF_POTATOES));
-        setButton(23, createCustomItemButton(CustomItem.CASH_BLASTER));
-        setButton(24, createCustomItemButton(CustomItem.BOUNCE_PAD));
+        setButton(20, createCustomItemButton(CustomItem.BLOOMING_ROSE));
+        setButton(21, createCustomItemButton(CustomItem.HUNTERS_MARK));
+        setButton(22, createCustomItemButton(CustomItem.TOTEM_OF_HAUNTING));
+        setButton(23, createCustomItemButton(CustomItem.GRENADE));
+        setButton(24, createCustomItemButton(CustomItem.BOOMBOX));
 
         // Row 4
-        setButton(29, createCustomItemButton(CustomItem.BOOMBOX));
-        setButton(30, createCustomItemButton(CustomItem.MEDIC_POUCH));
-        setButton(31, createCustomItemButton(CustomItem.INVIS_CLOAK));
-        setButton(32, createCustomItemButton(CustomItem.TABLET_OF_HACKING));
-        setButton(33, createCustomItemButton(CustomItem.RESPAWN_ANCHOR));
+        setButton(29, createCustomItemButton(CustomItem.OVERDRIVE_POTION));
+        setButton(30, createCustomItemButton(CustomItem.BOUNCE_PAD));
+        setButton(31, createCustomItemButton(CustomItem.RADIATING_LOTUS));
+        setButton(32, createCustomItemButton(CustomItem.INVIS_CLOAK));
+        setButton(33, createCustomItemButton(CustomItem.SMOKE_CLOUD_GRENADE));
 
         // Row 5
-        setButton(36, createCustomItemButton(CustomItem.TOTEM_OF_HAUNTING));
-        setButton(37, createCustomItemButton(CustomItem.RADIATING_LOTUS));
-        setButton(38, createCustomItemButton(CustomItem.ICE_FAN));
-        setButton(39, createCustomItemButton(CustomItem.OVERDRIVE_POTION));
-        setButton(40, createCustomItemButton(CustomItem.HUNTERS_MARK));
-        setButton(41, createCustomItemButton(CustomItem.BLOOMING_ROSE));
+        setButton(36, createCustomItemButton(CustomItem.BAG_OF_POTATOES));
+        setButton(37, createCustomItemButton(CustomItem.CASH_BLASTER));
+        setButton(38, createCustomItemButton(CustomItem.MEDIC_POUCH));
+        setButton(39, createCustomItemButton(CustomItem.TABLET_OF_HACKING));
+        setButton(40, createCustomItemButton(CustomItem.RESPAWN_ANCHOR));
+
+        // Row 6
+        setButton(41, createCustomItemButton(CustomItem.ICE_FAN));
         setButton(42, createCustomItemButton(CustomItem.ORB_OF_GRAVITATION));
         setButton(43, createCustomItemButton(CustomItem.SOUL_KATANA));
     }
