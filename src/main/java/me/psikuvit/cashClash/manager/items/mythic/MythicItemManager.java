@@ -3,73 +3,52 @@ package me.psikuvit.cashClash.manager.items.mythic;
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
-import me.psikuvit.cashClash.util.SchedulerUtils;
-import me.psikuvit.cashClash.util.effects.ParticleUtils;
-import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.ItemFactory;
-import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
-import org.bukkit.Color;
-import org.bukkit.FluidCollisionMode;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Sound;
-import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Display;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.ItemDisplay;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.RayTraceResult;
-import org.bukkit.util.Transformation;
-import org.bukkit.util.Vector;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Manages Mythic (Legendary) item behaviors, cooldowns, and special abilities.
- * Each player can only purchase ONE mythic per game.
- * Each mythic can only be purchased ONCE per game (globally).
+ * Registry of every mythic (legendary) item's behaviour, plus the game-wide
+ * ownership and shop lifecycle. Each mythic item is handled by its own
+ * {@link MythicItemHandler}; the manager looks handlers up by item or handler
+ * type and fans out cleanup to every handler.
+ *
+ * <p>Purchase/ownership rules: each player can only purchase ONE mythic per
+ * game, and each mythic can only be purchased ONCE per game (globally).</p>
  */
 public class MythicItemManager {
 
     private static MythicItemManager instance;
+
     private final ItemsConfig cfg;
     private final CooldownManager cooldownManager;
 
@@ -77,80 +56,33 @@ public class MythicItemManager {
     private final Map<UUID, Set<MythicItem>> sessionPurchasedMythics;
     private final Map<UUID, List<MythicItem>> sessionAvailableMythics;
 
-    // BlazeBite shots tracking (shared between both crossbows)
-    private final Map<UUID, Integer> blazebiteShotsRemaining;
-
-    // BlazeBite Glacier frozen players tracking (UUID -> expiration timestamp)
-    private final Map<UUID, Long> glacierFrozenPlayers;
-
-    // Goblin Spear shots tracking
-    private final Map<UUID, Integer> goblinSpearShotsRemaining;
-
-    // Goblin Spear charge state tracking (player -> list of caught players)
-    private final Map<UUID, List<Player>> goblinSpearCharging;
-
-    // BloodWrench mode tracking (true = rapid fire, false = supercharged)
-    private final Map<UUID, Boolean> bloodwrenchRapidMode;
-
-    // BloodWrench rapid fire shots remaining (must fire all 3 before switching)
-    private final Map<UUID, Integer> bloodwrenchRapidShotsRemaining;
-
-    // BloodWrench rapid fire in progress (cannot switch modes while firing)
-    private final Set<UUID> bloodwrenchRapidFiring;
-
-    // Active tasks for cleanup
+    // Active tasks across all handlers, cancelled on per-player and global cleanup
     private final Map<UUID, List<BukkitTask>> activeTasks;
 
-    // Warden Gloves boxing punch counter (UUID -> punch count)
-    private final Map<UUID, Integer> wardenPunchCount;
-    // Warden Gloves boxing ability active (UUID -> true if ability is active)
-    private final Set<UUID> wardenBoxingActive;
-
-    // Glacier frostbite particle tasks (UUID -> particle task)
-    private final Map<UUID, BukkitTask> glacierFrostbiteParticleTasks;
-
-    // Wind Bow shots tracking (10 shots then reload cooldown)
-    private final Map<UUID, Integer> windBowShotsRemaining;
-
-    // Alchemist Blink Swap invincibility (UUID -> hits remaining)
-    private final Map<UUID, Integer> alchemistBlinkProtection;
-    private final Map<UUID, Long> alchemistBlinkProtectionExpiry;
-
-    // Alchemist Wand Taunt tracking
-    private final Map<UUID, Set<UUID>> alchemistTauntChains;
-    private final Map<UUID, Long> alchemistTauntExpiry;
-    private final Map<UUID, List<ItemDisplay>> alchemistTauntDisplays;
-
-    // Carl's spinning players
-    private final Set<UUID> spinningPlayers;
+    // Handler registry - one handler per mythic item
+    private final Map<MythicItem, MythicItemHandler> handlers;
+    private final List<MythicItemHandler> allHandlers;
 
     private MythicItemManager() {
         cfg = ItemsConfig.getInstance();
         cooldownManager = CooldownManager.getInstance();
 
-        // Use ConcurrentHashMap for thread safety
         playerMythics = new ConcurrentHashMap<>();
         sessionPurchasedMythics = new ConcurrentHashMap<>();
         sessionAvailableMythics = new ConcurrentHashMap<>();
-        blazebiteShotsRemaining = new ConcurrentHashMap<>();
-        glacierFrozenPlayers = new ConcurrentHashMap<>();
-        goblinSpearShotsRemaining = new ConcurrentHashMap<>();
-        goblinSpearCharging = new ConcurrentHashMap<>();
-        bloodwrenchRapidMode = new ConcurrentHashMap<>();
-        bloodwrenchRapidShotsRemaining = new ConcurrentHashMap<>();
-        bloodwrenchRapidFiring = ConcurrentHashMap.newKeySet();
         activeTasks = new ConcurrentHashMap<>();
-        wardenPunchCount = new ConcurrentHashMap<>();
-        wardenBoxingActive = ConcurrentHashMap.newKeySet();
-        glacierFrostbiteParticleTasks = new ConcurrentHashMap<>();
-        windBowShotsRemaining = new ConcurrentHashMap<>();
-        spinningPlayers = ConcurrentHashMap.newKeySet();
-        alchemistBlinkProtection = new ConcurrentHashMap<>();
-        alchemistBlinkProtectionExpiry = new ConcurrentHashMap<>();
-        alchemistTauntChains = new ConcurrentHashMap<>();
-        alchemistTauntExpiry = new ConcurrentHashMap<>();
-        alchemistTauntDisplays = new ConcurrentHashMap<>();
 
+        handlers = new EnumMap<>(MythicItem.class);
+        allHandlers = new ArrayList<>();
+
+        register(CarlsBattleaxeHandler::new, MythicItem.CARLS_BATTLEAXE);
+        register(WindBowHandler::new, MythicItem.WIND_BOW);
+        register(ElectricEelHandler::new, MythicItem.ELECTRIC_EEL_SWORD);
+        register(GoblinSpearHandler::new, MythicItem.GOBLIN_SPEAR);
+        register(BloodwrenchHandler::new, MythicItem.BLOODWRENCH_CROSSBOW);
+        register(WardenGlovesHandler::new, MythicItem.WARDEN_GLOVES);
+        register(BlazebiteHandler::new, MythicItem.BLAZEBITE_CROSSBOWS);
+        register(AlchemistWandHandler::new, MythicItem.ALCHEMIST_WAND);
     }
 
     public static MythicItemManager getInstance() {
@@ -158,6 +90,64 @@ public class MythicItemManager {
             instance = new MythicItemManager();
         }
         return instance;
+    }
+
+    private void register(java.util.function.Function<MythicItemManager, ? extends MythicItemHandler> factory, MythicItem item) {
+        MythicItemHandler handler = factory.apply(this);
+        allHandlers.add(handler);
+        handlers.put(item, handler);
+    }
+
+    /**
+     * Looks up the handler for a mythic item.
+     *
+     * @throws IllegalArgumentException when no handler is registered for the item
+     */
+    public MythicItemHandler getHandler(MythicItem item) {
+        MythicItemHandler handler = handlers.get(item);
+        if (handler == null) {
+            throw new IllegalArgumentException("No mythic handler registered for " + item);
+        }
+        return handler;
+    }
+
+    /**
+     * Looks up a handler by its concrete type, e.g. {@code getHandler(WindBowHandler.class)}.
+     *
+     * @throws IllegalArgumentException when no handler of that type is registered
+     */
+    public <T extends MythicItemHandler> T getHandler(Class<T> type) {
+        for (MythicItemHandler handler : allHandlers) {
+            if (type.isInstance(handler)) {
+                return type.cast(handler);
+            }
+        }
+        throw new IllegalArgumentException("No mythic handler registered for " + type.getSimpleName());
+    }
+
+    /**
+     * Every registered handler, for cross-cutting fan-out (cleanup).
+     */
+    public Collection<MythicItemHandler> getHandlers() {
+        return Collections.unmodifiableList(allHandlers);
+    }
+
+    // ---- Shared dependencies handed to every handler ----
+
+    ItemsConfig getCfg() {
+        return cfg;
+    }
+
+    CooldownManager getCooldownManager() {
+        return cooldownManager;
+    }
+
+    /**
+     * Registers a scheduled task to be cancelled when the owning player quits
+     * or dies, or when the plugin shuts down.
+     */
+    void trackTask(UUID uuid, BukkitTask task) {
+        activeTasks.computeIfAbsent(uuid, k -> new ArrayList<>()).add(task);
     }
 
     // ==================== PURCHASE & OWNERSHIP ====================
@@ -366,16 +356,16 @@ public class MythicItemManager {
                 NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_damage");
                 AttributeModifier damageMod = new AttributeModifier(
                         damageKey,
-                        8.0, 
+                        8.0,
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
                 meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, damageMod);
-                
+
                 NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_speed");
                 AttributeModifier speedMod = new AttributeModifier(
                         speedKey,
-                        -2.4, 
+                        -2.4,
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
@@ -389,21 +379,21 @@ public class MythicItemManager {
                 NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "warden_damage");
                 AttributeModifier damageMod = new AttributeModifier(
                         damageKey,
-                        8.0, 
+                        8.0,
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
                 meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, damageMod);
-                
+
                 NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "warden_speed");
                 AttributeModifier speedMod = new AttributeModifier(
                         speedKey,
-                        -2.4, 
+                        -2.4,
                         AttributeModifier.Operation.ADD_NUMBER,
                         EquipmentSlotGroup.MAINHAND
                 );
                 meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedMod);
-                
+
                 // Extra reach removed
                 meta.removeAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE);
             }
@@ -429,1665 +419,6 @@ public class MythicItemManager {
         return !available.contains(mythic);
     }
 
-    // ==================== CARL'S BATTLEAXE ====================
-
-    /**
-     * Activate Carl's Battleaxe spinning attack.
-     * Player spins the axe around their body, slowed down, dealing high damage to nearby enemies.
-     * Includes a spinning Item Display visual effect.
-     */
-    public void activateCarlsSpinAttack(Player attacker) {
-        UUID uuid = attacker.getUniqueId();
-
-        Messages.debug(attacker, "CARLS_BATTLEAXE: Spin attack activated");
-
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH)) {
-            Messages.debug(attacker, "CARLS_BATTLEAXE: Spin attack on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH) + "s");
-            Messages.send(attacker, "mythic.carls-battleaxe-cooldown", "cooldown_seconds", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH)));
-            return;
-        }
-
-        if (spinningPlayers.contains(uuid)) {
-            Messages.send(attacker, "mythic.carls-battleaxe-already-spinning");
-            return;
-        }
-
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH, cfg.getCarlsSpinCooldown());
-        spinningPlayers.add(uuid);
-
-        // Apply slowness during spin
-        CashClashPlayer.applyEffect(attacker, PotionEffectType.SLOWNESS, cfg.getCarlsSpinDuration(), 1);
-
-        Messages.send(attacker, "mythic.carls-battleaxe-activated");
-        SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.5f);
-
-        // Spawn the spinning axe display
-        ItemDisplay axeDisplay = spawnSpinningAxeDisplay(attacker);
-
-        // Start the spin attack runnable
-        final int duration = cfg.getCarlsSpinDuration();
-        final double damage = cfg.getCarlsSpinDamage();
-        final double radius = cfg.getCarlsSpinRadius();
-        final int hitInterval = cfg.getCarlsSpinHitInterval();
-        final Set<UUID> recentlyHit = new HashSet<>();
-
-        new BukkitRunnable() {
-            int ticks = 0;
-            double angle = 0;
-            double heightOffset = 0;
-            boolean goingUp = true;
-
-            @Override
-            public void run() {
-                if (ticks >= duration || !attacker.isOnline() || attacker.isDead()) {
-                    cleanup();
-                    return;
-                }
-
-                // Update axe display position - spin around player and bob up/down
-                if (axeDisplay.isValid()) {
-                    angle += Math.PI / 8; // Spin speed
-
-                    // Bob up and down
-                    if (goingUp) {
-                        heightOffset += 0.05;
-                        if (heightOffset >= 0.5) goingUp = false;
-                    } else {
-                        heightOffset -= 0.05;
-                        if (heightOffset <= -0.3) goingUp = true;
-                    }
-
-                    double x = Math.cos(angle) * 1.2;
-                    double z = Math.sin(angle) * 1.2;
-                    Location newLoc = attacker.getLocation().add(x, 1.0 + heightOffset, z);
-
-                    // Make the axe face the player (handle towards player)
-                    float yaw = (float) Math.toDegrees(Math.atan2(-x, -z));
-                    newLoc.setYaw(yaw);
-                    newLoc.setPitch(0);
-
-                    axeDisplay.teleport(newLoc);
-                    // Rotate the axe itself for spinning visual
-                    axeDisplay.setRotation(yaw + (ticks * 15), 90); // Vertical orientation with spin
-                }
-
-                // Deal damage every hitInterval ticks
-                if (ticks % hitInterval == 0) {
-                    recentlyHit.clear();
-
-                    for (Entity entity : attacker.getNearbyEntities(radius, radius, radius)) {
-                        if (!(entity instanceof Player victim)) continue;
-                        if (victim.equals(attacker)) continue;
-                        if (recentlyHit.contains(victim.getUniqueId())) continue;
-
-                        // Check if in same game and different team
-                        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
-                        if (session == null) continue;
-
-                        Team attackerTeam = session.getPlayerTeam(attacker);
-                        Team victimTeam = session.getPlayerTeam(victim);
-                        if (attackerTeam == null || victimTeam == null) continue;
-                        if (attackerTeam.equals(victimTeam)) continue;
-
-                        // Deal damage
-                        victim.damage(damage, attacker);
-                        recentlyHit.add(victim.getUniqueId());
-
-                        // Visual feedback
-                        SoundUtils.playAt(victim.getLocation(), Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
-                        ParticleUtils.hitFeedback(victim.getLocation(), 15, 0.3);
-                        Messages.debug(attacker, "CARLS_BATTLEAXE: Spin hit " + victim.getName() + " for " + damage + " damage");
-                    }
-                }
-
-                // Spinning particles around player
-                if (ticks % 2 == 0) {
-                    ParticleUtils.spinSweep(attacker.getLocation(), angle, radius);
-                }
-
-                // Sound every 10 ticks
-                if (ticks % 10 == 0) {
-                    SoundUtils.playAt(attacker.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.8f, 1.2f);
-                }
-
-                ticks++;
-            }
-
-            private void cleanup() {
-                spinningPlayers.remove(uuid);
-                if (axeDisplay.isValid()) {
-                    axeDisplay.remove();
-                }
-                CashClashPlayer.removeEffect(attacker, PotionEffectType.SLOWNESS);
-                Messages.send(attacker, "mythic.carls-battleaxe-ended");
-                cancel();
-            }
-        }.runTaskTimer(CashClashPlugin.getInstance(), 0L, 1L);
-
-        Messages.debug(attacker, "CARLS_BATTLEAXE: Spin attack started! Duration: " + (duration / 20) + "s, Damage: " + damage + ", Radius: " + radius);
-    }
-
-    /**
-     * Spawn an ItemDisplay entity showing Carl's Battleaxe spinning around the player.
-     */
-    private ItemDisplay spawnSpinningAxeDisplay(Player player) {
-        Location spawnLoc = player.getLocation().add(1.2, 1.0, 0);
-
-        return player.getWorld().spawn(spawnLoc, ItemDisplay.class, display -> {
-            // Create the axe item
-            ItemStack axe = new ItemStack(Material.NETHERITE_AXE);
-            display.setItemStack(axe);
-
-            // Set the transformation for vertical orientation (handle facing player)
-            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-
-            // Make it larger and rotate to vertical (handle down)
-            Transformation transform = display.getTransformation();
-            Quaternionf leftRotation = new Quaternionf();
-            leftRotation.rotateX((float) Math.toRadians(90)); // Rotate to vertical
-
-            display.setTransformation(new Transformation(
-                    transform.getTranslation(),
-                    leftRotation,
-                    new Vector3f(1.5f, 1.5f, 1.5f), // Scale up
-                    transform.getRightRotation()
-            ));
-
-            display.setBillboard(Display.Billboard.FIXED);
-            display.setBrightness(new Display.Brightness(15, 15));
-        });
-    }
-
-    /**
-     * Check if a player is currently in a spin attack.
-     */
-    public boolean isSpinning(UUID playerId) {
-        return spinningPlayers.contains(playerId);
-    }
-
-    /**
-     * Handle Carl's Battleaxe critical hit launch.
-     * Critical hits (while falling) launch enemies into the air.
-     * 10 second cooldown.
-     */
-    public void handleCarlsCriticalHit(Player attacker, Player victim) {
-        // Launch ability removed - now just deals normal critical damage
-        Messages.debug(attacker, "CARLS_BATTLEAXE: Critical hit detected (launch disabled)");
-        
-        SoundUtils.play(attacker, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.8f);
-        ParticleUtils.crit(victim.getLocation().add(0, 1, 0), 20, 0.5);
-    }
-
-    // ==================== WIND BOW ====================
-
-    /**
-     * Handle Wind Bow shot.
-     * 10 shots per magazine, then 30 second reload cooldown.
-     * @return true if shot is allowed, false if on cooldown
-     */
-    public boolean handleWindBowShot(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        // Check if on reload cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_RELOAD)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD);
-            Messages.send(player, "mythic.wind-bow-reloading",
-                    "remaining", String.valueOf(remaining));
-            return false;
-        }
-
-        // Get or initialize shots remaining
-        int shots = windBowShotsRemaining.getOrDefault(uuid, cfg.getWindBowShotsPerMagazine());
-
-        if (shots <= 0) {
-            // Start reload cooldown
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD, cfg.getWindBowReloadCooldown());
-            windBowShotsRemaining.put(uuid, cfg.getWindBowShotsPerMagazine());
-            Messages.send(player, "mythic.wind-bow-out-of-shots");
-            SoundUtils.play(player, Sound.ITEM_CROSSBOW_LOADING_END, 1.0f, 0.5f);
-            return false;
-        }
-
-        // Consume a shot
-        shots--;
-        windBowShotsRemaining.put(uuid, shots);
-
-        if (shots == 0) {
-            // Start reload cooldown
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD, cfg.getWindBowReloadCooldown());
-            windBowShotsRemaining.put(uuid, cfg.getWindBowShotsPerMagazine());
-            Messages.send(player, "mythic.wind-bow-magazine-empty");
-            SoundUtils.play(player, Sound.ITEM_CROSSBOW_LOADING_END, 1.0f, 0.5f);
-        } else if (shots <= 3) {
-            Messages.send(player, "mythic.wind-bow-shots-remaining", "{shots}", String.valueOf(shots));
-        }
-
-        Messages.debug(player, "WIND_BOW: Shot fired, " + shots + " remaining");
-        return true;
-    }
-
-    /**
-     * Wind Bow right-click boost (while sneaking).
-     * Boosts player up and forward.
-     * 30 second cooldown.
-     */
-    public void useWindBowBoost(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        Messages.debug(player, "WIND_BOW: Boost ability triggered");
-
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_BOOST)) {
-            Messages.debug(player, "WIND_BOW: Boost on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST) + "s");
-            Messages.send(player, "mythic.wind-bow-boost-cooldown", "{cooldown_seconds}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST)));
-            return;
-        }
-
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST, cfg.getWindBowBoostCooldown());
-
-        Vector direction = player.getLocation().getDirection();
-        direction.setY(Math.max(direction.getY() + 0.5, 0.5));
-
-        Vector velocity = direction.multiply(cfg.getWindBowBoostPower());
-        player.setVelocity(velocity);
-
-        Messages.debug(player, "WIND_BOW: Boosted! Power: " + cfg.getWindBowBoostPower() + ", Cooldown: " + cfg.getWindBowBoostCooldown() + "s");
-        SoundUtils.play(player, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.0f, 1.0f);
-        ParticleUtils.cloud(player.getLocation(), 20, 0.5);
-
-        Messages.send(player, "mythic.wind-bow-boost-activated");
-    }
-
-    /**
-     * Wind Bow arrow hit - propel target and nearby players backwards.
-     * Acts as a wind gust in 3 block radius. Passive ability.
-     */
-    public void handleWindBowHit(Player shooter, Player target) {
-        Location hitLoc = target.getLocation();
-        Vector pushDirection = hitLoc.toVector().subtract(shooter.getLocation().toVector()).normalize();
-        pushDirection.setY(0.3);
-
-        int hitCount = 0;
-        // Push target and all nearby players
-        for (Entity entity : target.getWorld().getNearbyEntities(hitLoc, cfg.getWindBowPushRadius(), cfg.getWindBowPushRadius(), cfg.getWindBowPushRadius())) {
-            if (!(entity instanceof Player p)) continue;
-            if (p.equals(shooter)) continue;
-
-            p.setVelocity(pushDirection.clone().multiply(cfg.getWindBowPushPower()));
-            hitCount++;
-        }
-
-        Messages.debug(shooter, "WIND_BOW: Wind gust pushed " + hitCount + " players, radius: " + cfg.getWindBowPushRadius() + ", power: " + cfg.getWindBowPushPower());
-        SoundUtils.playAt(hitLoc, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.0f, 0.8f);
-        ParticleUtils.cloud(hitLoc, 30, 1);
-    }
-
-    // ==================== ELECTRIC EEL SWORD ====================
-
-    /**
-     * Electric Eel Sword chain damage.
-     * Fully charged hits damage nearby enemies in 5 block radius for 0.5 hearts.
-     * 1 second cooldown.
-     */
-    public void handleElectricEelChain(Player attacker, LivingEntity victim) {
-        UUID uuid = attacker.getUniqueId();
-        
-
-        Messages.debug(attacker, "ELECTRIC_EEL: Chain damage check");
-
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_CHAIN)) {
-            Messages.debug(attacker, "ELECTRIC_EEL: Chain on cooldown");
-            return;
-        }
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_CHAIN, cfg.getEelChainCooldown());
-
-        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
-        if (session == null) {
-            Messages.debug(attacker, "ELECTRIC_EEL: No session");
-            return;
-        }
-
-        Team attackerTeam = session.getPlayerTeam(attacker);
-        Location victimLoc = victim.getLocation();
-        int radius = cfg.getEelChainRadius();
-        int chainCount = 0;
-
-        // Chain damage to nearby enemies
-        for (Entity entity : victim.getWorld().getNearbyEntities(victimLoc, radius, radius, radius)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(attacker) || target.equals(victim)) continue;
-
-            Team targetTeam = session.getPlayerTeam(target);
-            if (targetTeam != null && attackerTeam != null &&
-                targetTeam.getTeamNumber() == attackerTeam.getTeamNumber()) continue;
-
-            target.damage(cfg.getEelChainDamage(), attacker);
-            chainCount++;
-
-            // Lightning spark effect
-            ParticleUtils.electricSpark(target.getLocation().add(0, 1, 0), 15, 0.3);
-        }
-
-        Messages.debug(attacker, "ELECTRIC_EEL: Chained to " + chainCount + " enemies, radius: " + radius + ", damage: " + cfg.getEelChainDamage());
-        SoundUtils.playAt(victimLoc, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 0.5f, 1.5f);
-    }
-
-    /**
-     * Electric Eel Sword teleport.
-     * Zaps player 4 blocks forward but not through walls.
-     * 15 second cooldown.
-     */
-    public void useElectricEelTeleport(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        Messages.debug(player, "ELECTRIC_EEL: Teleport ability triggered");
-
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING)) {
-            Messages.debug(player, "ELECTRIC_EEL: Teleport on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING) + "s");
-            Messages.send(player, "mythic.electric-eel-teleport-cooldown", "{cooldown_seconds}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING)));
-            return;
-        }
-
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING, cfg.getEelTeleportCooldown());
-
-        Location start = player.getEyeLocation();
-        Vector direction = start.getDirection().normalize();
-        World world = player.getWorld();
-
-        double distance = cfg.getEelTeleportDistance(); // treat as push strength
-
-        RayTraceResult result = world.rayTraceBlocks(start, direction, distance, FluidCollisionMode.NEVER, true);
-
-        double pushStrength = distance; // you can tune this
-
-        if (result != null && result.getHitBlock() != null) {
-            // Stop before the wall
-            double hitDistance = result.getHitPosition().distance(start.toVector());
-            pushStrength = Math.max(0.1, hitDistance - 0.5);
-            Messages.debug(player, "ELECTRIC_EEL: Hit wall, reduced push strength");
-        } else {
-            Messages.debug(player, "ELECTRIC_EEL: Full push strength");
-        }
-
-        Vector velocity = direction.multiply(pushStrength);
-        player.setVelocity(velocity);
-
-        // Effects at destination
-        ParticleUtils.electricSpark(player.getLocation().add(0, 1, 0), 30, 0.5);
-
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_LIGHTNING, cfg.getEelTeleportCooldown());
-        Messages.debug(player, "ELECTRIC_EEL: Teleported! Distance: " + distance + ", Cooldown: " + cfg.getEelTeleportCooldown() + "s");
-        Messages.send(player, "mythic.electric-eel-zap");
-    }
-
-    /**
-     * Handle Goblin Spear throw.
-     * 8 shots per magazine, 15 second reload.
-     * @return true if shot was successful, false if on reload cooldown
-     */
-    public boolean handleGoblinSpearThrow(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        Messages.debug(player, "GOBLIN_SPEAR: Throw triggered");
-
-        int shots = goblinSpearShotsRemaining.getOrDefault(uuid, cfg.getGoblinShotsPerMag());
-        if (shots <= 0) {
-            if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD)) {
-                Messages.debug(player, "GOBLIN_SPEAR: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD) + "s");
-                Messages.send(player, "mythic.goblin-spear-reloading", "{cooldown_seconds}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD)));
-                return false;
-            }
-            goblinSpearShotsRemaining.put(uuid, cfg.getGoblinShotsPerMag());
-            shots = cfg.getGoblinShotsPerMag();
-            Messages.debug(player, "GOBLIN_SPEAR: Magazine reloaded to " + shots);
-        }
-
-        goblinSpearShotsRemaining.put(uuid, shots - 1);
-        Messages.debug(player, "GOBLIN_SPEAR: Shot fired! Remaining: " + (shots - 1));
-
-        if (shots - 1 <= 0) {
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD, cfg.getGoblinReloadCooldown());
-            Messages.debug(player, "GOBLIN_SPEAR: Out of shots, reloading for " + cfg.getGoblinReloadCooldown() + "s");
-            Messages.send(player, "mythic.goblin-spear-reload-start");
-        }
-
-        return true;
-    }
-
-    /**
-     * Handle Goblin Spear hit.
-     * Deals damage + Poison.
-     * @param shooter The attacker
-     * @param victim The victim
-     * @param isMelee Whether this is a melee hit (prevents double damage)
-     */
-    public void handleGoblinSpearHit(Player shooter, LivingEntity victim, boolean isMelee) {
-        Messages.debug(shooter, "GOBLIN_SPEAR: Hit " + victim.getName() + " (Melee: " + isMelee + ")");
-
-        if (!isMelee) {
-            victim.damage(cfg.getGoblinSpearDamage(), shooter);
-        }
-
-        if (victim instanceof Player victimPlayer) {
-            CashClashPlayer.applyEffect(victimPlayer, PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true);
-        } else {
-            victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true));
-        }
-
-        if (!isMelee) {
-            Messages.debug(shooter, "GOBLIN_SPEAR: Dealt " + cfg.getGoblinSpearDamage() + " damage + Poison " + (cfg.getGoblinPoisonLevel() + 1));
-        } else {
-            Messages.debug(shooter, "GOBLIN_SPEAR: Applied Poison " + (cfg.getGoblinPoisonLevel() + 1));
-        }
-
-        ParticleUtils.slime(victim.getLocation().add(0, 1, 0), 20, 0.5);
-    }
-
-    /**
-     * Start Goblin Spear charge ability.
-     * Player charges forward, catching enemies and dealing damage + poison when hitting a wall.
-     */
-    public void startGoblinSpearCharge(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        // Remove respawn protection when starting charge
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session != null) {
-            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-            if (ccp != null) {
-                ccp.setRespawnProtection(0L);
-            }
-        }
-
-        // Check cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE);
-            Messages.send(player, "mythic.charge-cooldown", "{remaining}", String.valueOf(remaining));
-            return;
-        }
-
-        // Check if already charging
-        if (goblinSpearCharging.containsKey(uuid)) {
-            return;
-        }
-
-        Messages.debug(player, "GOBLIN_SPEAR: Charge started!");
-        Messages.send(player, "mythic.charge-activated");
-        SoundUtils.play(player, Sound.ENTITY_RAVAGER_ROAR, 1.0f, 1.5f);
-
-        // Initialize caught players list
-        goblinSpearCharging.put(uuid, new ArrayList<>());
-
-        // Get session for team checking
-        Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
-
-        // Get charge direction
-        Vector chargeDirection = player.getLocation().getDirection().setY(0).normalize();
-        double chargeSpeed = cfg.getGoblinChargeSpeed();
-        int maxDuration = cfg.getGoblinChargeMaxDuration();
-
-        // Start charge runnable
-        BukkitTask chargeTask = new BukkitRunnable() {
-            int ticks = 0;
-
-            @Override
-            public void run() {
-                if (!player.isOnline() || ticks >= maxDuration) {
-                    endCharge(player, false);
-                    cancel();
-                    return;
-                }
-
-                // Move player forward
-                Vector velocity = chargeDirection.clone().multiply(chargeSpeed);
-                velocity.setY(player.getVelocity().getY()); // Preserve Y velocity
-                player.setVelocity(velocity);
-
-                // Check for wall collision
-                Location checkLoc = player.getLocation().add(chargeDirection.clone().multiply(0.5));
-                if (checkLoc.getBlock().getType().isSolid()) {
-                    endCharge(player, true);
-                    cancel();
-                    return;
-                }
-
-                // Check for nearby enemies to catch
-                List<Player> caughtPlayers = goblinSpearCharging.get(uuid);
-                for (Entity entity : player.getNearbyEntities(1.5, 1.5, 1.5)) {
-                    if (!(entity instanceof Player target)) continue;
-                    if (target.equals(player)) continue;
-                    if (caughtPlayers.contains(target)) continue;
-
-                    // Team check
-                    if (session != null && playerTeam != null) {
-                        Team targetTeam = session.getPlayerTeam(target);
-                        if (targetTeam != null && targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) {
-                            continue;
-                        }
-                    }
-
-                    // Catch the player
-                    caughtPlayers.add(target);
-                    Messages.debug(player, "GOBLIN_SPEAR: Caught " + target.getName());
-                    SoundUtils.play(target, Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
-                }
-
-                // Drag caught players along
-                Location dragLoc = player.getLocation().add(0, 0.5, 0);
-                for (Player caught : caughtPlayers) {
-                    if (caught.isOnline()) {
-                        caught.teleport(dragLoc);
-                    }
-                }
-
-                // Spawn particles
-                ParticleUtils.crit(player.getLocation().add(0, 1, 0), 5, 0.3);
-
-                ticks++;
-            }
-        }.runTaskTimer(CashClashPlugin.getInstance(), 0L, 1L);
-
-        // Track the task
-        activeTasks.computeIfAbsent(uuid, k -> new ArrayList<>()).add(chargeTask);
-    }
-
-    /**
-     * End Goblin Spear charge, applying damage if hit wall.
-     */
-    private void endCharge(Player player, boolean hitWall) {
-        UUID uuid = player.getUniqueId();
-        List<Player> caughtPlayers = goblinSpearCharging.remove(uuid);
-
-        if (caughtPlayers == null || caughtPlayers.isEmpty()) {
-            Messages.debug(player, "GOBLIN_SPEAR: Charge ended, no players caught");
-        } else if (hitWall) {
-            // Deal damage and poison to all caught players
-            double damage = cfg.getGoblinChargeWallDamage();
-            int poisonDuration = cfg.getGoblinChargePoisonDuration();
-            int poisonLevel = cfg.getGoblinChargePoisonLevel();
-
-            for (Player caught : caughtPlayers) {
-                if (!caught.isOnline()) continue;
-
-                caught.setNoDamageTicks(0);
-                player.setNoDamageTicks(0);
-                caught.setMaximumNoDamageTicks(0); // Ensure they can be damaged immediately
-                player.setMaximumNoDamageTicks(0);
-                caught.damage(damage, player);
-                CashClashPlayer.applyEffect(caught, PotionEffectType.POISON, poisonDuration, poisonLevel, false, true);
-                
-                // Reset to default after damage is applied (vanilla is 20)
-                Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-                    if (caught.isOnline()) caught.setMaximumNoDamageTicks(20);
-                    if (player.isOnline()) player.setMaximumNoDamageTicks(20);
-                }, 1L);
-
-                // Visual effects
-                ParticleUtils.damageIndicator(caught.getLocation().add(0, 1, 0), 20, 0.5);
-                SoundUtils.play(caught, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
-
-                Messages.debug(player, "GOBLIN_SPEAR: Wall impact dealt " + damage + " damage + Poison to " + caught.getName());
-            }
-
-            Messages.send(player, "mythic.wall-impact", "{damage}", String.valueOf((int) damage), "{enemy_count}", String.valueOf(caughtPlayers.size()));
-            SoundUtils.play(player, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 1.0f, 0.8f);
-        } else {
-            Messages.debug(player, "GOBLIN_SPEAR: Charge ended without wall impact");
-        }
-
-        // Set cooldown
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE, cfg.getGoblinChargeCooldown());
-        Messages.debug(player, "GOBLIN_SPEAR: Charge cooldown set to " + cfg.getGoblinChargeCooldown() + "s");
-
-        // Stop the player
-        player.setVelocity(new Vector(0, 0, 0));
-    }
-
-    /**
-     * Check if player is currently charging with Goblin Spear.
-     */
-    public boolean isGoblinSpearCharging(UUID playerId) {
-        if (goblinSpearCharging.containsKey(playerId)) {
-            return true;
-        }
-        for (List<Player> caught : goblinSpearCharging.values()) {
-            for (Player p : caught) {
-                if (p.getUniqueId().equals(playerId)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if a player is caught in another player's Goblin Spear charge.
-     */
-    public boolean isCaughtInGoblinCharge(UUID playerId) {
-        for (List<Player> caught : goblinSpearCharging.values()) {
-            for (Player p : caught) {
-                if (p.getUniqueId().equals(playerId)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Get the charger who caught the given victim.
-     */
-    public UUID getGoblinChargerOf(UUID victimId) {
-        for (Map.Entry<UUID, List<Player>> entry : goblinSpearCharging.entrySet()) {
-            for (Player p : entry.getValue()) {
-                if (p.getUniqueId().equals(victimId)) {
-                    return entry.getKey();
-                }
-            }
-        }
-        return null;
-    }
-
-    // ==================== BLOODWRENCH_CROSSBOW ====================
-
-     /**
-      * Toggle BloodWrench mode between Rapid Fire and Supercharged.
-      * Cannot switch modes while rapid firing or on cooldown.
-      * 1 second cooldown between toggles.
-      */
-     public void toggleBloodwrenchMode(Player player) {
-         UUID uuid = player.getUniqueId();
-
-         // Cannot switch while in rapid fire burst
-         if (bloodwrenchRapidFiring.contains(uuid)) {
-             Messages.send(player, "mythic.cannot-switch-modes");
-             return;
-         }
-
-         // Check toggle cooldown
-         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE)) {
-             Messages.send(player, "mythic.mode-switch-cooldown", "{remaining}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE)));
-             return;
-         }
-
-         // Toggle mode (default is rapid mode = true)
-         boolean currentRapid = bloodwrenchRapidMode.getOrDefault(uuid, true);
-         boolean newRapid = !currentRapid;
-         bloodwrenchRapidMode.put(uuid, newRapid);
-
-         // Set toggle cooldown
-         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE, cfg.getBloodwrenchModeToggleCooldown());
-
-         String modeName = newRapid ? "Rapid Fire" : "Supercharged";
-         Messages.send(player, "mythic.bloodwrench-mode", "{mode_name}", modeName);
-         SoundUtils.play(player, Sound.BLOCK_LEVER_CLICK, 1.0f, newRapid ? 1.5f : 0.8f);
-         Messages.debug(player, "BLOODWRENCH: Switched to " + (newRapid ? "Rapid Fire" : "Supercharged") + " mode");
-     }
-
-    /**
-     * Check if BloodWrench is in Rapid Fire mode.
-     */
-    public boolean isBloodwrenchRapidMode(Player player) {
-        return bloodwrenchRapidMode.getOrDefault(player.getUniqueId(), true);
-    }
-
-    /**
-     * Check if the target player is on the same team as the given team number.
-     */
-    private boolean isSameTeam(GameSession session, int teamNumber, Player target) {
-        Team targetTeam = session.getPlayerTeam(target);
-        return targetTeam != null && targetTeam.getTeamNumber() == teamNumber;
-    }
-
-    /**
-     * Handle BloodWrench shot based on current mode.
-     */
-    public boolean handleBloodwrenchShot(Player player) {
-        player.getUniqueId();
-        boolean isRapid = isBloodwrenchRapidMode(player);
-
-        Messages.debug(player, "BLOODWRENCH: Shot triggered (" + (isRapid ? "Rapid" : "Supercharged") + " mode)");
-
-        if (isRapid) {
-            return handleBloodwrenchRapidShot(player);
-        } else {
-            return handleBloodwrenchSuperchargedShot(player);
-        }
-    }
-
-    /**
-     * Handle Rapid Fire mode shot.
-     * Player fires 3 blood shots. Once started, must complete all 3 before switching modes.
-     * After 3 shots, cooldown begins.
-     */
-     private boolean handleBloodwrenchRapidShot(Player player) {
-         UUID uuid = player.getUniqueId();
-
-         // Check if on reload cooldown
-         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD)) {
-             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD);
-             Messages.send(player, "mythic.bloodwrench-reloading", "{remaining}", String.valueOf(remaining));
-             Messages.debug(player, "BLOODWRENCH: Rapid reloading - " + remaining + "s");
-             return false;
-         }
-
-         int shots = bloodwrenchRapidShotsRemaining.getOrDefault(uuid, cfg.getBloodwrenchRapidShots());
-
-         // First shot starts the burst
-         if (shots == cfg.getBloodwrenchRapidShots()) {
-             bloodwrenchRapidFiring.add(uuid);
-             Messages.debug(player, "BLOODWRENCH: Rapid fire burst started");
-         }
-
-         // Fire the shot
-         bloodwrenchRapidShotsRemaining.put(uuid, shots - 1);
-         Messages.debug(player, "BLOODWRENCH: Rapid shot fired! Remaining: " + (shots - 1));
-
-         // Check if burst complete
-         if (shots - 1 <= 0) {
-             bloodwrenchRapidFiring.remove(uuid);
-             bloodwrenchRapidShotsRemaining.remove(uuid);
-             cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD, cfg.getBloodwrenchRapidReloadCooldown());
-             Messages.send(player, "mythic.bloodwrench-reload-start");
-             Messages.debug(player, "BLOODWRENCH: Rapid burst complete, reloading for " + cfg.getBloodwrenchRapidReloadCooldown() + "s");
-         }
-
-         return true;
-     }
-
-    /**
-     * Handle Supercharged mode shot.
-     * Single powerful shot creating a blood vortex.
-     */
-    private boolean handleBloodwrenchSuperchargedShot(Player player) {
-        UUID uuid = player.getUniqueId();
-
-         // Check cooldown
-         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN)) {
-             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN);
-             Messages.send(player, "mythic.bloodwrench-supercharged-cooldown", "{remaining}", String.valueOf(remaining));
-             Messages.debug(player, "BLOODWRENCH: Supercharged on cooldown - " + remaining + "s");
-             return false;
-         }
-
-        Messages.debug(player, "BLOODWRENCH: Supercharged shot fired!");
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN, cfg.getBloodwrenchSuperchargeCooldown());
-        return true;
-    }
-
-    /**
-     * Handle BloodWrench Rapid Fire hit - creates blood sphere.
-     * Blood sphere gives Slowness I when inside and burst damage (nerfed grenade).
-     */
-    public void handleBloodwrenchRapidHit(Player shooter, Location hitLocation) {
-        World world = hitLocation.getWorld();
-        if (world == null) return;
-
-        GameSession session = GameManager.getInstance().getPlayerSession(shooter);
-        Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
-
-        Messages.debug(shooter, "BLOODWRENCH: Rapid hit - creating blood sphere at " + hitLocation);
-
-        // Visual blood sphere
-        double radius = cfg.getBloodwrenchSphereRadius();
-        ParticleUtils.bloodSphere(hitLocation, radius, 50);
-        SoundUtils.playAt(hitLocation, Sound.BLOCK_SLIME_BLOCK_BREAK, 1.0f, 0.5f);
-
-        // Create blood sphere effect that lingers
-        int durationTicks = cfg.getBloodwrenchSphereDuration();
-        double damage = cfg.getBloodwrenchSphereDamage();
-
-        // Initial burst damage (nerfed grenade - smaller radius, less damage)
-        for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius, radius)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(shooter)) continue;
-
-            if (session != null) {
-                Team targetTeam = session.getPlayerTeam(target);
-                if (targetTeam != null && shooterTeam != null &&
-                    targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
-            }
-
-            // Burst damage (30% boost for legendary crossbow)
-            double boostedDamage = damage * 1.3;
-            target.damage(boostedDamage, shooter);
-            Messages.debug(shooter, "BLOODWRENCH: Blood sphere damaged " + target.getName() + " for " + boostedDamage + " (base: " + damage + ")");
-        }
-
-        // Lingering sphere effect
-        final double sphereRadius = radius;
-        BukkitTask sphereTask = SchedulerUtils.runTaskTimer(() -> {
-            // Particle effect
-            ParticleUtils.bloodSphereLingering(hitLocation, sphereRadius);
-
-            // Apply slowness to enemies inside
-            for (Entity entity : world.getNearbyEntities(hitLocation, sphereRadius, sphereRadius, sphereRadius)) {
-                if (!(entity instanceof Player target)) continue;
-                if (target.equals(shooter)) continue;
-
-                if (session != null) {
-                    Team targetTeam = session.getPlayerTeam(target);
-                    if (targetTeam != null && shooterTeam != null &&
-                        targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
-                }
-
-                // Slowness I while inside sphere
-                CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, 40, 0);
-            }
-        }, 0L, 10L);
-
-        // Cancel after duration
-        SchedulerUtils.runTaskLater(() -> {
-            Objects.requireNonNull(sphereTask).cancel();
-            Messages.debug(shooter, "BLOODWRENCH: Blood sphere expired");
-        }, durationTicks);
-
-        activeTasks.computeIfAbsent(shooter.getUniqueId(), k -> new ArrayList<>()).add(sphereTask);
-    }
-
-    /**
-     * Handle BloodWrench Supercharged hit - creates blood vortex.
-     * Vortex has red particles, gives Levitation and deals damage to enemies inside.
-     */
-    public void handleBloodwrenchSuperchargedHit(Player shooter, Location hitLocation) {
-        World world = hitLocation.getWorld();
-        if (world == null) return;
-
-        GameSession session = GameManager.getInstance().getPlayerSession(shooter);
-        Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
-
-        Messages.debug(shooter, "BLOODWRENCH: Supercharged hit - creating blood vortex at " + hitLocation);
-        Messages.send(shooter, "mythic.blood-vortex-activated");
-
-        SoundUtils.playAt(hitLocation, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.5f);
-        SoundUtils.playAt(hitLocation, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 1.2f);
-
-        int durationTicks = cfg.getBloodwrenchVortexDuration();
-        double radius = cfg.getBloodwrenchVortexRadius();
-        double damagePerTick = cfg.getBloodwrenchVortexDamage();
-
-        // Vortex effect with spiraling particles
-        final int[] tick = {0};
-        BukkitTask vortexTask = SchedulerUtils.runTaskTimer(() -> {
-            tick[0]++;
-
-            // Spiraling red particles using helper method
-            ParticleUtils.bloodVortexSpiral(hitLocation, radius, tick[0]);
-
-            // Apply effects every 10 ticks (0.5 seconds)
-            if (tick[0] % 10 == 0) {
-                for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius + 2, radius)) {
-                    if (!(entity instanceof Player target)) continue;
-                    if (target.equals(shooter)) continue;
-
-                    if (session != null) {
-                        Team targetTeam = session.getPlayerTeam(target);
-                        if (targetTeam != null && shooterTeam != null &&
-                            targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
-                    }
-
-                    // Levitation and damage while inside vortex (30% boost for legendary crossbow)
-                    CashClashPlayer.applyEffect(target, PotionEffectType.LEVITATION, 30, cfg.getBloodwrenchVortexLevitationLevel() - 1);
-                    double boostedDamage = damagePerTick * 1.3;
-                    target.damage(boostedDamage, shooter);
-                    Messages.debug(shooter, "BLOODWRENCH: Vortex affecting " + target.getName() + " for " + boostedDamage + " damage");
-                }
-            }
-        }, 0L, 2L);
-
-        // Cancel after duration
-        SchedulerUtils.runTaskLater(() -> {
-            Objects.requireNonNull(vortexTask).cancel();
-            Messages.debug(shooter, "BLOODWRENCH: Blood vortex expired");
-            // Final burst effect
-            ParticleUtils.bloodVortexExplosion(hitLocation, radius);
-            SoundUtils.playAt(hitLocation, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.5f);
-        }, durationTicks);
-
-        activeTasks.computeIfAbsent(shooter.getUniqueId(), k -> new ArrayList<>()).add(vortexTask);
-    }
-
-    /**
-     * Check if player is currently in rapid fire burst (cannot switch modes).
-     */
-    public boolean isBloodwrenchRapidFiring(UUID playerId) {
-        return bloodwrenchRapidFiring.contains(playerId);
-    }
-
-    // ==================== WARDEN GLOVES (BOXING GLOVES) ====================
-
-    /**
-     * Warden Gloves boxing ability - Left click to punch.
-     * On every 5th punch, speed increases.
-     * Ability lasts for 20 seconds, 35 second cooldown.
-     */
-    public void useWardenPunch(Player player, Player victim) {
-        UUID uuid = player.getUniqueId();
-
-        Messages.debug(player, "WARDEN_GLOVES: Punch attack on " + victim.getName());
-
-         // Check if boxing ability is on cooldown (ability hasn't been started yet)
-         if (!wardenBoxingActive.contains(uuid) && cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_BOXING)) {
-             long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING);
-             Messages.send(player, "mythic.genericitem-cooldown", "{item_name}", "Boxing gloves", "{cooldown_seconds}", String.valueOf(remaining));
-             return;
-         }
-
-        // Start boxing ability if not already active
-        if (!wardenBoxingActive.contains(uuid)) {
-            startWardenBoxingAbility(player);
-        }
-
-        // Increment punch count (kept for analytics/debug)
-        int punchCount = wardenPunchCount.getOrDefault(uuid, 0) + 1;
-        wardenPunchCount.put(uuid, punchCount);
-
-        // Apply punch knockback
-        Vector knockback = victim.getLocation().toVector()
-                .subtract(player.getLocation().toVector())
-                .normalize()
-                .multiply(1.2)
-                .setY(0.4);
-        victim.setVelocity(knockback);
-
-        // Maintain Speed I every punch to avoid ramping
-        int durationTicks = cfg.getWardenBoxingDuration() * 20;
-        CashClashPlayer.applyEffect(player, PotionEffectType.SPEED, durationTicks, 0, false, true);
-
-        // Punch sound effect
-        SoundUtils.play(victim, Sound.ENTITY_WARDEN_ATTACK_IMPACT, 1.0f, 1.0f);
-        ParticleUtils.sweep(victim.getLocation().add(0, 1, 0));
-
-        Messages.debug(player, "WARDEN_GLOVES: Punch hit! Count: " + punchCount);
-    }
-
-    /**
-     * Start the Warden boxing ability (20 second duration).
-     */
-    private void startWardenBoxingAbility(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        wardenBoxingActive.add(uuid);
-        wardenPunchCount.put(uuid, 0);
-
-        // Start with Speed I immediately and keep it at Speed I
-        int durationTicks = cfg.getWardenBoxingDuration() * 20;
-        CashClashPlayer.applyEffect(player, PotionEffectType.SPEED, durationTicks, 0, false, true);
-
-        Messages.send(player, "mythic.boxing-gloves-activated");
-        Messages.send(player, "mythic.genericitem-punch");
-        SoundUtils.play(player, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.5f);
-
-        // End the ability after duration
-        BukkitTask endTask = SchedulerUtils.runTaskLater(() -> endWardenBoxingAbility(player), durationTicks);
-
-        activeTasks.computeIfAbsent(uuid, k -> new ArrayList<>()).add(endTask);
-
-        Messages.debug(player, "WARDEN_GLOVES: Boxing ability started with Speed I - " + cfg.getWardenBoxingDuration() + "s duration");
-    }
-
-    /**
-     * End the Warden boxing ability and start cooldown.
-     */
-    private void endWardenBoxingAbility(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        if (!wardenBoxingActive.contains(uuid)) return;
-
-        wardenBoxingActive.remove(uuid);
-        wardenPunchCount.remove(uuid);
-
-        // Remove speed effect
-        CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
-
-        // Start cooldown
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING, cfg.getWardenBoxingCooldown());
-        Messages.send(player, "mythic.boxing-gloves-cooldown", "seconds", String.valueOf(cfg.getWardenBoxingCooldown()));
-        Messages.debug(player, "WARDEN_GLOVES: Boxing ability ended - cooldown " + cfg.getWardenBoxingCooldown() + "s");
-    }
-
-    /**
-     * Check if player has boxing ability active.
-     */
-    public boolean isWardenBoxingActive(UUID playerId) {
-        return wardenBoxingActive.contains(playerId);
-    }
-
-    /**
-     * Warden Gloves shockwave attack (Right-click ability).
-     * Unleashes shockwave dealing damage + big knockback in cone.
-     */
-    public void useWardenShockwave(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        Messages.debug(player, "WARDEN_GLOVES: Shockwave ability triggered");
-
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE)) {
-            Messages.debug(player, "WARDEN_GLOVES: Shockwave on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE) + "s");
-            Messages.send(player, "mythic.shockwave-cooldown", "cooldown_seconds",
-                    String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE)));
-            return;
-        }
-
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE, cfg.getWardenShockwaveCooldown());
-
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) {
-            Messages.debug(player, "WARDEN_GLOVES: No session");
-            return;
-        }
-
-        Team playerTeam = session.getPlayerTeam(player);
-        Location loc = player.getLocation();
-        Vector direction = loc.getDirection().setY(0).normalize();
-        World world = player.getWorld();
-
-        // Sonic boom visual effect
-        ParticleUtils.sonicBoom(loc.clone().add(direction.clone().multiply(2)).add(0, 1, 0));
-        SoundUtils.playAt(loc, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.0f);
-
-        int range = cfg.getWardenShockwaveRange();
-        int hitCount = 0;
-
-        // Damage and knockback enemies in cone
-        for (Entity entity : world.getNearbyEntities(loc, range, 4, range)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(player)) continue;
-
-            Team targetTeam = session.getPlayerTeam(target);
-            if (targetTeam != null && playerTeam != null &&
-                targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) continue;
-
-            // Check if target is in front of player (cone check)
-            Vector toTarget = target.getLocation().toVector().subtract(player.getLocation().toVector()).normalize();
-            if (direction.dot(toTarget) < 0.3) continue; // Not in cone (about 70 degree cone)
-
-            target.damage(cfg.getWardenShockwaveDamage(), player);
-
-            Vector knockback = toTarget.multiply(cfg.getWardenKnockbackPower()).setY(0.8);
-            target.setVelocity(knockback);
-            hitCount++;
-        }
-
-        Messages.debug(player, "WARDEN_GLOVES: Shockwave hit " + hitCount + " enemies, damage: " + cfg.getWardenShockwaveDamage() + ", cooldown: " + cfg.getWardenShockwaveCooldown() + "s");
-        Messages.send(player, "mythic.shockwave-activated");
-    }
-
-
-    // ==================== BLAZEBITE CROSSBOWS ====================
-
-    /**
-     * Handle BlazeBite shot.
-     * 8 shots per magazine, 25 second reload.
-     * Mode is determined by which crossbow is being used (stored in item PDC).
-     */
-    public boolean handleBlazebiteShot(Player player, ItemStack crossbow) {
-        UUID uuid = player.getUniqueId();
-        
-        String mode = PDCDetection.getBlazebiteMode(crossbow);
-        boolean isGlacier = "glacier".equals(mode);
-
-        Messages.debug(player, "BLAZEBITE: Shot triggered (" + (isGlacier ? "Glacier" : "Volcano") + " mode)");
-
-        int shots = blazebiteShotsRemaining.getOrDefault(uuid, cfg.getBlazebiteShotsPerMag());
-        if (shots <= 0) {
-            if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD)) {
-                Messages.debug(player, "BLAZEBITE: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD) + "s");
-                Messages.send(player, "mythic.blazebite-reloading", "cooldown_seconds",
-                        String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD)));
-                return false;
-            }
-            blazebiteShotsRemaining.put(uuid, cfg.getBlazebiteShotsPerMag());
-            shots = cfg.getBlazebiteShotsPerMag();
-            Messages.debug(player, "BLAZEBITE: Magazine reloaded to " + shots);
-        }
-
-        blazebiteShotsRemaining.put(uuid, shots - 1);
-        Messages.debug(player, "BLAZEBITE: Shot fired! Remaining: " + (shots - 1));
-
-        if (shots - 1 <= 0) {
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD, cfg.getBlazebiteReloadCooldown());
-            Messages.debug(player, "BLAZEBITE: Out of shots, reloading for " + cfg.getBlazebiteReloadCooldown() + "s");
-            Messages.send(player, "mythic.blazebite-reload-start");
-        }
-
-        return true;
-    }
-
-    /**
-     * Handle BlazeBite hit effects.
-     * Glacier: First hit applies frostbite for 5 seconds. Second hit while frozen freezes player in place for 3 seconds.
-     * Volcano: Explosive fire arrow (2 hearts direct, 1 heart splash in 3 blocks).
-     */
-    public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc, boolean isGlacierMode) {
-        World world = hitLoc.getWorld();
-        if (world == null) return;
-
-        Messages.debug(shooter, "BLAZEBITE: Hit detected (" + (isGlacierMode ? "Glacier" : "Volcano") + " mode)");
-
-        if (isGlacierMode) {
-            if (hitEntity instanceof Player victim) {
-                UUID victimId = victim.getUniqueId();
-                long currentTime = System.currentTimeMillis();
-
-                // Check if player is already frozen (hit while frozen)
-                boolean alreadyFrozen = glacierFrozenPlayers.containsKey(victimId)
-                        && glacierFrozenPlayers.get(victimId) > currentTime;
-
-                if (alreadyFrozen) {
-                    // FREEZE IN PLACE - Apply max slowness (level 255 = completely frozen) for 3 seconds
-                    int freezeInPlaceDuration = cfg.getBlazebiteMaxSlownessDuration();
-                    CashClashPlayer.applyEffect(victim, PotionEffectType.SLOWNESS, freezeInPlaceDuration, 255, false, true);
-                    CashClashPlayer.applyEffect(victim, PotionEffectType.JUMP_BOOST, freezeInPlaceDuration, 128, false, true);
-
-                    Messages.debug(shooter, "BLAZEBITE: Glacier DOUBLE HIT on " + victim.getName() + " - FROZEN IN PLACE for " + (freezeInPlaceDuration / 20) + "s");
-                    Messages.send(shooter, "mythic.target-frozen");
-                    Messages.send(victim, "mythic.you-are-frozen");
-
-                    SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
-                    SoundUtils.play(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);
-
-                    // Continuous freeze particles above head
-                    final UUID victimUUID = victimId;
-                    BukkitTask particleTask = SchedulerUtils.runTaskTimer(() -> {
-                        Player frozenPlayer = Bukkit.getPlayer(victimUUID);
-                        if (frozenPlayer == null || !frozenPlayer.isOnline()) return;
-                        ParticleUtils.freezeParticles(frozenPlayer.getLocation());
-                    }, 0L, 5L);
-
-                    // Cancel particle task after freeze duration
-                    final BukkitTask taskToCancel = particleTask;
-                    SchedulerUtils.runTaskLater(() -> {
-                        if (taskToCancel != null && !taskToCancel.isCancelled()) {
-                            taskToCancel.cancel();
-                        }
-                    }, freezeInPlaceDuration);
-
-                    activeTasks.computeIfAbsent(victimId, k -> new ArrayList<>()).add(particleTask);
-                    glacierFrozenPlayers.remove(victimId);
-                } else {
-                    // FIRST HIT - Apply frostbite for 5 seconds
-                    int frostbiteDuration = cfg.getBlazebiteFreezeDuration();
-                    CashClashPlayer.applyEffect(victim, PotionEffectType.SLOWNESS, frostbiteDuration, 0, false, true);
-
-                    Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - Frostbite for " + (frostbiteDuration / 20) + "s");
-                    ParticleUtils.glacierFrost(victim.getLocation());
-                    SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
-
-                    int freezeTicks = 140 + frostbiteDuration;
-                    victim.setFreezeTicks(freezeTicks);
-
-                    // Cancel any existing frostbite particle task
-                    BukkitTask existingTask = glacierFrostbiteParticleTasks.remove(victimId);
-                    if (existingTask != null && !existingTask.isCancelled()) {
-                        existingTask.cancel();
-                    }
-
-                    // Frostbite particles during initial freeze
-                    final UUID victimUUID = victimId;
-                    BukkitTask frostbiteParticleTask = SchedulerUtils.runTaskTimer(() -> {
-                        Player frostbittenPlayer = Bukkit.getPlayer(victimUUID);
-                        if (frostbittenPlayer == null || !frostbittenPlayer.isOnline()) return;
-                        ParticleUtils.frostbiteParticles(frostbittenPlayer.getLocation());
-                    }, 0L, 5L);
-
-                    glacierFrostbiteParticleTasks.put(victimId, frostbiteParticleTask);
-
-                    final BukkitTask taskToCancel = frostbiteParticleTask;
-                    SchedulerUtils.runTaskLater(() -> {
-                        if (taskToCancel != null && !taskToCancel.isCancelled()) {
-                            taskToCancel.cancel();
-                        }
-                        glacierFrostbiteParticleTasks.remove(victimUUID);
-                    }, frostbiteDuration);
-
-                    activeTasks.computeIfAbsent(victimId, k -> new ArrayList<>()).add(frostbiteParticleTask);
-
-                    long expirationTime = currentTime + (frostbiteDuration / 20 * 1000L);
-                    glacierFrozenPlayers.put(victimId, expirationTime);
-                }
-            }
-        } else {
-            // Volcano mode
-            ParticleUtils.volcanoExplosion(hitLoc);
-            SoundUtils.playAt(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
-
-            GameSession session = GameManager.getInstance().getPlayerSession(shooter);
-            Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
-            int radius = cfg.getBlazebiteVolcanoRadius();
-            int hitCount = 0;
-
-            for (Entity entity : world.getNearbyEntities(hitLoc, radius, radius, radius)) {
-                if (!(entity instanceof Player target)) continue;
-                if (target.equals(shooter)) continue;
-
-                if (session != null) {
-                    Team targetTeam = session.getPlayerTeam(target);
-                    if (targetTeam != null && shooterTeam != null &&
-                        targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
-                }
-
-                double damage = entity.equals(hitEntity) ? cfg.getBlazebiteVolcanoDirectDamage() : cfg.getBlazebiteVolcanoSplashDamage();
-                // 30% boost for legendary crossbow
-                double boostedDamage = damage * 1.3;
-                target.damage(boostedDamage, shooter);
-                target.setFireTicks(4 * 20);
-                hitCount++;
-            }
-            Messages.debug(shooter, "BLAZEBITE: Volcano explosion hit " + hitCount + " enemies, radius: " + radius);
-        }
-    }
-
-    // ==================== ALCHEMIST WAND ====================
-
-    /**
-     * Alchemist Wand Blink Swap.
-     * Swaps positions with the player directly under the crosshair.
-     * Target must be within 10 blocks and have line of sight.
-     */
-    public void useAlchemistBlinkSwap(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        Messages.debug(player, "ALCHEMIST_WAND: Blink Swap triggered");
-
-        // Check cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ALCHEMIST_BLINK_SWAP)) {
-            Messages.debug(player, "ALCHEMIST_WAND: Blink Swap on cooldown - "
-                    + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ALCHEMIST_BLINK_SWAP) + "s");
-            return;
-        }
-
-        // Get game session and player's team
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) {
-            Messages.debug(player, "ALCHEMIST_WAND: No session");
-            return;
-        }
-
-        Team playerTeam = session.getPlayerTeam(player);
-        if (playerTeam == null) {
-            Messages.debug(player, "ALCHEMIST_WAND: Player has no team");
-            return;
-        }
-
-        // Ray trace from the player's crosshair
-        Location start = player.getEyeLocation();
-        Vector direction = start.getDirection().normalize();
-
-        RayTraceResult result = player.getWorld().rayTraceEntities(
-                start,
-                direction,
-                10.0,
-                0.1,
-                entity -> entity instanceof Player target
-                        && !target.equals(player)
-                        && isSameTeam(session, playerTeam.getTeamNumber(), target)
-        );
-
-        // No valid teammate under crosshair
-        if (result == null || !(result.getHitEntity() instanceof Player target)) {
-            Messages.debug(player, "ALCHEMIST_WAND: No valid teammate target");
-            return;
-        }
-
-        // Require clear line of sight
-        if (!player.hasLineOfSight(target)) {
-            Messages.debug(player, "ALCHEMIST_WAND: Target is not in line of sight");
-            return;
-        }
-
-        // Store both positions, including their original orientations
-        Location playerLocation = player.getLocation().clone();
-        Location targetLocation = target.getLocation().clone();
-
-        // Play Blink Swap visual at both original positions
-        playAlchemistBlinkVisual(playerLocation);
-        playAlchemistBlinkVisual(targetLocation);
-
-        // Give both players protection against their next 2 damage hits
-        long protectionExpiry = System.currentTimeMillis() + 5000;
-
-        alchemistBlinkProtection.put(uuid, 2);
-        alchemistBlinkProtection.put(target.getUniqueId(), 2);
-
-        alchemistBlinkProtectionExpiry.put(uuid, protectionExpiry);
-        alchemistBlinkProtectionExpiry.put(target.getUniqueId(), protectionExpiry);
-
-        // Swap positions
-        player.teleport(targetLocation);
-        target.teleport(playerLocation);
-
-        // Play Blink Swap activation sound
-        SoundUtils.play(player, Sound.ENTITY_EVOKER_CAST_SPELL, 1.0f, 1.0f);
-
-        // Start cooldown only after a successful swap
-        cooldownManager.setCooldownSeconds(
-                uuid,
-                CooldownManager.Keys.ALCHEMIST_BLINK_SWAP,
-                11
-        );
-
-        Messages.debug(player, "ALCHEMIST_WAND: Blink Swap successful with " + target.getName());
-    }
-
-    /**
-     * Creates a yellow spiral effect for Alchemist Wand Blink Swap.
-     */
-    private void playAlchemistBlinkVisual(Location location) {
-        if (location == null || location.getWorld() == null) return;
-
-        Location center = location.clone();
-
-        new BukkitRunnable() {
-            int ticks = 0;
-
-            @Override
-            public void run() {
-                if (ticks >= 13 || center.getWorld() == null) {
-                    cancel();
-                    return;
-                }
-
-                double progress = ticks / 13.0;
-                double radius = 0.25 + (progress * 0.75);
-                double height = progress * 1.8;
-                double angle = ticks * 0.8;
-
-                for (int i = 0; i < 3; i++) {
-                    double offsetAngle = angle + (i * (Math.PI * 2 / 3));
-
-                    double x = Math.cos(offsetAngle) * radius;
-                    double z = Math.sin(offsetAngle) * radius;
-
-                    Location particleLocation = center.clone().add(x, height, z);
-
-                    ParticleUtils.spawnDust(
-                            particleLocation,
-                            Color.fromRGB(255, 220, 0),
-                            1.5f,
-                            2,
-                            0.05
-                    );
-                }
-
-                ticks++;
-            }
-        }.runTaskTimer(CashClashPlugin.getInstance(), 0L, 1L);
-    }
-
-    /**
-     * Checks and consumes Alchemist Blink Swap damage protection.
-     *
-     * @return true if the damage should be cancelled
-     */
-    public boolean handleAlchemistBlinkProtection(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        Integer hitsRemaining = alchemistBlinkProtection.get(uuid);
-        if (hitsRemaining == null || hitsRemaining <= 0) {
-            return false;
-        }
-
-        // Protection expires after 5 seconds
-        Long expiry = alchemistBlinkProtectionExpiry.get(uuid);
-        if (expiry == null || System.currentTimeMillis() >= expiry) {
-            alchemistBlinkProtection.remove(uuid);
-            alchemistBlinkProtectionExpiry.remove(uuid);
-            return false;
-        }
-
-        // Consume one protected hit
-        if (hitsRemaining <= 1) {
-            alchemistBlinkProtection.remove(uuid);
-            alchemistBlinkProtectionExpiry.remove(uuid);
-        } else {
-            alchemistBlinkProtection.put(uuid, hitsRemaining - 1);
-        }
-
-        Messages.debug(player, "ALCHEMIST_WAND: Blink protection blocked damage. Hits remaining: "
-                + Math.max(0, hitsRemaining - 1));
-
-        return true;
-    }
-
-    private Map<UUID, Set<UUID>> buildAlchemistTauntLinks(Player wielder, GameSession session) {
-        Map<UUID, Set<UUID>> links = new HashMap<>();
-
-        Team wielderTeam = session.getPlayerTeam(wielder);
-        if (wielderTeam == null) {
-            return links;
-        }
-
-        List<Player> teamPlayers = new ArrayList<>();
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            Team team = session.getPlayerTeam(player);
-
-            if (team != null &&
-                    team.getTeamNumber() == wielderTeam.getTeamNumber()) {
-                teamPlayers.add(player);
-                links.put(player.getUniqueId(), new HashSet<>());
-            }
-        }
-
-        // Build direct 6.5-block connections
-        for (Player first : teamPlayers) {
-            for (Player second : teamPlayers) {
-                if (first.equals(second)) continue;
-
-                if (!first.getWorld().equals(second.getWorld())) continue;
-
-                if (first.getLocation().distance(second.getLocation()) <= 6.5) {
-                    links.get(first.getUniqueId()).add(second.getUniqueId());
-                }
-            }
-        }
-
-        // Only keep players that are actually connected to the wielder
-        Set<UUID> connectedToWielder = new HashSet<>();
-        Set<UUID> toVisit = new HashSet<>();
-        toVisit.add(wielder.getUniqueId());
-
-        while (!toVisit.isEmpty()) {
-            UUID current = toVisit.iterator().next();
-            toVisit.remove(current);
-
-            if (!connectedToWielder.add(current)) {
-                continue;
-            }
-
-            Set<UUID> neighbors = links.get(current);
-            if (neighbors != null) {
-                for (UUID neighbor : neighbors) {
-                    if (!connectedToWielder.contains(neighbor)) {
-                        toVisit.add(neighbor);
-                    }
-                }
-            }
-        }
-
-        // Remove players who aren't connected to the wielder
-        links.keySet().removeIf(uuid -> !connectedToWielder.contains(uuid));
-
-        return links;
-    }
-
-    public void useAlchemistTaunt(Player wielder) {
-        UUID uuid = wielder.getUniqueId();
-
-        Messages.debug(wielder, "ALCHEMIST_WAND: Taunt triggered");
-
-        // Check cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ALCHEMIST_TAUNT)) {
-            Messages.debug(wielder, "ALCHEMIST_WAND: Taunt on cooldown - "
-                    + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ALCHEMIST_TAUNT) + "s");
-            return;
-        }
-
-        // Get game session
-        GameSession session = GameManager.getInstance().getPlayerSession(wielder);
-        if (session == null) {
-            Messages.debug(wielder, "ALCHEMIST_WAND: No session");
-            return;
-        }
-
-        // Find everyone connected through the 6.5 block chain network
-        Map<UUID, Set<UUID>> tauntLinks = buildAlchemistTauntLinks(wielder, session);
-
-        // Create chain visuals
-        List<ItemDisplay> displays = new ArrayList<>();
-
-        for (Map.Entry<UUID, Set<UUID>> entry : tauntLinks.entrySet()) {
-            Player first = Bukkit.getPlayer(entry.getKey());
-            if (first == null) continue;
-
-            for (UUID secondUuid : entry.getValue()) {
-                Player second = Bukkit.getPlayer(secondUuid);
-                if (second == null) continue;
-
-                // Only create each chain once
-                if (first.getUniqueId().compareTo(second.getUniqueId()) >= 0) continue;
-
-                ItemDisplay display = createAlchemistChainDisplay(first, second);
-                if (display != null) {
-                    displays.add(display);
-                }
-            }
-        }
-
-        alchemistTauntDisplays.put(wielder.getUniqueId(), displays);
-
-        // Store the chain links
-        for (Map.Entry<UUID, Set<UUID>> entry : tauntLinks.entrySet()) {
-            alchemistTauntChains.put(entry.getKey(), entry.getValue());
-        }
-
-        // Taunt lasts 7 seconds
-        long expiry = System.currentTimeMillis() + 7000;
-        alchemistTauntExpiry.put(uuid, expiry);
-
-        // Start cooldown
-        cooldownManager.setCooldownSeconds(
-                uuid,
-                CooldownManager.Keys.ALCHEMIST_TAUNT,
-                28
-        );
-
-        Set<UUID> chainedPlayers = findAlchemistTauntChain(wielder, session);
-        alchemistTauntChains.put(wielder.getUniqueId(), chainedPlayers);
-        alchemistTauntExpiry.put(wielder.getUniqueId(), System.currentTimeMillis() + 7000);
-        Messages.debug(wielder, "ALCHEMIST_WAND: Taunt activated with "
-                + tauntLinks.size() + " chained players");
-
-        Messages.send(wielder, "mythic.alchemist-taunt-activated");
-    }
-
-    private ItemDisplay createAlchemistChainDisplay(Player first, Player second) {
-        Location firstLocation = first.getLocation().clone().add(0, 1.0, 0);
-        Location secondLocation = second.getLocation().clone().add(0, 1.0, 0);
-
-        Vector difference = secondLocation.toVector().subtract(firstLocation.toVector());
-        double distance = difference.length();
-
-        if (distance <= 0.05) {
-            return null;
-        }
-
-        Vector direction = difference.clone().normalize();
-
-        // Position the display halfway between both players
-        Location center = firstLocation.clone().add(
-                direction.clone().multiply(distance / 2.0)
-        );
-
-        return first.getWorld().spawn(center, ItemDisplay.class, display -> {
-            ItemStack chain = new ItemStack(Material.matchMaterial("CHAIN"));
-            display.setItemStack(chain);
-
-            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-            display.setBillboard(Display.Billboard.FIXED);
-            display.setBrightness(new Display.Brightness(15, 15));
-
-            // Rotate the chain so it points between the two players
-            float yaw = (float) Math.toDegrees(
-                    Math.atan2(-direction.getX(), direction.getZ())
-            );
-
-            float pitch = (float) Math.toDegrees(
-                    Math.asin(-direction.getY())
-            );
-
-            display.setRotation(yaw, pitch);
-
-            // Stretch the chain to approximately span the distance
-            Transformation transform = display.getTransformation();
-
-            display.setTransformation(new Transformation(
-                    transform.getTranslation(),
-                    transform.getLeftRotation(),
-                    new Vector3f(
-                            1.0f,
-                            (float) distance,
-                            1.0f
-                    ),
-                    transform.getRightRotation()
-            ));
-        });
-    }
-
-    private Set<UUID> findAlchemistTauntChain(Player wielder, GameSession session) {
-        Set<UUID> chainedPlayers = new HashSet<>();
-
-        // Start with the wielder
-        Set<UUID> connected = new HashSet<>();
-        connected.add(wielder.getUniqueId());
-
-        boolean changed;
-
-        do {
-            changed = false;
-
-            for (UUID playerId : session.getPlayers()) {
-                Player player = Bukkit.getPlayer(playerId);
-                if (player == null || !player.isOnline()) continue;
-                if (connected.contains(player.getUniqueId())) {
-                    continue;
-                }
-
-                // Check if this player is within 6.5 blocks of ANY
-                // player already connected to the chain.
-                for (UUID connectedId : connected) {
-                    Player connectedPlayer = Bukkit.getPlayer(connectedId);
-                    if (connectedPlayer == null || !connectedPlayer.isOnline()) {
-                        continue;
-                    }
-
-                    if (!connectedPlayer.getWorld().equals(player.getWorld())) {
-                        continue;
-                    }
-
-                    if (connectedPlayer.getLocation().distance(player.getLocation()) <= 6.5) {
-                        connected.add(player.getUniqueId());
-                        chainedPlayers.add(player.getUniqueId());
-                        changed = true;
-                        break;
-                    }
-                }
-            }
-        } while (changed);
-
-        return chainedPlayers;
-    }
-
-    private void removeAlchemistTauntDisplays(UUID playerId) {
-        List<ItemDisplay> displays = alchemistTauntDisplays.remove(playerId);
-        if (displays == null) return;
-        for (ItemDisplay display : displays) {
-            if (display != null && !display.isDead()) {
-                display.remove();
-            }
-        }
-    }
-
     // ==================== CLEANUP ====================
 
     /**
@@ -2095,33 +426,10 @@ public class MythicItemManager {
      */
     public void cleanup(Player player) {
         UUID uuid = player.getUniqueId();
-        
-        // Clear tracking
-        blazebiteShotsRemaining.remove(uuid);
-        glacierFrozenPlayers.remove(uuid);
-        goblinSpearShotsRemaining.remove(uuid);
-        bloodwrenchRapidMode.remove(uuid);
-        bloodwrenchRapidShotsRemaining.remove(uuid);
-        bloodwrenchRapidFiring.remove(uuid);
-        wardenPunchCount.remove(uuid);
-        wardenBoxingActive.remove(uuid);
-        windBowShotsRemaining.remove(uuid);
-        spinningPlayers.remove(uuid);
 
-        alchemistBlinkProtection.remove(uuid);
-        alchemistBlinkProtectionExpiry.remove(uuid);
-        alchemistTauntChains.remove(uuid);
-        alchemistTauntExpiry.remove(uuid);
-        removeAlchemistTauntDisplays(uuid);
-
-        // Remove from caught lists
-        for (Map.Entry<UUID, List<Player>> entry : goblinSpearCharging.entrySet()) {
-            entry.getValue().removeIf(p -> p.getUniqueId().equals(uuid));
-        }
-
-        // End charge if active
-        if (goblinSpearCharging.containsKey(uuid)) {
-            endCharge(player, false);
+        // Release each handler's per-player state
+        for (MythicItemHandler handler : allHandlers) {
+            handler.cleanupPlayer(player);
         }
 
         // Cancel player tasks
@@ -2139,39 +447,15 @@ public class MythicItemManager {
     public void cleanup() {
         CashClashPlugin.getInstance().getLogger().info("[MythicItemManager] Cleaning up all mythic data...");
 
-
         // Clear session data
         playerMythics.clear();
         sessionPurchasedMythics.clear();
         sessionAvailableMythics.clear();
 
-        // Clear shot tracking
-        blazebiteShotsRemaining.clear();
-        glacierFrozenPlayers.clear();
-        goblinSpearShotsRemaining.clear();
-        goblinSpearCharging.clear();
-        bloodwrenchRapidMode.clear();
-        bloodwrenchRapidShotsRemaining.clear();
-        bloodwrenchRapidFiring.clear();
-        wardenPunchCount.clear();
-        wardenBoxingActive.clear();
-        windBowShotsRemaining.clear();
-        spinningPlayers.clear();
-
-        alchemistBlinkProtection.clear();
-        alchemistBlinkProtectionExpiry.clear();
-        alchemistTauntChains.clear();
-        alchemistTauntExpiry.clear();
-        for (UUID playerId : alchemistTauntDisplays.keySet()) {
-            removeAlchemistTauntDisplays(playerId);
+        // Clear each handler's state
+        for (MythicItemHandler handler : allHandlers) {
+            handler.cleanup();
         }
-        alchemistTauntDisplays.clear();
-
-        // Cancel and clear frostbite particle tasks
-        glacierFrostbiteParticleTasks.values().forEach(task -> {
-            if (task != null && !task.isCancelled()) task.cancel();
-        });
-        glacierFrostbiteParticleTasks.clear();
 
         // Cancel all active tasks
         activeTasks.values().forEach(tasks -> tasks.forEach(task -> {
@@ -2182,7 +466,3 @@ public class MythicItemManager {
         CashClashPlugin.getInstance().getLogger().info("[MythicItemManager] Cleanup complete");
     }
 }
-
-
-
-

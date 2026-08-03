@@ -23,7 +23,14 @@ import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
 import me.psikuvit.cashClash.manager.items.custom.RadiatingLotusHandler;
 import me.psikuvit.cashClash.manager.items.custom.SoulKatanaHandler;
 import me.psikuvit.cashClash.manager.items.custom.TabletOfHackingHandler;
+import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
+import me.psikuvit.cashClash.manager.items.mythic.BloodwrenchHandler;
+import me.psikuvit.cashClash.manager.items.mythic.CarlsBattleaxeHandler;
+import me.psikuvit.cashClash.manager.items.mythic.ElectricEelHandler;
+import me.psikuvit.cashClash.manager.items.mythic.GoblinSpearHandler;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
+import me.psikuvit.cashClash.manager.items.mythic.WindBowHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
@@ -116,13 +123,13 @@ public class InteractListener implements Listener {
 
                 if (mythic == MythicItem.GOBLIN_SPEAR) {
                     // Check if player is charging - prevent throw during charge
-                    if (mythicManager.isGoblinSpearCharging(player.getUniqueId())) {
+                    if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(player.getUniqueId())) {
                         event.setCancelled(true);
                         return;
                     }
 
                     // Check shot system - if out of shots or reloading, cancel the throw
-                    if (!mythicManager.handleGoblinSpearThrow(player)) {
+                    if (!mythicManager.getHandler(GoblinSpearHandler.class).handleGoblinSpearThrow(player)) {
                         event.setCancelled(true);
                         return;
                     }
@@ -476,7 +483,7 @@ public class InteractListener implements Listener {
         switch (mythic) {
             case CARLS_BATTLEAXE -> {
                 event.setCancelled(true);
-                mythicManager.activateCarlsSpinAttack(player);
+                mythicManager.getHandler(CarlsBattleaxeHandler.class).activateCarlsSpinAttack(player);
                 return true;
             }
             case WIND_BOW -> {
@@ -488,7 +495,7 @@ public class InteractListener implements Listener {
                     }
                     event.setCancelled(true);
                     armorManager.lockMythicShift(player);
-                    mythicManager.useWindBowBoost(player);
+                    mythicManager.getHandler(WindBowHandler.class).useWindBowBoost(player);
                     return true;
                 }
             }
@@ -499,7 +506,7 @@ public class InteractListener implements Listener {
                     return true;
                 }
                 event.setCancelled(true);
-                mythicManager.useElectricEelTeleport(player);
+                mythicManager.getHandler(ElectricEelHandler.class).useElectricEelTeleport(player);
                 return true;
             }
             case GOBLIN_SPEAR -> {
@@ -512,22 +519,22 @@ public class InteractListener implements Listener {
                     }
                     event.setCancelled(true);
                     armorManager.lockMythicShift(player);
-                    mythicManager.startGoblinSpearCharge(player);
+                    mythicManager.getHandler(GoblinSpearHandler.class).startGoblinSpearCharge(player);
                     return true;
                 }
             }
             case WARDEN_GLOVES -> {
                 event.setCancelled(true);
-                mythicManager.useWardenShockwave(player);
+                mythicManager.getHandler(WardenGlovesHandler.class).useWardenShockwave(player);
                 return true;
             }
             case ALCHEMIST_WAND -> {
                 event.setCancelled(true);
 
                 if (player.isSneaking()) {
-                    mythicManager.useAlchemistTaunt(player);
+                    mythicManager.getHandler(AlchemistWandHandler.class).useAlchemistTaunt(player);
                 } else {
-                    mythicManager.useAlchemistBlinkSwap(player);
+                    mythicManager.getHandler(AlchemistWandHandler.class).useAlchemistBlinkSwap(player);
                 }
                 return true;
             }
@@ -536,7 +543,7 @@ public class InteractListener implements Listener {
                 if (player.isSneaking()) {
                     event.setCancelled(true);
                     armorManager.lockMythicShift(player);
-                    mythicManager.toggleBloodwrenchMode(player);
+                    mythicManager.getHandler(BloodwrenchHandler.class).toggleBloodwrenchMode(player);
                     return true;
                 }
             }

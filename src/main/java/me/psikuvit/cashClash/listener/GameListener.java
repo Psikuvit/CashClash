@@ -23,7 +23,11 @@ import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
 import me.psikuvit.cashClash.manager.items.custom.MedicPouchHandler;
 import me.psikuvit.cashClash.manager.items.custom.OrbOfGravitationHandler;
 import me.psikuvit.cashClash.manager.items.custom.RespawnAnchorHandler;
+import me.psikuvit.cashClash.manager.items.mythic.BlazebiteHandler;
+import me.psikuvit.cashClash.manager.items.mythic.BloodwrenchHandler;
+import me.psikuvit.cashClash.manager.items.mythic.GoblinSpearHandler;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.mythic.WindBowHandler;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
@@ -608,10 +612,10 @@ public class GameListener implements Listener {
      * Handle BloodWrench crossbow shot
      */
     private void handleBloodwrenchShot(EntityShootBowEvent event, Player player) {
-        if (!mythicManager.handleBloodwrenchShot(player)) {
+        if (!mythicManager.getHandler(BloodwrenchHandler.class).handleBloodwrenchShot(player)) {
             event.setCancelled(true);
         } else if (event.getProjectile() instanceof Arrow arrow) {
-            String mode = mythicManager.isBloodwrenchRapidMode(player) ? "rapid" : "supercharged";
+            String mode = mythicManager.getHandler(BloodwrenchHandler.class).isBloodwrenchRapidMode(player) ? "rapid" : "supercharged";
             arrow.getPersistentDataContainer().set(Keys.BLOODWRENCH_MODE, PersistentDataType.STRING, mode);
         }
     }
@@ -620,7 +624,7 @@ public class GameListener implements Listener {
      * Handle BlazeBite crossbow shot
      */
     private void handleBlazebiteShot(EntityShootBowEvent event, Player player, ItemStack bow) {
-        if (!mythicManager.handleBlazebiteShot(player, bow)) {
+        if (!mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteShot(player, bow)) {
             event.setCancelled(true);
         } else if (event.getProjectile() instanceof Arrow arrow) {
             String mode = PDCDetection.getBlazebiteMode(bow);
@@ -634,7 +638,7 @@ public class GameListener implements Listener {
      * Handle Wind Bow shot
      */
     private void handleWindBowShot(EntityShootBowEvent event, Player player) {
-        if (!mythicManager.handleWindBowShot(player)) {
+        if (!mythicManager.getHandler(WindBowHandler.class).handleWindBowShot(player)) {
             event.setCancelled(true);
         }
     }
@@ -685,7 +689,7 @@ public class GameListener implements Listener {
 
         Location hitLoc = event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation();
         boolean isGlacier = "glacier".equals(blazebiteMode);
-        mythicManager.handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc, isGlacier);
+        mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc, isGlacier);
     }
 
     /**
@@ -696,7 +700,7 @@ public class GameListener implements Listener {
         MythicItem mythic = PDCDetection.getMythic(bow);
 
         if (mythic == MythicItem.WIND_BOW && event.getHitEntity() instanceof Player hitPlayer) {
-            mythicManager.handleWindBowHit(shooter, hitPlayer);
+            mythicManager.getHandler(WindBowHandler.class).handleWindBowHit(shooter, hitPlayer);
         }
     }
 
@@ -710,9 +714,9 @@ public class GameListener implements Listener {
         Location hitLoc = event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation();
 
         if ("rapid".equals(bloodwrenchMode)) {
-            mythicManager.handleBloodwrenchRapidHit(shooter, hitLoc);
+            mythicManager.getHandler(BloodwrenchHandler.class).handleBloodwrenchRapidHit(shooter, hitLoc);
         } else if ("supercharged".equals(bloodwrenchMode)) {
-            mythicManager.handleBloodwrenchSuperchargedHit(shooter, hitLoc);
+            mythicManager.getHandler(BloodwrenchHandler.class).handleBloodwrenchSuperchargedHit(shooter, hitLoc);
         }
     }
 
@@ -724,7 +728,7 @@ public class GameListener implements Listener {
 
         MythicItem mythic = resolveTridentMythic(shooter, trident);
         if (mythic == MythicItem.GOBLIN_SPEAR && event.getHitEntity() instanceof LivingEntity target) {
-            mythicManager.handleGoblinSpearHit(shooter, target, false);
+            mythicManager.getHandler(GoblinSpearHandler.class).handleGoblinSpearHit(shooter, target, false);
             Messages.debug("GOBLIN_SPEAR hit handled for " + target.getName());
             
             // Remove the trident to prevent multi-hits

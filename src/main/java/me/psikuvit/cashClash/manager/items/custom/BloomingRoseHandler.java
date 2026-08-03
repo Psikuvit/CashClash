@@ -244,32 +244,34 @@ public class BloomingRoseHandler extends CustomItemHandler {
         double radius = cfg.getBloomingRoseZoneRadius();
         Color pink = Color.fromRGB(255, 150, 190);
 
-        final int[] formed = {0};
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private int formed;
+
             @Override
             public void run() {
-                formed[0] += 6;
-                if (formed[0] >= 90) {
+                formed += 6;
+                if (formed >= 90) {
                     ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, 90, pink, 0.12f);
                     cancel();
                     return;
                 }
-                ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, formed[0], pink, 0.12f);
+                ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, formed, pink, 0.12f);
             }
         }, 0L, 1L);
-        final int[] fig = {0};
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private int fig;
+
             @Override
             public void run() {
-                fig[0] += 4;
-                if (fig[0] >= 60) {
+                fig += 4;
+                if (fig >= 60) {
                     ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, 60, false);
                     ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, 60, true);
                     cancel();
                     return;
                 }
-                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig[0], false);
-                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig[0], true);
+                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig, false);
+                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig, true);
             }
         }, 0L, 1L);
     }

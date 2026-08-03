@@ -15,7 +15,12 @@ import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
 import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
 import me.psikuvit.cashClash.manager.items.custom.SoulKatanaHandler;
 import me.psikuvit.cashClash.manager.items.custom.TotemOfHauntingHandler;
+import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
+import me.psikuvit.cashClash.manager.items.mythic.CarlsBattleaxeHandler;
+import me.psikuvit.cashClash.manager.items.mythic.ElectricEelHandler;
+import me.psikuvit.cashClash.manager.items.mythic.GoblinSpearHandler;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -135,7 +140,7 @@ public class DamageListener implements Listener {
             trackDamageForBonuses(event, player);
 
             // 4. Alchemist Wand Blink Swap protection
-            if (mythicManager.handleAlchemistBlinkProtection(player)) {
+            if (mythicManager.getHandler(AlchemistWandHandler.class).handleAlchemistBlinkProtection(player)) {
                 event.setCancelled(true);
                 return;
             }
@@ -207,15 +212,15 @@ public class DamageListener implements Listener {
 
             // Special case: Goblin Spear Charge
             // If attacker is charging and victim is caught by THIS attacker, allow damage (bypass protection)
-            if (mythicManager.isGoblinSpearCharging(attackerId)) {
-                UUID victimCharger = mythicManager.getGoblinChargerOf(victimId);
+            if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(attackerId)) {
+                UUID victimCharger = mythicManager.getHandler(GoblinSpearHandler.class).getGoblinChargerOf(victimId);
                 if (attackerId.equals(victimCharger)) {
                     return false; // Allow damage between charger and their victim
                 }
             }
             
             // Allow chargers to be hit
-            if (mythicManager.isGoblinSpearCharging(victimId)) {
+            if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(victimId)) {
                 return false;
             }
         }
@@ -470,7 +475,7 @@ public class DamageListener implements Listener {
         CashClashPlayer victimCcp = session.getCashClashPlayer(victim.getUniqueId());
         if (victimCcp != null && victimCcp.isRespawnProtected()) {
             // Allow damage if victim is currently charging with Goblin Spear
-            if (mythicManager.isGoblinSpearCharging(victim.getUniqueId())) {
+            if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(victim.getUniqueId())) {
                 return false;
             }
 
@@ -775,9 +780,9 @@ public class DamageListener implements Listener {
      */
     private void processMythicDamageEffects(EntityDamageByEntityEvent event, Player attacker, Player victim, MythicItem mythic) {
         switch (mythic) {
-            case CARLS_BATTLEAXE -> applyMythicCriticalEffect(event, attacker, victim, mythicManager::handleCarlsCriticalHit);
-            case ELECTRIC_EEL_SWORD -> applyMythicCriticalEffect(event, attacker, victim, mythicManager::handleElectricEelChain);
-            case WARDEN_GLOVES -> mythicManager.useWardenPunch(attacker, victim);
+            case CARLS_BATTLEAXE -> applyMythicCriticalEffect(event, attacker, victim, mythicManager.getHandler(CarlsBattleaxeHandler.class)::handleCarlsCriticalHit);
+            case ELECTRIC_EEL_SWORD -> applyMythicCriticalEffect(event, attacker, victim, mythicManager.getHandler(ElectricEelHandler.class)::handleElectricEelChain);
+            case WARDEN_GLOVES -> mythicManager.getHandler(WardenGlovesHandler.class).useWardenPunch(attacker, victim);
             case GOBLIN_SPEAR -> applyGoblinSpearEffect(event, attacker, victim);
             case BLOODWRENCH_CROSSBOW, BLAZEBITE_CROSSBOWS -> applyLegendaryCrossbowBoost(event, attacker);
             default -> { /* No special handling */ }
@@ -798,7 +803,7 @@ public class DamageListener implements Listener {
      */
     private void applyGoblinSpearEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
         if (event.getDamager() instanceof Player) {
-            mythicManager.handleGoblinSpearHit(attacker, victim, true);
+            mythicManager.getHandler(GoblinSpearHandler.class).handleGoblinSpearHit(attacker, victim, true);
         }
     }
 

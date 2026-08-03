@@ -164,12 +164,13 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
             pulled.add(target);
         }
 
-        final int[] tick = {0};
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private int tick;
+
             @Override
             public void run() {
-                tick[0]++;
-                float progress = Math.min(1.0f, tick[0] / (float) durationTicks);
+                tick++;
+                float progress = Math.min(1.0f, tick / (float) durationTicks);
                 Color beamColor = lerpColor(Color.fromRGB(255, 230, 150), Color.fromRGB(200, 40, 40), progress);
 
                 for (Player target : new ArrayList<>(pulled)) {
@@ -181,7 +182,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
                 }
                 ParticleUtils.spawnDust(center.clone().add(0, 1, 0), beamColor, 1.0f, 3, 0.3);
 
-                if (tick[0] >= durationTicks) {
+                if (tick >= durationTicks) {
                     cancel();
                 }
             }

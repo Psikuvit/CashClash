@@ -95,12 +95,14 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
 
-        int[] tick = {0};
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+
+            private int tick;
+
             @Override
             public void run() {
-                tick[0]++;
-                double currentRadius = maxRadius * tick[0] / totalTicks;
+                tick++;
+                double currentRadius = maxRadius * tick / totalTicks;
                 for (int arm = 0; arm < arms; arm++) {
                     ParticleUtils.smokeSpiralFrame(origin, currentRadius, arm, arms);
                 }
@@ -120,7 +122,7 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
                     }
                 }
 
-                if (tick[0] >= totalTicks) {
+                if (tick >= totalTicks) {
                     cancel();
                 }
             }
