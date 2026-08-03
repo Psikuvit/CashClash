@@ -14,10 +14,13 @@ import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Color;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -25,6 +28,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -59,6 +63,11 @@ public class CustomArmorManager {
     private final Map<UUID, Integer> dragonHitCount; // Player -> fully-charged melee hits toward next scale
     private final Map<UUID, Long> dragonRushDamageBuff; // Player -> expiry of +25% rush damage buff
     private final Set<UUID> dragonRushInvincible; // Players invincible during teammate Dragon Rush
+    private final Set<UUID> dragonRushIndicators; // Players with an active Dragon Rush reminder
+    private final Set<UUID> dragonOutrageIndicators; // Players with an active Dragon Outrage reminder
+    private final Set<UUID> dragonOutrageActive; // Players mid Dragon Outrage flight
+    private final Map<UUID, Long> dragonOutrageStartTime; // Player -> outrage activation time
+    private final Map<UUID, BukkitTask> dragonOutrageTasks; // Player -> outrage flight trail task
 
     // Bullseye Pants tracking
     private final Map<UUID, Integer> bullseyeHitCount; // Attacker -> current hit count
@@ -95,6 +104,11 @@ public class CustomArmorManager {
         this.dragonHitCount = new ConcurrentHashMap<>();
         this.dragonRushDamageBuff = new ConcurrentHashMap<>();
         this.dragonRushInvincible = ConcurrentHashMap.newKeySet();
+        this.dragonRushIndicators = ConcurrentHashMap.newKeySet();
+        this.dragonOutrageIndicators = ConcurrentHashMap.newKeySet();
+        this.dragonOutrageActive = ConcurrentHashMap.newKeySet();
+        this.dragonOutrageStartTime = new ConcurrentHashMap<>();
+        this.dragonOutrageTasks = new ConcurrentHashMap<>();
 
         this.bullseyeHitCount = new ConcurrentHashMap<>();
 
@@ -272,8 +286,15 @@ public class CustomArmorManager {
         return dragonScales.getOrDefault(player.getUniqueId(), 0);
     }
 
+    public int getMaxDragonScales() {
+        return cfg.getDragonMaxScales();
+    }
+
     private void setDragonScales(Player player, int amount) {
         dragonScales.put(player.getUniqueId(), Math.min(cfg.getDragonMaxScales(), amount));
+        if (amount >= cfg.getDragonMaxScales()) {
+            startDragonOutrageIndicator(player);
+        }
     }
 
     public boolean consumeDragonScale(Player player) {
@@ -301,6 +322,8 @@ public class CustomArmorManager {
         } else {
             dragonHitCount.put(player.getUniqueId(), hits);
         }
+
+        startDragonRushIndicator(player);
     }
 
     /**
@@ -309,14 +332,30 @@ public class CustomArmorManager {
     public void onDragonRush(Player player) {
         if (!hasDragonSet(player)) return;
 
+        UUID id = player.getUniqueId();
+
+        if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.DRAGON_DASH)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(id, CooldownManager.Keys.DRAGON_DASH);
+            Messages.send(player, "armor.dragon-rush-cooldown", "remaining", String.valueOf(remaining));
+            return;
+        }
+
         Entity target = player.getTargetEntity(cfg.getDragonRushRange());
-        if (!(target instanceof Player targetPlayer)) return;
-        if (!player.hasLineOfSight(targetPlayer)) return;
+        if (!(target instanceof Player targetPlayer)) {
+            failDragonRush(player);
+            return;
+        }
+        if (!player.hasLineOfSight(targetPlayer)) {
+            failDragonRush(player);
+            return;
+        }
 
         if (!consumeDragonScale(player)) {
             Messages.send(player, "armor.dragon-need-scale");
             return;
         }
+
+        dragonRushIndicators.remove(id);
 
         Messages.send(player, "armor.dragon-scale-used", "scales", String.valueOf(getDragonScales(player)));
 
@@ -363,6 +402,16 @@ public class CustomArmorManager {
     }
 
     /**
+     * Failed Dragon Rush: short cooldown so the player can re-aim quickly.
+     */
+    private void failDragonRush(Player player) {
+        UUID id = player.getUniqueId();
+        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.DRAGON_DASH, 5);
+        Messages.send(player, "armor.dragon-rush-no-target");
+        SoundUtils.play(player, Sound.ENTITY_ENDERMAN_TELEPORT, 0.4f, 0.4f);
+    }
+
+    /**
      * Apply the empowered Dragon Rush strike if the damage buff is active.
      */
     public void onDragonRushHit(EntityDamageByEntityEvent event) {
@@ -387,6 +436,259 @@ public class CustomArmorManager {
      */
     public boolean isDragonRushInvincible(UUID uuid) {
         return dragonRushInvincible.contains(uuid);
+    }
+
+    // ==================== DRAGON RUSH / OUTRAGE INDICATORS ====================
+
+    /**
+     * Show periodic reminders (purple target ring) while the player has scales and is
+     * aiming at a valid rush target.
+     */
+    public void startDragonRushIndicator(Player player) {
+        if (cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.DRAGON_DASH)) {
+            return;
+        }
+        UUID uuid = player.getUniqueId();
+        if (dragonRushIndicators.contains(uuid)) {
+            return;
+        }
+        dragonRushIndicators.add(uuid);
+
+        for (int i = 0; i < 3; i++) {
+            long delay = i * 100L;
+            SchedulerUtils.runTaskLater(() -> {
+                if (!player.isOnline()
+                        || !hasDragonSet(player)
+                        || getDragonScales(player) <= 0
+                        || getDragonScales(player) >= cfg.getDragonMaxScales()) {
+                    dragonRushIndicators.remove(uuid);
+                    return;
+                }
+                Entity target = player.getTargetEntity(cfg.getDragonRushRange());
+                if (!(target instanceof Player targetPlayer)) {
+                    return;
+                }
+                if (!player.hasLineOfSight(targetPlayer)) {
+                    return;
+                }
+                showDragonRushIndicator(player, targetPlayer);
+            }, delay);
+        }
+
+        SchedulerUtils.runTaskLater(() -> {
+            dragonRushIndicators.remove(uuid);
+        }, 300L);
+    }
+
+    /**
+     * Draw a purple circle under the rush target and play a heartbeat sound.
+     */
+    public void showDragonRushIndicator(Player player, Player target) {
+        Location center = target.getLocation().clone().add(0, 0.1, 0);
+        for (int i = 0; i < 12; i++) {
+            double angle = 2 * Math.PI * i / 12;
+            double x = Math.cos(angle) * 1.2;
+            double z = Math.sin(angle) * 1.2;
+            ParticleUtils.spawnDust(center.clone().add(x, 0.9, z), Color.fromRGB(140, 0, 255), 0.8f, 1);
+        }
+        SoundUtils.play(player, Sound.ENTITY_WARDEN_HEARTBEAT, 0.5f, 0.7f);
+    }
+
+    /**
+     * Show a dark-purple ring around the player when all scales are charged and
+     * Dragon Outrage is available.
+     */
+    public void startDragonOutrageIndicator(Player player) {
+        UUID uuid = player.getUniqueId();
+        if (dragonOutrageIndicators.contains(uuid)) {
+            return;
+        }
+        dragonOutrageIndicators.add(uuid);
+
+        for (int i = 0; i < 3; i++) {
+            long delay = i * 100L;
+            SchedulerUtils.runTaskLater(() -> {
+                if (!player.isOnline()
+                        || !hasDragonSet(player)
+                        || getDragonScales(player) < cfg.getDragonMaxScales()) {
+                    dragonOutrageIndicators.remove(uuid);
+                    return;
+                }
+                Location center = player.getLocation().clone().add(0, 0.9, 0);
+                for (int j = 0; j < 16; j++) {
+                    double angle = 2 * Math.PI * j / 16;
+                    double x = Math.cos(angle) * 1.0;
+                    double z = Math.sin(angle) * 1.0;
+                    ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(80, 0, 120), 1.2f, 1);
+                }
+                SoundUtils.play(player, Sound.ENTITY_WARDEN_HEARTBEAT, 0.5f, 0.6f);
+            }, delay);
+        }
+
+        SchedulerUtils.runTaskLater(() -> dragonOutrageIndicators.remove(uuid), 300L);
+    }
+
+    /**
+     * Dragon Outrage: with all scales charged, sneak to launch into the air toward
+     * the aimed location, then slam down in a massive explosion.
+     */
+    public void startDragonOutrage(Player player) {
+        if (!hasDragonSet(player)) return;
+        if (getDragonScales(player) < cfg.getDragonMaxScales()) return;
+
+        UUID uuid = player.getUniqueId();
+        if (dragonOutrageActive.contains(uuid)) return;
+
+        setDragonScales(player, 0);
+        dragonOutrageIndicators.remove(uuid);
+
+        dragonOutrageActive.add(uuid);
+        dragonOutrageStartTime.put(uuid, System.currentTimeMillis());
+
+        Messages.send(player, "armor.dragon-outrage-activated");
+        SoundUtils.play(player, Sound.ENTITY_WITHER_AMBIENT, 1.0f, 1.0f);
+
+        Location landing = getDragonOutrageTarget(player);
+        if (landing == null) {
+            landing = player.getLocation().clone();
+        }
+
+        Vector direction = player.getLocation().getDirection().normalize();
+        Vector launchVelocity = new Vector(direction.getX() * 0.35, 0.9, direction.getZ() * 0.35);
+        player.setVelocity(launchVelocity);
+
+        startDragonOutrageFlight(player, landing);
+    }
+
+    /**
+     * Resolve the aimed landing spot for Dragon Outrage (solid top face up to 40 blocks).
+     */
+    public Location getDragonOutrageTarget(Player player) {
+        Location eye = player.getEyeLocation();
+        RayTraceResult result = player.getWorld().rayTraceBlocks(eye, eye.getDirection(), 40);
+
+        if (result == null || result.getHitBlock() == null) {
+            return null;
+        }
+
+        Block block = result.getHitBlock();
+
+        if (!block.getType().isSolid()) {
+            return null;
+        }
+
+        if (result.getHitBlockFace() != BlockFace.UP) {
+            return null;
+        }
+
+        return block.getLocation().add(0.5, 1.05, 0.5);
+    }
+
+    /**
+     * Fly the player toward the landing spot, spawning a spiral trail, then slam down.
+     */
+    private void startDragonOutrageFlight(Player player, Location landing) {
+        UUID uuid = player.getUniqueId();
+        if (dragonOutrageTasks.containsKey(uuid)) return;
+
+        BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
+            if (!player.isOnline() || !dragonOutrageActive.contains(uuid)) {
+                endDragonOutrageFlight(player);
+                return;
+            }
+
+            long elapsed = System.currentTimeMillis() - dragonOutrageStartTime.getOrDefault(uuid, 0L);
+
+            ParticleUtils.dragonOutrageTrail(player.getLocation().clone().add(0, 1, 0));
+
+            double distance = player.getLocation().distance(landing);
+            boolean reached = distance <= 1.5;
+            boolean timedOut = elapsed >= 3000;
+
+            if (reached || timedOut) {
+                endDragonOutrageFlight(player);
+                dragonOutrageExplosion(player, landing);
+                return;
+            }
+
+            // Steer toward the aimed landing spot
+            Vector toTarget = landing.toVector().subtract(player.getLocation().toVector()).normalize();
+            Vector steer = toTarget.multiply(0.8);
+            if (steer.getY() > 0.6) steer.setY(0.6);
+            if (steer.getY() < -0.4) steer.setY(-0.4);
+            player.setVelocity(steer);
+        }, 2L, 1L);
+
+        dragonOutrageTasks.put(uuid, task);
+    }
+
+    private void endDragonOutrageFlight(Player player) {
+        UUID uuid = player.getUniqueId();
+        BukkitTask task = dragonOutrageTasks.remove(uuid);
+        if (task != null) {
+            task.cancel();
+        }
+        dragonOutrageActive.remove(uuid);
+        dragonOutrageStartTime.remove(uuid);
+    }
+
+    /**
+     * Massive landing explosion for Dragon Outrage: expanding sphere, ground shockwave,
+     * and damage to enemies within a 5x3x5 box.
+     */
+    public void dragonOutrageExplosion(Player player, Location location) {
+        World world = location.getWorld();
+        if (world == null) return;
+
+        SoundUtils.playAt(location, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 0.7f);
+        SoundUtils.playAt(location, Sound.ENTITY_ENDER_DRAGON_GROWL, 3.0f, 0.8f);
+        SoundUtils.playAt(location, Sound.ENTITY_WITHER_BREAK_BLOCK, 1.5f, 0.8f);
+
+        Color purple = Color.fromRGB(140, 60, 220);
+        Color black = Color.fromRGB(20, 0, 30);
+
+        BukkitTask explosionTask = SchedulerUtils.runTaskTimer(() -> {
+            // Expanding purple/black sphere
+            for (int i = 0; i < 40; i++) {
+                double x = (Math.random() - 0.5) * 8;
+                double y = Math.random() * 5;
+                double z = (Math.random() - 0.5) * 8;
+                Location particle = location.clone().add(x, y, z);
+                ParticleUtils.spawnDust(particle, purple, 2.0f, 1, 0.05);
+                ParticleUtils.spawnDust(particle, black, 2.5f, 1);
+            }
+
+            // Ground shockwave ring
+            for (int i = 0; i < 40; i++) {
+                double angle = Math.PI * 2 * i / 40;
+                double x = Math.cos(angle) * 3.5;
+                double z = Math.sin(angle) * 3.5;
+                ParticleUtils.spawnDust(location.clone().add(x, 0.1, z), purple, 2.0f, 1);
+            }
+
+            // Vertical energy column
+            for (int i = 0; i < 15; i++) {
+                double y = Math.random() * 4;
+                ParticleUtils.spawnDust(location.clone().add(0, y, 0), black, 2.5f, 1);
+            }
+        }, 0L, 1L);
+
+        SchedulerUtils.runTaskLater(explosionTask::cancel, 10L);
+
+        for (Entity entity : world.getNearbyEntities(location, 5, 3, 5)) {
+            if (!(entity instanceof Player target)) continue;
+            if (target.equals(player)) continue;
+
+            target.damage(18, player);
+
+            Vector knockback = target.getLocation()
+                    .toVector()
+                    .subtract(location.toVector())
+                    .normalize()
+                    .multiply(1.5);
+            knockback.setY(0.6);
+            target.setVelocity(knockback);
+        }
     }
 
     /**
@@ -422,6 +724,10 @@ public class CustomArmorManager {
 
     public void onPlayerToggleSneak(Player p, boolean sneaking) {
         if (!hasBunnyShoes(p)) return;
+        if (!p.isOnline()) return;
+        if (p.getGameMode() == GameMode.SPECTATOR) return;
+        if (p.isDead()) return;
+        if (p.getHealth() <= 0) return;
         UUID id = p.getUniqueId();
 
         if (sneaking) {
@@ -436,10 +742,17 @@ public class CustomArmorManager {
     }
 
     private void tryActivateBunnyShoes(Player p) {
+        if (!p.isOnline()) return;
+        if (p.getGameMode() == GameMode.SPECTATOR) return;
+        if (p.isDead()) return;
+        if (p.getHealth() <= 0) return;
         UUID id = p.getUniqueId();
 
         // Blocked while a mythic shift ability is active
         if (mythicShiftLock.contains(id)) return;
+
+        // Blocked while a rune shift ability is active
+        if (RuneManager.isRuneShiftLocked(p)) return;
 
         // Check if player is silenced (carrying enemy flag in CTF)
         if (isSilenced(p)) {
@@ -459,7 +772,8 @@ public class CustomArmorManager {
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES, cfg.getBunnyShoesCooldown());
 
         Messages.send(p, "armor.bunny-shoes-activated", "duration", String.valueOf(duration));
-        SoundUtils.play(p, Sound.ENTITY_RABBIT_JUMP, 1.0f, 1.5f);
+        ParticleUtils.bunnyDiamond(p.getLocation().clone().add(0, 0.08, 0));
+        SoundUtils.play(p, Sound.ENTITY_BREEZE_IDLE_AIR, 1.0f, 1.0f);
     }
 
     // ==================== GUARDIAN'S VEST ====================
@@ -480,6 +794,7 @@ public class CustomArmorManager {
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.GUARDIAN_VEST, 20);
 
         Messages.send(p, "armor.guardian-vest-activated", "uses", String.valueOf(used + 1));
+        ParticleUtils.guardianRings(p.getLocation());
         SoundUtils.play(p, Sound.ITEM_TOTEM_USE, 0.5f, 1.5f);
     }
 
@@ -497,9 +812,14 @@ public class CustomArmorManager {
 
         Messages.send(killer, "armor.deathmauler-heal");
 
-        // Show small healing particle effect on normal kills
-        ParticleUtils.deathmaulerHeal(killer.getLocation());
-        SoundUtils.play(killer, Sound.ENTITY_ZOMBIE_VILLAGER_CURE, 0.5f, 1.5f);
+        // Dark hearts + smoke pulses rising from the kill
+        for (int i = 0; i < 3; i++) {
+            SchedulerUtils.runTaskLater(() -> {
+                if (!killer.isOnline()) return;
+                ParticleUtils.deathmaulerHeal(killer.getLocation());
+            }, i * 8L);
+            SoundUtils.play(killer, Sound.ENTITY_WITHER_HURT, 0.6f, 0.6f);
+        }
     }
 
     public void onDeathmaulerDamageTaken(Player p) {
@@ -533,34 +853,54 @@ public class CustomArmorManager {
 
         if (!isFullyChargedMelee(attacker)) return;
 
-        double damage = 3.0; // 1.5 hearts
-        double radius = 7.0;
-        double totalDealt = 0.0;
-
-        for (org.bukkit.entity.Entity entity : attacker.getWorld().getNearbyEntities(attacker.getLocation(), radius, radius, radius)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(attacker)) continue;
-
-            if (session != null) {
-                Team aTeam = session.getPlayerTeam(attacker);
-                Team tTeam = session.getPlayerTeam(target);
-                if (tTeam != null && aTeam == tTeam) continue;
-            }
-
-            double newHealth = Math.max(0.0, target.getHealth() - damage);
-            target.setHealth(newHealth);
-            totalDealt += damage;
-            ParticleUtils.hitFeedback(target.getLocation(), 10, 0.2);
-        }
-
-        if (totalDealt > 0) {
-            double newHealth = Math.min(attacker.getHealth() + totalDealt, max);
-            attacker.setHealth(newHealth);
-        }
-
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST, 35);
         Messages.send(attacker, "armor.soul-burst");
         SoundUtils.play(attacker, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.8f);
+
+        Location center = attacker.getLocation();
+        Set<UUID> hitPlayers = ConcurrentHashMap.newKeySet();
+        final double[] radius = {0.5};
+
+        BukkitTask[] waveTask = new BukkitTask[1];
+        waveTask[0] = SchedulerUtils.runTaskTimer(() -> {
+            if (!attacker.isOnline() || attacker.isDead()) {
+                waveTask[0].cancel();
+                return;
+            }
+
+            radius[0] += 0.5;
+            if (radius[0] >= 6.0) {
+                waveTask[0].cancel();
+                int enemies = hitPlayers.size();
+                Messages.send(attacker, enemies == 1 ? "armor.soul-burst-enemy" : "armor.soul-burst-enemies",
+                        "count", String.valueOf(enemies));
+                return;
+            }
+
+            ParticleUtils.soulBurstRing(center, radius[0]);
+
+            for (Entity entity : center.getWorld().getNearbyEntities(center, radius[0], radius[0], radius[0])) {
+                if (!(entity instanceof Player target)) continue;
+                if (target.equals(attacker)) continue;
+                if (hitPlayers.contains(target.getUniqueId())) continue;
+
+                if (session != null) {
+                    Team aTeam = session.getPlayerTeam(attacker);
+                    Team tTeam = session.getPlayerTeam(target);
+                    if (tTeam != null && aTeam == tTeam) continue;
+                }
+
+                hitPlayers.add(target.getUniqueId());
+
+                double newHealth = Math.max(0.0, target.getHealth() - 3.0);
+                target.setHealth(newHealth);
+
+                double healAmount = Math.min(max - attacker.getHealth(), 3.0);
+                attacker.setHealth(attacker.getHealth() + healAmount);
+
+                ParticleUtils.hitFeedback(target.getLocation(), 10, 0.2);
+            }
+        }, 0L, 2L);
     }
 
     private boolean isFullyChargedMelee(Player attacker) {
@@ -659,9 +999,17 @@ public class CustomArmorManager {
                 ParticleUtils.spawnDust(trailLoc.clone().add(0, 0.2, 0), Color.RED, 1.0f, 3, 0.15, 0.05, 0.15);
             }
 
+            GameSession session = GameManager.getInstance().getPlayerSession(p);
+            Team playerTeam = session != null ? session.getPlayerTeam(p) : null;
+
             for (Entity entity : p.getNearbyEntities(1.2, 1.0, 1.2)) {
                 if (!(entity instanceof Player target)) continue;
                 if (target.equals(p)) continue;
+
+                if (session != null && playerTeam != null) {
+                    Team targetTeam = session.getPlayerTeam(target);
+                    if (targetTeam == playerTeam) continue;
+                }
                 target.setFireTicks(60);
             }
         }, 0L, 2L);
@@ -891,6 +1239,12 @@ public class CustomArmorManager {
         dragonHitCount.clear();
         dragonRushDamageBuff.clear();
         dragonRushInvincible.clear();
+        dragonRushIndicators.clear();
+        dragonOutrageIndicators.clear();
+        dragonOutrageTasks.values().forEach(BukkitTask::cancel);
+        dragonOutrageTasks.clear();
+        dragonOutrageActive.clear();
+        dragonOutrageStartTime.clear();
 
         // Cancel all flamebringer tasks
         flamebringerFireTask.values().forEach(BukkitTask::cancel);
@@ -920,6 +1274,12 @@ public class CustomArmorManager {
         dragonHitCount.clear();
         dragonRushDamageBuff.clear();
         dragonRushInvincible.clear();
+        dragonRushIndicators.clear();
+        dragonOutrageIndicators.clear();
+        dragonOutrageTasks.values().forEach(BukkitTask::cancel);
+        dragonOutrageTasks.clear();
+        dragonOutrageActive.clear();
+        dragonOutrageStartTime.clear();
 
         // Reset flamebringer kill counters
         flamebringerKills.clear();

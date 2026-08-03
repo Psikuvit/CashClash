@@ -31,9 +31,9 @@ public enum CustomArmorItem implements Purchasable {
     DEATHMAULER_CHESTPLATE(Material.NETHERITE_CHESTPLATE, "deathmauler-chestplate", "Deathmauler's Chestplate", ArmorSet.DEATHMAULER),
     DEATHMAULER_LEGGINGS(Material.NETHERITE_LEGGINGS, "deathmauler-leggings", "Deathmauler's Leggings", ArmorSet.DEATHMAULER),
 
-    DRAGON_HELMET(Material.DIAMOND_HELMET, "dragon-head", "Dragon Helmet", ArmorSet.DRAGON),
+    DRAGON_HELMET(Material.IRON_HELMET, "dragon-head", "Dragon Helmet", ArmorSet.DRAGON),
     DRAGON_CHESTPLATE(Material.DIAMOND_CHESTPLATE, "dragon-chestplate", "Dragon Chestplate", ArmorSet.DRAGON),
-    DRAGON_BOOTS(Material.DIAMOND_BOOTS, "dragon-boots", "Dragon Boots", ArmorSet.DRAGON);
+    DRAGON_BOOTS(Material.IRON_BOOTS, "dragon-boots", "Dragon Boots", ArmorSet.DRAGON);
 
     private final Material material;
     private final String configKey;

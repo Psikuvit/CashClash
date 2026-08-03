@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -44,6 +45,7 @@ public class InteractListener implements Listener {
 
     private final CustomItemManager customItemManager = CustomItemManager.getInstance();
     private final MythicItemManager mythicManager = MythicItemManager.getInstance();
+    private final CustomArmorManager armorManager = CustomArmorManager.getInstance();
 
     // ==================== ENDER PEARL RESTRICTIONS ====================
 
@@ -326,6 +328,7 @@ public class InteractListener implements Listener {
             case CASH_BLASTER -> {
                 if (player.isSneaking() && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK)) {
                     event.setCancelled(true);
+                    armorManager.lockMythicShift(player);
                     customItemManager.onCashBlasterToggle(player);
                     return true;
                 }
@@ -421,6 +424,7 @@ public class InteractListener implements Listener {
             case SOUL_KATANA -> {
                 if (action.isRightClick() && player.isSneaking()) {
                     event.setCancelled(true);
+                    armorManager.lockMythicShift(player);
                     customItemManager.usePhantomSlice(player);
                     return true;
                 }
@@ -469,6 +473,7 @@ public class InteractListener implements Listener {
                         return true;
                     }
                     event.setCancelled(true);
+                    armorManager.lockMythicShift(player);
                     mythicManager.useWindBowBoost(player);
                     return true;
                 }
@@ -492,6 +497,7 @@ public class InteractListener implements Listener {
                         return true;
                     }
                     event.setCancelled(true);
+                    armorManager.lockMythicShift(player);
                     mythicManager.startGoblinSpearCharge(player);
                     return true;
                 }
@@ -515,6 +521,7 @@ public class InteractListener implements Listener {
                 // Shift + Right-click to toggle mode
                 if (player.isSneaking()) {
                     event.setCancelled(true);
+                    armorManager.lockMythicShift(player);
                     mythicManager.toggleBloodwrenchMode(player);
                     return true;
                 }

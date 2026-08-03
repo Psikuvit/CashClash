@@ -32,6 +32,7 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -40,7 +41,6 @@ import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
@@ -320,15 +320,9 @@ public class GameListener implements Listener {
                             type == PotionEffectType.REGENERATION ||
                             type == PotionEffectType.RESISTANCE ||
                             type == PotionEffectType.FIRE_RESISTANCE) {
-                        player.removePotionEffect(type);
-                        player.addPotionEffect(new PotionEffect(
-                                type,
-                                45 * 20,
-                                effect.getAmplifier(),
-                                effect.isAmbient(),
-                                effect.hasParticles(),
-                                effect.hasIcon()
-                        ));
+                        CashClashPlayer.removeEffect(player, type);
+                        CashClashPlayer.applyEffect(player, type, 45 * 20,
+                                effect.getAmplifier(), effect.isAmbient(), effect.hasParticles(), effect.hasIcon());
                     }
                 });
             }, 1L);
@@ -352,7 +346,6 @@ public class GameListener implements Listener {
      * Spawn a spiral of dust particles around the player when a custom food is consumed.
      */
     private void playFoodParticles(Player player, Color color) {
-        Particle.DustOptions dust = new Particle.DustOptions(color, 1.4f);
         Location base = player.getLocation().clone();
 
         // Direction vectors
@@ -364,8 +357,8 @@ public class GameListener implements Listener {
             double offset = 0.35 + (i * 0.05);
             Location left = base.clone().add(side.clone().multiply(offset)).add(0, 1.0 + (i * 0.05), 0);
             Location right = base.clone().add(side.clone().multiply(-offset)).add(0, 1.0 + (i * 0.05), 0);
-            player.getWorld().spawnParticle(Particle.DUST, left, 3, 0.12, 0.12, 0.12, dust);
-            player.getWorld().spawnParticle(Particle.DUST, right, 3, 0.12, 0.12, 0.12, dust);
+            ParticleUtils.spawnDust(left, color, 1.4f, 3, 0.12, 0.12, 0.12);
+            ParticleUtils.spawnDust(right, color, 1.4f, 3, 0.12, 0.12, 0.12);
         }
 
         // DIAGONAL BODY BURSTS
@@ -377,13 +370,12 @@ public class GameListener implements Listener {
                 Location particle = center.clone()
                         .add(side.clone().multiply(diagonal))
                         .add(forward.clone().multiply(diagonal));
-                player.getWorld().spawnParticle(Particle.DUST, particle, 2, 0.08, 0.08, 0.08, dust);
+                ParticleUtils.spawnDust(particle, color, 1.4f, 2, 0.08, 0.08, 0.08);
             }
         }
 
         // FOOT BURST
-        Location feet = base.clone().add(0, 0.1, 0);
-        player.getWorld().spawnParticle(Particle.DUST, feet, 25, 0.35, 0.05, 0.35, dust);
+        ParticleUtils.spawnDust(base.clone().add(0, 0.1, 0), color, 1.4f, 25, 0.35, 0.05, 0.35);
     }
 
     /**
@@ -521,7 +513,7 @@ public class GameListener implements Listener {
             }
         }
 
-        // Dragon Set: sneak-start triggers a Dragon Rush to the targeted player
+        // Dragon Set: sneak-start triggers Dragon Outrage at full scales, otherwise Dragon Rush
         if (event.isSneaking() && armorManager.hasDragonSet(p)) {
             if (isPlayerDead(session, p)) {
                 Messages.send(p, "listener.cannot-use-items-dead");
@@ -531,7 +523,11 @@ public class GameListener implements Listener {
                 Messages.send(p, "listener.cannot-use-abilities-while-silenced");
                 return;
             }
-            armorManager.onDragonRush(p);
+            if (armorManager.getDragonScales(p) >= armorManager.getMaxDragonScales()) {
+                armorManager.startDragonOutrage(p);
+            } else {
+                armorManager.onDragonRush(p);
+            }
             return;
         }
 

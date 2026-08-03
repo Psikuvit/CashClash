@@ -20,8 +20,8 @@ import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import org.bukkit.Color;
 import org.bukkit.Sound;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -552,10 +552,23 @@ public class DamageListener implements Listener {
 
     /**
      * Handle Bullseye Pants "Storming arrow" passive.
-     * Every 4th landed arrow does 30% more damage and deals AOE damage.
+     * Headshots trigger a storm arrow immediately (no counter increment).
+     * Every 4th non-headshot landed arrow does 30% more damage and deals AOE damage.
      */
     private void handleBullseyePantsEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
         if (!(event.getDamager() instanceof Arrow arrow)) {
+            return;
+        }
+
+        // ---------------- HEADSHOT CHECK ----------------
+        org.bukkit.Location hitLoc = arrow.getLocation();
+        double arrowY = hitLoc.getY();
+        double headY = victim.getLocation().getY() + victim.getEyeHeight();
+        boolean isHeadshot = Math.abs(arrowY - headY) <= 0.25;
+
+        if (isHeadshot) {
+            SoundUtils.playAt(victim.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.4f);
+            triggerStorm(attacker, victim, event.getDamage() * 1.3);
             return;
         }
 
@@ -564,32 +577,36 @@ public class DamageListener implements Listener {
         }
 
         if (armorManager.incrementBullseyeHit(attacker)) {
-            // 4th hit triggered
+            // 4th non-headshot hit triggered
             double originalDamage = event.getDamage();
             event.setDamage(originalDamage * 1.3); // +30% damage
 
-            org.bukkit.Location hitLoc = victim.getLocation().add(0, 1, 0);
-            ParticleUtils.bullseyeStorm(hitLoc);
-            SoundUtils.play(attacker, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0f, 1.2f);
+            triggerStorm(attacker, victim, originalDamage);
             Messages.send(attacker, "armor.bullseye-storm-triggered");
-            Messages.debug(attacker, "BULLSEYE: 4th shot triggered! +30% damage and AOE.");
+        }
+    }
 
-            // AOE Arrows: 6 arrows firing outward
-            double aoeDamage = originalDamage * 0.35;
-            for (int i = 0; i < 6; i++) {
-                double angle = 2 * Math.PI * i / 6;
-                Vector direction = new Vector(Math.cos(angle), 0.2, Math.sin(angle)).normalize();
-                
-                Arrow aoeArrow = attacker.getWorld().spawn(hitLoc, Arrow.class);
-                aoeArrow.setShooter(attacker);
-                aoeArrow.setVelocity(direction.multiply(1.5));
-                aoeArrow.setCritical(true);
-                aoeArrow.setColor(i % 2 == 0 ? Color.RED : Color.WHITE);
-                
-                // Add metadata or tag to identify as AOE arrow if needed for damage scaling
-                // For now we'll just set it to a fixed damage if hit
-                aoeArrow.setDamage(aoeDamage / 2.0); // Vanilla damage is a bit complex, but this is a start
-            }
+    /**
+     * Spawn the storm arrow burst: impact particles, wind burst sound, and 6 AOE arrows
+     * firing outward (uncolored so they read as normal arrows).
+     */
+    private void triggerStorm(Player attacker, Player victim, double aoeBaseDamage) {
+        org.bukkit.Location impact = victim.getLocation().add(0, 1, 0);
+        ParticleUtils.bullseyeStorm(impact);
+        SoundUtils.playAt(impact, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.1f, 1.2f);
+
+        double aoeDamage = aoeBaseDamage * 0.35;
+        for (int i = 0; i < 6; i++) {
+            double angle = 2 * Math.PI * i / 6;
+            Vector direction = new Vector(Math.cos(angle), 0.2, Math.sin(angle)).normalize();
+
+            Arrow aoeArrow = attacker.getWorld().spawn(impact, Arrow.class);
+            aoeArrow.setShooter(attacker);
+            aoeArrow.setVelocity(direction.multiply(1.5));
+            aoeArrow.setCritical(true);
+            aoeArrow.setDamage(aoeDamage);
+            aoeArrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
+            SchedulerUtils.runTaskLater(aoeArrow::remove, 40L);
         }
     }
 

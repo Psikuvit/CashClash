@@ -378,6 +378,79 @@ public final class ParticleUtils {
     }
 
     /**
+     * Spawn the white/blue diamond burst for Bunny Shoes activation.
+     */
+    public static void bunnyDiamond(Location center) {
+        if (center == null || center.getWorld() == null) return;
+        Color white = Color.WHITE;
+        Color blue = Color.fromRGB(120, 200, 255);
+        double[][] diamond = {
+                { 0.0,  0.85},
+                { 0.30, 0.60},
+                { 0.60, 0.30},
+                { 0.85, 0.0},
+                { 0.60,-0.30},
+                { 0.30,-0.60},
+                { 0.0, -0.85},
+                {-0.30,-0.60},
+                {-0.60,-0.30},
+                {-0.85, 0.0},
+                {-0.60, 0.30},
+                {-0.30, 0.60}
+        };
+        for (double[] point : diamond) {
+            Location particleLoc = center.clone().add(point[0], 0, point[1]);
+            spawnDust(particleLoc, white, 1.2f, 2, 0.03);
+            spawnDust(particleLoc.clone().add(0, 0.08, 0), blue, 1.2f, 2, 0.03);
+        }
+    }
+
+    /**
+     * Spawn the turquoise/orange shield rings for Guardian's Vest activation.
+     */
+    public static void guardianRings(Location playerLocation) {
+        if (playerLocation == null || playerLocation.getWorld() == null) return;
+        Color turquoise = Color.fromRGB(40, 220, 180);
+        Color orange = Color.fromRGB(255, 140, 40);
+        for (int i = 0; i < 3; i++) {
+            double radius = 0.8 + (i * 0.25);
+            for (int j = 0; j < 28; j++) {
+                double angle = 2 * Math.PI * j / 28;
+                double x = Math.cos(angle) * radius;
+                double z = Math.sin(angle) * radius;
+                Color color = (j % 7 == 0) ? orange : turquoise;
+                spawnDust(playerLocation.clone().add(x, 1.8, z), color, 1.8f, 1);
+            }
+        }
+    }
+
+    /**
+     * Spawn one expanding Soul Burst wave ring (black/red alternating dust).
+     */
+    public static void soulBurstRing(Location center, double radius) {
+        if (center == null || center.getWorld() == null) return;
+        Color red = Color.RED;
+        Color black = Color.BLACK;
+        for (double angle = 0; angle < Math.PI * 2; angle += 0.15) {
+            double x = Math.cos(angle) * radius;
+            double z = Math.sin(angle) * radius;
+            Location particleLoc = center.clone().add(x, 1.0 + (Math.random() * 0.4 - 0.2), z);
+            Color color = (angle % 0.3 < 0.15) ? black : red;
+            spawnDust(particleLoc, color, 1.2f, 1);
+        }
+    }
+
+    /**
+     * Spawn one frame of the purple spiral flight trail for Dragon Outrage.
+     */
+    public static void dragonOutrageTrail(Location location) {
+        if (location == null || location.getWorld() == null) return;
+        spawnDust(location, Color.fromRGB(220, 170, 255), 1.2f, 3, 0.2);
+        spawnDust(location, Color.fromRGB(140, 0, 255), 1.2f, 3, 0.2);
+        spawn(Particle.PORTAL, location, 4, 0.3, 0.3, 0.3, 0.05);
+    }
+
+    /**
      * Spawn fiery gravitational pull particles (Flamebringer).
      */
     public static void flamebringerPull(Location center, double radius) {
