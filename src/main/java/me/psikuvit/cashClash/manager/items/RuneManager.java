@@ -21,7 +21,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Transformation;
@@ -37,20 +36,9 @@ public class RuneManager {
 
     public static void ensureItemUUID(ItemStack item) {
         if (item == null || item.getType().isAir()) return;
+        if (PDCDetection.hasKey(item, Keys.ITEM_UUID)) return;
 
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return;
-
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-
-        if (!pdc.has(Keys.ITEM_UUID, PersistentDataType.STRING)) {
-            pdc.set(
-                    Keys.ITEM_UUID,
-                    PersistentDataType.STRING,
-                    UUID.randomUUID().toString()
-            );
-            item.setItemMeta(meta);
-        }
+        PDCSetter.of(item).set(Keys.ITEM_UUID, PersistentDataType.STRING, UUID.randomUUID().toString()).apply();
     }
 
     public static String getItemUUID(ItemStack item) {
@@ -70,14 +58,8 @@ public class RuneManager {
         String uuid = getItemUUID(target);
         if (uuid == null) return;
         if (!rune.hasItemMeta()) return;
-        ItemMeta meta = rune.getItemMeta();
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(
-                Keys.RUNE_LINK,
-                PersistentDataType.STRING,
-                uuid
-        );
-        rune.setItemMeta(meta);
+
+        PDCSetter.of(rune).set(Keys.RUNE_LINK, PersistentDataType.STRING, uuid).apply();
     }
 
     public static ItemStack getLinkedItem(Player player, ItemStack rune) {

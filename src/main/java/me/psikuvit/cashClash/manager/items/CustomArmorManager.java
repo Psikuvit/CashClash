@@ -58,9 +58,6 @@ public class CustomArmorManager {
     // Guardian's Vest tracking
     private final Map<UUID, Integer> guardianUsesThisRound;
 
-    // Deathmauler tracking
-    private final Map<UUID, Integer> deathmaulerExtraHearts;
-
     // Dragon Set tracking
     private final Map<UUID, Integer> dragonScales; // Player -> charged scales (max 3)
     private final Map<UUID, Integer> dragonHitCount; // Player -> fully-charged melee hits toward next scale
@@ -100,8 +97,6 @@ public class CustomArmorManager {
         this.bunnyToggleReady = new ConcurrentHashMap<>();
 
         this.guardianUsesThisRound = new ConcurrentHashMap<>();
-
-        this.deathmaulerExtraHearts = new ConcurrentHashMap<>();
 
         this.dragonScales = new ConcurrentHashMap<>();
         this.dragonHitCount = new ConcurrentHashMap<>();
@@ -1234,8 +1229,6 @@ public class CustomArmorManager {
 
         guardianUsesThisRound.clear();
 
-        deathmaulerExtraHearts.clear();
-
         bullseyeHitCount.clear();
 
         tectonicCharge1Cooldown.clear();
@@ -1273,7 +1266,6 @@ public class CustomArmorManager {
      */
     public void resetRoundTracking() {
         guardianUsesThisRound.clear();
-        deathmaulerExtraHearts.clear();
         bullseyeHitCount.clear();
 
         dragonScales.clear();
