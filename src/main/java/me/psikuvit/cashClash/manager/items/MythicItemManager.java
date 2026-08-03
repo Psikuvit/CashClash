@@ -16,6 +16,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -37,7 +38,6 @@ import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -274,29 +274,29 @@ public class MythicItemManager {
         }
 
         ItemStack item = new ItemStack(mythic.getMaterial());
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return item;
+        if (!item.hasItemMeta()) return item;
+
+        PDCSetter tags = PDCSetter.of(item);
 
         // Display name with mythic color
-        meta.displayName(Messages.parse("<light_purple><bold>" + mythic.getDisplayName() + "</bold></light_purple>"));
+        tags.meta().displayName(Messages.parse("<light_purple><bold>" + mythic.getDisplayName() + "</bold></light_purple>"));
 
         // Lore
         List<Component> lore = ItemFactory.getInstance().getGameplayFactory().getConfiguredLore(mythic);
         if (!lore.isEmpty()) {
-            meta.lore(lore);
+            tags.meta().lore(lore);
         }
 
         // PDC tags
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, mythic.name());
-        pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+        tags.set(Keys.ITEM_ID, PersistentDataType.STRING, mythic.name());
+        tags.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
 
         // Apply special attributes based on mythic type
-        applyMythicAttributes(mythic, meta);
+        applyMythicAttributes(mythic, tags.meta());
 
-        meta.setUnbreakable(true);
-        meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-        item.setItemMeta(meta);
+        tags.meta().setUnbreakable(true);
+        tags.meta().addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
+        tags.apply();
 
         // Apply custom model data using string key for resource pack
         CustomModelDataMapper.applyCustomModel(item, mythic);
@@ -319,13 +319,14 @@ public class MythicItemManager {
      */
     private ItemStack createBlazebiteItem(Player owner, boolean isGlacier) {
         ItemStack item = new ItemStack(Material.CROSSBOW);
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return item;
+        if (!item.hasItemMeta()) return item;
+
+        PDCSetter tags = PDCSetter.of(item);
 
         String name = isGlacier ? "Glacier Crossbow" : "Volcano Crossbow";
         String color = isGlacier ? "<aqua>" : "<red>";
 
-        meta.displayName(Messages.parse("<light_purple><bold>" + name + "</bold></light_purple>"));
+        tags.meta().displayName(Messages.parse("<light_purple><bold>" + name + "</bold></light_purple>"));
 
         // Lore
         List<Component> lore = new ArrayList<>();
@@ -341,21 +342,20 @@ public class MythicItemManager {
         lore.add(Component.empty());
         lore.add(Messages.parse("<gray>8 shots per magazine, 25s reload</gray>"));
         lore.add(Messages.parse("<gray>Owner: " + owner.getName() + "</gray>"));
-        meta.lore(lore);
+        tags.meta().lore(lore);
 
         // PDC tags - mark as BlazeBite and store mode
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, MythicItem.BLAZEBITE_CROSSBOWS.name());
-        pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
-        pdc.set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, isGlacier ? "glacier" : "volcano");
+        tags.set(Keys.ITEM_ID, PersistentDataType.STRING, MythicItem.BLAZEBITE_CROSSBOWS.name());
+        tags.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+        tags.set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, isGlacier ? "glacier" : "volcano");
 
         // Apply enchantments - Piercing 3, Quick Charge 1
-        meta.addEnchant(Enchantment.PIERCING, 3, true);
-        meta.addEnchant(Enchantment.QUICK_CHARGE, 1, true);
+        tags.meta().addEnchant(Enchantment.PIERCING, 3, true);
+        tags.meta().addEnchant(Enchantment.QUICK_CHARGE, 1, true);
 
-        meta.setUnbreakable(true);
-        meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-        item.setItemMeta(meta);
+        tags.meta().setUnbreakable(true);
+        tags.meta().addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
+        tags.apply();
 
         return item;
     }

@@ -23,7 +23,6 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -51,37 +50,36 @@ public final class GameplayItemFactory {
         if (purchasable == null) return null;
 
         ItemStack item = new ItemStack(purchasable.getMaterial(), 1);
-        ItemMeta meta = item.getItemMeta();
+        if (!item.hasItemMeta()) return item;
 
-        if (meta == null) return item;
+        PDCSetter tags = PDCSetter.of(item);
 
         // Set PDC tag for item identification
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, purchasable.name());
+        tags.set(Keys.ITEM_ID, PersistentDataType.STRING, purchasable.name());
 
         // Set display name
-        meta.displayName(Messages.parse("<yellow>" + purchasable.getDisplayName() + "</yellow>"));
+        tags.meta().displayName(Messages.parse("<yellow>" + purchasable.getDisplayName() + "</yellow>"));
 
         // Try to get lore from configuration based on item category
         List<Component> lore = getConfiguredLore(purchasable);
 
         if (!lore.isEmpty()) {
-            meta.lore(lore);
+            tags.meta().lore(lore);
         }
 
         // Handle special item types
         if (purchasable instanceof FoodItem foodItem) {
             // Apply armor properties is not needed for food
             // Set meta first, then apply food properties (which use DataComponentTypes directly on item)
-            item.setItemMeta(meta);
+            tags.apply();
             applyFoodProperties(item, foodItem);
             return item;
         } else {
             // Apply armor properties (unbreakable, hide flags)
-            applyArmorProperties(meta, item.getType());
+            applyArmorProperties(tags.meta(), item.getType());
         }
 
-        item.setItemMeta(meta);
+        tags.apply();
         return item;
     }
 
@@ -96,30 +94,29 @@ public final class GameplayItemFactory {
         if (customItem == null || owner == null) return null;
 
         ItemStack item = new ItemStack(customItem.getMaterial());
-        ItemMeta meta = item.getItemMeta();
+        if (!item.hasItemMeta()) return item;
 
-        if (meta == null) return item;
+        PDCSetter tags = PDCSetter.of(item);
 
         // Set display name
-        meta.displayName(Messages.parse("<yellow>" + customItem.getDisplayName() + "</yellow>"));
+        tags.meta().displayName(Messages.parse("<yellow>" + customItem.getDisplayName() + "</yellow>"));
 
         // Try to get lore from configuration first
         List<Component> lore = getConfiguredLore(customItem);
 
         if (!lore.isEmpty()) {
-            meta.lore(lore);
+            tags.meta().lore(lore);
         }
 
         // Add PDC tags
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, customItem.name());
-        pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
+        tags.set(Keys.ITEM_ID, PersistentDataType.STRING, customItem.name());
+        tags.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
 
         // Apply special properties based on item type
-        applyCustomItemProperties(meta, customItem, item);
+        applyCustomItemProperties(tags, customItem, item);
 
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-        item.setItemMeta(meta);
+        tags.meta().addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
+        tags.apply();
 
         // Apply custom model data
         CustomModelDataMapper.applyCustomModel(item, customItem);
@@ -142,16 +139,15 @@ public final class GameplayItemFactory {
         if (player == null || armor == null) return;
 
         ItemStack item = new ItemStack(armor.getMaterial());
-        ItemMeta meta = item.getItemMeta();
+        if (!item.hasItemMeta()) return;
 
-        if (meta == null) return;
+        PDCSetter tags = PDCSetter.of(item);
 
         // Set PDC tag
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, armor.name());
+        tags.set(Keys.ITEM_ID, PersistentDataType.STRING, armor.name());
 
         // Set display name
-        meta.displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
+        tags.meta().displayName(Messages.parse("<gold>" + armor.getDisplayName() + "</gold>"));
 
         // Try to get lore from configuration first
         List<Component> lore = getConfiguredLore(armor);
@@ -161,14 +157,14 @@ public final class GameplayItemFactory {
             lore = new ArrayList<>(lore);
             lore.add(Component.empty());
             lore.add(Messages.parse("<yellow>Special Armor</yellow>"));
-            meta.lore(lore);
+            tags.meta().lore(lore);
         }
 
         // Make unbreakable and hide flags
-        meta.setUnbreakable(true);
-        meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
+        tags.meta().setUnbreakable(true);
+        tags.meta().addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
 
-        item.setItemMeta(meta);
+        tags.apply();
 
         CustomModelDataMapper.applyArmorModel(item, armor);
 
@@ -233,26 +229,22 @@ public final class GameplayItemFactory {
     /**
      * Applies special properties to custom items based on their type.
      */
-    private void applyCustomItemProperties(ItemMeta meta, CustomItem customItem, ItemStack item) {
+    private void applyCustomItemProperties(PDCSetter tags, CustomItem customItem, ItemStack item) {
         switch (customItem) {
             case BAG_OF_POTATOES -> {
-                if (meta instanceof Damageable damageable) {
+                if (tags.meta() instanceof Damageable damageable) {
                     damageable.setDamage(item.getType().getMaxDurability() - 3);
                 }
-                meta.addEnchant(Enchantment.KNOCKBACK, 3, true);
+                tags.meta().addEnchant(Enchantment.KNOCKBACK, 3, true);
             }
-            case CASH_BLASTER -> meta.addEnchant(Enchantment.MULTISHOT, 1, true);
-            case INVIS_CLOAK -> {
-                PersistentDataContainer pdc = meta.getPersistentDataContainer();
-                pdc.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);
-            }
+            case CASH_BLASTER -> tags.meta().addEnchant(Enchantment.MULTISHOT, 1, true);
+            case INVIS_CLOAK -> tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);
             case ICE_FAN -> {
                 // Shears' vanilla max durability doesn't match the 75-point design budget, so
                 // remaining durability is tracked as a PDC counter (mirrored onto the visual
                 // durability bar in CustomItemManager.setIceFanDurability) rather than relying
                 // on Damageable directly, like BAG_OF_POTATOES does.
-                PersistentDataContainer pdc = meta.getPersistentDataContainer();
-                pdc.set(Keys.ITEM_USES, PersistentDataType.INTEGER, ItemsConfig.getInstance().getIceFanMaxDurability());
+                tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, ItemsConfig.getInstance().getIceFanMaxDurability());
             }
             default -> {
                 // No special properties

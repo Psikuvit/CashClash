@@ -17,6 +17,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
@@ -1669,19 +1670,20 @@ public class CustomItemManager {
      * bar proportionally, since Shears' vanilla max durability doesn't match the 75-point budget.
      */
     private void setIceFanDurability(ItemStack item, int remaining) {
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return;
+        if (!item.hasItemMeta()) return;
 
         int max = cfg.getIceFanMaxDurability();
         int clamped = Math.max(0, Math.min(max, remaining));
-        meta.getPersistentDataContainer().set(Keys.ITEM_USES, PersistentDataType.INTEGER, clamped);
 
-        if (meta instanceof Damageable damageable) {
+        PDCSetter tags = PDCSetter.of(item);
+        tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, clamped);
+
+        if (tags.meta() instanceof Damageable damageable) {
             int maxDurability = item.getType().getMaxDurability();
             double fractionUsed = 1.0 - ((double) clamped / max);
             damageable.setDamage((int) Math.round(fractionUsed * maxDurability));
         }
-        item.setItemMeta(meta);
+        tags.apply();
     }
 
     private void breakIceFan(Player player, ItemStack item) {

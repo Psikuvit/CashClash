@@ -49,6 +49,14 @@ public final class PDCSetter {
     }
 
     /**
+     * The meta being modified, for non-PDC mutations (name, lore, enchants, flags, damage).
+     * All mutations are applied together on {@link #apply}.
+     */
+    public ItemMeta meta() {
+        return meta;
+    }
+
+    /**
      * Writes all queued tags back to the item. Call once after the last {@link #set}.
      */
     public void apply() {

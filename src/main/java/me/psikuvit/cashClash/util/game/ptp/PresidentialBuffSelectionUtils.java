@@ -3,10 +3,10 @@ package me.psikuvit.cashClash.util.game.ptp;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
@@ -30,26 +30,23 @@ public class PresidentialBuffSelectionUtils {
      */
     public static ItemStack createBuffSelectionItem(String name, String benefit) {
         ItemStack item = new ItemStack(Material.POTION);
-        ItemMeta meta = item.getItemMeta();
 
-        if (meta != null) {
-            meta.displayName(Messages.parse("<yellow>" + name + "</yellow>"));
-            meta.lore(List.of(
-                    Messages.parse(benefit),
-                    Component.empty(),
-                    Messages.parse("<gray>Right-click to select</gray>"),
-                    Messages.parse("<gray>or deselect</gray>")
-            ));
-            // Mark as buff selection potion (undrinkable)
-            meta.getPersistentDataContainer().set(Keys.BUFF_SELECTION_POTION, PersistentDataType.BYTE, (byte) 1);
-            item.setItemMeta(meta);
-            try {
-                item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
-            } catch (Exception e) {
-                Messages.debug("[PTP] Warning: Could not unset consumable data: " + e.getMessage());
-            }
-        } else {
-            Messages.debug("[PTP] WARNING: Could not get ItemMeta for POTION");
+        PDCSetter tags = PDCSetter.of(item);
+        tags.meta().displayName(Messages.parse("<yellow>" + name + "</yellow>"));
+        tags.meta().lore(List.of(
+                Messages.parse(benefit),
+                Component.empty(),
+                Messages.parse("<gray>Right-click to select</gray>"),
+                Messages.parse("<gray>or deselect</gray>")
+        ));
+        // Mark as buff selection potion (undrinkable)
+        tags.set(Keys.BUFF_SELECTION_POTION, PersistentDataType.BYTE, (byte) 1);
+        tags.apply();
+
+        try {
+            item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
+        } catch (Exception e) {
+            Messages.debug("[PTP] Warning: Could not unset consumable data: " + e.getMessage());
         }
 
         return item;

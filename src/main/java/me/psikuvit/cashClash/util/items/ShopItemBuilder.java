@@ -33,13 +33,15 @@ import java.util.List;
 public class ShopItemBuilder {
 
     private final ItemStack item;
+    private final PDCSetter tags;
     private final ItemMeta meta;
     private final List<Component> lore;
     private final List<Component> priceLore;
 
     private ShopItemBuilder(Material material, int amount) {
         this.item = new ItemStack(material, amount);
-        this.meta = item.getItemMeta();
+        this.tags = PDCSetter.of(item);
+        this.meta = tags.meta();
         this.lore = new ArrayList<>();
         this.priceLore = new ArrayList<>();
     }
@@ -239,7 +241,7 @@ public class ShopItemBuilder {
         lore.clear();
         priceLore.clear();
         lore.addAll(Messages.wrapLines("<gray>You already own this item</gray>"));
-        meta.getPersistentDataContainer().set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
+        tags.set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         return this;
     }
 
@@ -253,7 +255,7 @@ public class ShopItemBuilder {
         lore.clear();
         priceLore.clear();
         lore.addAll(Messages.wrapLines(message));
-        meta.getPersistentDataContainer().set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
+        tags.set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         return this;
     }
 
@@ -266,7 +268,7 @@ public class ShopItemBuilder {
     public ShopItemBuilder locked(String reason) {
         lore.add(Component.empty());
         lore.addAll(Messages.wrapLines("<red>" + reason + "</red>"));
-        meta.getPersistentDataContainer().set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
+        tags.set(Keys.ITEM_MAXED, PersistentDataType.BYTE, (byte) 1);
         return this;
     }
 
@@ -277,7 +279,7 @@ public class ShopItemBuilder {
      * @return This builder for chaining
      */
     public ShopItemBuilder itemId(String key) {
-        meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, key);
+        tags.set(Keys.ITEM_ID, PersistentDataType.STRING, key);
         return this;
     }
 
@@ -350,7 +352,7 @@ public class ShopItemBuilder {
             meta.lore(finalLore);
         }
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        item.setItemMeta(meta);
+        tags.apply();
         return item;
     }
 }

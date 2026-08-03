@@ -120,25 +120,20 @@ public class RuneManager {
     public static void setRuneActive(ItemStack rune, boolean active) {
         if (rune == null || !rune.hasItemMeta()) return;
 
-        ItemMeta meta = rune.getItemMeta();
-
-        meta.getPersistentDataContainer().set(
-                Keys.RUNE_ACTIVE,
-                PersistentDataType.BYTE,
-                (byte) (active ? 1 : 0)
-        );
+        PDCSetter tags = PDCSetter.of(rune);
+        tags.set(Keys.RUNE_ACTIVE, PersistentDataType.BYTE, (byte) (active ? 1 : 0));
 
         EnchantEntry enchant = PDCDetection.getRune(rune);
 
         if (enchant != null) {
             if (active) {
-                meta.addEnchant(enchant.getEnchantment(), 1, true);
+                tags.meta().addEnchant(enchant.getEnchantment(), 1, true);
             } else {
-                meta.removeEnchant(enchant.getEnchantment());
+                tags.meta().removeEnchant(enchant.getEnchantment());
             }
         }
 
-        rune.setItemMeta(meta);
+        tags.apply();
     }
 
     public static boolean toggleRune(Player player, ItemStack rune) {

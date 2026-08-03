@@ -2,11 +2,11 @@ package me.psikuvit.cashClash.manager.lobby;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
@@ -125,16 +125,16 @@ public class LobbyManager {
         if (material == null) material = Material.PAPER;
 
         ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
+        PDCSetter tags = PDCSetter.of(item);
 
-        meta.displayName(Messages.parse(config.getLobbyStatsName()));
-        meta.lore(config.getLobbyStatsLore().stream()
+        tags.meta().displayName(Messages.parse(config.getLobbyStatsName()));
+        tags.meta().lore(config.getLobbyStatsLore().stream()
                 .map(Messages::parse)
                 .toList());
 
-        meta.getPersistentDataContainer().set(LOBBY_ITEM_KEY, PersistentDataType.STRING, LobbyItemType.STATS.getId());
+        tags.set(LOBBY_ITEM_KEY, PersistentDataType.STRING, LobbyItemType.STATS.getId());
 
-        item.setItemMeta(meta);
+        tags.apply();
         return item;
     }
 
@@ -148,16 +148,16 @@ public class LobbyManager {
         if (material == null) material = Material.COMPASS;
 
         ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
+        PDCSetter tags = PDCSetter.of(item);
 
-        meta.displayName(Messages.parse(config.getLobbyArenaSelectorName()));
-        meta.lore(config.getLobbyArenaSelectorLore().stream()
+        tags.meta().displayName(Messages.parse(config.getLobbyArenaSelectorName()));
+        tags.meta().lore(config.getLobbyArenaSelectorLore().stream()
                 .map(Messages::parse)
                 .toList());
 
-        meta.getPersistentDataContainer().set(LOBBY_ITEM_KEY, PersistentDataType.STRING, LobbyItemType.ARENA_SELECTOR.getId());
+        tags.set(LOBBY_ITEM_KEY, PersistentDataType.STRING, LobbyItemType.ARENA_SELECTOR.getId());
 
-        item.setItemMeta(meta);
+        tags.apply();
         return item;
     }
 
@@ -171,16 +171,16 @@ public class LobbyManager {
         if (material == null) material = Material.ANVIL;
 
         ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
+        PDCSetter tags = PDCSetter.of(item);
 
-        meta.displayName(Messages.parse(config.getLobbyLayoutConfiguratorName()));
-        meta.lore(config.getLobbyLayoutConfiguratorLore().stream()
+        tags.meta().displayName(Messages.parse(config.getLobbyLayoutConfiguratorName()));
+        tags.meta().lore(config.getLobbyLayoutConfiguratorLore().stream()
                 .map(Messages::parse)
                 .toList());
 
-        meta.getPersistentDataContainer().set(LOBBY_ITEM_KEY, PersistentDataType.STRING, LobbyItemType.LAYOUT_CONFIGURATOR.getId());
+        tags.set(LOBBY_ITEM_KEY, PersistentDataType.STRING, LobbyItemType.LAYOUT_CONFIGURATOR.getId());
 
-        item.setItemMeta(meta);
+        tags.apply();
         return item;
     }
 }

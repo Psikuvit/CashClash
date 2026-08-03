@@ -239,19 +239,20 @@ public final class ItemUtils {
     public static ItemStack createRune(EnchantEntry ee, int level) {
         ItemStack rune = new ItemStack(ee.getRuneMaterial(), 1);
 
-        ItemMeta meta = rune.getItemMeta();
-        if (meta == null) return rune;
+        if (!rune.hasItemMeta()) return rune;
 
-        meta.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, ee.name());
-        meta.getPersistentDataContainer().set(Keys.RUNE_LEVEL, PersistentDataType.INTEGER, level);
+        PDCSetter tags = PDCSetter.of(rune);
 
-        meta.displayName(Messages.parse("<yellow>" + ee.getDisplayName() + " Rune " + level + "</yellow>"));
-        meta.lore(List.of(
+        tags.set(Keys.ITEM_ID, PersistentDataType.STRING, ee.name());
+        tags.set(Keys.RUNE_LEVEL, PersistentDataType.INTEGER, level);
+
+        tags.meta().displayName(Messages.parse("<yellow>" + ee.getDisplayName() + " Rune " + level + "</yellow>"));
+        tags.meta().lore(List.of(
                 Messages.parse("<gray>Enhances: " + ee.getDisplayName() + "</gray>"),
                 Messages.parse("<gray>Level: " + level + "</gray>")
         ));
 
-        rune.setItemMeta(meta);
+        tags.apply();
 
         RuneManager.initializeRuneDurability(rune, ee);
 
