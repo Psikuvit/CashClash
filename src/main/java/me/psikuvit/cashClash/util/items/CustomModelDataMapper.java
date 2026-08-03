@@ -42,21 +42,21 @@ public final class CustomModelDataMapper {
         // assets/minecraft/items/phantom_membrane.json  when: "invisibilitycloak"
         CUSTOM_ITEM_KEYS.put(CustomItem.INVIS_CLOAK,         "invisibilitycloak");
         // assets/minecraft/items/nether_star.json       when: "totemofhaunting"
-        CUSTOM_ITEM_KEYS.put(CustomItem.TOTEM_OF_HAUNTING,   "totemofhaunting");
+        // CUSTOM_ITEM_KEYS.put(CustomItem.TOTEM_OF_HAUNTING,   "totemofhaunting");
         // assets/minecraft/items/glow_berries.json      when: "radiatinglotus"
-        CUSTOM_ITEM_KEYS.put(CustomItem.RADIATING_LOTUS,     "radiatinglotus");
+        // CUSTOM_ITEM_KEYS.put(CustomItem.RADIATING_LOTUS,     "radiatinglotus");
         // assets/minecraft/items/shears.json            when: "icefan"
-        CUSTOM_ITEM_KEYS.put(CustomItem.ICE_FAN,             "icefan");
+        // CUSTOM_ITEM_KEYS.put(CustomItem.ICE_FAN,             "icefan");
         // assets/minecraft/items/potion.json            when: "overdrivepotion"
-        CUSTOM_ITEM_KEYS.put(CustomItem.OVERDRIVE_POTION,    "overdrivepotion");
+        // CUSTOM_ITEM_KEYS.put(CustomItem.OVERDRIVE_POTION,    "overdrivepotion");
         // assets/minecraft/items/feather.json           when: "huntersmark"
-        CUSTOM_ITEM_KEYS.put(CustomItem.HUNTERS_MARK,        "huntersmark");
+        // CUSTOM_ITEM_KEYS.put(CustomItem.HUNTERS_MARK,        "huntersmark");
         // assets/minecraft/items/cherry_sapling.json     when: "bloomingrose"
-        CUSTOM_ITEM_KEYS.put(CustomItem.BLOOMING_ROSE,       "bloomingrose");
+        // CUSTOM_ITEM_KEYS.put(CustomItem.BLOOMING_ROSE,       "bloomingrose");
         // assets/minecraft/items/magma_cream.json        when: "orbofgravitation"
-        CUSTOM_ITEM_KEYS.put(CustomItem.ORB_OF_GRAVITATION,  "orbofgravitation");
+        // CUSTOM_ITEM_KEYS.put(CustomItem.ORB_OF_GRAVITATION,  "orbofgravitation");
         // assets/minecraft/items/iron_sword.json         when: "soulkatana"
-        CUSTOM_ITEM_KEYS.put(CustomItem.SOUL_KATANA,         "soulkatana");
+        // CUSTOM_ITEM_KEYS.put(CustomItem.SOUL_KATANA,         "soulkatana");
 
         // assets/minecraft/items/diamond_sword.json     when: "electriceelsword"
         MYTHIC_KEYS.put(MythicItem.ELECTRIC_EEL_SWORD, "electriceelsword");
