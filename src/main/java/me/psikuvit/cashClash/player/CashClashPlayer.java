@@ -304,6 +304,36 @@ public class CashClashPlayer {
         applyHealth();
     }
 
+    /**
+     * Heals the player by the given amount, clamped to their max health.
+     * @return the amount of health actually restored (less than {@code amount} when the
+     *         player was already within {@code amount} of full health)
+     */
+    public double heal(double amount) {
+        if (player == null || !player.isOnline() || amount <= 0) return 0.0;
+        double maxHealth = getMaxHealth();
+        double healed = Math.min(amount, Math.max(0.0, maxHealth - player.getHealth()));
+        if (healed > 0) {
+            player.setHealth(player.getHealth() + healed);
+        }
+        return healed;
+    }
+
+    /**
+     * Sets the player's health directly, clamped to [0, max health].
+     */
+    public void setHealth(double health) {
+        if (player == null || !player.isOnline()) return;
+        player.setHealth(Math.min(Math.max(0.0, health), getMaxHealth()));
+    }
+
+    /**
+     * Heals the player back up to their full max health.
+     */
+    public void healToFull() {
+        heal(Double.MAX_VALUE);
+    }
+
     // ================= Potion Effect Management =================
 
     /**
@@ -483,6 +513,52 @@ public class CashClashPlayer {
             player.getActivePotionEffects().stream()
                     .map(PotionEffect::getType)
                     .forEach(player::removePotionEffect);
+        }
+    }
+
+    /**
+     * Heal a player through the centralized health system (clamped to max health).
+     * Falls back to clamping against the vanilla 20 health when the player is not
+     * inside a game session.
+     * @return the amount of health actually restored
+     */
+    public static double heal(Player player, double amount) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) return ccp.heal(amount);
+        if (player == null || !player.isOnline() || amount <= 0) return 0.0;
+        double healed = Math.min(amount, Math.max(0.0, 20.0 - player.getHealth()));
+        if (healed > 0) {
+            player.setHealth(player.getHealth() + healed);
+        }
+        return healed;
+    }
+
+    /**
+     * Set a player's health through the centralized health system, clamped to [0, max health].
+     * Falls back to clamping against the vanilla 20 health outside a game session.
+     */
+    public static void setHealth(Player player, double health) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) {
+            ccp.setHealth(health);
+            return;
+        }
+        if (player == null || !player.isOnline()) return;
+        player.setHealth(Math.min(Math.max(0.0, health), 20.0));
+    }
+
+    /**
+     * Heal a player back up to full max health through the centralized health system.
+     * Falls back to the vanilla 20 health outside a game session.
+     */
+    public static void healToFull(Player player) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) {
+            ccp.healToFull();
+            return;
+        }
+        if (player != null && player.isOnline()) {
+            player.setHealth(20.0);
         }
     }
 
