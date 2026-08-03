@@ -10,8 +10,9 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.listener.BlockListener;
-import me.psikuvit.cashClash.manager.items.CustomArmorManager;
-import me.psikuvit.cashClash.manager.items.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.sequence.Sequences;
@@ -209,7 +210,7 @@ public class RoundManager {
             startBuffSelectionTimer(roundNumber);
         } else {
             // Disable all invisibility cloaks when shopping phase starts
-            CustomItemManager.getInstance().disableAllInvisibilityCloaks();
+            CustomItemManager.getInstance().getHandler(InvisCloakHandler.class).disableAll();
 
             // Notify gamemode when shopping phase starts (for cleanup, banner removal, etc.)
             if (session.getGamemode() instanceof CaptureTheFlagGamemode ctf) {

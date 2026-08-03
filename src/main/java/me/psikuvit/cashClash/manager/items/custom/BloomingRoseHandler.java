@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.manager.items;
+package me.psikuvit.cashClash.manager.items.custom;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
@@ -290,13 +290,13 @@ public class BloomingRoseHandler extends CustomItemHandler {
                 Team team = session.getPlayerTeam(holder);
                 if (team == null) continue;
 
-                StringBuilder sb = new StringBuilder("<white>Rose HP:</white> <aqua>You <red>❤")
+                StringBuilder sb = new StringBuilder("<white>Rose HP:</white> <aqua>You <red>â¤")
                         .append(String.format("%.1f", holder.getHealth())).append("</red>");
                 for (Player teammate : Bukkit.getOnlinePlayers()) {
                     if (teammate.equals(holder)) continue;
                     Team t = session.getPlayerTeam(teammate);
                     if (t == null || t.getTeamNumber() != team.getTeamNumber()) continue;
-                    sb.append(" <aqua>").append(teammate.getName()).append(" <red>❤")
+                    sb.append(" <aqua>").append(teammate.getName()).append(" <red>â¤")
                             .append(String.format("%.1f", teammate.getHealth())).append("</red>");
                 }
                 holder.sendActionBar(Messages.parse(sb.toString()));

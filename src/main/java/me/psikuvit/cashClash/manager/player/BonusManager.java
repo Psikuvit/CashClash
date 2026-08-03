@@ -358,7 +358,7 @@ public class BonusManager {
         Player player = Bukkit.getPlayer(playerUuid);
         double investorMultiplier = 1.0;
         if (player != null) {
-            investorMultiplier = me.psikuvit.cashClash.manager.items.CustomArmorManager.getInstance().getInvestorMultiplier(player);
+            investorMultiplier = me.psikuvit.cashClash.manager.items.armor.CustomArmorManager.getInstance().getInvestorMultiplier(player);
         }
         long finalReward = (long) (baseReward * investorMultiplier);
 

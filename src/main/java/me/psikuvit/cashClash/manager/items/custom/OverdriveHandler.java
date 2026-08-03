@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.manager.items;
+package me.psikuvit.cashClash.manager.items.custom;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.util.Messages;

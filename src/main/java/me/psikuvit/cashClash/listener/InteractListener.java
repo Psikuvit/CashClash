@@ -7,9 +7,23 @@ import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.manager.items.CustomArmorManager;
-import me.psikuvit.cashClash.manager.items.CustomItemManager;
-import me.psikuvit.cashClash.manager.items.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
+import me.psikuvit.cashClash.manager.items.custom.BouncePadHandler;
+import me.psikuvit.cashClash.manager.items.custom.BoomboxHandler;
+import me.psikuvit.cashClash.manager.items.custom.CashBlasterHandler;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.custom.GrenadeHandler;
+import me.psikuvit.cashClash.manager.items.custom.HuntersMarkHandler;
+import me.psikuvit.cashClash.manager.items.custom.IceFanHandler;
+import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
+import me.psikuvit.cashClash.manager.items.custom.MedicPouchHandler;
+import me.psikuvit.cashClash.manager.items.custom.OrbOfGravitationHandler;
+import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
+import me.psikuvit.cashClash.manager.items.custom.RadiatingLotusHandler;
+import me.psikuvit.cashClash.manager.items.custom.SoulKatanaHandler;
+import me.psikuvit.cashClash.manager.items.custom.TabletOfHackingHandler;
+import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
@@ -149,7 +163,7 @@ public class InteractListener implements Listener {
         // Overdrive Potion: while invincible the player cannot use ANY inventory item except
         // the Overdrive Potion itself (to cancel early). Left-clicks (block breaking, melee)
         // are untouched.
-        if (action.isRightClick() && customItemManager.isOverdriveInvincible(player.getUniqueId())) {
+        if (action.isRightClick() && customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
             CustomItem inHand = item != null ? PDCDetection.getCustomItem(item) : null;
             if (inHand != CustomItem.OVERDRIVE_POTION) {
                 event.setCancelled(true);
@@ -272,7 +286,7 @@ public class InteractListener implements Listener {
             if (action.isRightClick()) {
                 event.setCancelled(true);
                 if (isInShoppingPhase(player)) {
-                    customItemManager.useTabletOfHacking(player);
+                    customItemManager.getHandler(TabletOfHackingHandler.class).useTabletOfHacking(player);
                 } else {
                     Messages.send(player, "listener.tablet-shopping-only");
                 }
@@ -300,28 +314,28 @@ public class InteractListener implements Listener {
             case GRENADE -> {
                 if (action.isRightClick()) {
                     event.setCancelled(true);
-                    customItemManager.throwGrenade(player, item, false);
+                    customItemManager.getHandler(GrenadeHandler.class).throwGrenade(player, item, false);
                     return true;
                 }
             }
             case SMOKE_CLOUD_GRENADE -> {
                 if (action.isRightClick()) {
                     event.setCancelled(true);
-                    customItemManager.throwGrenade(player, item, true);
+                    customItemManager.getHandler(GrenadeHandler.class).throwGrenade(player, item, true);
                     return true;
                 }
             }
             case MEDIC_POUCH -> {
                 if (action == Action.RIGHT_CLICK_AIR) {
                     event.setCancelled(true);
-                    customItemManager.useMedicPouchSelf(player, item);
+                    customItemManager.getHandler(MedicPouchHandler.class).useMedicPouchSelf(player, item);
                     return true;
                 }
             }
             case INVIS_CLOAK -> {
                 if (action.isRightClick()) {
                     event.setCancelled(true);
-                    customItemManager.handleInvisCloakRightClick(player);
+                    customItemManager.getHandler(InvisCloakHandler.class).handleInvisCloakRightClick(player);
                     return true;
                 }
             }
@@ -329,7 +343,7 @@ public class InteractListener implements Listener {
                 if (player.isSneaking() && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK)) {
                     event.setCancelled(true);
                     armorManager.lockMythicShift(player);
-                    customItemManager.onCashBlasterToggle(player);
+                    customItemManager.getHandler(CashBlasterHandler.class).onCashBlasterToggle(player);
                     return true;
                 }
             }
@@ -341,14 +355,14 @@ public class InteractListener implements Listener {
                         return true;
                     }
                     event.setCancelled(true);
-                    customItemManager.placeBouncePad(player, item, event.getClickedBlock(), event.getBlockFace());
+                    customItemManager.getHandler(BouncePadHandler.class).placeBouncePad(player, item, event.getClickedBlock(), event.getBlockFace());
                     return true;
                 }
             }
             case BOOMBOX -> {
                 if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
                     event.setCancelled(true);
-                    customItemManager.placeBoombox(player, item, event.getClickedBlock());
+                    customItemManager.getHandler(BoomboxHandler.class).placeBoombox(player, item, event.getClickedBlock());
                     return true;
                 }
             }
@@ -360,27 +374,27 @@ public class InteractListener implements Listener {
                         return true;
                     }
                     event.setCancelled(true);
-                    customItemManager.startRadiatingLotusCharge(player, item);
+                    customItemManager.getHandler(RadiatingLotusHandler.class).startRadiatingLotusCharge(player, item);
                     return true;
                 }
             }
             case ICE_FAN -> {
                 if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                     event.setCancelled(true);
-                    customItemManager.handleIceFanLeftClick(player, item);
+                    customItemManager.getHandler(IceFanHandler.class).handleIceFanLeftClick(player, item);
                     return true;
                 } else if (action.isRightClick()) {
                     event.setCancelled(true);
-                    customItemManager.handleIceFanRightClick(player, item);
+                    customItemManager.getHandler(IceFanHandler.class).handleIceFanRightClick(player, item);
                     return true;
                 }
             }
             case OVERDRIVE_POTION -> {
                 if (action.isRightClick()) {
                     // Already active: right-click again cancels the invincibility early
-                    if (customItemManager.isOverdriveInvincible(player.getUniqueId())) {
+                    if (customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
                         event.setCancelled(true);
-                        customItemManager.cancelOverdriveEarly(player);
+                        customItemManager.getHandler(OverdriveHandler.class).cancelOverdriveEarly(player);
                         return true;
                     }
                     if (isSilenced(player)) {
@@ -389,14 +403,14 @@ public class InteractListener implements Listener {
                         return true;
                     }
                     event.setCancelled(true);
-                    customItemManager.useOverdrivePotion(player, item);
+                    customItemManager.getHandler(OverdriveHandler.class).useOverdrivePotion(player, item);
                     return true;
                 }
             }
             case HUNTERS_MARK -> {
                 if (action.isRightClick()) {
                     event.setCancelled(true);
-                    customItemManager.startHunterMarkCharge(player, item);
+                    customItemManager.getHandler(HuntersMarkHandler.class).startHunterMarkCharge(player, item);
                     return true;
                 }
             }
@@ -406,17 +420,17 @@ public class InteractListener implements Listener {
                     Location loc = event.getClickedBlock() != null
                             ? event.getClickedBlock().getLocation()
                             : player.getLocation();
-                    customItemManager.placeBloomingRose(player, item, loc);
+                    customItemManager.getHandler(BloomingRoseHandler.class).placeBloomingRose(player, item, loc);
                     return true;
                 }
             }
             case ORB_OF_GRAVITATION -> {
                 if (action.isRightClick()) {
                     event.setCancelled(true);
-                    if (customItemManager.hasLiveOrb(player)) {
-                        customItemManager.activateOrbByOwner(player);
+                    if (customItemManager.getHandler(OrbOfGravitationHandler.class).hasLiveOrb(player)) {
+                        customItemManager.getHandler(OrbOfGravitationHandler.class).activateOrbByOwner(player);
                     } else {
-                        customItemManager.throwOrbOfGravitation(player);
+                        customItemManager.getHandler(OrbOfGravitationHandler.class).throwOrbOfGravitation(player);
                     }
                     return true;
                 }
@@ -425,7 +439,7 @@ public class InteractListener implements Listener {
                 if (action.isRightClick() && player.isSneaking()) {
                     event.setCancelled(true);
                     armorManager.lockMythicShift(player);
-                    customItemManager.usePhantomSlice(player);
+                    customItemManager.getHandler(SoulKatanaHandler.class).usePhantomSlice(player);
                     return true;
                 }
             }

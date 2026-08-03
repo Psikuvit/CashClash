@@ -3,8 +3,9 @@ package me.psikuvit.cashClash.command.subcommands;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.manager.items.CustomItemManager;
-import me.psikuvit.cashClash.manager.items.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
+import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Messages;
@@ -65,7 +66,7 @@ public class DebugCommand extends AbstractArgCommand {
             }
         }
 
-        if (CustomItemManager.getInstance().isInvisActive(uuid)) {
+        if (CustomItemManager.getInstance().getHandler(InvisCloakHandler.class).isInvisActive(uuid)) {
             Messages.send(sender, "debug.invis-cloak-active");
         }
 

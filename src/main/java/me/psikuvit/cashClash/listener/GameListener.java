@@ -15,9 +15,15 @@ import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.manager.items.CustomArmorManager;
-import me.psikuvit.cashClash.manager.items.CustomItemManager;
-import me.psikuvit.cashClash.manager.items.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
+import me.psikuvit.cashClash.manager.items.custom.CashBlasterHandler;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
+import me.psikuvit.cashClash.manager.items.custom.MedicPouchHandler;
+import me.psikuvit.cashClash.manager.items.custom.OrbOfGravitationHandler;
+import me.psikuvit.cashClash.manager.items.custom.RespawnAnchorHandler;
+import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
@@ -104,7 +110,7 @@ public class GameListener implements Listener {
 
         // Profit Vortex: a death inside a vortex credits the killer's team even though the
         // fatal blow may not be credited to the vortex owner.
-        customItemManager.onProfitVortexDeath(event);
+        customItemManager.getHandler(CashBlasterHandler.class).onProfitVortexDeath(event);
 
         // Prevent item drops and experience loss
         event.setKeepInventory(true);
@@ -113,7 +119,7 @@ public class GameListener implements Listener {
         event.setDroppedExp(0);
 
         // Clear invisibility cloak state on death (armor is preserved by keepInventory)
-        customItemManager.clearInvisCloakOnDeath(player);
+        customItemManager.getHandler(InvisCloakHandler.class).clearInvisCloakOnDeath(player);
 
         // Clear bunny shoes sneak-toggle ready state on death
         armorManager.getBunnyToggleReady().remove(player.getUniqueId());
@@ -554,7 +560,7 @@ public class GameListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onRoseStructureBreak(BlockBreakEvent event) {
-        customItemManager.onRoseStructureBroken(event.getBlock());
+        customItemManager.getHandler(BloomingRoseHandler.class).onRoseStructureBroken(event.getBlock());
     }
 
 
@@ -576,7 +582,7 @@ public class GameListener implements Listener {
 
         // Cash Blaster: supercharge toggle + Profit Vortex shots (custom item, not mythic)
         if (PDCDetection.getCustomItem(bow) == CustomItem.CASH_BLASTER) {
-            customItemManager.onCashBlasterShoot(event);
+            customItemManager.getHandler(CashBlasterHandler.class).onCashBlasterShoot(event);
             return;
         }
 
@@ -642,18 +648,18 @@ public class GameListener implements Listener {
         if (event.getEntity() instanceof Arrow arrow) {
             // Profit Vortex: a tagged Cash Blaster arrow spawns its vortex on any impact
             // (world or entity), so handle it before the orb/charged-arrow branch.
-            customItemManager.onProfitVortexArrowHit(arrow);
+            customItemManager.getHandler(CashBlasterHandler.class).onProfitVortexArrowHit(arrow);
             // Orb of Gravitation: a fully-charged bow shot hitting a live orb decrements its
             // hits-remaining counter (4 hits destroys it) - projectile-vs-projectile collisions
             // surface here via getHitEntity(), not EntityDamageByEntityEvent.
             if (event.getHitEntity() instanceof Snowball orb) {
-                customItemManager.handleOrbHitByChargedArrow(arrow, orb);
+                customItemManager.getHandler(OrbOfGravitationHandler.class).handleOrbHitByChargedArrow(arrow, orb);
             }
             handleArrowHit(arrow, event);
         } else if (event.getEntity() instanceof Trident trident) {
             handleTridentHit(trident, event);
-        } else if (event.getEntity() instanceof Snowball snowball && customItemManager.isOrbEntity(snowball)) {
-            customItemManager.activateOrb(snowball);
+        } else if (event.getEntity() instanceof Snowball snowball && customItemManager.getHandler(OrbOfGravitationHandler.class).isOrbEntity(snowball)) {
+            customItemManager.getHandler(OrbOfGravitationHandler.class).activateOrb(snowball);
         }
 
         handleCustomProjectileHit(event);
@@ -759,7 +765,7 @@ public class GameListener implements Listener {
 
         CustomItem type = PDCDetection.getCustomItem(item);
         if (type == CustomItem.CASH_BLASTER) {
-            customItemManager.handleCashBlasterHit(attacker);
+            customItemManager.getHandler(CashBlasterHandler.class).handleCashBlasterHit(attacker);
         }
     }
 
@@ -797,11 +803,11 @@ public class GameListener implements Listener {
         switch (type) {
             case MEDIC_POUCH -> {
                 event.setCancelled(true);
-                customItemManager.useMedicPouchAlly(player, target, item, session);
+                customItemManager.getHandler(MedicPouchHandler.class).useMedicPouchAlly(player, target, item, session);
             }
             case RESPAWN_ANCHOR -> {
                 event.setCancelled(true);
-                customItemManager.useRespawnAnchor(player, target, item);
+                customItemManager.getHandler(RespawnAnchorHandler.class).useRespawnAnchor(player, target, item);
             }
         }
     }

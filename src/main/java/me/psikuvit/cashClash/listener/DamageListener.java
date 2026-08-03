@@ -5,9 +5,17 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.manager.items.CustomArmorManager;
-import me.psikuvit.cashClash.manager.items.CustomItemManager;
-import me.psikuvit.cashClash.manager.items.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.custom.BagOfPotatoesHandler;
+import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.custom.HuntersMarkHandler;
+import me.psikuvit.cashClash.manager.items.custom.IceFanHandler;
+import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
+import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
+import me.psikuvit.cashClash.manager.items.custom.SoulKatanaHandler;
+import me.psikuvit.cashClash.manager.items.custom.TotemOfHauntingHandler;
+import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -82,13 +90,13 @@ public class DamageListener implements Listener {
 
         try {
             // 0. Totem of Haunting - brief invincibility window after triggering
-            if (customItemManager.isTotemInvincible(player.getUniqueId())) {
+            if (customItemManager.getHandler(TotemOfHauntingHandler.class).isTotemInvincible(player.getUniqueId())) {
                 event.setCancelled(true);
                 return;
             }
 
             // 0b. Overdrive Potion - total invincibility while active
-            if (customItemManager.isOverdriveInvincible(player.getUniqueId())) {
+            if (customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
                 event.setCancelled(true);
                 return;
             }
@@ -105,17 +113,17 @@ public class DamageListener implements Listener {
             }
 
             // 1b. Hunter's Mark - marked players take extra damage (base + per missing heart)
-            double vulnerability = customItemManager.getVulnerabilityMultiplier(player.getUniqueId());
+            double vulnerability = customItemManager.getHandler(HuntersMarkHandler.class).getVulnerabilityMultiplier(player.getUniqueId());
             if (vulnerability > 1.0) {
                 event.setDamage(event.getDamage() * vulnerability);
             }
 
             // 1c. Blooming Rose - same-team zone: reduce damage and clamp so health never drops
             // below the 2-heart floor (the base clamp guarantees final damage can't exceed it)
-            double roseReduction = customItemManager.getBloomingRoseDamageReduction(player);
+            double roseReduction = customItemManager.getHandler(BloomingRoseHandler.class).getBloomingRoseDamageReduction(player);
             if (roseReduction > 0) {
                 event.setDamage(event.getDamage() * (1.0 - roseReduction / 100.0));
-                double floor = customItemManager.getBloomingRoseMinHealth(player);
+                double floor = customItemManager.getHandler(BloomingRoseHandler.class).getBloomingRoseMinHealth(player);
                 double maxDamage = Math.max(0, player.getHealth() - floor);
                 event.setDamage(Math.min(event.getDamage(), maxDamage));
             }
@@ -173,7 +181,7 @@ public class DamageListener implements Listener {
 
             // Soul Katana Phantom Slice: zero armor/effect-based damage modifiers so the flat
             // ability strike lands untouched (transient flag set only around the direct damage call)
-            if (attacker != null && victim != null && customItemManager.isPhantomSliceDamage(attacker.getUniqueId())) {
+            if (attacker != null && victim != null && customItemManager.getHandler(SoulKatanaHandler.class).isPhantomSliceDamage(attacker.getUniqueId())) {
                 applyPhantomSliceDamageModifiers(event);
             }
 
@@ -303,17 +311,17 @@ public class DamageListener implements Listener {
         }
 
         event.setCancelled(true);
-        customItemManager.triggerTotemOfHaunting(victim, totem);
+        customItemManager.getHandler(TotemOfHauntingHandler.class).triggerTotemOfHaunting(victim, totem);
     }
 
     /**
      * Cancels vanilla melee damage from Ice Fan (a pure ability-tool - its own gust/burst hits
-     * flow through {@link CustomItemManager#isIceFanAbilityDamage(UUID)} and are let through).
+     * flow through {@link IceFanHandler#isIceFanAbilityDamage(UUID)} and are let through).
      */
     private boolean onIceFanMeleeSuppression(EntityDamageByEntityEvent event, Player attacker) {
         if (attacker == null) return false;
         if (PDCDetection.getCustomItem(attacker.getInventory().getItemInMainHand()) != CustomItem.ICE_FAN) return false;
-        if (customItemManager.isIceFanAbilityDamage(attacker.getUniqueId())) return false;
+        if (customItemManager.getHandler(IceFanHandler.class).isIceFanAbilityDamage(attacker.getUniqueId())) return false;
 
         event.setCancelled(true);
         return true;
@@ -696,14 +704,14 @@ public class DamageListener implements Listener {
      */
     private void handleInvisibilityRemoval(Player attacker, Player victim) {
         // Remove invisibility from attacker when they deal damage
-        if (customItemManager.isInvisActive(attacker.getUniqueId())) {
-            customItemManager.toggleInvisCloak(attacker, false);
+        if (customItemManager.getHandler(InvisCloakHandler.class).isInvisActive(attacker.getUniqueId())) {
+            customItemManager.getHandler(InvisCloakHandler.class).toggleInvisCloak(attacker, false);
             Messages.send(attacker, "listener.invisibility-lost-attacker");
         }
 
         // Remove invisibility from victim when they take damage
-        if (customItemManager.isInvisActive(victim.getUniqueId())) {
-            customItemManager.toggleInvisCloak(victim, false);
+        if (customItemManager.getHandler(InvisCloakHandler.class).isInvisActive(victim.getUniqueId())) {
+            customItemManager.getHandler(InvisCloakHandler.class).toggleInvisCloak(victim, false);
             Messages.send(victim, "listener.invisibility-lost-victim");
         }
     }
@@ -735,7 +743,7 @@ public class DamageListener implements Listener {
 
         CustomItem customType = PDCDetection.getCustomItem(weapon);
         if (customType == CustomItem.BAG_OF_POTATOES) {
-            customItemManager.handleBagOfPotatoesHit(attacker, weapon, session);
+            customItemManager.getHandler(BagOfPotatoesHandler.class).handleBagOfPotatoesHit(attacker, weapon, session);
         }
     }
 

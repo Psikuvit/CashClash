@@ -12,7 +12,7 @@ import me.psikuvit.cashClash.gui.categories.MythicCategoryGui;
 import me.psikuvit.cashClash.gui.categories.UtilityCategoryGui;
 import me.psikuvit.cashClash.gui.categories.WeaponsCategoryGui;
 import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.manager.items.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.MythicItem;

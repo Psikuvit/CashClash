@@ -101,7 +101,7 @@ public class PlayerConnectionListener implements Listener {
         LayoutManager.getInstance().handleDisconnect(player.getUniqueId());
 
         // Cleanup mythic state
-        me.psikuvit.cashClash.manager.items.MythicItemManager.getInstance().cleanup(player);
+        me.psikuvit.cashClash.manager.items.mythic.MythicItemManager.getInstance().cleanup(player);
 
         // Remove lobby scoreboard
         ScoreboardManager.getInstance().setScoreboard(player);

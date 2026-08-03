@@ -3,8 +3,10 @@ package me.psikuvit.cashClash.listener;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.manager.items.CustomArmorManager;
-import me.psikuvit.cashClash.manager.items.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.custom.BouncePadHandler;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.custom.SoulKatanaHandler;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -47,13 +49,13 @@ public class MoveListener implements Listener {
 
         // Soul Katana Phantom Slice: the dash strike resolves once the player leaves the ground
         // and touches back down
-        customItemManager.handleSoulKatanaLand(player);
+        customItemManager.getHandler(SoulKatanaHandler.class).handleSoulKatanaLand(player);
 
         // Check block player is standing on for floor-mounted bounce pads
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
         if (blockBelow.getType() == Material.SLIME_BLOCK) {
-            if (customItemManager.isBouncePad(blockBelow)) {
-                customItemManager.handleBouncePad(player, blockBelow);
+            if (customItemManager.getHandler(BouncePadHandler.class).isBouncePad(blockBelow)) {
+                customItemManager.getHandler(BouncePadHandler.class).handleBouncePad(player, blockBelow);
             }
         }
 
@@ -76,8 +78,8 @@ public class MoveListener implements Listener {
     private void checkWallBouncePad(Player player, Block currentBlock, BlockFace face, boolean nearFace) {
         if (!nearFace) return;
         Block neighbor = currentBlock.getRelative(face);
-        if (neighbor.getType() == Material.SLIME_BLOCK && customItemManager.isBouncePad(neighbor)) {
-            customItemManager.handleBouncePad(player, neighbor);
+        if (neighbor.getType() == Material.SLIME_BLOCK && customItemManager.getHandler(BouncePadHandler.class).isBouncePad(neighbor)) {
+            customItemManager.getHandler(BouncePadHandler.class).handleBouncePad(player, neighbor);
         }
     }
 }

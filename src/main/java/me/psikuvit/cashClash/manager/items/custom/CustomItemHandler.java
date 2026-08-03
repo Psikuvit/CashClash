@@ -1,8 +1,9 @@
-package me.psikuvit.cashClash.manager.items;
+package me.psikuvit.cashClash.manager.items.custom;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import org.bukkit.entity.Player;

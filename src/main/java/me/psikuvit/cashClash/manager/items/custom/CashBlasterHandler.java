@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.manager.items;
+package me.psikuvit.cashClash.manager.items.custom;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;

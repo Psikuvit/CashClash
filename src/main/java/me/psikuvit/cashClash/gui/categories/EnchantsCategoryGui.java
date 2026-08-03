@@ -2,7 +2,7 @@ package me.psikuvit.cashClash.gui.categories;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
-import me.psikuvit.cashClash.manager.items.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.EnchantEntry;

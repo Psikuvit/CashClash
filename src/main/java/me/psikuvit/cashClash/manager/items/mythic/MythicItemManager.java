@@ -1,4 +1,4 @@
-package me.psikuvit.cashClash.manager.items;
+package me.psikuvit.cashClash.manager.items.mythic;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
@@ -330,7 +330,7 @@ public class MythicItemManager {
 
         // Lore
         List<Component> lore = new ArrayList<>();
-        lore.add(Messages.parse("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>"));
+        lore.add(Messages.parse("<dark_purple>âœ¦ MYTHIC WEAPON âœ¦</dark_purple>"));
         lore.add(Component.empty());
         if (isGlacier) {
             lore.add(Messages.parse(color + "Glacier Mode: Arrows inflict Slowness I"));

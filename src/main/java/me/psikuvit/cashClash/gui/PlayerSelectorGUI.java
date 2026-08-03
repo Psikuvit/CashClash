@@ -2,7 +2,8 @@ package me.psikuvit.cashClash.gui;
 
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
-import me.psikuvit.cashClash.manager.items.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.custom.TabletOfHackingHandler;
 import me.psikuvit.cashClash.util.items.ItemFactory;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -64,7 +65,7 @@ public class PlayerSelectorGUI extends AbstractGui {
 
         return GuiButton.of(skull).onClick(clicker -> {
             clicker.closeInventory();
-            CustomItemManager.getInstance().handleTabletOfHackingSelection(clicker, target);
+            CustomItemManager.getInstance().getHandler(TabletOfHackingHandler.class).handleTabletOfHackingSelection(clicker, target);
         });
     }
 }
