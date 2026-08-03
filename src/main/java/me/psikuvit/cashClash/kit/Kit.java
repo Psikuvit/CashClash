@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.ItemUtils;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
@@ -674,10 +675,7 @@ public enum Kit {
 
     private void markKitItem(ItemStack item) {
         if (item == null || item.getType().isAir()) return;
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return;
-        meta.getPersistentDataContainer().set(KIT_ITEM_KEY, PersistentDataType.BYTE, KIT_ITEM_FLAG);
-        item.setItemMeta(meta);
+        PDCSetter.of(item).set(KIT_ITEM_KEY, PersistentDataType.BYTE, KIT_ITEM_FLAG).apply();
     }
 
     private boolean isKitItem(ItemStack item) {

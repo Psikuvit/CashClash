@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -487,15 +488,7 @@ public class RuneManager {
     public static void setRuneDurability(ItemStack rune, double amount) {
         if (rune == null || !rune.hasItemMeta()) return;
 
-        ItemMeta meta = rune.getItemMeta();
-
-        meta.getPersistentDataContainer().set(
-                Keys.RUNE_DURABILITY,
-                PersistentDataType.DOUBLE,
-                amount
-        );
-
-        rune.setItemMeta(meta);
+        PDCSetter.of(rune).set(Keys.RUNE_DURABILITY, PersistentDataType.DOUBLE, amount).apply();
     }
 
     public static void updateRuneDurabilityBar(ItemStack rune) {
@@ -654,15 +647,7 @@ public class RuneManager {
     public static void setRuneOffTime(ItemStack rune) {
         if (rune == null || !rune.hasItemMeta()) return;
 
-        ItemMeta meta = rune.getItemMeta();
-
-        meta.getPersistentDataContainer().set(
-                Keys.RUNE_OFF_TIME,
-                PersistentDataType.LONG,
-                System.currentTimeMillis()
-        );
-
-        rune.setItemMeta(meta);
+        PDCSetter.of(rune).set(Keys.RUNE_OFF_TIME, PersistentDataType.LONG, System.currentTimeMillis()).apply();
     }
 
     public static boolean canRuneRecharge(ItemStack rune) {
@@ -779,15 +764,7 @@ public class RuneManager {
 
         if (rune == null || !rune.hasItemMeta()) return;
 
-        ItemMeta meta = rune.getItemMeta();
-
-        meta.getPersistentDataContainer().set(
-                Keys.RUNE_FULL_CHARGE_WARNING,
-                PersistentDataType.BYTE,
-                (byte) (warned ? 1 : 0)
-        );
-
-        rune.setItemMeta(meta);
+        PDCSetter.of(rune).set(Keys.RUNE_FULL_CHARGE_WARNING, PersistentDataType.BYTE, (byte) (warned ? 1 : 0)).apply();
     }
 
     public static String formatRuneName(EnchantEntry enchant) {

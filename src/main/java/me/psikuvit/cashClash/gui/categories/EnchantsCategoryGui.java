@@ -14,10 +14,10 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
@@ -136,15 +136,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
                     .get(Keys.RUNE_LINK, PersistentDataType.STRING);
 
             if (linkedUUID != null) {
-                ItemMeta meta = rune.getItemMeta();
-
-                meta.getPersistentDataContainer().set(
-                        Keys.RUNE_LINK,
-                        PersistentDataType.STRING,
-                        linkedUUID
-                );
-
-                rune.setItemMeta(meta);
+                PDCSetter.of(rune).set(Keys.RUNE_LINK, PersistentDataType.STRING, linkedUUID).apply();
             }
         }
         if (viewer.getInventory().firstEmpty() == -1) {
