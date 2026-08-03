@@ -2,6 +2,8 @@ package me.psikuvit.cashClash.manager.player;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.round.RoundData;
+import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.util.Messages;
@@ -358,7 +360,7 @@ public class BonusManager {
         Player player = Bukkit.getPlayer(playerUuid);
         double investorMultiplier = 1.0;
         if (player != null) {
-            investorMultiplier = me.psikuvit.cashClash.manager.items.armor.CustomArmorManager.getInstance().getInvestorMultiplier(player);
+            investorMultiplier = CustomArmorManager.getInstance().getHandler(InvestorSetHandler.class).getInvestorMultiplier(player);
         }
         long finalReward = (long) (baseReward * investorMultiplier);
 

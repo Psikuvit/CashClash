@@ -15,7 +15,12 @@ import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.armor.BunnyShoesHandler;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
 import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
 import me.psikuvit.cashClash.manager.items.custom.CashBlasterHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
@@ -126,7 +131,7 @@ public class GameListener implements Listener {
         customItemManager.getHandler(InvisCloakHandler.class).clearInvisCloakOnDeath(player);
 
         // Clear bunny shoes sneak-toggle ready state on death
-        armorManager.getBunnyToggleReady().remove(player.getUniqueId());
+        armorManager.getHandler(BunnyShoesHandler.class).getBunnyToggleReady().remove(player.getUniqueId());
 
         // Cleanup mythic state (like Goblin Spear charge)
         mythicManager.cleanup(player);
@@ -192,10 +197,10 @@ public class GameListener implements Listener {
         }
 
         // Handle armor set kill effects
-        armorManager.onPlayerKill(killer, session);
-        armorManager.onPlayerKillDragon(killer);
-        armorManager.onFlamebringerKill(killer);
-        armorManager.onInvestorKill(killer, session);
+        armorManager.getHandler(DeathmaulerSetHandler.class).onPlayerKill(killer, session);
+        armorManager.getHandler(DragonSetHandler.class).onPlayerKillDragon(killer);
+        armorManager.getHandler(FlamebringerSetHandler.class).onFlamebringerKill(killer);
+        armorManager.getHandler(InvestorSetHandler.class).onInvestorKill(killer, session);
     }
 
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {
@@ -512,7 +517,7 @@ public class GameListener implements Listener {
         if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) return;
 
         // Dead players cannot use Bunny Shoes or any abilities
-        if (armorManager.hasBunnyShoes(p)) {
+        if (armorManager.getHandler(BunnyShoesHandler.class).hasBunnyShoes(p)) {
             if (isPlayerDead(session, p)) {
                 Messages.send(p, "listener.cannot-use-items-dead");
                 return;
@@ -524,7 +529,7 @@ public class GameListener implements Listener {
         }
 
         // Dragon Set: sneak-start triggers Dragon Outrage at full scales, otherwise Dragon Rush
-        if (event.isSneaking() && armorManager.hasDragonSet(p)) {
+        if (event.isSneaking() && armorManager.getHandler(DragonSetHandler.class).hasDragonSet(p)) {
             if (isPlayerDead(session, p)) {
                 Messages.send(p, "listener.cannot-use-items-dead");
                 return;
@@ -533,15 +538,15 @@ public class GameListener implements Listener {
                 Messages.send(p, "listener.cannot-use-abilities-while-silenced");
                 return;
             }
-            if (armorManager.getDragonScales(p) >= armorManager.getMaxDragonScales()) {
-                armorManager.startDragonOutrage(p);
+            if (armorManager.getHandler(DragonSetHandler.class).getDragonScales(p) >= armorManager.getHandler(DragonSetHandler.class).getMaxDragonScales()) {
+                armorManager.getHandler(DragonSetHandler.class).startDragonOutrage(p);
             } else {
-                armorManager.onDragonRush(p);
+                armorManager.getHandler(DragonSetHandler.class).onDragonRush(p);
             }
             return;
         }
 
-        armorManager.onPlayerToggleSneak(p, event.isSneaking());
+        armorManager.getHandler(BunnyShoesHandler.class).onPlayerToggleSneak(p, event.isSneaking());
     }
 
     private boolean isPlayerDead(GameSession session, Player player) {

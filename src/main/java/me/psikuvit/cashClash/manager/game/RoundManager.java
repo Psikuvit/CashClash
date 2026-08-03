@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
 import me.psikuvit.cashClash.manager.player.BonusManager;
@@ -357,7 +358,7 @@ public class RoundManager {
             for (UUID uuid : session.getPlayers()) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null && p.isOnline()) {
-                    CustomArmorManager.getInstance().onFlamebringerFireTick(p);
+                    CustomArmorManager.getInstance().getHandler(FlamebringerSetHandler.class).onFlamebringerFireTick(p);
                 }
             }
 

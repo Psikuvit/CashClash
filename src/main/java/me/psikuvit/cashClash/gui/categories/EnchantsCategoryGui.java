@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.gui.categories;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.EnchantEntry;
@@ -95,7 +96,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
 
         // Deathmauler restriction: Cannot buy both protection types
         CustomArmorManager armorManager = CustomArmorManager.getInstance();
-        if (armorManager.hasDeathmaulerSet(viewer)) {
+        if (armorManager.getHandler(DeathmaulerSetHandler.class).hasDeathmaulerSet(viewer)) {
             if (ee == EnchantEntry.PROTECTION && ccp.getOwnedEnchantLevel(EnchantEntry.PROJECTILE_PROTECTION) > 0) {
                 Messages.send(viewer, "shop.deathmauler-has-projectile");
                 Messages.send(viewer, "shop.deathmauler-protection-choice");

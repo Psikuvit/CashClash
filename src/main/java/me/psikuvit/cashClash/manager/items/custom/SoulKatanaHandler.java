@@ -3,6 +3,8 @@ package me.psikuvit.cashClash.manager.items.custom;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -117,8 +119,8 @@ public class SoulKatanaHandler extends CustomItemHandler {
             if (player.getLocation().distance(target.getLocation()) > reach || dot <= 0.3) continue;
 
             dealPhantomSliceDamage(target, player);
-            if (session != null) armorManager.tryDeathmaulerSoulBurst(player, target, session);
-            armorManager.handleDragonHit(player);
+            if (session != null) armorManager.getHandler(DeathmaulerSetHandler.class).tryDeathmaulerSoulBurst(player, target, session);
+            armorManager.getHandler(DragonSetHandler.class).handleDragonHit(player);
             SoundUtils.playAt(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.0f);
 
             manager.applyHealingReduction(target.getUniqueId(), healingMultiplier, debuffDuration);

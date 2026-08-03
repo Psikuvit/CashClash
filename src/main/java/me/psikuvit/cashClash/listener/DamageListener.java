@@ -5,7 +5,14 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.armor.BullseyePantsHandler;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.GuardianVestHandler;
+import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.TectonicCapHandler;
 import me.psikuvit.cashClash.manager.items.custom.BagOfPotatoesHandler;
 import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
@@ -107,7 +114,7 @@ public class DamageListener implements Listener {
             }
 
             // 0c. Dragon Rush teammate rush - brief invincibility window
-            if (armorManager.isDragonRushInvincible(player.getUniqueId())) {
+            if (armorManager.getHandler(DragonSetHandler.class).isDragonRushInvincible(player.getUniqueId())) {
                 event.setCancelled(true);
                 return;
             }
@@ -344,7 +351,7 @@ public class DamageListener implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
         if (event.getCause() != EntityDamageEvent.DamageCause.FALL) return;
 
-        armorManager.onTectonicCapFall(event, player);
+        armorManager.getHandler(TectonicCapHandler.class).onTectonicCapFall(event, player);
     }
 
     /**
@@ -370,7 +377,7 @@ public class DamageListener implements Listener {
         if ((event.getCause() == EntityDamageEvent.DamageCause.FIRE ||
              event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK ||
              event.getCause() == EntityDamageEvent.DamageCause.LAVA) &&
-            armorManager.hasFlamebringerNoFireKb(player)) {
+            armorManager.getHandler(FlamebringerSetHandler.class).hasFlamebringerNoFireKb(player)) {
 
             // Schedule to reset velocity after knockback is applied
             SchedulerUtils.runTask(() -> {
@@ -524,14 +531,14 @@ public class DamageListener implements Listener {
         // Dragon Set: no explosion immunity
         
         // Guardian's Vest: resistance when low health
-        armorManager.onPlayerDamaged(player, healthAfter);
+        armorManager.getHandler(GuardianVestHandler.class).onPlayerDamaged(player, healthAfter);
 
         // Deathmauler: track damage for absorption
-        armorManager.onDeathmaulerDamageTaken(player);
+        armorManager.getHandler(DeathmaulerSetHandler.class).onDeathmaulerDamageTaken(player);
 
         // Flamebringer: lava trigger speed
         if (cause == EntityDamageEvent.DamageCause.LAVA) {
-            armorManager.onFlamebringerLavaDamage(player);
+            armorManager.getHandler(FlamebringerSetHandler.class).onFlamebringerLavaDamage(player);
         }
     }
 
@@ -545,13 +552,13 @@ public class DamageListener implements Listener {
         }
 
         // Dragon Set: charge a scale on fully-charged melee hits
-        armorManager.handleDragonHit(attacker);
+        armorManager.getHandler(DragonSetHandler.class).handleDragonHit(attacker);
 
         // Dragon Set: apply empowered Dragon Rush strike
-        armorManager.onDragonRushHit(event);
+        armorManager.getHandler(DragonSetHandler.class).onDragonRushHit(event);
 
         // Investor's Set: bonus damage in rounds 4/5
-        double damageMultiplier = armorManager.getInvestorMeleeDamageMultiplier(attacker, session.getCurrentRound());
+        double damageMultiplier = armorManager.getHandler(InvestorSetHandler.class).getInvestorMeleeDamageMultiplier(attacker, session.getCurrentRound());
         if (damageMultiplier > 1.0) {
             event.setDamage(event.getDamage() * damageMultiplier);
         }
@@ -560,7 +567,7 @@ public class DamageListener implements Listener {
         handleBullseyePantsEffect(event, attacker, victim);
 
         // Deathmauler: Soul Burst
-        armorManager.tryDeathmaulerSoulBurst(attacker, victim, session);
+        armorManager.getHandler(DeathmaulerSetHandler.class).tryDeathmaulerSoulBurst(attacker, victim, session);
     }
 
     /**
@@ -585,11 +592,11 @@ public class DamageListener implements Listener {
             return;
         }
 
-        if (!armorManager.hasBullseyePants(attacker)) {
+        if (!armorManager.getHandler(BullseyePantsHandler.class).hasBullseyePants(attacker)) {
             return;
         }
 
-        if (armorManager.incrementBullseyeHit(attacker)) {
+        if (armorManager.getHandler(BullseyePantsHandler.class).incrementBullseyeHit(attacker)) {
             // 4th non-headshot hit triggered
             double originalDamage = event.getDamage();
             event.setDamage(originalDamage * 1.3); // +30% damage
