@@ -36,9 +36,11 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
@@ -72,6 +74,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.util.Vector;
 
 import java.util.UUID;
 
@@ -306,6 +309,81 @@ public class GameListener implements Listener {
 
         // Handle special consumables
         handleSpecialConsumable(p, consumed);
+
+        // Enchanted golden apple: clamp absorption/resistance/fire-resistance (and regen) to 45s
+        if (consumed.getType() == Material.ENCHANTED_GOLDEN_APPLE) {
+            SchedulerUtils.runTaskLater(() -> {
+                Player player = event.getPlayer();
+                player.getActivePotionEffects().forEach(effect -> {
+                    PotionEffectType type = effect.getType();
+                    if (type == PotionEffectType.ABSORPTION ||
+                            type == PotionEffectType.REGENERATION ||
+                            type == PotionEffectType.RESISTANCE ||
+                            type == PotionEffectType.FIRE_RESISTANCE) {
+                        player.removePotionEffect(type);
+                        player.addPotionEffect(new PotionEffect(
+                                type,
+                                45 * 20,
+                                effect.getAmplifier(),
+                                effect.isAmbient(),
+                                effect.hasParticles(),
+                                effect.hasIcon()
+                        ));
+                    }
+                });
+            }, 1L);
+        }
+
+        // Custom food particles + activation sound
+        FoodItem foodItem = PDCDetection.getFood(consumed);
+        if (foodItem != null) {
+            switch (foodItem) {
+                case SPEED_CARROT -> playFoodParticles(p, Color.fromRGB(80, 170, 255));
+                case GOLDEN_CHICKEN -> playFoodParticles(p, Color.fromRGB(255, 220, 60));
+                case COOKIE_OF_LIFE -> playFoodParticles(p, Color.fromRGB(255, 120, 220));
+                case SUNSCREEN -> playFoodParticles(p, Color.fromRGB(255, 150, 40));
+                case CAN_OF_SPINACH -> playFoodParticles(p, Color.fromRGB(70, 220, 70));
+            }
+            SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
+        }
+    }
+
+    /**
+     * Spawn a spiral of dust particles around the player when a custom food is consumed.
+     */
+    private void playFoodParticles(Player player, Color color) {
+        Particle.DustOptions dust = new Particle.DustOptions(color, 1.4f);
+        Location base = player.getLocation().clone();
+
+        // Direction vectors
+        Vector forward = player.getLocation().getDirection().setY(0).normalize();
+        Vector side = new Vector(-forward.getZ(), 0, forward.getX());
+
+        // PARTICLE BURST
+        for (int i = 0; i < 12; i++) {
+            double offset = 0.35 + (i * 0.05);
+            Location left = base.clone().add(side.clone().multiply(offset)).add(0, 1.0 + (i * 0.05), 0);
+            Location right = base.clone().add(side.clone().multiply(-offset)).add(0, 1.0 + (i * 0.05), 0);
+            player.getWorld().spawnParticle(Particle.DUST, left, 3, 0.12, 0.12, 0.12, dust);
+            player.getWorld().spawnParticle(Particle.DUST, right, 3, 0.12, 0.12, 0.12, dust);
+        }
+
+        // DIAGONAL BODY BURSTS
+        double[] heights = {0.15, 1.0, 1.8};
+        for (double height : heights) {
+            Location center = base.clone().add(0, height, 0);
+            for (int i = 0; i < 10; i++) {
+                double diagonal = (i * 0.08) - 0.4;
+                Location particle = center.clone()
+                        .add(side.clone().multiply(diagonal))
+                        .add(forward.clone().multiply(diagonal));
+                player.getWorld().spawnParticle(Particle.DUST, particle, 2, 0.08, 0.08, 0.08, dust);
+            }
+        }
+
+        // FOOT BURST
+        Location feet = base.clone().add(0, 0.1, 0);
+        player.getWorld().spawnParticle(Particle.DUST, feet, 25, 0.35, 0.05, 0.35, dust);
     }
 
     /**

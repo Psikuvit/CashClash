@@ -1131,8 +1131,15 @@ public class MythicItemManager {
     }
 
     /**
+     * Check if the target player is on the same team as the given team number.
+     */
+    private boolean isSameTeam(GameSession session, int teamNumber, Player target) {
+        Team targetTeam = session.getPlayerTeam(target);
+        return targetTeam != null && targetTeam.getTeamNumber() == teamNumber;
+    }
+
+    /**
      * Handle BloodWrench shot based on current mode.
-     * Returns false if shot should be cancelled.
      */
     public boolean handleBloodwrenchShot(Player player) {
         player.getUniqueId();
@@ -1711,12 +1718,14 @@ public class MythicItemManager {
                 direction,
                 10.0,
                 0.1,
-                entity -> entity instanceof Player && !entity.equals(player)
+                entity -> entity instanceof Player target
+                        && !target.equals(player)
+                        && isSameTeam(session, playerTeam.getTeamNumber(), target)
         );
 
-        // No player under crosshair
+        // No valid teammate under crosshair
         if (result == null || !(result.getHitEntity() instanceof Player target)) {
-            Messages.debug(player, "ALCHEMIST_WAND: No valid player target");
+            Messages.debug(player, "ALCHEMIST_WAND: No valid teammate target");
             return;
         }
 

@@ -820,13 +820,9 @@ public class RuneManager {
 
     public static void playRuneActivation(Player player, EnchantEntry enchant) {
 
-        Location ground = player.getLocation().clone();
-
-        while (ground.getBlock().isPassable()) {
-            ground.subtract(0, 1, 0);
-        }
-
-        double animationY = ground.getY() + 1;
+        // Anchor the book to the player's position so it always travels the same
+        // distance upward, even when the player is midair.
+        double animationY = player.getLocation().getY();
         spawnRuneParticles(player, enchant);
         ItemDisplay book = spawnRuneBook(player, animationY);
 

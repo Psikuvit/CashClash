@@ -13,14 +13,18 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Waterlogged;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.block.LeavesDecayEvent;
+import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -59,6 +63,18 @@ public class BlockListener implements Listener {
     // Map of player UUID to water bucket refill task
     private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
 
+    // Map of water/lava block location to its origin source location
+    private static final Map<Location, Location> waterLavaOrigins = new ConcurrentHashMap<>();
+
+    // Set of locations already flooded by createQuickFluid per session
+    private static final Map<UUID, Set<Location>> quickFluidVisited = new ConcurrentHashMap<>();
+
+    // Map of water/lava location to cleanup task
+    private static final Map<Location, BukkitTask> waterLavaCleanupTasks = new ConcurrentHashMap<>();
+
+    // Map of arrow UUID to despawn task
+    private static final Map<UUID, BukkitTask> arrowDespawnTasks = new ConcurrentHashMap<>();
+
     // ==================== BLOCK PLACE ====================
 
     public static void cleanupRound(UUID sessionId) {
@@ -89,6 +105,7 @@ public class BlockListener implements Listener {
         playerLeafBlockCount.remove(sessionId);
         playerWebBlockCount.remove(sessionId);
         playerWaterBucketRefillCount.remove(sessionId);
+        quickFluidVisited.remove(sessionId);
         // Note: waterBucketRefillTasks are per-player and handled separately
     }
 
@@ -116,11 +133,17 @@ public class BlockListener implements Listener {
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
 
+        Block target = event.getBlock();
+        Location origin = target.getLocation().toBlockLocation();
+        waterLavaOrigins.put(origin, origin);
+        scheduleWaterLavaCleanup(target);
+
         // Track water source placement for refill
         queueWaterBucketRefill(player);
         
         // Track the water block for cleanup
-        trackPlacedBlock(session.getSessionId(), event.getBlock());
+        trackPlacedBlock(session.getSessionId(), target);
+        createQuickFluid(target, session.getSessionId(), origin);
     }
 
     /**
@@ -282,6 +305,16 @@ public class BlockListener implements Listener {
         waterLavaSourceCount.get(sessionId).put(teamNum, currentCount + 1);
         trackPlacedBlock(sessionId, event.getBlock());
 
+        // Track origin and schedule despawn so placed fluids flow then clear
+        Location origin = event.getBlock().getLocation().toBlockLocation();
+        waterLavaOrigins.put(origin, origin);
+        if (blockType == Material.WATER) {
+            scheduleWaterLavaCleanup(event.getBlock());
+        } else if (blockType == Material.LAVA) {
+            scheduleLavaCleanup(event.getBlock());
+        }
+        createQuickFluid(event.getBlock(), sessionId, origin);
+
         // Schedule water bucket refill (only for water, not lava)
         if (blockType == Material.WATER) {
             queueWaterBucketRefill(player);
@@ -298,19 +331,159 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Prevent water/lava from spreading, except to break webs or extinguish fire.
+     * Limit water/lava vanilla spread to 3 blocks from the original source.
      */
     @EventHandler(priority = EventPriority.HIGH)
-    public void onBlockSpread(BlockSpreadEvent event) {
+    public void onWaterLavaSpread(BlockFromToEvent event) {
         if (event.isCancelled()) return;
 
-        Block source = event.getSource();
-        Material sourceType = source.getType();
+        Block source = event.getBlock();
+        Material type = source.getType();
+        if (type != Material.WATER && type != Material.LAVA) return;
 
-        // Only handle water and lava spreading
-        if (sourceType == Material.WATER || sourceType == Material.LAVA) {
-            event.setCancelled(true);
+        Location sourceLocation = source.getLocation().toBlockLocation();
+
+        Location origin = waterLavaOrigins.get(sourceLocation);
+
+        // Try to find the origin from nearby tracked water blocks
+        if (origin == null) {
+            for (Map.Entry<Location, Location> entry : waterLavaOrigins.entrySet()) {
+                if (entry.getKey().distanceSquared(sourceLocation) <= 4) {
+                    origin = entry.getValue();
+                    waterLavaOrigins.put(sourceLocation, origin);
+                    break;
+                }
+            }
         }
+
+        // Makes new water source origin
+        if (origin == null) {
+            origin = sourceLocation;
+            waterLavaOrigins.put(sourceLocation, origin);
+        }
+
+        Location destination = event.getToBlock().getLocation().toBlockLocation();
+
+        // Stop vanilla spread beyond 3 blocks
+        if (destination.distance(origin) > 3.0) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // Track newly spread water/lava so future spreads know the origin
+        waterLavaOrigins.put(destination, origin);
+    }
+
+    /**
+     * Force placed water/lava to flow in all four directions.
+     */
+    private void createQuickFluid(Block source, UUID sessionId, Location origin) {
+        Set<Location> visited = quickFluidVisited.computeIfAbsent(
+                sessionId,
+                k -> ConcurrentHashMap.newKeySet()
+        );
+
+        Location loc = source.getLocation().toBlockLocation();
+
+        if (loc.distance(origin) >= 3) {
+            return;
+        }
+
+        if (!visited.add(loc)) {
+            return;
+        }
+
+        for (BlockFace face : new BlockFace[]{
+                BlockFace.NORTH,
+                BlockFace.SOUTH,
+                BlockFace.EAST,
+                BlockFace.WEST
+        }) {
+            Block next = source.getRelative(face);
+            if (next.getBlockData() instanceof Waterlogged) {
+                continue;
+            }
+            if (next.getType() == Material.AIR) {
+                next.setType(source.getType());
+                waterLavaOrigins.put(next.getLocation().toBlockLocation(), origin);
+                trackPlacedBlock(sessionId, next);
+                if (source.getType() == Material.WATER) {
+                    scheduleWaterLavaCleanup(next);
+                } else if (source.getType() == Material.LAVA) {
+                    scheduleLavaCleanup(next);
+                }
+                SchedulerUtils.runTaskLater(
+                        () -> createQuickFluid(next, sessionId, origin),
+                        1L
+                );
+            }
+        }
+    }
+
+    /**
+     * Schedule a water/lava block to despawn after 10 seconds with visual effects.
+     */
+    private void scheduleWaterLavaCleanup(Block block) {
+        Location loc = block.getLocation().toBlockLocation();
+
+        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
+            if (block.getType() == Material.WATER || block.getType() == Material.LAVA) {
+                Location center = loc.clone().add(0.5, 0.5, 0.5);
+                ParticleUtils.spawn(Particle.SPLASH, center, 12, 0.3, 0.2, 0.3, 0.05);
+                ParticleUtils.spawn(Particle.BUBBLE, center, 8, 0.2, 0.2, 0.2, 0.02);
+                SoundUtils.playAt(center, Sound.ENTITY_GENERIC_SPLASH, 0.7f, 1.0f);
+                block.setType(Material.AIR);
+            }
+            waterLavaOrigins.remove(loc);
+            waterLavaCleanupTasks.remove(loc);
+        }, 200);
+
+        waterLavaCleanupTasks.put(loc, task);
+    }
+
+    /**
+     * Schedule a lava block to despawn after 10 seconds with visual effects.
+     */
+    private void scheduleLavaCleanup(Block block) {
+        Location loc = block.getLocation().toBlockLocation();
+
+        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
+            if (block.getType() == Material.LAVA) {
+                Location center = loc.clone().add(0.5, 0.5, 0.5);
+                ParticleUtils.spawn(Particle.LAVA, center, 8, 0.25, 0.2, 0.25, 0);
+                ParticleUtils.spawn(Particle.SMALL_FLAME, center, 12, 0.25, 0.2, 0.25, 0.01);
+                SoundUtils.playAt(center, Sound.BLOCK_LAVA_EXTINGUISH, 0.7f, 1.0f);
+                block.setType(Material.AIR);
+            }
+            waterLavaOrigins.remove(loc);
+            waterLavaCleanupTasks.remove(loc);
+        }, 200);
+
+        waterLavaCleanupTasks.put(loc, task);
+    }
+
+    /**
+     * Schedule an arrow to despawn after 5 seconds.
+     */
+    private void scheduleArrowDespawn(AbstractArrow arrow) {
+        UUID id = arrow.getUniqueId();
+
+        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
+            if (!arrow.isDead()) {
+                ParticleUtils.spawn(Particle.CRIT, arrow.getLocation(), 8, 0.2);
+                SoundUtils.playAt(arrow.getLocation(), Sound.ENTITY_ARROW_HIT, 0.5f, 1.2f);
+                arrow.remove();
+            }
+            arrowDespawnTasks.remove(id);
+        }, 100);
+
+        arrowDespawnTasks.put(id, task);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onArrowShoot(EntityShootBowEvent event) {
+        if (!(event.getProjectile() instanceof AbstractArrow arrow)) return;
+        scheduleArrowDespawn(arrow);
     }
 
     // ==================== STATIC UTILITIES ====================
@@ -423,16 +596,19 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Schedule web block to despawn after 5 seconds of no touch.
+     * Schedule web block to despawn after 8 seconds with visual effects.
      */
     private void scheduleWebDespawn(Block block) {
         Location loc = block.getLocation().toBlockLocation();
         BukkitTask task = SchedulerUtils.runTaskLater(() -> {
             if (block.getType() == Material.COBWEB) {
+                Location center = loc.clone().add(0.5, 0.5, 0.5);
+                ParticleUtils.spawn(Particle.CLOUD, center, 10, 0.25, 0.25, 0.25, 0.01);
+                SoundUtils.playAt(center, Sound.BLOCK_WOOL_BREAK, 0.6f, 1.0f);
                 block.setType(Material.AIR);
             }
             webDespawnTasks.remove(loc);
-        }, 100);
+        }, 160);
         
         webDespawnTasks.put(loc, task);
     }
@@ -465,7 +641,7 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Schedule leaf block to decay after 5 seconds with visual effects.
+     * Schedule leaf block to decay after 8 seconds with visual effects.
      */
     private void scheduleLeafDecay(Block block) {
         Location loc = block.getLocation().toBlockLocation();
@@ -473,12 +649,12 @@ public class BlockListener implements Listener {
             if (isLeafBlock(block.getType())) {
                 Location center = loc.clone().add(0.5, 0.5, 0.5);
                 ParticleUtils.spawn(Particle.FALLING_DUST, center, 10, 0.3);
-                SoundUtils.playAt(center, Sound.BLOCK_GRASS_BREAK, 0.5f, 1.0f);
+                SoundUtils.playAt(center, Sound.BLOCK_GRASS_BREAK, 1.0f, 1.0f);
 
                 block.setType(Material.AIR);
             }
             leafDecayTasks.remove(loc);
-        }, 100);
+        }, 160);
         leafDecayTasks.put(loc, task);
     }
 

@@ -252,6 +252,7 @@ public class ShopService {
                 }
                 if (currentWebs >= 8) {
                     Messages.send(player, "listener.max-webs-reached");
+                    SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                     refund(player, totalPrice);
                     return;
                 }

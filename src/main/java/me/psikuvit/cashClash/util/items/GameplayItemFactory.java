@@ -186,11 +186,11 @@ public final class GameplayItemFactory {
         // Vanilla food items should keep their Minecraft default food properties
         PotionEffect potionEffect;
         switch (foodItem) {
-            case SPEED_CARROT -> potionEffect = new PotionEffect(PotionEffectType.SPEED, 20 * 20, 0);
-            case GOLDEN_CHICKEN -> potionEffect = new PotionEffect(PotionEffectType.ABSORPTION, 20 * 20, 1);
-            case COOKIE_OF_LIFE -> potionEffect = new PotionEffect(PotionEffectType.REGENERATION, 14 * 20, 0);
-            case SUNSCREEN -> potionEffect = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 30 * 20, 0);
-            case CAN_OF_SPINACH -> potionEffect = new PotionEffect(PotionEffectType.STRENGTH, 15 * 20, 0);
+            case SPEED_CARROT -> potionEffect = new PotionEffect(PotionEffectType.SPEED, 11 * 20, 0);
+            case GOLDEN_CHICKEN -> potionEffect = new PotionEffect(PotionEffectType.ABSORPTION, 11 * 20, 1);
+            case COOKIE_OF_LIFE -> potionEffect = new PotionEffect(PotionEffectType.REGENERATION, 11 * 20, 0);
+            case SUNSCREEN -> potionEffect = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 11 * 20, 0);
+            case CAN_OF_SPINACH -> potionEffect = new PotionEffect(PotionEffectType.STRENGTH, 11 * 20, 0);
             default -> {
                 // No custom food properties needed - they have Minecraft defaults
                 return;
