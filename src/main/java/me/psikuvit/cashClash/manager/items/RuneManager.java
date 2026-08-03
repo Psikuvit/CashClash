@@ -378,11 +378,7 @@ public class RuneManager {
     public static void clearRuneLink(ItemStack rune) {
         if (rune == null || !rune.hasItemMeta()) return;
 
-        ItemMeta meta = rune.getItemMeta();
-
-        meta.getPersistentDataContainer().remove(Keys.RUNE_LINK);
-
-        rune.setItemMeta(meta);
+        PDCSetter.of(rune).remove(Keys.RUNE_LINK).apply();
     }
 
     public static void updateArmorRunes(Player player) {
@@ -605,15 +601,7 @@ public class RuneManager {
     public static void setRuneBroken(ItemStack rune) {
         if (rune == null || !rune.hasItemMeta()) return;
 
-        ItemMeta meta = rune.getItemMeta();
-
-        meta.getPersistentDataContainer().set(
-                Keys.RUNE_BROKEN_TIME,
-                PersistentDataType.LONG,
-                System.currentTimeMillis()
-        );
-
-        rune.setItemMeta(meta);
+        PDCSetter.of(rune).set(Keys.RUNE_BROKEN_TIME, PersistentDataType.LONG, System.currentTimeMillis()).apply();
     }
 
 
@@ -636,12 +624,7 @@ public class RuneManager {
     public static void clearRuneBroken(ItemStack rune) {
         if (rune == null || !rune.hasItemMeta()) return;
 
-        ItemMeta meta = rune.getItemMeta();
-
-        meta.getPersistentDataContainer()
-                .remove(Keys.RUNE_BROKEN_TIME);
-
-        rune.setItemMeta(meta);
+        PDCSetter.of(rune).remove(Keys.RUNE_BROKEN_TIME).apply();
     }
 
     public static void setRuneOffTime(ItemStack rune) {
@@ -779,7 +762,7 @@ public class RuneManager {
 
         for (String word : words) {
 
-            if (formatted.length() > 0) {
+            if (!formatted.isEmpty()) {
                 formatted.append(" ");
             }
 

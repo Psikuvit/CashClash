@@ -43,6 +43,11 @@ public final class PDCSetter {
         return this;
     }
 
+    public PDCSetter remove(NamespacedKey key) {
+        meta.getPersistentDataContainer().remove(key);
+        return this;
+    }
+
     /**
      * Writes all queued tags back to the item. Call once after the last {@link #set}.
      */
