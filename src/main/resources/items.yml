@@ -316,7 +316,7 @@ custom-items:
     healing-reduction-percent: 30
     healing-reduction-duration-seconds: 3
     cooldown-seconds: 18
-    strike-radius: 3
+    strike-radius: 4
 
 
 # ============================================

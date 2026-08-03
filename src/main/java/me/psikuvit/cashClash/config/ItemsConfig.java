@@ -558,7 +558,7 @@ public class ItemsConfig {
     }
 
     public double getSoulKatanaStrikeRadius() {
-        return config.getDouble("custom-items.soul-katana.strike-radius", 3);
+        return config.getDouble("custom-items.soul-katana.strike-radius", 4);
     }
 
     // ==================== CUSTOM ARMOR ====================

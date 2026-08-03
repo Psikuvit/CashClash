@@ -74,10 +74,10 @@ public class Keys {
     public static final NamespacedKey PROFIT_VORTEX_ARROW;
 
     /**
-     * Byte marker on Profit Vortex arrows indicating a spectral vortex (1 = spectral, 0 = normal).
-     * Spectral vortices glow enemies and mark them before applying the slowness.
+     * Seconds of glow a Profit Vortex applies to caught enemies (2 per spectral arrow consumed).
+     * A value > 0 makes the vortex spectral.
      */
-    public static final NamespacedKey SPECTRAL_VORTEX;
+    public static final NamespacedKey PROFIT_VORTEX_GLOW_SECONDS;
 
     /**
      * Stores the upgrade level on rune items.
@@ -139,7 +139,7 @@ public class Keys {
         BUFF_SELECTION_POTION = new NamespacedKey(CashClashPlugin.getInstance(), "buff_selection_potion");
         FULLY_CHARGED_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "fully_charged_arrow");
         PROFIT_VORTEX_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "profit_vortex_arrow");
-        SPECTRAL_VORTEX = new NamespacedKey(CashClashPlugin.getInstance(), "spectral_vortex");
+        PROFIT_VORTEX_GLOW_SECONDS = new NamespacedKey(CashClashPlugin.getInstance(), "profit_vortex_glow_seconds");
         RUNE_LEVEL = new NamespacedKey(CashClashPlugin.getInstance(), "rune_level");
         RUNE_LINK = new NamespacedKey(CashClashPlugin.getInstance(), "rune_link");
         ITEM_UUID = new NamespacedKey(CashClashPlugin.getInstance(), "item_uuid");

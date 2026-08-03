@@ -45,6 +45,10 @@ public class MoveListener implements Listener {
         // Skip if in shopping phase
         if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) return;
 
+        // Soul Katana Phantom Slice: the dash strike resolves once the player leaves the ground
+        // and touches back down
+        customItemManager.handleSoulKatanaLand(player);
+
         // Check block player is standing on for floor-mounted bounce pads
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
         if (blockBelow.getType() == Material.SLIME_BLOCK) {

@@ -926,6 +926,7 @@ messages:
     orb-destroyed: "<dark_yellow>The orb shatters!</dark_yellow>"
     soul-katana-slice: "<light_purple><bold>PHANTOM SLICE!</bold></light_purple>"
     soul-katana-cooldown: "<red>Soul Katana is on cooldown! ({remaining}s)</red>"
+    soul-katana-healing-reduced: "<blue>Your healing has been reduced by {percent}%!</blue>"
 
   # ============================================
   # ERROR & VALIDATION MESSAGES
