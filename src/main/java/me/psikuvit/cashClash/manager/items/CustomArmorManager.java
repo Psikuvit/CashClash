@@ -2,8 +2,9 @@ package me.psikuvit.cashClash.manager.items;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.game.round.RoundData;
+import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
@@ -13,6 +14,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -27,6 +29,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -845,7 +848,7 @@ public class CustomArmorManager {
         UUID id = attacker.getUniqueId();
 
         // Use centralized health system for correct max health
-        var attackerCCP = session != null ? session.getCashClashPlayer(id) : null;
+        CashClashPlayer attackerCCP = session != null ? session.getCashClashPlayer(id) : null;
         double max = attackerCCP != null ? attackerCCP.getMaxHealth() : 20.0;
         if (attacker.getHealth() > max * 0.5) return;
 
@@ -859,46 +862,49 @@ public class CustomArmorManager {
 
         Location center = attacker.getLocation();
         Set<UUID> hitPlayers = ConcurrentHashMap.newKeySet();
-        final double[] radius = {0.5};
 
-        BukkitTask[] waveTask = new BukkitTask[1];
-        waveTask[0] = SchedulerUtils.runTaskTimer(() -> {
-            if (!attacker.isOnline() || attacker.isDead()) {
-                waveTask[0].cancel();
-                return;
-            }
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private double radius = 0.5;
 
-            radius[0] += 0.5;
-            if (radius[0] >= 6.0) {
-                waveTask[0].cancel();
-                int enemies = hitPlayers.size();
-                Messages.send(attacker, enemies == 1 ? "armor.soul-burst-enemy" : "armor.soul-burst-enemies",
-                        "count", String.valueOf(enemies));
-                return;
-            }
-
-            ParticleUtils.soulBurstRing(center, radius[0]);
-
-            for (Entity entity : center.getWorld().getNearbyEntities(center, radius[0], radius[0], radius[0])) {
-                if (!(entity instanceof Player target)) continue;
-                if (target.equals(attacker)) continue;
-                if (hitPlayers.contains(target.getUniqueId())) continue;
-
-                if (session != null) {
-                    Team aTeam = session.getPlayerTeam(attacker);
-                    Team tTeam = session.getPlayerTeam(target);
-                    if (tTeam != null && aTeam == tTeam) continue;
+            @Override
+            public void run() {
+                if (!attacker.isOnline() || attacker.isDead()) {
+                    cancel();
+                    return;
                 }
 
-                hitPlayers.add(target.getUniqueId());
+                radius += 0.5;
+                if (radius >= 6.0) {
+                    cancel();
+                    int enemies = hitPlayers.size();
+                    Messages.send(attacker, enemies == 1 ? "armor.soul-burst-enemy" : "armor.soul-burst-enemies",
+                            "count", String.valueOf(enemies));
+                    return;
+                }
 
-                double newHealth = Math.max(0.0, target.getHealth() - 3.0);
-                target.setHealth(newHealth);
+                ParticleUtils.soulBurstRing(center, radius);
 
-                double healAmount = Math.min(max - attacker.getHealth(), 3.0);
-                attacker.setHealth(attacker.getHealth() + healAmount);
+                for (Entity entity : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
+                    if (!(entity instanceof Player target)) continue;
+                    if (target.equals(attacker)) continue;
+                    if (hitPlayers.contains(target.getUniqueId())) continue;
 
-                ParticleUtils.hitFeedback(target.getLocation(), 10, 0.2);
+                    if (session != null) {
+                        Team aTeam = session.getPlayerTeam(attacker);
+                        Team tTeam = session.getPlayerTeam(target);
+                        if (tTeam != null && aTeam == tTeam) continue;
+                    }
+
+                    hitPlayers.add(target.getUniqueId());
+
+                    double newHealth = Math.max(0.0, target.getHealth() - 3.0);
+                    target.setHealth(newHealth);
+
+                    double healAmount = Math.min(max - attacker.getHealth(), 3.0);
+                    attacker.setHealth(attacker.getHealth() + healAmount);
+
+                    ParticleUtils.hitFeedback(target.getLocation(), 10, 0.2);
+                }
             }
         }, 0L, 2L);
     }
@@ -1067,7 +1073,7 @@ public class CustomArmorManager {
 
                 ParticleUtils.flamebringerPull(killerLoc, radius);
 
-                for (org.bukkit.entity.Entity entity : killer.getWorld().getNearbyEntities(killerLoc, radius, radius, radius)) {
+                for (Entity entity : killer.getWorld().getNearbyEntities(killerLoc, radius, radius, radius)) {
                     if (!(entity instanceof Player target)) continue;
                     if (target.equals(killer)) continue;
 
@@ -1151,7 +1157,7 @@ public class CustomArmorManager {
             if (ccp != null) {
                 ccp.addCoins(reward);
             }
-            Player teammate = org.bukkit.Bukkit.getPlayer(uuid);
+            Player teammate = Bukkit.getPlayer(uuid);
             if (teammate != null && teammate.isOnline()) {
                 playInvestorRewardEffect(teammate, reward);
             }
@@ -1178,7 +1184,7 @@ public class CustomArmorManager {
             if (ccp != null) {
                 ccp.addCoins(reward);
             }
-            Player teammate = org.bukkit.Bukkit.getPlayer(uuid);
+            Player teammate = Bukkit.getPlayer(uuid);
             if (teammate != null && teammate.isOnline()) {
                 playInvestorRewardEffect(teammate, reward);
             }
@@ -1297,14 +1303,14 @@ public class CustomArmorManager {
         // Dead players are silenced for all items
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null) {
-            me.psikuvit.cashClash.game.round.RoundData roundData = session.getCurrentRoundData();
+            RoundData roundData = session.getCurrentRoundData();
             if (roundData != null && !roundData.isAlive(player.getUniqueId())) {
                 return true;
             }
         }
 
         if (session == null || session.getGamemode() == null) return false;
-        if (!(session.getGamemode() instanceof me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode gamemode)) return false;
+        if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return false;
         return gamemode.isSilenced(player.getUniqueId());
     }
 }
