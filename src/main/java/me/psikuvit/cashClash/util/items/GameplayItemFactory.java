@@ -266,7 +266,6 @@ public final class GameplayItemFactory {
      */
     private void applyWeaponProperties(PDCSetter tags, WeaponItem weaponItem) {
         switch (weaponItem) {
-            case CASH_BLASTER -> tags.meta().addEnchant(Enchantment.MULTISHOT, 1, true);
             default -> {
                 // No special properties
             }

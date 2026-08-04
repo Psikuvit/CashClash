@@ -89,7 +89,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
 
@@ -350,13 +349,27 @@ public class GameListener implements Listener {
         FoodItem foodItem = PDCDetection.getFood(consumed);
         if (foodItem != null) {
             switch (foodItem) {
-                case SPEED_CARROT -> playFoodParticles(p, Color.fromRGB(80, 170, 255));
-                case GOLDEN_CHICKEN -> playFoodParticles(p, Color.fromRGB(255, 220, 60));
-                case COOKIE_OF_LIFE -> playFoodParticles(p, Color.fromRGB(255, 120, 220));
-                case SUNSCREEN -> playFoodParticles(p, Color.fromRGB(255, 150, 40));
-                case CAN_OF_SPINACH -> playFoodParticles(p, Color.fromRGB(70, 220, 70));
+                case SPEED_CARROT -> {
+                    playFoodParticles(p, Color.fromRGB(80, 170, 255));
+                    SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
+                }
+                case GOLDEN_CHICKEN -> {
+                    playFoodParticles(p, Color.fromRGB(255, 220, 60));
+                    SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
+                }
+                case COOKIE_OF_LIFE -> {
+                    playFoodParticles(p, Color.fromRGB(255, 120, 220));
+                    SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
+                }
+                case SUNSCREEN -> {
+                    playFoodParticles(p, Color.fromRGB(255, 150, 40));
+                    SoundUtils.play(p, Sound.ENTITY_GENERIC_DRINK, 1.0f, 1.0f);
+                }
+                case CAN_OF_SPINACH -> {
+                    playFoodParticles(p, Color.fromRGB(70, 220, 70));
+                    SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
+                }
             }
-            SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
         }
     }
 
@@ -668,13 +681,11 @@ public class GameListener implements Listener {
                 customItemManager.getHandler(OrbOfGravitationHandler.class).handleOrbHitByChargedArrow(arrow, orb);
             }
             handleArrowHit(arrow, event);
-        } else if (event.getEntity() instanceof Trident trident) {
+        } else         if (event.getEntity() instanceof Trident trident) {
             handleTridentHit(trident, event);
         } else if (event.getEntity() instanceof Snowball snowball && customItemManager.getHandler(OrbOfGravitationHandler.class).isOrbEntity(snowball)) {
             customItemManager.getHandler(OrbOfGravitationHandler.class).activateOrb(snowball);
         }
-
-        handleCustomProjectileHit(event);
     }
 
     /**
@@ -754,31 +765,6 @@ public class GameListener implements Listener {
             mythic = PDCDetection.getMythic(mainHand);
         }
         return mythic;
-    }
-
-    /**
-     * Handle custom item projectile hits (Cash Blaster, etc.)
-     */
-    private void handleCustomProjectileHit(ProjectileHitEvent event) {
-        if (!(event.getHitEntity() instanceof Player)) return;
-
-        ProjectileSource projectileShooter = event.getEntity().getShooter();
-        if (!(projectileShooter instanceof Player attacker)) return;
-
-        ItemStack item = attacker.getInventory().getItemInMainHand();
-        if (!item.hasItemMeta()) return;
-
-        // Prevent custom projectiles during shopping
-        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
-        if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {
-            event.setCancelled(true);
-            return;
-        }
-
-        WeaponItem type = PDCDetection.getWeapon(item);
-        if (type == WeaponItem.CASH_BLASTER) {
-            weaponItemManager.getHandler(CashBlasterHandler.class).handleCashBlasterHit(attacker);
-        }
     }
 
     // ==================== ENTITY INTERACTIONS ====================
@@ -862,6 +848,24 @@ public class GameListener implements Listener {
         // --- Handle Rune Linking ---
         ItemStack cursor = event.getCursor();
         if (RuneManager.isRune(cursor)) {
+
+            if (RuneManager.isRuneBroken(cursor)) {
+                event.setCancelled(true);
+                Messages.send(p, "rune.broken-cannot-use");
+                SoundUtils.play(
+                        p,
+                        Sound.ENTITY_VILLAGER_NO,
+                        1.0f,
+                        1.0f
+                );
+                return;
+            }
+
+            GameSession session = GameManager.getInstance().getPlayerSession(p);
+            if (session != null && session.getState() == GameState.SHOPPING) {
+                event.setCancelled(true);
+                return;
+            }
 
             if (RuneManager.isRuneActive(cursor)) {
                 event.setCancelled(true);

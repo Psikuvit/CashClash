@@ -389,23 +389,45 @@ public class DragonSetHandler extends ArmorSetHandler {
 
             ParticleUtils.dragonOutrageTrail(player.getLocation().clone().add(0, 1, 0));
 
+            Vector toTarget = landing.toVector().subtract(player.getLocation().toVector());
             double distance = player.getLocation().distance(landing);
-            boolean reached = distance <= 1.5;
             boolean timedOut = elapsed >= 3000;
+            boolean landedEarly = elapsed > 800 &&
+                    player.isOnGround() &&
+                    player.getLocation().getY() <= landing.getY() + 1.2;
 
-            if (reached || timedOut) {
+            if (distance <= 1.5 || landedEarly || timedOut) {
                 endDragonOutrageFlight(player);
                 dragonOutrageExplosion(player, landing);
                 return;
             }
 
-            // Steer toward the aimed landing spot
-            Vector toTarget = landing.toVector().subtract(player.getLocation().toVector()).normalize();
-            Vector steer = toTarget.multiply(0.8);
-            if (steer.getY() > 0.6) steer.setY(0.6);
-            if (steer.getY() < -0.4) steer.setY(-0.4);
-            player.setVelocity(steer);
-        }, 2L, 1L);
+            double phase = elapsed / 700.0;
+
+            if (phase < 1.0) {
+                // Phase 1: launch upward toward the aimed landing before steering
+                double horizontal = Math.hypot(toTarget.getX(), toTarget.getZ());
+                if (horizontal < 0.001) {
+                    Vector dir = player.getLocation().getDirection();
+                    player.setVelocity(new Vector(dir.getX() * 0.3, 1.15, dir.getZ() * 0.3));
+                } else {
+                    double forward = 0.4 + (phase * 0.6);
+                    player.setVelocity(new Vector(
+                            (toTarget.getX() / horizontal) * forward,
+                            1.15,
+                            (toTarget.getZ() / horizontal) * forward
+                    ));
+                }
+            } else {
+                // Phase 2: steer down toward the landing spot and slam
+                Vector steerDir = toTarget.clone().normalize();
+                player.setVelocity(new Vector(
+                        steerDir.getX() * 0.9,
+                        Math.max(-1.4, Math.min(steerDir.getY(), 0.6)),
+                        steerDir.getZ() * 0.9
+                ));
+            }
+        }, 1L, 1L);
 
         dragonOutrageTasks.put(uuid, task);
     }

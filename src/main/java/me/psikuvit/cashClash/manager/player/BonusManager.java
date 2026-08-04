@@ -2,8 +2,6 @@ package me.psikuvit.cashClash.manager.player;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.round.RoundData;
-import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
-import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.util.Messages;
@@ -354,22 +352,15 @@ public class BonusManager {
             return;
         }
 
-        long baseReward = bonusType.getReward();
-        
-        // Apply investor set bonus (12.5% per piece)
-        Player player = Bukkit.getPlayer(playerUuid);
-        double investorMultiplier = 1.0;
-        if (player != null) {
-            investorMultiplier = CustomArmorManager.getInstance().getHandler(InvestorSetHandler.class).getInvestorMultiplier(player);
-        }
-        long finalReward = (long) (baseReward * investorMultiplier);
+        long finalReward = bonusType.getReward();
 
-        Messages.debug("GAME", "Awarding bonus " + bonusType.name() + " to " + playerUuid + " (+$" + baseReward + " base, +$" + finalReward + " with investor bonus)");
+        Messages.debug("GAME", "Awarding bonus " + bonusType.name() + " to " + playerUuid + " (+$" + finalReward + ")");
 
-        // Add coins directly with investor bonus applied
+        // Add coins directly
         ccp.addCoins(finalReward);
         ccp.getBonusesEarned().put(bonusType, ccp.getBonusesEarned().getOrDefault(bonusType, 0) + 1);
 
+        Player player = Bukkit.getPlayer(playerUuid);
         if (player != null && player.isOnline()) {
             String bonusName = formatBonusName(bonusType);
             Messages.send(player, "bonus.announce-spacer");
@@ -377,10 +368,6 @@ public class BonusManager {
                 "bonus_name", bonusName);
             Messages.send(player, "bonus.bonus-coins",
                 "amount", formatCoins(finalReward));
-            if (investorMultiplier > 1.0) {
-                Messages.send(player, "bonus.bonus-investor",
-                    "multiplier_percent", String.format("%.1f", (investorMultiplier - 1.0) * 100));
-            }
             Messages.send(player, "bonus.announce-spacer");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         }

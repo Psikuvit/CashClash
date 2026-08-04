@@ -11,7 +11,6 @@ import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.GuardianVestHandler;
-import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.TectonicCapHandler;
 import me.psikuvit.cashClash.manager.items.custom.BagOfPotatoesHandler;
 import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
@@ -560,12 +559,6 @@ public class DamageListener implements Listener {
         // Dragon Set: apply empowered Dragon Rush strike
         armorManager.getHandler(DragonSetHandler.class).onDragonRushHit(event);
 
-        // Investor's Set: bonus damage in rounds 4/5
-        double damageMultiplier = armorManager.getHandler(InvestorSetHandler.class).getInvestorMeleeDamageMultiplier(attacker, session.getCurrentRound());
-        if (damageMultiplier > 1.0) {
-            event.setDamage(event.getDamage() * damageMultiplier);
-        }
-
         // Bullseye Pants: Storming arrow
         handleBullseyePantsEffect(event, attacker, victim);
 
@@ -575,11 +568,14 @@ public class DamageListener implements Listener {
 
     /**
      * Handle Bullseye Pants "Storming arrow" passive.
-     * Headshots trigger a storm arrow immediately (no counter increment).
-     * Every 4th non-headshot landed arrow does 30% more damage and deals AOE damage.
+     * Every 4th headshot landed arrow does 30% more damage and deals AOE damage.
      */
     private void handleBullseyePantsEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
         if (!(event.getDamager() instanceof Arrow arrow)) {
+            return;
+        }
+
+        if (!armorManager.getHandler(BullseyePantsHandler.class).hasBullseyePants(attacker)) {
             return;
         }
 
@@ -589,18 +585,14 @@ public class DamageListener implements Listener {
         double headY = victim.getLocation().getY() + victim.getEyeHeight();
         boolean isHeadshot = Math.abs(arrowY - headY) <= 0.25;
 
-        if (isHeadshot) {
-            SoundUtils.playAt(victim.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.4f);
-            triggerStorm(attacker, victim, event.getDamage() * 1.3);
+        if (!isHeadshot) {
             return;
         }
 
-        if (!armorManager.getHandler(BullseyePantsHandler.class).hasBullseyePants(attacker)) {
-            return;
-        }
+        SoundUtils.playAt(victim.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.4f);
 
         if (armorManager.getHandler(BullseyePantsHandler.class).incrementBullseyeHit(attacker)) {
-            // 4th non-headshot hit triggered
+            // 4th headshot triggered
             double originalDamage = event.getDamage();
             event.setDamage(originalDamage * 1.3); // +30% damage
 

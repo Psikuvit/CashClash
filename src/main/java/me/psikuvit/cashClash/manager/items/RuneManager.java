@@ -129,30 +129,27 @@ public class RuneManager {
         tags.apply();
     }
 
-    public static boolean applyRuneToItem(Player player, ItemStack rune, ItemStack target) {
-        if (player == null || rune == null || target == null) return false;
+    /**
+     * Toggle a rune on or off. Activating applies the enchant to the linked item
+     * only (the player must link the rune to an item first), deactivating removes
+     * it. The rune and target copies are written back to the inventory.
+     */
+    public static boolean toggleRune(Player player, ItemStack rune) {
+        if (player == null || rune == null) return false;
         if (isRuneBroken(rune)) {
             Messages.send(player, "rune.broken-cannot-use");
-            SoundUtils.play(
-                    player,
-                    Sound.ENTITY_VILLAGER_NO,
-                    1.0f,
-                    1.0f
-            );
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return false;
         }
 
         EnchantEntry enchantEntry = PDCDetection.getRune(rune);
         if (enchantEntry == null) return false;
-        if (!enchantEntry.canApplyTo(target)) return false;
 
         String runeUUID = getItemUUID(rune);
-
         if (runeUUID == null) {
             ensureItemUUID(rune);
             runeUUID = getItemUUID(rune);
         }
-
         if (runeUUID == null) return false;
 
         if (CooldownManager.getInstance().isOnCooldown(
@@ -167,48 +164,44 @@ public class RuneManager {
             Messages.send(player, "rune.toggle-cooldown",
                     "seconds", String.valueOf(remaining));
 
-            SoundUtils.play(
-                    player,
-                    Sound.ENTITY_VILLAGER_NO,
-                    1.0f,
-                    1.0f
-            );
-
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return false;
         }
 
         if (isRuneActive(rune)) {
             ItemStack linkedItem = getLinkedItem(player, rune);
+            setRuneActive(rune, false);
+            setRuneOffTime(rune);
+            if (linkedItem != null) {
+                String linkedUUID = getItemUUID(linkedItem);
+                int linkedSlot = linkedUUID != null ? findSlotByItemUUID(player, linkedUUID) : -1;
 
-            if (linkedItem != null && linkedItem.isSimilar(target)) {
-                setRuneActive(rune, false);
-                playRuneDeactivation(player, enchantEntry);
-                setRuneOffTime(rune);
+                removeRune(player, linkedItem, rune);
 
-                removeRune(player, target, rune);
+                if (linkedSlot != -1) {
+                    player.getInventory().setItem(linkedSlot, linkedItem);
+                }
 
                 if (enchantEntry == EnchantEntry.PROTECTION ||
                         enchantEntry == EnchantEntry.PROJECTILE_PROTECTION) {
-
                     updateArmorRunes(player);
                 }
-
-                CooldownManager.getInstance().setCooldownSeconds(
-                        player.getUniqueId(),
-                        CooldownManager.Keys.RUNE_TOGGLE + "_" + runeUUID,
-                        5
-                );
-                return true;
             }
+            player.getInventory().setItemInMainHand(rune);
 
-            Messages.send(player, "rune.active-cannot-switch");
-            SoundUtils.play(
-                    player,
-                    Sound.ENTITY_VILLAGER_NO,
-                    1.0f,
-                    1.0f
+            CooldownManager.getInstance().setCooldownSeconds(
+                    player.getUniqueId(),
+                    CooldownManager.Keys.RUNE_TOGGLE + "_" + runeUUID,
+                    5
             );
-            return false;
+
+            try {
+                playRuneDeactivation(player, enchantEntry);
+                SoundUtils.play(player, Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 1.0f);
+            } catch (Exception ex) {
+                Messages.debug("RUNES", "Deactivation visual failed: " + ex.getMessage());
+            }
+            return true;
         }
 
         if (getActiveRuneCount(player) >= 2) {
@@ -217,16 +210,28 @@ public class RuneManager {
             return false;
         }
 
-        setRuneLink(rune, target);
+        ItemStack target = getLinkedItem(player, rune);
+        if (target == null) {
+            Messages.send(player, "rune.no-valid-item");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return false;
+        }
+
         applyRune(player, target, rune);
         setRuneActive(rune, true);
-        playRuneActivation(player, enchantEntry);
 
         if (enchantEntry == EnchantEntry.PROTECTION ||
                 enchantEntry == EnchantEntry.PROJECTILE_PROTECTION) {
-
             updateArmorRunes(player);
+        } else {
+            String targetUUID = getItemUUID(target);
+            int targetSlot = targetUUID != null ? findSlotByItemUUID(player, targetUUID) : -1;
+            if (targetSlot != -1) {
+                player.getInventory().setItem(targetSlot, target);
+            }
         }
+
+        player.getInventory().setItemInMainHand(rune);
 
         CooldownManager.getInstance().setCooldownSeconds(
                 player.getUniqueId(),
@@ -234,6 +239,12 @@ public class RuneManager {
                 5
         );
 
+        try {
+            playRuneActivation(player, enchantEntry);
+            SoundUtils.play(player, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
+        } catch (Exception ex) {
+            Messages.debug("RUNES", "Activation visual failed: " + ex.getMessage());
+        }
         return true;
     }
 
@@ -806,7 +817,7 @@ public class RuneManager {
 
                 double eased = 1 - Math.pow(1 - progress, 3);
                 double radius = 2.5 * (1 - eased);
-                double height = 1 + (eased * 1.7);
+                double height = 1 + (eased * 0.7);
                 double angle = tick * 0.25;
 
                 double x = Math.cos(angle) * radius;
@@ -969,10 +980,8 @@ public class RuneManager {
                 playerLoc.setY(animationY);
 
                 double progress = tick / (double) duration;
-
                 double eased = 1 - Math.pow(1 - progress, 3);
-
-                double height = 1 + (eased * 1.7);
+                double height = 1 + (eased * 0.7);
 
                 Location newLoc = playerLoc.clone()
                         .add(0, height, 0);
@@ -984,29 +993,23 @@ public class RuneManager {
 
                 // Begin slowing down earlier
                 if (tick >= 20 && tick <= 26) {
-
                     double slowdown = (26 - tick) / 6.0;
                     spinSpeed *= slowdown;
-
                 } else if (tick > 20) {
-
                     spinSpeed = 0;
                 }
 
                 spinBook(book, (float) spinSpeed);
 
                 if (tick >= duration) {
-
                     book.remove();
 
                     // Small, condensed burst
                     Location center = player.getLocation().clone()
-                            .add(0, 2.7, 0);
+                            .add(0, 1.7, 0);
 
                     Color runeColor = getRuneColor(enchant);
-
                     ParticleUtils.spawnDust(center, runeColor, 1.1f, 12, 0.25, 0.25, 0.25);
-
                     cancel();
                 }
             }

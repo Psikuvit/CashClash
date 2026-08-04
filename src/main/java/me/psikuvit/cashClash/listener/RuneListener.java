@@ -5,7 +5,6 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
-import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -14,67 +13,46 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.persistence.PersistentDataType;
 
 public class RuneListener implements Listener {
 
     @EventHandler
-    public void onRuneApplyClick(InventoryClickEvent event) {
+    public void onRuneToggle(PlayerInteractEvent event) {
 
-        if (!(event.getWhoClicked() instanceof Player player)) return;
+        // Only use main hand interaction
+        if (event.getHand() != EquipmentSlot.HAND) return;
 
-        ItemStack rune = event.getCursor();
+        Action action = event.getAction();
 
-        if (rune == null || rune.getType().isAir()) return;
+        // Sneak + right click toggles the rune
+        if (action != Action.RIGHT_CLICK_AIR &&
+                action != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+
+        // Must be sneaking
+        if (!player.isSneaking()) return;
+
+        ItemStack rune = player.getInventory().getItemInMainHand();
+
+        // Not a rune
         if (!RuneManager.isRune(rune)) return;
 
-        Inventory clickedInventory = event.getClickedInventory();
-
-        // Only apply runes to items in the player's own inventory
-        if (!(clickedInventory instanceof PlayerInventory)) return;
-
-        ItemStack target = event.getCurrentItem();
-
-        if (target == null || target.getType().isAir()) return;
-        if (RuneManager.isRune(target)) return;
+        // Prevent normal item behavior
+        event.setCancelled(true);
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
         if (session != null && session.getState() == GameState.SHOPPING) {
-            event.setCancelled(true);
             return;
         }
 
-        EnchantEntry enchantEntry = PDCDetection.getRune(rune);
-
-        // Not an applicable target: leave the rune free to be rearranged
-        if (enchantEntry == null || !enchantEntry.canApplyTo(target)) {
-            return;
-        }
-
-        boolean applied = RuneManager.applyRuneToItem(player, rune, target);
-
-        event.setCancelled(true);
-
-        if (!applied) {
-            return;
-        }
-
-        // Write the modified copies back (Bukkit inventory getters return copies)
-        event.getView().setCursor(rune);
-
-        // Armor runes are handled entirely by updateArmorRunes on the equipped pieces
-        if (enchantEntry != EnchantEntry.PROTECTION &&
-                enchantEntry != EnchantEntry.PROJECTILE_PROTECTION) {
-
-            event.setCurrentItem(target);
-        }
+        RuneManager.toggleRune(player, rune);
     }
 
     @EventHandler
@@ -103,33 +81,6 @@ public class RuneListener implements Listener {
 
         // Prevent normal item behavior
         event.setCancelled(true);
-    }
-
-    public static void applyRune(ItemStack item, ItemStack rune) {
-        if (item == null || rune == null) return;
-
-        EnchantEntry enchant = PDCDetection.getRune(rune);
-        if (enchant == null) return;
-
-        Integer level = rune.getItemMeta()
-                .getPersistentDataContainer()
-                .get(Keys.RUNE_LEVEL, PersistentDataType.INTEGER);
-
-        if (level == null) return;
-
-        item.addUnsafeEnchantment(
-                enchant.getEnchantment(),
-                level
-        );
-    }
-
-    public static void removeRune(ItemStack item, ItemStack rune) {
-        if (item == null || rune == null) return;
-
-        EnchantEntry enchant = PDCDetection.getRune(rune);
-        if (enchant == null) return;
-
-        item.removeEnchantment(enchant.getEnchantment());
     }
 
     public RuneListener() {

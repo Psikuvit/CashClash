@@ -249,7 +249,6 @@ messages:
     announce-spacer: "<dark_gray> </dark_gray>"
     bonus-earned: "<dark_purple><bold>⭐ BONUS!</bold></dark_purple> <light_purple>{bonus_name}</light_purple>"
     bonus-coins: "<gray>+${amount} coins</gray>"
-    bonus-investor: "<gray>Investor's Set: +{multiplier_percent}% bonus</gray>"
     bonus-broadcast: "<dark_purple>{player_name}</dark_purple> <dark_gray>earned</dark_gray> <light_purple>{bonus_name}</light_purple>"
 
   # ============================================
@@ -849,7 +848,7 @@ messages:
     dragon-kill-buff: "<light_purple>🐉 Dragon power surges! Strength I (4s)</light_purple>"
     investor-reward: "<green>Investor's Set: your team earned +${reward}!</green>"
     bunny-shoes-cooldown: "<red>Bunny Shoes on cooldown: {remaining}s</red>"
-    bunny-shoes-activated: "<green>Bunny Shoes activated! Speed II & Jump Boost for {duration} seconds.</green>"
+    bunny-shoes-activated: "<green>Bunny Shoes activated! Speed II for {duration} seconds.</green>"
     guardian-vest-activated: "<gold>Guardian's Vest activated! Resistance II for 15 seconds. ({uses}/3 uses)</gold>"
     deathmauler-heal: "<dark_red>Deathmauler healed you +4 hearts!</dark_red>"
     deathmauler-absorption: "<dark_red>Deathmauler granted 2 absorption hearts!</dark_red>"
@@ -885,9 +884,6 @@ messages:
     invis-disabled-shopping: "<red>Invisibility disabled at start of shopping phase!</red>"
     max-one-cloak: "<red>You can only carry one Invisibility Cloak at a time!</red>"
     already-owned: "<red>You already own {item_name}!</red>"
-    cash-blaster-hit-capped: "<green>+${amount} from Cash Blaster hit! (Reached max: ${max})</green>"
-    cash-blaster-limit: "<red>Cash Blaster limit of ${max} reached this round!</red>"
-    cash-blaster-hit: "<green>+${amount} from Cash Blaster hit!</green>"
     cash-blaster-supercharged: "<green>Cash Blaster supercharged!</green>"
     cash-blaster-supercharge-disabled: "<red>Cash Blaster supercharge disabled!</red>"
     cash-blaster-vortex-full-charge: "<red>You must fully charge the bow!</red>"

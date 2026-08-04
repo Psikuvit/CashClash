@@ -51,3 +51,7 @@ usercache.json
 logs/
 crash-reports/
 
+# Working docs (not tracked)
+CLAUDE.md
+IMPLEMENTATION_SUMMARY.md
+

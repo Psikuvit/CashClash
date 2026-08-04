@@ -18,8 +18,7 @@ import org.bukkit.entity.Player;
 import java.util.UUID;
 
 /**
- * Investor's Set - rewards the wearer's team coins on kills and CTF flag captures,
- * and scales prices/damage based on the number of pieces owned.
+ * Investor's Set - rewards the wearer's team coins on kills and CTF flag captures.
  */
 public class InvestorSetHandler extends ArmorSetHandler {
 
@@ -33,19 +32,6 @@ public class InvestorSetHandler extends ArmorSetHandler {
             if (ca.isInvestorsSet()) cnt++;
         }
         return cnt;
-    }
-
-    public double getInvestorMultiplier(Player p) {
-        int pieces = countInvestorsPieces(p);
-        if (pieces <= 0) return 1.0;
-        return 1.0 + (0.125 * pieces); // +12.5% per piece
-    }
-
-    public double getInvestorMeleeDamageMultiplier(Player p, int currentRound) {
-        if (currentRound < 4) return 1.0;
-        int pieces = countInvestorsPieces(p);
-        if (pieces <= 0) return 1.0;
-        return 1.0 + (0.05 * pieces); // +5% per piece in rounds 4/5
     }
 
     /**

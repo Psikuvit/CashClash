@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Bunny Shoes - sneak toggle burst of Speed/Jump Boost.
+ * Bunny Shoes - sneak toggle burst of Speed.
  */
 public class BunnyShoesHandler extends ArmorSetHandler {
 
@@ -78,7 +78,6 @@ public class BunnyShoesHandler extends ArmorSetHandler {
 
         int duration = cfg.getBunnyShoesDuration();
         CashClashPlayer.applyEffect(p, PotionEffectType.SPEED, duration * 20, 1);
-        CashClashPlayer.applyEffect(p, PotionEffectType.JUMP_BOOST, duration * 20, 0);
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES, cfg.getBunnyShoesCooldown());
 
         Messages.send(p, "armor.bunny-shoes-activated", "duration", String.valueOf(duration));

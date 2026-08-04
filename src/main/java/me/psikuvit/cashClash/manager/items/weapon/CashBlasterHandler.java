@@ -37,15 +37,12 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Cash Blaster: coins per successful hit (capped per round), a sneak-right-click
- * supercharge toggle, and - while supercharged - a fully-charged shot that
- * consumes 4 arrows and launches a Profit Vortex arrow. The vortex slows enemies
- * inside it and credits the shooter's team when one of them dies inside it; a
- * spectral-vortex variant glows enemies first.
+ * Cash Blaster: a sneak-right-click supercharge toggle, and - while supercharged -
+ * a fully-charged shot that consumes 4 arrows and launches a Profit Vortex arrow.
+ * The vortex slows enemies inside it and credits the shooter's team when one of
+ * them dies inside it; a spectral-vortex variant glows enemies first.
  */
 public class CashBlasterHandler extends WeaponItemHandler {
-
-    private final Map<UUID, Long> cashBlasterEarningsThisRound;
 
     private final Map<UUID, Boolean> cashBlasterSupercharged;
 
@@ -57,46 +54,12 @@ public class CashBlasterHandler extends WeaponItemHandler {
 
     public CashBlasterHandler(WeaponItemManager manager) {
         super(manager);
-        this.cashBlasterEarningsThisRound = new HashMap<>();
         this.cashBlasterSupercharged = new HashMap<>();
         this.playersInProfitVortex = new HashMap<>();
         this.profitVortexOwners = new HashMap<>();
         this.playersKilledInProfitVortex = new HashMap<>();
         this.spectralProfitVortices = new HashMap<>();
         this.spectralVortexMarkedPlayers = new HashMap<>();
-    }
-
-    public void handleCashBlasterHit(Player attacker) {
-        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
-        if (session == null) return;
-
-        CashClashPlayer ccp = session.getCashClashPlayer(attacker.getUniqueId());
-        if (ccp != null) {
-            UUID attackerId = attacker.getUniqueId();
-            long currentEarnings = cashBlasterEarningsThisRound.getOrDefault(attackerId, 0L);
-            long MAX_EARNINGS_PER_ROUND = 10000;
-
-            int coinsPerHit = cfg.getCashBlasterCoinsPerHit();
-
-            // Check if adding this hit would exceed the limit
-            if (currentEarnings + coinsPerHit > MAX_EARNINGS_PER_ROUND) {
-                long remaining = MAX_EARNINGS_PER_ROUND - currentEarnings;
-                if (remaining > 0) {
-                    ccp.addCoins(remaining);
-                    cashBlasterEarningsThisRound.put(attackerId, MAX_EARNINGS_PER_ROUND);
-                    Messages.send(attacker, "customitem.cash-blaster-hit-capped", "amount", String.valueOf(remaining), "max", String.valueOf(MAX_EARNINGS_PER_ROUND));
-                } else {
-                    Messages.send(attacker, "customitem.cash-blaster-limit", "max", String.valueOf(MAX_EARNINGS_PER_ROUND));
-                }
-                SoundUtils.play(attacker, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
-                return;
-            }
-
-            ccp.addCoins(coinsPerHit);
-            cashBlasterEarningsThisRound.put(attackerId, currentEarnings + coinsPerHit);
-            Messages.send(attacker, "customitem.cash-blaster-hit", "amount", String.valueOf(coinsPerHit));
-            SoundUtils.play(attacker, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
-        }
     }
 
     /**
@@ -400,7 +363,6 @@ public class CashBlasterHandler extends WeaponItemHandler {
 
     @Override
     public void cleanup() {
-        cashBlasterEarningsThisRound.clear();
         cashBlasterSupercharged.clear();
         playersInProfitVortex.clear();
         profitVortexOwners.clear();

@@ -364,10 +364,6 @@ public class ItemsConfig {
     }
 
     // Cash Blaster
-    public int getCashBlasterCoinsPerHit() {
-        return config.getInt("weapons.cash-blaster.coins-per-hit", 500);
-    }
-
     public int getCashBlasterVortexCooldown() {
         return config.getInt("weapons.cash-blaster.vortex-cooldown-seconds", 10);
     }
