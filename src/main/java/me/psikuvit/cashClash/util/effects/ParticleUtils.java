@@ -39,6 +39,23 @@ public final class ParticleUtils {
     }
 
     /**
+     * Spawn a particle with simple offset and particle data (e.g. BlockData for
+     * particles that require it, like {@link Particle#FALLING_DUST}).
+     */
+    public static void spawn(Particle particle, Location location, int count, double offset, Object data) {
+        spawn(particle, location, count, offset, offset, offset, 0, data);
+    }
+
+    /**
+     * Spawn a particle with full control over parameters and particle data.
+     */
+    public static void spawn(Particle particle, Location location, int count, double offsetX, double offsetY, double offsetZ, double extra, Object data) {
+        if (particle == null || location == null) return;
+        if (location.getWorld() == null) return;
+        location.getWorld().spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra, data);
+    }
+
+    /**
      * Spawn a particle at a location with no offset.
      */
     public static void spawn(Particle particle, Location location, int count) {

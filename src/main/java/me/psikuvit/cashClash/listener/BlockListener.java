@@ -648,7 +648,7 @@ public class BlockListener implements Listener {
         BukkitTask task = SchedulerUtils.runTaskLater(() -> {
             if (isLeafBlock(block.getType())) {
                 Location center = loc.clone().add(0.5, 0.5, 0.5);
-                ParticleUtils.spawn(Particle.FALLING_DUST, center, 10, 0.3);
+                ParticleUtils.spawn(Particle.FALLING_DUST, center, 10, 0.3, block.getBlockData());
                 SoundUtils.playAt(center, Sound.BLOCK_GRASS_BREAK, 1.0f, 1.0f);
 
                 block.setType(Material.AIR);
