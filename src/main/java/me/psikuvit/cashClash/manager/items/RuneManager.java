@@ -212,9 +212,14 @@ public class RuneManager {
 
         ItemStack target = getLinkedItem(player, rune);
         if (target == null) {
-            Messages.send(player, "rune.no-valid-item");
-            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            return false;
+            // Not linked yet - auto-link to the first applicable item instead of failing
+            target = findFirstApplicableItem(player, rune);
+            if (target == null) {
+                Messages.send(player, "rune.no-valid-item");
+                SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                return false;
+            }
+            setRuneLink(rune, target);
         }
 
         applyRune(player, target, rune);
@@ -246,6 +251,28 @@ public class RuneManager {
             Messages.debug("RUNES", "Activation visual failed: " + ex.getMessage());
         }
         return true;
+    }
+
+    /**
+     * Find the first inventory item this rune's enchant can apply to, for auto-linking
+     * when the player toggles a rune that hasn't been manually linked yet.
+     */
+    public static ItemStack findFirstApplicableItem(Player player, ItemStack rune) {
+        if (player == null || rune == null) return null;
+
+        EnchantEntry enchantEntry = PDCDetection.getRune(rune);
+        if (enchantEntry == null) return null;
+
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null || item.getType().isAir()) continue;
+            if (isRune(item)) continue;
+
+            if (enchantEntry.canApplyTo(item)) {
+                return item;
+            }
+        }
+
+        return null;
     }
 
     /**
