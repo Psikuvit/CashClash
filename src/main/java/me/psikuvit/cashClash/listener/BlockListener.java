@@ -125,23 +125,35 @@ public class BlockListener implements Listener {
             .merge(playerId, 1, Integer::sum);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBucketEmpty(org.bukkit.event.player.PlayerBucketEmptyEvent event) {
-        if (event.getBucket() != Material.WATER_BUCKET) return;
+        Material bucket = event.getBucket();
+        if (bucket != Material.WATER_BUCKET && bucket != Material.LAVA_BUCKET) return;
 
         Player player = event.getPlayer();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session == null) return;
 
         Block target = event.getBlock();
+
+        if (bucket == Material.WATER_BUCKET && target.getBlockData() instanceof Waterlogged) {
+            event.setCancelled(true);
+            Messages.send(player, "listener.water-bucket-waterlog-blocked");
+            return;
+        }
+
         Location origin = target.getLocation().toBlockLocation();
         waterLavaOrigins.put(origin, origin);
-        scheduleWaterLavaCleanup(target);
 
-        // Track water source placement for refill
-        queueWaterBucketRefill(player);
-        
-        // Track the water block for cleanup
+        if (bucket == Material.WATER_BUCKET) {
+            scheduleWaterLavaCleanup(target);
+            // Track water source placement for refill
+            queueWaterBucketRefill(player);
+        } else {
+            scheduleLavaCleanup(target);
+        }
+
+        // Track the water/lava block for cleanup
         trackPlacedBlock(session.getSessionId(), target);
         createQuickFluid(target, session.getSessionId(), origin);
     }

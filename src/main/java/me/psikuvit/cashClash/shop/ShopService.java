@@ -52,8 +52,43 @@ public class ShopService {
         CashClashPlayer ccp = getCashClashPlayer(player);
         if (ccp == null) return;
 
+        // Block fully-capped utility items before coins ever get deducted, so a blocked
+        // purchase doesn't also show a "Purchase successful" receipt that just gets refunded
+        if (item instanceof UtilityItem utilityItem && isUtilityCapReached(player, utilityItem)) {
+            return;
+        }
+
         deductCoins(player, totalPrice);
         giveItemToPlayer(player, ccp, item, quantity, totalPrice);
+    }
+
+    /**
+     * Check (and message/sound) a hard-capped utility item that's already at its limit.
+     * Items bought in bulk that straddle the cap are still handled in giveItemToPlayer.
+     */
+    private boolean isUtilityCapReached(Player player, UtilityItem utilityItem) {
+        int max = switch (utilityItem) {
+            case COBWEB -> 8;
+            case TOTEM -> 2;
+            default -> -1;
+        };
+        if (max < 0) return false;
+
+        if (countMaterial(player, utilityItem.getMaterial()) < max) return false;
+
+        Messages.send(player, utilityItem == UtilityItem.TOTEM ? "listener.max-totems-reached" : "listener.max-webs-reached");
+        SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+        return true;
+    }
+
+    private int countMaterial(Player player, Material material) {
+        int count = 0;
+        for (ItemStack is : player.getInventory().getContents()) {
+            if (is != null && is.getType() == material) {
+                count += is.getAmount();
+            }
+        }
+        return count;
     }
 
 
@@ -244,18 +279,9 @@ public class ShopService {
 
         switch (item) {
             case UtilityItem utilityItem when utilityItem == UtilityItem.COBWEB -> {
-                int currentWebs = 0;
-                for (ItemStack is : player.getInventory().getContents()) {
-                    if (is != null && is.getType() == Material.COBWEB) {
-                        currentWebs += is.getAmount();
-                    }
-                }
-                if (currentWebs >= 8) {
-                    Messages.send(player, "listener.max-webs-reached");
-                    SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                    refund(player, totalPrice);
-                    return;
-                }
+                // The fully-capped case is blocked earlier in processPurchase(); this only
+                // handles a bulk purchase that straddles the 8-web cap.
+                int currentWebs = countMaterial(player, Material.COBWEB);
                 int canGive = Math.min(giveQty, 8 - currentWebs);
                 ItemStack stack = ItemFactory.getInstance().createGameplayItem(item);
                 stack.setAmount(canGive);
