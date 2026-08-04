@@ -17,7 +17,6 @@ public enum CustomItem implements Purchasable {
     SMOKE_CLOUD_GRENADE(Material.GRAY_DYE, "smoke-grenade", 1, 0, "Smoke Cloud Grenade"),
     BOOMBOX(Material.JUKEBOX, "boombox", 1, 0, "Boombox"),
     INVIS_CLOAK(Material.PHANTOM_MEMBRANE, "invis-cloak", 1, 5, "Invisibility Cloak"),
-    CASH_BLASTER(Material.CROSSBOW, "cash-blaster", 1, 1, "Cash Blaster"),
     RESPAWN_ANCHOR(Material.RESPAWN_ANCHOR, "respawn-anchor", 1, 2, "Respawn Anchor"),
     TOTEM_OF_HAUNTING(Material.NETHER_STAR, "totem-of-haunting", 1, 0, "Totem of Haunting"),
     RADIATING_LOTUS(Material.GLOW_BERRIES, "radiating-lotus", 1, 0, "Radiating Lotus"),
@@ -25,8 +24,7 @@ public enum CustomItem implements Purchasable {
     OVERDRIVE_POTION(Material.POTION, "overdrive-potion", 1, 0, "Overdrive Potion"),
     HUNTERS_MARK(Material.FEATHER, "hunters-mark", 1, 0, "Hunter's Mark"),
     BLOOMING_ROSE(Material.CHERRY_SAPLING, "blooming-rose", 1, 0, "Blooming Rose"),
-    ORB_OF_GRAVITATION(Material.MAGMA_CREAM, "orb-of-gravitation", 1, 0, "Orb of Gravitation"),
-    SOUL_KATANA(Material.IRON_SWORD, "soul-katana", 1, 1, "Soul Katana");
+    ORB_OF_GRAVITATION(Material.MAGMA_CREAM, "orb-of-gravitation", 1, 0, "Orb of Gravitation");
 
     private final Material material;
     private final String configKey;

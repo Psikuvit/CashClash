@@ -11,7 +11,6 @@ import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
 import me.psikuvit.cashClash.manager.items.custom.BouncePadHandler;
 import me.psikuvit.cashClash.manager.items.custom.BoomboxHandler;
-import me.psikuvit.cashClash.manager.items.custom.CashBlasterHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.custom.GrenadeHandler;
 import me.psikuvit.cashClash.manager.items.custom.HuntersMarkHandler;
@@ -21,7 +20,6 @@ import me.psikuvit.cashClash.manager.items.custom.MedicPouchHandler;
 import me.psikuvit.cashClash.manager.items.custom.OrbOfGravitationHandler;
 import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
 import me.psikuvit.cashClash.manager.items.custom.RadiatingLotusHandler;
-import me.psikuvit.cashClash.manager.items.custom.SoulKatanaHandler;
 import me.psikuvit.cashClash.manager.items.custom.TabletOfHackingHandler;
 import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
 import me.psikuvit.cashClash.manager.items.mythic.BloodwrenchHandler;
@@ -31,9 +29,13 @@ import me.psikuvit.cashClash.manager.items.mythic.GoblinSpearHandler;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.manager.items.mythic.WindBowHandler;
+import me.psikuvit.cashClash.manager.items.weapon.CashBlasterHandler;
+import me.psikuvit.cashClash.manager.items.weapon.SoulKatanaHandler;
+import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
@@ -67,6 +69,7 @@ public class InteractListener implements Listener {
     private final CustomItemManager customItemManager = CustomItemManager.getInstance();
     private final MythicItemManager mythicManager = MythicItemManager.getInstance();
     private final CustomArmorManager armorManager = CustomArmorManager.getInstance();
+    private final WeaponItemManager weaponItemManager = WeaponItemManager.getInstance();
 
     // ==================== ENDER PEARL RESTRICTIONS ====================
 
@@ -184,6 +187,7 @@ public class InteractListener implements Listener {
             if (handleFireCharge(event, player, item)) return;
             if (handleSupplyDrop(event, player, item, action)) return;
             if (handleCustomItem(event, player, item, action)) return;
+            if (handleWeaponItem(event, player, item, action)) return;
             if (handleMythicItem(event, player, item, action)) return;
         }
     }
@@ -346,14 +350,6 @@ public class InteractListener implements Listener {
                     return true;
                 }
             }
-            case CASH_BLASTER -> {
-                if (player.isSneaking() && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK)) {
-                    event.setCancelled(true);
-                    armorManager.lockMythicShift(player);
-                    customItemManager.getHandler(CashBlasterHandler.class).onCashBlasterToggle(player);
-                    return true;
-                }
-            }
             case BOUNCE_PAD -> {
                 if (action == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
                     if (isSilenced(player)) {
@@ -442,13 +438,38 @@ public class InteractListener implements Listener {
                     return true;
                 }
             }
+        }
+        return false;
+    }
+
+    // ==================== WEAPONS ====================
+
+    private boolean handleWeaponItem(PlayerInteractEvent event, Player player, ItemStack item, Action action) {
+        WeaponItem weapon = PDCDetection.getWeapon(item);
+        if (weapon == null) return false;
+
+        // Special weapon abilities cannot be used during shopping
+        if (isInShoppingPhase(player)) return false;
+
+        switch (weapon) {
+            case CASH_BLASTER -> {
+                if (player.isSneaking() && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK)) {
+                    event.setCancelled(true);
+                    armorManager.lockMythicShift(player);
+                    weaponItemManager.getHandler(CashBlasterHandler.class).onCashBlasterToggle(player);
+                    return true;
+                }
+            }
             case SOUL_KATANA -> {
                 if (action.isRightClick() && player.isSneaking()) {
                     event.setCancelled(true);
                     armorManager.lockMythicShift(player);
-                    customItemManager.getHandler(SoulKatanaHandler.class).usePhantomSlice(player);
+                    weaponItemManager.getHandler(SoulKatanaHandler.class).usePhantomSlice(player);
                     return true;
                 }
+            }
+            default -> {
+                // No special interaction for standard weapons
             }
         }
         return false;

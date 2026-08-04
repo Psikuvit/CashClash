@@ -20,7 +20,6 @@ import me.psikuvit.cashClash.manager.items.custom.HuntersMarkHandler;
 import me.psikuvit.cashClash.manager.items.custom.IceFanHandler;
 import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
 import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
-import me.psikuvit.cashClash.manager.items.custom.SoulKatanaHandler;
 import me.psikuvit.cashClash.manager.items.custom.TotemOfHauntingHandler;
 import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
 import me.psikuvit.cashClash.manager.items.mythic.CarlsBattleaxeHandler;
@@ -28,6 +27,8 @@ import me.psikuvit.cashClash.manager.items.mythic.ElectricEelHandler;
 import me.psikuvit.cashClash.manager.items.mythic.GoblinSpearHandler;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
+import me.psikuvit.cashClash.manager.items.weapon.SoulKatanaHandler;
+import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -80,12 +81,14 @@ public class DamageListener implements Listener {
     private final CustomArmorManager armorManager;
     private final CustomItemManager customItemManager;
     private final MythicItemManager mythicManager;
+    private final WeaponItemManager weaponItemManager;
 
     public DamageListener() {
         this.gameManager = GameManager.getInstance();
         this.armorManager = CustomArmorManager.getInstance();
         this.customItemManager = CustomItemManager.getInstance();
         this.mythicManager = MythicItemManager.getInstance();
+        this.weaponItemManager = WeaponItemManager.getInstance();
     }
 
     // ==================== MAIN DAMAGE HANDLER (EntityDamageEvent) ====================
@@ -193,7 +196,7 @@ public class DamageListener implements Listener {
 
             // Soul Katana Phantom Slice: zero armor/effect-based damage modifiers so the flat
             // ability strike lands untouched (transient flag set only around the direct damage call)
-            if (attacker != null && victim != null && customItemManager.getHandler(SoulKatanaHandler.class).isPhantomSliceDamage(attacker.getUniqueId())) {
+            if (attacker != null && victim != null && weaponItemManager.getHandler(SoulKatanaHandler.class).isPhantomSliceDamage(attacker.getUniqueId())) {
                 applyPhantomSliceDamageModifiers(event);
             }
 

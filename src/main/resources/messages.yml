@@ -476,9 +476,9 @@ messages:
      shockwave-activated: "<dark_aqua>SHOCKWAVE!</dark_aqua>"
      blazebite-reloading: "<red>BlazeBite reloading! ({cooldown_seconds}s)</red>"
      blazebite-reload-start: "<yellow>BlazeBite reloading...</yellow>"
-      target-frozen: "<aqua>Target frozen solid!</aqua>"
-      you-are-frozen: "<aqua>You are frozen in place!</aqua>"
-      alchemist-taunt-activated: "<gold>Alchemist Wand: TAUNT! Teammates chained together.</gold>"
+     target-frozen: "<aqua>Target frozen solid!</aqua>"
+     you-are-frozen: "<aqua>You are frozen in place!</aqua>"
+     alchemist-taunt-activated: "<gold>Alchemist Wand: TAUNT! Teammates chained together.</gold>"
 
   # ============================================
   # CASHQUAKE/LOTTERY MESSAGES
@@ -884,6 +884,7 @@ messages:
     invis-deactivated: "<yellow>Invisibility deactivated.</yellow>"
     invis-disabled-shopping: "<red>Invisibility disabled at start of shopping phase!</red>"
     max-one-cloak: "<red>You can only carry one Invisibility Cloak at a time!</red>"
+    already-owned: "<red>You already own {item_name}!</red>"
     cash-blaster-hit-capped: "<green>+${amount} from Cash Blaster hit! (Reached max: ${max})</green>"
     cash-blaster-limit: "<red>Cash Blaster limit of ${max} reached this round!</red>"
     cash-blaster-hit: "<green>+${amount} from Cash Blaster hit!</green>"

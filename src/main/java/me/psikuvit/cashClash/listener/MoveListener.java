@@ -6,7 +6,8 @@ import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.custom.BouncePadHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
-import me.psikuvit.cashClash.manager.items.custom.SoulKatanaHandler;
+import me.psikuvit.cashClash.manager.items.weapon.SoulKatanaHandler;
+import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -25,6 +26,7 @@ public class MoveListener implements Listener {
 
     private final CustomItemManager customItemManager = CustomItemManager.getInstance();
     private final CustomArmorManager armorManager = CustomArmorManager.getInstance();
+    private final WeaponItemManager weaponItemManager = WeaponItemManager.getInstance();
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
@@ -49,7 +51,7 @@ public class MoveListener implements Listener {
 
         // Soul Katana Phantom Slice: the dash strike resolves once the player leaves the ground
         // and touches back down
-        customItemManager.getHandler(SoulKatanaHandler.class).handleSoulKatanaLand(player);
+        weaponItemManager.getHandler(SoulKatanaHandler.class).handleSoulKatanaLand(player);
 
         // Check block player is standing on for floor-mounted bounce pads
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();

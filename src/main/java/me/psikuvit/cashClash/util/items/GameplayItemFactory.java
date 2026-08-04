@@ -50,7 +50,7 @@ public final class GameplayItemFactory {
         if (purchasable == null) return null;
 
         ItemStack item = new ItemStack(purchasable.getMaterial(), 1);
-        if (!item.hasItemMeta()) return item;
+        if (item.getType().isAir()) return item;
 
         PDCSetter tags = PDCSetter.of(item);
 
@@ -77,6 +77,9 @@ public final class GameplayItemFactory {
         } else {
             // Apply armor properties (unbreakable, hide flags)
             applyArmorProperties(tags.meta(), item.getType());
+            if (purchasable instanceof WeaponItem weaponItem) {
+                applyWeaponProperties(tags, weaponItem);
+            }
         }
 
         tags.apply();
@@ -94,7 +97,7 @@ public final class GameplayItemFactory {
         if (customItem == null || owner == null) return null;
 
         ItemStack item = new ItemStack(customItem.getMaterial());
-        if (!item.hasItemMeta()) return item;
+        if (item.getType().isAir()) return item;
 
         PDCSetter tags = PDCSetter.of(item);
 
@@ -139,7 +142,12 @@ public final class GameplayItemFactory {
         if (player == null || armor == null) return;
 
         ItemStack item = new ItemStack(armor.getMaterial());
-        if (!item.hasItemMeta()) return;
+        Messages.debug(player, Messages.DebugCategory.SHOP, "createAndEquipCustomArmor: " + armor.name()
+                + " material=" + armor.getMaterial() + " hasItemMeta=" + item.hasItemMeta());
+        if (item.getType().isAir()) {
+            Messages.debug(player, Messages.DebugCategory.SHOP, "!! EARLY RETURN: air material, armor NOT equipped: " + armor.name());
+            return;
+        }
 
         PDCSetter tags = PDCSetter.of(item);
 
@@ -169,7 +177,9 @@ public final class GameplayItemFactory {
         CustomModelDataMapper.applyArmorModel(item, armor);
 
         // Equip the armor
+        Messages.debug(player, Messages.DebugCategory.SHOP, "createAndEquipCustomArmor tags applied, equipping: " + armor.name() + " meta=" + item.hasItemMeta());
         ItemUtils.equipArmorOrReplace(player, item);
+        Messages.debug(player, Messages.DebugCategory.SHOP, "createAndEquipCustomArmor finished for: " + armor.name());
     }
 
     // ==================== PRIVATE HELPER METHODS ====================
@@ -237,7 +247,6 @@ public final class GameplayItemFactory {
                 }
                 tags.meta().addEnchant(Enchantment.KNOCKBACK, 3, true);
             }
-            case CASH_BLASTER -> tags.meta().addEnchant(Enchantment.MULTISHOT, 1, true);
             case INVIS_CLOAK -> tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);
             case ICE_FAN -> {
                 // Shears' vanilla max durability doesn't match the 75-point design budget, so
@@ -246,6 +255,18 @@ public final class GameplayItemFactory {
                 // on Damageable directly, like BAG_OF_POTATOES does.
                 tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, ItemsConfig.getInstance().getIceFanMaxDurability());
             }
+            default -> {
+                // No special properties
+            }
+        }
+    }
+
+    /**
+     * Applies special properties to weapons based on their type.
+     */
+    private void applyWeaponProperties(PDCSetter tags, WeaponItem weaponItem) {
+        switch (weaponItem) {
+            case CASH_BLASTER -> tags.meta().addEnchant(Enchantment.MULTISHOT, 1, true);
             default -> {
                 // No special properties
             }

@@ -1,9 +1,18 @@
 package me.psikuvit.cashClash.gui.categories;
 
+import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.shop.ShopCategory;
+import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
+import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.inventory.ItemStack;
 
 /**
  * Shop category GUI for weapons.
@@ -43,10 +52,34 @@ public class WeaponsCategoryGui extends AbstractShopCategoryGui {
             setButton(12, createPurchasableButtonMaxed(WeaponItem.IRON_AXE, false));
         }
 
+        // Ranged weapons
+        setButton(14, createPurchasableButton(UtilityItem.CROSSBOW, 1));
+        setButton(15, createPurchasableButton(UtilityItem.BOW, 1));
+
+        // Signature weapons (unique ownership)
+        setButton(30, createSignatureWeaponButton(WeaponItem.SOUL_KATANA));
+        setButton(32, createSignatureWeaponButton(WeaponItem.CASH_BLASTER));
+
         // Separator
         for (int i = 0; i < 2; i++) {
             setItem(SEPARATOR_COLUMN_BASE_SLOT + i * 18, createPane(Material.LIGHT_BLUE_STAINED_GLASS_PANE));
         }
     }
-}
 
+    /**
+     * Creates a button for a unique weapon that the player can only own once.
+     */
+    private GuiButton createSignatureWeaponButton(WeaponItem item) {
+        ItemStack itemStack = ItemFactory.getInstance().createGuiItem(viewer, item, 1);
+        return GuiButton.of(itemStack).onClick(p -> {
+            for (ItemStack is : p.getInventory().getContents()) {
+                if (is != null && PDCDetection.getWeapon(is) == item) {
+                    Messages.send(p, "customitem.already-owned", "item_name", item.getDisplayName());
+                    SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                    return;
+                }
+            }
+            handlePurchasableClick(item, ClickType.LEFT);
+        });
+    }
+}

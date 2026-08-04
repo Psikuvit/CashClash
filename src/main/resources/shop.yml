@@ -31,6 +31,8 @@ weapons:
   diamond-axe: 3000
   netherite-sword: 10000
   netherite-axe: 10000
+  cash-blaster: 30000
+  soul-katana: 30000
 
 # ============================================
 # FOOD PRICES
@@ -61,7 +63,9 @@ utility:
   wind-charge: 3000
   bow: 3500
   arrow: 500
+  spectral-arrow: 500
   leaves: 750
+  totem: 10000
   soul-sand: 1000
 
 # ============================================
@@ -76,7 +80,6 @@ custom-items:
   bag-of-potatoes: 17500
   boombox: 20000
   invis-cloak: 25000
-  cash-blaster: 30000
   respawn-anchor: 50000
   totem-of-haunting: 7500
   radiating-lotus: 2000
@@ -85,7 +88,6 @@ custom-items:
   hunters-mark: 7000
   blooming-rose: 6500
   orb-of-gravitation: 7000
-  soul-katana: 30000
 
 # ============================================
 # CUSTOM ARMOR PRICES

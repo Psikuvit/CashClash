@@ -22,7 +22,6 @@ import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
 import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
-import me.psikuvit.cashClash.manager.items.custom.CashBlasterHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
 import me.psikuvit.cashClash.manager.items.custom.MedicPouchHandler;
@@ -33,6 +32,8 @@ import me.psikuvit.cashClash.manager.items.mythic.BloodwrenchHandler;
 import me.psikuvit.cashClash.manager.items.mythic.GoblinSpearHandler;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.WindBowHandler;
+import me.psikuvit.cashClash.manager.items.weapon.CashBlasterHandler;
+import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
@@ -42,6 +43,7 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
@@ -102,6 +104,7 @@ public class GameListener implements Listener {
     private final CustomArmorManager armorManager = CustomArmorManager.getInstance();
     private final CustomItemManager customItemManager = CustomItemManager.getInstance();
     private final MythicItemManager mythicManager = MythicItemManager.getInstance();
+    private final WeaponItemManager weaponItemManager = WeaponItemManager.getInstance();
 
     // ==================== PLAYER DEATH ====================
 
@@ -119,7 +122,7 @@ public class GameListener implements Listener {
 
         // Profit Vortex: a death inside a vortex credits the killer's team even though the
         // fatal blow may not be credited to the vortex owner.
-        customItemManager.getHandler(CashBlasterHandler.class).onProfitVortexDeath(event);
+        weaponItemManager.getHandler(CashBlasterHandler.class).onProfitVortexDeath(event);
 
         // Prevent item drops and experience loss
         event.setKeepInventory(true);
@@ -589,9 +592,9 @@ public class GameListener implements Listener {
         ItemStack bow = event.getBow();
         if (bow == null) return;
 
-        // Cash Blaster: supercharge toggle + Profit Vortex shots (custom item, not mythic)
-        if (PDCDetection.getCustomItem(bow) == CustomItem.CASH_BLASTER) {
-            customItemManager.getHandler(CashBlasterHandler.class).onCashBlasterShoot(event);
+        // Cash Blaster: supercharge toggle + Profit Vortex shots (special weapon, not mythic)
+        if (PDCDetection.getWeapon(bow) == WeaponItem.CASH_BLASTER) {
+            weaponItemManager.getHandler(CashBlasterHandler.class).onCashBlasterShoot(event);
             return;
         }
 
@@ -657,7 +660,7 @@ public class GameListener implements Listener {
         if (event.getEntity() instanceof Arrow arrow) {
             // Profit Vortex: a tagged Cash Blaster arrow spawns its vortex on any impact
             // (world or entity), so handle it before the orb/charged-arrow branch.
-            customItemManager.getHandler(CashBlasterHandler.class).onProfitVortexArrowHit(arrow);
+            weaponItemManager.getHandler(CashBlasterHandler.class).onProfitVortexArrowHit(arrow);
             // Orb of Gravitation: a fully-charged bow shot hitting a live orb decrements its
             // hits-remaining counter (4 hits destroys it) - projectile-vs-projectile collisions
             // surface here via getHitEntity(), not EntityDamageByEntityEvent.
@@ -772,9 +775,9 @@ public class GameListener implements Listener {
             return;
         }
 
-        CustomItem type = PDCDetection.getCustomItem(item);
-        if (type == CustomItem.CASH_BLASTER) {
-            customItemManager.getHandler(CashBlasterHandler.class).handleCashBlasterHit(attacker);
+        WeaponItem type = PDCDetection.getWeapon(item);
+        if (type == WeaponItem.CASH_BLASTER) {
+            weaponItemManager.getHandler(CashBlasterHandler.class).handleCashBlasterHit(attacker);
         }
     }
 

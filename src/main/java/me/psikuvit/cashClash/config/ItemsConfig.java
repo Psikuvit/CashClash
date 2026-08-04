@@ -365,23 +365,23 @@ public class ItemsConfig {
 
     // Cash Blaster
     public int getCashBlasterCoinsPerHit() {
-        return config.getInt("custom-items.cash-blaster.coins-per-hit", 500);
+        return config.getInt("weapons.cash-blaster.coins-per-hit", 500);
     }
 
     public int getCashBlasterVortexCooldown() {
-        return config.getInt("custom-items.cash-blaster.vortex-cooldown-seconds", 10);
+        return config.getInt("weapons.cash-blaster.vortex-cooldown-seconds", 10);
     }
 
     public double getCashBlasterVortexRadius() {
-        return config.getDouble("custom-items.cash-blaster.vortex-radius", 3.5);
+        return config.getDouble("weapons.cash-blaster.vortex-radius", 3.5);
     }
 
     public int getCashBlasterVortexDurationTicks() {
-        return config.getInt("custom-items.cash-blaster.vortex-duration-ticks", 80);
+        return config.getInt("weapons.cash-blaster.vortex-duration-ticks", 80);
     }
 
     public int getCashBlasterVortexKillReward() {
-        return config.getInt("custom-items.cash-blaster.vortex-kill-reward", 400);
+        return config.getInt("weapons.cash-blaster.vortex-kill-reward", 400);
     }
 
     // Respawn Anchor
@@ -538,27 +538,27 @@ public class ItemsConfig {
 
     // Soul Katana
     public double getSoulKatanaLeapDistance() {
-        return config.getDouble("custom-items.soul-katana.leap-distance", 3);
+        return config.getDouble("weapons.soul-katana.leap-distance", 3);
     }
 
     public double getSoulKatanaStrikeDamage() {
-        return config.getDouble("custom-items.soul-katana.strike-damage", 6.0);
+        return config.getDouble("weapons.soul-katana.strike-damage", 6.0);
     }
 
     public int getSoulKatanaHealingReductionPercent() {
-        return config.getInt("custom-items.soul-katana.healing-reduction-percent", 30);
+        return config.getInt("weapons.soul-katana.healing-reduction-percent", 30);
     }
 
     public int getSoulKatanaHealingReductionDurationSeconds() {
-        return config.getInt("custom-items.soul-katana.healing-reduction-duration-seconds", 3);
+        return config.getInt("weapons.soul-katana.healing-reduction-duration-seconds", 3);
     }
 
     public int getSoulKatanaCooldownSeconds() {
-        return config.getInt("custom-items.soul-katana.cooldown-seconds", 18);
+        return config.getInt("weapons.soul-katana.cooldown-seconds", 18);
     }
 
     public double getSoulKatanaStrikeRadius() {
-        return config.getDouble("custom-items.soul-katana.strike-radius", 4);
+        return config.getDouble("weapons.soul-katana.strike-radius", 4);
     }
 
     // ==================== CUSTOM ARMOR ====================

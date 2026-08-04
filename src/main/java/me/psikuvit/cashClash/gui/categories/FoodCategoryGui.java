@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.gui.categories;
 
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.FoodItem;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 /**
@@ -10,6 +11,9 @@ import org.bukkit.entity.Player;
 public class FoodCategoryGui extends AbstractShopCategoryGui {
 
     private static final String GUI_ID = "shop_food";
+
+    // Separator column base slot
+    private static final int SEPARATOR_COLUMN_BASE_SLOT = 24;
 
     public FoodCategoryGui(Player viewer) {
         super(GUI_ID, viewer, ShopCategory.FOOD);
@@ -23,15 +27,17 @@ public class FoodCategoryGui extends AbstractShopCategoryGui {
         setButton(21, createPurchasableButton(FoodItem.COOKIE_OF_LIFE, 2));
         setButton(22, createPurchasableButton(FoodItem.SUNSCREEN, 2));
         setButton(23, createPurchasableButton(FoodItem.CAN_OF_SPINACH, 2));
-        setButton(25, createPurchasableButton(FoodItem.GOLDEN_APPLE, 1));
 
         // Standard food
+        setButton(25, createPurchasableButton(FoodItem.GOLDEN_APPLE, 1));
         setButton(29, createPurchasableButton(FoodItem.BREAD, 4));
         setButton(30, createPurchasableButton(FoodItem.STEAK, 4));
         setButton(31, createPurchasableButton(FoodItem.GOLDEN_CARROT, 4));
-        setButton(32, createPurchasableButton(FoodItem.COOKED_MUTTON, 4));
-        setButton(33, createPurchasableButton(FoodItem.PORKCHOP, 4));
         setButton(34, createPurchasableButton(FoodItem.ENCHANTED_GOLDEN_APPLE, 1));
+
+        // Separator
+        for (int i = 0; i < 2; i++) {
+            setItem(SEPARATOR_COLUMN_BASE_SLOT + i * 9, createPane(Material.LIGHT_BLUE_STAINED_GLASS_PANE));
+        }
     }
 }
-

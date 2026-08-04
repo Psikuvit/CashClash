@@ -17,6 +17,7 @@ import me.psikuvit.cashClash.manager.game.RoundManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
@@ -663,6 +664,7 @@ public class GameSession {
         CustomArmorManager.getInstance().cleanup();
         CustomItemManager.getInstance().cleanup();
         MythicItemManager.getInstance().cleanup();
+        WeaponItemManager.getInstance().cleanup();
     }
 
     /**

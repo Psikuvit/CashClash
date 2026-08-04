@@ -8,19 +8,23 @@ import org.bukkit.Material;
  * Weapon items available in the shop.
  */
 public enum WeaponItem implements Purchasable {
-    IRON_SWORD(Material.IRON_SWORD, "iron-sword"),
-    IRON_AXE(Material.IRON_AXE, "iron-axe"),
-    DIAMOND_SWORD(Material.DIAMOND_SWORD, "diamond-sword"),
-    DIAMOND_AXE(Material.DIAMOND_AXE, "diamond-axe"),
-    NETHERITE_SWORD(Material.NETHERITE_SWORD, "netherite-sword"),
-    NETHERITE_AXE(Material.NETHERITE_AXE, "netherite-axe");
+    IRON_SWORD(Material.IRON_SWORD, "iron-sword", "Iron Sword"),
+    IRON_AXE(Material.IRON_AXE, "iron-axe", "Iron Axe"),
+    DIAMOND_SWORD(Material.DIAMOND_SWORD, "diamond-sword", "Diamond Sword"),
+    DIAMOND_AXE(Material.DIAMOND_AXE, "diamond-axe", "Diamond Axe"),
+    NETHERITE_SWORD(Material.NETHERITE_SWORD, "netherite-sword", "Netherite Sword"),
+    NETHERITE_AXE(Material.NETHERITE_AXE, "netherite-axe", "Netherite Axe"),
+    SOUL_KATANA(Material.IRON_SWORD, "soul-katana", "Soul Katana"),
+    CASH_BLASTER(Material.BOW, "cash-blaster", "Cash Blaster");
 
     private final Material material;
     private final String configKey;
+    private final String displayName;
 
-    WeaponItem(Material material, String configKey) {
+    WeaponItem(Material material, String configKey, String displayName) {
         this.material = material;
         this.configKey = configKey;
+        this.displayName = displayName;
     }
 
     @Override
@@ -50,7 +54,6 @@ public enum WeaponItem implements Purchasable {
 
     @Override
     public String getDisplayName() {
-        return name().substring(0, 1).toUpperCase() + name().substring(1).toLowerCase().replace("_", " ");
+        return displayName;
     }
 }
-

@@ -1,10 +1,11 @@
-package me.psikuvit.cashClash.manager.items.custom;
+package me.psikuvit.cashClash.manager.items.weapon;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -32,7 +33,7 @@ import java.util.UUID;
  * healing-reduction debuff shown by a rotating soul mark. Also hooks the Deathmauler
  * soul-burst and the Dragon-scale armor counters on a strike.
  */
-public class SoulKatanaHandler extends CustomItemHandler {
+public class SoulKatanaHandler extends WeaponItemHandler {
 
     // Soul Katana - Phantom Slice: attackers whose damage call is the flat ability strike (set
     // only around the direct damage call so DamageListener zeroes armor/effect modifiers there)
@@ -46,7 +47,7 @@ public class SoulKatanaHandler extends CustomItemHandler {
     private final Map<UUID, BukkitTask> soulKatanaTrailTasks;
     private final Map<UUID, BukkitTask> soulKatanaMarkTasks;
 
-    public SoulKatanaHandler(CustomItemManager manager) {
+    public SoulKatanaHandler(WeaponItemManager manager) {
         super(manager);
         this.phantomSliceDamageActive = new HashSet<>();
         this.soulKatanaDashing = new HashMap<>();
@@ -123,7 +124,7 @@ public class SoulKatanaHandler extends CustomItemHandler {
             armorManager.getHandler(DragonSetHandler.class).handleDragonHit(player);
             SoundUtils.playAt(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.0f);
 
-            manager.applyHealingReduction(target.getUniqueId(), healingMultiplier, debuffDuration);
+            CustomItemManager.getInstance().applyHealingReduction(target.getUniqueId(), healingMultiplier, debuffDuration);
             startSoulKatanaHealingMark(target);
         }
 
@@ -201,12 +202,12 @@ public class SoulKatanaHandler extends CustomItemHandler {
 
             @Override
             public void run() {
-                Long endTime = manager.getHealingReducedUntil().get(id);
+                Long endTime = CustomItemManager.getInstance().getHealingReducedUntil().get(id);
                 if (endTime == null || System.currentTimeMillis() >= endTime || !target.isOnline()) {
                     cancel();
                     soulKatanaMarkTasks.remove(id);
-                    manager.getHealingReducedUntil().remove(id);
-                    manager.getHealingReductionMultiplier().remove(id);
+                    CustomItemManager.getInstance().getHealingReducedUntil().remove(id);
+                    CustomItemManager.getInstance().getHealingReductionMultiplier().remove(id);
                     return;
                 }
                 Location center = target.getLocation().clone().add(0, 2.4, 0);

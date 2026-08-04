@@ -1,10 +1,10 @@
-package me.psikuvit.cashClash.manager.items.custom;
+package me.psikuvit.cashClash.manager.items.weapon;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
@@ -43,7 +43,7 @@ import java.util.UUID;
  * inside it and credits the shooter's team when one of them dies inside it; a
  * spectral-vortex variant glows enemies first.
  */
-public class CashBlasterHandler extends CustomItemHandler {
+public class CashBlasterHandler extends WeaponItemHandler {
 
     private final Map<UUID, Long> cashBlasterEarningsThisRound;
 
@@ -55,7 +55,7 @@ public class CashBlasterHandler extends CustomItemHandler {
     private final Map<Location, Boolean> spectralProfitVortices;
     private final Map<Location, Set<UUID>> spectralVortexMarkedPlayers;
 
-    public CashBlasterHandler(CustomItemManager manager) {
+    public CashBlasterHandler(WeaponItemManager manager) {
         super(manager);
         this.cashBlasterEarningsThisRound = new HashMap<>();
         this.cashBlasterSupercharged = new HashMap<>();
@@ -125,7 +125,7 @@ public class CashBlasterHandler extends CustomItemHandler {
     }
 
     public boolean hasCashBlasterInHand(Player player) {
-        return PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.CASH_BLASTER;
+        return PDCDetection.getWeapon(player.getInventory().getItemInMainHand()) == WeaponItem.CASH_BLASTER;
     }
 
     /**

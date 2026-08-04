@@ -113,6 +113,27 @@ mythic-items:
       fire-duration-seconds: 5
 
 # ============================================
+# WEAPONS
+# ============================================
+weapons:
+  # Cash Blaster
+  cash-blaster:
+    coins-per-hit: 200
+    vortex-cooldown-seconds: 10
+    vortex-radius: 3.5
+    vortex-duration-ticks: 80
+    vortex-kill-reward: 400
+
+  # Soul Katana
+  soul-katana:
+    leap-distance: 3
+    strike-damage: 6.0
+    healing-reduction-percent: 30
+    healing-reduction-duration-seconds: 3
+    cooldown-seconds: 18
+    strike-radius: 4
+
+# ============================================
 # CUSTOM ARMOR SETS
 # ============================================
 custom-armor:
@@ -237,14 +258,6 @@ custom-items:
     cooldown-seconds: 15
     uses-per-round: 1
 
-  # Cash Blaster
-  cash-blaster:
-    coins-per-hit: 200
-    vortex-cooldown-seconds: 10
-    vortex-radius: 3.5
-    vortex-duration-ticks: 80
-    vortex-kill-reward: 400
-
   # Respawn Anchor
   respawn-anchor:
     revive-duration-seconds: 10
@@ -308,15 +321,6 @@ custom-items:
     pull-duration-ticks: 40
     slowness-duration-seconds: 5
     hits-to-destroy: 4
-
-  # Soul Katana
-  soul-katana:
-    leap-distance: 3
-    strike-damage: 6.0
-    healing-reduction-percent: 30
-    healing-reduction-duration-seconds: 3
-    cooldown-seconds: 18
-    strike-radius: 4
 
 
 # ============================================
@@ -407,6 +411,16 @@ item-lore:
       lore:
         - "<gray>A legendary netherite axe</gray>"
         - "<yellow>Late game weapon</yellow>"
+    cash-blaster:
+      lore:
+        - "<gray>Shoots coins</gray>"
+        - "<yellow>Deals damage</yellow>"
+    soul-katana:
+      lore:
+        - "<gray>Shift + right-click: Phantom Slice</gray>"
+        - "<gray>Leap forward and strike all nearby</gray>"
+        - "<gray>Damage ignores armor and effects</gray>"
+        - "<gray>Struck enemies heal 30% less for 3s</gray>"
 
   # ==================== ARMOR ====================
   armor:
@@ -591,10 +605,6 @@ item-lore:
       lore:
         - "<gray>Grants invisibility</gray>"
         - "<yellow>Costs coins per second</yellow>"
-    cash-blaster:
-      lore:
-        - "<gray>Shoots coins</gray>"
-        - "<yellow>Deals damage</yellow>"
     respawn-anchor:
       lore:
         - "<gray>Revives fallen allies</gray>"
@@ -637,12 +647,6 @@ item-lore:
         - "<gray>or let it impact to pull enemies in</gray>"
         - "<gray>Pulled enemies take Slowness I for 5s</gray>"
         - "<gray>Destroyed by 4 fully-charged bow shots</gray>"
-    soul-katana:
-      lore:
-        - "<gray>Shift + right-click: Phantom Slice</gray>"
-        - "<gray>Leap forward and strike all nearby</gray>"
-        - "<gray>Damage ignores armor and effects</gray>"
-        - "<gray>Struck enemies heal 30% less for 3s</gray>"
 
   # ==================== CUSTOM ARMOR ====================
   custom-armor:

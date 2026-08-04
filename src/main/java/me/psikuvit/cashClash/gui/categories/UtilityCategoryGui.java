@@ -25,13 +25,9 @@ public class UtilityCategoryGui extends AbstractShopCategoryGui {
         // Row 3
         setButton(21, createPurchasableButton(UtilityItem.COBWEB, 1));
         setButton(22, createPurchasableButton(UtilityItem.ARROWS, 5));
-        setButton(23, createPurchasableButton(UtilityItem.FISHING_ROD, 1));
+        setButton(23, createPurchasableButton(UtilityItem.TOTEM, 1));
 
         // Row 4
-        setButton(31, createPurchasableButton(UtilityItem.CROSSBOW, 1));
-        setButton(32, createPurchasableButton(UtilityItem.WIND_CHARGE, 4));
-        setButton(33, createPurchasableButton(UtilityItem.BOW, 1));
-        setButton(34, createPurchasableButton(UtilityItem.SOUL_SAND, 16));
+        setButton(31, createPurchasableButton(UtilityItem.SPECTRAL_ARROW, 5));
     }
 }
-

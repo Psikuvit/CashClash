@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.ShopItems;
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.enums.InvestmentType;
 import org.bukkit.NamespacedKey;
@@ -42,6 +43,15 @@ public final class PDCDetection {
     public static CustomItem getCustomItem(ItemStack stack) {
         String tag = readTag(stack, Keys.ITEM_ID);
         return tag != null ? ShopItems.getCustomItem(tag) : null;
+    }
+
+    /**
+     * Get weapon type from an ItemStack.
+     * @return WeaponItem or null if not a weapon
+     */
+    public static WeaponItem getWeapon(ItemStack stack) {
+        String tag = readTag(stack, Keys.ITEM_ID);
+        return tag != null ? ShopItems.getWeapon(tag) : null;
     }
 
     /**

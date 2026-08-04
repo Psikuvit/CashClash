@@ -58,7 +58,6 @@ public class CustomItemManager {
         register(BagOfPotatoesHandler::new, CustomItem.BAG_OF_POTATOES);
         register(BoomboxHandler::new, CustomItem.BOOMBOX);
         register(InvisCloakHandler::new, CustomItem.INVIS_CLOAK);
-        register(CashBlasterHandler::new, CustomItem.CASH_BLASTER);
         register(RespawnAnchorHandler::new, CustomItem.RESPAWN_ANCHOR);
         register(TotemOfHauntingHandler::new, CustomItem.TOTEM_OF_HAUNTING);
         register(RadiatingLotusHandler::new, CustomItem.RADIATING_LOTUS);
@@ -67,7 +66,6 @@ public class CustomItemManager {
         register(HuntersMarkHandler::new, CustomItem.HUNTERS_MARK);
         register(BloomingRoseHandler::new, CustomItem.BLOOMING_ROSE);
         register(OrbOfGravitationHandler::new, CustomItem.ORB_OF_GRAVITATION);
-        register(SoulKatanaHandler::new, CustomItem.SOUL_KATANA);
     }
 
     public static CustomItemManager getInstance() {
@@ -137,11 +135,11 @@ public class CustomItemManager {
         return armorManager;
     }
 
-    Map<UUID, Long> getHealingReducedUntil() {
+    public Map<UUID, Long> getHealingReducedUntil() {
         return healingReducedUntil;
     }
 
-    Map<UUID, Double> getHealingReductionMultiplier() {
+    public Map<UUID, Double> getHealingReductionMultiplier() {
         return healingReductionMultiplier;
     }
 
