@@ -28,11 +28,13 @@ public class TectonicCapHandler extends ArmorSetHandler {
 
     private final Map<UUID, Long> tectonicCharge1Cooldown;
     private final Map<UUID, Long> tectonicCharge2Cooldown;
+    private final Map<UUID, Long> nextFallWarningTick; // throttle for the falling warning aura
 
     public TectonicCapHandler(CustomArmorManager manager) {
         super(manager);
         this.tectonicCharge1Cooldown = new ConcurrentHashMap<>();
         this.tectonicCharge2Cooldown = new ConcurrentHashMap<>();
+        this.nextFallWarningTick = new ConcurrentHashMap<>();
     }
 
     public boolean hasTectonicCap(Player player) {
@@ -40,6 +42,32 @@ public class TectonicCapHandler extends ArmorSetHandler {
             if (ca == CustomArmorItem.TECTONIC_CAP) return true;
         }
         return false;
+    }
+
+    /**
+     * Falling warning aura: while airborne, falling far enough that a landing would deal
+     * fall damage, and with at least one slam charge ready, trail dust around the wearer's
+     * feet to telegraph the impending slam.
+     */
+    public void handleFallWarning(Player player) {
+        if (!hasTectonicCap(player)) return;
+        if (player.isOnGround() || player.isFlying()) return;
+        if (player.getVelocity().getY() >= 0) return;
+        if (player.getFallDistance() < 3.0f) return;
+
+        UUID id = player.getUniqueId();
+        long now = System.currentTimeMillis();
+
+        boolean charge1Ready = !tectonicCharge1Cooldown.containsKey(id) || tectonicCharge1Cooldown.get(id) <= now;
+        boolean charge2Ready = !tectonicCharge2Cooldown.containsKey(id) || tectonicCharge2Cooldown.get(id) <= now;
+        if (!charge1Ready && !charge2Ready) return;
+
+        Long next = nextFallWarningTick.get(id);
+        if (next != null && now < next) return;
+        nextFallWarningTick.put(id, now + 150L);
+
+        ParticleUtils.spawnDust(player.getLocation().clone().add(0, 0.1, 0),
+                Color.fromRGB(180, 120, 60), 1.0f, 6, 0.25, 0.05, 0.25);
     }
 
     public void onTectonicCapFall(EntityDamageEvent event, Player player) {
@@ -101,6 +129,7 @@ public class TectonicCapHandler extends ArmorSetHandler {
     public void cleanup() {
         tectonicCharge1Cooldown.clear();
         tectonicCharge2Cooldown.clear();
+        nextFallWarningTick.clear();
     }
 
     @Override

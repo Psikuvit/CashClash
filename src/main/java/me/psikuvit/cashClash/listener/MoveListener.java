@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.armor.TectonicCapHandler;
 import me.psikuvit.cashClash.manager.items.custom.BouncePadHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.weapon.SoulKatanaHandler;
@@ -52,6 +53,9 @@ public class MoveListener implements Listener {
         // Soul Katana Phantom Slice: the dash strike resolves once the player leaves the ground
         // and touches back down
         weaponItemManager.getHandler(SoulKatanaHandler.class).handleSoulKatanaLand(player);
+
+        // Tectonic Cap: falling warning aura when a slam charge is ready
+        armorManager.getHandler(TectonicCapHandler.class).handleFallWarning(player);
 
         // Check block player is standing on for floor-mounted bounce pads
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
