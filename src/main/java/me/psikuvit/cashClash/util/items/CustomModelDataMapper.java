@@ -86,19 +86,19 @@ public final class CustomModelDataMapper {
         INVESTMENT_KEYS.put(InvestmentType.ENDER_BAG, "enderbag");
 
         // Armor: setItemModel() → assets/cc/items/<name>.json (all verified present in pack)
-        ARMOR_MODELS.put(CustomArmorItem.BUNNY_SHOES,            new NamespacedKey("cc", "item/bunny_boots"));
-        ARMOR_MODELS.put(CustomArmorItem.DEATHMAULER_CHESTPLATE, new NamespacedKey("cc", "item/deathmaulers_chestplate"));
-        ARMOR_MODELS.put(CustomArmorItem.DEATHMAULER_LEGGINGS,   new NamespacedKey("cc", "item/deathmaulers_leggings"));
-        ARMOR_MODELS.put(CustomArmorItem.DRAGON_BOOTS,           new NamespacedKey("cc", "item/dragon_boots"));
-        ARMOR_MODELS.put(CustomArmorItem.DRAGON_CHESTPLATE,      new NamespacedKey("cc", "item/dragon_chestplate"));
-        ARMOR_MODELS.put(CustomArmorItem.DRAGON_HELMET,          new NamespacedKey("cc", "item/dragon_helmet"));
-        ARMOR_MODELS.put(CustomArmorItem.FLAMEBRINGER_BOOTS,     new NamespacedKey("cc", "item/flamebridger_boots"));
-        ARMOR_MODELS.put(CustomArmorItem.FLAMEBRINGER_LEGGINGS,  new NamespacedKey("cc", "item/flamebridger_leggings"));
-        ARMOR_MODELS.put(CustomArmorItem.GUARDIANS_VEST,         new NamespacedKey("cc", "item/guardian_chestplate"));
-        ARMOR_MODELS.put(CustomArmorItem.INVESTORS_BOOTS,        new NamespacedKey("cc", "item/investors_boots"));
-        ARMOR_MODELS.put(CustomArmorItem.INVESTORS_CHESTPLATE,   new NamespacedKey("cc", "item/investors_chestplate"));
-        ARMOR_MODELS.put(CustomArmorItem.INVESTORS_HELMET,       new NamespacedKey("cc", "item/investors_helmet"));
-        ARMOR_MODELS.put(CustomArmorItem.INVESTORS_LEGGINGS,     new NamespacedKey("cc", "item/investors_leggings"));
+        //ARMOR_MODELS.put(CustomArmorItem.BUNNY_SHOES,            new NamespacedKey("cc", "item/bunny_boots"));
+        //ARMOR_MODELS.put(CustomArmorItem.DEATHMAULER_CHESTPLATE, new NamespacedKey("cc", "item/deathmaulers_chestplate"));
+        //ARMOR_MODELS.put(CustomArmorItem.DEATHMAULER_LEGGINGS,   new NamespacedKey("cc", "item/deathmaulers_leggings"));
+        //ARMOR_MODELS.put(CustomArmorItem.DRAGON_BOOTS,           new NamespacedKey("cc", "item/dragon_boots"));
+        //ARMOR_MODELS.put(CustomArmorItem.DRAGON_CHESTPLATE,      new NamespacedKey("cc", "item/dragon_chestplate"));
+        //ARMOR_MODELS.put(CustomArmorItem.DRAGON_HELMET,          new NamespacedKey("cc", "item/dragon_helmet"));
+        //ARMOR_MODELS.put(CustomArmorItem.FLAMEBRINGER_BOOTS,     new NamespacedKey("cc", "item/flamebridger_boots"));
+        //ARMOR_MODELS.put(CustomArmorItem.FLAMEBRINGER_LEGGINGS,  new NamespacedKey("cc", "item/flamebridger_leggings"));
+        //ARMOR_MODELS.put(CustomArmorItem.GUARDIANS_VEST,         new NamespacedKey("cc", "item/guardian_chestplate"));
+        //ARMOR_MODELS.put(CustomArmorItem.INVESTORS_BOOTS,        new NamespacedKey("cc", "item/investors_boots"));
+        //ARMOR_MODELS.put(CustomArmorItem.INVESTORS_CHESTPLATE,   new NamespacedKey("cc", "item/investors_chestplate"));
+        //ARMOR_MODELS.put(CustomArmorItem.INVESTORS_HELMET,       new NamespacedKey("cc", "item/investors_helmet"));
+        //ARMOR_MODELS.put(CustomArmorItem.INVESTORS_LEGGINGS,     new NamespacedKey("cc", "item/investors_leggings"));
     }
 
     public static String getItemKey(CustomItem item) {
