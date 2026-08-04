@@ -26,13 +26,9 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 public class RuneManager {
-
-    private static final Set<UUID> runeShiftLock = new HashSet<>();
 
     public static void ensureItemUUID(ItemStack item) {
         if (item == null || item.getType().isAir()) return;
@@ -45,9 +41,7 @@ public class RuneManager {
         if (item == null || item.getType().isAir()) return null;
         if (!item.hasItemMeta()) return null;
 
-        return item.getItemMeta()
-                .getPersistentDataContainer()
-                .get(Keys.ITEM_UUID, PersistentDataType.STRING);
+        return PDCDetection.readTag(item, Keys.ITEM_UUID);
     }
 
     public static void setRuneLink(ItemStack rune, ItemStack target) {
@@ -73,11 +67,28 @@ public class RuneManager {
 
         if (linkedUUID == null) return null;
 
+        // The linked piece may be equipped (armor runes) rather than in storage
         for (ItemStack item : player.getInventory().getContents()) {
             if (item == null || item.getType().isAir()) continue;
             String itemUUID = getItemUUID(item);
             if (linkedUUID.equals(itemUUID)) {
                 return item;
+            }
+        }
+
+        for (ItemStack item : player.getInventory().getArmorContents()) {
+            if (item == null || item.getType().isAir()) continue;
+            String itemUUID = getItemUUID(item);
+            if (linkedUUID.equals(itemUUID)) {
+                return item;
+            }
+        }
+
+        ItemStack offhand = player.getInventory().getItemInOffHand();
+        if (offhand != null && !offhand.getType().isAir()) {
+            String itemUUID = getItemUUID(offhand);
+            if (linkedUUID.equals(itemUUID)) {
+                return offhand;
             }
         }
 
@@ -118,8 +129,8 @@ public class RuneManager {
         tags.apply();
     }
 
-    public static boolean toggleRune(Player player, ItemStack rune) {
-        if (player == null || rune == null) return false;
+    public static boolean applyRuneToItem(Player player, ItemStack rune, ItemStack target) {
+        if (player == null || rune == null || target == null) return false;
         if (isRuneBroken(rune)) {
             Messages.send(player, "rune.broken-cannot-use");
             SoundUtils.play(
@@ -133,6 +144,7 @@ public class RuneManager {
 
         EnchantEntry enchantEntry = PDCDetection.getRune(rune);
         if (enchantEntry == null) return false;
+        if (!enchantEntry.canApplyTo(target)) return false;
 
         String runeUUID = getItemUUID(rune);
 
@@ -167,25 +179,36 @@ public class RuneManager {
 
         if (isRuneActive(rune)) {
             ItemStack linkedItem = getLinkedItem(player, rune);
-            setRuneActive(rune, false);
-            playRuneDeactivation(player, enchantEntry);
-            setRuneOffTime(rune);
-            if (linkedItem != null) {
-                removeRune(player, linkedItem, rune);
+
+            if (linkedItem != null && linkedItem.isSimilar(target)) {
+                setRuneActive(rune, false);
+                playRuneDeactivation(player, enchantEntry);
+                setRuneOffTime(rune);
+
+                removeRune(player, target, rune);
 
                 if (enchantEntry == EnchantEntry.PROTECTION ||
                         enchantEntry == EnchantEntry.PROJECTILE_PROTECTION) {
 
                     updateArmorRunes(player);
                 }
+
+                CooldownManager.getInstance().setCooldownSeconds(
+                        player.getUniqueId(),
+                        CooldownManager.Keys.RUNE_TOGGLE + "_" + runeUUID,
+                        5
+                );
+                return true;
             }
-            CooldownManager.getInstance().setCooldownSeconds(
-                    player.getUniqueId(),
-                    CooldownManager.Keys.RUNE_TOGGLE + "_" + runeUUID,
-                    5
+
+            Messages.send(player, "rune.active-cannot-switch");
+            SoundUtils.play(
+                    player,
+                    Sound.ENTITY_VILLAGER_NO,
+                    1.0f,
+                    1.0f
             );
-            lockRuneShift(player);
-            return true;
+            return false;
         }
 
         if (getActiveRuneCount(player) >= 2) {
@@ -194,31 +217,7 @@ public class RuneManager {
             return false;
         }
 
-        ItemStack target = getLinkedItem(player, rune);
-
-        if (target == null) {
-
-            if (isRuneActive(rune)) {
-                Messages.send(player, "rune.active-cannot-switch");
-                SoundUtils.play(
-                        player,
-                        Sound.ENTITY_VILLAGER_NO,
-                        1.0f,
-                        1.0f
-                );
-                return false;
-            }
-
-            target = findFirstApplicableItem(player, rune);
-
-            if (target == null) {
-                Messages.send(player, "rune.no-valid-item");
-                return false;
-            }
-
-            setRuneLink(rune, target);
-        }
-        // Link rune if it wasn't already linked
+        setRuneLink(rune, target);
         applyRune(player, target, rune);
         setRuneActive(rune, true);
         playRuneActivation(player, enchantEntry);
@@ -235,25 +234,40 @@ public class RuneManager {
                 5
         );
 
-        lockRuneShift(player);
         return true;
     }
 
-    public static ItemStack findFirstApplicableItem(Player player, ItemStack rune) {
-        if (player == null || rune == null) return null;
+    /**
+     * Inventory slot index of the item carrying the given ITEM_UUID tag, or -1.
+     */
+    public static int findSlotByItemUUID(Player player, String uuid) {
+        if (player == null || uuid == null) return -1;
 
-        EnchantEntry enchantEntry = PDCDetection.getRune(rune);
-        if (enchantEntry == null) return null;
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int i = 0; i < contents.length; i++) {
+            if (contents[i] == null || contents[i].getType().isAir()) continue;
 
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item == null || item.getType().isAir()) continue;
-
-            if (enchantEntry.canApplyTo(item)) {
-                return item;
+            if (uuid.equals(getItemUUID(contents[i]))) {
+                return i;
             }
         }
 
-        return null;
+        return -1;
+    }
+
+    /**
+     * Writes a modified rune back into the player's inventory by matching its ITEM_UUID.
+     */
+    public static void persistRune(Player player, ItemStack rune) {
+        if (player == null || rune == null) return;
+
+        String uuid = getItemUUID(rune);
+        if (uuid == null) return;
+
+        int slot = findSlotByItemUUID(player, uuid);
+        if (slot != -1) {
+            player.getInventory().setItem(slot, rune);
+        }
     }
 
     public static void applyRune(Player player, ItemStack target, ItemStack rune) {
@@ -321,21 +335,6 @@ public class RuneManager {
         target.setItemMeta(meta);
     }
 
-    public static void lockRuneShift(Player player) {
-        UUID id = player.getUniqueId();
-
-        runeShiftLock.add(id);
-
-        SchedulerUtils.runTaskLater(
-                () -> runeShiftLock.remove(id),
-                10L
-        );
-    }
-
-    public static boolean isRuneShiftLocked(Player player) {
-        return runeShiftLock.contains(player.getUniqueId());
-    }
-
     public static int getActiveRuneCount(Player player) {
         if (player == null) return 0;
 
@@ -359,32 +358,34 @@ public class RuneManager {
     }
 
     public static void updateArmorRunes(Player player) {
+        if (player == null) return;
 
         // Remove rune enchants from every armor piece in inventory
-        for (ItemStack item : player.getInventory().getContents()) {
-
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int i = 0; i < contents.length; i++) {
+            ItemStack item = contents[i];
             if (!isArmor(item)) continue;
 
             removeArmorRuneEnchants(item);
+            contents[i] = item;
         }
+        player.getInventory().setContents(contents);
 
         // Remove rune enchants from equipped armor
-        for (ItemStack armor : player.getInventory().getArmorContents()) {
+        ItemStack[] armor = player.getInventory().getArmorContents();
+        for (int i = 0; i < armor.length; i++) {
+            if (armor[i] == null || armor[i].getType().isAir()) continue;
 
-            if (armor == null || armor.getType().isAir()) continue;
-
-            removeArmorRuneEnchants(armor);
+            removeArmorRuneEnchants(armor[i]);
         }
 
-
         // Now reapply active armor runes to equipped armor only
-        for (ItemStack armor : player.getInventory().getArmorContents()) {
+        for (int i = 0; i < armor.length; i++) {
+            ItemStack armorPiece = armor[i];
+            if (armorPiece == null || armorPiece.getType().isAir()) continue;
 
-            if (armor == null || armor.getType().isAir()) continue;
-
-            ItemMeta meta = armor.getItemMeta();
+            ItemMeta meta = armorPiece.getItemMeta();
             if (meta == null) continue;
-
 
             for (ItemStack runeItem : player.getInventory().getContents()) {
 
@@ -404,7 +405,6 @@ public class RuneManager {
 
                 if (level == null) continue;
 
-
                 meta.addEnchant(
                         rune.getEnchantment(),
                         level,
@@ -412,8 +412,10 @@ public class RuneManager {
                 );
             }
 
-            armor.setItemMeta(meta);
+            armorPiece.setItemMeta(meta);
+            armor[i] = armorPiece;
         }
+        player.getInventory().setArmorContents(armor);
     }
 
     private static void removeArmorRuneEnchants(ItemStack item) {
@@ -508,7 +510,7 @@ public class RuneManager {
 
     public static boolean consumeRuneDurability(Player player, ItemStack rune) {
 
-        if (rune == null || !isRune(rune)) return false;
+        if (player == null || rune == null || !isRune(rune)) return false;
 
         EnchantEntry enchant = PDCDetection.getRune(rune);
         if (enchant == null) return false;
@@ -533,7 +535,14 @@ public class RuneManager {
             ItemStack linkedItem = getLinkedItem(player, rune);
 
             if (linkedItem != null) {
+                String linkedUUID = getItemUUID(linkedItem);
+                int linkedSlot = linkedUUID != null ? findSlotByItemUUID(player, linkedUUID) : -1;
+
                 removeRune(player, linkedItem, rune);
+
+                if (linkedSlot != -1) {
+                    player.getInventory().setItem(linkedSlot, linkedItem);
+                }
 
                 if (enchant == EnchantEntry.PROTECTION ||
                         enchant == EnchantEntry.PROJECTILE_PROTECTION) {
@@ -544,6 +553,7 @@ public class RuneManager {
 
             setRuneBroken(rune);
             setRuneOffTime(rune);
+            persistRune(player, rune);
 
             Messages.send(player, "rune.broken",
                     "rune", formatRuneName(enchant));
@@ -561,6 +571,7 @@ public class RuneManager {
 
         setRuneDurability(rune, newAmount);
         updateRuneDurabilityBar(rune);
+        persistRune(player, rune);
 
         return false;
     }
@@ -633,7 +644,11 @@ public class RuneManager {
 
                     for (Player player : Bukkit.getOnlinePlayers()) {
 
-                        for (ItemStack item : player.getInventory().getContents()) {
+                        ItemStack[] contents = player.getInventory().getContents();
+
+                        for (int i = 0; i < contents.length; i++) {
+
+                            ItemStack item = contents[i];
 
                             if (!isRune(item)) continue;
                             if (isRuneActive(item)) continue;
@@ -663,6 +678,8 @@ public class RuneManager {
                             setRuneDurability(item, newAmount);
                             updateRuneDurabilityBar(item);
 
+                            contents[i] = item;
+
                             if (newAmount >= max) {
 
                                 if (!hasFullChargeWarning(item) && !wasFull) {
@@ -681,6 +698,8 @@ public class RuneManager {
                                 }
                             }
                         }
+
+                        player.getInventory().setContents(contents);
                     }
 
                 },

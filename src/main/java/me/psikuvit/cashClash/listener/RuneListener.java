@@ -6,9 +6,7 @@ import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.util.Keys;
-import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,51 +14,67 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.persistence.PersistentDataType;
 
 public class RuneListener implements Listener {
 
     @EventHandler
-    public void onRuneToggle(PlayerInteractEvent event) {
+    public void onRuneApplyClick(InventoryClickEvent event) {
 
-        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
 
-        Player player = event.getPlayer();
+        ItemStack rune = event.getCursor();
+
+        if (rune == null || rune.getType().isAir()) return;
+        if (!RuneManager.isRune(rune)) return;
+
+        Inventory clickedInventory = event.getClickedInventory();
+
+        // Only apply runes to items in the player's own inventory
+        if (!(clickedInventory instanceof PlayerInventory)) return;
+
+        ItemStack target = event.getCurrentItem();
+
+        if (target == null || target.getType().isAir()) return;
+        if (RuneManager.isRune(target)) return;
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
 
         if (session != null && session.getState() == GameState.SHOPPING) {
+            event.setCancelled(true);
             return;
         }
 
-        ItemStack item = player.getInventory().getItemInMainHand();
+        EnchantEntry enchantEntry = PDCDetection.getRune(rune);
 
-        if (item == null || !RuneManager.isRune(item)) return;
+        // Not an applicable target: leave the rune free to be rearranged
+        if (enchantEntry == null || !enchantEntry.canApplyTo(target)) {
+            return;
+        }
 
-        if (!event.getAction().isRightClick()) return;
-        if (!player.isSneaking()) return;
+        boolean applied = RuneManager.applyRuneToItem(player, rune, target);
 
         event.setCancelled(true);
 
-        if (RuneManager.isRuneShiftLocked(player)) {
+        if (!applied) {
             return;
         }
 
-        boolean toggled = RuneManager.toggleRune(player, item);
+        // Write the modified copies back (Bukkit inventory getters return copies)
+        event.getView().setCursor(rune);
 
-        if (!toggled) return;
+        // Armor runes are handled entirely by updateArmorRunes on the equipped pieces
+        if (enchantEntry != EnchantEntry.PROTECTION &&
+                enchantEntry != EnchantEntry.PROJECTILE_PROTECTION) {
 
-        SoundUtils.play(
-                player,
-                RuneManager.isRuneActive(item)
-                        ? Sound.BLOCK_BEACON_ACTIVATE
-                        : Sound.BLOCK_BEACON_DEACTIVATE,
-                1.0f,
-                1.0f
-        );
+            event.setCurrentItem(target);
+        }
     }
 
     @EventHandler
@@ -284,10 +298,6 @@ public class RuneListener implements Listener {
     public void onRuneVanillaUse(PlayerInteractEvent event) {
 
         if (event.getHand() != EquipmentSlot.HAND) return;
-
-        Player player = event.getPlayer();
-
-        if (player.isSneaking()) return;
 
         ItemStack item = event.getItem();
 

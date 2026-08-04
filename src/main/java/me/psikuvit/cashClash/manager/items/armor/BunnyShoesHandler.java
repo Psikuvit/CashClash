@@ -64,9 +64,6 @@ public class BunnyShoesHandler extends ArmorSetHandler {
         // Blocked while a mythic shift ability is active
         if (manager.isMythicShiftLocked(id)) return;
 
-        // Blocked while a rune shift ability is active
-        if (RuneManager.isRuneShiftLocked(p)) return;
-
         // Check if player is silenced (carrying enemy flag in CTF)
         if (isSilenced(p)) {
             Messages.send(p, "listener.cannot-use-items-while-silenced");
