@@ -15,8 +15,10 @@ import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
@@ -211,11 +213,16 @@ public final class GameplayItemFactory {
                 .build());
         item.unsetData(DataComponentTypes.CONSUMABLE); // Remove default consumable behavior
 
-        item.setData(DataComponentTypes.CONSUMABLE, Consumable.consumable()
+        Consumable.Builder consumable = Consumable.consumable()
                 .animation(ItemUseAnimation.EAT)
-                .addEffect(ConsumeEffect.applyStatusEffects(List.of(potionEffect), 1))
-                .build()
-        );
+                .addEffect(ConsumeEffect.applyStatusEffects(List.of(potionEffect), 1));
+
+        // Sunscreen: play the drinking noise on a loop for the whole animation, not just on completion
+        if (foodItem == FoodItem.SUNSCREEN) {
+            consumable.sound(Sound.ENTITY_GENERIC_DRINK.key());
+        }
+
+        item.setData(DataComponentTypes.CONSUMABLE, consumable.build());
 
 
         // Apply custom model data for food items with custom textures

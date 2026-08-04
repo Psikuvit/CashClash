@@ -362,8 +362,9 @@ public class GameListener implements Listener {
                     SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
                 }
                 case SUNSCREEN -> {
+                    // Drinking noise now loops through the whole animation via the item's
+                    // Consumable sound component; no one-shot sound needed here.
                     playFoodParticles(p, Color.fromRGB(255, 150, 40));
-                    SoundUtils.play(p, Sound.ENTITY_GENERIC_DRINK, 1.0f, 1.0f);
                 }
                 case CAN_OF_SPINACH -> {
                     playFoodParticles(p, Color.fromRGB(70, 220, 70));
