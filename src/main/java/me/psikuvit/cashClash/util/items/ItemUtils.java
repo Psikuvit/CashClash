@@ -69,22 +69,28 @@ public final class ItemUtils {
         if (player == null || newArmor == null) return;
         PlayerInventory inv = player.getInventory();
         Material m = newArmor.getType();
+        Messages.debug(player, Messages.DebugCategory.GAME, "equipArmorOrReplace: material=" + m + " hasItemMeta=" + newArmor.hasItemMeta());
 
         ItemStack old = null;
         if (m.name().endsWith("HELMET")) {
             old = inv.getHelmet();
             inv.setHelmet(newArmor);
+            Messages.debug(player, Messages.DebugCategory.GAME, "  -> helmet set to " + newArmor);
         } else if (m.name().endsWith("CHESTPLATE")) {
             old = inv.getChestplate();
             inv.setChestplate(newArmor);
+            Messages.debug(player, Messages.DebugCategory.GAME, "  -> chestplate set to " + newArmor);
         } else if (m.name().endsWith("LEGGINGS")) {
             old = inv.getLeggings();
             inv.setLeggings(newArmor);
+            Messages.debug(player, Messages.DebugCategory.GAME, "  -> leggings set to " + newArmor);
         } else if (m.name().endsWith("BOOTS")) {
             old = inv.getBoots();
             inv.setBoots(newArmor);
+            Messages.debug(player, Messages.DebugCategory.GAME, "  -> boots set to " + newArmor);
         } else {
             inv.addItem(newArmor);
+            Messages.debug(player, Messages.DebugCategory.GAME, "  -> not armor material (" + m + "), added to inventory");
         }
 
         if (old != null) {
@@ -199,20 +205,35 @@ public final class ItemUtils {
         var ccp = session.getCashClashPlayer(player.getUniqueId());
         if (ccp == null) return;
 
-        for (var e : ccp.getOwnedEnchants().entrySet()) {
-            EnchantEntry ee = e.getKey();
-            int lvl = e.getValue();
+        ItemStack[] contents = player.getInventory().getContents();
+        boolean modified = false;
 
-            player.getInventory().forEach(is -> {
-                if (is == null) return;
-                if (!ee.getApplicableMaterials().contains(is.getType())) return;
+        for (int i = 0; i < contents.length; i++) {
+            ItemStack is = contents[i];
+            if (is == null || is.getType().isAir()) continue;
 
-                ItemMeta meta = is.getItemMeta();
+            boolean itemModified = false;
+            ItemMeta meta = is.getItemMeta();
+            if (meta == null) continue;
 
-                if (meta == null) return;
+            for (var e : ccp.getOwnedEnchants().entrySet()) {
+                EnchantEntry ee = e.getKey();
+                int lvl = e.getValue();
+                if (!ee.getApplicableMaterials().contains(is.getType())) continue;
+
                 meta.addEnchant(ee.getEnchantment(), lvl, true);
+                itemModified = true;
+            }
+
+            if (itemModified) {
                 is.setItemMeta(meta);
-            });
+                contents[i] = is;
+                modified = true;
+            }
+        }
+
+        if (modified) {
+            player.getInventory().setContents(contents);
         }
     }
 
@@ -238,8 +259,6 @@ public final class ItemUtils {
 
     public static ItemStack createRune(EnchantEntry ee, int level) {
         ItemStack rune = new ItemStack(ee.getRuneMaterial(), 1);
-
-        if (!rune.hasItemMeta()) return rune;
 
         PDCSetter tags = PDCSetter.of(rune);
 
