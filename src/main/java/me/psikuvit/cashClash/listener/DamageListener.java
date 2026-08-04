@@ -568,7 +568,8 @@ public class DamageListener implements Listener {
 
     /**
      * Handle Bullseye Pants "Storming arrow" passive.
-     * Every 4th headshot landed arrow does 30% more damage and deals AOE damage.
+     * Headshots trigger a storm arrow immediately (no counter increment).
+     * Every 4th non-headshot landed arrow does 30% more damage and deals AOE damage.
      */
     private void handleBullseyePantsEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
         if (!(event.getDamager() instanceof Arrow arrow)) {
@@ -585,14 +586,14 @@ public class DamageListener implements Listener {
         double headY = victim.getLocation().getY() + victim.getEyeHeight();
         boolean isHeadshot = Math.abs(arrowY - headY) <= 0.25;
 
-        if (!isHeadshot) {
+        if (isHeadshot) {
+            SoundUtils.playAt(victim.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.4f);
+            triggerStorm(attacker, victim, event.getDamage() * 1.3);
             return;
         }
 
-        SoundUtils.playAt(victim.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.4f);
-
         if (armorManager.getHandler(BullseyePantsHandler.class).incrementBullseyeHit(attacker)) {
-            // 4th headshot triggered
+            // 4th non-headshot hit triggered
             double originalDamage = event.getDamage();
             event.setDamage(originalDamage * 1.3); // +30% damage
 
