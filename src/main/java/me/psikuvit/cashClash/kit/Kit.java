@@ -58,9 +58,9 @@ public enum Kit {
      *
      * @param player The player to give the kit to
      * @param round The current round number
-     * @param rounds1to3HaveShields Whether rounds 1-3 have shields
+     * @param shieldsEnabled Whether this game session has shields (fixed for every round)
      */
-    public void apply(Player player, int round, boolean rounds1to3HaveShields) {
+    public void apply(Player player, int round, boolean shieldsEnabled) {
         if (round == 1) {
             // Round 1 kits removed temporarily - all rounds get base items
             player.getInventory().clear();
@@ -69,11 +69,11 @@ public enum Kit {
             removeKitItems(player);
             removeKitSpecificEnhancements(player);
 
-            giveBaseItems(player, round, rounds1to3HaveShields);
+            giveBaseItems(player, shieldsEnabled);
         }
 
         // Always apply shield logic each round
-        toggleShield(player, round, rounds1to3HaveShields);
+        toggleShield(player, shieldsEnabled);
     }
 
     /**
@@ -99,15 +99,14 @@ public enum Kit {
     }
 
     /**
-     * Toggle shield in the offhand based on round number.
-     * This is called at the start of each shopping phase to update the shield.
+     * Toggle shield in the offhand based on this session's fixed shield setting.
+     * This is called at the start of each shopping phase to reapply the shield.
      *
      * @param player The player to update
-     * @param round The current round number
-     * @param rounds1to3HaveShields Whether rounds 1-3 have shields
+     * @param shieldsEnabled Whether this game session has shields (fixed for every round)
      */
-    public void toggleShield(Player player, int round, boolean rounds1to3HaveShields) {
-        setShield(player, shouldGiveShield(round, rounds1to3HaveShields));
+    public void toggleShield(Player player, boolean shieldsEnabled) {
+        setShield(player, shieldsEnabled);
     }
 
     /**
@@ -232,9 +231,9 @@ public enum Kit {
 
     /**
      * Give base items that all kits receive every round.
-     * This includes armor, tools, food, and shield (based on round).
+     * This includes armor, tools, food, and shield (fixed for the whole game session).
      */
-    private void giveBaseItems(Player player, int round, boolean rounds1to3HaveShields) {
+    private void giveBaseItems(Player player, boolean shieldsEnabled) {
         // === ARMOR ===
         // Leather helmet (unbreakable)
         ItemStack leatherHelmet = new ItemStack(Material.LEATHER_HELMET);
@@ -316,24 +315,8 @@ public enum Kit {
         player.getInventory().addItem(waterBucket);
 
         // === SHIELD ===
-        // Shield logic based on round number
-        setShield(player, shouldGiveShield(round, rounds1to3HaveShields));
-    }
-    
-    /**
-     * Determine if player should get a shield based on round number.
-     * Rounds 1-3: shield or shieldless (determined by rounds1to3HaveShields)
-     * Rounds 4-6: opposite of rounds 1-3
-     * Round 7+: 50/50 chance
-     */
-    private boolean shouldGiveShield(int round, boolean rounds1to3HaveShields) {
-        if (round <= 3) {
-            return rounds1to3HaveShields;
-        } else if (round <= 6) {
-            return !rounds1to3HaveShields;
-        } else {
-            return true;
-        }
+        // Fixed for the whole game session - no per-round swap
+        setShield(player, shieldsEnabled);
     }
 
     private int getSwordSlot(Player player) {
@@ -436,9 +419,9 @@ public enum Kit {
      * @param player The player to give the kit to
      * @param layout Map of slot -> item identifier
      * @param round The current round number
-     * @param rounds1to3HaveShields Whether rounds 1-3 have shields (rounds 4-6 will be opposite)
+     * @param shieldsEnabled Whether this game session has shields (fixed for every round)
      */
-    public void applyWithLayout(Player player, Map<Integer, String> layout, int round, boolean rounds1to3HaveShields) {
+    public void applyWithLayout(Player player, Map<Integer, String> layout, int round, boolean shieldsEnabled) {
         if (round == 1) {
             // Round 1 kits removed temporarily - all rounds get base items
             player.getInventory().clear();
@@ -451,7 +434,7 @@ public enum Kit {
         }
 
         // Always apply shield logic each round
-        toggleShield(player, round, rounds1to3HaveShields);
+        toggleShield(player, shieldsEnabled);
     }
 
     /**

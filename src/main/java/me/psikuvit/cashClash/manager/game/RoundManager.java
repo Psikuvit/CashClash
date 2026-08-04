@@ -53,20 +53,14 @@ public class RoundManager {
     public void startShoppingPhase(int roundNumber) {
         Messages.debug("GAME", "Starting shopping phase for round " + roundNumber + " in session " + session.getSessionId());
 
-        // Get players to the shop area before any freeze/reveal sequence plays (round 4
-        // transition, PTP president reveal, sudden death) so they aren't blind/frozen
-        // wherever they happened to be standing.
+        // Get players to the shop area before any freeze/reveal sequence plays (PTP
+        // president reveal, sudden death) so they aren't blind/frozen wherever they
+        // happened to be standing.
         teleportToBuyPhase();
 
         prepareSuddenDeathRoundIfNeeded();
 
-        // Round 4 plays the shield/shieldless half-transition sequence before anything else
-        if (roundNumber == 4) {
-            session.getSequenceManager().play(Sequences.round4ShieldTransition(), true,
-                    () -> beginBuyPhase(roundNumber));
-        } else {
-            beginBuyPhase(roundNumber);
-        }
+        beginBuyPhase(roundNumber);
     }
 
     /**

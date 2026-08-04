@@ -88,13 +88,13 @@ public class SelectKitCommand extends AbstractArgCommand {
 
         PlayerData playerData = PlayerDataManager.getInstance().getData(target.getUniqueId());
         int currentRound = session.getCurrentRound();
-        boolean rounds1to3HaveShields = session.hasShieldsInRounds1to3();
+        boolean shieldsEnabled = session.hasShields();
 
         if (playerData.hasKitLayout(kit.name())) {
             Map<Integer, String> layout = playerData.getKitLayout(kit.name());
-            kit.applyWithLayout(target, layout, currentRound, rounds1to3HaveShields);
+            kit.applyWithLayout(target, layout, currentRound, shieldsEnabled);
         } else {
-            kit.apply(target, currentRound, rounds1to3HaveShields);
+            kit.apply(target, currentRound, shieldsEnabled);
         }
 
         String display = kit.getDisplayName();

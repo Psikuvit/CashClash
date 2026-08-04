@@ -119,25 +119,6 @@ public final class Sequences {
     }
 
     /**
-     * Round 4 buy phase: blind + freeze, announce the shield/shieldless half transition.
-     */
-    public static Sequence round4ShieldTransition() {
-        return Sequence.create()
-                .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), REVEAL_BLINDNESS_TICKS))
-                .pause(40)
-                .run(s -> {
-                    SequenceEffects.showTitle(s.getPlayers(),
-                            component(MSG.getRaw("round4.title")),
-                            component(MSG.getRaw("round4.subtitle")));
-                    boolean round4HasShield = !s.hasShieldsInRounds1to3();
-                    Messages.broadcast(s.getPlayers(),
-                            round4HasShield ? "round.round4-shield-chat" : "round.round4-shieldless-chat");
-                })
-                .waitSeconds(5)
-                .run(Sequences::clearLock);
-    }
-
-    /**
      * Sudden death: no lock/blindness, just a short delay then a red announcement title.
      */
     public static Sequence suddenDeath(Gamemode gamemode) {

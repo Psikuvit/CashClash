@@ -429,6 +429,6 @@ leaderboard:
 
 sequences:
   # Enable scripted title/freeze sequences (round start, president reveal, round end,
-  # round 4 shield transition, sudden death, victory)
+  # sudden death, victory)
   enabled: true
 

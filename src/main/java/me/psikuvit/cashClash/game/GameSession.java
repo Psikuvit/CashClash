@@ -76,9 +76,9 @@ public class GameSession {
     private boolean sequenceLocked;
     private boolean actionsRestricted;
     private boolean damageDisabled;
-    // Shield logic: rounds 1-3 are either shield or shieldless, rounds 4-6 is the other one
-    // Determined at game start, consistent for the entire game
-    private final boolean rounds1to3HaveShields;
+    // Shield logic: the whole game is either shield or shieldless, decided once at game
+    // start (50/50 chance) and fixed for every round - no mid-game swap
+    private final boolean shieldsEnabled;
 
     // Countdown/start preparation
     private BukkitTask startCountdownTask;
@@ -109,10 +109,8 @@ public class GameSession {
         this.startingCountdown = false;
         this.sequenceManager = new SequenceManager(this);
 
-        // Determine shield preference for this game (50/50 chance)
-        // If true, rounds 1-3 have shields, rounds 4-6 don't
-        // If false, rounds 1-3 don't have shields, rounds 4-6 do
-        this.rounds1to3HaveShields = new Random().nextBoolean();
+        // Determine shield preference for this game (50/50 chance), fixed for every round
+        this.shieldsEnabled = new Random().nextBoolean();
 
         // Get the fixed arena
         Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
@@ -263,11 +261,10 @@ public class GameSession {
     }
 
     /**
-     * Returns whether rounds 1-3 have shields in this game session.
-     * Rounds 4-6 will have the opposite setting.
+     * Returns whether shields are enabled for this game session (fixed for every round).
      */
-    public boolean hasShieldsInRounds1to3() {
-        return rounds1to3HaveShields;
+    public boolean hasShields() {
+        return shieldsEnabled;
     }
 
     /**
@@ -526,7 +523,7 @@ public class GameSession {
         if (currentRound == 1) {
             applyKitWithLayout(p, ccp.getUuid(), kitToApply);
         } else {
-            kitToApply.apply(p, currentRound, rounds1to3HaveShields);
+            kitToApply.apply(p, currentRound, shieldsEnabled);
         }
 
         // Admin shield override (testing) takes precedence over the round pattern
@@ -543,9 +540,9 @@ public class GameSession {
         PlayerData playerData = PlayerDataManager.getInstance().getData(uuid);
         if (playerData.hasKitLayout(kit.name())) {
             Map<Integer, String> layout = playerData.getKitLayout(kit.name());
-            kit.applyWithLayout(p, layout, currentRound, rounds1to3HaveShields);
+            kit.applyWithLayout(p, layout, currentRound, shieldsEnabled);
         } else {
-            kit.apply(p, currentRound, rounds1to3HaveShields);
+            kit.apply(p, currentRound, shieldsEnabled);
         }
     }
 
