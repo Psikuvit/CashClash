@@ -93,15 +93,19 @@ public class BouncePadHandler extends CustomItemHandler {
             return;
         }
 
+        boolean wallMounted = pad.attachedFace() != BlockFace.UP && pad.attachedFace() != BlockFace.DOWN;
+
         Vector direction;
-        if (pad.attachedFace() != BlockFace.UP && pad.attachedFace() != BlockFace.DOWN) {
+        if (wallMounted) {
             // Wall-mounted pad: launch outward along the wall's face instead of the player's look direction
             direction = pad.attachedFace().getDirection();
         } else {
             direction = player.getLocation().getDirection();
         }
         direction.setY(0).normalize();
-        Vector velocity = direction.multiply(cfg.getBouncePadForwardVelocity()).setY(cfg.getBouncePadUpwardVelocity());
+        // Side bounces (wall-mounted) launch much flatter than a floor pad - 80% less vertical height.
+        double upwardVelocity = wallMounted ? cfg.getBouncePadUpwardVelocity() * 0.2 : cfg.getBouncePadUpwardVelocity();
+        Vector velocity = direction.multiply(cfg.getBouncePadForwardVelocity()).setY(upwardVelocity);
         player.setVelocity(velocity);
 
         SoundUtils.play(player, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1.0f, 1.2f);
