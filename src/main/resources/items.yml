@@ -277,7 +277,7 @@ custom-items:
     max-charge-seconds: 2
     grace-seconds: 1
     knockback-per-second: 3.0
-    heal-radius-per-second: 1.5
+    heal-radius-per-second: 2.5
     heal-amount: 4.0
     slow-percent-while-charging: 80
 

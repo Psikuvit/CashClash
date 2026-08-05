@@ -420,7 +420,7 @@ public class ItemsConfig {
     }
 
     public double getLotusHealRadiusPerSecond() {
-        return config.getDouble("custom-items.radiating-lotus.heal-radius-per-second", 1.5);
+        return config.getDouble("custom-items.radiating-lotus.heal-radius-per-second", 2.5);
     }
 
     public double getLotusHealAmount() {

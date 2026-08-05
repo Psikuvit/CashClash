@@ -103,8 +103,8 @@ public class RadiatingLotusHandler extends CustomItemHandler {
         double chargeSeconds = chargeTicks / 20.0;
 
         double knockbackDistance = chargeSeconds * cfg.getLotusKnockbackPerSecond();
+        // Purely horizontal - no vertical launch component, this is a shove backward, not a hop.
         Vector back = player.getLocation().getDirection().clone().setY(0).normalize().multiply(-knockbackDistance * 0.35);
-        back.setY(0.4);
         player.setVelocity(back);
         cooldownManager.setCooldownSeconds(uuid, "WIND_CHARGE_PROTECTION", 2);
 
@@ -116,7 +116,7 @@ public class RadiatingLotusHandler extends CustomItemHandler {
         double healAmount = cfg.getLotusHealAmount();
 
         ParticleUtils.spawnDust(loc.clone().add(0, 1, 0), Color.fromRGB(60, 200, 60), 2.0f, 40, 0.5);
-        ParticleUtils.groundDiamond(loc, healRadius, Color.fromRGB(255, 105, 180));
+        spawnHealRadiusDiamond(loc, healRadius);
 
         World world = loc.getWorld();
         GameSession session = GameManager.getInstance().getPlayerSession(player);
@@ -131,6 +131,24 @@ public class RadiatingLotusHandler extends CustomItemHandler {
             double heal = healAmount * manager.getHealingMultiplier(target.getUniqueId());
             CashClashPlayer.heal(target, heal);
         }
+    }
+
+    /**
+     * Draws the pink diamond marking the heal radius for a few ticks so it's actually
+     * visible rather than a single-frame flash.
+     */
+    private void spawnHealRadiusDiamond(Location loc, double healRadius) {
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private int tick;
+
+            @Override
+            public void run() {
+                ParticleUtils.groundDiamond(loc, healRadius, Color.fromRGB(255, 105, 180));
+                if (++tick >= 6) {
+                    cancel();
+                }
+            }
+        }, 0L, 2L);
     }
 
     private void applyLotusSlow(Player player) {
