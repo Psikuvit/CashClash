@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.game.ptp.PTPFinalStandUtils;
 import me.psikuvit.cashClash.util.game.ptp.PTPInventoryUtils;
 import me.psikuvit.cashClash.util.game.ptp.PresidentialEffectsUtils;
@@ -573,8 +574,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 for (UUID uuid : teamObj.getPlayers()) {
                     Player p = Bukkit.getPlayer(uuid);
                     if (p != null) {
-                        Messages.send(p, "gamemode-ptp.kill-bonus");
-                        session.getCashClashPlayer(uuid).addCoins(bonusPerPlayer);
+                        session.getRewardManager().grant(p, RewardType.PTP_KILL_STREAK_BONUS, bonusPerPlayer);
                     }
                 }
             }

@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -232,9 +233,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
 
         int coins = cfg.getCashBlasterVortexKillReward();
         for (UUID uuid : killerTeam.getPlayers()) {
-            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-            if (ccp == null) continue;
-            ccp.addCoins(coins);
+            session.getRewardManager().grant(uuid, RewardType.CASH_BLASTER_VORTEX, coins);
 
             Player teammate = Bukkit.getPlayer(uuid);
             if (teammate == null || !teammate.isOnline()) continue;

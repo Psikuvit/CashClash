@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.BonusType;
+import me.psikuvit.cashClash.util.enums.RewardType;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -356,8 +357,7 @@ public class BonusManager {
 
         Messages.debug("GAME", "Awarding bonus " + bonusType.name() + " to " + playerUuid + " (+$" + finalReward + ")");
 
-        // Add coins directly
-        ccp.addCoins(finalReward);
+        session.getRewardManager().grant(playerUuid, RewardType.BONUS, finalReward);
         ccp.getBonusesEarned().put(bonusType, ccp.getBonusesEarned().getOrDefault(bonusType, 0) + 1);
 
         Player player = Bukkit.getPlayer(playerUuid);

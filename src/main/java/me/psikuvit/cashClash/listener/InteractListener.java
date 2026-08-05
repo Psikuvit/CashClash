@@ -39,6 +39,7 @@ import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -279,8 +280,8 @@ public class InteractListener implements Listener {
             player.getInventory().setItemInMainHand(null);
         }
 
-        ccp.addCoins(amount);
-        Messages.send(player, "cashquake.supply-drop-reward", "amount", String.format("%,d", amount));
+        session.getRewardManager().grant(player, RewardType.SUPPLY_DROP, amount,
+                "amount", String.format("%,d", amount));
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         event.setCancelled(true);
         return true;

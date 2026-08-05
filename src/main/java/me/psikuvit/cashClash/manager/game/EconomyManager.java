@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.enums.RewardType;
 
 import java.util.UUID;
  
@@ -29,10 +30,7 @@ public class EconomyManager {
         Messages.debug("ECONOMY: Round " + session.getCurrentRound() + " - Total Kills: " + totalKills + " Pool: " + killPool + " Final per player: " + finalAmount);
 
         for (UUID uuid : session.getPlayers()) {
-            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-            if (ccp != null) {
-                ccp.addCoins(finalAmount);
-            }
+            session.getRewardManager().grant(uuid, RewardType.ROUND_DISTRIBUTION, finalAmount);
         }
     }
 

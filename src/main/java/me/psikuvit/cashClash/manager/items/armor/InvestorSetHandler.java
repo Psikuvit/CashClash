@@ -2,7 +2,6 @@ package me.psikuvit.cashClash.manager.items.armor;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.Messages;
@@ -18,7 +17,7 @@ import org.bukkit.entity.Player;
 import java.util.UUID;
 
 /**
- * Investor's Set - rewards the wearer's team coins on kills and CTF flag captures.
+ * Investor's Set - rewards the wearer's team coins on kills and objective completions.
  */
 public class InvestorSetHandler extends ArmorSetHandler {
 
@@ -45,39 +44,15 @@ public class InvestorSetHandler extends ArmorSetHandler {
     }
 
     /**
-     * Investor's Set: reward the killer's team coins on every kill.
+     * Investor's Set: reward the wearer's team coins on a kill or objective completion
+     * (CTF flag capture, Kill Confirm tag confirm - a Protect The President assassination
+     * is just a kill). Routed through {@link me.psikuvit.cashClash.manager.player.RewardManager#grantKillOrObjective}
+     * rather than called directly by gamemode code.
      */
-    public void onInvestorKill(Player killer, GameSession session) {
-        if (killer == null || session == null) return;
-        int pieces = countInvestorsPieces(killer);
-        if (pieces <= 0) return;
-
-        Team team = session.getPlayerTeam(killer);
-        if (team == null) return;
-
-        int reward = 200 * pieces;
-        for (UUID uuid : team.getPlayers()) {
-            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-            if (ccp != null) {
-                ccp.addCoins(reward);
-            }
-            Player teammate = Bukkit.getPlayer(uuid);
-            if (teammate != null && teammate.isOnline()) {
-                playInvestorRewardEffect(teammate, reward);
-            }
-        }
-    }
-
-    /**
-     * Investor's Set: reward the capturing player's team coins on a CTF flag capture.
-     */
-    public void onInvestorObjectivectf(Player player) {
-        if (player == null) return;
+    public void onInvestorReward(Player player, GameSession session) {
+        if (player == null || session == null) return;
         int pieces = countInvestorsPieces(player);
         if (pieces <= 0) return;
-
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) return;
 
         Team team = session.getPlayerTeam(player);
         if (team == null) return;

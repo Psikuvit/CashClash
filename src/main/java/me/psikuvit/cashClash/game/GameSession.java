@@ -21,6 +21,7 @@ import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
+import me.psikuvit.cashClash.manager.player.RewardManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -34,6 +35,7 @@ import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.enums.RewardType;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -72,6 +74,7 @@ public class GameSession {
     private RoundManager roundManager;
     //private CashQuakeManager cashQuakeManager;
     private BonusManager bonusManager;
+    private final RewardManager rewardManager;
     private final SequenceManager sequenceManager;
     private boolean sequenceLocked;
     private boolean actionsRestricted;
@@ -108,6 +111,7 @@ public class GameSession {
 
         this.startingCountdown = false;
         this.sequenceManager = new SequenceManager(this);
+        this.rewardManager = new RewardManager(this);
 
         // Determine shield preference for this game (50/50 chance), fixed for every round
         this.shieldsEnabled = new Random().nextBoolean();
@@ -173,6 +177,10 @@ public class GameSession {
 
     public BonusManager getBonusManager() {
         return bonusManager;
+    }
+
+    public RewardManager getRewardManager() {
+        return rewardManager;
     }
 
     public Gamemode getGamemode() {
@@ -995,10 +1003,7 @@ public class GameSession {
      * Apply forfeit bonus to winning team
      */
     private void applyForfeitBonus(Team winningTeam, long bonus) {
-        winningTeam.getPlayers().forEach(uuid -> {
-            var p = players.get(uuid);
-            if (p != null) p.addCoins(bonus);
-        });
+        winningTeam.getPlayers().forEach(uuid -> rewardManager.grant(uuid, RewardType.FORFEIT_BONUS, bonus));
     }
 
 

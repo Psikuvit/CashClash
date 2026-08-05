@@ -20,7 +20,6 @@ import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
-import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
 import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
@@ -52,6 +51,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
+import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -202,7 +202,7 @@ public class GameListener implements Listener {
         armorManager.getHandler(DeathmaulerSetHandler.class).onPlayerKill(killer, session);
         armorManager.getHandler(DragonSetHandler.class).onPlayerKillDragon(killer);
         armorManager.getHandler(FlamebringerSetHandler.class).onFlamebringerKill(killer);
-        armorManager.getHandler(InvestorSetHandler.class).onInvestorKill(killer, session);
+        session.getRewardManager().grantKillOrObjective(killer, RewardType.KILL, 0);
     }
 
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {
@@ -837,8 +837,8 @@ public class GameListener implements Listener {
                             event.setCurrentItem(null);
                         }
 
-                        ccp.addCoins(amount);
-                        Messages.send(p, "cashquake.supply-drop-reward", "amount", String.format("%,d", amount));
+                        session.getRewardManager().grant(p, RewardType.SUPPLY_DROP, amount,
+                                "amount", String.format("%,d", amount));
                         SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
                         return;
                     }

@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.util.ActionBarQueue;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.game.kc.KCZoneUtils;
 import me.psikuvit.cashClash.util.game.kc.KCZoneValidator;
 import org.bukkit.Bukkit;
@@ -473,6 +474,9 @@ public class KillConfirmGamemode extends Gamemode {
         String teamName = capturingTeam == 1 ? "Red" : "Blue";
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
+        // Investor's Set: reward the confirming player's team on objective completion
+        session.getRewardManager().grantKillOrObjective(capturer, RewardType.OBJECTIVE_KC_CONFIRM, 0);
+
         if (zone.getKind() == KCZone.ZoneKind.NAMETAG) {
             teamScore.merge(capturingTeam, 1, Integer::sum);
             if (suddenDeathManager.isInSuddenDeath()) {
@@ -533,11 +537,8 @@ public class KillConfirmGamemode extends Gamemode {
                 suddenDeathManager.applyExtraHeart(p, HEART_BONUS_DURATION_MS);
                 Messages.send(p, "gamemode-kc.money-tag-bonus-heart");
             } else {
-                CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-                if (ccp != null) {
-                    ccp.addCoins(share);
-                }
-                Messages.send(p, "gamemode-kc.money-tag-bonus-coins", "amount", String.format("%,d", share));
+                session.getRewardManager().grant(p, RewardType.KC_CONFIRM_BONUS, share,
+                        "amount", String.format("%,d", share));
             }
         }
     }

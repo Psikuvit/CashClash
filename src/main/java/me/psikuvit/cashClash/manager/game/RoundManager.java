@@ -22,6 +22,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
+import me.psikuvit.cashClash.util.enums.RewardType;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -545,14 +546,8 @@ public class RoundManager {
         
         if (bonus > 0) {
             for (UUID uuid : losingTeam.getPlayers()) {
-                CashClashPlayer player = session.getCashClashPlayer(uuid);
-                if (player != null) {
-                    player.addCoins(bonus);
-                    Player bukkit = Bukkit.getPlayer(uuid);
-                    if (bukkit != null && bukkit.isOnline()) {
-                        Messages.send(bukkit, "round.loss-streak-bonus", "bonus", String.format("%,d", bonus));
-                    }
-                }
+                session.getRewardManager().grant(uuid, RewardType.LOSS_STREAK, bonus,
+                        "bonus", String.format("%,d", bonus));
             }
         }
     }
