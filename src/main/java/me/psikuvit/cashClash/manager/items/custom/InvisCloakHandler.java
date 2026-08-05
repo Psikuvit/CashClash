@@ -11,41 +11,36 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 /**
  * Invis Cloak: toggled invisibility that drains coins per second while active.
- * The player's armor (and off-hand shield) is stashed while invisible so nothing
- * gives them away, and restored on deactivate or death. Each activation consumes
- * one of the 5 uses. Handles the shopping-phase force-off on its own.
+ * The player's armor and off-hand item are stashed via CashClashPlayer#hideInventory while
+ * invisible so nothing gives them away, and restored on deactivate or death (the main hand
+ * stays as-is - it holds the cloak itself, needed to right-click deactivate). Each activation
+ * consumes one of the 5 uses. Handles the shopping-phase force-off on its own.
  */
 public class InvisCloakHandler extends CustomItemHandler {
 
     private final Map<UUID, Integer> invisCloakUsesRemaining;
     private final Set<UUID> invisCloakActive;
     private final Map<UUID, BukkitTask> invisCloakTasks;
-    private final Map<UUID, List<ItemStack>> invisCloakStoredArmor;
 
     public InvisCloakHandler(CustomItemManager manager) {
         super(manager);
         this.invisCloakUsesRemaining = new HashMap<>();
         this.invisCloakActive = new HashSet<>();
         this.invisCloakTasks = new HashMap<>();
-        this.invisCloakStoredArmor = new HashMap<>();
     }
 
     public void toggleInvisCloak(Player player, boolean turnOn) {
@@ -67,18 +62,13 @@ public class InvisCloakHandler extends CustomItemHandler {
             invisCloakActive.add(uuid);
             invisCloakUsesRemaining.put(uuid, uses - 1);
 
-            // Store and hide armor
-            ItemStack[] currentArmor = player.getInventory().getArmorContents();
-            List<ItemStack> armorCopy = new ArrayList<>();
-            for (ItemStack stack : currentArmor) {
-                armorCopy.add(stack != null ? stack.clone() : null);
-            }
-            if (player.getInventory().getItemInOffHand().getType() == Material.SHIELD) {
-                armorCopy.add(player.getInventory().getItemInOffHand().clone());
-            }
-            invisCloakStoredArmor.put(uuid, armorCopy);
-            player.getInventory().setArmorContents(new ItemStack[4]); // Clear visible armor
-            player.getInventory().setItemInOffHand(null); // Clear shield if any
+            GameSession session = GameManager.getInstance().getPlayerSession(player);
+            CashClashPlayer ccp = session != null ? session.getCashClashPlayer(uuid) : null;
+
+            // Hide worn armor + off-hand - a vanilla Invisibility effect alone still shows
+            // equipped/held items floating in place. The main-hand item stays untouched: it's
+            // the cloak itself, and the right-click-to-deactivate flow needs it in hand.
+            if (ccp != null) ccp.hideInventory(false);
 
             CashClashPlayer.applyEffect(player, PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0);
 
@@ -90,9 +80,6 @@ public class InvisCloakHandler extends CustomItemHandler {
             Messages.send(player, "customitem.invis-cost-per-second", "cost", String.valueOf(costPerSecond));
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0f, 1.0f);
             playInvisToggleEffect(player);
-
-            GameSession session = GameManager.getInstance().getPlayerSession(player);
-            CashClashPlayer ccp = session != null ? session.getCashClashPlayer(uuid) : null;
 
             BukkitTask drainTask = SchedulerUtils.runTaskTimer(() -> {
                 if (!invisCloakActive.contains(uuid)) return;
@@ -110,22 +97,7 @@ public class InvisCloakHandler extends CustomItemHandler {
         } else if (!turnOn && invisCloakActive.contains(uuid)) {
             invisCloakActive.remove(uuid);
             CashClashPlayer.removeEffect(player, PotionEffectType.INVISIBILITY);
-
-            // Restore armor
-            List<ItemStack> storedArmor = invisCloakStoredArmor.remove(uuid);
-            if (storedArmor != null && storedArmor.size() >= 4) {
-                // Restore armor contents (first 4 items are helmet, chestplate, leggings, boots)
-                ItemStack[] armorContents = new ItemStack[4];
-                for (int i = 0; i < 4; i++) {
-                    armorContents[i] = storedArmor.get(i);
-                }
-                player.getInventory().setArmorContents(armorContents);
-
-                // Check if there's a 5th item (shield in offhand)
-                if (storedArmor.size() > 4 && storedArmor.get(4) != null) {
-                    player.getInventory().setItemInOffHand(storedArmor.get(4));
-                }
-            }
+            CashClashPlayer.restoreInventory(player);
 
             BukkitTask task = invisCloakTasks.remove(uuid);
             if (task != null) task.cancel();
@@ -167,8 +139,8 @@ public class InvisCloakHandler extends CustomItemHandler {
     }
 
     /**
-     * Clears invisibility cloak state on death and restores armor.
-     * The armor was hidden when invis was activated, so we need to restore it.
+     * Clears invisibility cloak state on death and restores the player's equipment.
+     * It was hidden when invis was activated, so we need to restore it.
      */
     public void clearInvisCloakOnDeath(Player player) {
         UUID uuid = player.getUniqueId();
@@ -177,22 +149,7 @@ public class InvisCloakHandler extends CustomItemHandler {
 
         invisCloakActive.remove(uuid);
         CashClashPlayer.removeEffect(player, PotionEffectType.INVISIBILITY);
-
-        // Restore armor that was hidden during invisibility
-        List<ItemStack> storedArmor = invisCloakStoredArmor.remove(uuid);
-        if (storedArmor != null && storedArmor.size() >= 4) {
-            // Restore armor contents (first 4 items are helmet, chestplate, leggings, boots)
-            ItemStack[] armorContents = new ItemStack[4];
-            for (int i = 0; i < 4; i++) {
-                armorContents[i] = storedArmor.get(i);
-            }
-            player.getInventory().setArmorContents(armorContents);
-
-            // Check if there's a 5th item (shield in offhand)
-            if (storedArmor.size() > 4 && storedArmor.get(4) != null) {
-                player.getInventory().setItemInOffHand(storedArmor.get(4));
-            }
-        }
+        CashClashPlayer.restoreInventory(player);
 
         // Cancel the drain task
         BukkitTask task = invisCloakTasks.remove(uuid);
@@ -227,7 +184,17 @@ public class InvisCloakHandler extends CustomItemHandler {
     public void cleanup() {
         invisCloakTasks.values().forEach(BukkitTask::cancel);
         invisCloakTasks.clear();
+
+        // Restore any still-hidden equipment before the session (and its CashClashPlayer
+        // instances, which hold the stashed items) goes away - otherwise an abrupt session
+        // end while a player is invisible would lose their gear permanently.
+        for (UUID uuid : invisCloakActive) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                CashClashPlayer.removeEffect(player, PotionEffectType.INVISIBILITY);
+                CashClashPlayer.restoreInventory(player);
+            }
+        }
         invisCloakActive.clear();
-        invisCloakStoredArmor.clear();
     }
 }

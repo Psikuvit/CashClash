@@ -10,6 +10,8 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.BonusType;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -57,6 +59,14 @@ public class CashClashPlayer {
 
     // Potion effect tracking
     private final Map<PotionEffectType, PotionEffect> trackedEffects = new HashMap<>();
+
+    // Invisibility support - visible equipment (armor + both hands) stashed here while an
+    // ability like Invis Cloak is active, so nothing gives the player's position away;
+    // restored on deactivation/death/disconnect.
+    private ItemStack[] hiddenArmorContents;
+    private ItemStack hiddenMainHand;
+    private ItemStack hiddenOffHand;
+    private boolean inventoryHidden;
 
     public CashClashPlayer(Player player) {
         this.uuid = player.getUniqueId();
@@ -377,6 +387,95 @@ public class CashClashPlayer {
                 .map(PotionEffect::getType)
                 .forEach(player::removePotionEffect);
         trackedEffects.clear();
+    }
+
+    /**
+     * Hides the player's visible equipment (armor + both hands) for an invisibility-style
+     * ability - stashes it here and clears the live slots so nothing gives their position
+     * away. No-op if already hidden, so a repeat call can't clobber a saved snapshot with
+     * empty slots.
+     */
+    public void hideInventory() {
+        hideInventory(true);
+    }
+
+    /**
+     * Same as {@link #hideInventory()}, but lets the caller leave the main-hand item alone -
+     * needed by an ability whose own toggle-off interaction depends on the player still
+     * holding it (e.g. Invis Cloak), where clearing the main hand would make it un-toggleable.
+     */
+    public void hideInventory(boolean hideMainHand) {
+        if (inventoryHidden || player == null) return;
+
+        PlayerInventory inv = player.getInventory();
+        hiddenArmorContents = cloneItems(inv.getArmorContents());
+        hiddenOffHand = inv.getItemInOffHand().clone();
+        inv.setArmorContents(new ItemStack[4]);
+        inv.setItemInOffHand(null);
+
+        if (hideMainHand) {
+            hiddenMainHand = inv.getItemInMainHand().clone();
+            inv.setItemInMainHand(null);
+        }
+        inventoryHidden = true;
+    }
+
+    /**
+     * Restores whatever {@link #hideInventory()} stashed. No-op if nothing is hidden.
+     */
+    public void restoreInventory() {
+        if (!inventoryHidden || player == null) return;
+
+        PlayerInventory inv = player.getInventory();
+        if (hiddenArmorContents != null) inv.setArmorContents(hiddenArmorContents);
+        if (hiddenMainHand != null) inv.setItemInMainHand(hiddenMainHand);
+        if (hiddenOffHand != null) inv.setItemInOffHand(hiddenOffHand);
+
+        hiddenArmorContents = null;
+        hiddenMainHand = null;
+        hiddenOffHand = null;
+        inventoryHidden = false;
+    }
+
+    /**
+     * Whether this player's equipment is currently stashed via {@link #hideInventory()}.
+     */
+    public boolean isInventoryHidden() {
+        return inventoryHidden;
+    }
+
+    private static ItemStack[] cloneItems(ItemStack[] items) {
+        ItemStack[] copy = new ItemStack[items.length];
+        for (int i = 0; i < items.length; i++) {
+            copy[i] = items[i] != null ? items[i].clone() : null;
+        }
+        return copy;
+    }
+
+    /**
+     * Hides a player's visible equipment if they're in a session; a no-op otherwise, since
+     * there is no session-scoped instance to hold the snapshot for a later restore.
+     */
+    public static void hideInventory(Player player) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.hideInventory();
+    }
+
+    /**
+     * Same as {@link #hideInventory(Player)}, but lets the caller leave the main-hand item
+     * alone - see {@link #hideInventory(boolean)}.
+     */
+    public static void hideInventory(Player player, boolean hideMainHand) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.hideInventory(hideMainHand);
+    }
+
+    /**
+     * Restores a player's equipment previously hidden by {@link #hideInventory(Player)}.
+     */
+    public static void restoreInventory(Player player) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.restoreInventory();
     }
 
     /**
