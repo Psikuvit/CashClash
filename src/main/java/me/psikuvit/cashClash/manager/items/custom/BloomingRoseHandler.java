@@ -17,6 +17,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -26,9 +27,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Blooming Rose: places a cherry-blossom structure that creates a healing zone.
@@ -44,15 +43,16 @@ public class BloomingRoseHandler extends CustomItemHandler {
     private boolean bloomingRoseHpLoopStarted;
 
     /**
-     * @param session    the game session the rose was placed in (used for team lookups on expiry)
-     * @param teamNumber the team the placer belongs to - only same-team players get protection/regen
-     * @param center     the trunk location (zone centre)
-     * @param expiresAt  epoch millis the zone naturally expires
-     * @param blocks     every block the structure occupies (log + leaves), tracked for counterplay
-     * @param task       the zone upkeep task (drift particles + floor heal + expiry)
+     * @param session       the game session the rose was placed in (used for team lookups on expiry)
+     * @param teamNumber    the team the placer belongs to - only same-team players get protection/regen
+     * @param center        the trunk location (zone centre)
+     * @param expiresAt     epoch millis the zone naturally expires
+     * @param originalBlocks every block the structure occupies (log + leaves), mapped to what was
+     *                      there before placement so it can be restored, not just cleared to air
+     * @param task          the zone upkeep task (drift particles + floor heal + expiry)
      */
     private record BloomingRoseZone(GameSession session, int teamNumber, Location center, long expiresAt,
-                                    Set<Block> blocks, BukkitTask task) {}
+                                    Map<Block, BlockData> originalBlocks, BukkitTask task) {}
 
     public BloomingRoseHandler(CustomItemManager manager) {
         super(manager);
@@ -67,13 +67,13 @@ public class BloomingRoseHandler extends CustomItemHandler {
         consumeItem(player, item);
 
         Block origin = loc.getBlock();
-        Set<Block> blocks = new HashSet<>();
-        buildRoseStructure(origin, blocks);
+        Map<Block, BlockData> originalBlocks = new HashMap<>();
+        buildRoseStructure(origin, originalBlocks);
 
         Location center = origin.getLocation();
         long expiresAt = System.currentTimeMillis() + cfg.getBloomingRoseZoneDurationSeconds() * 1000L;
-        BukkitTask upkeepTask = startRoseZoneTask(center, blocks, expiresAt, session, team.getTeamNumber());
-        bloomingRoseZones.put(center, new BloomingRoseZone(session, team.getTeamNumber(), center, expiresAt, blocks, upkeepTask));
+        BukkitTask upkeepTask = startRoseZoneTask(center, originalBlocks, expiresAt, session, team.getTeamNumber());
+        bloomingRoseZones.put(center, new BloomingRoseZone(session, team.getTeamNumber(), center, expiresAt, originalBlocks, upkeepTask));
 
         Messages.send(player, "customitem.blooming-rose-placed");
         SoundUtils.playAt(center, Sound.BLOCK_CHERRY_WOOD_PLACE, 1.0f, 1.0f);
@@ -84,10 +84,11 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
     /**
      * Builds the 6-high CHERRY_LOG trunk with a small CHERRY_LEAVES canopy at the top and two
-     * single-log branch offshoots, tracking every block placed so it can be torn down on expiry
-     * or by manual destruction (the intended counterplay).
+     * single-log branch offshoots, recording each block's original state before overwriting it
+     * so the structure can be fully torn down (and the map restored, not left as air) on expiry
+     * or manual destruction (the intended counterplay).
      */
-    private void buildRoseStructure(Block origin, Set<Block> blocks) {
+    private void buildRoseStructure(Block origin, Map<Block, BlockData> originalBlocks) {
         World world = origin.getWorld();
         int baseX = origin.getX();
         int baseY = origin.getY();
@@ -95,8 +96,8 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
         for (int i = 0; i < 6; i++) {
             Block b = world.getBlockAt(baseX, baseY + i, baseZ);
+            originalBlocks.put(b, b.getBlockData());
             b.setType(Material.CHERRY_LOG, false);
-            blocks.add(b);
         }
 
         int canopyY = baseY + 6;
@@ -104,27 +105,28 @@ public class BloomingRoseHandler extends CustomItemHandler {
             for (int dz = -2; dz <= 2; dz++) {
                 if (Math.abs(dx) == 2 && Math.abs(dz) == 2) continue; // rounded canopy
                 Block b = world.getBlockAt(baseX + dx, canopyY, baseZ + dz);
+                originalBlocks.put(b, b.getBlockData());
                 b.setType(Material.CHERRY_LEAVES, false);
-                blocks.add(b);
             }
         }
         Block crown = world.getBlockAt(baseX, canopyY + 1, baseZ);
+        originalBlocks.put(crown, crown.getBlockData());
         crown.setType(Material.CHERRY_LEAVES, false);
-        blocks.add(crown);
 
         Block branchA = world.getBlockAt(baseX + 1, baseY + 3, baseZ);
+        originalBlocks.put(branchA, branchA.getBlockData());
         branchA.setType(Material.CHERRY_LOG, false);
-        blocks.add(branchA);
         Block branchB = world.getBlockAt(baseX - 1, baseY + 3, baseZ);
+        originalBlocks.put(branchB, branchB.getBlockData());
         branchB.setType(Material.CHERRY_LOG, false);
-        blocks.add(branchB);
     }
 
     /**
-     * Zone upkeep: every second it drifts sakura dust off the leaves, heals same-team members
-     * below the health floor back up to it, and tears the structure down once it expires.
+     * Zone upkeep: every second it drifts red dust off the leaves, draws a red ring at the
+     * zone's healing radius, heals same-team members below the health floor back up to it,
+     * and tears the structure down once it expires.
      */
-    private BukkitTask startRoseZoneTask(Location center, Set<Block> blocks, long expiresAt,
+    private BukkitTask startRoseZoneTask(Location center, Map<Block, BlockData> originalBlocks, long expiresAt,
                                          GameSession session, int teamNumber) {
         return SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             @Override
@@ -134,15 +136,31 @@ public class BloomingRoseHandler extends CustomItemHandler {
                     cancel();
                     return;
                 }
-                for (Block block : blocks) {
+                Color red = Color.fromRGB(220, 20, 20);
+                for (Block block : originalBlocks.keySet()) {
                     if (block.getType() == Material.CHERRY_LEAVES) {
                         ParticleUtils.spawnDust(block.getLocation().add(0.5, 0.5, 0.5),
-                                Color.fromRGB(255, 150, 190), 0.6f, 1, 0.15);
+                                red, 0.6f, 1, 0.15);
                     }
                 }
+                spawnRoseRadiusRing(center, red);
                 healRoseMembersToFloor(center, session, teamNumber);
             }
         }, 20L, 20L);
+    }
+
+    /**
+     * Draws a red ring on the ground at the zone's healing radius so players can see its bounds.
+     */
+    private void spawnRoseRadiusRing(Location center, Color color) {
+        double radius = cfg.getBloomingRoseZoneRadius();
+        int points = 40;
+        for (int i = 0; i < points; i++) {
+            double angle = 2 * Math.PI * i / points;
+            double x = center.getX() + 0.5 + radius * Math.cos(angle);
+            double z = center.getZ() + 0.5 + radius * Math.sin(angle);
+            ParticleUtils.spawnDust(new Location(center.getWorld(), x, center.getY() + 0.1, z), color, 1.0f, 1);
+        }
     }
 
     /**
@@ -164,17 +182,19 @@ public class BloomingRoseHandler extends CustomItemHandler {
     }
 
     /**
-     * Tears down an active zone (expiry or manual destruction): removes the structure blocks and
-     * grants teammates inside the radius Regen I for the configured duration.
+     * Tears down an active zone (expiry or manual destruction): restores every structure block
+     * to whatever was there before the rose was placed (not just air) and grants teammates
+     * inside the radius Regen I for the configured duration.
      */
     private void destroyBloomingRose(Location center) {
         BloomingRoseZone zone = bloomingRoseZones.remove(center);
         if (zone == null) return;
 
         if (zone.task() != null) zone.task().cancel();
-        for (Block block : zone.blocks()) {
+        for (Map.Entry<Block, BlockData> entry : zone.originalBlocks().entrySet()) {
+            Block block = entry.getKey();
             if (block.getType() == Material.CHERRY_LOG || block.getType() == Material.CHERRY_LEAVES) {
-                block.setType(Material.AIR, false);
+                block.setBlockData(entry.getValue(), false);
             }
         }
         triggerRoseRegen(zone);
@@ -186,7 +206,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
      */
     public void onRoseStructureBroken(Block block) {
         for (Map.Entry<Location, BloomingRoseZone> entry : new ArrayList<>(bloomingRoseZones.entrySet())) {
-            if (entry.getValue().blocks().contains(block)) {
+            if (entry.getValue().originalBlocks().containsKey(block)) {
                 destroyBloomingRose(entry.getKey());
                 return;
             }
@@ -226,7 +246,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
     private BloomingRoseZone findRoseZone(Player player) {
         double radius = cfg.getBloomingRoseZoneRadius();
         for (BloomingRoseZone zone : bloomingRoseZones.values()) {
-            if (zone.blocks().isEmpty()) continue;
+            if (zone.originalBlocks().isEmpty()) continue;
             if (zone.center().getWorld().equals(player.getWorld())
                     && zone.center().distance(player.getLocation()) <= radius
                     && isSameTeam(zone.session(), zone.teamNumber(), player)) {
@@ -292,13 +312,13 @@ public class BloomingRoseHandler extends CustomItemHandler {
                 Team team = session.getPlayerTeam(holder);
                 if (team == null) continue;
 
-                StringBuilder sb = new StringBuilder("<white>Rose HP:</white> <aqua>You <red>â¤")
+                StringBuilder sb = new StringBuilder("<white>Rose HP:</white> <aqua>You</aqua> <red>❤ ")
                         .append(String.format("%.1f", holder.getHealth())).append("</red>");
                 for (Player teammate : Bukkit.getOnlinePlayers()) {
                     if (teammate.equals(holder)) continue;
                     Team t = session.getPlayerTeam(teammate);
                     if (t == null || t.getTeamNumber() != team.getTeamNumber()) continue;
-                    sb.append(" <aqua>").append(teammate.getName()).append(" <red>â¤")
+                    sb.append("  <aqua>").append(teammate.getName()).append("</aqua> <red>❤ ")
                             .append(String.format("%.1f", teammate.getHealth())).append("</red>");
                 }
                 holder.sendActionBar(Messages.parse(sb.toString()));
@@ -310,9 +330,10 @@ public class BloomingRoseHandler extends CustomItemHandler {
     public void cleanup() {
         bloomingRoseZones.values().forEach(zone -> {
             if (zone.task() != null) zone.task().cancel();
-            for (Block block : zone.blocks()) {
+            for (Map.Entry<Block, BlockData> entry : zone.originalBlocks().entrySet()) {
+                Block block = entry.getKey();
                 if (block.getType() == Material.CHERRY_LOG || block.getType() == Material.CHERRY_LEAVES) {
-                    block.setType(Material.AIR, false);
+                    block.setBlockData(entry.getValue(), false);
                 }
             }
         });
