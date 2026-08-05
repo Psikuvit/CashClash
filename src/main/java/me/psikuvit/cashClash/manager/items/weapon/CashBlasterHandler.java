@@ -241,7 +241,8 @@ public class CashBlasterHandler extends WeaponItemHandler {
             Player teammate = Bukkit.getPlayer(uuid);
             if (teammate == null || !teammate.isOnline()) continue;
 
-            SoundUtils.play(teammate, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 0.5f);
+            SoundUtils.play(teammate, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
+            Messages.send(teammate, "customitem.cash-blaster-vortex-reward", "amount", String.valueOf(coins));
             Location center = teammate.getLocation().clone().add(0, 0.6, 0);
             for (int i = 0; i < 18; i++) {
                 int delay = i;

@@ -890,6 +890,7 @@ messages:
     cash-blaster-vortex-full-charge: "<red>You must fully charge the bow!</red>"
     cash-blaster-vortex-cooldown: "<red>Profit Vortex is on cooldown for ${remaining}s!</red>"
     cash-blaster-vortex-need-arrows: "<red>You need 5 arrows to use Profit Vortex!</red>"
+    cash-blaster-vortex-reward: "<green>Profit Vortex: your team earned +${amount}!</green>"
     cannot-place-during-shopping: "<red>You can't place this item during shopping!</red>"
     cannot-place-bounce-pad: "<red>Cannot place bounce pad here!</red>"
     bounce-pad-placed: "<green>Bounce pad placed!</green>"

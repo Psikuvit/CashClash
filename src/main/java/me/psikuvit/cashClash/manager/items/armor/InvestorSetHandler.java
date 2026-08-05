@@ -74,7 +74,7 @@ public class InvestorSetHandler extends ArmorSetHandler {
      * Play the coin reward particle/sound effect for an investor reward recipient.
      */
     private void playInvestorRewardEffect(Player player, int reward) {
-        SoundUtils.play(player, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.7f, 1.5f);
+        SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
         Messages.send(player, "armor.investor-reward", "reward", String.valueOf(reward));
 
         Color lightGreen = Color.fromRGB(120, 255, 120);
