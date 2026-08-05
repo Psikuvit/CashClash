@@ -112,6 +112,18 @@ public class BouncePadHandler extends CustomItemHandler {
         return bouncePadTeams.containsKey(block.getLocation());
     }
 
+    /**
+     * Whether this block is a bounce pad that was placed wall-mounted (as opposed to a
+     * floor pad). Used to gate the side-touch bounce trigger to wall pads only - a floor
+     * pad brushed from the side shouldn't launch the player.
+     */
+    public boolean isWallMountedBouncePad(Block block) {
+        if (block.getType() != Material.SLIME_BLOCK) return false;
+        BouncePadInfo pad = bouncePadTeams.get(block.getLocation());
+        if (pad == null) return false;
+        return pad.attachedFace() != BlockFace.UP && pad.attachedFace() != BlockFace.DOWN;
+    }
+
     @Override
     public void cleanup() {
         bouncePadTeams.keySet().forEach(loc -> {

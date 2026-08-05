@@ -313,11 +313,11 @@ public class ItemsConfig {
 
     // Bounce Pad
     public double getBouncePadForwardVelocity() {
-        return config.getDouble("custom-items.bounce-pad.forward-velocity", 1.4);
+        return config.getDouble("custom-items.bounce-pad.forward-velocity", 1.2);
     }
 
     public double getBouncePadUpwardVelocity() {
-        return config.getDouble("custom-items.bounce-pad.upward-velocity", 1.0);
+        return config.getDouble("custom-items.bounce-pad.upward-velocity", 0.85);
     }
 
     // Medic Pouch

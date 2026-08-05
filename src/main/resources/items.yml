@@ -222,8 +222,8 @@ custom-items:
 
   # Bounce Pad
   bounce-pad:
-    forward-velocity: 1.4
-    upward-velocity: 1.0
+    forward-velocity: 1.2
+    upward-velocity: 0.85
 
   # Medic Pouch
   medic-pouch:

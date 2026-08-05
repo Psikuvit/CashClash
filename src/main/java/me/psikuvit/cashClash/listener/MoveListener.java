@@ -84,7 +84,7 @@ public class MoveListener implements Listener {
     private void checkWallBouncePad(Player player, Block currentBlock, BlockFace face, boolean nearFace) {
         if (!nearFace) return;
         Block neighbor = currentBlock.getRelative(face);
-        if (neighbor.getType() == Material.SLIME_BLOCK && customItemManager.getHandler(BouncePadHandler.class).isBouncePad(neighbor)) {
+        if (customItemManager.getHandler(BouncePadHandler.class).isWallMountedBouncePad(neighbor)) {
             customItemManager.getHandler(BouncePadHandler.class).handleBouncePad(player, neighbor);
         }
     }
