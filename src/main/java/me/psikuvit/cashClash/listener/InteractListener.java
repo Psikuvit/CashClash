@@ -528,6 +528,7 @@ public class InteractListener implements Listener {
         switch (mythic) {
             case CARLS_BATTLEAXE -> {
                 event.setCancelled(true);
+                armorManager.lockMythicShift(player);
                 mythicManager.getHandler(CarlsBattleaxeHandler.class).activateCarlsSpinAttack(player);
                 return true;
             }

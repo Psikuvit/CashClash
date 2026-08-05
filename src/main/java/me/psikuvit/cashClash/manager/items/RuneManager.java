@@ -31,7 +31,7 @@ import java.util.UUID;
 public class RuneManager {
 
     // How high above the player the activation book spawns and hovers
-    private static final double BOOK_HOVER_HEIGHT = 1.25;
+    private static final double BOOK_HOVER_HEIGHT = 2.75;
 
     public static void ensureItemUUID(ItemStack item) {
         if (item == null || item.getType().isAir()) return;
