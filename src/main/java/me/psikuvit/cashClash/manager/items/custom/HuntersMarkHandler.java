@@ -125,6 +125,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
 
         Messages.send(hunter, "customitem.hunters-mark-applied", "player_name", target.getName());
         Messages.send(target, "customitem.hunters-mark-target");
+        SoundUtils.play(hunter, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0f, 1.2f);
         SoundUtils.play(target, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 1.4f);
 
         spawnHunterMarkDisplay(target, durationMillis);
