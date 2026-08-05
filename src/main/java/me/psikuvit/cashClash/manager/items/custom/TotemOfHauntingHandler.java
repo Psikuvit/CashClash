@@ -9,16 +9,24 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Transformation;
+import org.joml.Vector3f;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -32,10 +40,15 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
 
     // Totem of Haunting - active death-save invincibility window
     private final Set<UUID> totemInvincible;
+    // Floating spinning nether star shown above a haunted player's head while they're invisible
+    private final Map<UUID, ItemDisplay> hauntingStarDisplays;
+    private final Map<UUID, BukkitTask> hauntingStarTasks;
 
     public TotemOfHauntingHandler(CustomItemManager manager) {
         super(manager);
         this.totemInvincible = new HashSet<>();
+        this.hauntingStarDisplays = new HashMap<>();
+        this.hauntingStarTasks = new HashMap<>();
     }
 
     public boolean isTotemInvincible(UUID uuid) {
@@ -54,13 +67,58 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
 
         totemInvincible.add(uuid);
         int invincibilitySeconds = cfg.getTotemInvincibilitySeconds();
-        SchedulerUtils.runTaskLater(() -> totemInvincible.remove(uuid), invincibilitySeconds * 20L);
+        int invincibilityTicks = invincibilitySeconds * 20;
+        SchedulerUtils.runTaskLater(() -> totemInvincible.remove(uuid), invincibilityTicks);
+
+        // Haunting: the reviver turns into a translucent ghost for the invincibility window,
+        // marked by a floating spinning nether star so they aren't a completely free hidden kill.
+        CashClashPlayer.applyEffect(player, PotionEffectType.INVISIBILITY, invincibilityTicks, 0, false, false);
+        spawnHauntingStarDisplay(player, invincibilityTicks);
 
         Messages.send(player, "customitem.totem-haunting-triggered");
         SoundUtils.play(player, Sound.ITEM_TOTEM_USE, 1.0f, 0.6f);
         SoundUtils.play(player, Sound.ENTITY_WITHER_AMBIENT, 0.4f, 0.5f);
 
         spawnHauntingSpiral(player);
+    }
+
+    /**
+     * Spawns a floating nether star above the haunted player's head that spins in place and
+     * follows them for the duration of their post-totem invincibility/invisibility window.
+     */
+    private void spawnHauntingStarDisplay(Player player, int durationTicks) {
+        UUID uuid = player.getUniqueId();
+        clearHauntingStarDisplay(uuid);
+
+        World world = player.getWorld();
+        ItemDisplay display = world.spawn(player.getEyeLocation(), ItemDisplay.class, d -> {
+            d.setItemStack(new ItemStack(Material.NETHER_STAR));
+            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+            d.setBillboard(Display.Billboard.FIXED);
+            d.setBrightness(new Display.Brightness(15, 15));
+            Transformation t = d.getTransformation();
+            d.setTransformation(new Transformation(t.getTranslation(), t.getLeftRotation(), new Vector3f(0.5f, 0.5f, 0.5f), t.getRightRotation()));
+        });
+        hauntingStarDisplays.put(uuid, display);
+
+        long expiresAt = System.currentTimeMillis() + (durationTicks * 50L);
+        BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
+            if (!player.isOnline() || player.isDead() || System.currentTimeMillis() >= expiresAt) {
+                clearHauntingStarDisplay(uuid);
+                return;
+            }
+            Location above = player.getEyeLocation().add(0, 1.0, 0);
+            display.teleport(above);
+            display.setRotation(display.getYaw() + 15f, 0f);
+        }, 0L, 1L);
+        hauntingStarTasks.put(uuid, task);
+    }
+
+    private void clearHauntingStarDisplay(UUID uuid) {
+        BukkitTask task = hauntingStarTasks.remove(uuid);
+        if (task != null) task.cancel();
+        ItemDisplay display = hauntingStarDisplays.remove(uuid);
+        if (display != null && !display.isDead()) display.remove();
     }
 
     /**
@@ -103,7 +161,9 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
             public void run() {
                 tick++;
                 double currentRadius = maxRadius * tick / totalTicks;
+                // Same 3-arm spiral formula, just spawned twice per arm per tick for a denser trail.
                 for (int arm = 0; arm < arms; arm++) {
+                    ParticleUtils.smokeSpiralFrame(origin, currentRadius, arm, arms);
                     ParticleUtils.smokeSpiralFrame(origin, currentRadius, arm, arms);
                 }
 
@@ -116,8 +176,8 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
                         if (target.getLocation().distance(origin) > currentRadius + 1.0) continue;
 
                         alreadyDebuffed.add(target.getUniqueId());
-                        CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, debuffDurationTicks, 0, false, true);
-                        CashClashPlayer.applyEffect(target, PotionEffectType.WEAKNESS, debuffDurationTicks, 0, false, true);
+                        applyStackedEffect(target, PotionEffectType.SLOWNESS, debuffDurationTicks);
+                        applyStackedEffect(target, PotionEffectType.WEAKNESS, debuffDurationTicks);
                         Messages.send(target, "customitem.totem-haunting-witness", "player_name", player.getName());
                     }
                 }
@@ -129,8 +189,24 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
         }, 0L, 1L);
     }
 
+    /**
+     * Applies Slowness/Weakness, bumping the amplifier one level above whatever the target
+     * already has instead of overwriting it - so a second/third totem pop in range stacks.
+     */
+    private void applyStackedEffect(Player target, PotionEffectType type, int durationTicks) {
+        PotionEffect existing = CashClashPlayer.getEffect(target, type);
+        int amplifier = existing != null ? existing.getAmplifier() + 1 : 0;
+        CashClashPlayer.applyEffect(target, type, durationTicks, amplifier, false, true);
+    }
+
     @Override
     public void cleanup() {
         totemInvincible.clear();
+        hauntingStarTasks.values().forEach(BukkitTask::cancel);
+        hauntingStarTasks.clear();
+        hauntingStarDisplays.values().forEach(d -> {
+            if (!d.isDead()) d.remove();
+        });
+        hauntingStarDisplays.clear();
     }
 }
