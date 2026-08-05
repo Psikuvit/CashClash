@@ -553,6 +553,7 @@ public class InteractListener implements Listener {
                 event.setCancelled(true);
 
                 if (player.isSneaking()) {
+                    armorManager.lockMythicShift(player);
                     mythicManager.getHandler(AlchemistWandHandler.class).useAlchemistTaunt(player);
                 } else {
                     mythicManager.getHandler(AlchemistWandHandler.class).useAlchemistBlinkSwap(player);
