@@ -46,8 +46,8 @@ public class TectonicCapHandler extends ArmorSetHandler {
 
     /**
      * Falling warning aura: while airborne, falling far enough that a landing would deal
-     * fall damage, and with at least one slam charge ready, trail dust around the wearer's
-     * feet to telegraph the impending slam.
+     * fall damage, and with at least one slam charge ready, ring the wearer's feet with an
+     * inner dark-brown ring and an outer light-brown ring to telegraph the impending slam.
      */
     public void handleFallWarning(Player player) {
         if (!hasTectonicCap(player)) return;
@@ -66,8 +66,21 @@ public class TectonicCapHandler extends ArmorSetHandler {
         if (next != null && now < next) return;
         nextFallWarningTick.put(id, now + 150L);
 
-        ParticleUtils.spawnDust(player.getLocation().clone().add(0, 0.1, 0),
-                Color.fromRGB(180, 120, 60), 1.0f, 6, 0.25, 0.05, 0.25);
+        Location center = player.getLocation().clone().add(0, 0.1, 0);
+
+        for (int i = 0; i < 10; i++) {
+            double angle = 2 * Math.PI * i / 10;
+            double x = Math.cos(angle) * 0.6;
+            double z = Math.sin(angle) * 0.6;
+            ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(80, 45, 20), 1.0f, 1);
+        }
+
+        for (int i = 0; i < 16; i++) {
+            double angle = 2 * Math.PI * i / 16;
+            double x = Math.cos(angle) * 1.1;
+            double z = Math.sin(angle) * 1.1;
+            ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(180, 120, 60), 1.0f, 1);
+        }
     }
 
     public void onTectonicCapFall(EntityDamageEvent event, Player player) {
