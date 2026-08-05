@@ -30,6 +30,9 @@ import java.util.UUID;
 
 public class RuneManager {
 
+    // How high above the player the activation book spawns and hovers
+    private static final double BOOK_HOVER_HEIGHT = 1.25;
+
     public static void ensureItemUUID(ItemStack item) {
         if (item == null || item.getType().isAir()) return;
         if (PDCDetection.hasKey(item, Keys.ITEM_UUID)) return;
@@ -818,7 +821,7 @@ public class RuneManager {
         // distance upward, even when the player is midair.
         double animationY = player.getLocation().getY();
         spawnRuneParticles(player, enchant);
-        ItemDisplay book = spawnRuneBook(player, animationY);
+        ItemDisplay book = spawnRuneBook(player, animationY, BOOK_HOVER_HEIGHT);
 
         final int duration = 60;
 
@@ -844,7 +847,7 @@ public class RuneManager {
 
                 double eased = 1 - Math.pow(1 - progress, 3);
                 double radius = 2.5 * (1 - eased);
-                double height = 1 + (eased * 0.7);
+                double height = BOOK_HOVER_HEIGHT;
                 double angle = tick * 0.25;
 
                 double x = Math.cos(angle) * radius;
@@ -880,32 +883,25 @@ public class RuneManager {
         }, 0L, 1L);
     }
 
-    private static ItemDisplay spawnRuneBook(Player player, double animationY) {
+    private static ItemDisplay spawnRuneBook(Player player, double animationY, double heightOffset) {
 
         ItemDisplay display = player.getWorld().spawn(
-                getRuneStartLocation(player, animationY),
+                getRuneStartLocation(player, animationY, heightOffset),
                 ItemDisplay.class
         );
 
         ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
-
         display.setItemStack(book);
-
         display.setBillboard(Display.Billboard.FIXED);
-
         display.setItemDisplayTransform(
                 ItemDisplay.ItemDisplayTransform.GROUND
         );
-
         display.setGravity(false);
-
         display.setInvulnerable(true);
-
         return display;
     }
 
-    private static Location getRuneStartLocation(Player player, double animationY) {
-
+    private static Location getRuneStartLocation(Player player, double animationY, double heightOffset) {
         Location location = player.getLocation().clone();
         location.setY(animationY);
 
@@ -922,13 +918,11 @@ public class RuneManager {
         return location
                 .add(forward.multiply(-2))
                 .add(right.multiply(2))
-                .add(0, 1, 0);
+                .add(0, heightOffset, 0);
     }
 
     private static void spinBook(ItemDisplay book, float speed) {
-
         Transformation transformation = book.getTransformation();
-
         transformation.getLeftRotation().rotateY(
                 (float) Math.toRadians(speed)
         );
@@ -937,72 +931,49 @@ public class RuneManager {
     }
 
     private static void spawnRuneParticles(Player player, EnchantEntry enchant) {
-
         Location center = player.getLocation().clone()
                 .add(0, 1.2, 0);
 
         Color runeColor = getRuneColor(enchant);
-
         ParticleUtils.spawn(Particle.ENCHANT, center, 40, 0.6, 0.6, 0.6, 0.15);
-
         ParticleUtils.spawnDust(center, runeColor, 1.2f, 25, 0.6, 0.6, 0.6);
     }
 
     private static Color getRuneColor(EnchantEntry enchant) {
-
         return switch (enchant) {
-
             case SHARPNESS -> Color.RED;
-
             case FIRE_ASPECT -> Color.fromRGB(255, 140, 0);
-
             case KNOCKBACK -> Color.GREEN;
-
             case PROTECTION -> Color.BLUE;
-
             case PROJECTILE_PROTECTION -> Color.AQUA;
-
             case POWER -> Color.fromRGB(75, 0, 130);
-
             case FLAME -> Color.YELLOW;
-
             case PUNCH -> Color.fromRGB(255, 105, 180);
-
             case PIERCING -> Color.fromRGB(138, 43, 226);
-
             case QUICK_CHARGE -> Color.WHITE;
         };
     }
 
     public static void playRuneDeactivation(Player player, EnchantEntry enchant) {
-
         Location ground = player.getLocation().clone();
-
         while (ground.getBlock().isPassable()) {
             ground.subtract(0, 1, 0);
         }
 
         double animationY = ground.getY() + 1;
-
-        ItemDisplay book = spawnRuneBook(player, animationY);
-
+        ItemDisplay book = spawnRuneBook(player, animationY, 1.0);
         final int duration = 32; // 1.6 seconds
 
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
-
             int tick = 0;
-
             @Override
             public void run() {
-
                 if (!player.isOnline() || book.isDead()) {
                     book.remove();
                     cancel();
                     return;
                 }
-
                 tick++;
-
                 Location playerLoc = player.getLocation().clone();
                 playerLoc.setY(animationY);
 
