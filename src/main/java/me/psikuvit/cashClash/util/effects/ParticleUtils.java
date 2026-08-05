@@ -573,7 +573,8 @@ public final class ParticleUtils {
      * left-click gust.
      */
     public static void iceFanGust(Location location) {
-        spawnDust(location, Color.fromRGB(173, 216, 230), 1.2f, 12, 0.5, 0.4, 0.5);
+        spawnDust(location, Color.fromRGB(0, 255, 255), 1.2f, 8, 0.5, 0.4, 0.5);
+        spawnDust(location, Color.fromRGB(255, 255, 255), 1.0f, 6, 0.5, 0.4, 0.5);
         spawn(Particle.SNOWFLAKE, location, 6, 0.4, 0.3, 0.4, 0.02);
     }
 

@@ -406,8 +406,8 @@ public class InteractListener implements Listener {
             case ICE_FAN -> {
                 if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                     // The gust itself is driven by onIceFanSwing (PlayerAnimationEvent) so it
-                    // also fires when aiming directly at a player; this just suppresses
-                    // vanilla Shears block interaction on left-click.
+                    // also fires when aiming directly at a player; this just suppresses the
+                    // item's own vanilla block interaction on left-click.
                     event.setCancelled(true);
                     return true;
                 } else if (action.isRightClick()) {

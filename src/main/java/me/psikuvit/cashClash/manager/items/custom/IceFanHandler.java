@@ -40,8 +40,10 @@ import java.util.UUID;
  */
 public class IceFanHandler extends CustomItemHandler {
 
-    // How long after the last swing before the gust is considered "released"
-    private static final long GUST_HOLD_TIMEOUT_MS = 700L;
+    // How long after the last swing before the gust is considered "released". Generous window -
+    // this item's swing cadence while held isn't a steady stream (~2/sec like combat), so a short
+    // timeout let the gust die between swings after only 1-2 pulses.
+    private static final long GUST_HOLD_TIMEOUT_MS = 1500L;
     // Gust tick cadence - matches the original per-click cadence (~2/sec) this replaces
     private static final long GUST_TICK_INTERVAL = 10L;
 
@@ -132,7 +134,7 @@ public class IceFanHandler extends CustomItemHandler {
             registerIceFanGustHit(target.getUniqueId());
         }
 
-        spawnGustSweepParticles(player, origin, direction);
+        spawnGustParticles(player, origin, direction);
         SoundUtils.play(player, Sound.ENTITY_PHANTOM_FLAP, 0.7f, 1.6f);
 
         if (newRemaining <= 0) {
@@ -148,18 +150,12 @@ public class IceFanHandler extends CustomItemHandler {
     }
 
     /**
-     * Light-blue gust particles swept in a small brushing arc in front of the player, so a
-     * sustained gust reads as one continuous sweeping stream rather than a single static point.
+     * Cyan/white gust particles shooting straight out from the player along the aim direction,
+     * matching the right-click burst's outward look instead of a fixed-point puff.
      */
-    private void spawnGustSweepParticles(Player player, Location origin, Vector direction) {
-        Vector right = new Vector(-direction.getZ(), 0, direction.getX()).normalize();
-        long phase = System.currentTimeMillis() / 100L;
-        double sweep = Math.sin(phase * 0.9) * 0.6;
-
-        for (double d = 0.8; d <= 2.4; d += 0.8) {
-            Location point = origin.clone()
-                    .add(direction.clone().multiply(d))
-                    .add(right.clone().multiply(sweep));
+    private void spawnGustParticles(Player player, Location origin, Vector direction) {
+        for (double d = 0.6; d <= 3.0; d += 0.7) {
+            Location point = origin.clone().add(direction.clone().multiply(d));
             ParticleUtils.iceFanGust(point);
         }
     }
@@ -191,7 +187,7 @@ public class IceFanHandler extends CustomItemHandler {
             Vector knockback = target.getLocation().toVector()
                     .subtract(player.getLocation().toVector())
                     .normalize()
-                    .multiply(0.6)
+                    .multiply(0.45)
                     .setY(0.25);
             target.setVelocity(target.getVelocity().add(knockback));
         }
@@ -288,7 +284,8 @@ public class IceFanHandler extends CustomItemHandler {
 
     /**
      * Persists remaining durability as a PDC counter and mirrors it onto the visual durability
-     * bar proportionally, since Shears' vanilla max durability doesn't match the 75-point budget.
+     * bar proportionally, since the underlying material's vanilla max durability doesn't match
+     * the 75-point budget.
      */
     private void setIceFanDurability(ItemStack item, int remaining) {
         if (!item.hasItemMeta()) return;

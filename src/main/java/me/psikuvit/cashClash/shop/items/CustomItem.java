@@ -20,7 +20,7 @@ public enum CustomItem implements Purchasable {
     RESPAWN_ANCHOR(Material.RESPAWN_ANCHOR, "respawn-anchor", 1, 2, "Respawn Anchor"),
     TOTEM_OF_HAUNTING(Material.NETHER_STAR, "totem-of-haunting", 1, 0, "Totem of Haunting"),
     RADIATING_LOTUS(Material.GLOW_BERRIES, "radiating-lotus", 1, 0, "Radiating Lotus"),
-    ICE_FAN(Material.SHEARS, "ice-fan", 1, 0, "Ice Fan"),
+    ICE_FAN(Material.BRUSH, "ice-fan", 1, 0, "Ice Fan"),
     OVERDRIVE_POTION(Material.POTION, "overdrive-potion", 1, 0, "Overdrive Potion"),
     HUNTERS_MARK(Material.FEATHER, "hunters-mark", 1, 0, "Hunter's Mark"),
     BLOOMING_ROSE(Material.CHERRY_SAPLING, "blooming-rose", 1, 0, "Blooming Rose"),

@@ -256,10 +256,10 @@ public final class GameplayItemFactory {
             }
             case INVIS_CLOAK -> tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);
             case ICE_FAN -> {
-                // Shears' vanilla max durability doesn't match the 75-point design budget, so
-                // remaining durability is tracked as a PDC counter (mirrored onto the visual
-                // durability bar in CustomItemManager.setIceFanDurability) rather than relying
-                // on Damageable directly, like BAG_OF_POTATOES does.
+                // The underlying material's vanilla max durability doesn't match the 75-point
+                // design budget, so remaining durability is tracked as a PDC counter (mirrored
+                // onto the visual durability bar in CustomItemManager.setIceFanDurability)
+                // rather than relying on Damageable directly, like BAG_OF_POTATOES does.
                 tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, ItemsConfig.getInstance().getIceFanMaxDurability());
             }
             default -> {
