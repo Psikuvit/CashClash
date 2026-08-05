@@ -314,7 +314,7 @@ custom-items:
 
   # Orb of Gravitation
   orb-of-gravitation:
-    throw-speed: 0.6
+    throw-speed: 0.35
     pull-radius: 4
     pull-duration-ticks: 40
     slowness-duration-seconds: 5

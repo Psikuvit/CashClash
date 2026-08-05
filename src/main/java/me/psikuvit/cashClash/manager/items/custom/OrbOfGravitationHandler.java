@@ -14,9 +14,12 @@ import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
 import org.bukkit.inventory.ItemStack;
@@ -25,7 +28,9 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,16 +49,19 @@ import java.util.UUID;
 public class OrbOfGravitationHandler extends CustomItemHandler {
 
     // Orb of Gravitation - live orb tracking (Snowball entity UUID -> hits remaining, owner UUID,
-    // and the orb's dust-trail task, cancelled when the orb resolves)
+    // the orb's dust-trail task, and the magma-slime ItemDisplay riding it, all cancelled/removed
+    // together when the orb resolves)
     private final Map<UUID, Integer> orbHitsRemaining;
     private final Map<UUID, UUID> orbOwners;
     private final Map<UUID, BukkitTask> orbTrailTasks;
+    private final Map<UUID, ItemDisplay> orbDisplays;
 
     public OrbOfGravitationHandler(CustomItemManager manager) {
         super(manager);
         this.orbHitsRemaining = new HashMap<>();
         this.orbOwners = new HashMap<>();
         this.orbTrailTasks = new HashMap<>();
+        this.orbDisplays = new HashMap<>();
     }
 
     public boolean isOrbEntity(Entity entity) {
@@ -95,7 +103,11 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
     public void throwOrbOfGravitation(Player player) {
 
         Snowball orb = player.launchProjectile(Snowball.class);
-        orb.setVelocity(player.getLocation().getDirection().multiply(cfg.getOrbThrowSpeed()));
+        Vector direction = player.getLocation().getDirection();
+        orb.setVelocity(direction.multiply(cfg.getOrbThrowSpeed()));
+        // No gravity - the orb should slowly cruise straight along where the player aimed
+        // instead of arcing/dropping like a thrown snowball.
+        orb.setGravity(false);
 
         PersistentDataContainer pdc = orb.getPersistentDataContainer();
         pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.ORB_OF_GRAVITATION.name());
@@ -105,16 +117,38 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         orbHitsRemaining.put(orbUuid, cfg.getOrbHitsToDestroy());
         orbOwners.put(orbUuid, player.getUniqueId());
 
+        // Cosmetic "magma slime" riding the orb - a magma-cream ItemDisplay closely follows the
+        // invisible Snowball, which stays the real projectile/collision entity underneath so all
+        // existing hit-detection (ProjectileHitEvent, charged-arrow hits) keeps working unchanged.
+        ItemDisplay orbDisplay = orb.getWorld().spawn(orb.getLocation(), ItemDisplay.class, d -> {
+            d.setItemStack(new ItemStack(Material.MAGMA_CREAM));
+            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GROUND);
+            d.setBillboard(Display.Billboard.CENTER);
+            d.setBrightness(new Display.Brightness(15, 15));
+            Transformation t = d.getTransformation();
+            d.setTransformation(new Transformation(t.getTranslation(), t.getLeftRotation(), new Vector3f(0.7f, 0.7f, 0.7f), t.getRightRotation()));
+        });
+        orbDisplays.put(orbUuid, orbDisplay);
+
         BukkitTask trailTask = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private float spin;
+
             @Override
             public void run() {
                 if (orb.isDead() || !orbHitsRemaining.containsKey(orbUuid)) {
                     cancel();
                     return;
                 }
+                // Re-affirm velocity every tick so gravity/drag can't slowly bleed off the
+                // straight-line cruise - keeps it "slowly flying where the player aimed".
+                orb.setVelocity(direction.clone().multiply(cfg.getOrbThrowSpeed()));
+
+                spin += 8f;
+                orbDisplay.teleport(orb.getLocation());
+                orbDisplay.setRotation(spin, 0f);
                 ParticleUtils.spawnDust(orb.getLocation(), Color.fromRGB(180, 140, 40), 0.8f, 2, 0.1);
             }
-        }, 0L, 2L);
+        }, 0L, 1L);
         orbTrailTasks.put(orbUuid, trailTask);
 
         Messages.send(player, "customitem.orb-thrown");
@@ -164,23 +198,37 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
             pulled.add(target);
         }
 
+        Color pullYellow = Color.fromRGB(255, 220, 60);
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             private int tick;
 
             @Override
             public void run() {
                 tick++;
-                float progress = Math.min(1.0f, tick / (float) durationTicks);
-                Color beamColor = lerpColor(Color.fromRGB(255, 230, 150), Color.fromRGB(200, 40, 40), progress);
 
                 for (Player target : new ArrayList<>(pulled)) {
                     if (!target.isOnline() || target.isDead()) continue;
                     Vector toCenter = center.toVector().subtract(target.getLocation().toVector());
-                    if (toCenter.lengthSquared() < 0.25) continue; // arrived
-                    target.setVelocity(toCenter.normalize().multiply(0.55));
-                    ParticleUtils.beam(center.clone().add(0, 1, 0), target.getLocation().add(0, 1, 0), beamColor, 0.15f, 2);
+
+                    if (toCenter.lengthSquared() < 0.25) {
+                        // Arrived - kill residual momentum instead of letting it overshoot and get
+                        // yanked back and forth, and just barely hover/sway in place. No beam once
+                        // fully pulled in, matching the line fading out as they arrive.
+                        Vector hover = target.getVelocity().multiply(0.2);
+                        double phase = (tick + target.getEntityId()) * 0.3;
+                        hover.setX(hover.getX() + Math.sin(phase) * 0.03);
+                        hover.setZ(hover.getZ() + Math.cos(phase) * 0.03);
+                        hover.setY(Math.min(hover.getY(), 0));
+                        target.setVelocity(hover);
+                        continue;
+                    }
+
+                    // Slower pull than before, and the beam stays yellow throughout - only its
+                    // length (naturally shrinking as the target closes in) signals progress.
+                    target.setVelocity(toCenter.normalize().multiply(0.3));
+                    ParticleUtils.beam(center.clone().add(0, 1, 0), target.getLocation().add(0, 1, 0), pullYellow, 0.15f, 2);
                 }
-                ParticleUtils.spawnDust(center.clone().add(0, 1, 0), beamColor, 1.0f, 3, 0.3);
+                ParticleUtils.spawnDust(center.clone().add(0, 1, 0), pullYellow, 1.0f, 3, 0.3);
 
                 if (tick >= durationTicks) {
                     cancel();
@@ -221,6 +269,8 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         orbOwners.remove(orbUuid);
         BukkitTask trail = orbTrailTasks.remove(orbUuid);
         if (trail != null) trail.cancel();
+        ItemDisplay display = orbDisplays.remove(orbUuid);
+        if (display != null && !display.isDead()) display.remove();
     }
 
     /**
@@ -241,17 +291,14 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         }
     }
 
-    private Color lerpColor(Color from, Color to, float t) {
-        return Color.fromRGB(
-                (int) (from.getRed() + (to.getRed() - from.getRed()) * t),
-                (int) (from.getGreen() + (to.getGreen() - from.getGreen()) * t),
-                (int) (from.getBlue() + (to.getBlue() - from.getBlue()) * t));
-    }
-
     @Override
     public void cleanup() {
         orbTrailTasks.values().forEach(BukkitTask::cancel);
         orbTrailTasks.clear();
+        orbDisplays.values().forEach(d -> {
+            if (!d.isDead()) d.remove();
+        });
+        orbDisplays.clear();
         orbHitsRemaining.keySet().forEach(uuid -> {
             Entity entity = Bukkit.getEntity(uuid);
             if (entity != null) entity.remove();

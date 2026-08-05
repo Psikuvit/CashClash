@@ -513,7 +513,7 @@ public class ItemsConfig {
 
     // Orb of Gravitation
     public double getOrbThrowSpeed() {
-        return config.getDouble("custom-items.orb-of-gravitation.throw-speed", 0.6);
+        return config.getDouble("custom-items.orb-of-gravitation.throw-speed", 0.35);
     }
 
     public double getOrbPullRadius() {
