@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -109,9 +110,10 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         // instead of arcing/dropping like a thrown snowball.
         orb.setGravity(false);
 
-        PersistentDataContainer pdc = orb.getPersistentDataContainer();
-        pdc.set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.ORB_OF_GRAVITATION.name());
-        pdc.set(Keys.ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString());
+        PDCSetter.of(orb)
+                .set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.ORB_OF_GRAVITATION.name())
+                .set(Keys.ITEM_OWNER, PersistentDataType.STRING, player.getUniqueId().toString())
+                .apply();
 
         UUID orbUuid = orb.getUniqueId();
         orbHitsRemaining.put(orbUuid, cfg.getOrbHitsToDestroy());
