@@ -13,6 +13,7 @@ import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -134,8 +135,10 @@ public class CashBlasterHandler extends WeaponItemHandler {
         Arrow vortexArrow = player.launchProjectile(Arrow.class);
         vortexArrow.setDamage(vortexArrow.getDamage() * 1.10);
         vortexArrow.setCritical(false);
-        vortexArrow.getPersistentDataContainer().set(Keys.PROFIT_VORTEX_ARROW, PersistentDataType.BYTE, (byte) 1);
-        vortexArrow.getPersistentDataContainer().set(Keys.PROFIT_VORTEX_GLOW_SECONDS, PersistentDataType.INTEGER, spectralArrowsConsumed * 2);
+        PDCSetter.of(vortexArrow)
+                .set(Keys.PROFIT_VORTEX_ARROW, PersistentDataType.BYTE, (byte) 1)
+                .set(Keys.PROFIT_VORTEX_GLOW_SECONDS, PersistentDataType.INTEGER, spectralArrowsConsumed * 2)
+                .apply();
 
         startCashBlasterTrail(vortexArrow, true, spectralArrowsConsumed > 0);
         cooldownManager.setCooldownSeconds(player.getUniqueId(), CooldownManager.Keys.CASH_BLASTER_VORTEX, cfg.getCashBlasterVortexCooldown());

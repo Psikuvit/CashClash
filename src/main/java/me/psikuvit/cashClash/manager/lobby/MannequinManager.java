@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -175,7 +176,7 @@ public class MannequinManager {
             mannequin.setCustomNameVisible(false);
             mannequin.setAI(false);
             mannequin.setSilent(true);
-            mannequin.getPersistentDataContainer().set(Keys.ARENA_NPC_KEY, PersistentDataType.BYTE, (byte) 1);
+            PDCSetter.of(mannequin).set(Keys.ARENA_NPC_KEY, PersistentDataType.BYTE, (byte) 1).apply();
 
             // Apply villager skin (use default villager skin if no URL configured)
 //            try {

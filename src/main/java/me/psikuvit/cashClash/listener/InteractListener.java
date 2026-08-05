@@ -41,6 +41,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -141,7 +142,7 @@ public class InteractListener implements Listener {
                     }
 
                     // Tag the projectile with mythic id so hit detection works even when hand is empty
-                    trident.getPersistentDataContainer().set(Keys.ITEM_ID, PersistentDataType.STRING, mythic.getConfigKey());
+                    PDCSetter.of(trident).set(Keys.ITEM_ID, PersistentDataType.STRING, mythic.getConfigKey()).apply();
                 }
             }
         }

@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -101,7 +102,7 @@ public class ShopManager {
             villager.customName(comp);
             villager.setCustomNameVisible(true);
 
-            villager.getPersistentDataContainer().set(Keys.SHOP_NPC_KEY, PersistentDataType.BYTE, (byte) 1);
+            PDCSetter.of(villager).set(Keys.SHOP_NPC_KEY, PersistentDataType.BYTE, (byte) 1).apply();
             spawned.add(villager.getUniqueId());
             entityToSession.put(villager.getUniqueId(), session.getSessionId());
             entityTeam.put(villager.getUniqueId(), 1);

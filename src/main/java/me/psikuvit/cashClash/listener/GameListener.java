@@ -53,6 +53,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
@@ -590,7 +591,7 @@ public class GameListener implements Listener {
         // Orb of Gravitation's bow-destroy mechanic needs to know about every fully-charged
         // shot regardless of which bow it came from, so tag it before the mythic check.
         if (event.getProjectile() instanceof Arrow arrow && event.getForce() >= 0.95f) {
-            arrow.getPersistentDataContainer().set(Keys.FULLY_CHARGED_ARROW, PersistentDataType.BYTE, (byte) 1);
+            PDCSetter.of(arrow).set(Keys.FULLY_CHARGED_ARROW, PersistentDataType.BYTE, (byte) 1).apply();
         }
 
         ItemStack bow = event.getBow();
@@ -628,7 +629,7 @@ public class GameListener implements Listener {
             event.setCancelled(true);
         } else if (event.getProjectile() instanceof Arrow arrow) {
             String mode = mythicManager.getHandler(BloodwrenchHandler.class).isBloodwrenchRapidMode(player) ? "rapid" : "supercharged";
-            arrow.getPersistentDataContainer().set(Keys.BLOODWRENCH_MODE, PersistentDataType.STRING, mode);
+            PDCSetter.of(arrow).set(Keys.BLOODWRENCH_MODE, PersistentDataType.STRING, mode).apply();
         }
     }
 
@@ -641,7 +642,7 @@ public class GameListener implements Listener {
         } else if (event.getProjectile() instanceof Arrow arrow) {
             String mode = PDCDetection.getBlazebiteMode(bow);
             if (mode != null) {
-                arrow.getPersistentDataContainer().set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, mode);
+                PDCSetter.of(arrow).set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, mode).apply();
             }
         }
     }
