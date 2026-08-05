@@ -61,13 +61,9 @@ public class RuneManager {
 
     public static ItemStack getLinkedItem(Player player, ItemStack rune) {
         if (player == null || rune == null) return null;
-
         if (!rune.hasItemMeta()) return null;
 
-        String linkedUUID = rune.getItemMeta()
-                .getPersistentDataContainer()
-                .get(Keys.RUNE_LINK, PersistentDataType.STRING);
-
+        String linkedUUID = PDCDetection.readTag(rune, Keys.RUNE_LINK);
         if (linkedUUID == null) return null;
 
         // The linked piece may be equipped (armor runes) rather than in storage
@@ -826,7 +822,6 @@ public class RuneManager {
         final int duration = 60;
 
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
-
             int tick = 0;
 
             @Override
@@ -861,18 +856,13 @@ public class RuneManager {
                 double spinSpeed = 15;
 
                 if (tick >= 50 && tick <= 53) {
-
                     double slowdown = (53 - tick) / 3.0;
                     spinSpeed *= slowdown;
-
                 } else if (tick > 53) {
-
                     spinSpeed = 0;
-
                 }
 
                 spinBook(book, (float) spinSpeed);
-
 
                 if (tick >= duration) {
                     book.remove();
