@@ -1,11 +1,11 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
@@ -155,7 +155,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
 
         Location center = location.clone();
 
-        new BukkitRunnable() {
+        BukkitRunnable blinkRunnable = new BukkitRunnable() {
             int ticks = 0;
 
             @Override
@@ -189,7 +189,8 @@ public class AlchemistWandHandler extends MythicItemHandler {
 
                 ticks++;
             }
-        }.runTaskTimer(CashClashPlugin.getInstance(), 0L, 1L);
+        };
+        SchedulerUtils.runTaskTimer(blinkRunnable, 0L, 1L);
     }
 
     /**

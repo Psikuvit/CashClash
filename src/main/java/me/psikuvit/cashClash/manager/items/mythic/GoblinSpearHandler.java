@@ -1,15 +1,14 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
@@ -151,7 +150,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
         int maxDuration = cfg.getGoblinChargeMaxDuration();
 
         // Start charge runnable
-        BukkitTask chargeTask = new BukkitRunnable() {
+        BukkitRunnable chargeRunnable = new BukkitRunnable() {
             int ticks = 0;
 
             @Override
@@ -209,7 +208,8 @@ public class GoblinSpearHandler extends MythicItemHandler {
 
                 ticks++;
             }
-        }.runTaskTimer(CashClashPlugin.getInstance(), 0L, 1L);
+        };
+        BukkitTask chargeTask = SchedulerUtils.runTaskTimer(chargeRunnable, 0L, 1L);
 
         // Track the task
         manager.trackTask(uuid, chargeTask);
@@ -241,7 +241,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
                 CashClashPlayer.applyEffect(caught, PotionEffectType.POISON, poisonDuration, poisonLevel, false, true);
 
                 // Reset to default after damage is applied (vanilla is 20)
-                Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
+                SchedulerUtils.runTaskLater(() -> {
                     if (caught.isOnline()) caught.setMaximumNoDamageTicks(20);
                     if (player.isOnline()) player.setMaximumNoDamageTicks(20);
                 }, 1L);

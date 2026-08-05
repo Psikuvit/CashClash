@@ -1,12 +1,12 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Location;
@@ -80,7 +80,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
         final int hitInterval = cfg.getCarlsSpinHitInterval();
         final Set<UUID> recentlyHit = new HashSet<>();
 
-        new BukkitRunnable() {
+        BukkitRunnable spinRunnable = new BukkitRunnable() {
             int ticks = 0;
             double angle = 0;
             double heightOffset = 0;
@@ -171,7 +171,8 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                 Messages.send(attacker, "mythic.carls-battleaxe-ended");
                 cancel();
             }
-        }.runTaskTimer(CashClashPlugin.getInstance(), 0L, 1L);
+        };
+        SchedulerUtils.runTaskTimer(spinRunnable, 0L, 1L);
 
         Messages.debug(attacker, "CARLS_BATTLEAXE: Spin attack started! Duration: " + (duration / 20) + "s, Damage: " + damage + ", Radius: " + radius);
     }
