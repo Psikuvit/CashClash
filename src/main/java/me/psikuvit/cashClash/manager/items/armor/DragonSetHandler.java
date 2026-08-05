@@ -14,14 +14,12 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 import java.util.Map;
@@ -35,10 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * - teammate: both players become briefly invincible
  * - enemy: next melee hit deals bonus damage
  * Killing with the set grants Strength for a few seconds.
- * With all scales charged, sneaking launches Dragon Outrage: the player is launched up and
- * hovers, flashing a ground star each second where they're looking; the 6th star turns
- * purple and a second later a massive storm slams down on that spot while the player
- * drifts back down with Slow Falling.
+ * With all scales charged, sneaking launches Dragon Outrage: the player is sent ~5 blocks into
+ * the air, falls back down, and the storm releases on impact - no fall damage from the landing.
  */
 public class DragonSetHandler extends ArmorSetHandler {
 
@@ -48,8 +44,7 @@ public class DragonSetHandler extends ArmorSetHandler {
     private final Set<UUID> dragonRushInvincible; // Players invincible during teammate Dragon Rush
     private final Set<UUID> dragonRushIndicators; // Players with an active Dragon Rush reminder
     private final Set<UUID> dragonOutrageIndicators; // Players with an active Dragon Outrage reminder
-    private final Set<UUID> dragonOutrageActive; // Players mid Dragon Outrage hover
-    private final Map<UUID, BukkitTask> dragonOutrageTasks; // Player -> outrage hover task
+    private final Set<UUID> dragonOutrageActive; // Players mid Dragon Outrage flight (launch -> landing)
 
     public DragonSetHandler(CustomArmorManager manager) {
         super(manager);
@@ -60,7 +55,6 @@ public class DragonSetHandler extends ArmorSetHandler {
         this.dragonRushIndicators = ConcurrentHashMap.newKeySet();
         this.dragonOutrageIndicators = ConcurrentHashMap.newKeySet();
         this.dragonOutrageActive = ConcurrentHashMap.newKeySet();
-        this.dragonOutrageTasks = new ConcurrentHashMap<>();
     }
 
     public boolean hasDragonSet(Player player) {
@@ -318,10 +312,9 @@ public class DragonSetHandler extends ArmorSetHandler {
     }
 
     /**
-     * Dragon Outrage: with all scales charged, sneak to launch into the air and hover.
-     * Once per second a star flashes on the ground where the player is looking; the 6th
-     * star turns purple, and after a one-second delay the storm slams down on that spot.
-     * The player is given Slow Falling to drift back down afterward.
+     * Dragon Outrage: with all scales charged, sneak to launch ~5 blocks into the air. The
+     * storm releases on landing (see {@link #onDragonOutrageLanding}), which also cancels the
+     * fall damage from that landing.
      */
     public void startDragonOutrage(Player player) {
         if (!hasDragonSet(player)) return;
@@ -337,128 +330,19 @@ public class DragonSetHandler extends ArmorSetHandler {
         Messages.send(player, "armor.dragon-outrage-activated");
         SoundUtils.play(player, Sound.ENTITY_WITHER_AMBIENT, 1.0f, 1.0f);
 
-        // 1. Send player up
-        player.setVelocity(new Vector(0, 1.1, 0));
-
-        startDragonOutrageHover(player);
+        // Send the player ~5 blocks up; gravity brings them back down naturally
+        player.setVelocity(new Vector(0, 1.2, 0));
     }
 
     /**
-     * Resolve the aimed ground spot for Dragon Outrage (solid top face up to 40 blocks).
+     * Cancel fall damage and release the storm when a player lands from Dragon Outrage.
      */
-    public Location getDragonOutrageTarget(Player player) {
-        Location eye = player.getEyeLocation();
-        RayTraceResult result = player.getWorld().rayTraceBlocks(eye, eye.getDirection(), 40);
-
-        if (result == null || result.getHitBlock() == null) {
-            return null;
-        }
-
-        Block block = result.getHitBlock();
-
-        if (!block.getType().isSolid()) {
-            return null;
-        }
-
-        if (result.getHitBlockFace() != BlockFace.UP) {
-            return null;
-        }
-
-        return block.getLocation().add(0.5, 1.05, 0.5);
-    }
-
-    private static final int OUTRAGE_HOVER_START_TICK = 12; // let the launch carry them up first
-    private static final int OUTRAGE_STAR_INTERVAL_TICKS = 20; // once per second
-    private static final int OUTRAGE_STAR_COUNT = 6;
-
-    /**
-     * 2-4. Hover in place, flashing a ground star once per second at the player's look
-     * target; the 6th star is purple, and the storm plays a second after it appears.
-     */
-    private void startDragonOutrageHover(Player player) {
+    public void onDragonOutrageLanding(EntityDamageEvent event, Player player) {
         UUID uuid = player.getUniqueId();
-        if (dragonOutrageTasks.containsKey(uuid)) return;
+        if (!dragonOutrageActive.remove(uuid)) return;
 
-        BukkitTask task = SchedulerUtils.runTaskTimer(new Runnable() {
-            int tick = 0;
-            int starsShown = 0;
-            Location finalStarLocation;
-            int stormAtTick = -1;
-
-            @Override
-            public void run() {
-                if (!player.isOnline() || !dragonOutrageActive.contains(uuid)) {
-                    endDragonOutrageHover(player);
-                    return;
-                }
-
-                tick++;
-
-                // 2. Hover: hold the player in place once the launch has carried them up
-                if (tick >= OUTRAGE_HOVER_START_TICK) {
-                    player.setVelocity(new Vector(0, 0, 0));
-                }
-
-                // 3-4. Flash a ground star once per second while under the star count
-                if (tick >= OUTRAGE_HOVER_START_TICK
-                        && starsShown < OUTRAGE_STAR_COUNT
-                        && (tick - OUTRAGE_HOVER_START_TICK) % OUTRAGE_STAR_INTERVAL_TICKS == 0) {
-                    starsShown++;
-                    boolean isFinal = starsShown == OUTRAGE_STAR_COUNT;
-                    Location ground = getDragonOutrageTarget(player);
-                    if (ground == null) {
-                        ground = player.getLocation().clone();
-                        ground.setY(player.getWorld().getHighestBlockYAt(ground) + 1.05);
-                    }
-                    spawnDragonStar(ground, isFinal);
-
-                    if (isFinal) {
-                        finalStarLocation = ground;
-                        stormAtTick = tick + OUTRAGE_STAR_INTERVAL_TICKS;
-                    }
-                }
-
-                // 5. One second after the purple star, play the storm and let the
-                // player drift back down with Slow Falling
-                if (stormAtTick != -1 && tick >= stormAtTick) {
-                    dragonOutrageExplosion(player, finalStarLocation);
-                    CashClashPlayer.applyEffect(player, PotionEffectType.SLOW_FALLING, 4 * 20, 0);
-                    endDragonOutrageHover(player);
-                }
-            }
-        }, 1L, 1L);
-
-        dragonOutrageTasks.put(uuid, task);
-    }
-
-    /**
-     * Draw a star flash on the ground - pink for the first five, purple for the sixth.
-     */
-    private void spawnDragonStar(Location ground, boolean isFinal) {
-        Color color = isFinal ? Color.fromRGB(160, 0, 255) : Color.fromRGB(255, 105, 180);
-        Location center = ground.clone().add(0, 0.05, 0);
-
-        for (int i = 0; i < 8; i++) {
-            double angle = 2 * Math.PI * i / 8;
-            for (double r = 0.2; r <= 0.9; r += 0.2) {
-                double x = Math.cos(angle) * r;
-                double z = Math.sin(angle) * r;
-                ParticleUtils.spawnDust(center.clone().add(x, 0, z), color, 1.3f, 1);
-            }
-        }
-        ParticleUtils.spawnDust(center, color, 2.2f, 3, 0.05, 0.05, 0.05);
-
-        SoundUtils.playAt(center, isFinal ? Sound.BLOCK_BEACON_ACTIVATE : Sound.BLOCK_AMETHYST_BLOCK_CHIME,
-                1.5f, isFinal ? 0.6f : 1.4f);
-    }
-
-    private void endDragonOutrageHover(Player player) {
-        UUID uuid = player.getUniqueId();
-        BukkitTask task = dragonOutrageTasks.remove(uuid);
-        if (task != null) {
-            task.cancel();
-        }
-        dragonOutrageActive.remove(uuid);
+        event.setCancelled(true);
+        dragonOutrageExplosion(player, player.getLocation());
     }
 
     /**
@@ -557,8 +441,6 @@ public class DragonSetHandler extends ArmorSetHandler {
         dragonRushInvincible.clear();
         dragonRushIndicators.clear();
         dragonOutrageIndicators.clear();
-        dragonOutrageTasks.values().forEach(BukkitTask::cancel);
-        dragonOutrageTasks.clear();
         dragonOutrageActive.clear();
     }
 
@@ -570,8 +452,6 @@ public class DragonSetHandler extends ArmorSetHandler {
         dragonRushInvincible.clear();
         dragonRushIndicators.clear();
         dragonOutrageIndicators.clear();
-        dragonOutrageTasks.values().forEach(BukkitTask::cancel);
-        dragonOutrageTasks.clear();
         dragonOutrageActive.clear();
     }
 }
