@@ -394,6 +394,7 @@ messages:
     both-flags-held: "<red>You must kill the other flag holder in order to score!</red>"
     flag-drop-timer-reset: "<gold>{team_name} team has reset the dropped flag return timer!</gold>"
     cannot-use-while-carrying-flag: "<red>You cannot use this while carrying the flag!</red>"
+    cannot-use-invis-with-flag: "<red>You cannot use Invisibility Cloak while carrying the flag!</red>"
 
   gamemode-kc:
     game-started: "<gold>Kill Confirm has been selected as the gamemode!</gold>"
