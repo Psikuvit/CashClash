@@ -6,8 +6,11 @@ import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -86,6 +89,7 @@ public class InvisCloakHandler extends CustomItemHandler {
             int costPerSecond = cfg.getInvisCloakCostPerSecond();
             Messages.send(player, "customitem.invis-cost-per-second", "cost", String.valueOf(costPerSecond));
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0f, 1.0f);
+            playInvisToggleEffect(player);
 
             GameSession session = GameManager.getInstance().getPlayerSession(player);
             CashClashPlayer ccp = session != null ? session.getCashClashPlayer(uuid) : null;
@@ -130,7 +134,16 @@ public class InvisCloakHandler extends CustomItemHandler {
 
             Messages.send(player, "customitem.invis-deactivated");
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.0f, 0.8f);
+            playInvisToggleEffect(player);
         }
+    }
+
+    /**
+     * Quick gray dust burst around the player when the cloak toggles on or off.
+     */
+    private void playInvisToggleEffect(Player player) {
+        Location center = player.getLocation().clone().add(0, 1.0, 0);
+        ParticleUtils.spawnDust(center, Color.fromRGB(150, 150, 150), 1.2f, 25, 0.4, 0.6, 0.4);
     }
 
     /**
