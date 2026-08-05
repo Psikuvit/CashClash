@@ -264,7 +264,6 @@ public class MythicItemManager {
         }
 
         ItemStack item = new ItemStack(mythic.getMaterial());
-        if (!item.hasItemMeta()) return item;
 
         PDCSetter tags = PDCSetter.of(item);
 
@@ -309,7 +308,6 @@ public class MythicItemManager {
      */
     private ItemStack createBlazebiteItem(Player owner, boolean isGlacier) {
         ItemStack item = new ItemStack(Material.CROSSBOW);
-        if (!item.hasItemMeta()) return item;
 
         PDCSetter tags = PDCSetter.of(item);
 
