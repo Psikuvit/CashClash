@@ -6,13 +6,11 @@ public class PlayerRoundStats {
     private double damageDealt;
     private int deaths;
     private long lastDamageTime;
-    private boolean survivor;
 
     public PlayerRoundStats() {
         this.kills = 0;
         this.damageDealt = 0.0;
         this.lastDamageTime = 0L;
-        this.survivor = false;
     }
 
     public int getKills() {
@@ -45,13 +43,5 @@ public class PlayerRoundStats {
 
     public void setLastDamageTime(long time) {
         this.lastDamageTime = time;
-    }
-
-    public boolean isSurvivor() {
-        return survivor;
-    }
-
-    public void markSurvivor() {
-        this.survivor = true;
     }
 }

@@ -93,13 +93,6 @@ public class RoundData {
         return totalRoundKills;
     }
 
-    public void addSurvivor(UUID player) {
-        PlayerRoundStats s = getStats(player);
-        if (s != null) {
-            s.markSurvivor();
-        }
-    }
-
     public UUID getMostKillsPlayer() {
         UUID best = null;
         int maxKills = -1;

@@ -43,9 +43,6 @@ public class CashClashPlayer {
 
     // Round tracking
     private int lives;
-    private double lowestHealthThisLife;
-    private boolean reachedOneHeart;
-    private long oneHeartTime;
     private UUID firstDeathRound;
 
     // Special items
@@ -69,7 +66,6 @@ public class CashClashPlayer {
         this.lives = 3;
         this.bonusesEarned = new HashMap<>();
         this.purchaseHistory = new ArrayDeque<>();
-        this.lowestHealthThisLife = 20.0;
         this.respawnProtectionUntil = 0L;
         this.ownedEnchants = new HashMap<>();
     }
@@ -95,8 +91,6 @@ public class CashClashPlayer {
         this.deathsThisRound = 0;
         this.killStreak = 0;
         this.hasFirstBlood = false;
-        this.lowestHealthThisLife = 20.0;
-        this.reachedOneHeart = false;
 
         // Clear enchants to prevent carryover
         this.ownedEnchants.clear();
@@ -135,8 +129,6 @@ public class CashClashPlayer {
         lives--;
         deathsThisRound++;
         killStreak = 0;
-        lowestHealthThisLife = 20.0;
-        reachedOneHeart = false;
 
         // Handle investment penalties
         if (currentInvestment != null) {
@@ -147,32 +139,6 @@ public class CashClashPlayer {
     public void handleKill() {
         totalKills++;
         killStreak++;
-    }
-
-    public void resetLife() {
-        lowestHealthThisLife = 20.0;
-        reachedOneHeart = false;
-    }
-
-    public void updateLowestHealth(double health) {
-        if (health < lowestHealthThisLife) {
-            lowestHealthThisLife = health;
-        }
-
-        // Check for close call bonus
-        if (health <= 2.0 && !reachedOneHeart) {
-            reachedOneHeart = true;
-            oneHeartTime = System.currentTimeMillis();
-        }
-    }
-
-    public boolean checkCloseCallBonus() {
-        if (reachedOneHeart && lowestHealthThisLife > 2.0) {
-            long timeSinceOneHeart = System.currentTimeMillis() - oneHeartTime;
-            // 10 seconds
-            return timeSinceOneHeart >= 10000;
-        }
-        return false;
     }
 
     public void setOwnedEnchantLevel(EnchantEntry enchant, int level) {
