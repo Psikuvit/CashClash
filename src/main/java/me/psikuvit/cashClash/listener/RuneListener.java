@@ -5,6 +5,8 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.entity.Player;
@@ -21,6 +23,7 @@ import org.bukkit.inventory.ItemStack;
 public class RuneListener implements Listener {
 
     private final CustomArmorManager armorManager = CustomArmorManager.getInstance();
+    private final CustomItemManager customItemManager = CustomItemManager.getInstance();
 
     @EventHandler
     public void onRuneToggle(PlayerInteractEvent event) {
@@ -47,6 +50,12 @@ public class RuneListener implements Listener {
 
         // Prevent normal item behavior
         event.setCancelled(true);
+
+        // Overdrive Potion: no inventory items can be used while invincible (this listener
+        // runs independently of InteractListener's own overdrive block, so it needs its own)
+        if (customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
+            return;
+        }
 
         GameSession session = GameManager.getInstance().getPlayerSession(player);
         if (session != null && session.getState() == GameState.SHOPPING) {
