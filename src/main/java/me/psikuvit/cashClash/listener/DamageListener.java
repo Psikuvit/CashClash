@@ -28,7 +28,6 @@ import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.manager.items.weapon.SoulKatanaHandler;
 import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
-import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
@@ -51,7 +50,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -391,24 +389,6 @@ public class DamageListener implements Listener {
         }
     }
 
-    // ==================== HEALTH REGAIN ====================
-
-    /**
-     * Handles health regain tracking for bonus calculations.
-     */
-    @EventHandler(priority = EventPriority.NORMAL)
-    public void onPlayerHeal(EntityRegainHealthEvent event) {
-        if (event.isCancelled() || !(event.getEntity() instanceof Player player)) {
-            return;
-        }
-
-        try {
-            handleHealthRegain(event, player);
-        } catch (Exception e) {
-            Messages.debug("DAMAGE", "Error handling health regain: " + e.getMessage());
-        }
-    }
-
     // ==================== PROTECTION HANDLERS ====================
 
     /**
@@ -651,56 +631,18 @@ public class DamageListener implements Listener {
             return;
         }
 
-        CashClashPlayer ccPlayer = session.getCashClashPlayer(player.getUniqueId());
-        if (ccPlayer == null) {
-            return;
-        }
-
-        // Update last damage time
+        // Update last damage time (combat-grace-period checks read this)
         currentRound.setLastDamageTime(player.getUniqueId(), System.currentTimeMillis());
 
-        // Track damage received
-        if (event.getDamage() > 0) {
-            currentRound.addDamage(player.getUniqueId(), event.getFinalDamage());
-        }
-
-        // Update health tracking for close call bonus
-        double healthAfter = Math.max(0, player.getHealth() - event.getFinalDamage());
-        ccPlayer.updateLowestHealth(healthAfter);
-
-        // Notify BonusManager of low health state
-        BonusManager bonusManager = session.getBonusManager();
-        if (bonusManager != null && healthAfter <= 2.0 && healthAfter > 0) {
-            bonusManager.onReachLowHealth(player.getUniqueId());
-        }
-    }
-
-    /**
-     * Handle health regain tracking for bonuses.
-     */
-    private void handleHealthRegain(EntityRegainHealthEvent event, Player player) {
-        GameSession session = gameManager.getPlayerSession(player);
-        if (session == null) {
+        if (event.getDamage() <= 0) {
             return;
         }
 
-        CashClashPlayer ccPlayer = session.getCashClashPlayer(player.getUniqueId());
-        if (ccPlayer == null) {
-            return;
-        }
-
-        double healthBefore = player.getHealth();
-        double maxHealth = ccPlayer.getMaxHealth();
-        double healthAfter = Math.min(player.getHealth() + event.getAmount(), maxHealth);
-
-        ccPlayer.updateLowestHealth(healthAfter);
-
-        BonusManager bonusManager = session.getBonusManager();
-        if (bonusManager != null) {
-            if (healthBefore <= 2.0 && healthAfter > 2.0) {
-                bonusManager.onHealFromLowHealth(player.getUniqueId());
-            } else if (healthAfter <= 2.0) {
-                bonusManager.onDropBackToLowHealth(player.getUniqueId());
+        // Attribute damage dealt to the attacker (for the Most Damage bonus), not the victim
+        if (event instanceof EntityDamageByEntityEvent byEntity) {
+            Player attacker = resolveAttacker(byEntity);
+            if (attacker != null) {
+                currentRound.addDamage(attacker.getUniqueId(), event.getFinalDamage());
             }
         }
     }

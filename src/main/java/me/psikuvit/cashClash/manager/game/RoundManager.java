@@ -316,12 +316,6 @@ public class RoundManager {
                 && session.getGamemode().getSuddenDeathManager().isInSuddenDeath();
         timeRemaining = suddenDeathRound ? SUDDEN_DEATH_PHASE_SECONDS : config.getCombatPhaseDuration();
 
-        // Start bonus tracking for the round
-        BonusManager bonusManager = session.getBonusManager();
-        if (bonusManager != null) {
-            bonusManager.startRound();
-        }
-
         // Apply team outlines to all players (Feature #7-8)
         applyTeamOutlinesToAllPlayers();
 

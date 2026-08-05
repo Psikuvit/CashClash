@@ -1,20 +1,15 @@
 package me.psikuvit.cashClash.util.enums;
 
 /**
- * Types of bonuses players can earn
+ * The four bonuses players can earn, each a flat 2000 coins to that player only:
+ * First Blood (first kill of the round), Killstreak (every 4th kill in an uninterrupted
+ * streak), and Most Kills / Most Damage (session-wide, awarded once at game end).
  */
 public enum BonusType {
-    // Endgame bonuses
-    MOST_KILLS(10000),
-    MOST_DAMAGE(10000),
-    UNDERDOG(10000),
-
-    // Midgame bonuses
-    SURVIVOR(3000),
-    CLOSE_CALLS(5000),
-    RAMPAGE(5000),
     FIRST_BLOOD(2000),
-    COMEBACK_KID(2000);
+    KILLSTREAK(2000),
+    MOST_KILLS(2000),
+    MOST_DAMAGE(2000);
 
     private final long reward;
 
@@ -26,4 +21,3 @@ public enum BonusType {
         return reward;
     }
 }
-

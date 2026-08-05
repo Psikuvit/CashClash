@@ -146,11 +146,6 @@ public class GameListener implements Listener {
             victim.handleDeath();
             session.getCurrentRoundData().removeLife(player.getUniqueId());
 
-            BonusManager bonusManager = session.getBonusManager();
-            if (bonusManager != null) {
-                bonusManager.onDeath(player.getUniqueId());
-            }
-
             Player killer = player.getKiller();
             if (killer != null) {
                 handleKillerRewards(session, killer);
@@ -285,11 +280,6 @@ public class GameListener implements Listener {
         CashClashPlayer cashClashPlayer = session.getCashClashPlayer(player.getUniqueId());
         if (cashClashPlayer != null) {
             cashClashPlayer.setRespawnProtection(respawnProtectionSec * 1000L);
-        }
-
-        BonusManager bonusManager = session.getBonusManager();
-        if (bonusManager != null) {
-            bonusManager.onRespawn(player.getUniqueId());
         }
     }
 
