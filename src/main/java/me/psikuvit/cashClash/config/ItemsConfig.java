@@ -351,7 +351,7 @@ public class ItemsConfig {
     }
 
     public int getBoomboxSpeedBoostDuration() {
-        return config.getInt("custom-items.boombox.speed-boost-duration-seconds", 8);
+        return config.getInt("custom-items.boombox.speed-boost-duration-seconds", 5);
     }
 
     // Invis Cloak

@@ -248,7 +248,7 @@ custom-items:
     total-duration-seconds: 12
     radius: 5
     speed-boost-percent: 20
-    speed-boost-duration-seconds: 8
+    speed-boost-duration-seconds: 5
 
   # Invisibility Cloak
   invis-cloak:
