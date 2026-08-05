@@ -458,16 +458,6 @@ public final class ParticleUtils {
     }
 
     /**
-     * Spawn one frame of the purple spiral flight trail for Dragon Outrage.
-     */
-    public static void dragonOutrageTrail(Location location) {
-        if (location == null || location.getWorld() == null) return;
-        spawnDust(location, Color.fromRGB(220, 170, 255), 1.2f, 3, 0.2);
-        spawnDust(location, Color.fromRGB(140, 0, 255), 1.2f, 3, 0.2);
-        spawn(Particle.PORTAL, location, 4, 0.3, 0.3, 0.3, 0.05);
-    }
-
-    /**
      * Spawn fiery gravitational pull particles (Flamebringer).
      */
     public static void flamebringerPull(Location center, double radius) {
