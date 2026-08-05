@@ -103,8 +103,11 @@ public class RadiatingLotusHandler extends CustomItemHandler {
         double chargeSeconds = chargeTicks / 20.0;
 
         double knockbackDistance = chargeSeconds * cfg.getLotusKnockbackPerSecond();
-        // Purely horizontal - no vertical launch component, this is a shove backward, not a hop.
-        Vector back = player.getLocation().getDirection().clone().setY(0).normalize().multiply(-knockbackDistance * 0.35);
+        // Mostly horizontal - a tiny vertical lift keeps this from reading as a launch, but a
+        // fully flat velocity gets killed almost instantly by ground friction while grounded,
+        // which made the knockback invisible/non-functional.
+        Vector back = player.getLocation().getDirection().clone().setY(0).normalize().multiply(-knockbackDistance * 0.45);
+        back.setY(0.1);
         player.setVelocity(back);
         cooldownManager.setCooldownSeconds(uuid, "WIND_CHARGE_PROTECTION", 2);
 
@@ -112,7 +115,8 @@ public class RadiatingLotusHandler extends CustomItemHandler {
         SoundUtils.playAt(player.getLocation(), Sound.ITEM_TRIDENT_RETURN, 1.0f, 1.4f);
 
         Location loc = player.getLocation();
-        double healRadius = Math.max(1.0, chargeSeconds * cfg.getLotusHealRadiusPerSecond());
+        // Floor of 3 blocks (3x3) so the heal radius/diamond are never tiny even on a short charge.
+        double healRadius = Math.max(3.0, chargeSeconds * cfg.getLotusHealRadiusPerSecond());
         double healAmount = cfg.getLotusHealAmount();
 
         ParticleUtils.spawnDust(loc.clone().add(0, 1, 0), Color.fromRGB(60, 200, 60), 2.0f, 40, 0.5);
