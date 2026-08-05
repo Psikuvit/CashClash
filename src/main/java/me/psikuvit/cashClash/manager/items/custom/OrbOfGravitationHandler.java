@@ -109,6 +109,10 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         // No gravity - the orb should slowly cruise straight along where the player aimed
         // instead of arcing/dropping like a thrown snowball.
         orb.setGravity(false);
+        // Hidden entirely - it stays the real projectile/collision entity, but the magma-cream
+        // ItemDisplay below is the only thing that should actually be visible flying through
+        // the air.
+        orb.setVisibleByDefault(false);
 
         PDCSetter.of(orb)
                 .set(Keys.ITEM_ID, PersistentDataType.STRING, CustomItem.ORB_OF_GRAVITATION.name())
@@ -128,7 +132,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
             d.setBillboard(Display.Billboard.CENTER);
             d.setBrightness(new Display.Brightness(15, 15));
             Transformation t = d.getTransformation();
-            d.setTransformation(new Transformation(t.getTranslation(), t.getLeftRotation(), new Vector3f(0.7f, 0.7f, 0.7f), t.getRightRotation()));
+            d.setTransformation(new Transformation(t.getTranslation(), t.getLeftRotation(), new Vector3f(1.4f, 1.4f, 1.4f), t.getRightRotation()));
         });
         orbDisplays.put(orbUuid, orbDisplay);
 
