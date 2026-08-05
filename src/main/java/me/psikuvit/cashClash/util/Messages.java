@@ -165,7 +165,7 @@ public final class Messages {
      * @param player The player to send to (can be null)
      * @param key The message to send
      */
-    public static void send(@Nullable Player player, @Nullable String key, @NotNull Object... args) {
+    public static void send(@Nullable Player player, @Nullable String key, @NotNull String... args) {
         if (player != null && player.isOnline()) {
             player.sendMessage(parse(config.getMessage(key, args)));
         }
@@ -192,7 +192,7 @@ public final class Messages {
      * @param sender The sender to send to (can be null)
      * @param key The message key from MessagesConfig
      */
-    public static void send(@Nullable CommandSender sender, @Nullable String key, @NotNull Object... args) {
+    public static void send(@Nullable CommandSender sender, @Nullable String key, @NotNull String... args) {
         if (sender != null) {
             sender.sendMessage(parse(config.getMessage(key, args)));
         }
@@ -227,7 +227,7 @@ public final class Messages {
     /**
      * Broadcast a message to a collection of player UUIDs.
      */
-    public static void broadcast(Collection<UUID> players, String key, Object... args) {
+    public static void broadcast(Collection<UUID> players, String key, String... args) {
         players.forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
@@ -248,7 +248,7 @@ public final class Messages {
     /**
      * Broadcast a message with placeholders to all players in a team.
      */
-    public static void broadcastToTeam(Team team, String key, Object... args) {
+    public static void broadcastToTeam(Team team, String key, String... args) {
         if (team != null) {
             broadcast(team.getPlayers(), key, args);
         }

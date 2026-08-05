@@ -98,19 +98,19 @@ public class MessagesConfig {
      * @param placeholders Pairs of (placeholder_name, replacement_value)
      * @return The message with placeholders replaced, or a default if not found
      */
-    public String getMessage(String key, Object... placeholders) {
+    public String getMessage(String key, String... placeholders) {
         String message = messages.getOrDefault(key, "{MISSING_MESSAGE: " + key + "}");
 
         // Replace placeholders
         if (placeholders.length > 0 && placeholders.length % 2 == 0) {
             for (int i = 0; i < placeholders.length; i += 2) {
-                String placeholderName = placeholders[i].toString();
+                String placeholderName = placeholders[i];
                 if (placeholderName.startsWith("{") && placeholderName.endsWith("}") && placeholderName.length() > 2) {
                     placeholderName = placeholderName.substring(1, placeholderName.length() - 1);
                 }
 
                 String placeholder = "{" + placeholderName + "}";
-                String replacement = placeholders[i + 1].toString();
+                String replacement = placeholders[i + 1];
                 message = message.replace(placeholder, replacement);
             }
         }

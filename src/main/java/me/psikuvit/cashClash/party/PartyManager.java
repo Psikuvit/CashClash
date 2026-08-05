@@ -438,7 +438,7 @@ public class PartyManager {
     /**
      * Broadcast a configured message to all party members.
      */
-    public void broadcastToParty(Party party, String messageKey, Object... args) {
+    public void broadcastToParty(Party party, String messageKey, String... args) {
         for (Player member : party.getOnlineMembers()) {
             Messages.send(member, messageKey, args);
         }
