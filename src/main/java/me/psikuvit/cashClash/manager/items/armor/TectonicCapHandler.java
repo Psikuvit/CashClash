@@ -47,7 +47,7 @@ public class TectonicCapHandler extends ArmorSetHandler {
     /**
      * Falling warning aura: while airborne, falling far enough that a landing would deal
      * fall damage, and with at least one slam charge ready, ring the wearer's feet with an
-     * inner dark-brown ring and an outer light-brown ring to telegraph the impending slam.
+     * inner black ring and an outer white ring to telegraph the impending slam.
      */
     public void handleFallWarning(Player player) {
         if (!hasTectonicCap(player)) return;
@@ -72,14 +72,14 @@ public class TectonicCapHandler extends ArmorSetHandler {
             double angle = 2 * Math.PI * i / 10;
             double x = Math.cos(angle) * 0.6;
             double z = Math.sin(angle) * 0.6;
-            ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(80, 45, 20), 1.0f, 1);
+            ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(0, 0, 0), 1.0f, 1);
         }
 
         for (int i = 0; i < 16; i++) {
             double angle = 2 * Math.PI * i / 16;
             double x = Math.cos(angle) * 1.1;
             double z = Math.sin(angle) * 1.1;
-            ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(180, 120, 60), 1.0f, 1);
+            ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(255, 255, 255), 1.0f, 1);
         }
     }
 
@@ -106,8 +106,8 @@ public class TectonicCapHandler extends ArmorSetHandler {
         double radius = cfg.getTectonicCapRadius() + (fallDamage * 0.3);
         World world = player.getWorld();
 
-        ParticleUtils.spawnDust(impact, Color.fromRGB(180, 120, 60), 2.5f, 75, 1.1, 0.1, 1.1);
-        ParticleUtils.spawnDust(impact, Color.fromRGB(80, 45, 20), 2.5f, 60, 1.1, 0.1, 1.1);
+        ParticleUtils.spawnDust(impact, Color.fromRGB(255, 255, 255), 2.5f, 75, 1.1, 0.1, 1.1);
+        ParticleUtils.spawnDust(impact, Color.fromRGB(0, 0, 0), 2.5f, 60, 1.1, 0.1, 1.1);
 
         SoundUtils.playAt(impact, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.9f);
 
