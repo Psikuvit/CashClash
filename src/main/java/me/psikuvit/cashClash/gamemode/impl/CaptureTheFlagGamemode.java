@@ -986,7 +986,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     applyExtraHeartCTF(p);
                     Messages.send(p, "gamemode-ctf.capture-bonus-heart");
                 } else {
-                    session.getRewardManager().grant(p, RewardType.CTF_HOLD_BONUS, bonusPerPlayer);
+                    session.getRewardManager().grant(p, RewardType.CTF_HOLD_BONUS, bonusPerPlayer,
+                            "amount", String.format("%,d", bonusPerPlayer));
                 }
             }
         }

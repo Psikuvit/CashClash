@@ -574,7 +574,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 for (UUID uuid : teamObj.getPlayers()) {
                     Player p = Bukkit.getPlayer(uuid);
                     if (p != null) {
-                        session.getRewardManager().grant(p, RewardType.PTP_KILL_STREAK_BONUS, bonusPerPlayer);
+                        session.getRewardManager().grant(p, RewardType.PTP_KILL_STREAK_BONUS, bonusPerPlayer,
+                                "amount", String.format("%,d", bonusPerPlayer));
                     }
                 }
             }
