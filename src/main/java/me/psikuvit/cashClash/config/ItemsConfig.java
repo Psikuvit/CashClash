@@ -453,7 +453,7 @@ public class ItemsConfig {
     }
 
     public double getIceFanBurstDamage() {
-        return config.getDouble("custom-items.ice-fan.burst-damage", 4.0);
+        return config.getDouble("custom-items.ice-fan.burst-damage", 4.5);
     }
 
     public int getIceFanBurstMinDurability() {

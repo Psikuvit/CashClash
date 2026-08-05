@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.manager.items.custom;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
@@ -24,31 +25,42 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.UUID;
 
 /**
- * Ice Fan: an ability-only tool. Left-click swings a discrete gust tick that
- * deals damage and builds a freeze streak on each target (freezing after ~3
- * continuous seconds); right-click fires a burst that instantly freezes. Both
- * consume a PDC-backed 75-point durability budget mirrored onto the visual bar.
+ * Ice Fan: an ability-only tool. Holding left-click sustains a continuous gust (driven by
+ * repeated PlayerAnimationEvent swings, which fire regardless of whether a block, air, or a
+ * player is under the cursor) that deals damage and builds a freeze streak on each target hit
+ * (freezing after ~3 continuous seconds); right-click fires a burst that instantly freezes.
+ * Both consume a PDC-backed 75-point durability budget mirrored onto the visual bar.
  */
 public class IceFanHandler extends CustomItemHandler {
 
-    // Ice Fan - consecutive gust-hit streak per target (for the freeze-after-3s rule) and a
-    // transient flag suppressing DamageListener's vanilla-melee cancellation for its own hits
+    // How long after the last swing before the gust is considered "released"
+    private static final long GUST_HOLD_TIMEOUT_MS = 700L;
+    // Gust tick cadence - matches the original per-click cadence (~2/sec) this replaces
+    private static final long GUST_TICK_INTERVAL = 10L;
+
+    // Ice Fan - consecutive gust-hit streak per target (for the freeze-after-3s rule), the
+    // continuous left-click gust's hold-state, and a transient flag suppressing
+    // DamageListener's vanilla-melee cancellation for its own hits
     private final Map<UUID, Integer> iceFanGustStreak;
     private final Map<UUID, BukkitTask> iceFanGustResetTasks;
     private final Set<UUID> iceFanAbilityDamageActive;
+    private final Map<UUID, Long> gustLastSwingTime;
+    private final Map<UUID, BukkitTask> activeGustTasks;
 
     public IceFanHandler(CustomItemManager manager) {
         super(manager);
         this.iceFanGustStreak = new HashMap<>();
         this.iceFanGustResetTasks = new HashMap<>();
         this.iceFanAbilityDamageActive = new HashSet<>();
+        this.gustLastSwingTime = new HashMap<>();
+        this.activeGustTasks = new HashMap<>();
     }
 
     /**
@@ -61,18 +73,56 @@ public class IceFanHandler extends CustomItemHandler {
     }
 
     /**
-     * Left-click: one discrete ~0.5s "gust tick" per swing (Bukkit cannot detect a held-down
-     * left mouse button - sustained rapid clicking approximates "continuous").
+     * Called on every arm swing while holding Ice Fan (from PlayerAnimationEvent, which fires
+     * regardless of whether a block, air, or a player is under the cursor - so aiming directly
+     * at a player still gusts instead of silently doing nothing or throwing a vanilla punch).
+     * Starts the continuous gust tick loop if it isn't already running; otherwise just refreshes
+     * the "still holding" timer the loop is watching.
      */
-    public void handleIceFanLeftClick(Player player, ItemStack item) {
-        int remaining = getIceFanDurability(item);
-        if (remaining <= 0) {
+    public void onIceFanSwing(Player player) {
+        UUID uuid = player.getUniqueId();
+        gustLastSwingTime.put(uuid, System.currentTimeMillis());
+
+        if (activeGustTasks.containsKey(uuid)) return;
+
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (getIceFanDurability(item) <= 0) {
             Messages.send(player, "customitem.ice-fan-broken");
             return;
         }
 
-        int drainThisClick = Math.max(1, cfg.getIceFanGustDurabilityPerSecond() / 2);
-        int newRemaining = remaining - drainThisClick;
+        BukkitTask task = SchedulerUtils.runTaskTimer(() -> tickGust(player), 0L, GUST_TICK_INTERVAL);
+        activeGustTasks.put(uuid, task);
+    }
+
+    /**
+     * One gust pulse - reuses the exact damage/durability numbers the old per-click design used,
+     * just fired automatically on a timer instead of needing a fresh click each time. Stops
+     * itself once no swing has landed within the hold timeout (release) or the fan breaks.
+     */
+    private void tickGust(Player player) {
+        UUID uuid = player.getUniqueId();
+        Long lastSwing = gustLastSwingTime.get(uuid);
+        boolean stillHolding = lastSwing != null
+                && (System.currentTimeMillis() - lastSwing) <= GUST_HOLD_TIMEOUT_MS
+                && player.isOnline()
+                && PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.ICE_FAN;
+
+        if (!stillHolding) {
+            stopGust(uuid);
+            return;
+        }
+
+        ItemStack item = player.getInventory().getItemInMainHand();
+        int remaining = getIceFanDurability(item);
+        if (remaining <= 0) {
+            stopGust(uuid);
+            breakIceFan(player, item);
+            return;
+        }
+
+        int drainThisTick = Math.max(1, cfg.getIceFanGustDurabilityPerSecond() / 2);
+        int newRemaining = remaining - drainThisTick;
         setIceFanDurability(item, newRemaining);
 
         Location origin = player.getEyeLocation();
@@ -82,10 +132,36 @@ public class IceFanHandler extends CustomItemHandler {
             registerIceFanGustHit(target.getUniqueId());
         }
 
-        ParticleUtils.iceFanGust(origin.clone().add(direction.clone().multiply(1.5)));
+        spawnGustSweepParticles(player, origin, direction);
         SoundUtils.play(player, Sound.ENTITY_PHANTOM_FLAP, 0.7f, 1.6f);
 
-        if (newRemaining <= 0) breakIceFan(player, item);
+        if (newRemaining <= 0) {
+            stopGust(uuid);
+            breakIceFan(player, item);
+        }
+    }
+
+    private void stopGust(UUID uuid) {
+        BukkitTask task = activeGustTasks.remove(uuid);
+        if (task != null) task.cancel();
+        gustLastSwingTime.remove(uuid);
+    }
+
+    /**
+     * Light-blue gust particles swept in a small brushing arc in front of the player, so a
+     * sustained gust reads as one continuous sweeping stream rather than a single static point.
+     */
+    private void spawnGustSweepParticles(Player player, Location origin, Vector direction) {
+        Vector right = new Vector(-direction.getZ(), 0, direction.getX()).normalize();
+        long phase = System.currentTimeMillis() / 100L;
+        double sweep = Math.sin(phase * 0.9) * 0.6;
+
+        for (double d = 0.8; d <= 2.4; d += 0.8) {
+            Location point = origin.clone()
+                    .add(direction.clone().multiply(d))
+                    .add(right.clone().multiply(sweep));
+            ParticleUtils.iceFanGust(point);
+        }
     }
 
     /**
@@ -108,15 +184,37 @@ public class IceFanHandler extends CustomItemHandler {
 
         Location origin = player.getEyeLocation();
         Vector direction = origin.getDirection();
-        for (Player target : findIceFanTargets(player, origin, direction, 4)) {
+        for (Player target : findIceFanTargets(player, origin, direction, 5)) {
             dealIceFanDamage(player, target, cfg.getIceFanBurstDamage());
             target.setFreezeTicks(target.getMaxFreezeTicks());
+
+            Vector knockback = target.getLocation().toVector()
+                    .subtract(player.getLocation().toVector())
+                    .normalize()
+                    .multiply(0.6)
+                    .setY(0.25);
+            target.setVelocity(target.getVelocity().add(knockback));
         }
 
-        ParticleUtils.iceFanBurst(origin.clone().add(direction.clone().multiply(2)));
+        spawnBurstShootParticles(player, origin, direction);
         SoundUtils.play(player, Sound.ENTITY_GLOW_SQUID_SQUIRT, 1.0f, 0.6f);
 
         if (newRemaining <= 0) breakIceFan(player, item);
+    }
+
+    /**
+     * Burst particles that travel outward from the player along the aim direction instead of
+     * appearing as one static point.
+     */
+    private void spawnBurstShootParticles(Player player, Location origin, Vector direction) {
+        for (int i = 0; i < 5; i++) {
+            double distance = 0.6 + (i * 0.7);
+            int delay = i;
+            SchedulerUtils.runTaskLater(() -> {
+                if (!player.isOnline()) return;
+                ParticleUtils.iceFanBurst(origin.clone().add(direction.clone().multiply(distance)));
+            }, delay);
+        }
     }
 
     /**
@@ -162,7 +260,7 @@ public class IceFanHandler extends CustomItemHandler {
 
     /**
      * Tracks consecutive gust hits on a target, freezing them once they've been hit enough
-     * times to approximate 3 continuous seconds of gust (sustained ~2 clicks/sec); the streak
+     * times to approximate 3 continuous seconds of gust (sustained ~2 hits/sec); the streak
      * resets if a full second passes without another gust hit landing.
      */
     private void registerIceFanGustHit(UUID targetUuid) {
@@ -222,6 +320,10 @@ public class IceFanHandler extends CustomItemHandler {
 
     @Override
     public void cleanup() {
+        activeGustTasks.values().forEach(BukkitTask::cancel);
+        activeGustTasks.clear();
+        gustLastSwingTime.clear();
+
         iceFanGustResetTasks.values().forEach(BukkitTask::cancel);
         iceFanGustResetTasks.clear();
         iceFanGustStreak.clear();

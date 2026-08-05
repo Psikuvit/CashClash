@@ -288,7 +288,7 @@ custom-items:
     gust-damage-per-tick: 1.0
     gust-freeze-seconds-required: 3
     burst-durability-cost: 25
-    burst-damage: 4.0
+    burst-damage: 4.5
     burst-min-durability: 25
 
   # Overdrive Potion

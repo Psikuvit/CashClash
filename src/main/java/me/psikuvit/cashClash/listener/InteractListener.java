@@ -55,6 +55,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.player.PlayerAnimationEvent;
+import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -143,6 +145,24 @@ public class InteractListener implements Listener {
                 }
             }
         }
+    }
+
+    // ==================== ICE FAN CONTINUOUS GUST ====================
+
+    /**
+     * Drives Ice Fan's continuous left-click gust. PlayerAnimationEvent fires on every arm
+     * swing regardless of whether a block, air, or a player is under the cursor, so aiming
+     * directly at a player still gusts instead of throwing a vanilla punch or doing nothing.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onIceFanSwing(PlayerAnimationEvent event) {
+        if (event.getAnimationType() != PlayerAnimationType.ARM_SWING) return;
+
+        Player player = event.getPlayer();
+        if (PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) != CustomItem.ICE_FAN) return;
+        if (isInShoppingPhase(player)) return;
+
+        customItemManager.getHandler(IceFanHandler.class).onIceFanSwing(player);
     }
 
     // ==================== MAIN INTERACT HANDLER ====================
@@ -384,8 +404,10 @@ public class InteractListener implements Listener {
             }
             case ICE_FAN -> {
                 if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
+                    // The gust itself is driven by onIceFanSwing (PlayerAnimationEvent) so it
+                    // also fires when aiming directly at a player; this just suppresses
+                    // vanilla Shears block interaction on left-click.
                     event.setCancelled(true);
-                    customItemManager.getHandler(IceFanHandler.class).handleIceFanLeftClick(player, item);
                     return true;
                 } else if (action.isRightClick()) {
                     event.setCancelled(true);
