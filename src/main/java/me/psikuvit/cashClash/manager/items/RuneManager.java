@@ -242,6 +242,21 @@ public class RuneManager {
         EnchantEntry enchantEntry = PDCDetection.getRune(rune);
         if (enchantEntry == null) return null;
 
+        // Armor runes (PROTECTION/PROJECTILE_PROTECTION) must only ever target armor the
+        // player is currently wearing - never a spare piece sitting in the main inventory
+        // (e.g. gear replaced by a shop upgrade but still carried). Weapon/bow runes keep
+        // scanning the general inventory since they have no "equipped" slot of their own.
+        if (isArmorEnchant(enchantEntry)) {
+            for (ItemStack item : player.getInventory().getArmorContents()) {
+                if (item == null || item.getType().isAir()) continue;
+
+                if (enchantEntry.canApplyTo(item)) {
+                    return item;
+                }
+            }
+            return null;
+        }
+
         for (ItemStack item : player.getInventory().getContents()) {
             if (item == null || item.getType().isAir()) continue;
             if (isRune(item)) continue;
@@ -251,17 +266,16 @@ public class RuneManager {
             }
         }
 
-        // Armor runes (PROTECTION/PROJECTILE_PROTECTION) target equipped armor, which
-        // getContents() above doesn't include - check the armor slots too.
-        for (ItemStack item : player.getInventory().getArmorContents()) {
-            if (item == null || item.getType().isAir()) continue;
-
-            if (enchantEntry.canApplyTo(item)) {
-                return item;
-            }
-        }
-
         return null;
+    }
+
+    /**
+     * True for enchants whose applicable materials are all armor pieces (PROTECTION,
+     * PROJECTILE_PROTECTION) - these must resolve against equipped armor only, see
+     * {@link #findFirstApplicableItem}.
+     */
+    private static boolean isArmorEnchant(EnchantEntry enchantEntry) {
+        return enchantEntry == EnchantEntry.PROTECTION || enchantEntry == EnchantEntry.PROJECTILE_PROTECTION;
     }
 
     /**
