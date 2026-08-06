@@ -19,6 +19,7 @@ import org.bukkit.entity.Display;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -172,19 +173,8 @@ public class RuneManager {
             setRuneActive(rune, false);
             setRuneOffTime(rune);
             if (linkedItem != null) {
-                String linkedUUID = getItemUUID(linkedItem);
-                int linkedSlot = linkedUUID != null ? findSlotByItemUUID(player, linkedUUID) : -1;
-
                 removeRune(player, linkedItem, rune);
-
-                if (linkedSlot != -1) {
-                    player.getInventory().setItem(linkedSlot, linkedItem);
-                }
-
-                if (enchantEntry == EnchantEntry.PROTECTION ||
-                        enchantEntry == EnchantEntry.PROJECTILE_PROTECTION) {
-                    updateArmorRunes(player);
-                }
+                persistLinkedItem(player, linkedItem);
             }
             player.getInventory().setItemInMainHand(rune);
 
@@ -223,17 +213,7 @@ public class RuneManager {
 
         applyRune(player, target, rune);
         setRuneActive(rune, true);
-
-        if (enchantEntry == EnchantEntry.PROTECTION ||
-                enchantEntry == EnchantEntry.PROJECTILE_PROTECTION) {
-            updateArmorRunes(player);
-        } else {
-            String targetUUID = getItemUUID(target);
-            int targetSlot = targetUUID != null ? findSlotByItemUUID(player, targetUUID) : -1;
-            if (targetSlot != -1) {
-                player.getInventory().setItem(targetSlot, target);
-            }
-        }
+        persistLinkedItem(player, target);
 
         player.getInventory().setItemInMainHand(rune);
 
@@ -271,6 +251,16 @@ public class RuneManager {
             }
         }
 
+        // Armor runes (PROTECTION/PROJECTILE_PROTECTION) target equipped armor, which
+        // getContents() above doesn't include - check the armor slots too.
+        for (ItemStack item : player.getInventory().getArmorContents()) {
+            if (item == null || item.getType().isAir()) continue;
+
+            if (enchantEntry.canApplyTo(item)) {
+                return item;
+            }
+        }
+
         return null;
     }
 
@@ -293,6 +283,37 @@ public class RuneManager {
     }
 
     /**
+     * Writes a modified item back to wherever it currently sits - a main inventory slot, an
+     * equipped armor slot, or the off-hand - by matching its ITEM_UUID tag. Needed because a
+     * rune's linked item can be any of those (armor runes link to equipped armor), and
+     * getArmorContents()/off-hand mutations don't persist without an explicit write-back.
+     */
+    public static void persistLinkedItem(Player player, ItemStack item) {
+        if (player == null || item == null) return;
+        String uuid = getItemUUID(item);
+        if (uuid == null) return;
+
+        int slot = findSlotByItemUUID(player, uuid);
+        if (slot != -1) {
+            player.getInventory().setItem(slot, item);
+            return;
+        }
+
+        PlayerInventory inv = player.getInventory();
+        if (uuid.equals(getItemUUID(inv.getHelmet()))) {
+            inv.setHelmet(item);
+        } else if (uuid.equals(getItemUUID(inv.getChestplate()))) {
+            inv.setChestplate(item);
+        } else if (uuid.equals(getItemUUID(inv.getLeggings()))) {
+            inv.setLeggings(item);
+        } else if (uuid.equals(getItemUUID(inv.getBoots()))) {
+            inv.setBoots(item);
+        } else if (uuid.equals(getItemUUID(inv.getItemInOffHand()))) {
+            inv.setItemInOffHand(item);
+        }
+    }
+
+    /**
      * Writes a modified rune back into the player's inventory by matching its ITEM_UUID.
      */
     public static void persistRune(Player player, ItemStack rune) {
@@ -307,8 +328,15 @@ public class RuneManager {
         }
     }
 
+    /**
+     * Applies the rune's enchant to its linked target - a specific item, which may be an
+     * equipped armor piece for PROTECTION/PROJECTILE_PROTECTION runes. Armor runes are no
+     * longer a special case: they apply to (and only to) their own linked piece, exactly like
+     * weapon runes, instead of every currently-equipped armor piece. Caller is responsible for
+     * persisting the mutated target back via {@link #persistLinkedItem}.
+     */
     public static void applyRune(Player player, ItemStack target, ItemStack rune) {
-        if (player == null || rune == null) return;
+        if (player == null || rune == null || target == null) return;
 
         EnchantEntry enchantEntry = PDCDetection.getRune(rune);
         if (enchantEntry == null) return;
@@ -318,19 +346,6 @@ public class RuneManager {
                 .get(Keys.RUNE_LEVEL, PersistentDataType.INTEGER);
 
         if (level == null) return;
-
-        int damage = level;
-
-        // Armor runes update based on currently equipped armor
-        if (enchantEntry == EnchantEntry.PROTECTION ||
-                enchantEntry == EnchantEntry.PROJECTILE_PROTECTION) {
-
-            updateArmorRunes(player);
-            return;
-        }
-
-        // Normal item enchant
-        if (target == null) return;
 
         ItemMeta meta = target.getItemMeta();
         if (meta == null) return;
@@ -344,28 +359,15 @@ public class RuneManager {
         target.setItemMeta(meta);
     }
 
+    /**
+     * Removes the rune's enchant from its linked target only - see {@link #applyRune}.
+     */
     public static void removeRune(Player player, ItemStack target, ItemStack rune) {
-        if (player == null || rune == null) return;
+        if (player == null || rune == null || target == null) return;
 
         EnchantEntry enchantEntry = PDCDetection.getRune(rune);
         if (enchantEntry == null) return;
 
-
-        // Armor runes remove from all equipped armor
-        if (enchantEntry == EnchantEntry.PROTECTION ||
-                enchantEntry == EnchantEntry.PROJECTILE_PROTECTION) {
-            for (ItemStack armor : player.getInventory().getArmorContents()) {
-                if (armor == null || armor.getType().isAir()) continue;
-                ItemMeta meta = armor.getItemMeta();
-                if (meta == null) continue;
-                meta.removeEnchant(enchantEntry.getEnchantment());
-                armor.setItemMeta(meta);
-            }
-            return;
-        }
-
-        // Normal item removal
-        if (target == null) return;
         ItemMeta meta = target.getItemMeta();
         if (meta == null) return;
         meta.removeEnchant(enchantEntry.getEnchantment());
@@ -392,96 +394,6 @@ public class RuneManager {
         if (rune == null || !rune.hasItemMeta()) return;
 
         PDCSetter.of(rune).remove(Keys.RUNE_LINK).apply();
-    }
-
-    public static void updateArmorRunes(Player player) {
-        if (player == null) return;
-
-        // Remove rune enchants from every armor piece in inventory
-        ItemStack[] contents = player.getInventory().getContents();
-        for (int i = 0; i < contents.length; i++) {
-            ItemStack item = contents[i];
-            if (!isArmor(item)) continue;
-
-            removeArmorRuneEnchants(item);
-            contents[i] = item;
-        }
-        player.getInventory().setContents(contents);
-
-        // Remove rune enchants from equipped armor
-        ItemStack[] armor = player.getInventory().getArmorContents();
-        for (int i = 0; i < armor.length; i++) {
-            if (armor[i] == null || armor[i].getType().isAir()) continue;
-
-            removeArmorRuneEnchants(armor[i]);
-        }
-
-        // Now reapply active armor runes to equipped armor only
-        for (int i = 0; i < armor.length; i++) {
-            ItemStack armorPiece = armor[i];
-            if (armorPiece == null || armorPiece.getType().isAir()) continue;
-
-            ItemMeta meta = armorPiece.getItemMeta();
-            if (meta == null) continue;
-
-            for (ItemStack runeItem : player.getInventory().getContents()) {
-
-                if (!isRune(runeItem)) continue;
-                if (!isRuneActive(runeItem)) continue;
-
-                EnchantEntry rune = PDCDetection.getRune(runeItem);
-
-                if (rune != EnchantEntry.PROTECTION &&
-                        rune != EnchantEntry.PROJECTILE_PROTECTION) {
-                    continue;
-                }
-
-                Integer level = runeItem.getItemMeta()
-                        .getPersistentDataContainer()
-                        .get(Keys.RUNE_LEVEL, PersistentDataType.INTEGER);
-
-                if (level == null) continue;
-
-                meta.addEnchant(
-                        rune.getEnchantment(),
-                        level,
-                        true
-                );
-            }
-
-            armorPiece.setItemMeta(meta);
-            armor[i] = armorPiece;
-        }
-        player.getInventory().setArmorContents(armor);
-    }
-
-    private static void removeArmorRuneEnchants(ItemStack item) {
-
-        ItemMeta meta = item.getItemMeta();
-
-        if (meta == null) return;
-
-        meta.removeEnchant(
-                EnchantEntry.PROTECTION.getEnchantment()
-        );
-
-        meta.removeEnchant(
-                EnchantEntry.PROJECTILE_PROTECTION.getEnchantment()
-        );
-
-        item.setItemMeta(meta);
-    }
-
-    private static boolean isArmor(ItemStack item) {
-
-        if (item == null) return false;
-
-        String name = item.getType().name();
-
-        return name.endsWith("_HELMET")
-                || name.endsWith("_CHESTPLATE")
-                || name.endsWith("_LEGGINGS")
-                || name.endsWith("_BOOTS");
     }
 
     // ================= RUNE DURABILITY =====================
@@ -572,20 +484,8 @@ public class RuneManager {
             ItemStack linkedItem = getLinkedItem(player, rune);
 
             if (linkedItem != null) {
-                String linkedUUID = getItemUUID(linkedItem);
-                int linkedSlot = linkedUUID != null ? findSlotByItemUUID(player, linkedUUID) : -1;
-
                 removeRune(player, linkedItem, rune);
-
-                if (linkedSlot != -1) {
-                    player.getInventory().setItem(linkedSlot, linkedItem);
-                }
-
-                if (enchant == EnchantEntry.PROTECTION ||
-                        enchant == EnchantEntry.PROJECTILE_PROTECTION) {
-
-                    updateArmorRunes(player);
-                }
+                persistLinkedItem(player, linkedItem);
             }
 
             setRuneBroken(rune);

@@ -77,13 +77,11 @@ import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
@@ -974,39 +972,6 @@ public class GameListener implements Listener {
                 Messages.send(p, "listener.max-webs-reached");
             }
         }
-
-        SchedulerUtils.runTask(
-                () -> RuneManager.updateArmorRunes(p)
-        );
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onItemSwap(PlayerItemHeldEvent event) {
-        Player player = event.getPlayer();
-
-        SchedulerUtils.runTask(
-                () -> RuneManager.updateArmorRunes(player)
-        );
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onInventoryDrag(InventoryDragEvent event) {
-
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        SchedulerUtils.runTask(
-                () -> RuneManager.updateArmorRunes(player)
-        );
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onInventoryArmorChange(InventoryClickEvent event) {
-
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        SchedulerUtils.runTask(
-                () -> RuneManager.updateArmorRunes(player)
-        );
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
