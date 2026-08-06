@@ -18,7 +18,7 @@ public enum CustomItem implements Purchasable {
     BOOMBOX(Material.JUKEBOX, "boombox", 1, 0, "Boombox"),
     INVIS_CLOAK(Material.PHANTOM_MEMBRANE, "invis-cloak", 1, 5, "Invisibility Cloak"),
     RESPAWN_ANCHOR(Material.RESPAWN_ANCHOR, "respawn-anchor", 1, 2, "Respawn Anchor"),
-    TOTEM_OF_HAUNTING(Material.NETHER_STAR, "totem-of-haunting", 1, 0, "Totem of Haunting"),
+    TOTEM_OF_HAUNTING(Material.NETHER_STAR, "totem-of-haunting", 1, 2, "Totem of Haunting"),
     RADIATING_LOTUS(Material.GLOW_BERRIES, "radiating-lotus", 1, 0, "Radiating Lotus"),
     ICE_FAN(Material.BRUSH, "ice-fan", 1, 0, "Ice Fan"),
     OVERDRIVE_POTION(Material.POTION, "overdrive-potion", 1, 0, "Overdrive Potion"),

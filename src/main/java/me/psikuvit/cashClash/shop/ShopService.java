@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.player.PurchaseRecord.ArmorSlot;
 import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
@@ -58,6 +59,10 @@ public class ShopService {
             return;
         }
 
+        if (item == CustomItem.TOTEM_OF_HAUNTING && isTotemOfHauntingCapReached(player)) {
+            return;
+        }
+
         deductCoins(player, totalPrice);
         giveItemToPlayer(player, ccp, item, quantity, totalPrice);
     }
@@ -77,6 +82,17 @@ public class ShopService {
         if (countMaterial(player, utilityItem.getMaterial()) < max) return false;
 
         Messages.send(player, utilityItem == UtilityItem.TOTEM ? "listener.max-totems-reached" : "listener.max-webs-reached");
+        SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+        return true;
+    }
+
+    /**
+     * Totem of Haunting is capped at 2 owned at once, mirroring the utility-item cap pattern.
+     */
+    private boolean isTotemOfHauntingCapReached(Player player) {
+        if (countMaterial(player, CustomItem.TOTEM_OF_HAUNTING.getMaterial()) < 2) return false;
+
+        Messages.send(player, "listener.max-totem-of-haunting-reached");
         SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         return true;
     }

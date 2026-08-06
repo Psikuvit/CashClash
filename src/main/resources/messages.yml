@@ -791,6 +791,7 @@ messages:
     water-bucket-refilled: "<aqua>Water bucket refilled!</aqua>"
     max-webs-reached: "<red>You already own 8 webs!</red>"
     max-totems-reached: "<red>You already own 2 Mini Totems!</red>"
+    max-totem-of-haunting-reached: "<red>You already own 2 Totems of Haunting!</red>"
     max-leaf-blocks-reached: "<red>You have reached the maximum of 64 leaf blocks!</red>"
     leaf-stack-limit: "<red>You cannot stack more than 3 leaf blocks vertically!</red>"
     max-water-lava-sources: "<red>Your team has reached the maximum of 4 water/lava sources!</red>"
