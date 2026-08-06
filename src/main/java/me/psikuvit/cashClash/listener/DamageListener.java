@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.GuardianVestHandler;
+import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.TectonicCapHandler;
 import me.psikuvit.cashClash.manager.items.custom.BagOfPotatoesHandler;
 import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
@@ -783,6 +784,23 @@ public class DamageListener implements Listener {
 
         // Nerf/cap power enchantment on bows
         applyPowerNerf(event, attacker, weapon);
+
+        // Investor's Set: melee damage tradeoff for the set's passive team income
+        applyInvestorMeleeNerf(event, attacker);
+    }
+
+    /**
+     * Investor's Set reduces the wearer's melee damage 5% per piece worn (e.g. full set =
+     * -20%), as a tradeoff for the set's passive team income on kills/objectives. Melee only -
+     * projectile damage (bows/crossbows) is untouched.
+     */
+    private void applyInvestorMeleeNerf(EntityDamageByEntityEvent event, Player attacker) {
+        if (!(event.getDamager() instanceof Player)) return;
+
+        double multiplier = armorManager.getHandler(InvestorSetHandler.class).getMeleeDamageMultiplier(attacker);
+        if (multiplier >= 1.0) return;
+
+        event.setDamage(event.getDamage() * multiplier);
     }
 
     /**

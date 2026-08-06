@@ -34,6 +34,17 @@ public class InvestorSetHandler extends ArmorSetHandler {
     }
 
     /**
+     * Balance tradeoff for the set's passive team income: melee damage dealt is reduced 5%
+     * per Investor's Set piece worn (e.g. full 4-piece set = -20%).
+     * @return melee damage multiplier, 1.0 if no pieces are worn
+     */
+    public double getMeleeDamageMultiplier(Player player) {
+        int pieces = countInvestorsPieces(player);
+        if (pieces <= 0) return 1.0;
+        return 1.0 - (0.05 * pieces);
+    }
+
+    /**
      * Calculate the price for an investor piece based on how many are already owned.
      */
     public long getInvestorPrice(CustomArmorItem armor, int piecesOwned) {
