@@ -45,23 +45,29 @@ public class IceFanHandler extends CustomItemHandler {
     private static final long GUST_HOLD_TIMEOUT_MS = 1500L;
     // Gust tick cadence - matches the original per-click cadence (~2/sec) this replaces
     private static final long GUST_TICK_INTERVAL = 10L;
-    // Each gust blast that connects stacks 1.5s of freeze ticks onto the target's current
-    // freeze (1.5s -> 3s -> 4.5s ...), capped at 6s total, instead of building a hit streak
-    // toward a delayed full freeze.
-    private static final int GUST_HIT_FREEZE_TICKS = 30;
-    private static final int GUST_MAX_FREEZE_TICKS = 120;
+    // Each gust blast that connects stacks 1.5s onto the target's freeze (1.5s -> 3s -> 4.5s
+    // ...), capped at 6s total - tracked on our own timer (see iceFanFreezeExpiresAt) rather
+    // than Bukkit's native freezeTicks, which decays on its own every tick outside powder snow
+    // and would otherwise race against the stacking.
+    private static final long GUST_HIT_FREEZE_MS = 1500L;
+    private static final long GUST_MAX_FREEZE_MS = 6000L;
 
     // Ice Fan - the continuous left-click gust's hold-state, and a transient flag suppressing
     // DamageListener's vanilla-melee cancellation for its own hits
     private final Set<UUID> iceFanAbilityDamageActive;
     private final Map<UUID, Long> gustLastSwingTime;
     private final Map<UUID, BukkitTask> activeGustTasks;
+    // Independent freeze-stack timer per target, and the task pumping it into freezeTicks
+    private final Map<UUID, Long> iceFanFreezeExpiresAt;
+    private final Map<UUID, BukkitTask> iceFanFreezePumpTasks;
 
     public IceFanHandler(CustomItemManager manager) {
         super(manager);
         this.iceFanAbilityDamageActive = new HashSet<>();
         this.gustLastSwingTime = new HashMap<>();
         this.activeGustTasks = new HashMap<>();
+        this.iceFanFreezeExpiresAt = new HashMap<>();
+        this.iceFanFreezePumpTasks = new HashMap<>();
     }
 
     /**
@@ -130,7 +136,7 @@ public class IceFanHandler extends CustomItemHandler {
         Vector direction = origin.getDirection();
         for (Player target : findIceFanTargets(player, origin, direction, 3)) {
             dealIceFanDamage(player, target, cfg.getIceFanGustDamagePerTick());
-            target.setFreezeTicks(Math.min(target.getFreezeTicks() + GUST_HIT_FREEZE_TICKS, GUST_MAX_FREEZE_TICKS));
+            stackIceFanFreeze(target);
             ParticleUtils.blueFreezeHeart(target.getEyeLocation().add(0, 0.5, 0));
         }
 
@@ -147,6 +153,46 @@ public class IceFanHandler extends CustomItemHandler {
         BukkitTask task = activeGustTasks.remove(uuid);
         if (task != null) task.cancel();
         gustLastSwingTime.remove(uuid);
+    }
+
+    /**
+     * Stacks 1.5s onto the target's remaining Ice Fan freeze time, capped at 6s total, and
+     * starts the pump task (if not already running) that keeps freezeTicks synced to it every
+     * tick - directly setting freezeTicks here would just get overwritten by the next pump.
+     */
+    private void stackIceFanFreeze(Player target) {
+        UUID uuid = target.getUniqueId();
+        long now = System.currentTimeMillis();
+
+        long currentExpiry = iceFanFreezeExpiresAt.getOrDefault(uuid, now);
+        long remaining = Math.max(0, currentExpiry - now);
+        long newRemaining = Math.min(remaining + GUST_HIT_FREEZE_MS, GUST_MAX_FREEZE_MS);
+        iceFanFreezeExpiresAt.put(uuid, now + newRemaining);
+
+        if (!iceFanFreezePumpTasks.containsKey(uuid)) {
+            BukkitTask task = SchedulerUtils.runTaskTimer(() -> pumpIceFanFreeze(target), 0L, 1L);
+            iceFanFreezePumpTasks.put(uuid, task);
+        }
+    }
+
+    /**
+     * Keeps the target's freezeTicks matching the remaining time on our own timer every tick,
+     * overriding Bukkit's natural decay, until the stack expires.
+     */
+    private void pumpIceFanFreeze(Player target) {
+        UUID uuid = target.getUniqueId();
+        Long expiresAt = iceFanFreezeExpiresAt.get(uuid);
+        long now = System.currentTimeMillis();
+
+        if (expiresAt == null || now >= expiresAt || !target.isOnline()) {
+            iceFanFreezeExpiresAt.remove(uuid);
+            BukkitTask task = iceFanFreezePumpTasks.remove(uuid);
+            if (task != null) task.cancel();
+            return;
+        }
+
+        int ticksLeft = (int) ((expiresAt - now) / 50L);
+        target.setFreezeTicks(Math.min(ticksLeft, target.getMaxFreezeTicks()));
     }
 
     /**
@@ -204,11 +250,10 @@ public class IceFanHandler extends CustomItemHandler {
     private void spawnBurstShootParticles(Player player, Location origin, Vector direction) {
         for (int i = 0; i < 5; i++) {
             double distance = 0.6 + (i * 0.7);
-            int delay = i;
             SchedulerUtils.runTaskLater(() -> {
                 if (!player.isOnline()) return;
                 ParticleUtils.iceFanBurst(origin.clone().add(direction.clone().multiply(distance)));
-            }, delay);
+            }, i);
         }
     }
 
@@ -297,5 +342,9 @@ public class IceFanHandler extends CustomItemHandler {
         activeGustTasks.clear();
         gustLastSwingTime.clear();
         iceFanAbilityDamageActive.clear();
+
+        iceFanFreezePumpTasks.values().forEach(BukkitTask::cancel);
+        iceFanFreezePumpTasks.clear();
+        iceFanFreezeExpiresAt.clear();
     }
 }
