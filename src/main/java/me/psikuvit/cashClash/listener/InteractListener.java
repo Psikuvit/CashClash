@@ -60,6 +60,7 @@ import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -164,6 +165,20 @@ public class InteractListener implements Listener {
         if (isInShoppingPhase(player)) return;
 
         customItemManager.getHandler(IceFanHandler.class).onIceFanSwing(player);
+    }
+
+    // ==================== OVERDRIVE POTION HOTBAR LOCK ====================
+
+    /**
+     * Blocks hotbar slot switching while Overdrive Potion invincibility is active, matching
+     * the existing "cannot use any inventory item" restriction (see onPlayerInteract).
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onOverdriveHotbarSwitch(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        if (customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
+            event.setCancelled(true);
+        }
     }
 
     // ==================== MAIN INTERACT HANDLER ====================
