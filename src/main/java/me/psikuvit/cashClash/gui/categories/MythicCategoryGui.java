@@ -90,8 +90,6 @@ public final class MythicCategoryGui {
             ItemUtils.replaceBestMatchingTool(player, mythicItem);
         }
 
-        ItemUtils.applyOwnedEnchantsAfterPurchase(player, mythic);
-
         if (mythic == MythicItem.WIND_BOW) {
             player.getInventory().addItem(new ItemStack(Material.ARROW, 20));
         }

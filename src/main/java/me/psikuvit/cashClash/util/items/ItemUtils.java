@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.util.items;
 
-import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
@@ -192,49 +191,6 @@ public final class ItemUtils {
 
         Messages.send(player, "enchant.ineligible-item");
         return false;
-    }
-
-    public static void applyOwnedEnchantsAfterPurchase(Player player, Purchasable si) {
-        if (player == null || si == null) return;
-        if (si.getCategory() == ShopCategory.UTILITY &&
-                (si.getMaterial() == Material.BOW || si.getMaterial() == Material.CROSSBOW)) return;
-
-        var session = GameManager.getInstance().getPlayerSession(player);
-        if (session == null) return;
-
-        var ccp = session.getCashClashPlayer(player.getUniqueId());
-        if (ccp == null) return;
-
-        ItemStack[] contents = player.getInventory().getContents();
-        boolean modified = false;
-
-        for (int i = 0; i < contents.length; i++) {
-            ItemStack is = contents[i];
-            if (is == null || is.getType().isAir()) continue;
-
-            boolean itemModified = false;
-            ItemMeta meta = is.getItemMeta();
-            if (meta == null) continue;
-
-            for (var e : ccp.getOwnedEnchants().entrySet()) {
-                EnchantEntry ee = e.getKey();
-                int lvl = e.getValue();
-                if (!ee.getApplicableMaterials().contains(is.getType())) continue;
-
-                meta.addEnchant(ee.getEnchantment(), lvl, true);
-                itemModified = true;
-            }
-
-            if (itemModified) {
-                is.setItemMeta(meta);
-                contents[i] = is;
-                modified = true;
-            }
-        }
-
-        if (modified) {
-            player.getInventory().setContents(contents);
-        }
     }
 
     public static void removeRune(Player player, EnchantEntry ee) {

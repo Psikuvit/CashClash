@@ -349,10 +349,9 @@ public class ShopService {
                     long setPrice = customArmor.getArmorSet().getTotalPrice();
                     ccp.addPurchase(new PurchaseRecord(setPieces.getFirst(), setPrice, round, replacedSetItems, setPieces));
 
-                    // Apply enchants to all pieces
-                    for (CustomArmorItem piece : setPieces) {
-                        ItemUtils.applyOwnedEnchantsAfterPurchase(player, piece);
-                    }
+                    // Note: runes are NOT auto-reapplied to the newly equipped pieces here -
+                    // a rune only ever affects its manually linked, currently active target
+                    // (see RuneManager), same as every other purchase path.
 
                     Messages.send(player, "shop.purchased-set",
                         "item_name", customArmor.getArmorSet().getDisplayName(),
@@ -454,7 +453,8 @@ public class ShopService {
 
     private void cachePurchase(Player player, CashClashPlayer ccp, Purchasable item, int round, ItemStack replacedItem) {
         ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
-        ItemUtils.applyOwnedEnchantsAfterPurchase(player, item);
+        // Note: runes are NOT auto-reapplied here - a rune only ever affects its manually
+        // linked, currently active target (see RuneManager), regardless of what else is bought.
 
         Messages.send(player, "shop.purchased",
             "item_name", item.getDisplayName(),
