@@ -415,8 +415,8 @@ public class ItemsConfig {
         return config.getInt("custom-items.radiating-lotus.grace-seconds", 1);
     }
 
-    public double getLotusKnockbackPerSecond() {
-        return config.getDouble("custom-items.radiating-lotus.knockback-per-second", 3.0);
+    public double getLotusKnockbackDistance() {
+        return config.getDouble("custom-items.radiating-lotus.knockback-distance", 3.0);
     }
 
     public double getLotusHealRadiusPerSecond() {

@@ -102,7 +102,8 @@ public class RadiatingLotusHandler extends CustomItemHandler {
 
         double chargeSeconds = chargeTicks / 20.0;
 
-        double knockbackDistance = chargeSeconds * cfg.getLotusKnockbackPerSecond();
+        // Flat knockback regardless of charge time - charging now only affects heal radius.
+        double knockbackDistance = cfg.getLotusKnockbackDistance();
         // Mostly horizontal - a tiny vertical lift keeps this from reading as a launch, but a
         // fully flat velocity gets killed almost instantly by ground friction while grounded,
         // which made the knockback invisible/non-functional.
