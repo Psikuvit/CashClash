@@ -112,9 +112,13 @@ public enum CustomArmorItem implements Purchasable {
 
     /**
      * Checks if this armor piece is part of the Investor's set.
+     * Unlike Dragon/Deathmauler/Flamebringer, Investor's pieces are intentionally sold
+     * individually with progressive per-piece pricing (see InvestorSetHandler#getInvestorPrice),
+     * not as an ArmorSet bundle - so this is identity-based rather than armorSet-based.
      */
     public boolean isInvestorsSet() {
-        return armorSet == ArmorSet.INVESTORS;
+        return this == INVESTORS_HELMET || this == INVESTORS_CHESTPLATE
+                || this == INVESTORS_LEGGINGS || this == INVESTORS_BOOTS;
     }
 
     /**
