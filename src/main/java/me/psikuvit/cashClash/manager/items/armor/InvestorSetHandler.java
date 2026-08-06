@@ -63,9 +63,11 @@ public class InvestorSetHandler extends ArmorSetHandler {
     public void onInvestorReward(Player player, GameSession session) {
         if (player == null || session == null) return;
         int pieces = countInvestorsPieces(player);
+        Messages.debug(player, "ECONOMY", "InvestorSet: onInvestorReward called, pieces=" + pieces);
         if (pieces <= 0) return;
 
         Team team = session.getPlayerTeam(player);
+        Messages.debug(player, "ECONOMY", "InvestorSet: team=" + (team == null ? "null" : team.getTeamNumber()));
         if (team == null) return;
 
         int reward = 200 * pieces;
