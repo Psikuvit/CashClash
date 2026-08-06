@@ -12,7 +12,6 @@ import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
@@ -34,9 +33,9 @@ import java.util.UUID;
 /**
  * Ice Fan: an ability-only tool. Holding left-click sustains a continuous gust (driven by
  * repeated PlayerAnimationEvent swings, which fire regardless of whether a block, air, or a
- * player is under the cursor) that deals damage and builds a freeze streak on each target hit
- * (freezing after ~3 continuous seconds); right-click fires a burst that instantly freezes.
- * Both consume a PDC-backed 75-point durability budget mirrored onto the visual bar.
+ * player is under the cursor) that deals damage and grants 1.5s of freeze directly on every
+ * blast that connects; right-click fires a damaging/knockback burst (no freeze). Both consume
+ * a PDC-backed 75-point durability budget mirrored onto the visual bar.
  */
 public class IceFanHandler extends CustomItemHandler {
 
@@ -46,20 +45,18 @@ public class IceFanHandler extends CustomItemHandler {
     private static final long GUST_HOLD_TIMEOUT_MS = 1500L;
     // Gust tick cadence - matches the original per-click cadence (~2/sec) this replaces
     private static final long GUST_TICK_INTERVAL = 10L;
+    // Each gust blast that connects grants 1.5s of freeze ticks directly, instead of building
+    // a hit streak toward a delayed full freeze.
+    private static final int GUST_HIT_FREEZE_TICKS = 30;
 
-    // Ice Fan - consecutive gust-hit streak per target (for the freeze-after-3s rule), the
-    // continuous left-click gust's hold-state, and a transient flag suppressing
+    // Ice Fan - the continuous left-click gust's hold-state, and a transient flag suppressing
     // DamageListener's vanilla-melee cancellation for its own hits
-    private final Map<UUID, Integer> iceFanGustStreak;
-    private final Map<UUID, BukkitTask> iceFanGustResetTasks;
     private final Set<UUID> iceFanAbilityDamageActive;
     private final Map<UUID, Long> gustLastSwingTime;
     private final Map<UUID, BukkitTask> activeGustTasks;
 
     public IceFanHandler(CustomItemManager manager) {
         super(manager);
-        this.iceFanGustStreak = new HashMap<>();
-        this.iceFanGustResetTasks = new HashMap<>();
         this.iceFanAbilityDamageActive = new HashSet<>();
         this.gustLastSwingTime = new HashMap<>();
         this.activeGustTasks = new HashMap<>();
@@ -131,7 +128,7 @@ public class IceFanHandler extends CustomItemHandler {
         Vector direction = origin.getDirection();
         for (Player target : findIceFanTargets(player, origin, direction, 3)) {
             dealIceFanDamage(player, target, cfg.getIceFanGustDamagePerTick());
-            registerIceFanGustHit(target.getUniqueId());
+            target.setFreezeTicks(GUST_HIT_FREEZE_TICKS);
         }
 
         spawnGustParticles(player, origin, direction);
@@ -182,7 +179,6 @@ public class IceFanHandler extends CustomItemHandler {
         Vector direction = origin.getDirection();
         for (Player target : findIceFanTargets(player, origin, direction, 5)) {
             dealIceFanDamage(player, target, cfg.getIceFanBurstDamage());
-            target.setFreezeTicks(target.getMaxFreezeTicks());
 
             Vector knockback = target.getLocation().toVector()
                     .subtract(player.getLocation().toVector())
@@ -254,29 +250,6 @@ public class IceFanHandler extends CustomItemHandler {
         }
     }
 
-    /**
-     * Tracks consecutive gust hits on a target, freezing them once they've been hit enough
-     * times to approximate 3 continuous seconds of gust (sustained ~2 hits/sec); the streak
-     * resets if a full second passes without another gust hit landing.
-     */
-    private void registerIceFanGustHit(UUID targetUuid) {
-        int hits = iceFanGustStreak.merge(targetUuid, 1, Integer::sum);
-
-        BukkitTask existingReset = iceFanGustResetTasks.remove(targetUuid);
-        if (existingReset != null) existingReset.cancel();
-
-        int requiredHits = cfg.getIceFanGustFreezeSecondsRequired() * 2;
-        if (hits >= requiredHits) {
-            iceFanGustStreak.remove(targetUuid);
-            Player target = Bukkit.getPlayer(targetUuid);
-            if (target != null) target.setFreezeTicks(target.getMaxFreezeTicks());
-            return;
-        }
-
-        BukkitTask resetTask = SchedulerUtils.runTaskLater(() -> iceFanGustStreak.remove(targetUuid), 20L);
-        iceFanGustResetTasks.put(targetUuid, resetTask);
-    }
-
     private int getIceFanDurability(ItemStack item) {
         Integer remaining = PDCDetection.getItemUses(item);
         return remaining != null ? remaining : cfg.getIceFanMaxDurability();
@@ -320,10 +293,6 @@ public class IceFanHandler extends CustomItemHandler {
         activeGustTasks.values().forEach(BukkitTask::cancel);
         activeGustTasks.clear();
         gustLastSwingTime.clear();
-
-        iceFanGustResetTasks.values().forEach(BukkitTask::cancel);
-        iceFanGustResetTasks.clear();
-        iceFanGustStreak.clear();
         iceFanAbilityDamageActive.clear();
     }
 }

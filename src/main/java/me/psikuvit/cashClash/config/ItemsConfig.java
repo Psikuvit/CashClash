@@ -444,10 +444,6 @@ public class ItemsConfig {
         return config.getDouble("custom-items.ice-fan.gust-damage-per-tick", 1.0);
     }
 
-    public int getIceFanGustFreezeSecondsRequired() {
-        return config.getInt("custom-items.ice-fan.gust-freeze-seconds-required", 3);
-    }
-
     public int getIceFanBurstDurabilityCost() {
         return config.getInt("custom-items.ice-fan.burst-durability-cost", 25);
     }

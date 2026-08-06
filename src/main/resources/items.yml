@@ -286,7 +286,6 @@ custom-items:
     max-durability: 75
     gust-durability-per-second: 5
     gust-damage-per-tick: 1.0
-    gust-freeze-seconds-required: 3
     burst-durability-cost: 25
     burst-damage: 4.5
     burst-min-durability: 25
@@ -618,8 +617,8 @@ item-lore:
     ice-fan:
       lore:
         - "<gray>Left-click: continuous cold gust</gray>"
-        - "<gray>Right-click: burst of cold wind</gray>"
-        - "<yellow>Both freeze enemies over time</yellow>"
+        - "<yellow>Each blast that hits freezes for 1.5s</yellow>"
+        - "<gray>Right-click: burst of cold wind + knockback</gray>"
     overdrive-potion:
       lore:
         - "<gray>Drink to become invincible</gray>"
