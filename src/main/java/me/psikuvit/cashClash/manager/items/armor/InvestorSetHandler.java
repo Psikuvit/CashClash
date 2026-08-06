@@ -77,7 +77,6 @@ public class InvestorSetHandler extends ArmorSetHandler {
         SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
         Messages.send(player, "armor.investor-reward", "reward", String.valueOf(reward));
 
-        Color lightGreen = Color.fromRGB(120, 255, 120);
         Location center = player.getLocation().clone().add(0, 0.6, 0);
         for (int i = 0; i < 18; i++) {
             int delay = i;
@@ -85,8 +84,8 @@ public class InvestorSetHandler extends ArmorSetHandler {
                 double angle = (Math.PI * 2 / 18) * delay;
                 double x = Math.cos(angle) * 0.55;
                 double z = Math.sin(angle) * 0.55;
-                ParticleUtils.spawnDust(center.clone().add(x, 0, z), lightGreen, 1.3f, 2);
-            }, (int) (delay * 0.8));
+                ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(0, 120, 40), 1.3f, 2, 0.05);
+            }, (long) (delay * 0.8));
         }
     }
 
