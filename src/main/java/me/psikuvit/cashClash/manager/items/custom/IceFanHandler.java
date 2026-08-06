@@ -45,9 +45,11 @@ public class IceFanHandler extends CustomItemHandler {
     private static final long GUST_HOLD_TIMEOUT_MS = 1500L;
     // Gust tick cadence - matches the original per-click cadence (~2/sec) this replaces
     private static final long GUST_TICK_INTERVAL = 10L;
-    // Each gust blast that connects grants 1.5s of freeze ticks directly, instead of building
-    // a hit streak toward a delayed full freeze.
+    // Each gust blast that connects stacks 1.5s of freeze ticks onto the target's current
+    // freeze (1.5s -> 3s -> 4.5s ...), capped at 6s total, instead of building a hit streak
+    // toward a delayed full freeze.
     private static final int GUST_HIT_FREEZE_TICKS = 30;
+    private static final int GUST_MAX_FREEZE_TICKS = 120;
 
     // Ice Fan - the continuous left-click gust's hold-state, and a transient flag suppressing
     // DamageListener's vanilla-melee cancellation for its own hits
@@ -128,7 +130,8 @@ public class IceFanHandler extends CustomItemHandler {
         Vector direction = origin.getDirection();
         for (Player target : findIceFanTargets(player, origin, direction, 3)) {
             dealIceFanDamage(player, target, cfg.getIceFanGustDamagePerTick());
-            target.setFreezeTicks(GUST_HIT_FREEZE_TICKS);
+            target.setFreezeTicks(Math.min(target.getFreezeTicks() + GUST_HIT_FREEZE_TICKS, GUST_MAX_FREEZE_TICKS));
+            ParticleUtils.blueFreezeHeart(target.getEyeLocation().add(0, 0.5, 0));
         }
 
         spawnGustParticles(player, origin, direction);

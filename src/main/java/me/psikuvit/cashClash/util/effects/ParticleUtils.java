@@ -322,6 +322,24 @@ public final class ParticleUtils {
     }
 
     /**
+     * Draws a small blue heart outline above a location - the "you're freezing" damage
+     * indicator used by Ice Fan's stacking freeze (mirrors the codebase's other custom
+     * parametric shapes, e.g. deathmaulerPermanentHeart, since vanilla's Particle.HEART can't
+     * be recolored).
+     */
+    public static void blueFreezeHeart(Location location) {
+        if (location == null || location.getWorld() == null) return;
+        Color blue = Color.fromRGB(80, 170, 255);
+        for (int i = 0; i < 20; i++) {
+            double t = (2 * Math.PI * i) / 20;
+            double hx = 16 * Math.pow(Math.sin(t), 3);
+            double hy = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            Location point = location.clone().add(hx * 0.025, hy * 0.025, 0);
+            spawnDust(point, blue, 1.0f, 1, 0);
+        }
+    }
+
+    /**
      * Spawn volcano explosion effect (for BlazeBite Volcano).
      */
     public static void volcanoExplosion(Location location) {
