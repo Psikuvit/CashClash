@@ -26,6 +26,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TectonicCapHandler extends ArmorSetHandler {
 
+    // Ring radii for both the falling-warning aura and the slam impact burst
+    private static final double INNER_RING_RADIUS = 2.0;
+    private static final double OUTER_RING_RADIUS = 4.0;
+
     private final Map<UUID, Long> tectonicCharge1Cooldown;
     private final Map<UUID, Long> tectonicCharge2Cooldown;
     private final Map<UUID, Long> nextFallWarningTick; // throttle for the falling warning aura
@@ -47,7 +51,8 @@ public class TectonicCapHandler extends ArmorSetHandler {
     /**
      * Falling warning aura: while airborne, falling far enough that a landing would deal
      * fall damage, and with at least one slam charge ready, ring the wearer's feet with an
-     * inner dark-brown ring and an outer light-brown ring to telegraph the impending slam.
+     * inner dark-brown ring (radius 2) and an outer light-brown ring (radius 4) to telegraph
+     * the impending slam.
      */
     public void handleFallWarning(Player player) {
         if (!hasTectonicCap(player)) return;
@@ -70,15 +75,15 @@ public class TectonicCapHandler extends ArmorSetHandler {
 
         for (int i = 0; i < 10; i++) {
             double angle = 2 * Math.PI * i / 10;
-            double x = Math.cos(angle) * 0.6;
-            double z = Math.sin(angle) * 0.6;
+            double x = Math.cos(angle) * INNER_RING_RADIUS;
+            double z = Math.sin(angle) * INNER_RING_RADIUS;
             ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(80, 45, 20), 1.0f, 1);
         }
 
         for (int i = 0; i < 16; i++) {
             double angle = 2 * Math.PI * i / 16;
-            double x = Math.cos(angle) * 1.1;
-            double z = Math.sin(angle) * 1.1;
+            double x = Math.cos(angle) * OUTER_RING_RADIUS;
+            double z = Math.sin(angle) * OUTER_RING_RADIUS;
             ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(180, 120, 60), 1.0f, 1);
         }
     }
@@ -106,8 +111,8 @@ public class TectonicCapHandler extends ArmorSetHandler {
         double radius = cfg.getTectonicCapRadius() + (fallDamage * 0.3);
         World world = player.getWorld();
 
-        ParticleUtils.spawnDust(impact, Color.fromRGB(180, 120, 60), 2.5f, 75, 1.1, 0.1, 1.1);
-        ParticleUtils.spawnDust(impact, Color.fromRGB(80, 45, 20), 2.5f, 60, 1.1, 0.1, 1.1);
+        ParticleUtils.spawnDust(impact, Color.fromRGB(180, 120, 60), 2.5f, 75, OUTER_RING_RADIUS, 0.1, OUTER_RING_RADIUS);
+        ParticleUtils.spawnDust(impact, Color.fromRGB(80, 45, 20), 2.5f, 60, INNER_RING_RADIUS, 0.1, INNER_RING_RADIUS);
 
         SoundUtils.playAt(impact, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.9f);
 
