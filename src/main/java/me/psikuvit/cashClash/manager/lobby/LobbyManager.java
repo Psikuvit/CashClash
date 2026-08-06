@@ -66,16 +66,29 @@ public class LobbyManager {
         ItemsConfig config = ItemsConfig.getInstance();
 
         // Stats item (slot from config, default 0)
-        int statsSlot = config.getLobbyStatsSlot();
-        player.getInventory().setItem(statsSlot, createStatsItem());
+        setLobbyItemSafely(player, config.getLobbyStatsSlot(), createStatsItem(), "stats");
 
         // Arena selector item (slot from config, default 4)
-        int arenaSlot = config.getLobbyArenaSelectorSlot();
-        player.getInventory().setItem(arenaSlot, createArenaSelectorItem());
+        setLobbyItemSafely(player, config.getLobbyArenaSelectorSlot(), createArenaSelectorItem(), "arena-selector");
 
         // Layout configurator item (slot from config, default 8)
-        int layoutSlot = config.getLobbyLayoutConfiguratorSlot();
-        player.getInventory().setItem(layoutSlot, createLayoutConfiguratorItem());
+        setLobbyItemSafely(player, config.getLobbyLayoutConfiguratorSlot(), createLayoutConfiguratorItem(), "layout-configurator");
+    }
+
+    /**
+     * Places a lobby item at its configured slot, guarding against an out-of-range value (e.g.
+     * a misconfigured items.yml) throwing ArrayIndexOutOfBoundsException and aborting the whole
+     * PlayerJoinEvent handler chain - previously a single bad slot here could break join setup
+     * entirely instead of just that one item.
+     */
+    private void setLobbyItemSafely(Player player, int slot, ItemStack item, String itemName) {
+        int size = player.getInventory().getSize();
+        if (slot < 0 || slot >= size) {
+            Messages.debug("SYSTEM", "Lobby item '" + itemName + "' has an invalid configured slot ("
+                    + slot + "), skipping - valid range is 0-" + (size - 1));
+            return;
+        }
+        player.getInventory().setItem(slot, item);
     }
 
     /**
