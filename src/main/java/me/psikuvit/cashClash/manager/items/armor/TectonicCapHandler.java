@@ -29,6 +29,9 @@ public class TectonicCapHandler extends ArmorSetHandler {
     // Ring radii for both the falling-warning aura and the slam impact burst
     private static final double INNER_RING_RADIUS = 2.0;
     private static final double OUTER_RING_RADIUS = 4.0;
+    // More points + smaller dust than a plain manual loop, for a denser/finer ring
+    private static final int INNER_RING_POINTS = 24;
+    private static final int OUTER_RING_POINTS = 40;
 
     private final Map<UUID, Long> tectonicCharge1Cooldown;
     private final Map<UUID, Long> tectonicCharge2Cooldown;
@@ -73,19 +76,8 @@ public class TectonicCapHandler extends ArmorSetHandler {
 
         Location center = player.getLocation().clone().add(0, 0.1, 0);
 
-        for (int i = 0; i < 10; i++) {
-            double angle = 2 * Math.PI * i / 10;
-            double x = Math.cos(angle) * INNER_RING_RADIUS;
-            double z = Math.sin(angle) * INNER_RING_RADIUS;
-            ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(80, 45, 20), 1.0f, 1);
-        }
-
-        for (int i = 0; i < 16; i++) {
-            double angle = 2 * Math.PI * i / 16;
-            double x = Math.cos(angle) * OUTER_RING_RADIUS;
-            double z = Math.sin(angle) * OUTER_RING_RADIUS;
-            ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(180, 120, 60), 1.0f, 1);
-        }
+        ParticleUtils.formingRing(center, INNER_RING_RADIUS, INNER_RING_POINTS, INNER_RING_POINTS, Color.fromRGB(80, 45, 20), 0.6f);
+        ParticleUtils.formingRing(center, OUTER_RING_RADIUS, OUTER_RING_POINTS, OUTER_RING_POINTS, Color.fromRGB(180, 120, 60), 0.6f);
     }
 
     public void onTectonicCapFall(EntityDamageEvent event, Player player) {
