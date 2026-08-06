@@ -945,10 +945,12 @@ public class RuneManager {
     }
 
     public static void playRuneDeactivation(Player player, EnchantEntry enchant) {
-        // Anchor to the player's position the same way activation does, so the book hovers at
-        // the same height for both instead of deactivation floating much lower near the ground.
+        // Anchor to the player's position the same way activation does, so the book hovers in
+        // the same area for both. Spawns 1 block lower than activation since this animation
+        // rises over its duration - starting at the same height would end up too high.
         double animationY = player.getLocation().getY();
-        ItemDisplay book = spawnRuneBook(player, animationY, BOOK_HOVER_HEIGHT);
+        double spawnHeight = BOOK_HOVER_HEIGHT - 1.0;
+        ItemDisplay book = spawnRuneBook(player, animationY, spawnHeight);
         final int duration = 32; // 1.6 seconds
 
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
@@ -966,7 +968,7 @@ public class RuneManager {
 
                 double progress = tick / (double) duration;
                 double eased = 1 - Math.pow(1 - progress, 3);
-                double height = BOOK_HOVER_HEIGHT + (eased * 0.7);
+                double height = spawnHeight + (eased * 0.7);
 
                 Location newLoc = playerLoc.clone()
                         .add(0, height, 0);
@@ -989,9 +991,9 @@ public class RuneManager {
                 if (tick >= duration) {
                     book.remove();
 
-                    // Small, condensed burst
+                    // Small, condensed burst, at the height the book actually rose to
                     Location center = player.getLocation().clone()
-                            .add(0, BOOK_HOVER_HEIGHT, 0);
+                            .add(0, spawnHeight + 0.7, 0);
 
                     Color runeColor = getRuneColor(enchant);
                     ParticleUtils.spawnDust(center, runeColor, 1.1f, 12, 0.25, 0.25, 0.25);
