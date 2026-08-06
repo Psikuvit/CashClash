@@ -72,12 +72,15 @@ public class TectonicCapHandler extends ArmorSetHandler {
 
         Long next = nextFallWarningTick.get(id);
         if (next != null && now < next) return;
-        nextFallWarningTick.put(id, now + 150L);
+        // Throttled a bit more than before (150ms -> 250ms) - the player is falling/moving
+        // between draws, so redrawing too often stacks up multiple rings at slightly different
+        // centers and reads as a messy smear rather than one clean ring.
+        nextFallWarningTick.put(id, now + 250L);
 
         Location center = player.getLocation().clone().add(0, 0.1, 0);
 
-        ParticleUtils.formingRing(center, INNER_RING_RADIUS, INNER_RING_POINTS, INNER_RING_POINTS, Color.fromRGB(80, 45, 20), 0.6f);
-        ParticleUtils.formingRing(center, OUTER_RING_RADIUS, OUTER_RING_POINTS, OUTER_RING_POINTS, Color.fromRGB(180, 120, 60), 0.6f);
+        ParticleUtils.formingRing(center, INNER_RING_RADIUS, INNER_RING_POINTS, INNER_RING_POINTS, Color.fromRGB(80, 45, 20), 0.25f);
+        ParticleUtils.formingRing(center, OUTER_RING_RADIUS, OUTER_RING_POINTS, OUTER_RING_POINTS, Color.fromRGB(180, 120, 60), 0.25f);
     }
 
     public void onTectonicCapFall(EntityDamageEvent event, Player player) {
