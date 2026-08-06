@@ -59,7 +59,9 @@ public class ShopService {
             return;
         }
 
-        if (item == CustomItem.TOTEM_OF_HAUNTING && isTotemOfHauntingCapReached(player)) {
+        // Regular totems and Totems of Haunting share one combined cap of 2 - buying either
+        // counts against both.
+        if ((item == UtilityItem.TOTEM || item == CustomItem.TOTEM_OF_HAUNTING) && isTotemCapReached(player)) {
             return;
         }
 
@@ -74,25 +76,27 @@ public class ShopService {
     private boolean isUtilityCapReached(Player player, UtilityItem utilityItem) {
         int max = switch (utilityItem) {
             case COBWEB -> 8;
-            case TOTEM -> 2;
             default -> -1;
         };
         if (max < 0) return false;
 
         if (countMaterial(player, utilityItem.getMaterial()) < max) return false;
 
-        Messages.send(player, utilityItem == UtilityItem.TOTEM ? "listener.max-totems-reached" : "listener.max-webs-reached");
+        Messages.send(player, "listener.max-webs-reached");
         SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         return true;
     }
 
     /**
-     * Totem of Haunting is capped at 2 owned at once, mirroring the utility-item cap pattern.
+     * Regular totems (Material.TOTEM_OF_UNDYING) and Totems of Haunting (Material.NETHER_STAR)
+     * share one combined cap of 2 owned at once - owning one counts against the other.
      */
-    private boolean isTotemOfHauntingCapReached(Player player) {
-        if (countMaterial(player, CustomItem.TOTEM_OF_HAUNTING.getMaterial()) < 2) return false;
+    private boolean isTotemCapReached(Player player) {
+        int combined = countMaterial(player, UtilityItem.TOTEM.getMaterial())
+                + countMaterial(player, CustomItem.TOTEM_OF_HAUNTING.getMaterial());
+        if (combined < 2) return false;
 
-        Messages.send(player, "listener.max-totem-of-haunting-reached");
+        Messages.send(player, "listener.max-totems-reached");
         SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         return true;
     }
