@@ -452,7 +452,7 @@ public class InteractListener implements Listener {
             case HUNTERS_MARK -> {
                 if (action.isRightClick()) {
                     event.setCancelled(true);
-                    customItemManager.getHandler(HuntersMarkHandler.class).startHunterMarkCharge(player, item);
+                    customItemManager.getHandler(HuntersMarkHandler.class).useHuntersMark(player, item);
                     return true;
                 }
             }
@@ -521,7 +521,7 @@ public class InteractListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onCustomItemConsumeCancel(PlayerItemConsumeEvent event) {
         CustomItem type = PDCDetection.getCustomItem(event.getItem());
-        if (type == CustomItem.RADIATING_LOTUS || type == CustomItem.HUNTERS_MARK) {
+        if (type == CustomItem.RADIATING_LOTUS) {
             event.setCancelled(true);
         }
     }

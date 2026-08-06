@@ -298,11 +298,9 @@ custom-items:
 
   # Hunter's Mark
   hunters-mark:
-    charge-seconds: 3
-    range: 2
+    range: 1
     duration-seconds: 8
     base-vulnerability-percent: 15
-    vulnerability-per-missing-heart: 2
 
   # Blooming Rose
   blooming-rose:
@@ -630,9 +628,8 @@ item-lore:
         - "<dark_gray>Cannot be used while holding the flag</dark_gray>"
     hunters-mark:
       lore:
-        - "<gray>Hold right-click to mark an enemy</gray>"
-        - "<gray>Stand within 2 blocks for 3s</gray>"
-        - "<yellow>Marked enemies take extra damage</yellow>"
+        - "<gray>Right-click an enemy within 1 block to mark them</gray>"
+        - "<yellow>Marked enemies take 15% more damage for 8s</yellow>"
     blooming-rose:
       lore:
         - "<gray>Right-click to plant a blooming sakura</gray>"

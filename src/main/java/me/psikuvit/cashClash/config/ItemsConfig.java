@@ -470,12 +470,8 @@ public class ItemsConfig {
     }
 
     // Hunter's Mark
-    public int getHuntersMarkChargeSeconds() {
-        return config.getInt("custom-items.hunters-mark.charge-seconds", 3);
-    }
-
     public double getHuntersMarkRange() {
-        return config.getDouble("custom-items.hunters-mark.range", 2);
+        return config.getDouble("custom-items.hunters-mark.range", 1);
     }
 
     public int getHuntersMarkDurationSeconds() {
@@ -484,10 +480,6 @@ public class ItemsConfig {
 
     public int getHuntersMarkBaseVulnerabilityPercent() {
         return config.getInt("custom-items.hunters-mark.base-vulnerability-percent", 15);
-    }
-
-    public int getHuntersMarkVulnerabilityPerMissingHeart() {
-        return config.getInt("custom-items.hunters-mark.vulnerability-per-missing-heart", 2);
     }
 
     // Blooming Rose

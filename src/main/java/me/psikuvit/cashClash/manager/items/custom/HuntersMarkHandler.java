@@ -3,15 +3,9 @@ package me.psikuvit.cashClash.manager.items.custom;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
-import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
-import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.items.PDCDetection;
-import org.bukkit.Bukkit;
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -22,7 +16,6 @@ import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
 import org.joml.Vector3f;
@@ -33,17 +26,14 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Hunter's Mark: hold right-click within range of an enemy to charge a mark that
- * makes them take bonus damage (base + 2% per missing heart, clamped by the
- * display). The mark is tracked by a rotating coal block over the target's head
- * plus a floating vulnerability % and self-tears down on expiry or death.
+ * Hunter's Mark: a single right-click within range of an enemy instantly marks them,
+ * making them take a flat 15% more damage for the mark's duration. The mark is tracked
+ * by a rotating coal block over the target's head plus a floating vulnerability % and
+ * self-tears down on expiry or death.
  */
 public class HuntersMarkHandler extends CustomItemHandler {
 
-    // Hunter's Mark - hold-to-charge state (per attacker) and active marks (per target). The
-    // target's damage-in multiplier is derived live from their missing hearts.
-    private final Map<UUID, Integer> hunterMarkChargeTicks;
-    private final Map<UUID, BukkitTask> hunterMarkChargeTasks;
+    // Hunter's Mark - active marks, keyed by target
     private final Map<UUID, HunterMarkInfo> hunterMarks;
     private final Map<UUID, Long> markedUntil;
 
@@ -56,63 +46,20 @@ public class HuntersMarkHandler extends CustomItemHandler {
 
     public HuntersMarkHandler(CustomItemManager manager) {
         super(manager);
-        this.hunterMarkChargeTicks = new HashMap<>();
-        this.hunterMarkChargeTasks = new HashMap<>();
         this.hunterMarks = new HashMap<>();
         this.markedUntil = new HashMap<>();
     }
 
     /**
-     * Starts the "hold right-click within range of an enemy" charge. The item is food-eligible so
-     * right-click raises the hand (see GameplayItemFactory), letting us poll isHandRaised() every
-     * tick like Radiating Lotus - release before the timer completes, or an out-of-range/no-target
-     * tick, cancels the charge.
+     * Right-click within range of an enemy instantly applies Hunter's Mark - no charge-up.
      */
-    public void startHunterMarkCharge(Player player, ItemStack item) {
-        UUID uuid = player.getUniqueId();
-        if (hunterMarkChargeTasks.containsKey(uuid)) return; // already charging
-
-        hunterMarkChargeTicks.put(uuid, 0);
-        int requiredTicks = cfg.getHuntersMarkChargeSeconds() * 20;
-
-        BukkitTask task = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
-            @Override
-            public void run() {
-                Integer ticks = hunterMarkChargeTicks.get(uuid);
-                boolean stillCharging = ticks != null && player.isOnline() && player.isHandRaised()
-                        && PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.HUNTERS_MARK;
-
-                if (!stillCharging) {
-                    cancelHunterMarkCharge(uuid);
-                    cancel();
-                    return;
-                }
-
-                Player target = findNearestMarkTarget(player, cfg.getHuntersMarkRange());
-                if (target == null) {
-                    cancelHunterMarkCharge(uuid);
-                    cancel();
-                    Messages.send(player, "customitem.hunters-mark-no-target");
-                    return;
-                }
-
-                int next = ticks + 1;
-                hunterMarkChargeTicks.put(uuid, next);
-                ParticleUtils.spawnDust(target.getLocation().add(0, 1, 0), Color.fromRGB(230, 40, 40), 0.8f, 3, 0.2);
-
-                if (next >= requiredTicks) {
-                    applyHunterMark(player, target, item);
-                    cancelHunterMarkCharge(uuid);
-                    cancel();
-                }
-            }
-        }, 0L, 1L);
-        hunterMarkChargeTasks.put(uuid, task);
-    }
-
-    private void cancelHunterMarkCharge(UUID uuid) {
-        hunterMarkChargeTicks.remove(uuid);
-        hunterMarkChargeTasks.remove(uuid);
+    public void useHuntersMark(Player player, ItemStack item) {
+        Player target = findNearestMarkTarget(player, cfg.getHuntersMarkRange());
+        if (target == null) {
+            Messages.send(player, "customitem.hunters-mark-no-target");
+            return;
+        }
+        applyHunterMark(player, target, item);
     }
 
     private void applyHunterMark(Player hunter, Player target, ItemStack item) {
@@ -146,9 +93,8 @@ public class HuntersMarkHandler extends CustomItemHandler {
     }
 
     /**
-     * @return damage-in multiplier for the target: 1.0 when not marked, otherwise 1 + the live
-     * vulnerability % (base + 2% per missing heart), clamped so a dead-health target can't exceed
-     * the display's cap.
+     * @return damage-in multiplier for the target: 1.0 when not marked, otherwise 1 + the flat
+     * mark vulnerability %.
      */
     public double getVulnerabilityMultiplier(UUID targetUuid) {
         Long until = markedUntil.get(targetUuid);
@@ -156,9 +102,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
             markedUntil.remove(targetUuid);
             return 1.0;
         }
-        Player target = Bukkit.getPlayer(targetUuid);
-        if (target == null) return 1.0;
-        return 1.0 + hunterMarkPercent(target) / 100.0;
+        return 1.0 + hunterMarkPercent() / 100.0;
     }
 
     private void spawnHunterMarkDisplay(Player target, long durationMillis) {
@@ -178,6 +122,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
             display.setBillboard(Display.Billboard.CENTER);
             display.setSeeThrough(true);
             display.setShadowed(false);
+            display.text(Messages.parse("<red><bold>+" + hunterMarkPercent() + "%</bold></red>"));
         });
 
         UUID targetUuid = target.getUniqueId();
@@ -190,17 +135,13 @@ public class HuntersMarkHandler extends CustomItemHandler {
             coalDisplay.teleport(eye.clone().add(0, 0.25, 0));
             coalDisplay.setRotation(coalDisplay.getYaw() + 12f, 0f);
             textDisplay.teleport(eye.clone().add(0, 0.7, 0));
-            textDisplay.text(Messages.parse("<red><bold>+" + hunterMarkPercent(target) + "%</bold></red>"));
         }, 0L, 1L);
 
         hunterMarks.put(targetUuid, new HunterMarkInfo(task, targetUuid, coalDisplay, textDisplay, expiresAt));
     }
 
-    private int hunterMarkPercent(Player target) {
-        double maxHealth = getMaxHealth(target);
-        double missingHearts = Math.max(0, (maxHealth - target.getHealth()) / 2.0);
-        return cfg.getHuntersMarkBaseVulnerabilityPercent()
-                + (int) Math.round(missingHearts * cfg.getHuntersMarkVulnerabilityPerMissingHeart());
+    private int hunterMarkPercent() {
+        return cfg.getHuntersMarkBaseVulnerabilityPercent();
     }
 
     private Player findNearestMarkTarget(Player player, double range) {
@@ -226,10 +167,6 @@ public class HuntersMarkHandler extends CustomItemHandler {
 
     @Override
     public void cleanup() {
-        hunterMarkChargeTasks.values().forEach(BukkitTask::cancel);
-        hunterMarkChargeTasks.clear();
-        hunterMarkChargeTicks.clear();
-
         new ArrayList<>(hunterMarks.keySet()).forEach(this::clearHunterMark);
         hunterMarks.clear();
         markedUntil.clear();
