@@ -14,6 +14,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -162,14 +163,26 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
     /**
      * Draws a red ring on the ground at the zone's healing radius so players can see its bounds -
-     * always fully formed (same ParticleUtils.formingRing helper Boombox uses for its radius
-     * ring), just redrawn often enough that it never visibly fades between draws.
+     * a direct point-by-point loop (not routed through the shared ring helpers) redrawn often
+     * enough that it never visibly fades between draws, with a generous size/count per point so
+     * it's unmistakable even against grass/terrain.
      */
     private void spawnRoseRadiusRing(Location center, Color color) {
         double radius = cfg.getBloomingRoseZoneRadius();
-        int points = 40;
-        Location ringCenter = center.clone().add(0.5, 0.1, 0.5);
-        ParticleUtils.formingRing(ringCenter, radius, points, points, color, 1.0f);
+        World world = center.getWorld();
+        if (world == null) return;
+
+        int points = 48;
+        double x0 = center.getX() + 0.5;
+        double z0 = center.getZ() + 0.5;
+        double y = center.getY() + 0.15;
+
+        for (int i = 0; i < points; i++) {
+            double angle = 2 * Math.PI * i / points;
+            double x = x0 + radius * Math.cos(angle);
+            double z = z0 + radius * Math.sin(angle);
+            world.spawnParticle(Particle.DUST, x, y, z, 2, 0.03, 0.03, 0.03, 0, new Particle.DustOptions(color, 1.4f));
+        }
     }
 
     /**
