@@ -129,6 +129,9 @@ public class BloomingRoseHandler extends CustomItemHandler {
     private BukkitTask startRoseZoneTask(Location center, Map<Block, BlockData> originalBlocks, long expiresAt,
                                          GameSession session, int teamNumber) {
         return SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+
+            private int tick;
+
             @Override
             public void run() {
                 if (System.currentTimeMillis() >= expiresAt) {
@@ -136,31 +139,37 @@ public class BloomingRoseHandler extends CustomItemHandler {
                     cancel();
                     return;
                 }
-                Color red = Color.fromRGB(220, 20, 20);
-                for (Block block : originalBlocks.keySet()) {
-                    if (block.getType() == Material.CHERRY_LEAVES) {
-                        ParticleUtils.spawnDust(block.getLocation().add(0.5, 0.5, 0.5),
-                                red, 0.6f, 1, 0.15);
+                tick++;
+
+                // Redrawn every 5 ticks (vs. leaf particles/heal below, which stay on the
+                // original 1s cadence) so the ring reads as continuously present instead of
+                // flashing fully in then fading out once a second.
+                spawnRoseRadiusRing(center, Color.fromRGB(220, 20, 20));
+
+                if (tick % 20 == 0) {
+                    Color red = Color.fromRGB(220, 20, 20);
+                    for (Block block : originalBlocks.keySet()) {
+                        if (block.getType() == Material.CHERRY_LEAVES) {
+                            ParticleUtils.spawnDust(block.getLocation().add(0.5, 0.5, 0.5),
+                                    red, 0.6f, 1, 0.15);
+                        }
                     }
+                    healRoseMembersToFloor(center, session, teamNumber);
                 }
-                spawnRoseRadiusRing(center, red);
-                healRoseMembersToFloor(center, session, teamNumber);
             }
-        }, 20L, 20L);
+        }, 20L, 5L);
     }
 
     /**
-     * Draws a red ring on the ground at the zone's healing radius so players can see its bounds.
+     * Draws a red ring on the ground at the zone's healing radius so players can see its bounds -
+     * always fully formed (same ParticleUtils.formingRing helper Boombox uses for its radius
+     * ring), just redrawn often enough that it never visibly fades between draws.
      */
     private void spawnRoseRadiusRing(Location center, Color color) {
         double radius = cfg.getBloomingRoseZoneRadius();
         int points = 40;
-        for (int i = 0; i < points; i++) {
-            double angle = 2 * Math.PI * i / points;
-            double x = center.getX() + 0.5 + radius * Math.cos(angle);
-            double z = center.getZ() + 0.5 + radius * Math.sin(angle);
-            ParticleUtils.spawnDust(new Location(center.getWorld(), x, center.getY() + 0.1, z), color, 1.0f, 1);
-        }
+        Location ringCenter = center.clone().add(0.5, 0.1, 0.5);
+        ParticleUtils.formingRing(ringCenter, radius, points, points, color, 1.0f);
     }
 
     /**
