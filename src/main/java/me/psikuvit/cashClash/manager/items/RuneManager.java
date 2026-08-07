@@ -168,13 +168,21 @@ public class RuneManager {
             return false;
         }
 
+        boolean armorEnchant = isArmorEnchant(enchantEntry);
+
         if (isRuneActive(rune)) {
-            ItemStack linkedItem = getLinkedItem(player, rune);
             setRuneActive(rune, false);
             setRuneOffTime(rune);
-            if (linkedItem != null) {
-                removeRune(player, linkedItem, rune);
-                persistLinkedItem(player, linkedItem);
+            if (armorEnchant) {
+                // Protection/Projectile Protection enchant the whole worn armor set, not a
+                // single linked piece - remove from every equipped piece that has it.
+                removeArmorRuneFromAllWorn(player, rune);
+            } else {
+                ItemStack linkedItem = getLinkedItem(player, rune);
+                if (linkedItem != null) {
+                    removeRune(player, linkedItem, rune);
+                    persistLinkedItem(player, linkedItem);
+                }
             }
             player.getInventory().setItemInMainHand(rune);
 
@@ -199,22 +207,33 @@ public class RuneManager {
             return false;
         }
 
-        ItemStack target = getLinkedItem(player, rune);
-        if (target == null) {
-            // Not linked yet - auto-link to the first applicable item instead of failing
-            target = findFirstApplicableItem(player, rune);
-            if (target == null) {
+        if (armorEnchant) {
+            // Protection/Projectile Protection enchant every currently equipped armor piece
+            // they can apply to, not a single linked piece like every other rune.
+            int applied = applyArmorRuneToAllWorn(player, rune);
+            if (applied == 0) {
                 Messages.send(player, "rune.no-valid-item");
                 SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
                 return false;
             }
-            setRuneLink(rune, target);
+        } else {
+            ItemStack target = getLinkedItem(player, rune);
+            if (target == null) {
+                // Not linked yet - auto-link to the first applicable item instead of failing
+                target = findFirstApplicableItem(player, rune);
+                if (target == null) {
+                    Messages.send(player, "rune.no-valid-item");
+                    SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                    return false;
+                }
+                setRuneLink(rune, target);
+            }
+
+            applyRune(player, target, rune);
+            persistLinkedItem(player, target);
         }
 
-        applyRune(player, target, rune);
         setRuneActive(rune, true);
-        persistLinkedItem(player, target);
-
         player.getInventory().setItemInMainHand(rune);
 
         CooldownManager.getInstance().setCooldownSeconds(
@@ -343,10 +362,9 @@ public class RuneManager {
     }
 
     /**
-     * Applies the rune's enchant to its linked target - a specific item, which may be an
-     * equipped armor piece for PROTECTION/PROJECTILE_PROTECTION runes. Armor runes are no
-     * longer a special case: they apply to (and only to) their own linked piece, exactly like
-     * weapon runes, instead of every currently-equipped armor piece. Caller is responsible for
+     * Applies the rune's enchant to its linked target - a specific, single item. Used for every
+     * rune type except PROTECTION/PROJECTILE_PROTECTION, which enchant the player's whole worn
+     * armor set instead (see {@link #applyArmorRuneToAllWorn}). Caller is responsible for
      * persisting the mutated target back via {@link #persistLinkedItem}.
      */
     public static void applyRune(Player player, ItemStack target, ItemStack rune) {
@@ -386,6 +404,81 @@ public class RuneManager {
         if (meta == null) return;
         meta.removeEnchant(enchantEntry.getEnchantment());
         target.setItemMeta(meta);
+    }
+
+    /**
+     * PROTECTION/PROJECTILE_PROTECTION apply to the player's whole worn armor set rather than a
+     * single linked piece (manual linking of these two types is refused entirely - see
+     * GameListener's rune-link handling). Applies the rune's enchant to every currently equipped
+     * armor piece it's eligible for and writes the armor slots back. Returns how many pieces
+     * were enchanted, so the caller can fail the toggle if the player isn't wearing any eligible
+     * armor at all.
+     */
+    public static int applyArmorRuneToAllWorn(Player player, ItemStack rune) {
+        if (player == null || rune == null) return 0;
+
+        EnchantEntry enchantEntry = PDCDetection.getRune(rune);
+        if (enchantEntry == null) return 0;
+
+        Integer level = rune.getItemMeta()
+                .getPersistentDataContainer()
+                .get(Keys.RUNE_LEVEL, PersistentDataType.INTEGER);
+        if (level == null) return 0;
+
+        PlayerInventory inv = player.getInventory();
+        ItemStack[] armor = inv.getArmorContents();
+        int applied = 0;
+
+        for (int i = 0; i < armor.length; i++) {
+            ItemStack piece = armor[i];
+            if (piece == null || piece.getType().isAir()) continue;
+            if (!enchantEntry.canApplyTo(piece)) continue;
+
+            ItemMeta meta = piece.getItemMeta();
+            if (meta == null) continue;
+
+            meta.addEnchant(enchantEntry.getEnchantment(), level, true);
+            piece.setItemMeta(meta);
+            armor[i] = piece;
+            applied++;
+        }
+
+        if (applied > 0) {
+            inv.setArmorContents(armor);
+        }
+        return applied;
+    }
+
+    /**
+     * Counterpart to {@link #applyArmorRuneToAllWorn} - strips the rune's enchant from every
+     * currently equipped armor piece that has it.
+     */
+    public static void removeArmorRuneFromAllWorn(Player player, ItemStack rune) {
+        if (player == null || rune == null) return;
+
+        EnchantEntry enchantEntry = PDCDetection.getRune(rune);
+        if (enchantEntry == null) return;
+
+        PlayerInventory inv = player.getInventory();
+        ItemStack[] armor = inv.getArmorContents();
+        boolean modified = false;
+
+        for (int i = 0; i < armor.length; i++) {
+            ItemStack piece = armor[i];
+            if (piece == null || piece.getType().isAir()) continue;
+
+            ItemMeta meta = piece.getItemMeta();
+            if (meta == null || !meta.hasEnchant(enchantEntry.getEnchantment())) continue;
+
+            meta.removeEnchant(enchantEntry.getEnchantment());
+            piece.setItemMeta(meta);
+            armor[i] = piece;
+            modified = true;
+        }
+
+        if (modified) {
+            inv.setArmorContents(armor);
+        }
     }
 
     public static int getActiveRuneCount(Player player) {
