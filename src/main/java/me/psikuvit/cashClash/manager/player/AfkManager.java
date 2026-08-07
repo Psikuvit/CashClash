@@ -68,8 +68,8 @@ public class AfkManager {
             long idleMs = now - last;
             if (idleMs >= timeoutMs) {
                 Messages.send(player, "lobby-messages.afk-kick");
-                player.kickPlayer(Messages.parseToLegacy(Messages.parse(
-                        MessagesConfig.getInstance().getRaw("lobby-messages.afk-kick-reason"))));
+                player.kick(Messages.parse(
+                        MessagesConfig.getInstance().getRaw("lobby-messages.afk-kick-reason")));
                 remove(uuid);
             } else if (warningSeconds > 0 && idleMs >= timeoutMs - warningSeconds * 1000L && !warned.contains(uuid)) {
                 warned.add(uuid);

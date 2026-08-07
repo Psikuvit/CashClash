@@ -51,9 +51,11 @@ public class BloomingRoseHandler extends CustomItemHandler {
      * @param originalBlocks every block the structure occupies (log + leaves), mapped to what was
      *                      there before placement so it can be restored, not just cleared to air
      * @param task          the zone upkeep task (drift particles + floor heal + expiry)
+     * @param ringTask      the infinite boundary-ring redraw task - has no expiry check of its
+     *                      own, so it must be cancelled here rather than left to stop itself
      */
     private record BloomingRoseZone(GameSession session, int teamNumber, Location center, long expiresAt,
-                                    Map<Block, BlockData> originalBlocks, BukkitTask task) {}
+                                    Map<Block, BlockData> originalBlocks, BukkitTask task, BukkitTask ringTask) {}
 
     public BloomingRoseHandler(CustomItemManager manager) {
         super(manager);
@@ -74,12 +76,12 @@ public class BloomingRoseHandler extends CustomItemHandler {
         Location center = origin.getLocation();
         long expiresAt = System.currentTimeMillis() + cfg.getBloomingRoseZoneDurationSeconds() * 1000L;
         BukkitTask upkeepTask = startRoseZoneTask(center, originalBlocks, expiresAt, session, team.getTeamNumber());
-        bloomingRoseZones.put(center, new BloomingRoseZone(session, team.getTeamNumber(), center, expiresAt, originalBlocks, upkeepTask));
+        BukkitTask ringTask = spawnRoseFormationVisual(center);
+        bloomingRoseZones.put(center, new BloomingRoseZone(session, team.getTeamNumber(), center, expiresAt, originalBlocks, upkeepTask, ringTask));
 
         Messages.send(player, "customitem.blooming-rose-placed");
         SoundUtils.playAt(center, Sound.BLOCK_CHERRY_WOOD_PLACE, 1.0f, 1.0f);
 
-        spawnRoseFormationVisual(center);
         startBloomingRoseHpRevealLoop();
     }
 
@@ -92,7 +94,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
     private void buildRoseStructure(Block origin, Map<Block, BlockData> originalBlocks) {
         World world = origin.getWorld();
         int baseX = origin.getX();
-        int baseY = origin.getY();
+        int baseY = origin.getY() + 1;
         int baseZ = origin.getZ();
 
         for (int i = 0; i < 6; i++) {
@@ -141,11 +143,6 @@ public class BloomingRoseHandler extends CustomItemHandler {
                     return;
                 }
                 tick++;
-
-                // Redrawn every 5 ticks (vs. leaf particles/heal below, which stay on a 1s
-                // cadence) so the ring reads as continuously present instead of flashing fully
-                // in then fading out once a second.
-                spawnRoseRadiusRing(center, Color.fromRGB(220, 20, 20));
 
                 // tick increments once per call, and this task runs every 5 ticks - so "once per
                 // second" is every 4 calls (4 * 5 ticks = 20 ticks = 1s), not every 20 calls
@@ -218,6 +215,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
         if (zone == null) return;
 
         if (zone.task() != null) zone.task().cancel();
+        if (zone.ringTask() != null) zone.ringTask().cancel();
         for (Map.Entry<Block, BlockData> entry : zone.originalBlocks().entrySet()) {
             Block block = entry.getKey();
             if (block.getType() == Material.CHERRY_LOG || block.getType() == Material.CHERRY_LEAVES) {
@@ -285,9 +283,11 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
     /**
      * Sakura formation visual: a red formingRing (zone radius) that draws in while two figure-eight
-     * cursors converge from opposite ends around the trunk.
+     * cursors converge from opposite ends around the trunk. Also starts the boundary ring's
+     * continuous redraw loop, which - unlike the two animations above - never stops on its own,
+     * so its task is returned for the caller to track and cancel when the zone is destroyed.
      */
-    private void spawnRoseFormationVisual(Location center) {
+    private BukkitTask spawnRoseFormationVisual(Location center) {
         double radius = cfg.getBloomingRoseZoneRadius();
         Color pink = Color.fromRGB(255, 150, 190);
 
@@ -321,6 +321,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
                 ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig, true);
             }
         }, 0L, 1L);
+        return SchedulerUtils.runTaskTimer(() -> spawnRoseRadiusRing(center, Color.fromRGB(220, 20, 20)), 0L, 1);
     }
 
     /**
@@ -357,6 +358,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
     public void cleanup() {
         bloomingRoseZones.values().forEach(zone -> {
             if (zone.task() != null) zone.task().cancel();
+            if (zone.ringTask() != null) zone.ringTask().cancel();
             for (Map.Entry<Block, BlockData> entry : zone.originalBlocks().entrySet()) {
                 Block block = entry.getKey();
                 if (block.getType() == Material.CHERRY_LOG || block.getType() == Material.CHERRY_LEAVES) {

@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.manager.items.armor;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.Messages;
@@ -41,7 +42,7 @@ public class InvestorSetHandler extends ArmorSetHandler {
     public double getMeleeDamageMultiplier(Player player) {
         int pieces = countInvestorsPieces(player);
         if (pieces <= 0) return 1.0;
-        return 1.0 - (cfg.getInvestorMeleeDamageBonusPerPiece() * pieces);
+        return 1.0 - (cfg.getInvestorMeleeDamageBonusPerPiece() * pieces) * GameManager.getInstance().getPlayerSession(player).getCurrentRound();
     }
 
     /**
