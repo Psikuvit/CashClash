@@ -574,6 +574,11 @@ public class ItemsConfig {
         return config.getDouble("custom-armor.tectonic-cap.radius", 4.0);
     }
 
+    // Investor's Set
+    public double getInvestorMeleeDamageBonusPerPiece() {
+        return config.getDouble("custom-armor.investors.melee-damage-bonus-per-piece", 0.05);
+    }
+
     // Dragon Set
     public int getDragonHitsForScale() {
         return config.getInt("custom-armor.dragon.hits-for-scale", 5);
