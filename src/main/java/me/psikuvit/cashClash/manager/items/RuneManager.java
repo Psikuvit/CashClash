@@ -317,9 +317,10 @@ public class RuneManager {
 
     /**
      * Writes a modified item back to wherever it currently sits - a main inventory slot, an
-     * equipped armor slot, or the off-hand - by matching its ITEM_UUID tag. Needed because a
-     * rune's linked item can be any of those (armor runes link to equipped armor), and
-     * getArmorContents()/off-hand mutations don't persist without an explicit write-back.
+     * equipped armor slot, the off-hand, or the cursor - by matching its ITEM_UUID tag. Needed
+     * because a rune's linked item can be any of those (armor runes link to equipped armor, and
+     * unequipping one via an armor-slot click puts the old piece on the cursor), and
+     * getArmorContents()/off-hand/cursor mutations don't persist without an explicit write-back.
      */
     public static void persistLinkedItem(Player player, ItemStack item) {
         if (player == null || item == null) return;
@@ -343,6 +344,8 @@ public class RuneManager {
             inv.setBoots(item);
         } else if (uuid.equals(getItemUUID(inv.getItemInOffHand()))) {
             inv.setItemInOffHand(item);
+        } else if (uuid.equals(getItemUUID(player.getItemOnCursor()))) {
+            player.setItemOnCursor(item);
         }
     }
 
@@ -434,6 +437,11 @@ public class RuneManager {
             if (piece == null || piece.getType().isAir()) continue;
             if (!enchantEntry.canApplyTo(piece)) continue;
 
+            // Tag it now, while we know it's the piece being enchanted - lets a later unequip
+            // find it again (by UUID, wherever it lands) to strip the enchant back off, see
+            // syncArmorRuneOnEquipChange.
+            ensureItemUUID(piece);
+
             ItemMeta meta = piece.getItemMeta();
             if (meta == null) continue;
 
@@ -478,6 +486,48 @@ public class RuneManager {
 
         if (modified) {
             inv.setArmorContents(armor);
+        }
+    }
+
+    /**
+     * Keeps active PROTECTION/PROJECTILE_PROTECTION runes strictly tied to whatever is
+     * currently worn, live - called on every armor slot change regardless of cause (manual
+     * swap, shift-click, hotbar equip, dispenser, plugin call). The piece that just left a slot
+     * loses any active armor rune's enchant, wherever it landed; the piece that's now worn
+     * gains it if an armor rune is active and it's an eligible material. No-ops entirely if
+     * neither armor rune is active.
+     */
+    public static void syncArmorRuneOnEquipChange(Player player, ItemStack oldItem, ItemStack newItem) {
+        if (player == null) return;
+
+        ItemStack protectionRune = getActiveRune(player, EnchantEntry.PROTECTION);
+        ItemStack projectileRune = getActiveRune(player, EnchantEntry.PROJECTILE_PROTECTION);
+        if (protectionRune == null && projectileRune == null) return;
+
+        if (oldItem != null && !oldItem.getType().isAir()) {
+            ItemMeta meta = oldItem.getItemMeta();
+            if (meta != null) {
+                boolean changed = false;
+                if (protectionRune != null && meta.hasEnchant(EnchantEntry.PROTECTION.getEnchantment())) {
+                    meta.removeEnchant(EnchantEntry.PROTECTION.getEnchantment());
+                    changed = true;
+                }
+                if (projectileRune != null && meta.hasEnchant(EnchantEntry.PROJECTILE_PROTECTION.getEnchantment())) {
+                    meta.removeEnchant(EnchantEntry.PROJECTILE_PROTECTION.getEnchantment());
+                    changed = true;
+                }
+                if (changed) {
+                    oldItem.setItemMeta(meta);
+                    persistLinkedItem(player, oldItem);
+                }
+            }
+        }
+
+        // Re-running the "apply to everything currently worn" pass covers the newly-equipped
+        // piece too, since it's now part of that set - no separate single-item apply needed.
+        if (newItem != null && !newItem.getType().isAir()) {
+            if (protectionRune != null) applyArmorRuneToAllWorn(player, protectionRune);
+            if (projectileRune != null) applyArmorRuneToAllWorn(player, projectileRune);
         }
     }
 
