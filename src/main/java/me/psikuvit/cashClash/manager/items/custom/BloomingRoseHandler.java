@@ -171,20 +171,9 @@ public class BloomingRoseHandler extends CustomItemHandler {
      */
     private void spawnRoseRadiusRing(Location center, Color color) {
         double radius = cfg.getBloomingRoseZoneRadius();
-        World world = center.getWorld();
-        if (world == null) return;
-
         int points = 48;
-        double x0 = center.getX() + 0.5;
-        double z0 = center.getZ() + 0.5;
-        double y = center.getY() + 0.15;
 
-        for (int i = 0; i < points; i++) {
-            double angle = 2 * Math.PI * i / points;
-            double x = x0 + radius * Math.cos(angle);
-            double z = z0 + radius * Math.sin(angle);
-            world.spawnParticle(Particle.DUST, x, y, z, 2, 0.03, 0.03, 0.03, 0, new Particle.DustOptions(color, 1.4f));
-        }
+        ParticleUtils.circle(center, radius, points, 1, color, 1.0f);
     }
 
     /**
@@ -298,27 +287,33 @@ public class BloomingRoseHandler extends CustomItemHandler {
             public void run() {
                 formed += 6;
                 if (formed >= 90) {
-                    ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, 90, pink, 0.12f);
+                    ParticleUtils.formingRing(center.clone().add(0, 1, 0), radius, 90, 90, pink, 0.12f);
                     cancel();
                     return;
                 }
-                ParticleUtils.formingRing(center.clone().add(0, 0.5, 0), radius, 90, formed, pink, 0.12f);
+                ParticleUtils.formingRing(center.clone().add(0, 1, 0), radius, 90, formed, pink, 0.12f);
             }
         }, 0L, 1L);
+        Location figureEightCenter = center.clone().add(0.5, 1, 0.5); // +0.5 X/Z: block-center, not corner
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
-            private int fig;
+            // Reveal progress is time-based (tick / FIGURE_EIGHT_DURATION_TICKS) rather than a
+            // fixed points-per-call increment, so the whole draw-in reliably takes 5s regardless
+            // of the point count below.
+            private static final int FIGURE_EIGHT_DURATION_TICKS = 100; // 5s
+            private int tick;
 
             @Override
             public void run() {
-                fig += 4;
-                if (fig >= 60) {
-                    ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, 60, false);
-                    ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, 60, true);
+                tick++;
+                int formed = (int) Math.ceil(60.0 * tick / FIGURE_EIGHT_DURATION_TICKS);
+                if (formed >= 60) {
+                    ParticleUtils.figureEight(figureEightCenter, radius * 0.4, pink, 60, 60, false);
+                    ParticleUtils.figureEight(figureEightCenter, radius * 0.4, pink, 60, 60, true);
                     cancel();
                     return;
                 }
-                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig, false);
-                ParticleUtils.figureEight(center.clone().add(0, 0.5, 0), radius * 0.4, pink, 60, fig, true);
+                ParticleUtils.figureEight(figureEightCenter, radius * 0.4, pink, 60, formed, false);
+                ParticleUtils.figureEight(figureEightCenter, radius * 0.4, pink, 60, formed, true);
             }
         }, 0L, 1L);
         return SchedulerUtils.runTaskTimer(() -> spawnRoseRadiusRing(center, Color.fromRGB(220, 20, 20)), 0L, 1);
