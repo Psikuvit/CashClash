@@ -459,7 +459,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
             }
 
             if (removedAny) {
-                ParticleUtils.verticalBeam(member.getLocation(), beamColor, 2.0, 4, 0.3f, 3);
+                ParticleUtils.verticalBeam(member.getLocation(), beamColor, 5.0, 4, 0.3f, 3);
                 SoundUtils.playAt(member.getLocation(), sound, 1.0f, 1.2f);
                 Messages.send(member, messageKey);
             }
@@ -573,6 +573,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ALCHEMIST_TAUNT, cfg.getAlchemistTauntCooldown());
         Messages.debug(wielder, "ALCHEMIST_WAND: Taunt activated with " + chained.size() + " chained players");
         Messages.send(wielder, "mythic.alchemist-taunt-activated");
+        SoundUtils.play(wielder, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.8f);
     }
 
     private List<Player> alchemistTauntCandidates(Player wielder, GameSession session) {
@@ -668,7 +669,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
                     return;
                 }
                 if (!wielder.isOnline() || System.currentTimeMillis() >= taunt.expiresAt()) {
-                    endAlchemistTaunt(wielder);
+                    endAlchemistTaunt(wielder, true);
                     cancel();
                     return;
                 }
@@ -729,9 +730,11 @@ public class AlchemistWandHandler extends MythicItemHandler {
     /**
      * Tears down an active (or expired) Taunt: cancels its tick task, unleashes and removes
      * every edge's anchor, and drops every redirect entry pointing at this wielder. Safe to
-     * call for a player who never had one active.
+     * call for a player who never had one active. {@code natural} distinguishes the 7s timer
+     * genuinely running out (plays a deactivation sound + message) from a forced end via
+     * cleanupPlayer/cleanup (death, disconnect, plugin shutdown - no feedback needed).
      */
-    private void endAlchemistTaunt(Player wielder) {
+    private void endAlchemistTaunt(Player wielder, boolean natural) {
         UUID uuid = wielder.getUniqueId();
         TauntSession taunt = alchemistTaunts.remove(uuid);
         if (taunt == null) return;
@@ -742,6 +745,11 @@ public class AlchemistWandHandler extends MythicItemHandler {
         }
 
         alchemistTauntRedirect.values().removeIf(wielderUuid -> wielderUuid.equals(uuid));
+
+        if (natural && wielder.isOnline()) {
+            Messages.send(wielder, "mythic.alchemist-taunt-ended");
+            SoundUtils.play(wielder, Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 0.8f);
+        }
     }
 
     /**
@@ -830,7 +838,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
             removeAlchemistTidyUpBottlesFor(perTarget, uuid);
         }
 
-        endAlchemistTaunt(player);
+        endAlchemistTaunt(player, false);
         alchemistTauntRedirect.remove(uuid);
     }
 }

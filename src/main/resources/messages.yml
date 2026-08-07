@@ -477,6 +477,7 @@ messages:
      target-frozen: "<aqua>Target frozen solid!</aqua>"
      you-are-frozen: "<aqua>You are frozen in place!</aqua>"
      alchemist-taunt-activated: "<gold>Alchemist Wand: TAUNT! Teammates chained together.</gold>"
+     alchemist-taunt-ended: "<gray>Alchemist Wand: Taunt has ended.</gray>"
      alchemist-tidy-up-activated: "<aqua>Alchemist Wand: TIDY UP! Your next melee hit will cleanse or strip effects.</aqua>"
      alchemist-tidy-up-lost: "<gray>Alchemist Wand: Tidy Up faded - you didn't land a hit in time.</gray>"
      alchemist-tidy-up-cleansed: "<white>Your negative effects were cleansed by an Alchemist Wand!</white>"
