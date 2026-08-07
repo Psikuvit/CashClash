@@ -167,6 +167,24 @@ public class InteractListener implements Listener {
         customItemManager.getHandler(IceFanHandler.class).onIceFanSwing(player);
     }
 
+    // ==================== ALCHEMIST WAND TIDY UP ====================
+
+    /**
+     * Left-click activation for Alchemist Wand's Tidy Up ability - mirrors onIceFanSwing's
+     * PlayerAnimationEvent trigger since mythic item right-clicks are handled separately in
+     * handleMythicItem, which never sees left-clicks.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onAlchemistWandSwing(PlayerAnimationEvent event) {
+        if (event.getAnimationType() != PlayerAnimationType.ARM_SWING) return;
+
+        Player player = event.getPlayer();
+        if (PDCDetection.getMythic(player.getInventory().getItemInMainHand()) != MythicItem.ALCHEMIST_WAND) return;
+        if (isInShoppingPhase(player)) return;
+
+        mythicManager.getHandler(AlchemistWandHandler.class).useAlchemistTidyUp(player);
+    }
+
     // ==================== OVERDRIVE POTION HOTBAR LOCK ====================
 
     /**

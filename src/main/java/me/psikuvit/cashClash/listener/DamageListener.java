@@ -36,6 +36,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.CooldownManager;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -131,6 +132,15 @@ public class DamageListener implements Listener {
                 event.setDamage(event.getDamage() * vulnerability);
             }
 
+            // 1b2. Alchemist Wand Taunt - the wielder takes extra damage for the whole
+            // duration, both their own direct hits and damage redirected onto them from
+            // chained teammates (the redirect deals the raw, unamplified amount, relying on
+            // this check to apply the increase uniformly instead of double-counting it).
+            if (mythicManager.getHandler(AlchemistWandHandler.class).isTaunting(player.getUniqueId())) {
+                double increase = ItemsConfig.getInstance().getAlchemistTauntDamageIncreasePercent();
+                event.setDamage(event.getDamage() * (1.0 + increase / 100.0));
+            }
+
             // 1c. Blooming Rose - same-team zone: reduce damage and clamp so health never drops
             // below the 2-heart floor (the base clamp guarantees final damage can't exceed it)
             double roseReduction = customItemManager.getHandler(BloomingRoseHandler.class).getBloomingRoseDamageReduction(player);
@@ -189,6 +199,12 @@ public class DamageListener implements Listener {
 
             // Apply protection checks
             if (applyProtectionChecks(event, attacker, victim)) {
+                return;
+            }
+
+            // Alchemist Wand Taunt - a chained teammate takes zero damage, it's all redirected
+            // to the wielder instead (amplified by the wielder's own damage-increase check above)
+            if (victim != null && redirectAlchemistTauntDamage(event, victim)) {
                 return;
             }
 
@@ -276,6 +292,25 @@ public class DamageListener implements Listener {
      */
     private void logPvPDamageError(Exception e) {
         Messages.debug("DAMAGE", "Error handling PvP damage: " + e.getMessage());
+    }
+
+    /**
+     * Alchemist Wand Taunt: if the victim is currently chained to a Taunt wielder, cancel their
+     * damage entirely and deal the equivalent (raw, unamplified) amount to the wielder instead -
+     * see AlchemistWandHandler#redirectTauntDamage for the re-entrancy guard around that call,
+     * and the "1b2" check in onEntityDamage for where the wielder's own damage increase applies.
+     */
+    private boolean redirectAlchemistTauntDamage(EntityDamageByEntityEvent event, Player victim) {
+        AlchemistWandHandler handler = mythicManager.getHandler(AlchemistWandHandler.class);
+        UUID wielderUuid = handler.getTauntRedirectTarget(victim.getUniqueId());
+        if (wielderUuid == null) return false;
+
+        Player wielder = Bukkit.getPlayer(wielderUuid);
+        if (wielder == null || !wielder.isOnline() || handler.isRedirecting(wielderUuid)) return false;
+
+        event.setCancelled(true);
+        handler.redirectTauntDamage(wielder, event.getFinalDamage(), event.getDamager());
+        return true;
     }
 
     /**
@@ -732,6 +767,7 @@ public class DamageListener implements Listener {
             case WARDEN_GLOVES -> mythicManager.getHandler(WardenGlovesHandler.class).useWardenPunch(attacker, victim);
             case GOBLIN_SPEAR -> applyGoblinSpearEffect(event, attacker, victim);
             case BLOODWRENCH_CROSSBOW, BLAZEBITE_CROSSBOWS -> applyLegendaryCrossbowBoost(event, attacker);
+            case ALCHEMIST_WAND -> mythicManager.getHandler(AlchemistWandHandler.class).onAlchemistMeleeHit(attacker, victim);
             default -> { /* No special handling */ }
         }
     }
