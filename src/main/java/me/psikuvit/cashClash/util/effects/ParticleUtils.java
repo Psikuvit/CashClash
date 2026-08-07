@@ -230,11 +230,11 @@ public final class ParticleUtils {
         }
     }
 
-    public static void circle(Location center, double radius, int points, Color color) {
+    public static void circle(Location center, double radius, int points, double height, Color color, float size) {
         if (center == null || center.getWorld() == null) return;
         points = Math.max(4, points);
         for (int i = 0; i < points; i++) {
-            spawnDust(circlePoint(center, radius, ringAngle(i, points), 0), color, 1.0f, 1);
+            spawnDust(circlePoint(center, radius, ringAngle(i, points), height), color, size, 1);
         }
     }
 

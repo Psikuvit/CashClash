@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.manager.items.armor;
 
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Color;
@@ -13,6 +14,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.Map;
@@ -30,8 +32,8 @@ public class TectonicCapHandler extends ArmorSetHandler {
     private static final double INNER_RING_RADIUS = 2.0;
     private static final double OUTER_RING_RADIUS = 4.0;
     // More points + smaller dust than a plain manual loop, for a denser/finer ring
-    private static final int INNER_RING_POINTS = 24;
-    private static final int OUTER_RING_POINTS = 40;
+    private static final int INNER_RING_POINTS = 48;
+    private static final int OUTER_RING_POINTS = 64;
 
     private final Map<UUID, Long> tectonicCharge1Cooldown;
     private final Map<UUID, Long> tectonicCharge2Cooldown;
@@ -76,11 +78,6 @@ public class TectonicCapHandler extends ArmorSetHandler {
         // between draws, so redrawing too often stacks up multiple rings at slightly different
         // centers and reads as a messy smear rather than one clean ring.
         nextFallWarningTick.put(id, now + 250L);
-
-        Location center = player.getLocation().clone().add(0, 0.1, 0);
-
-        ParticleUtils.circle(center, INNER_RING_RADIUS, INNER_RING_POINTS , Color.fromRGB(80, 45, 20));
-        ParticleUtils.circle(center, OUTER_RING_RADIUS, OUTER_RING_POINTS, Color.fromRGB(180, 120, 60));
     }
 
     public void onTectonicCapFall(EntityDamageEvent event, Player player) {
@@ -104,10 +101,19 @@ public class TectonicCapHandler extends ArmorSetHandler {
         double fallDamage = event.getFinalDamage();
         event.setCancelled(true);
         double radius = cfg.getTectonicCapRadius() + (fallDamage * 0.3);
-        World world = player.getWorld();
 
-        ParticleUtils.spawnDust(impact, Color.fromRGB(180, 120, 60), 2.5f, 75, OUTER_RING_RADIUS, 0.1, OUTER_RING_RADIUS);
-        ParticleUtils.spawnDust(impact, Color.fromRGB(80, 45, 20), 2.5f, 60, INNER_RING_RADIUS, 0.1, INNER_RING_RADIUS);
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            int ticks = 0;
+            @Override
+            public void run() {
+                if (ticks++ >= 15) {
+                    cancel();
+                    return;
+                }
+                ParticleUtils.circle(impact, INNER_RING_RADIUS, INNER_RING_POINTS, 0, Color.fromRGB(80, 45, 20), 2);
+                ParticleUtils.circle(impact, OUTER_RING_RADIUS, OUTER_RING_POINTS, 0, Color.fromRGB(180, 120, 60), 2);
+            }
+        }, 0L, 2L);
 
         SoundUtils.playAt(impact, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.9f);
 
