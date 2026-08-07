@@ -192,8 +192,16 @@ public class IceFanHandler extends CustomItemHandler {
             return;
         }
 
+        // Mirrors BlazeBite Glacier's setFreezeTicks(140 + frostbiteDuration): vanilla only
+        // reaches the fully-frozen visual/mechanical state (icy screen edge, shivering,
+        // freeze damage) once freezeTicks reaches getMaxFreezeTicks() (140 - the 7s it'd take
+        // standing in powder snow). Clamping our own ticksLeft (max 120, i.e. the 6s cap) at
+        // that same ceiling meant Ice Fan's freeze never actually crossed it, so the target
+        // never looked or behaved "frozen" the way a Glacier Crossbow hit does - just added
+        // freeze-bar buildup. Adding the max as a baseline forces fully-frozen immediately,
+        // same as Blazebite, for as long as our own timer says the target should stay frozen.
         int ticksLeft = (int) ((expiresAt - now) / 50L);
-        target.setFreezeTicks(Math.min(ticksLeft, target.getMaxFreezeTicks()));
+        target.setFreezeTicks(target.getMaxFreezeTicks() + ticksLeft);
 
         if (ticksLeft % 5 == 0) {
             ParticleUtils.blueFreezeHeart(target.getEyeLocation().add(0, 0.5, 0));

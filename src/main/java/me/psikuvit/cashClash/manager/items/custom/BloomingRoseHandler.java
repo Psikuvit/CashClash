@@ -142,12 +142,17 @@ public class BloomingRoseHandler extends CustomItemHandler {
                 }
                 tick++;
 
-                // Redrawn every 5 ticks (vs. leaf particles/heal below, which stay on the
-                // original 1s cadence) so the ring reads as continuously present instead of
-                // flashing fully in then fading out once a second.
+                // Redrawn every 5 ticks (vs. leaf particles/heal below, which stay on a 1s
+                // cadence) so the ring reads as continuously present instead of flashing fully
+                // in then fading out once a second.
                 spawnRoseRadiusRing(center, Color.fromRGB(220, 20, 20));
 
-                if (tick % 20 == 0) {
+                // tick increments once per call, and this task runs every 5 ticks - so "once per
+                // second" is every 4 calls (4 * 5 ticks = 20 ticks = 1s), not every 20 calls
+                // (which would be every 5 real seconds). With the zone's 6s total lifetime, the
+                // old "% 20" only ever fired once, right before the zone expired - the leaf
+                // particles and health-floor healing were effectively never visible/active.
+                if (tick % 4 == 0) {
                     Color red = Color.fromRGB(220, 20, 20);
                     for (Block block : originalBlocks.keySet()) {
                         if (block.getType() == Material.CHERRY_LEAVES) {
