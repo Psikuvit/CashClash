@@ -112,6 +112,24 @@ mythic-items:
       explosion-radius: 3
       fire-duration-seconds: 5
 
+  # Alchemist Wand (Blink Swap ability is not covered here - stays hardcoded)
+  alchemist-wand:
+    # Tidy Up - Left click to see everyone's potion effects; your next melee hit cleanses
+    # your team's debuffs (if you hit a teammate) or strips the enemy team's buffs (if you
+    # hit an enemy)
+    tidy-up:
+      duration-seconds: 10
+      cooldown-seconds: 24
+    # Taunt - Shift + right click to chain nearby teammates, redirecting their damage to you
+    taunt:
+      duration-seconds: 7
+      cooldown-seconds: 26
+      chain-radius: 6.5
+      wielder-damage-increase-percent: 15
+      # TEMP: chain formation considers all online players (not just teammates) - for testing
+      # with fewer than 4 accounts. Flip to false for real matches.
+      test-mode-all-players: true
+
 # ============================================
 # WEAPONS
 # ============================================
@@ -303,7 +321,7 @@ custom-items:
 
   # Blooming Rose
   blooming-rose:
-    zone-radius: 2.5
+    zone-radius: 3
     zone-duration-seconds: 6
     damage-reduction-percent: 25
     min-health-floor: 4.0
@@ -777,6 +795,13 @@ item-lore:
         - "<dark_purple>Dual-mode crossbows</dark_purple>"
         - "<yellow>Glacier mode: Freeze enemies</yellow>"
         - "<yellow>Volcano mode: Ignite enemies</yellow>"
+    alchemist-wand:
+      lore:
+        - "<light_purple>✦ MYTHIC UTILITY ✦</light_purple>"
+        - "<dark_purple>A wand of team support</dark_purple>"
+        - "<yellow>Right-click: Blink Swap with a teammate</yellow>"
+        - "<yellow>Left-click: Tidy Up, see effects and cleanse/strip on hit</yellow>"
+        - "<yellow>Shift + right-click: Taunt, chain and tank for your team</yellow>"
 
   # ==================== ENCHANTS ====================
   enchants:

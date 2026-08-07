@@ -347,6 +347,7 @@ public class CooldownManager {
         public static final String BLAZEBITE_RELOAD = "BLAZEBITE_RELOAD";
         public static final String ALCHEMIST_BLINK_SWAP = "ALCHEMIST_BLINK_SWAP";
         public static final String ALCHEMIST_TAUNT = "ALCHEMIST_TAUNT";
+        public static final String ALCHEMIST_TIDY_UP = "ALCHEMIST_TIDY_UP";
 
         // Timestamps
         public static final String LAST_DAMAGE = "LAST_DAMAGE";

@@ -296,6 +296,36 @@ public class ItemsConfig {
         return config.getInt("mythic-items.blazebite-crossbows.volcano.explosion-radius", 3);
     }
 
+    // Alchemist Wand Tidy Up (Blink Swap stays hardcoded, not config-driven)
+    public int getAlchemistTidyUpDuration() {
+        return config.getInt("mythic-items.alchemist-wand.tidy-up.duration-seconds", 10);
+    }
+
+    public int getAlchemistTidyUpCooldown() {
+        return config.getInt("mythic-items.alchemist-wand.tidy-up.cooldown-seconds", 24);
+    }
+
+    // Alchemist Wand Taunt
+    public int getAlchemistTauntDuration() {
+        return config.getInt("mythic-items.alchemist-wand.taunt.duration-seconds", 7);
+    }
+
+    public int getAlchemistTauntCooldown() {
+        return config.getInt("mythic-items.alchemist-wand.taunt.cooldown-seconds", 26);
+    }
+
+    public double getAlchemistTauntChainRadius() {
+        return config.getDouble("mythic-items.alchemist-wand.taunt.chain-radius", 6.5);
+    }
+
+    public double getAlchemistTauntDamageIncreasePercent() {
+        return config.getDouble("mythic-items.alchemist-wand.taunt.wielder-damage-increase-percent", 15);
+    }
+
+    public boolean isAlchemistTauntTestModeAllPlayers() {
+        return config.getBoolean("mythic-items.alchemist-wand.taunt.test-mode-all-players", true);
+    }
+
     // ==================== CUSTOM ITEMS ====================
 
     // Grenade
@@ -480,7 +510,7 @@ public class ItemsConfig {
 
     // Blooming Rose
     public double getBloomingRoseZoneRadius() {
-        return config.getDouble("custom-items.blooming-rose.zone-radius", 2.5);
+        return config.getDouble("custom-items.blooming-rose.zone-radius", 3);
     }
 
     public int getBloomingRoseZoneDurationSeconds() {
