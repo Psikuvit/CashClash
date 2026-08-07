@@ -323,7 +323,7 @@ public class ItemsConfig {
     }
 
     public boolean isAlchemistTauntTestModeAllPlayers() {
-        return config.getBoolean("mythic-items.alchemist-wand.taunt.test-mode-all-players", true);
+        return config.getBoolean("mythic-items.alchemist-wand.taunt.test-mode-all-players", false);
     }
 
     // ==================== CUSTOM ITEMS ====================

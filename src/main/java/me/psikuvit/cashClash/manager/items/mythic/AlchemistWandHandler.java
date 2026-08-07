@@ -287,11 +287,20 @@ public class AlchemistWandHandler extends MythicItemHandler {
         BukkitTask displayTask = startAlchemistTidyUpDisplayTask(wielder, session, uuid);
         alchemistTidyUpDisplayTasks.put(uuid, displayTask);
 
-        BukkitTask timeoutTask = SchedulerUtils.runTaskLater(() -> endAlchemistTidyUp(wielder), durationTicks);
+        BukkitTask timeoutTask = SchedulerUtils.runTaskLater(() -> endAlchemistTidyUp(wielder, true), durationTicks);
         alchemistTidyUpTimeoutTasks.put(uuid, timeoutTask);
 
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ALCHEMIST_TIDY_UP, cfg.getAlchemistTidyUpCooldown());
         Messages.send(wielder, "mythic.alchemist-tidy-up-activated");
+        SoundUtils.play(wielder, Sound.BLOCK_BREWING_STAND_BREW, 1.0f, 1.2f);
+    }
+
+    /**
+     * @return true if the wielder currently has an active, unexpired Tidy Up window.
+     */
+    public boolean isTidyUpActive(UUID uuid) {
+        Long expiry = alchemistTidyUpExpiry.get(uuid);
+        return expiry != null && expiry > System.currentTimeMillis();
     }
 
     /**
@@ -435,6 +444,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
         Set<PotionEffectType> effectsToRemove = sameTeam ? TIDY_UP_NEGATIVE_EFFECTS : TIDY_UP_POSITIVE_EFFECTS;
         Color beamColor = sameTeam ? Color.WHITE : Color.fromRGB(15, 15, 15);
         Sound sound = sameTeam ? Sound.BLOCK_BEACON_ACTIVATE : Sound.ENTITY_WITHER_HURT;
+        String messageKey = sameTeam ? "mythic.alchemist-tidy-up-cleansed" : "mythic.alchemist-tidy-up-stripped";
 
         for (UUID memberUuid : affectedTeam.getPlayers()) {
             Player member = Bukkit.getPlayer(memberUuid);
@@ -451,21 +461,25 @@ public class AlchemistWandHandler extends MythicItemHandler {
             if (removedAny) {
                 ParticleUtils.verticalBeam(member.getLocation(), beamColor, 2.0, 4, 0.3f, 3);
                 SoundUtils.playAt(member.getLocation(), sound, 1.0f, 1.2f);
+                Messages.send(member, messageKey);
             }
         }
 
         Messages.debug(attacker, "ALCHEMIST_WAND: Tidy Up resolved on " + victim.getName()
                 + " (" + (sameTeam ? "cleanse" : "strip") + ")");
 
-        endAlchemistTidyUp(attacker);
+        endAlchemistTidyUp(attacker, false);
     }
 
     /**
      * Tears down an active (or expired) Tidy Up window: cancels its tasks and removes every
-     * bottle icon. Safe to call for a player who never had one active.
+     * bottle icon. Safe to call for a player who never had one active. When it ends because the
+     * 10s ran out without a qualifying hit ({@code expired}), the wielder gets a "you lost Tidy
+     * Up" sound + message - a hit-consumed end already has its own cleanse/strip feedback.
      */
-    private void endAlchemistTidyUp(Player wielder) {
+    private void endAlchemistTidyUp(Player wielder, boolean expired) {
         UUID uuid = wielder.getUniqueId();
+        boolean wasActive = alchemistTidyUpExpiry.containsKey(uuid);
 
         BukkitTask timeoutTask = alchemistTidyUpTimeoutTasks.remove(uuid);
         if (timeoutTask != null) timeoutTask.cancel();
@@ -483,6 +497,11 @@ public class AlchemistWandHandler extends MythicItemHandler {
         }
 
         alchemistTidyUpExpiry.remove(uuid);
+
+        if (expired && wasActive && wielder.isOnline()) {
+            Messages.send(wielder, "mythic.alchemist-tidy-up-lost");
+            SoundUtils.play(wielder, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.8f);
+        }
     }
 
     // ==================== TAUNT ====================
@@ -806,7 +825,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
         alchemistBlinkProtection.remove(uuid);
         alchemistBlinkProtectionExpiry.remove(uuid);
 
-        endAlchemistTidyUp(player);
+        endAlchemistTidyUp(player, false);
         for (Map<UUID, Map<PotionEffectType, ItemDisplay>> perTarget : alchemistTidyUpBottles.values()) {
             removeAlchemistTidyUpBottlesFor(perTarget, uuid);
         }

@@ -126,9 +126,9 @@ mythic-items:
       cooldown-seconds: 26
       chain-radius: 6.5
       wielder-damage-increase-percent: 15
-      # TEMP: chain formation considers all online players (not just teammates) - for testing
-      # with fewer than 4 accounts. Flip to false for real matches.
-      test-mode-all-players: true
+      # Chain formation considers only teammates (was temporarily true for testing with fewer
+      # than 4 accounts).
+      test-mode-all-players: false
 
 # ============================================
 # WEAPONS

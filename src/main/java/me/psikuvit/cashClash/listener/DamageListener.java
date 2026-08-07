@@ -247,6 +247,11 @@ public class DamageListener implements Listener {
             if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(victimId)) {
                 return false;
             }
+            
+            if (mythicManager.getHandler(AlchemistWandHandler.class).isTidyUpActive(attackerId)
+                    && PDCDetection.getMythic(attacker.getInventory().getItemInMainHand()) == MythicItem.ALCHEMIST_WAND) {
+                return false;
+            }
         }
 
         if (handleLobbyProtection(event, attacker)) {
