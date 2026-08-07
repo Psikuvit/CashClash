@@ -797,7 +797,8 @@ public class DamageListener implements Listener {
     private void applyInvestorMeleeNerf(EntityDamageByEntityEvent event, Player attacker) {
         if (!(event.getDamager() instanceof Player)) return;
 
-        double multiplier = armorManager.getHandler(InvestorSetHandler.class).getMeleeDamageMultiplier(attacker);
+        double multiplier = armorManager.getHandler(InvestorSetHandler.class).getMeleeDamageMultiplier(attacker)
+                * gameManager.getPlayerSession(attacker).getCurrentRound();
         if (multiplier >= 1.0) return;
 
         event.setDamage(event.getDamage() * multiplier);

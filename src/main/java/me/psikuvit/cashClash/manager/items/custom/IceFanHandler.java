@@ -201,7 +201,7 @@ public class IceFanHandler extends CustomItemHandler {
         // freeze-bar buildup. Adding the max as a baseline forces fully-frozen immediately,
         // same as Blazebite, for as long as our own timer says the target should stay frozen.
         int ticksLeft = (int) ((expiresAt - now) / 50L);
-        target.setFreezeTicks(target.getMaxFreezeTicks() + ticksLeft);
+        target.setFreezeTicks(140 + ticksLeft);
 
         if (ticksLeft % 5 == 0) {
             ParticleUtils.blueFreezeHeart(target.getEyeLocation().add(0, 0.5, 0));

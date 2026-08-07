@@ -255,6 +255,13 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
             }
         }
 
+        // Totem of Haunting shares its combined-cap-of-2 with regular totems (UtilityItem.TOTEM)
+        // - that check lives in ShopService since it also gates the regular totem's own purchase
+        // path (processPurchase), which this custom-item flow doesn't go through.
+        if (type == CustomItem.TOTEM_OF_HAUNTING && ShopService.getInstance().isTotemCapReached(viewer)) {
+            return;
+        }
+
         long price = type.getPrice();
         if (!ShopService.getInstance().canAfford(viewer, price)) {
             Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", price));

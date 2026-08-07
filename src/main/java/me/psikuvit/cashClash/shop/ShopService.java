@@ -89,9 +89,12 @@ public class ShopService {
 
     /**
      * Regular totems (Material.TOTEM_OF_UNDYING) and Totems of Haunting (Material.NETHER_STAR)
-     * share one combined cap of 2 owned at once - owning one counts against the other.
+     * share one combined cap of 2 owned at once - owning one counts against the other. Public
+     * because CustomItem purchases (Totem of Haunting) go through
+     * AbstractShopCategoryGui#handleCustomItemPurchase, a separate path from processPurchase()
+     * above that needs to check this itself rather than going through it.
      */
-    private boolean isTotemCapReached(Player player) {
+    public boolean isTotemCapReached(Player player) {
         int combined = countMaterial(player, UtilityItem.TOTEM.getMaterial())
                 + countMaterial(player, CustomItem.TOTEM_OF_HAUNTING.getMaterial());
         if (combined < 2) return false;
