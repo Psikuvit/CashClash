@@ -203,16 +203,30 @@ public final class ParticleUtils {
 
     // ==================== SHAPE METHODS ====================
 
+    /**
+     * The angle of point {@code i} of {@code totalPoints} evenly spaced around a full circle -
+     * shared by every ring/circle shape below instead of each recomputing it.
+     */
+    private static double ringAngle(int i, int totalPoints) {
+        return 2 * Math.PI * i / totalPoints;
+    }
+
+    /**
+     * A point on a circle of {@code radius} around {@code center}'s X/Z, raised {@code yOffset}
+     * above {@code center}'s Y - the shared building block for every ring/circle/spiral shape
+     * below instead of each recomputing the same cos/sin.
+     */
+    private static Location circlePoint(Location center, double radius, double angle, double yOffset) {
+        double x = center.getX() + radius * Math.cos(angle);
+        double z = center.getZ() + radius * Math.sin(angle);
+        return new Location(center.getWorld(), x, center.getY() + yOffset, z);
+    }
+
     public static void circle(Particle particle, Location center, double radius, double height, int points, double extra) {
         if (particle == null || center == null || center.getWorld() == null) return;
         points = Math.max(4, points);
         for (int i = 0; i < points; i++) {
-            double angle = 2 * Math.PI * i / points;
-            double x = center.getX() + radius * Math.cos(angle);
-            double z = center.getZ() + radius * Math.sin(angle);
-
-            Location spawn = new Location(center.getWorld(), x, center.getY() + height, z);
-            spawn(particle, spawn, 1, 0, 0, 0, extra);
+            spawn(particle, circlePoint(center, radius, ringAngle(i, points), height), 1, 0, 0, 0, extra);
         }
     }
 
@@ -222,12 +236,7 @@ public final class ParticleUtils {
         for (int i = 0; i < total; i++) {
             double t = (double) i / total;
             double angle = t * turns * 2 * Math.PI;
-            double y = center.getY() + height * t;
-            double x = center.getX() + radius * Math.cos(angle);
-            double z = center.getZ() + radius * Math.sin(angle);
-
-            Location spawn = new Location(center.getWorld(), x, y, z);
-            center.getWorld().spawnParticle(particle, spawn, 1, 0, 0, 0, extra);
+            spawn(particle, circlePoint(center, radius, angle, height * t), 1, 0, 0, 0, extra);
         }
     }
 
@@ -242,7 +251,7 @@ public final class ParticleUtils {
         for (int i = 0; i <= totalPoints; i++) {
             double y = base.getY() + (height * i / totalPoints);
             Location point = new Location(base.getWorld(), base.getX(), y, base.getZ());
-            base.getWorld().spawnParticle(Particle.DUST, point, particlesPerPoint, 0.05, 0, 0.05, dustOptions);
+            spawn(Particle.DUST, point, particlesPerPoint, 0.05, 0, 0.05, 0, dustOptions);
         }
     }
 
@@ -250,7 +259,7 @@ public final class ParticleUtils {
         if (particle == null || center == null || center.getWorld() == null || direction == null) return;
         for (int i = 0; i < Math.max(1, count); i++) {
             Vector v = direction.clone().rotateAroundY((Math.random() - 0.5) * spread).normalize();
-            center.getWorld().spawnParticle(particle, center, 0, v.getX(), v.getY(), v.getZ(), extra);
+            spawn(particle, center, 0, v.getX(), v.getY(), v.getZ(), extra);
         }
     }
 
@@ -280,13 +289,10 @@ public final class ParticleUtils {
         if (location == null || location.getWorld() == null) return;
 
         double angle = tick * 0.3;
+        double y = (tick % 20) * 0.15; // Spiral up
         for (int i = 0; i < 3; i++) {
             double offsetAngle = angle + (i * (Math.PI * 2 / 3));
-            double x = Math.cos(offsetAngle) * radius * 0.8;
-            double z = Math.sin(offsetAngle) * radius * 0.8;
-            double y = (tick % 20) * 0.15; // Spiral up
-
-            spawnDust(location.clone().add(x, y, z), Color.fromRGB(180, 0, 0), 2.0f, 5, 0.1);
+            spawnDust(circlePoint(location, radius * 0.8, offsetAngle, y), Color.fromRGB(180, 0, 0), 2.0f, 5, 0.1);
         }
 
         // Central column of particles
@@ -384,25 +390,19 @@ public final class ParticleUtils {
     }
 
     /**
-     * Spawn a circle of dust particles (Dragon Rush departure/arrival).
+     * Spawn a circle of dust particles (Dragon Rush departure/arrival) - a fully-formed
+     * {@link #formingRing}, 0.2 blocks off the ground.
      */
     public static void dragonRushCircle(Location center, Color color, float size) {
         if (center == null || center.getWorld() == null) return;
-        Particle.DustOptions options = new Particle.DustOptions(color, size);
-        for (int i = 0; i < 24; i++) {
-            double angle = 2 * Math.PI * i / 24;
-            double x = Math.cos(angle) * 1.2;
-            double z = Math.sin(angle) * 1.2;
-            center.getWorld().spawnParticle(Particle.DUST, center.clone().add(x, 0.2, z), 1, options);
-        }
+        formingRing(center.clone().add(0, 0.2, 0), 1.2, 24, 24, color, size);
     }
 
     /**
      * Spawn a single Dragon Fury veil particle (swirl built up over time by the caller).
      */
     public static void dragonFuryVeil(Location location, Color color) {
-        if (location == null || location.getWorld() == null) return;
-        location.getWorld().spawnParticle(Particle.DUST, location, 1, new Particle.DustOptions(color, 1.4f));
+        spawnDust(location, color, 1.4f, 1);
         spawn(Particle.PORTAL, location, 1, 0, 0, 0, 0.01);
     }
 
@@ -452,11 +452,8 @@ public final class ParticleUtils {
         for (int i = 0; i < 3; i++) {
             double radius = 0.8 + (i * 0.25);
             for (int j = 0; j < 28; j++) {
-                double angle = 2 * Math.PI * j / 28;
-                double x = Math.cos(angle) * radius;
-                double z = Math.sin(angle) * radius;
                 Color color = (j % 7 == 0) ? orange : turquoise;
-                spawnDust(playerLocation.clone().add(x, 1.8, z), color, 1.8f, 1);
+                spawnDust(circlePoint(playerLocation, radius, ringAngle(j, 28), 1.8), color, 1.8f, 1);
             }
         }
     }
@@ -469,11 +466,9 @@ public final class ParticleUtils {
         Color red = Color.RED;
         Color black = Color.BLACK;
         for (double angle = 0; angle < Math.PI * 2; angle += 0.15) {
-            double x = Math.cos(angle) * radius;
-            double z = Math.sin(angle) * radius;
-            Location particleLoc = center.clone().add(x, 1.0 + (Math.random() * 0.4 - 0.2), z);
+            double yJitter = 1.0 + (Math.random() * 0.4 - 0.2);
             Color color = (angle % 0.3 < 0.15) ? black : red;
-            spawnDust(particleLoc, color, 1.2f, 1);
+            spawnDust(circlePoint(center, radius, angle, yJitter), color, 1.2f, 1);
         }
     }
 
@@ -521,9 +516,7 @@ public final class ParticleUtils {
     public static void smokeSpiralFrame(Location center, double currentRadius, int armIndex, int totalArms) {
         if (center == null || center.getWorld() == null) return;
         double angle = currentRadius * 2.5 + armIndex * (2 * Math.PI / Math.max(1, totalArms));
-        double x = center.getX() + currentRadius * Math.cos(angle);
-        double z = center.getZ() + currentRadius * Math.sin(angle);
-        Location point = new Location(center.getWorld(), x, center.getY() + 0.2, z);
+        Location point = circlePoint(center, currentRadius, angle, 0.2);
 
         spawn(Particle.SMOKE, point, 2, 0.05, 0.05, 0.05, 0.01);
         if (Math.random() < 0.35) {
@@ -544,10 +537,7 @@ public final class ParticleUtils {
         if (center == null || center.getWorld() == null) return;
         int clampedFormed = Math.min(totalPoints, Math.max(0, formedCount));
         for (int i = 0; i < clampedFormed; i++) {
-            double angle = 2 * Math.PI * i / totalPoints;
-            double x = center.getX() + radius * Math.cos(angle);
-            double z = center.getZ() + radius * Math.sin(angle);
-            spawnDust(new Location(center.getWorld(), x, center.getY(), z), color, size, 1, 0);
+            spawnDust(circlePoint(center, radius, ringAngle(i, totalPoints), 0), color, size, 1, 0);
         }
     }
 
