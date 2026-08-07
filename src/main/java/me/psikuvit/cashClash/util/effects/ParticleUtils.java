@@ -230,6 +230,14 @@ public final class ParticleUtils {
         }
     }
 
+    public static void circle(Location center, double radius, int points, Color color) {
+        if (center == null || center.getWorld() == null) return;
+        points = Math.max(4, points);
+        for (int i = 0; i < points; i++) {
+            spawnDust(circlePoint(center, radius, ringAngle(i, points), 0), color, 1.0f, 1);
+        }
+    }
+
     public static void helix(Particle particle, Location center, double radius, double height, int turns, int pointsPerTurn, double extra) {
         if (particle == null || center == null || center.getWorld() == null) return;
         int total = Math.max(1, turns) * Math.max(4, pointsPerTurn);

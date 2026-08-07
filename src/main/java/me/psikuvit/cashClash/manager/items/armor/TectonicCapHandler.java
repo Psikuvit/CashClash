@@ -79,8 +79,8 @@ public class TectonicCapHandler extends ArmorSetHandler {
 
         Location center = player.getLocation().clone().add(0, 0.1, 0);
 
-        ParticleUtils.formingRing(center, INNER_RING_RADIUS, INNER_RING_POINTS, INNER_RING_POINTS, Color.fromRGB(80, 45, 20), 0.25f);
-        ParticleUtils.formingRing(center, OUTER_RING_RADIUS, OUTER_RING_POINTS, OUTER_RING_POINTS, Color.fromRGB(180, 120, 60), 0.25f);
+        ParticleUtils.circle(center, INNER_RING_RADIUS, INNER_RING_POINTS , Color.fromRGB(80, 45, 20));
+        ParticleUtils.circle(center, OUTER_RING_RADIUS, OUTER_RING_POINTS, Color.fromRGB(180, 120, 60));
     }
 
     public void onTectonicCapFall(EntityDamageEvent event, Player player) {
