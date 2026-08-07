@@ -303,7 +303,7 @@ custom-items:
 
   # Blooming Rose
   blooming-rose:
-    zone-radius: 5
+    zone-radius: 2.5
     zone-duration-seconds: 6
     damage-reduction-percent: 25
     min-health-floor: 4.0

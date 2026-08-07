@@ -480,7 +480,7 @@ public class ItemsConfig {
 
     // Blooming Rose
     public double getBloomingRoseZoneRadius() {
-        return config.getDouble("custom-items.blooming-rose.zone-radius", 5);
+        return config.getDouble("custom-items.blooming-rose.zone-radius", 2.5);
     }
 
     public int getBloomingRoseZoneDurationSeconds() {
