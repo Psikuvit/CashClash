@@ -137,7 +137,6 @@ public class IceFanHandler extends CustomItemHandler {
         for (Player target : findIceFanTargets(player, origin, direction, 3)) {
             dealIceFanDamage(player, target, cfg.getIceFanGustDamagePerTick());
             stackIceFanFreeze(target);
-            ParticleUtils.blueFreezeHeart(target.getEyeLocation().add(0, 0.5, 0));
         }
 
         spawnGustParticles(player, origin, direction);
@@ -177,7 +176,9 @@ public class IceFanHandler extends CustomItemHandler {
 
     /**
      * Keeps the target's freezeTicks matching the remaining time on our own timer every tick,
-     * overriding Bukkit's natural decay, until the stack expires.
+     * overriding Bukkit's natural decay, until the stack expires. Also pulses the blue freeze
+     * heart indicator every 5 ticks (matching BlazeBite Glacier's frostbite particle cadence)
+     * for the whole freeze duration, not just a one-off burst on the hit that caused it.
      */
     private void pumpIceFanFreeze(Player target) {
         UUID uuid = target.getUniqueId();
@@ -193,6 +194,10 @@ public class IceFanHandler extends CustomItemHandler {
 
         int ticksLeft = (int) ((expiresAt - now) / 50L);
         target.setFreezeTicks(Math.min(ticksLeft, target.getMaxFreezeTicks()));
+
+        if (ticksLeft % 5 == 0) {
+            ParticleUtils.blueFreezeHeart(target.getEyeLocation().add(0, 0.5, 0));
+        }
     }
 
     /**
