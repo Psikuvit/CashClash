@@ -2,7 +2,9 @@ package me.psikuvit.cashClash.arena;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
+import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
@@ -25,7 +27,6 @@ public class ArenaManager {
 
     private static ArenaManager instance;
     private final Map<Integer, Arena> arenas; // Arena number (1-5) -> Arena
-    private final Map<Integer, GameState> arenaStates; // Track the state of each arena
     private final Map<Integer, Integer> arenaPlayerCounts; // Track player count per arena
 
     // Template registry id -> TemplateWorld
@@ -39,7 +40,6 @@ public class ArenaManager {
 
     private ArenaManager() {
         this.arenas = new LinkedHashMap<>();
-        this.arenaStates = new HashMap<>();
         this.arenaPlayerCounts = new HashMap<>();
         this.templates = new HashMap<>();
 
@@ -76,7 +76,6 @@ public class ArenaManager {
                 Messages.debug("ARENA", "Arena slot " + i + " already loaded: " + arenas.get(i).getName());
             }
 
-            arenaStates.putIfAbsent(i, GameState.WAITING);
             arenaPlayerCounts.putIfAbsent(i, 0);
         }
 
@@ -202,7 +201,7 @@ public class ArenaManager {
         File file = new File(templatesDir, id + ".yml");
         FileConfiguration cfg = new YamlConfiguration();
 
-        cfg.set("world", tpl.getWorld() != null ? tpl.getWorld().getName() : null);
+        cfg.set("world", tpl.getWorldName());
 
         if (tpl.getLobbySpawn() != null) {
             LocationUtils.serializeLocation(cfg, "lobby", tpl.getLobbySpawn());
@@ -303,17 +302,13 @@ public class ArenaManager {
     }
 
     /**
-     * Get arena state
+     * The arena's current state - read live from its GameSession, if one exists. An arena with
+     * no active session (nothing has been created for it yet, or its last session already ended)
+     * reports WAITING.
      */
     public GameState getArenaState(int arenaNumber) {
-        return arenaStates.getOrDefault(arenaNumber, GameState.WAITING);
-    }
-
-    /**
-     * Set arena state
-     */
-    public void setArenaState(int arenaNumber, GameState state) {
-        arenaStates.put(arenaNumber, state);
+        GameSession session = GameManager.getInstance().getSessionForArena(arenaNumber);
+        return session != null ? session.getState() : GameState.WAITING;
     }
 
     /**
@@ -402,7 +397,6 @@ public class ArenaManager {
                 arenas.put(i, arena);
             }
 
-            arenaStates.put(i, GameState.WAITING);
             arenaPlayerCounts.put(i, 0);
         }
     }
@@ -470,8 +464,11 @@ public class ArenaManager {
         Messages.debug("ARENA", "Saved server lobby spawn to config");
     }
 
+    /**
+     * @return a clone - callers can freely mutate the result without corrupting the stored spawn.
+     */
     public Location getServerLobbySpawn() {
-        return serverLobbySpawn;
+        return LocationUtils.clone(serverLobbySpawn);
     }
 
     public void setServerLobbySpawn(Location loc) {

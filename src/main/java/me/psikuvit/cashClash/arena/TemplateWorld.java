@@ -1,19 +1,24 @@
 package me.psikuvit.cashClash.arena;
 
+import me.psikuvit.cashClash.util.LocationUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
- * Holds information about a template world used by arenas (template id -> world name)
+ * Holds information about a template world used by arenas (template id -> world name). Resolves
+ * the World live by name on every access instead of caching a reference, so a reload/unload
+ * elsewhere can never leave this holding a stale World.
  */
 public class TemplateWorld {
 
     private final String id;
-    private World world;
+    private String worldName;
 
     private Location lobbySpawn;
     private Location spectatorSpawn;
@@ -32,7 +37,7 @@ public class TemplateWorld {
 
     public TemplateWorld(String id, World world) {
         this.id = id;
-        this.world = world;
+        this.worldName = world != null ? world.getName() : null;
         this.teamRedSpawns = new ArrayList<>();
         this.teamBlueSpawns = new ArrayList<>();
         this.villagersSpawnPoint = new ArrayList<>();
@@ -41,20 +46,31 @@ public class TemplateWorld {
     public String getId() {
         return id;
     }
+
+    /**
+     * @return the live World, resolved by name - null if unset or not currently loaded.
+     */
     public World getWorld() {
-        return world;
+        return worldName == null ? null : Bukkit.getWorld(worldName);
     }
     public void setWorld(World world) {
-        this.world = world;
+        this.worldName = world != null ? world.getName() : null;
     }
+    public String getWorldName() {
+        return worldName;
+    }
+    /**
+     * @return a clone of the lobby spawn - callers can freely mutate the result without
+     *         corrupting this template's stored location.
+     */
     public Location getLobbySpawn() {
-        return lobbySpawn;
+        return LocationUtils.clone(lobbySpawn);
     }
     public void setSpawn(Location lobbySpawn) {
         this.lobbySpawn = lobbySpawn;
     }
     public Location getSpectatorSpawn() {
-        return spectatorSpawn;
+        return LocationUtils.clone(spectatorSpawn);
     }
     public void setSpectatorSpawn(Location loc) {
         this.spectatorSpawn = loc;
@@ -76,28 +92,33 @@ public class TemplateWorld {
 
     public Location getTeamRedSpawn(int idx) {
         if (idx < 0 || idx >= teamRedSpawns.size()) return null;
-        return teamRedSpawns.get(idx);
+        return LocationUtils.clone(teamRedSpawns.get(idx));
     }
 
     public Location getTeamBlueSpawn(int idx) {
         if (idx < 0 || idx >= teamBlueSpawns.size()) return null;
-        return teamBlueSpawns.get(idx);
+        return LocationUtils.clone(teamBlueSpawns.get(idx));
     }
 
     public Location getTeamRedShopSpawn() {
-        return teamRedShopSpawn;
+        return LocationUtils.clone(teamRedShopSpawn);
     }
     public void setTeamRedShopSpawn(Location teamRedShopSpawn) {
         this.teamRedShopSpawn = teamRedShopSpawn;
     }
     public Location getTeamBlueShopSpawn() {
-        return teamBlueShopSpawn;
+        return LocationUtils.clone(teamBlueShopSpawn);
     }
     public void setTeamBlueShopSpawn(Location teamBlueShopSpawn) {
         this.teamBlueShopSpawn = teamBlueShopSpawn;
     }
+
+    /**
+     * @return a defensive copy - both the list and each Location in it are safe for the caller
+     *         to mutate without affecting this template.
+     */
     public List<Location> getVillagersSpawnPoint() {
-        return villagersSpawnPoint;
+        return villagersSpawnPoint.stream().map(LocationUtils::clone).collect(Collectors.toList());
     }
     public void addVillagerSpawnPoint(Location loc) {
         villagersSpawnPoint.add(loc);
@@ -107,7 +128,7 @@ public class TemplateWorld {
      * Get Red flag location (CTF mode)
      */
     public Location getRedFlagLoc() {
-        return redFlagLoc;
+        return LocationUtils.clone(redFlagLoc);
     }
 
     /**
@@ -121,7 +142,7 @@ public class TemplateWorld {
      * Get Blue flag location (CTF mode)
      */
     public Location getBlueFlagLoc() {
-        return blueFlagLoc;
+        return LocationUtils.clone(blueFlagLoc);
     }
 
     /**
@@ -132,7 +153,7 @@ public class TemplateWorld {
     }
 
     public boolean isConfigured() {
-        if (world == null) return false;
+        if (worldName == null) return false;
         if (lobbySpawn == null) return false;
         if (spectatorSpawn == null) return false;
         if (teamRedSpawns.size() < 4 || teamBlueSpawns.size() < 4) return false;
