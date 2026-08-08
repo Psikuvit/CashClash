@@ -8,14 +8,20 @@ import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
 import me.psikuvit.cashClash.shop.EnchantEntry;
+import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -90,6 +96,88 @@ public class RuneListener implements Listener {
         // Not a rune
         if (!RuneManager.isRune(item)) return;
         event.setCancelled(true);
+    }
+
+    /**
+     * Dragging a rune onto another item in an inventory click links the two (or unlinks if
+     * already linked to that exact item). Armor runes (Protection/Projectile Protection) refuse
+     * manual linking - they auto-apply to the whole worn set instead, see RuneManager.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onRuneLinkClick(InventoryClickEvent event) {
+        if (event.isCancelled()) return;
+        if (!(event.getWhoClicked() instanceof Player p)) return;
+
+        ItemStack cursor = event.getCursor();
+        if (!RuneManager.isRune(cursor)) return;
+
+        if (RuneManager.isRuneBroken(cursor)) {
+            event.setCancelled(true);
+            Messages.send(p, "rune.broken-cannot-use");
+            SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        if (session != null && session.getState() == GameState.SHOPPING) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (RuneManager.isRuneActive(cursor)) {
+            event.setCancelled(true);
+            Messages.send(p, "rune.active-cannot-switch");
+            SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        if (CooldownManager.getInstance().isOnCooldown(p.getUniqueId(), CooldownManager.Keys.RUNE_LINK)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        ItemStack target = event.getCurrentItem();
+        if (target == null || target.getType().isAir()) return;
+
+        EnchantEntry enchant = PDCDetection.getRune(cursor);
+        if (enchant == null) return;
+
+        boolean isArmor = target.getType().name().endsWith("_HELMET")
+                || target.getType().name().endsWith("_CHESTPLATE")
+                || target.getType().name().endsWith("_LEGGINGS")
+                || target.getType().name().endsWith("_BOOTS");
+        if (isArmor && (enchant == EnchantEntry.PROTECTION || enchant == EnchantEntry.PROJECTILE_PROTECTION)) {
+            Messages.send(p, "rune.auto-linked");
+            SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        if (!enchant.canApplyTo(target)) {
+            event.setCancelled(true);
+            Messages.send(p, "rune.ineligible-target", "enchant", enchant.getDisplayName());
+            SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return;
+        }
+
+        ItemStack linked = RuneManager.getLinkedItem(p, cursor);
+        if (linked != null && linked.isSimilar(target)) {
+            RuneManager.clearRuneLink(cursor);
+            CooldownManager.getInstance().setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.RUNE_LINK, 1);
+            event.setCancelled(true);
+            p.setItemOnCursor(null);
+            p.getInventory().addItem(cursor);
+            SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 0.85f);
+            Messages.send(p, "rune.unlinked");
+            return;
+        }
+
+        RuneManager.setRuneLink(cursor, target);
+        CooldownManager.getInstance().setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.RUNE_LINK, 1);
+        event.setCancelled(true);
+        p.setItemOnCursor(null);
+        p.getInventory().addItem(cursor);
+        SoundUtils.play(p, Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
+        Messages.send(p, "rune.linked", "target", target.getType().name().toLowerCase().replace("_", " "));
     }
 
     public RuneListener() {

@@ -38,7 +38,6 @@ import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
@@ -798,177 +797,58 @@ public class GameListener implements Listener {
         }
     }
 
-    // ==================== INVENTORY CLICK (Supply Drop) ====================
+    // ==================== INVENTORY CLICK (Supply Drop / Cobweb Limit) ====================
+    // Rune-linking clicks are handled by RuneListener#onRuneLinkClick instead - that's its domain.
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
         if (event.isCancelled()) return;
-
         if (!(event.getWhoClicked() instanceof Player p)) return;
 
-        // --- Handle Supply Drop ---
+        if (handleSupplyDropClick(event, p)) return;
+        handleCobwebLimitClick(event, p);
+    }
+
+    /**
+     * @return true if this click was a supply-drop redemption (event already handled/cancelled)
+     */
+    private boolean handleSupplyDropClick(InventoryClickEvent event, Player p) {
         ItemStack current = event.getCurrentItem();
-        if (current != null && current.getType() == Material.EMERALD) {
-            Integer amount = PDCDetection.getSupplyDropAmount(current);
-            if (amount != null) {
-                GameSession session = GameManager.getInstance().getPlayerSession(p);
-                if (session != null) {
-                    CashClashPlayer ccp = session.getCashClashPlayer(p.getUniqueId());
-                    if (ccp != null) {
-                        event.setCancelled(true);
-                        int left = current.getAmount() - 1;
-                        if (left > 0) {
-                            current.setAmount(left);
-                            event.setCurrentItem(current);
-                        } else {
-                            event.setCurrentItem(null);
-                        }
+        if (current == null || current.getType() != Material.EMERALD) return false;
 
-                        session.getRewardManager().grant(p, RewardType.SUPPLY_DROP, amount,
-                                "amount", String.format("%,d", amount));
-                        SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
-                        return;
-                    }
-                }
-            }
+        Integer amount = PDCDetection.getSupplyDropAmount(current);
+        if (amount == null) return false;
+
+        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        if (session == null || session.getCashClashPlayer(p.getUniqueId()) == null) return false;
+
+        event.setCancelled(true);
+        int left = current.getAmount() - 1;
+        if (left > 0) {
+            current.setAmount(left);
+            event.setCurrentItem(current);
+        } else {
+            event.setCurrentItem(null);
         }
 
-        // --- Handle Rune Linking ---
-        ItemStack cursor = event.getCursor();
-        if (RuneManager.isRune(cursor)) {
+        session.getRewardManager().grant(p, RewardType.SUPPLY_DROP, amount,
+                "amount", String.format("%,d", amount));
+        SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+        return true;
+    }
 
-            if (RuneManager.isRuneBroken(cursor)) {
-                event.setCancelled(true);
-                Messages.send(p, "rune.broken-cannot-use");
-                SoundUtils.play(
-                        p,
-                        Sound.ENTITY_VILLAGER_NO,
-                        1.0f,
-                        1.0f
-                );
-                return;
+    private void handleCobwebLimitClick(InventoryClickEvent event, Player p) {
+        if (event.getCursor().getType() != Material.COBWEB) return;
+
+        int currentWebs = 0;
+        for (ItemStack is : p.getInventory().getContents()) {
+            if (is != null && is.getType() == Material.COBWEB) {
+                currentWebs += is.getAmount();
             }
-
-            GameSession session = GameManager.getInstance().getPlayerSession(p);
-            if (session != null && session.getState() == GameState.SHOPPING) {
-                event.setCancelled(true);
-                return;
-            }
-
-            if (RuneManager.isRuneActive(cursor)) {
-                event.setCancelled(true);
-                Messages.send(p, "rune.active-cannot-switch");
-                SoundUtils.play(
-                        p,
-                        Sound.ENTITY_VILLAGER_NO,
-                        1.0f,
-                        1.0f
-                );
-                return;
-            }
-
-            if (CooldownManager.getInstance().isOnCooldown(
-                    p.getUniqueId(),
-                    CooldownManager.Keys.RUNE_LINK
-            )) {
-                event.setCancelled(true);
-                return;
-            }
-            ItemStack target = event.getCurrentItem();
-            if (target == null || target.getType().isAir()) return;
-            EnchantEntry enchant = PDCDetection.getRune(cursor);
-            if (enchant == null) return;
-            boolean isArmor = target.getType().name().endsWith("_HELMET")
-                    || target.getType().name().endsWith("_CHESTPLATE")
-                    || target.getType().name().endsWith("_LEGGINGS")
-                    || target.getType().name().endsWith("_BOOTS");
-            if (isArmor &&
-                    (enchant == EnchantEntry.PROTECTION
-                            || enchant == EnchantEntry.PROJECTILE_PROTECTION)) {
-
-                Messages.send(p, "rune.auto-linked");
-                SoundUtils.play(
-                        p,
-                        Sound.ENTITY_VILLAGER_NO,
-                        1.0f,
-                        1.0f
-                );
-                return;
-            }
-            if (!enchant.canApplyTo(target)) {
-                event.setCancelled(true);
-                Messages.send(p, "rune.ineligible-target",
-                        "enchant", enchant.getDisplayName());
-                SoundUtils.play(
-                        p,
-                        Sound.ENTITY_VILLAGER_NO,
-                        1.0f,
-                        1.0f
-                );
-                return;
-            }
-
-            ItemStack linked = RuneManager.getLinkedItem(p, cursor);
-            if (linked != null && linked.isSimilar(target)) {
-                RuneManager.clearRuneLink(cursor);
-                CooldownManager.getInstance().setCooldownSeconds(
-                        p.getUniqueId(),
-                        CooldownManager.Keys.RUNE_LINK,
-                        1
-                );
-
-                event.setCancelled(true);
-                p.setItemOnCursor(null);
-                p.getInventory().addItem(cursor);
-
-                SoundUtils.play(
-                        p,
-                        Sound.BLOCK_ENCHANTMENT_TABLE_USE,
-                        1.0f,
-                        0.85f
-                );
-
-                Messages.send(p, "rune.unlinked");
-                return;
-            }
-
-            RuneManager.setRuneLink(cursor, target);
-            CooldownManager.getInstance().setCooldownSeconds(
-                    p.getUniqueId(),
-                    CooldownManager.Keys.RUNE_LINK,
-                    1
-            );
-
+        }
+        if (currentWebs >= 8) {
             event.setCancelled(true);
-            p.setItemOnCursor(null);
-            p.getInventory().addItem(cursor);
-
-            SoundUtils.play(
-                    p,
-                    Sound.BLOCK_ENCHANTMENT_TABLE_USE,
-                    1.0f,
-                    1.0f
-            );
-
-            Messages.send(p, "rune.linked",
-                    "target", target.getType().name().toLowerCase().replace("_", " "));
-            return;
-        }
-
-        // --- Handle Cobweb Limit ---
-        ItemStack cursorWeb = event.getCursor();
-        if (cursorWeb.getType() == Material.COBWEB) {
-            // Player is trying to put cobwebs into their inventory
-            int currentWebs = 0;
-            for (ItemStack is : p.getInventory().getContents()) {
-                if (is != null && is.getType() == Material.COBWEB) {
-                    currentWebs += is.getAmount();
-                }
-            }
-            if (currentWebs >= 8) {
-                event.setCancelled(true);
-                Messages.send(p, "listener.max-webs-reached");
-            }
+            Messages.send(p, "listener.max-webs-reached");
         }
     }
 
