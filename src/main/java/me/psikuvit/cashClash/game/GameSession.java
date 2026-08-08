@@ -87,6 +87,17 @@ public class GameSession {
     private Gamemode gamemode;
     private final GamemodeManager gamemodeManager;
     private final RejoinManager rejoinManager;
+    private final ArenaManager arenaManager;
+    private final ShopManager shopManager;
+    private final ScoreboardManager scoreboardManager;
+    private final ConfigManager configManager;
+    private final PlayerDataManager playerDataManager;
+    private final MythicItemManager mythicItemManager;
+    private final CustomArmorManager customArmorManager;
+    private final CustomItemManager customItemManager;
+    private final WeaponItemManager weaponItemManager;
+    private final LobbyManager lobbyManager;
+    private final GameManager gameManager;
 
     // Track round wins for each team (incremented when team wins a round)
     private final Map<Integer, Integer> roundWins; // 1 = Red, 2 = Blue
@@ -96,22 +107,21 @@ public class GameSession {
     private final Map<UUID, Boolean> shieldOverrides;
 
     public GameSession(int arenaNumber) {
-        this(arenaNumber, GamemodeManager.getInstance(), RejoinManager.getInstance());
-    }
-
-    /**
-     * @param gamemodeManager The gamemode manager this session selects/releases its
-     *                        {@link Gamemode} through - constructor-injected rather than
-     *                        resolved via {@code getInstance()} at each call site, so the
-     *                        session depends on one reference instead of the singleton.
-     * @param rejoinManager   The rejoin manager this session clears/restores rejoin state
-     *                        through - constructor-injected for the same reason.
-     */
-    public GameSession(int arenaNumber, GamemodeManager gamemodeManager, RejoinManager rejoinManager) {
         this.sessionId = UUID.randomUUID();
         this.arenaNumber = arenaNumber;
-        this.gamemodeManager = gamemodeManager;
-        this.rejoinManager = rejoinManager;
+        this.gamemodeManager = GamemodeManager.getInstance();
+        this.rejoinManager = RejoinManager.getInstance();
+        this.arenaManager = ArenaManager.getInstance();
+        this.shopManager = ShopManager.getInstance();
+        this.scoreboardManager = ScoreboardManager.getInstance();
+        this.configManager = ConfigManager.getInstance();
+        this.playerDataManager = PlayerDataManager.getInstance();
+        this.mythicItemManager = MythicItemManager.getInstance();
+        this.customArmorManager = CustomArmorManager.getInstance();
+        this.customItemManager = CustomItemManager.getInstance();
+        this.weaponItemManager = WeaponItemManager.getInstance();
+        this.lobbyManager = LobbyManager.getInstance();
+        this.gameManager = GameManager.getInstance();
         this.stateMachine = new GameStateMachine(GameState.WAITING);
         this.currentRound = 1;
         this.teamRed = new Team(1);
@@ -130,7 +140,7 @@ public class GameSession {
         this.shieldsEnabled = new Random().nextBoolean();
 
         // Get the fixed arena
-        Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
+        Arena arena = arenaManager.getArena(arenaNumber);
         if (arena == null) {
             throw new IllegalStateException("Arena " + arenaNumber + " not found!");
         }
@@ -143,7 +153,7 @@ public class GameSession {
         Messages.debug("GAME", "GameSession " + sessionId + " created for Arena " + arenaNumber + " with world: " + gameWorld.getName());
 
         // create shops in the copied world for this session
-        ShopManager.getInstance().createShopsForSession(this);
+        shopManager.createShopsForSession(this);
     }
 
     public UUID getSessionId() {
@@ -278,9 +288,9 @@ public class GameSession {
      * Get the arena template for this session
      */
     public TemplateWorld getArenaTemplate() {
-        Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
+        Arena arena = arenaManager.getArena(arenaNumber);
         if (arena == null) return null;
-        return ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        return arenaManager.getTemplate(arena.getTemplateId());
     }
 
     /**
@@ -332,7 +342,7 @@ public class GameSession {
 
         // Select a random gamemode for this session
         gamemode = gamemodeManager.selectGamemode(this);
-        ScoreboardManager.getInstance().createBoardForSession(this);
+        scoreboardManager.createBoardForSession(this);
 
         // Get players to the shop area before the round-start sequence freezes/blinds them
         roundManager.teleportToBuyPhase();
@@ -356,7 +366,7 @@ public class GameSession {
         startingCountdown = true;
         countdownSecondsRemaining = seconds;
 
-        int minPlayers = ConfigManager.getInstance().getMinPlayers();
+        int minPlayers = configManager.getMinPlayers();
 
         Messages.broadcast(players.keySet(), "round.game-countdown-start",
                 "seconds", String.valueOf(seconds));
@@ -467,7 +477,7 @@ public class GameSession {
      * Apply respawn protection to player
      */
     public void applyRespawnProtection(CashClashPlayer ccp) {
-        int protSec = ConfigManager.getInstance().getRespawnProtection();
+        int protSec = configManager.getRespawnProtection();
         ccp.setRespawnProtection(protSec * 1000L);
     }
 
@@ -557,7 +567,7 @@ public class GameSession {
      * Apply kit with layout if available
      */
     private void applyKitWithLayout(Player p, UUID uuid, Kit kit) {
-        PlayerData playerData = PlayerDataManager.getInstance().getData(uuid);
+        PlayerData playerData = playerDataManager.getData(uuid);
         if (playerData.hasKitLayout(kit.name())) {
             Map<Integer, String> layout = playerData.getKitLayout(kit.name());
             KitService.applyWithLayout(kit, p, layout, currentRound, shieldsEnabled);
@@ -573,10 +583,10 @@ public class GameSession {
         Team team = teamRed.hasPlayer(playerUuid) ? teamRed : (teamBlue.hasPlayer(playerUuid) ? teamBlue : null);
         if (team == null) return null;
 
-        Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
+        Arena arena = arenaManager.getArena(arenaNumber);
         if (arena == null) return null;
 
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        TemplateWorld tpl = arenaManager.getTemplate(arena.getTemplateId());
         if (tpl == null) return gameWorld != null ? gameWorld.getSpawnLocation() : null;
 
         int idx = (int) (new Random().nextDouble() * 3);
@@ -590,7 +600,7 @@ public class GameSession {
     public void nextRound() {
         currentRound++;
         // check if the round number exceeds the rounds in the config
-        if (currentRound > ConfigManager.getInstance().getTotalRounds()) {
+        if (currentRound > configManager.getTotalRounds()) {
             end();
             return;
         }
@@ -606,7 +616,7 @@ public class GameSession {
      */
     private void selectLegForRoundTwo() {
         if (currentRound == 2) {
-            MythicItemManager.getInstance().selectLegendariesForSession(this);
+            mythicItemManager.selectLegendariesForSession(this);
         }
     }
 
@@ -624,7 +634,7 @@ public class GameSession {
     private void resetRoundState() {
         teamRed.resetForfeitVotes();
         teamBlue.resetForfeitVotes();
-        CustomArmorManager.getInstance().resetRoundTracking();
+        customArmorManager.resetRoundTracking();
         BlockListener.cleanupRound(sessionId);
     }
 
@@ -677,10 +687,10 @@ public class GameSession {
         cancelStartCountdown();
         if (roundManager != null) roundManager.cleanup();
         if (bonusManager != null) bonusManager.cleanup();
-        CustomArmorManager.getInstance().cleanup();
-        CustomItemManager.getInstance().cleanup();
-        MythicItemManager.getInstance().cleanup();
-        WeaponItemManager.getInstance().cleanup();
+        customArmorManager.cleanup();
+        customItemManager.cleanup();
+        mythicItemManager.cleanup();
+        weaponItemManager.cleanup();
     }
 
     /**
@@ -703,7 +713,7 @@ public class GameSession {
             Player p = Bukkit.getPlayer(u);
             if (p != null && p.isOnline()) {
                 clearPlayerKit(p);
-                LobbyManager.getInstance().giveLobbyItems(p);
+                lobbyManager.giveLobbyItems(p);
             }
         }
 
@@ -717,7 +727,7 @@ public class GameSession {
     private void recordWins() {
         Team winner = calculateWinner();
         for (UUID u : winner.getPlayers()) {
-            PlayerDataManager.getInstance().incWins(u);
+            playerDataManager.incWins(u);
         }
     }
 
@@ -737,19 +747,19 @@ public class GameSession {
      */
     private void cleanupArena() {
         BlockListener.cleanupSession(sessionId);
-        ScoreboardManager.getInstance().removeBoard(sessionId);
+        scoreboardManager.removeBoard(sessionId);
 
         if (gameWorld != null) {
-            Arena arena = ArenaManager.getInstance().getArena(arenaNumber);
+            Arena arena = arenaManager.getArena(arenaNumber);
             if (arena != null) {
-                ShopManager.getInstance().removeShopsForSession(this);
+                shopManager.removeShopsForSession(this);
                 arena.deleteWorldCopy(gameWorld);
             }
         }
 
-        ArenaManager.getInstance().setArenaPlayerCount(arenaNumber, 0);
+        arenaManager.setArenaPlayerCount(arenaNumber, 0);
 
-        GameManager.getInstance().removeSession(sessionId);
+        gameManager.removeSession(sessionId);
     }
 
     /**
@@ -790,14 +800,14 @@ public class GameSession {
 
     public void addPlayer(Player player, int teamNumber) {
         // Clear lobby items when joining a game
-        LobbyManager.getInstance().clearLobbyItems(player);
+        lobbyManager.clearLobbyItems(player);
 
         CashClashPlayer ccPlayer = new CashClashPlayer(player);
         players.put(player.getUniqueId(), ccPlayer);
 
         if (teamNumber == 1) teamRed.addPlayer(player.getUniqueId());
         else teamBlue.addPlayer(player.getUniqueId());
-        ArenaManager.getInstance().incrementPlayerCount(arenaNumber);
+        arenaManager.incrementPlayerCount(arenaNumber);
     }
 
     public void removePlayer(Player player) {
@@ -814,7 +824,7 @@ public class GameSession {
         players.remove(player.getUniqueId());
         teamRed.removePlayer(player.getUniqueId());
         teamBlue.removePlayer(player.getUniqueId());
-        ArenaManager.getInstance().decrementPlayerCount(arenaNumber);
+        arenaManager.decrementPlayerCount(arenaNumber);
     }
 
     public Team getPlayerTeam(Player player) {
@@ -878,7 +888,7 @@ public class GameSession {
      */
     private boolean checkRecentDamageGrace(Team team, int aliveCount) {
         long now = System.currentTimeMillis();
-        int combatGrace = ConfigManager.getInstance().getForfeitCombatGrace();
+        int combatGrace = configManager.getForfeitCombatGrace();
         boolean anyRecentDamage = team.getPlayers().stream()
                 .anyMatch(uuid -> currentRoundData.getLastDamageTime(uuid) + (combatGrace * 1000L) > now);
 
@@ -924,7 +934,7 @@ public class GameSession {
 
     private void executeForfeit(Team forfeitingTeam) {
         Team other = getOpposingTeam(forfeitingTeam);
-        long bonus = ConfigManager.getInstance().getForfeitBonus();
+        long bonus = configManager.getForfeitBonus();
 
         applyForfeitPenalty(forfeitingTeam);
         applyForfeitBonus(other, bonus);
@@ -960,7 +970,7 @@ public class GameSession {
     }
 
     private Location determineFinalSpawn() {
-        Location spawnLoc = ArenaManager.getInstance().getServerLobbySpawn();
+        Location spawnLoc = arenaManager.getServerLobbySpawn();
         if (spawnLoc != null) return spawnLoc;
         World mainWorld = Bukkit.getWorlds().getFirst();
         return mainWorld != null ? mainWorld.getSpawnLocation() : null;
@@ -1058,7 +1068,7 @@ public class GameSession {
         if (ccp != null) {
             teamRed.removePlayer(playerUuid);
             teamBlue.removePlayer(playerUuid);
-            ArenaManager.getInstance().decrementPlayerCount(arenaNumber);
+            arenaManager.decrementPlayerCount(arenaNumber);
             Messages.debug("REJOIN", "Player " + playerUuid + " removed due to rejoin timeout");
         }
 
@@ -1106,11 +1116,11 @@ public class GameSession {
         }
 
         // Apply respawn protection
-        int protSec = ConfigManager.getInstance().getRespawnProtection();
+        int protSec = configManager.getRespawnProtection();
         existingCcp.setRespawnProtection(protSec * 1000L);
 
         // Set up scoreboard
-        ScoreboardManager.getInstance().setScoreboard(player);
+        scoreboardManager.setScoreboard(player);
 
         Messages.send(player, "round.rejoin-success");
         Messages.send(player, "round.rejoin-status",
