@@ -125,6 +125,12 @@ public abstract class Gamemode {
 
 
     /**
+     * Message key broadcast when a tied sudden-death cycle restarts - lets
+     * {@link SuddenDeathManager} announce this without a gamemode-type switch of its own.
+     */
+    public abstract String getSuddenDeathTiedRestartMessageKey();
+
+    /**
      * Get the sudden death manager for this gamemode
      */
     public abstract SuddenDeathManager getSuddenDeathManager();

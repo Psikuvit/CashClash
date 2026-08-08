@@ -8,20 +8,31 @@ import me.psikuvit.cashClash.gamemode.impl.KillConfirmGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.util.Messages;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
- * Manages gamemode selection and tracking for game sessions
+ * Manages gamemode selection and tracking for game sessions. Concrete {@link Gamemode}
+ * construction is a registry ({@link GamemodeType} -> factory function) rather than a switch, so
+ * adding a gamemode is one registration line here instead of a switch case that's easy to forget.
  */
 public class GamemodeManager {
 
     private static GamemodeManager instance;
     private final Map<UUID, Gamemode> sessionGamemodes = new HashMap<>();
     private final Map<UUID, GamemodeType> nextGamemode = new HashMap<>();
+    private final Map<GamemodeType, Function<GameSession, Gamemode>> registry = new EnumMap<>(GamemodeType.class);
     private final Random random = new Random();
+
+    private GamemodeManager() {
+        registry.put(GamemodeType.PROTECT_THE_PRESIDENT, ProtectThePresidentGamemode::new);
+        registry.put(GamemodeType.CAPTURE_THE_FLAG, CaptureTheFlagGamemode::new);
+        registry.put(GamemodeType.KILL_CONFIRM, KillConfirmGamemode::new);
+    }
 
     public static synchronized GamemodeManager getInstance() {
         if (instance == null) {
@@ -58,11 +69,11 @@ public class GamemodeManager {
     private Gamemode createGamemode(GameSession session, GamemodeType type) {
         Messages.debug("GAMEMODE", "Selected " + type.getDisplayName() + " for session " + session.getSessionId());
 
-        return switch (type) {
-            case PROTECT_THE_PRESIDENT -> new ProtectThePresidentGamemode(session);
-            case CAPTURE_THE_FLAG -> new CaptureTheFlagGamemode(session);
-            case KILL_CONFIRM -> new KillConfirmGamemode(session);
-        };
+        Function<GameSession, Gamemode> factory = registry.get(type);
+        if (factory == null) {
+            throw new IllegalStateException("No Gamemode registered for " + type);
+        }
+        return factory.apply(session);
     }
 
     /**
