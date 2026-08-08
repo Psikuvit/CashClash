@@ -50,16 +50,13 @@ public class BlazebiteHandler extends MythicItemHandler {
 
     /**
      * Handle BlazeBite shot.
-     * 8 shots per magazine, 25 second reload.
-     * Mode is determined by which crossbow is being used (stored in item PDC).
+     * 8 shots per magazine, 25 second reload. Every shot applies both the Glacier freeze and
+     * Volcano fire effects on hit - there's no longer a per-crossbow mode.
      */
     public boolean handleBlazebiteShot(Player player, ItemStack crossbow) {
         UUID uuid = player.getUniqueId();
 
-        String mode = PDCDetection.getBlazebiteMode(crossbow);
-        boolean isGlacier = "glacier".equals(mode);
-
-        Messages.debug(player, "BLAZEBITE: Shot triggered (" + (isGlacier ? "Glacier" : "Volcano") + " mode)");
+        Messages.debug(player, "BLAZEBITE: Shot triggered");
 
         int shots = blazebiteShotsRemaining.getOrDefault(uuid, cfg.getBlazebiteShotsPerMag());
         if (shots <= 0) {
@@ -87,17 +84,18 @@ public class BlazebiteHandler extends MythicItemHandler {
     }
 
     /**
-     * Handle BlazeBite hit effects.
+     * Handle BlazeBite hit effects - every hit now applies BOTH:
      * Glacier: First hit applies frostbite for 5 seconds. Second hit while frozen freezes player in place for 3 seconds.
      * Volcano: Explosive fire arrow (2 hearts direct, 1 heart splash in 3 blocks).
      */
-    public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc, boolean isGlacierMode) {
+    public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc) {
         World world = hitLoc.getWorld();
         if (world == null) return;
 
-        Messages.debug(shooter, "BLAZEBITE: Hit detected (" + (isGlacierMode ? "Glacier" : "Volcano") + " mode)");
+        Messages.debug(shooter, "BLAZEBITE: Hit detected");
 
-        if (isGlacierMode) {
+        // Glacier effect
+        {
             if (hitEntity instanceof Player victim) {
                 UUID victimId = victim.getUniqueId();
                 long currentTime = System.currentTimeMillis();
@@ -179,14 +177,18 @@ public class BlazebiteHandler extends MythicItemHandler {
                     glacierFrozenPlayers.put(victimId, expirationTime);
                 }
             }
-        } else {
-            // Volcano mode
+        }
+
+        // Volcano effect - fires on every hit alongside Glacier above.
+        {
             ParticleUtils.volcanoExplosion(hitLoc);
+            ParticleUtils.volcanoFlameBurst(hitLoc);
             SoundUtils.playAt(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
             GameSession session = GameManager.getInstance().getPlayerSession(shooter);
             Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
             int radius = cfg.getBlazebiteVolcanoRadius();
+            int fireTicks = cfg.getBlazebiteFireDuration();
             int hitCount = 0;
 
             for (Entity entity : world.getNearbyEntities(hitLoc, radius, radius, radius)) {
@@ -200,10 +202,8 @@ public class BlazebiteHandler extends MythicItemHandler {
                 }
 
                 double damage = entity.equals(hitEntity) ? cfg.getBlazebiteVolcanoDirectDamage() : cfg.getBlazebiteVolcanoSplashDamage();
-                // 30% boost for legendary crossbow
-                double boostedDamage = damage * 1.3;
-                target.damage(boostedDamage, shooter);
-                target.setFireTicks(4 * 20);
+                target.damage(damage, shooter);
+                target.setFireTicks(fireTicks);
                 hitCount++;
             }
             Messages.debug(shooter, "BLAZEBITE: Volcano explosion hit " + hitCount + " enemies, radius: " + radius);

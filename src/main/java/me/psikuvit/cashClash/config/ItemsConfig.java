@@ -369,6 +369,10 @@ public class ItemsConfig {
         return config.getInt("mythic-items.blazebite-crossbows.volcano.explosion-radius", 3);
     }
 
+    public int getBlazebiteFireDuration() {
+        return config.getInt("mythic-items.blazebite-crossbows.volcano.fire-duration-seconds", 5) * 20;
+    }
+
     // Alchemist Wand Tidy Up (Blink Swap stays hardcoded, not config-driven)
     public int getAlchemistTidyUpDuration() {
         return config.getInt("mythic-items.alchemist-wand.tidy-up.duration-seconds", 10);

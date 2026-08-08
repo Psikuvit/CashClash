@@ -44,15 +44,8 @@ public class MythicsCommand extends AbstractArgCommand {
             return true;
         }
 
-        // BlazeBite gives two crossbows
-        if (mythicItem == MythicItem.BLAZEBITE_CROSSBOWS) {
-            ItemStack[] crossbows = MythicItemManager.getInstance().createBlazebiteBundle(player);
-            player.getInventory().addItem(crossbows[0]); // Glacier
-            player.getInventory().addItem(crossbows[1]); // Volcano
-        } else {
-            ItemStack item = MythicItemManager.getInstance().createMythicItem(mythicItem, player);
-            player.getInventory().addItem(item);
-        }
+        ItemStack item = MythicItemManager.getInstance().createMythicItem(mythicItem, player);
+        player.getInventory().addItem(item);
         return false;
     }
 

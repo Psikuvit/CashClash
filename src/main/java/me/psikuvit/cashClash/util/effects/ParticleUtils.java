@@ -390,6 +390,17 @@ public final class ParticleUtils {
     }
 
     /**
+     * Spawn a red/orange/yellow dust burst left behind at a Volcano-mode impact point
+     * (BlazeBite). Smaller/tighter than {@link #flamebringerPull} since this is a one-shot
+     * burst, not a lingering pull effect.
+     */
+    public static void volcanoFlameBurst(Location location) {
+        spawnDust(location, Color.fromRGB(255, 0, 0), 1.2f, 12, 0.6);
+        spawnDust(location, Color.fromRGB(255, 165, 0), 1.2f, 12, 0.6);
+        spawnDust(location, Color.fromRGB(255, 255, 0), 1.2f, 12, 0.6);
+    }
+
+    /**
      * Spawn hit feedback particles (crit at target location).
      */
     public static void hitFeedback(Location targetLocation, int count, double offset) {

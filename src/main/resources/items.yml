@@ -125,7 +125,8 @@ mythic-items:
       max-stacks: 3               # 9 hits total (3 per stack) to reach full charge
       shield-disable-ticks: 100   # 5s vanilla shield-disable on a fully-charged (max-stacks) hit
 
-  # BlazeBite Crossbows
+  # BlazeBite Crossbows - a single crossbow now; every hit applies BOTH the glacier freeze
+  # and volcano fire/splash effects below (no more separate Glacier/Volcano items or modes).
   blazebite-crossbows:
     shots-per-magazine: 8
     reload-cooldown-seconds: 25
@@ -819,9 +820,9 @@ item-lore:
     blazebite-crossbows:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
-        - "<dark_purple>Dual-mode crossbows</dark_purple>"
-        - "<yellow>Glacier mode: Freeze enemies</yellow>"
-        - "<yellow>Volcano mode: Ignite enemies</yellow>"
+        - "<dark_purple>Every shot freezes AND ignites</dark_purple>"
+        - "<yellow>Freezes enemies on hit</yellow>"
+        - "<yellow>Explodes into fire on hit</yellow>"
     alchemist-wand:
       lore:
         - "<light_purple>✦ MYTHIC UTILITY ✦</light_purple>"

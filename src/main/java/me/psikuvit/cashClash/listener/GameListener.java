@@ -633,16 +633,15 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Handle BlazeBite crossbow shot
+     * Handle BlazeBite crossbow shot. Every shot now applies both the freeze and fire effects
+     * on hit - the arrow just needs a marker tag so {@link #handleBlazebiteArrow} knows it came
+     * from a BlazeBite crossbow.
      */
     private void handleBlazebiteShot(EntityShootBowEvent event, Player player, ItemStack bow) {
         if (!mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteShot(player, bow)) {
             event.setCancelled(true);
         } else if (event.getProjectile() instanceof Arrow arrow) {
-            String mode = PDCDetection.getBlazebiteMode(bow);
-            if (mode != null) {
-                PDCSetter.of(arrow).set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, mode).apply();
-            }
+            PDCSetter.of(arrow).set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, "active").apply();
         }
     }
 
@@ -691,15 +690,13 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Handle BlazeBite arrow hit
+     * Handle BlazeBite arrow hit - applies both the freeze and fire effects on every hit.
      */
     private void handleBlazebiteArrow(Player shooter, Arrow arrow, ProjectileHitEvent event) {
-        String blazebiteMode = PDCDetection.getArrowBlazebiteMode(arrow);
-        if (blazebiteMode == null) return;
+        if (PDCDetection.getArrowBlazebiteMode(arrow) == null) return;
 
         Location hitLoc = event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation();
-        boolean isGlacier = "glacier".equals(blazebiteMode);
-        mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc, isGlacier);
+        mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc);
     }
 
     /**

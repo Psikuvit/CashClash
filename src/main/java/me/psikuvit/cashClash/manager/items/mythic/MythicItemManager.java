@@ -255,14 +255,8 @@ public class MythicItemManager {
 
     /**
      * Create the mythic item with proper tags and appearance.
-     * For BlazeBite, use createBlazebiteBundle() instead to get both crossbows.
      */
     public ItemStack createMythicItem(MythicItem mythic, Player owner) {
-        // For BlazeBite, return just the Glacier crossbow (use createBlazebiteBundle for both)
-        if (mythic == MythicItem.BLAZEBITE_CROSSBOWS) {
-            return createBlazebiteItem(owner, true); // Default to Glacier
-        }
-
         ItemStack item = new ItemStack(mythic.getMaterial());
 
         PDCSetter tags = PDCSetter.of(item);
@@ -294,103 +288,39 @@ public class MythicItemManager {
     }
 
     /**
-     * Create the BlazeBite crossbow bundle - returns array of [Glacier, Volcano] crossbows.
+     * All melee mythics (Carl's Battleaxe, Electric Eel Sword, Goblin Spear, Warden Gloves) are
+     * normalized to diamond-sword-equivalent stats: 7.0 total attack damage, 1.6 attack speed.
+     * Deltas below are relative to each item's vanilla base-material totals (which already
+     * include the item's own built-in tool component): Netherite Axe 10.0/1.0, Diamond Sword
+     * 7.0/1.6, Trident 9.0/1.1, Netherite Sword 8.0/1.6.
      */
-    public ItemStack[] createBlazebiteBundle(Player owner) {
-        return new ItemStack[] {
-            createBlazebiteItem(owner, true),  // Glacier
-            createBlazebiteItem(owner, false)  // Volcano
-        };
-    }
-
-    /**
-     * Create a single BlazeBite crossbow (Glacier or Volcano).
-     */
-    private ItemStack createBlazebiteItem(Player owner, boolean isGlacier) {
-        ItemStack item = new ItemStack(Material.CROSSBOW);
-
-        PDCSetter tags = PDCSetter.of(item);
-
-        String name = isGlacier ? "Glacier Crossbow" : "Volcano Crossbow";
-        String color = isGlacier ? "<aqua>" : "<red>";
-
-        tags.meta().displayName(Messages.parse("<light_purple><bold>" + name + "</bold></light_purple>"));
-
-        // Lore
-        List<Component> lore = new ArrayList<>();
-        lore.add(Messages.parse("<dark_purple>âœ¦ MYTHIC WEAPON âœ¦</dark_purple>"));
-        lore.add(Component.empty());
-        if (isGlacier) {
-            lore.add(Messages.parse(color + "Glacier Mode: Arrows inflict Slowness I"));
-            lore.add(Messages.parse(color + "and Frostbite for 3 seconds."));
-        } else {
-            lore.add(Messages.parse(color + "Volcano Mode: Explosive fire arrows!"));
-            lore.add(Messages.parse(color + "2 hearts direct, 1 heart splash (3 blocks)."));
-        }
-        lore.add(Component.empty());
-        lore.add(Messages.parse("<gray>8 shots per magazine, 25s reload</gray>"));
-        lore.add(Messages.parse("<gray>Owner: " + owner.getName() + "</gray>"));
-        tags.meta().lore(lore);
-
-        // PDC tags - mark as BlazeBite and store mode
-        tags.set(Keys.ITEM_ID, PersistentDataType.STRING, MythicItem.BLAZEBITE_CROSSBOWS.name());
-        tags.set(Keys.ITEM_OWNER, PersistentDataType.STRING, owner.getUniqueId().toString());
-        tags.set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, isGlacier ? "glacier" : "volcano");
-
-        // Apply enchantments - Piercing 3, Quick Charge 1
-        tags.meta().addEnchant(Enchantment.PIERCING, 3, true);
-        tags.meta().addEnchant(Enchantment.QUICK_CHARGE, 1, true);
-
-        tags.meta().setUnbreakable(true);
-        tags.meta().addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-        tags.apply();
-
-        return item;
-    }
+    private static final double DIAMOND_SWORD_DAMAGE = 7.0;
+    private static final double DIAMOND_SWORD_SPEED = 1.6;
 
     private void applyMythicAttributes(MythicItem mythic, ItemMeta meta) {
         switch (mythic) {
+            case CARLS_BATTLEAXE -> {
+                // Netherite Axe base: 10.0 damage / 1.0 speed -> diamond sword equivalent
+                addAttackModifiers(meta, "carls_battleaxe", DIAMOND_SWORD_DAMAGE - 10.0, DIAMOND_SWORD_SPEED - 1.0);
+            }
+            case ELECTRIC_EEL_SWORD -> {
+                // Diamond Sword base is already diamond-equivalent - explicit no-op modifiers
+                // for consistency with the other melee mythics rather than an implicit default.
+                addAttackModifiers(meta, "electric_eel_sword", 0.0, 0.0);
+            }
             case GOBLIN_SPEAR -> {
-                NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_damage");
-                AttributeModifier damageMod = new AttributeModifier(
-                        damageKey,
-                        8.0,
-                        AttributeModifier.Operation.ADD_NUMBER,
-                        EquipmentSlotGroup.MAINHAND
-                );
-                meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, damageMod);
+                // Trident base: 9.0 damage / 1.1 speed -> diamond sword equivalent
+                addAttackModifiers(meta, "goblin_spear", DIAMOND_SWORD_DAMAGE - 9.0, DIAMOND_SWORD_SPEED - 1.1);
 
-                NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_speed");
-                AttributeModifier speedMod = new AttributeModifier(
-                        speedKey,
-                        -2.4,
-                        AttributeModifier.Operation.ADD_NUMBER,
-                        EquipmentSlotGroup.MAINHAND
-                );
-                meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedMod);
-
-                // +1 block range removed
+                // Loyalty makes the thrown spear return to the wielder - kept.
                 meta.addEnchant(Enchantment.LOYALTY, 3, true);
             }
             case WARDEN_GLOVES -> {
-                // Netherite sword stats: 8 attack damage (+4 base = 12 total), 1.6 attack speed
-                NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), "warden_damage");
-                AttributeModifier damageMod = new AttributeModifier(
-                        damageKey,
-                        8.0,
-                        AttributeModifier.Operation.ADD_NUMBER,
-                        EquipmentSlotGroup.MAINHAND
-                );
-                meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, damageMod);
-
-                NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), "warden_speed");
-                AttributeModifier speedMod = new AttributeModifier(
-                        speedKey,
-                        -2.4,
-                        AttributeModifier.Operation.ADD_NUMBER,
-                        EquipmentSlotGroup.MAINHAND
-                );
-                meta.addAttributeModifier(Attribute.ATTACK_SPEED, speedMod);
+                // Baseline is a true 0 damage - Rising Fury is the only source of real damage
+                // (see WardenGlovesHandler). Netherite Sword base 8.0/1.6 -> 0.0/1.6 baseline.
+                meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
+                        WardenGlovesHandler.WARDEN_DAMAGE_BASELINE_KEY, WardenGlovesHandler.WARDEN_BASELINE_DAMAGE_DELTA,
+                        AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
 
                 // Extra reach removed
                 meta.removeAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE);
@@ -401,11 +331,28 @@ public class MythicItemManager {
             case WIND_BOW -> // Legendary bow gets Power 3
                     meta.addEnchant(Enchantment.POWER, 3, true);
             case BLAZEBITE_CROSSBOWS -> {
-                // Legendary crossbow - damage boost handled in hit handler
+                // Single crossbow now applies both Glacier (freeze) and Volcano (fire) effects
+                // on every hit - damage/effects handled in the hit handler.
+                meta.addEnchant(Enchantment.PIERCING, 3, true);
+                meta.addEnchant(Enchantment.QUICK_CHARGE, 1, true);
             }
             default -> {
             }
         }
+    }
+
+    /**
+     * Adds mainhand ATTACK_DAMAGE/ATTACK_SPEED modifiers under stable, item-specific keys.
+     * {@code damageDelta}/{@code speedDelta} are relative to the item's vanilla base totals.
+     */
+    private void addAttackModifiers(ItemMeta meta, String keyPrefix, double damageDelta, double speedDelta) {
+        NamespacedKey damageKey = new NamespacedKey(CashClashPlugin.getInstance(), keyPrefix + "_damage");
+        meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
+                damageKey, damageDelta, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+
+        NamespacedKey speedKey = new NamespacedKey(CashClashPlugin.getInstance(), keyPrefix + "_speed");
+        meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(
+                speedKey, speedDelta, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
     }
 
     /**
