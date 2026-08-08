@@ -560,6 +560,17 @@ public class InteractListener implements Listener {
 
         switch (mythic) {
             case CARLS_BATTLEAXE -> {
+                if (player.isSneaking()) {
+                    if (isSilenced(player)) {
+                        event.setCancelled(true);
+                        Messages.send(player, "listener.cannot-use-abilities-while-silenced");
+                        return true;
+                    }
+                    event.setCancelled(true);
+                    armorManager.lockMythicShift(player);
+                    mythicManager.getHandler(CarlsBattleaxeHandler.class).useCarlsThrow(player);
+                    return true;
+                }
                 event.setCancelled(true);
                 armorManager.lockMythicShift(player);
                 mythicManager.getHandler(CarlsBattleaxeHandler.class).activateCarlsSpinAttack(player);

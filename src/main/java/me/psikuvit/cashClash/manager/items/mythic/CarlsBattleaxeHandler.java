@@ -4,11 +4,14 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -16,28 +19,47 @@ import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Snowball;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
+import org.bukkit.util.Vector;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Carl's Battleaxe - spinning melee attack with a visual Item Display axe.
+ * Carl's Battleaxe - spinning melee attack, a shift+right-click throw that catches and drags
+ * enemies, and a visual Item Display axe used for both.
  */
 public class CarlsBattleaxeHandler extends MythicItemHandler {
 
     private final Set<UUID> spinningPlayers;
 
+    // Throw ability state, keyed by thrower - tracked at handler level (not just inside the
+    // runnable closure) so cleanup()/cleanupPlayer() can tear down entities and restore the
+    // stashed axe even if the player disconnects or the game ends mid-flight.
+    private final Set<UUID> carlsThrowing;
+    private final Map<UUID, ItemStack> carlsStashedAxe;
+    private final Map<UUID, Entity> carlsThrowCarriers;
+    private final Map<UUID, ItemDisplay> carlsThrowDisplays;
+
     public CarlsBattleaxeHandler(MythicItemManager manager) {
         super(manager);
         this.spinningPlayers = ConcurrentHashMap.newKeySet();
+        this.carlsThrowing = ConcurrentHashMap.newKeySet();
+        this.carlsStashedAxe = new ConcurrentHashMap<>();
+        this.carlsThrowCarriers = new ConcurrentHashMap<>();
+        this.carlsThrowDisplays = new ConcurrentHashMap<>();
     }
 
     /**
@@ -216,6 +238,181 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
     }
 
     /**
+     * Carl's Battleaxe Throw (shift+right-click). The axe leaves the player's hand and flies
+     * out up to {@code distance} blocks (or until it hits a wall), catching enemies along the
+     * way; it then reverses and drags any caught players back, releasing + damaging them once
+     * within {@code release-distance} of the thrower, and the axe reappears in their hand.
+     */
+    public void useCarlsThrow(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        if (carlsThrowing.contains(uuid)) return;
+
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_THROW)) {
+            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_THROW);
+            Messages.send(player, "mythic.carls-battleaxe-throw-cooldown", "cooldown_seconds", String.valueOf(remaining));
+            return;
+        }
+
+        ItemStack axe = player.getInventory().getItemInMainHand();
+        if (PDCDetection.getMythic(axe) != MythicItem.CARLS_BATTLEAXE) return;
+
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_THROW, cfg.getCarlsThrowCooldown());
+        carlsThrowing.add(uuid);
+        carlsStashedAxe.put(uuid, axe.clone());
+        player.getInventory().setItemInMainHand(null);
+
+        Messages.send(player, "mythic.carls-battleaxe-throw-activated");
+        SoundUtils.play(player, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.6f);
+
+        Location startLoc = player.getEyeLocation();
+        Snowball carrier = player.getWorld().spawn(startLoc, Snowball.class, s -> {
+            s.setGravity(false);
+            s.setInvulnerable(true);
+            s.setPersistent(false);
+            s.setSilent(true);
+            s.setVisibleByDefault(false);
+            s.setShooter(player);
+        });
+        ItemDisplay display = spawnThrownAxeDisplay(startLoc);
+        carlsThrowCarriers.put(uuid, carrier);
+        carlsThrowDisplays.put(uuid, display);
+
+        double maxDistance = cfg.getCarlsThrowDistance();
+        double stepSize = cfg.getCarlsThrowSpeedPerTick();
+        double catchRadius = cfg.getCarlsThrowCatchRadius();
+        double releaseDistance = cfg.getCarlsThrowReleaseDistance();
+        double damage = cfg.getCarlsThrowDamage();
+
+        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
+
+        BukkitRunnable throwRunnable = new BukkitRunnable() {
+            Vector direction = startLoc.getDirection().normalize();
+            double traveled = 0;
+            boolean returning = false;
+            final List<Player> caught = new ArrayList<>();
+
+            @Override
+            public void run() {
+                if (!player.isOnline() || !carrier.isValid()) {
+                    finish(false);
+                    return;
+                }
+
+                Location carrierLoc = carrier.getLocation();
+
+                if (!returning) {
+                    Location nextLoc = carrierLoc.clone().add(direction.clone().multiply(stepSize));
+                    traveled += stepSize;
+                    boolean hitWall = nextLoc.getBlock().getType().isSolid();
+                    moveTo(nextLoc, direction);
+
+                    for (Entity entity : carrier.getNearbyEntities(catchRadius, catchRadius, catchRadius)) {
+                        if (!(entity instanceof Player target)) continue;
+                        if (target.equals(player) || caught.contains(target)) continue;
+                        if (session != null && playerTeam != null) {
+                            Team targetTeam = session.getPlayerTeam(target);
+                            if (targetTeam != null && targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) continue;
+                        }
+                        caught.add(target);
+                        SoundUtils.play(target, Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
+                        Messages.debug(player, "CARLS_BATTLEAXE: Throw caught " + target.getName());
+                    }
+
+                    if (hitWall || traveled >= maxDistance) {
+                        returning = true;
+                    }
+                } else {
+                    Vector toPlayer = player.getEyeLocation().toVector().subtract(carrierLoc.toVector());
+                    double distanceToPlayer = toPlayer.length();
+                    if (distanceToPlayer <= releaseDistance) {
+                        finish(true);
+                        return;
+                    }
+                    Vector returnDir = toPlayer.normalize();
+                    Location nextLoc = carrierLoc.clone().add(returnDir.clone().multiply(stepSize));
+                    moveTo(nextLoc, returnDir);
+                }
+
+                // Drag caught players along every tick once caught
+                Location dragLoc = carrier.getLocation().add(0, 0.5, 0);
+                for (Player c : caught) {
+                    if (c.isOnline()) c.teleport(dragLoc);
+                }
+
+                ParticleUtils.spawnDust(carrier.getLocation(), Color.fromRGB(150, 150, 160), 1.0f, 4, 0.15);
+            }
+
+            private void moveTo(Location nextLoc, Vector facing) {
+                carrier.teleport(nextLoc);
+                if (display.isValid()) {
+                    float yaw = (float) Math.toDegrees(Math.atan2(-facing.getX(), -facing.getZ()));
+                    nextLoc.setYaw(yaw);
+                    display.teleport(nextLoc);
+                    display.setRotation(yaw, 90);
+                }
+            }
+
+            private void finish(boolean natural) {
+                cancel();
+                carlsThrowing.remove(uuid);
+                carlsThrowCarriers.remove(uuid);
+                carlsThrowDisplays.remove(uuid);
+                if (carrier.isValid()) carrier.remove();
+                if (display.isValid()) display.remove();
+
+                if (natural && !caught.isEmpty()) {
+                    for (Player c : caught) {
+                        if (!c.isOnline()) continue;
+                        c.setNoDamageTicks(0);
+                        c.setMaximumNoDamageTicks(0);
+                        c.damage(damage, player);
+                        SchedulerUtils.runTaskLater(() -> {
+                            if (c.isOnline()) c.setMaximumNoDamageTicks(20);
+                        }, 1L);
+                        ParticleUtils.damageIndicator(c.getLocation().add(0, 1, 0), 20, 0.5);
+                        SoundUtils.play(c, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
+                    }
+                    Messages.send(player, "mythic.carls-battleaxe-throw-hit", "{enemy_count}", String.valueOf(caught.size()));
+                }
+
+                ItemStack stashed = carlsStashedAxe.remove(uuid);
+                if (player.isOnline() && stashed != null) {
+                    player.getInventory().setItemInMainHand(stashed);
+                }
+                Messages.debug(player, "CARLS_BATTLEAXE: Throw ended, caught " + caught.size() + " players");
+            }
+        };
+
+        BukkitTask task = SchedulerUtils.runTaskTimer(throwRunnable, 0L, 1L);
+        manager.trackTask(uuid, task);
+    }
+
+    /**
+     * Spawn a (non-spinning) ItemDisplay axe for the Throw ability, oriented per-tick towards
+     * the direction of travel by the caller.
+     */
+    private ItemDisplay spawnThrownAxeDisplay(Location loc) {
+        return loc.getWorld().spawn(loc, ItemDisplay.class, display -> {
+            display.setItemStack(new ItemStack(Material.NETHERITE_AXE));
+            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+
+            Transformation transform = display.getTransformation();
+            Quaternionf leftRotation = new Quaternionf();
+            leftRotation.rotateX((float) Math.toRadians(90));
+            display.setTransformation(new Transformation(
+                    transform.getTranslation(),
+                    leftRotation,
+                    new Vector3f(1.3f, 1.3f, 1.3f),
+                    transform.getRightRotation()
+            ));
+            display.setBillboard(Display.Billboard.FIXED);
+            display.setBrightness(new Display.Brightness(15, 15));
+        });
+    }
+
+    /**
      * Handle Carl's Battleaxe critical hit launch.
      * Critical hits (while falling) launch enemies into the air.
      * 10 second cooldown.
@@ -231,10 +428,35 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
     @Override
     public void cleanup() {
         spinningPlayers.clear();
+
+        carlsThrowCarriers.values().forEach(carrier -> {
+            if (carrier != null && carrier.isValid()) carrier.remove();
+        });
+        carlsThrowCarriers.clear();
+        carlsThrowDisplays.values().forEach(display -> {
+            if (display != null && display.isValid()) display.remove();
+        });
+        carlsThrowDisplays.clear();
+        carlsThrowing.clear();
+        carlsStashedAxe.clear();
     }
 
     @Override
     public void cleanupPlayer(Player player) {
-        spinningPlayers.remove(player.getUniqueId());
+        UUID uuid = player.getUniqueId();
+        spinningPlayers.remove(uuid);
+
+        if (carlsThrowing.remove(uuid)) {
+            Entity carrier = carlsThrowCarriers.remove(uuid);
+            if (carrier != null && carrier.isValid()) carrier.remove();
+
+            ItemDisplay display = carlsThrowDisplays.remove(uuid);
+            if (display != null && display.isValid()) display.remove();
+
+            ItemStack stashed = carlsStashedAxe.remove(uuid);
+            if (player.isOnline() && stashed != null) {
+                player.getInventory().setItemInMainHand(stashed);
+            }
+        }
     }
 }

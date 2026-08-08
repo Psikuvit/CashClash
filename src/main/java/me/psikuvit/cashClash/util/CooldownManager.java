@@ -330,6 +330,7 @@ public class CooldownManager {
         // Mythic Items
         public static final String CARLS_BATTLEAXE_SLASH = "CARLS_BATTLEAXE_SLASH";
         public static final String CARLS_BATTLEAXE_CRIT = "CARLS_BATTLEAXE_CRIT";
+        public static final String CARLS_BATTLEAXE_THROW = "CARLS_BATTLEAXE_THROW";
         public static final String WIND_BOW_BOOST = "WIND_BOW_BOOST";
         public static final String WIND_BOW_RELOAD = "WIND_BOW_RELOAD";
         public static final String BOBBY_DOG = "BOBBY_DOG";

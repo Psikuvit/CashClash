@@ -27,6 +27,15 @@ mythic-items:
     critical-hit:
       cooldown-milliseconds: 10000
       launch-power: 1.8
+    # Throw - Shift + right-click. The axe leaves your hand, flies out, catches enemies in its
+    # path, drags them back, and releases + damages them once close to you again.
+    throw:
+      cooldown-seconds: 25
+      distance: 6.0
+      speed-blocks-per-tick: 1.0
+      damage: 8.0
+      catch-radius: 1.5
+      release-distance: 1.0
 
   # Wind Bow
   wind-bow:

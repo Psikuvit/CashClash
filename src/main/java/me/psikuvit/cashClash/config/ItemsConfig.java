@@ -99,6 +99,31 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.carls-battleaxe.critical-hit.launch-power", 1.2);
     }
 
+    // Carl's Battleaxe - Throw (shift+right-click)
+    public int getCarlsThrowCooldown() {
+        return config.getInt("mythic-items.carls-battleaxe.throw.cooldown-seconds", 25);
+    }
+
+    public double getCarlsThrowDistance() {
+        return config.getDouble("mythic-items.carls-battleaxe.throw.distance", 6.0);
+    }
+
+    public double getCarlsThrowSpeedPerTick() {
+        return config.getDouble("mythic-items.carls-battleaxe.throw.speed-blocks-per-tick", 1.0);
+    }
+
+    public double getCarlsThrowDamage() {
+        return config.getDouble("mythic-items.carls-battleaxe.throw.damage", 8.0);
+    }
+
+    public double getCarlsThrowCatchRadius() {
+        return config.getDouble("mythic-items.carls-battleaxe.throw.catch-radius", 1.5);
+    }
+
+    public double getCarlsThrowReleaseDistance() {
+        return config.getDouble("mythic-items.carls-battleaxe.throw.release-distance", 1.0);
+    }
+
     // Wind Bow
     public int getWindBowBoostCooldown() {
         return config.getInt("mythic-items.wind-bow.boost.cooldown-seconds", 30);
