@@ -85,6 +85,8 @@ public class GameSession {
     private boolean startingCountdown;
     private int countdownSecondsRemaining;
     private Gamemode gamemode;
+    private final GamemodeManager gamemodeManager;
+    private final RejoinManager rejoinManager;
 
     // Track round wins for each team (incremented when team wins a round)
     private final Map<Integer, Integer> roundWins; // 1 = Red, 2 = Blue
@@ -94,8 +96,22 @@ public class GameSession {
     private final Map<UUID, Boolean> shieldOverrides;
 
     public GameSession(int arenaNumber) {
+        this(arenaNumber, GamemodeManager.getInstance(), RejoinManager.getInstance());
+    }
+
+    /**
+     * @param gamemodeManager The gamemode manager this session selects/releases its
+     *                        {@link Gamemode} through - constructor-injected rather than
+     *                        resolved via {@code getInstance()} at each call site, so the
+     *                        session depends on one reference instead of the singleton.
+     * @param rejoinManager   The rejoin manager this session clears/restores rejoin state
+     *                        through - constructor-injected for the same reason.
+     */
+    public GameSession(int arenaNumber, GamemodeManager gamemodeManager, RejoinManager rejoinManager) {
         this.sessionId = UUID.randomUUID();
         this.arenaNumber = arenaNumber;
+        this.gamemodeManager = gamemodeManager;
+        this.rejoinManager = rejoinManager;
         this.stateMachine = new GameStateMachine(GameState.WAITING);
         this.currentRound = 1;
         this.teamRed = new Team(1);
@@ -315,7 +331,7 @@ public class GameSession {
         bonusManager = new BonusManager(this);
 
         // Select a random gamemode for this session
-        gamemode = GamemodeManager.getInstance().selectGamemode(this);
+        gamemode = gamemodeManager.selectGamemode(this);
         ScoreboardManager.getInstance().createBoardForSession(this);
 
         // Get players to the shop area before the round-start sequence freezes/blinds them
@@ -631,7 +647,7 @@ public class GameSession {
         stateMachine.transitionTo(GameState.ENDING);
 
         // Clear any pending rejoins for this session
-        RejoinManager.getInstance().clearSessionRejoins(sessionId);
+        rejoinManager.clearSessionRejoins(sessionId);
 
         // Stop round/bonus timers immediately - the game is decided now. Gamemode
         // cleanup is deferred (releaseGamemode below) since ScoreboardProvider still
@@ -674,7 +690,7 @@ public class GameSession {
      */
     private void releaseGamemode() {
         if (gamemode != null) {
-            GamemodeManager.getInstance().removeGamemode(sessionId);
+            gamemodeManager.removeGamemode(sessionId);
             gamemode = null;
         }
     }
@@ -1079,7 +1095,7 @@ public class GameSession {
         }
 
         // Restore player state from rejoin data
-        RejoinManager.getInstance().restorePlayerState(player, existingCcp, data);
+        rejoinManager.restorePlayerState(player, existingCcp, data);
 
         // Teleport to spawn location
         Location spawn = getSpawnForPlayer(uuid);
