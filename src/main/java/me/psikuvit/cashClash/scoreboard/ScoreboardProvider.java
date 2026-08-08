@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.scoreboard;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -21,13 +23,13 @@ public class ScoreboardProvider {
     private static final ScoreboardContext LOBBY_CONTEXT = new ScoreboardContext() {
         @Override
         public Component getTitle(Player player, GameSession session) {
-            String titleRaw = ConfigManager.getInstance().getLobbyScoreboardTitle();
+            String titleRaw = CashClashPlugin.getInstance().getConfigManager().getLobbyScoreboardTitle();
             return Messages.parse(fillPlaceholders(titleRaw, player, session));
         }
 
         @Override
         public List<String> getLines(Player player, GameSession session) {
-            return ConfigManager.getInstance().getLobbyScoreboardLines();
+            return CashClashPlugin.getInstance().getConfigManager().getLobbyScoreboardLines();
         }
 
         @Override
@@ -46,7 +48,7 @@ public class ScoreboardProvider {
      * Get the appropriate scoreboard context for a player
      */
     public static ScoreboardContext getContext(Player player) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
 
         if (session == null) {
             return LOBBY_CONTEXT;
@@ -61,15 +63,15 @@ public class ScoreboardProvider {
                 String configTitle;
                 if (inSuddenDeath) {
                     configTitle = switch (session.getGamemode().getType()) {
-                        case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFSuddenDeathScoreboardTitle();
-                        case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPSuddenDeathScoreboardTitle();
-                        case KILL_CONFIRM -> ConfigManager.getInstance().getKCSuddenDeathScoreboardTitle();
+                        case CAPTURE_THE_FLAG -> CashClashPlugin.getInstance().getConfigManager().getCTFSuddenDeathScoreboardTitle();
+                        case PROTECT_THE_PRESIDENT -> CashClashPlugin.getInstance().getConfigManager().getPTPSuddenDeathScoreboardTitle();
+                        case KILL_CONFIRM -> CashClashPlugin.getInstance().getConfigManager().getKCSuddenDeathScoreboardTitle();
                     };
                 } else {
                     configTitle = switch (session.getGamemode().getType()) {
-                        case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFScoreboardTitle();
-                        case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPScoreboardTitle();
-                        case KILL_CONFIRM -> ConfigManager.getInstance().getKCScoreboardTitle();
+                        case CAPTURE_THE_FLAG -> CashClashPlugin.getInstance().getConfigManager().getCTFScoreboardTitle();
+                        case PROTECT_THE_PRESIDENT -> CashClashPlugin.getInstance().getConfigManager().getPTPScoreboardTitle();
+                        case KILL_CONFIRM -> CashClashPlugin.getInstance().getConfigManager().getKCScoreboardTitle();
                     };
                 }
                 String filled = fillPlaceholders(configTitle, player, session);
@@ -80,15 +82,15 @@ public class ScoreboardProvider {
             public List<String> getLines(Player player, GameSession session) {
                 if (inSuddenDeath) {
                     return switch (session.getGamemode().getType()) {
-                        case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFSuddenDeathScoreboardLines();
-                        case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPSuddenDeathScoreboardLines();
-                        case KILL_CONFIRM -> ConfigManager.getInstance().getKCSuddenDeathScoreboardLines();
+                        case CAPTURE_THE_FLAG -> CashClashPlugin.getInstance().getConfigManager().getCTFSuddenDeathScoreboardLines();
+                        case PROTECT_THE_PRESIDENT -> CashClashPlugin.getInstance().getConfigManager().getPTPSuddenDeathScoreboardLines();
+                        case KILL_CONFIRM -> CashClashPlugin.getInstance().getConfigManager().getKCSuddenDeathScoreboardLines();
                     };
                 } else {
                     return switch (session.getGamemode().getType()) {
-                        case CAPTURE_THE_FLAG -> ConfigManager.getInstance().getCTFScoreboardLines();
-                        case PROTECT_THE_PRESIDENT -> ConfigManager.getInstance().getPTPScoreboardLines();
-                        case KILL_CONFIRM -> ConfigManager.getInstance().getKCScoreboardLines();
+                        case CAPTURE_THE_FLAG -> CashClashPlugin.getInstance().getConfigManager().getCTFScoreboardLines();
+                        case PROTECT_THE_PRESIDENT -> CashClashPlugin.getInstance().getConfigManager().getPTPScoreboardLines();
+                        case KILL_CONFIRM -> CashClashPlugin.getInstance().getConfigManager().getKCScoreboardLines();
                     };
                 }
             }
@@ -134,6 +136,4 @@ public class ScoreboardProvider {
         return previousContext != currentContext.getContextType();
     }
 }
-
-
 

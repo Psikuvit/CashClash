@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.shop;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ShopConfig;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -85,7 +87,7 @@ public enum EnchantEntry {
         if (level < 1 || level > maxLevel) {
             return -1L;
         }
-        return ShopConfig.getInstance().getEnchantPrice(configKey, level);
+        return CashClashPlugin.getInstance().getShopConfig().getEnchantPrice(configKey, level);
     }
 
     public boolean canApplyTo(ItemStack item) {

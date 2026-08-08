@@ -29,8 +29,7 @@ public final class Messages {
     private static final MiniMessage MINI = MiniMessage.miniMessage();
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
     private static final int DEFAULT_WRAP_WIDTH = 40;
-    private static final MessagesConfig config = MessagesConfig.getInstance();
-
+    private static final MessagesConfig config = CashClashPlugin.getInstance().getMessagesConfig();
 
     /**
      * Log a debug message to the console if debug mode is enabled.
@@ -53,7 +52,7 @@ public final class Messages {
      * Check if debug mode is enabled in config.
      */
     public static boolean isDebugEnabled() {
-        return ConfigManager.getInstance().isDebugEnabled();
+        return CashClashPlugin.getInstance().getConfigManager().isDebugEnabled();
     }
 
     /**
@@ -170,7 +169,6 @@ public final class Messages {
             player.sendMessage(parse(config.getMessage(key, args)));
         }
     }
-
 
     /**
      * Send a message to a CommandSender using a message key.

@@ -17,7 +17,6 @@ import java.util.Map;
  */
 public class SequencesConfig {
 
-    private static SequencesConfig instance;
     private final ConfigValidator validator;
     private final Map<String, String> messages;
 
@@ -25,11 +24,6 @@ public class SequencesConfig {
         this.validator = new ConfigValidator();
         this.messages = new HashMap<>();
         loadConfig();
-        instance = this;
-    }
-
-    public static SequencesConfig getInstance() {
-        return instance;
     }
 
     private void loadConfig() {

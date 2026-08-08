@@ -111,7 +111,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
             return;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             Messages.debug(player, "ALCHEMIST_WAND: No session");
             return;
@@ -274,7 +274,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
             return;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(wielder);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(wielder);
         if (session == null) {
             Messages.debug(wielder, "ALCHEMIST_WAND: No session");
             return;
@@ -432,7 +432,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
         Long expiry = alchemistTidyUpExpiry.get(attackerId);
         if (expiry == null || System.currentTimeMillis() >= expiry) return;
 
-        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(attacker);
         if (session == null) return;
 
         Team attackerTeam = session.getPlayerTeam(attacker);
@@ -537,7 +537,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
             return;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(wielder);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(wielder);
         if (session == null) {
             Messages.debug(wielder, "ALCHEMIST_WAND: No session");
             return;

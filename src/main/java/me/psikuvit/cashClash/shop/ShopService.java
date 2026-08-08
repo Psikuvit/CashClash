@@ -33,18 +33,12 @@ import java.util.Map;
  */
 public class ShopService {
 
-    private static ShopService instance;
     private final GameManager gameManager;
     private final ItemFactory itemFactory;
 
     public ShopService(GameManager gameManager, ItemFactory itemFactory) {
         this.gameManager = gameManager;
         this.itemFactory = itemFactory;
-        instance = this;
-    }
-
-    public static ShopService getInstance() {
-        return instance;
     }
 
     public long calculateTotalPrice(Purchasable item, int quantity) {
@@ -115,7 +109,6 @@ public class ShopService {
         }
         return count;
     }
-
 
     public void refund(Player player, long amount) {
         CashClashPlayer ccp = getCashClashPlayer(player);
@@ -498,7 +491,6 @@ public class ShopService {
         inv.addItem(newWeapon);
         return null;
     }
-
 
     public void deductCoins(Player player, long cost) {
         CashClashPlayer ccp = getCashClashPlayer(player);

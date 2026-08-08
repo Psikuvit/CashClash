@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.kit.KitService;
@@ -57,7 +59,7 @@ public class ShieldCommand extends AbstractArgCommand {
             target = (Player) sender;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(target);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(target);
         if (session == null) {
             Messages.send(sender, "shield.target-not-in-game", "player_name", target.getName());
             return true;

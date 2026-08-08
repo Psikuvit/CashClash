@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -53,7 +55,7 @@ public class RespawnAnchorHandler extends CustomItemHandler {
         UUID reviverUuid = reviver.getUniqueId();
         UUID targetUuid = target.getUniqueId();
 
-        GameSession session = GameManager.getInstance().getPlayerSession(reviver);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(reviver);
         if (session == null) {
             Messages.send(reviver, "gamestate.must-be-in-game");
             return;
@@ -199,7 +201,7 @@ public class RespawnAnchorHandler extends CustomItemHandler {
      * Check if a player can be targeted for revive (has 0 lives, same team, not already revived)
      */
     public boolean canBeRevived(Player reviver, Player target) {
-        GameSession session = GameManager.getInstance().getPlayerSession(reviver);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(reviver);
         if (session == null) return false;
 
         Team reviverTeam = session.getPlayerTeam(reviver);

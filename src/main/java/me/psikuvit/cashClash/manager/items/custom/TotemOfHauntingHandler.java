@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -93,7 +95,7 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
         int arms = 3;
         Set<UUID> alreadyDebuffed = new HashSet<>();
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
 
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {

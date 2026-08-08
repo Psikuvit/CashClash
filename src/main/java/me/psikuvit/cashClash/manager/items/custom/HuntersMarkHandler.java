@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -145,7 +147,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
     }
 
     private Player findNearestMarkTarget(Player player, double range) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         Team team = session != null ? session.getPlayerTeam(player) : null;
 
         Player nearest = null;

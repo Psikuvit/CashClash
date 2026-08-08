@@ -25,8 +25,6 @@ import java.util.function.Function;
  */
 public class WeaponItemManager {
 
-    private static WeaponItemManager instance;
-
     private final CooldownManager cooldownManager;
     private final ItemsConfig cfg;
     private final CustomArmorManager armorManager;
@@ -44,11 +42,6 @@ public class WeaponItemManager {
 
         register(SoulKatanaHandler::new, WeaponItem.SOUL_KATANA);
         register(CashBlasterHandler::new, WeaponItem.CASH_BLASTER);
-        instance = this;
-    }
-
-    public static WeaponItemManager getInstance() {
-        return instance;
     }
 
     /**

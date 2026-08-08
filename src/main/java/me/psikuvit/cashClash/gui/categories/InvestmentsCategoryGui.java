@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui.categories;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -34,7 +36,7 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
     }
 
     private GuiButton createInvestmentButton(InvestmentType type) {
-        ItemStack itemStack = ItemFactory.getInstance().getGuiFactory().createInvestmentIcon(type);
+        ItemStack itemStack = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createInvestmentIcon(type);
         return GuiButton.of(itemStack).onClick(p -> handleInvestmentPurchase(type));
     }
 
@@ -63,13 +65,13 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
         }
 
         long cost = type.getCost();
-        if (!ShopService.getInstance().canAfford(viewer, cost)) {
+        if (!CashClashPlugin.getInstance().getShopService().canAfford(viewer, cost)) {
             Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", cost));
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        ShopService.getInstance().processPurchase(viewer, type, 1, cost);
+        CashClashPlugin.getInstance().getShopService().processPurchase(viewer, type, 1, cost);
 
         Investment investment = new Investment(type, cost);
         ccp.setCurrentInvestment(investment);
@@ -116,7 +118,7 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
         }
 
         ccp.popLastPurchase();
-        ShopService.getInstance().refund(viewer, rec.price());
+        CashClashPlugin.getInstance().getShopService().refund(viewer, rec.price());
 
         // Clear the investment
         ccp.setCurrentInvestment(null);

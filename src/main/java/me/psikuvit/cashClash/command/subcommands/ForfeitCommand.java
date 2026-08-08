@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.Messages;
@@ -18,7 +20,7 @@ public class ForfeitCommand extends AbstractArgCommand {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (!(sender instanceof Player player)) { Messages.send(sender, "command.only-players"); return true; }
 
-        var session = GameManager.getInstance().getPlayerSession(player);
+        var session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             Messages.send(player, "generic.player-not-in-game");
             return true;

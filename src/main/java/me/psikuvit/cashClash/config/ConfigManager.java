@@ -15,13 +15,11 @@ import java.util.List;
  */
 public class ConfigManager {
 
-    private static ConfigManager instance;
     private FileConfiguration config;
     private final ConfigValidator validator = new ConfigValidator();
 
     public ConfigManager() {
         loadConfig();
-        instance = this;
     }
 
     private void loadConfig() {
@@ -52,10 +50,6 @@ public class ConfigManager {
         } else {
             plugin.getLogger().info("No new values to add, config is up to date");
         }
-    }
-
-    public static ConfigManager getInstance() {
-        return instance;
     }
 
     public void reload() {

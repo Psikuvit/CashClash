@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.util.game.ptp;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
@@ -73,13 +75,13 @@ public class PTPFinalStandUtils {
             return null;
         }
 
-        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
+        Arena arena = CashClashPlugin.getInstance().getArenaManager().getArena(session.getArenaNumber());
         if (arena == null) {
             Messages.debug("[PTP] Cannot start border: arena not found");
             return null;
         }
 
-        TemplateWorld template = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        TemplateWorld template = CashClashPlugin.getInstance().getArenaManager().getTemplate(arena.getTemplateId());
         if (template == null) {
             Messages.debug("[PTP] Cannot start border: template not found");
             return null;

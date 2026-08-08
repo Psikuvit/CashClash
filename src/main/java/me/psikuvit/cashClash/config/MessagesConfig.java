@@ -17,17 +17,11 @@ import java.util.Map;
  */
 public class MessagesConfig {
 
-    private static MessagesConfig instance;
     private final Map<String, String> messages;
 
     public MessagesConfig() {
         this.messages = new HashMap<>();
         loadMessages();
-        instance = this;
-    }
-
-    public static MessagesConfig getInstance() {
-        return instance;
     }
 
     /**

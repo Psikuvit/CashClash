@@ -32,8 +32,6 @@ import java.util.UUID;
  */
 public class ShopManager {
 
-    private static ShopManager instance;
-
     private static final double LOOK_RANGE = 4;
     private static final long LOOK_UPDATE_TICKS = 2L;
 
@@ -54,11 +52,6 @@ public class ShopManager {
         this.entityToSession = new HashMap<>();
         this.entityTeam = new HashMap<>();
         startLookAtPlayerTask();
-        instance = this;
-    }
-
-    public static ShopManager getInstance() {
-        return instance;
     }
 
     /**

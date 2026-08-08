@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -42,7 +44,7 @@ public class BouncePadHandler extends CustomItemHandler {
     }
 
     public void placeBouncePad(Player player, ItemStack item, Block clickedBlock, BlockFace face) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) return;
 
         Team team = session.getPlayerTeam(player);
@@ -82,7 +84,7 @@ public class BouncePadHandler extends CustomItemHandler {
         BouncePadInfo pad = bouncePadTeams.get(blockLoc);
         if (pad == null) return;
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) return;
 
         Team playerTeam = session.getPlayerTeam(player);

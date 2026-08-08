@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -44,7 +46,7 @@ public class DebugCommand extends AbstractArgCommand {
         UUID uuid = target.getUniqueId();
         Messages.send(sender, "debug.session-header", "player_name", target.getName());
 
-        GameSession session = GameManager.getInstance().getPlayerSession(target);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(target);
         if (session == null) {
             Messages.send(sender, "debug.no-session");
         } else {
@@ -58,7 +60,7 @@ public class DebugCommand extends AbstractArgCommand {
                 Messages.send(sender, "debug.lives", "lives", String.valueOf(ccp.getLives()));
             }
 
-            MythicItem mythic = MythicItemManager.getInstance().getPlayerMythic(session, uuid);
+            MythicItem mythic = CashClashPlugin.getInstance().getMythicItemManager().getPlayerMythic(session, uuid);
             if (mythic != null) {
                 Messages.send(sender, "debug.mythic-line", "mythic_name", mythic.getDisplayName());
             } else {
@@ -66,7 +68,7 @@ public class DebugCommand extends AbstractArgCommand {
             }
         }
 
-        if (CustomItemManager.getInstance().getHandler(InvisCloakHandler.class).isInvisActive(uuid)) {
+        if (CashClashPlugin.getInstance().getCustomItemManager().getHandler(InvisCloakHandler.class).isInvisActive(uuid)) {
             Messages.send(sender, "debug.invis-cloak-active");
         }
 

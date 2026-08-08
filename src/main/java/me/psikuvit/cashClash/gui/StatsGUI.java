@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
@@ -28,7 +30,7 @@ public class StatsGUI extends AbstractGui {
     public StatsGUI(Player viewer, Player target) {
         super(GUI_ID, viewer);
         this.target = target;
-        this.data = PlayerDataManager.getInstance().getData(target.getUniqueId());
+        this.data = CashClashPlugin.getInstance().getPlayerDataManager().getData(target.getUniqueId());
         setTitle("<gold><bold>Player Statistics</bold></gold>");
         setRows(5);
         setFillMaterial(Material.GRAY_STAINED_GLASS_PANE);
@@ -73,7 +75,7 @@ public class StatsGUI extends AbstractGui {
     }
 
     private GuiButton createOverviewButton() {
-        ItemStack skull = ItemFactory.getInstance().getGuiFactory().createPlayerHead(target,
+        ItemStack skull = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createPlayerHead(target,
                 "<gold><bold>" + target.getName() + "'s Stats</bold></gold>",
                 List.of(
                         "<gray>Total Games: <white>" + (data.getWins() + data.getLosses()) + "</white></gray>",

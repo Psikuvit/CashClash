@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui.categories;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
@@ -51,14 +53,14 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
 
             if (nextLevel > ee.getMaxLevel()) {
                 setButton(slot,
-                        GuiButton.of(ItemFactory.getInstance().getGuiFactory().createMaxedEnchant(ee))
+                        GuiButton.of(CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createMaxedEnchant(ee))
                                 .onClick(p -> {
                                     Messages.send(p, "rune.max-level");
                                 })
                 );
             } else {
                 long price = ee.getPriceForLevel(nextLevel);
-                ItemStack enchantItem = ItemFactory.getInstance().getGuiFactory().createEnchantItem(viewer, ee, nextLevel, price);
+                ItemStack enchantItem = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createEnchantItem(viewer, ee, nextLevel, price);
                 setButton(slot, GuiButton.of(enchantItem).onClick(p -> handleEnchantPurchase(ee, level)));
             }
         }
@@ -88,14 +90,14 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
         }
 
         long price = ee.getPriceForLevel(nextLevel);
-        if (!ShopService.getInstance().canAfford(viewer, price)) {
+        if (!CashClashPlugin.getInstance().getShopService().canAfford(viewer, price)) {
             Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", price));
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         // Deathmauler restriction: Cannot buy both protection types
-        CustomArmorManager armorManager = CustomArmorManager.getInstance();
+        CustomArmorManager armorManager = CashClashPlugin.getInstance().getCustomArmorManager();
         if (armorManager.getHandler(DeathmaulerSetHandler.class).hasDeathmaulerSet(viewer)) {
             if (ee == EnchantEntry.PROTECTION && ccp.getOwnedEnchantLevel(EnchantEntry.PROJECTILE_PROTECTION) > 0) {
                 Messages.send(viewer, "shop.deathmauler-has-projectile");
@@ -146,7 +148,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
         }
         viewer.getInventory().addItem(rune);
         ccp.setOwnedEnchantLevel(ee, nextLevel);
-        ShopService.getInstance().deductCoins(viewer, price);
+        CashClashPlugin.getInstance().getShopService().deductCoins(viewer, price);
         Messages.send(viewer, "shop.enchant-purchased",
                 "enchant_name", ee.getDisplayName(), "level", String.valueOf(nextLevel), "price", String.format("%,d", price));
         refresh();

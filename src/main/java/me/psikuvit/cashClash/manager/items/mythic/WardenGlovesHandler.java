@@ -202,7 +202,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE, cfg.getWardenShockwaveCooldown());
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             Messages.debug(player, "WARDEN_GLOVES: No session");
             return;

@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
@@ -65,7 +67,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public ProtectThePresidentGamemode(GameSession session) {
         super(session, GamemodeType.PROTECT_THE_PRESIDENT);
 
-        ConfigManager cfg = ConfigManager.getInstance();
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
         this.SELECTION_TIME = cfg.getPTPSelectionTimeSeconds();
         this.KILL_BONUS_THRESHOLD = cfg.getPTPKillBonusThreshold();
         this.KILL_BONUS_AMOUNT = cfg.getPTPKillBonusAmount();
@@ -424,7 +426,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         for (UUID uuid : session.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null && p.isOnline()) {
-                ScoreboardManager.getInstance().updatePlayerScoreboard(p);
+                CashClashPlugin.getInstance().getScoreboardManager().updatePlayerScoreboard(p);
                 Messages.send(p, "gamemode-ptp.sudden-death-timer-start");
             }
         }
@@ -832,7 +834,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         return finalStandManager.isActive();
     }
 
-
     /**
      * Return the team number that most recently received an extra-heart bonus, or 0 if none or expired.
      * The recorded value expires after 3 minutes.
@@ -874,7 +875,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public FinalStandManager getFinalStandManager() {
         return finalStandManager;
     }
-
 
     /**
      * Enum for presidential buff options

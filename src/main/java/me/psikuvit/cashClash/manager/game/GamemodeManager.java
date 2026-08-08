@@ -23,7 +23,6 @@ import java.util.function.Function;
  */
 public class GamemodeManager implements Shutdownable {
 
-    private static GamemodeManager instance;
     private final Map<UUID, Gamemode> sessionGamemodes = new HashMap<>();
     private final Map<UUID, GamemodeType> nextGamemode = new HashMap<>();
     private final Map<GamemodeType, Function<GameSession, Gamemode>> registry = new EnumMap<>(GamemodeType.class);
@@ -33,11 +32,6 @@ public class GamemodeManager implements Shutdownable {
         registry.put(GamemodeType.PROTECT_THE_PRESIDENT, ProtectThePresidentGamemode::new);
         registry.put(GamemodeType.CAPTURE_THE_FLAG, CaptureTheFlagGamemode::new);
         registry.put(GamemodeType.KILL_CONFIRM, KillConfirmGamemode::new);
-        instance = this;
-    }
-
-    public static GamemodeManager getInstance() {
-        return instance;
     }
 
     /**

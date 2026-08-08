@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
@@ -56,7 +58,7 @@ public class PlayerSelectorGUI extends AbstractGui {
      * Create a clickable player head button that shows enemy inventory.
      */
     private GuiButton createPlayerHeadButton(Player target) {
-        ItemStack skull = ItemFactory.getInstance().getGuiFactory().createPlayerHead(target,
+        ItemStack skull = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createPlayerHead(target,
                 "<yellow>" + target.getName() + "</yellow>",
                 List.of(
                         "<gray>Click to view inventory</gray>",
@@ -65,7 +67,7 @@ public class PlayerSelectorGUI extends AbstractGui {
 
         return GuiButton.of(skull).onClick(clicker -> {
             clicker.closeInventory();
-            CustomItemManager.getInstance().getHandler(TabletOfHackingHandler.class).handleTabletOfHackingSelection(clicker, target);
+            CashClashPlugin.getInstance().getCustomItemManager().getHandler(TabletOfHackingHandler.class).handleTabletOfHackingSelection(clicker, target);
         });
     }
 }

@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
@@ -29,7 +31,7 @@ public class ForceNextRoundCommand extends AbstractArgCommand {
             return true;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(p);
         if (session == null) {
             Messages.send(sender, "generic.not-in-game");
             return true;
@@ -47,7 +49,7 @@ public class ForceNextRoundCommand extends AbstractArgCommand {
         }
 
         int currentRound = session.getCurrentRound();
-        int totalRounds = ConfigManager.getInstance().getTotalRounds();
+        int totalRounds = CashClashPlugin.getInstance().getConfigManager().getTotalRounds();
 
         if (currentRound >= totalRounds) {
             Messages.send(sender, "admin.forcenextround-is-final-round");

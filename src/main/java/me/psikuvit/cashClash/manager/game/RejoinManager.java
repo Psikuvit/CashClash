@@ -29,8 +29,6 @@ import java.util.UUID;
  */
 public class RejoinManager implements Shutdownable {
 
-    private static RejoinManager instance;
-
     private final Map<UUID, RejoinData> pendingRejoins;
     private BukkitTask cleanupTask;
     private final ConfigManager configManager;
@@ -41,11 +39,6 @@ public class RejoinManager implements Shutdownable {
         this.gameManager = gameManager;
         this.pendingRejoins = new HashMap<>();
         startCleanupTask();
-        instance = this;
-    }
-
-    public static RejoinManager getInstance() {
-        return instance;
     }
 
     /**

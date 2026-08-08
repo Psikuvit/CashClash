@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -173,7 +175,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
         World world = hitLocation.getWorld();
         if (world == null) return;
 
-        GameSession session = GameManager.getInstance().getPlayerSession(shooter);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(shooter);
         Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
 
         Messages.debug(shooter, "BLOODWRENCH: Rapid hit - creating blood sphere at " + hitLocation);
@@ -217,7 +219,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
 
                 // Refreshed every tick while inside - naturally decays `healNegationDuration`
                 // seconds after the target leaves the sphere since nothing refreshes it anymore.
-                CustomItemManager.getInstance().applyHealingReduction(target.getUniqueId(), 0.0, healNegationDuration);
+                CashClashPlugin.getInstance().getCustomItemManager().applyHealingReduction(target.getUniqueId(), 0.0, healNegationDuration);
 
                 if (target.equals(shooter)) continue;
                 if (session != null) {
@@ -248,7 +250,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
         World world = hitLocation.getWorld();
         if (world == null) return;
 
-        GameSession session = GameManager.getInstance().getPlayerSession(shooter);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(shooter);
         Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
 
         Messages.debug(shooter, "BLOODWRENCH: Supercharged hit - creating blood vortex at " + hitLocation);
@@ -278,7 +280,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
                 // decays naturally `healNegationDuration` seconds after a player leaves.
                 for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius + 2, radius)) {
                     if (entity instanceof Player inside) {
-                        CustomItemManager.getInstance().applyHealingReduction(inside.getUniqueId(), 0.0, healNegationDuration);
+                        CashClashPlugin.getInstance().getCustomItemManager().applyHealingReduction(inside.getUniqueId(), 0.0, healNegationDuration);
                     }
                 }
 

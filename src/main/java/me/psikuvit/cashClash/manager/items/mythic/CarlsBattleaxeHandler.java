@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -152,7 +154,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                         if (recentlyHit.contains(victim.getUniqueId())) continue;
 
                         // Check if in same game and different team
-                        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
+                        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(attacker);
                         if (session == null) continue;
 
                         Team attackerTeam = session.getPlayerTeam(attacker);
@@ -284,7 +286,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
         double releaseDistance = cfg.getCarlsThrowReleaseDistance();
         double damage = cfg.getCarlsThrowDamage();
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
 
         BukkitRunnable throwRunnable = new BukkitRunnable() {

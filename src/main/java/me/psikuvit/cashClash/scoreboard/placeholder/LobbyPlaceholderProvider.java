@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.scoreboard.placeholder;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.storage.PlayerData;
 import org.bukkit.Bukkit;
@@ -50,7 +52,7 @@ public class LobbyPlaceholderProvider implements PlaceholderProvider {
     }
 
     private String getPlayerStatsValue(String placeholder, Player player) {
-        PlayerData data = PlayerDataManager.getInstance().getOrLoadData(player.getUniqueId());
+        PlayerData data = CashClashPlugin.getInstance().getPlayerDataManager().getOrLoadData(player.getUniqueId());
 
         if (data == null) {
             return getDefaultPlayerStatsValue(placeholder);

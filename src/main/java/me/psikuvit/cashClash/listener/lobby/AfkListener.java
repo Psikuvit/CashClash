@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.listener.lobby;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import io.papermc.paper.event.player.AsyncChatEvent;
 import me.psikuvit.cashClash.manager.player.AfkManager;
 import org.bukkit.event.EventHandler;
@@ -15,7 +17,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
  */
 public class AfkListener implements Listener {
 
-    private final AfkManager afkManager = AfkManager.getInstance();
+    private final AfkManager afkManager = CashClashPlugin.getInstance().getAfkManager();
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {

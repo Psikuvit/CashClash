@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -45,7 +47,7 @@ public class TransferCommand extends AbstractArgCommand {
             return true;
         }
 
-        var session = GameManager.getInstance().getPlayerSession(player);
+        var session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) { Messages.send(player, "generic.player-not-in-game"); return true; }
 
         CashClashPlayer senderCCP = session.getCashClashPlayer(player.getUniqueId());

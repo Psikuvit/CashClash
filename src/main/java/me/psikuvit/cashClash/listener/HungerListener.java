@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -19,7 +21,7 @@ public class HungerListener implements Listener {
         if (event.isCancelled()) return;
         if (!(event.getEntity() instanceof Player player)) return;
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
 
         // Prevent hunger loss in lobby (no session), shopping phase, or a restricted sequence
         if (session == null || session.getState() == GameState.WAITING || session.getState() == GameState.SHOPPING

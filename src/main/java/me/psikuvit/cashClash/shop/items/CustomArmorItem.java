@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.shop.items;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import org.bukkit.Material;
@@ -59,7 +61,7 @@ public enum CustomArmorItem implements Purchasable {
 
     @Override
     public long getPrice() {
-        return ShopConfig.getInstance().getCustomArmorPrice(configKey);
+        return CashClashPlugin.getInstance().getShopConfig().getCustomArmorPrice(configKey);
     }
 
     /**
@@ -108,7 +110,6 @@ public enum CustomArmorItem implements Purchasable {
     public boolean isIndividualPiece() {
         return armorSet == null;
     }
-
 
     /**
      * Checks if this armor piece is part of the Investor's set.

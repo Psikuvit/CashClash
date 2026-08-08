@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
@@ -64,7 +66,7 @@ public class ArenaCommand extends AbstractArgCommand {
         }
 
         if (args.length == 2) {
-            out.addAll(ArenaManager.getInstance().getAllArenas().values().stream()
+            out.addAll(CashClashPlugin.getInstance().getArenaManager().getAllArenas().values().stream()
                     .map(Arena::getName)
                     .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(last))
                     .toList());
@@ -72,7 +74,7 @@ public class ArenaCommand extends AbstractArgCommand {
         }
 
         if (args.length == 3 && "assign".equals(args[0].toLowerCase(Locale.ROOT))) {
-            out.addAll(ArenaManager.getInstance().getAllTemplates().keySet().stream()
+            out.addAll(CashClashPlugin.getInstance().getArenaManager().getAllTemplates().keySet().stream()
                     .filter(id -> id.toLowerCase(Locale.ROOT).startsWith(last))
                     .toList());
         }
@@ -86,7 +88,7 @@ public class ArenaCommand extends AbstractArgCommand {
         }
         String id = args[1];
         String newName = args[2];
-        Arena arena = ArenaManager.getInstance().getArena(id);
+        Arena arena = CashClashPlugin.getInstance().getArenaManager().getArena(id);
         if (arena == null) {
             Messages.send(player, "chat.not-found", "arena_id", id);
             return;
@@ -101,13 +103,13 @@ public class ArenaCommand extends AbstractArgCommand {
         }
 
         String id = args[1];
-        Arena arena = ArenaManager.getInstance().getArena(id);
+        Arena arena = CashClashPlugin.getInstance().getArenaManager().getArena(id);
         if (arena == null) {
             Messages.send(player, "chat.not-found", "{arena_id}", id);
             return;
         }
 
-        TemplateWorld tplObj = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        TemplateWorld tplObj = CashClashPlugin.getInstance().getArenaManager().getTemplate(arena.getTemplateId());
         if (tplObj == null || tplObj.getWorld() == null) {
             Messages.send(player, "chat.no-template");
             return;
@@ -120,7 +122,7 @@ public class ArenaCommand extends AbstractArgCommand {
         player.teleport(target);
         
         // Remove respawn protection when using arena tp
-        GameSession currentSession = GameManager.getInstance().getPlayerSession(player);
+        GameSession currentSession = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (currentSession != null) {
             CashClashPlayer ccp = currentSession.getCashClashPlayer(player.getUniqueId());
             if (ccp != null) {
@@ -138,21 +140,21 @@ public class ArenaCommand extends AbstractArgCommand {
         String arenaId = args[1];
         String templateId = args[2];
 
-        Arena arena = ArenaManager.getInstance().getArena(arenaId);
+        Arena arena = CashClashPlugin.getInstance().getArenaManager().getArena(arenaId);
         if (arena == null) {
             Messages.send(player, "chat.not-found", "{arena_id}", arenaId);
             return;
         }
 
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(templateId);
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(templateId);
         if (tpl == null) {
             Messages.send(player, "chat.template-not-found", "{template_id}", templateId);
             return;
         }
 
         arena.setTemplateId(templateId);
-        Integer num = ArenaManager.getInstance().getArenaNumber(arena);
-        if (num != null) ArenaManager.getInstance().saveArena(num);
+        Integer num = CashClashPlugin.getInstance().getArenaManager().getArenaNumber(arena);
+        if (num != null) CashClashPlugin.getInstance().getArenaManager().saveArena(num);
         Messages.send(player, "chat.assigned", "{template_id}", templateId, "{arena_name}", arena.getName());
     }
 }

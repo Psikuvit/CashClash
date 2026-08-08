@@ -23,8 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PartyManager implements Shutdownable {
 
-    private static PartyManager instance;
-
     private final Set<Party> parties;
     private final Map<UUID, Party> playerPartyMap;
     private final Map<UUID, List<PartyInvite>> pendingInvites;
@@ -35,11 +33,6 @@ public class PartyManager implements Shutdownable {
         this.playerPartyMap = new ConcurrentHashMap<>();
         this.pendingInvites = new ConcurrentHashMap<>();
         startCleanupTask();
-        instance = this;
-    }
-
-    public static PartyManager getInstance() {
-        return instance;
     }
 
     /**

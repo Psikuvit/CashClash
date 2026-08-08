@@ -13,8 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class CooldownManager implements Shutdownable {
 
-    private static CooldownManager instance;
-
     // Maps: playerUUID -> (abilityKey -> cooldownEndTimeMillis)
     private final Map<UUID, Map<String, Long>> playerCooldowns;
 
@@ -24,11 +22,6 @@ public class CooldownManager implements Shutdownable {
     public CooldownManager() {
         this.playerCooldowns = new ConcurrentHashMap<>();
         this.playerTimestamps = new ConcurrentHashMap<>();
-        instance = this;
-    }
-
-    public static CooldownManager getInstance() {
-        return instance;
     }
 
     // ==================== COOLDOWN METHODS ====================

@@ -60,57 +60,83 @@ public final class CashClashPlugin extends JavaPlugin {
     private boolean initialized = false;
     private BukkitTask afkTask;
 
+    // Composition root: every manager lives here as a field, constructed once in onEnable() in
+    // dependency order, and exposed through the getters below - this is the single place that
+    // resolves a manager instance; every other class receives it via constructor injection or
+    // one of these getters instead of holding its own static instance.
+    private ConfigManager configManager;
+    private MessagesConfig messagesConfig;
+    private SequencesConfig sequencesConfig;
+    private ItemsConfig itemsConfig;
+    private ShopConfig shopConfig;
+    private PlayerDataManager playerDataManager;
+    private GameManager gameManager;
+    private GamemodeManager gamemodeManager;
+    private TabListManager tabListManager;
+    private PartyManager partyManager;
+    private ItemFactory itemFactory;
+    private CooldownManager cooldownManager;
+    private ArenaManager arenaManager;
+    private ChatManager chatManager;
+    private RejoinManager rejoinManager;
+    private LeaderboardManager leaderboardManager;
+    private AfkManager afkManager;
+    private MannequinManager mannequinManager;
+    private LobbyManager lobbyManager;
+    private ScoreboardManager scoreboardManager;
+    private ShopService shopService;
+    private TransferInputListener transferInputListener;
+    private ShopManager shopManager;
+    private LayoutManager layoutManager;
+    private CustomArmorManager customArmorManager;
+    private MythicItemManager mythicItemManager;
+    private CustomItemManager customItemManager;
+    private WeaponItemManager weaponItemManager;
+
     @Override
     public void onEnable() {
         instance = this;
 
         try {
-            // Composition root: every manager is constructed here, once, in dependency order,
-            // instead of lazily self-constructing on first getInstance() call. Each constructor
-            // takes the managers it depends on as explicit parameters; getInstance() on each
-            // class remains for the many call sites not worth threading a constructor reference
-            // through, but it now just exposes what was built here rather than deciding when
-            // construction happens.
-
             // Tier 0: no dependencies on any other manager.
-            ConfigManager configManager = new ConfigManager();
-            MessagesConfig messagesConfig = new MessagesConfig();
-            new SequencesConfig();
-            ItemsConfig itemsConfig = new ItemsConfig();
-            new ShopConfig();
+            configManager = new ConfigManager();
+            messagesConfig = new MessagesConfig();
+            sequencesConfig = new SequencesConfig();
+            itemsConfig = new ItemsConfig();
+            shopConfig = new ShopConfig();
             getLogger().info("Configuration files loaded successfully");
 
-            PlayerDataManager.init(this);
+            playerDataManager = PlayerDataManager.create(this);
             getLogger().info("Player data storage initialized");
 
-            GameManager gameManager = new GameManager();
-            new GamemodeManager();
-            TabListManager tabListManager = new TabListManager();
-            PartyManager partyManager = new PartyManager();
-            ItemFactory itemFactory = new ItemFactory();
-            new CooldownManager();
+            gameManager = new GameManager(this);
+            gamemodeManager = new GamemodeManager();
+            tabListManager = new TabListManager();
+            partyManager = new PartyManager();
+            itemFactory = new ItemFactory();
+            cooldownManager = new CooldownManager();
 
             // Tier 1: depend only on tier 0 managers.
-            ArenaManager arenaManager = new ArenaManager(gameManager, configManager);
-            new ChatManager(partyManager, gameManager);
-            new RejoinManager(configManager, gameManager);
-            new LeaderboardManager(configManager, PlayerDataManager.getInstance());
-            new AfkManager(configManager, gameManager, messagesConfig);
-            new MannequinManager(configManager);
-            LobbyManager lobbyManager = new LobbyManager(itemsConfig);
-            new ScoreboardManager(gameManager, tabListManager);
-            new ShopService(gameManager, itemFactory);
-            new TransferInputListener(gameManager);
+            arenaManager = new ArenaManager(gameManager, configManager);
+            chatManager = new ChatManager(partyManager, gameManager);
+            rejoinManager = new RejoinManager(configManager, gameManager);
+            leaderboardManager = new LeaderboardManager(configManager, playerDataManager);
+            afkManager = new AfkManager(configManager, gameManager, messagesConfig);
+            mannequinManager = new MannequinManager(configManager);
+            lobbyManager = new LobbyManager(itemsConfig);
+            scoreboardManager = new ScoreboardManager(gameManager, tabListManager);
+            shopService = new ShopService(gameManager, itemFactory);
+            transferInputListener = new TransferInputListener(gameManager);
 
             // Tier 2: depend on tier 1 managers.
-            new ShopManager(arenaManager, gameManager);
-            new LayoutManager(PlayerDataManager.getInstance(), lobbyManager);
-            CustomArmorManager customArmorManager = new CustomArmorManager(CooldownManager.getInstance(), itemsConfig);
-            new MythicItemManager(itemsConfig, CooldownManager.getInstance(), itemFactory);
+            shopManager = new ShopManager(arenaManager, gameManager);
+            layoutManager = new LayoutManager(playerDataManager, lobbyManager);
+            customArmorManager = new CustomArmorManager(cooldownManager, itemsConfig);
+            mythicItemManager = new MythicItemManager(itemsConfig, cooldownManager, itemFactory);
 
             // Tier 3: depend on tier 2 managers.
-            new CustomItemManager(CooldownManager.getInstance(), itemsConfig, customArmorManager);
-            new WeaponItemManager(CooldownManager.getInstance(), itemsConfig, customArmorManager);
+            customItemManager = new CustomItemManager(cooldownManager, itemsConfig, customArmorManager);
+            weaponItemManager = new WeaponItemManager(cooldownManager, itemsConfig, customArmorManager);
 
             // Step 3: Initialize arena system
             arenaManager.initializeArenas();
@@ -121,13 +147,13 @@ public final class CashClashPlugin extends JavaPlugin {
             registerCommands();
 
             // Step 4.5: Start the periodic AFK lobby kicker
-            afkTask = SchedulerUtils.runTaskTimer(AfkManager.getInstance()::checkAndKick, 20L * 30, 20L * 30);
+            afkTask = SchedulerUtils.runTaskTimer(afkManager::checkAndKick, 20L * 30, 20L * 30);
 
             // Step 4.6: Start the async leaderboard worker
-            LeaderboardManager.getInstance().start();
+            leaderboardManager.start();
 
             // Step 5: Spawn persistent mannequins
-            MannequinManager.getInstance().spawnAll();
+            mannequinManager.spawnAll();
             getLogger().info("Mannequin NPCs spawned");
 
             // Mark as successfully initialized
@@ -169,16 +195,16 @@ public final class CashClashPlugin extends JavaPlugin {
         // player data saved last) - a LinkedHashSet keeps that order instead of leaving it
         // to hash iteration.
         Set<Shutdownable> managers = new LinkedHashSet<>();
-        managers.add(LeaderboardManager.getInstance());
-        managers.add(GameManager.getInstance());
-        managers.add(RejoinManager.getInstance());
-        managers.add(GamemodeManager.getInstance());
-        managers.add(ScoreboardManager.getInstance());
-        managers.add(CooldownManager.getInstance());
-        managers.add(MannequinManager.getInstance());
-        managers.add(PartyManager.getInstance());
-        managers.add(ChatManager.getInstance());
-        managers.add(PlayerDataManager.getInstance());
+        managers.add(leaderboardManager);
+        managers.add(gameManager);
+        managers.add(rejoinManager);
+        managers.add(gamemodeManager);
+        managers.add(scoreboardManager);
+        managers.add(cooldownManager);
+        managers.add(mannequinManager);
+        managers.add(partyManager);
+        managers.add(chatManager);
+        managers.add(playerDataManager);
 
         for (Shutdownable manager : managers) {
             String name = manager.getClass().getSimpleName();
@@ -209,22 +235,51 @@ public final class CashClashPlugin extends JavaPlugin {
         return instance;
     }
 
+    public ConfigManager getConfigManager() { return configManager; }
+    public MessagesConfig getMessagesConfig() { return messagesConfig; }
+    public SequencesConfig getSequencesConfig() { return sequencesConfig; }
+    public ItemsConfig getItemsConfig() { return itemsConfig; }
+    public ShopConfig getShopConfig() { return shopConfig; }
+    public PlayerDataManager getPlayerDataManager() { return playerDataManager; }
+    public GameManager getGameManager() { return gameManager; }
+    public GamemodeManager getGamemodeManager() { return gamemodeManager; }
+    public TabListManager getTabListManager() { return tabListManager; }
+    public PartyManager getPartyManager() { return partyManager; }
+    public ItemFactory getItemFactory() { return itemFactory; }
+    public CooldownManager getCooldownManager() { return cooldownManager; }
+    public ArenaManager getArenaManager() { return arenaManager; }
+    public ChatManager getChatManager() { return chatManager; }
+    public RejoinManager getRejoinManager() { return rejoinManager; }
+    public LeaderboardManager getLeaderboardManager() { return leaderboardManager; }
+    public AfkManager getAfkManager() { return afkManager; }
+    public MannequinManager getMannequinManager() { return mannequinManager; }
+    public LobbyManager getLobbyManager() { return lobbyManager; }
+    public ScoreboardManager getScoreboardManager() { return scoreboardManager; }
+    public ShopService getShopService() { return shopService; }
+    public TransferInputListener getTransferInputListener() { return transferInputListener; }
+    public ShopManager getShopManager() { return shopManager; }
+    public LayoutManager getLayoutManager() { return layoutManager; }
+    public CustomArmorManager getCustomArmorManager() { return customArmorManager; }
+    public MythicItemManager getMythicItemManager() { return mythicItemManager; }
+    public CustomItemManager getCustomItemManager() { return customItemManager; }
+    public WeaponItemManager getWeaponItemManager() { return weaponItemManager; }
+
     private void registerEvents() {
         Listener[] listeners = {
                 new GuiListener(),
-                new BlockListener(),
-                new DamageListener(),
-                new InteractListener(),
-                new MoveListener(),
-                new GameListener(),
+                new BlockListener(this),
+                new DamageListener(this),
+                new InteractListener(this),
+                new MoveListener(this),
+                new GameListener(this),
                 new HungerListener(),
-                new PlayerConnectionListener(),
-                new LobbyListener(),
+                new PlayerConnectionListener(this),
+                new LobbyListener(this),
                 new AfkListener(),
                 new ArenaNPCListener(),
                 new ChatListener(),
-                new RuneListener(),
-                TransferInputListener.getInstance()
+                new RuneListener(this),
+                transferInputListener
         };
 
         for (Listener listener : listeners) {

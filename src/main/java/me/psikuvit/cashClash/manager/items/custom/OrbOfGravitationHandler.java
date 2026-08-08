@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -188,7 +190,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         int durationTicks = cfg.getOrbPullDurationTicks();
         int slownessTicks = cfg.getOrbSlownessDurationSeconds() * 20;
 
-        GameSession session = owner != null ? GameManager.getInstance().getPlayerSession(owner) : null;
+        GameSession session = owner != null ? CashClashPlugin.getInstance().getGameManager().getPlayerSession(owner) : null;
         Team team = session != null ? session.getPlayerTeam(owner) : null;
 
         // Slowness I once + a colour progress marker for the beam lerp

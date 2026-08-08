@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -62,7 +64,7 @@ public class InvisCloakHandler extends CustomItemHandler {
             invisCloakActive.add(uuid);
             invisCloakUsesRemaining.put(uuid, uses - 1);
 
-            GameSession session = GameManager.getInstance().getPlayerSession(player);
+            GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
             CashClashPlayer ccp = session != null ? session.getCashClashPlayer(uuid) : null;
 
             // Hide worn armor + off-hand - a vanilla Invisibility effect alone still shows

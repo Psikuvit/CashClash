@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.util.items;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
@@ -18,7 +20,7 @@ import org.bukkit.inventory.ItemStack;
  * 
  * <p>Usage example:
  * <pre>{@code
- * ItemFactory factory = ItemFactory.getInstance();
+ * ItemFactory factory = CashClashPlugin.getInstance().getItemFactory();
  * 
  * // Create a gameplay item
  * ItemStack sword = factory.createGameplayItem(WeaponItem.IRON_SWORD);
@@ -29,7 +31,6 @@ import org.bukkit.inventory.ItemStack;
  */
 public final class ItemFactory {
     
-    private static ItemFactory instance;
     
     private final GameplayItemFactory gameplayFactory;
     private final GuiItemFactory guiFactory;
@@ -37,7 +38,6 @@ public final class ItemFactory {
     public ItemFactory() {
         this.gameplayFactory = new GameplayItemFactory();
         this.guiFactory = new GuiItemFactory();
-        instance = this;
     }
 
     /**
@@ -45,9 +45,6 @@ public final class ItemFactory {
      *
      * @return The ItemFactory instance
      */
-    public static ItemFactory getInstance() {
-        return instance;
-    }
     
     // ==================== GAMEPLAY ITEMS ====================
     

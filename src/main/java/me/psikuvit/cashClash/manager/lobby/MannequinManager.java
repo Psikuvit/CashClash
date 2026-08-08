@@ -30,8 +30,6 @@ import java.util.logging.Level;
  */
 public class MannequinManager implements Shutdownable {
 
-    private static MannequinManager instance;
-
     private final CashClashPlugin plugin;
     private final File dataFile;
     private final List<Villager> spawnedMannequins = new ArrayList<>();
@@ -43,11 +41,6 @@ public class MannequinManager implements Shutdownable {
         this.plugin = CashClashPlugin.getInstance();
         this.dataFile = new File(plugin.getDataFolder(), "mannequins.yml");
         loadData();
-        instance = this;
-    }
-
-    public static MannequinManager getInstance() {
-        return instance;
     }
 
     /**

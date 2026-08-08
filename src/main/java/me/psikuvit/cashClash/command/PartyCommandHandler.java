@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.party.PartyManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
@@ -40,7 +42,7 @@ public class PartyCommandHandler extends Command {
         }
 
         String subCommand = args[0].toLowerCase();
-        PartyManager pm = PartyManager.getInstance();
+        PartyManager pm = CashClashPlugin.getInstance().getPartyManager();
 
         switch (subCommand) {
             case "create" -> pm.createParty(player);

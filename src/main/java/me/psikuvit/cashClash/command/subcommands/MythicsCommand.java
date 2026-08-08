@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -31,7 +33,7 @@ public class MythicsCommand extends AbstractArgCommand {
             return true;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             Messages.send(player, "generic.player-not-in-game");
             return true;
@@ -44,7 +46,7 @@ public class MythicsCommand extends AbstractArgCommand {
             return true;
         }
 
-        ItemStack item = MythicItemManager.getInstance().createMythicItem(mythicItem, player);
+        ItemStack item = CashClashPlugin.getInstance().getMythicItemManager().createMythicItem(mythicItem, player);
         player.getInventory().addItem(item);
         return false;
     }

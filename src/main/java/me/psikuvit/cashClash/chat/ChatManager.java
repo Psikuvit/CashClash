@@ -19,8 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ChatManager implements Shutdownable {
 
-    private static ChatManager instance;
-
     private final Map<UUID, ChatChannel> playerChannels;
     private final PartyManager partyManager;
     private final GameManager gameManager;
@@ -29,11 +27,6 @@ public class ChatManager implements Shutdownable {
         this.partyManager = partyManager;
         this.gameManager = gameManager;
         this.playerChannels = new ConcurrentHashMap<>();
-        instance = this;
-    }
-
-    public static ChatManager getInstance() {
-        return instance;
     }
 
     /**

@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.manager.player.LeaderboardManager;
 import me.psikuvit.cashClash.storage.PlayerData;
@@ -48,7 +50,7 @@ public class LeaderboardCommand extends AbstractArgCommand {
     }
 
     private void showBoard(CommandSender sender, LeaderboardManager.LeaderboardType type) {
-        List<PlayerData> board = LeaderboardManager.getInstance().getBoard(type);
+        List<PlayerData> board = CashClashPlugin.getInstance().getLeaderboardManager().getBoard(type);
         if (board.isEmpty()) {
             Messages.send(sender, "leaderboard.empty", "board", type.getConfigKey());
             return;

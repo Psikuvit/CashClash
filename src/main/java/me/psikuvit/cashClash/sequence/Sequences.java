@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.sequence;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.SequencesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
@@ -21,7 +23,7 @@ import java.util.UUID;
  */
 public final class Sequences {
 
-    private static final SequencesConfig MSG = SequencesConfig.getInstance();
+    private static final SequencesConfig MSG = CashClashPlugin.getInstance().getSequencesConfig();
 
     // Generous blindness duration for "reveal"-style sequences; always cleared explicitly
     // at the end of the sequence, so it only needs to outlast the sequence itself.

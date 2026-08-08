@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -275,7 +277,7 @@ public class IceFanHandler extends CustomItemHandler {
      * only hit what the player is actually aiming at.
      */
     private List<Player> findIceFanTargets(Player player, Location origin, Vector direction, double range) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
 
         List<Player> targets = new ArrayList<>();

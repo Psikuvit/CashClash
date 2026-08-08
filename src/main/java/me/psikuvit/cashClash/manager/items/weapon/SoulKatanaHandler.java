@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.weapon;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -100,7 +102,7 @@ public class SoulKatanaHandler extends WeaponItemHandler {
         }
         if (!soulKatanaLeftGround.getOrDefault(id, false)) return;
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         double reach = cfg.getSoulKatanaStrikeRadius();
         int debuffDuration = cfg.getSoulKatanaHealingReductionDurationSeconds();
         double healingMultiplier = 1.0 - cfg.getSoulKatanaHealingReductionPercent() / 100.0;
@@ -124,7 +126,7 @@ public class SoulKatanaHandler extends WeaponItemHandler {
             armorManager.getHandler(DragonSetHandler.class).handleDragonHit(player);
             SoundUtils.playAt(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.0f);
 
-            CustomItemManager.getInstance().applyHealingReduction(target.getUniqueId(), healingMultiplier, debuffDuration);
+            CashClashPlugin.getInstance().getCustomItemManager().applyHealingReduction(target.getUniqueId(), healingMultiplier, debuffDuration);
             startSoulKatanaHealingMark(target);
         }
 
@@ -202,12 +204,12 @@ public class SoulKatanaHandler extends WeaponItemHandler {
 
             @Override
             public void run() {
-                Long endTime = CustomItemManager.getInstance().getHealingReducedUntil().get(id);
+                Long endTime = CashClashPlugin.getInstance().getCustomItemManager().getHealingReducedUntil().get(id);
                 if (endTime == null || System.currentTimeMillis() >= endTime || !target.isOnline()) {
                     cancel();
                     soulKatanaMarkTasks.remove(id);
-                    CustomItemManager.getInstance().getHealingReducedUntil().remove(id);
-                    CustomItemManager.getInstance().getHealingReductionMultiplier().remove(id);
+                    CashClashPlugin.getInstance().getCustomItemManager().getHealingReducedUntil().remove(id);
+                    CashClashPlugin.getInstance().getCustomItemManager().getHealingReductionMultiplier().remove(id);
                     return;
                 }
                 Location center = target.getLocation().clone().add(0, 2.4, 0);

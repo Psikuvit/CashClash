@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.game;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.util.Messages;
@@ -15,29 +16,25 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class GameManager implements Shutdownable {
 
-    private static GameManager instance;
+    private final CashClashPlugin plugin;
     private final Map<UUID, GameSession> activeSessions;
     private final Map<UUID, GameSession> playerToSession;
     private final Map<Integer, GameSession> arenaToSession;
 
     /**
-     * Constructed once by {@link me.psikuvit.cashClash.CashClashPlugin} at startup (it has no
-     * dependencies on other managers). {@link #getInstance()} exposes that instance to the many
-     * call sites not worth threading a constructor reference through.
+     * Constructed once by {@link CashClashPlugin} at startup (it has no dependencies on other
+     * managers). {@link #getInstance()} exposes that instance to the many call sites not worth
+     * threading a constructor reference through.
      */
-    public GameManager() {
+    public GameManager(CashClashPlugin plugin) {
+        this.plugin = plugin;
         this.activeSessions = new ConcurrentHashMap<>();
         this.playerToSession = new ConcurrentHashMap<>();
         this.arenaToSession = new ConcurrentHashMap<>();
-        instance = this;
-    }
-
-    public static GameManager getInstance() {
-        return instance;
     }
 
     public GameSession createSession(int arenaNumber) {
-        GameSession session = new GameSession(arenaNumber);
+        GameSession session = new GameSession(arenaNumber, plugin);
         activeSessions.put(session.getSessionId(), session);
         arenaToSession.put(arenaNumber, session);
         Messages.debug("GAME", "Registered new session " + session.getSessionId() + " for arena " + arenaNumber);

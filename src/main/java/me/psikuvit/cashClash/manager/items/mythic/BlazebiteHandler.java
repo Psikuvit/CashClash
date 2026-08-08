@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -185,7 +187,7 @@ public class BlazebiteHandler extends MythicItemHandler {
             ParticleUtils.volcanoFlameBurst(hitLoc);
             SoundUtils.playAt(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
-            GameSession session = GameManager.getInstance().getPlayerSession(shooter);
+            GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(shooter);
             Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
             int radius = cfg.getBlazebiteVolcanoRadius();
             int fireTicks = cfg.getBlazebiteFireDuration();

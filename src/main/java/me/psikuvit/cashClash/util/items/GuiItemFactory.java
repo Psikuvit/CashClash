@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.util.items;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.shop.EnchantEntry;
@@ -70,7 +72,7 @@ public final class GuiItemFactory {
         // Use ItemsConfig to get lore based on category and configKey
         String category = getCategoryForLore(item);
         String configKey = item.getConfigKey();
-        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
+        List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore(category, configKey);
 
         if (!loreLinesFromConfig.isEmpty()) {
             // Add lore from config (as individual lines, no wrapping)
@@ -139,7 +141,7 @@ public final class GuiItemFactory {
                 .price(item.getPrice());
 
         String category = getCategoryForLore(item);
-        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, item.getConfigKey());
+        List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore(category, item.getConfigKey());
         if (!loreLinesFromConfig.isEmpty()) {
             builder.configLore(loreLinesFromConfig);
         }
@@ -165,7 +167,7 @@ public final class GuiItemFactory {
      * @return The configured ItemStack for display
      */
     public ItemStack createLockedDiamondItem(Purchasable item, int currentRound) {
-        ConfigManager cfg = ConfigManager.getInstance();
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
         return ShopItemBuilder.of(item.getMaterial())
                 .name("<red>" + item.getDisplayName() + " <gray>(Locked)</gray></red>")
                 .price(item.getPrice())
@@ -192,7 +194,7 @@ public final class GuiItemFactory {
                 .price(price)
                 .maxLevel(enchant.getMaxLevel());
 
-        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore("enchants", enchant.getConfigKey());
+        List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore("enchants", enchant.getConfigKey());
         if (!loreLinesFromConfig.isEmpty()) {
             builder.configLore(loreLinesFromConfig);
         }
@@ -221,7 +223,7 @@ public final class GuiItemFactory {
                 .price(price)
                 .maxLevel(enchant.getMaxLevel());
 
-        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore("enchants", enchant.getConfigKey());
+        List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore("enchants", enchant.getConfigKey());
         if (!loreLinesFromConfig.isEmpty()) {
             builder.configLore(loreLinesFromConfig);
         }
@@ -274,7 +276,7 @@ public final class GuiItemFactory {
     public ItemStack createCustomItemIcon(CustomItem type) {
         String category = getCategoryForLore(type);
         String configKey = type.getConfigKey();
-        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
+        List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore(category, configKey);
 
         ShopItemBuilder builder = ShopItemBuilder.of(type.getMaterial())
                 .name("<yellow>" + type.getDisplayName() + "</yellow>")
@@ -316,7 +318,7 @@ public final class GuiItemFactory {
             // Get lore from config
             String category = getCategoryForLore(piece);
             String configKey = piece.getConfigKey();
-            List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
+            List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore(category, configKey);
 
             if (ownsSet) {
                 ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
@@ -369,7 +371,7 @@ public final class GuiItemFactory {
                 .name("<yellow>" + type.name().replace("_", " ") + "</yellow>")
                 .price(type.getCost());
 
-        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore("investments", type.getConfigKey());
+        List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore("investments", type.getConfigKey());
         if (!loreLinesFromConfig.isEmpty()) {
             builder.configLore(loreLinesFromConfig);
         }
@@ -397,8 +399,8 @@ public final class GuiItemFactory {
     public ItemStack createCategoryIcon(Material material, ShopCategory category) {
         String categoryKey = category.name().toLowerCase().replace("_", "-");
         String defaultName = "<yellow>" + category.getDisplayName() + "</yellow>";
-        String configuredName = ItemsConfig.getInstance().getCategoryName(categoryKey, defaultName);
-        List<String> configuredLore = ItemsConfig.getInstance().getCategoryLore(categoryKey);
+        String configuredName = CashClashPlugin.getInstance().getItemsConfig().getCategoryName(categoryKey, defaultName);
+        List<String> configuredLore = CashClashPlugin.getInstance().getItemsConfig().getCategoryLore(categoryKey);
 
         ShopItemBuilder builder = ShopItemBuilder.of(material)
                 .name(configuredName);
@@ -432,7 +434,7 @@ public final class GuiItemFactory {
         // Get lore from config
         String category = getCategoryForLore(mythic);
         String configKey = mythic.getConfigKey();
-        List<String> loreLinesFromConfig = ItemsConfig.getInstance().getItemLore(category, configKey);
+        List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore(category, configKey);
 
         ShopItemBuilder builder = ShopItemBuilder.of(Material.BARRIER)
                 .hideAttributes()

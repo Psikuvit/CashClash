@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -63,7 +65,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
     }
 
     public void placeBloomingRose(Player player, ItemStack item, Location loc) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         Team team = session != null ? session.getPlayerTeam(player) : null;
         if (session == null || team == null) return;
 
@@ -330,7 +332,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
         hpRevealTask = SchedulerUtils.runTaskTimer(() -> {
             for (Player holder : Bukkit.getOnlinePlayers()) {
                 if (PDCDetection.getCustomItem(holder.getInventory().getItemInMainHand()) != CustomItem.BLOOMING_ROSE) continue;
-                GameSession session = GameManager.getInstance().getPlayerSession(holder);
+                GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(holder);
                 if (session == null) continue;
                 Team team = session.getPlayerTeam(holder);
                 if (team == null) continue;

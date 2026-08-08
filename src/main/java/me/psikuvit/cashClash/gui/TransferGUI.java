@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
@@ -42,7 +44,7 @@ public class TransferGUI extends AbstractGui {
      * Open the transfer GUI for a player.
      */
     public static void open(Player player) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             Messages.send(player, "transfer.must-be-in-game");
             return;
@@ -76,7 +78,7 @@ public class TransferGUI extends AbstractGui {
         // Balance display
         CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
         long coins = ccp != null ? ccp.getCoins() : 0;
-        setItem(22, ItemFactory.getInstance().getGuiFactory().createCoinDisplay(coins));
+        setItem(22, CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createCoinDisplay(coins));
 
         // Teammate slots: 11, 12, 13, 14 (4 players max per team)
         int[] slots = {11, 12, 13, 14};
@@ -103,7 +105,7 @@ public class TransferGUI extends AbstractGui {
         CashClashPlayer teammateCcp = session.getCashClashPlayer(teammate.getUniqueId());
         long teammateCoins = teammateCcp != null ? teammateCcp.getCoins() : 0;
 
-        ItemStack skull = ItemFactory.getInstance().getGuiFactory().createPlayerHead(teammate,
+        ItemStack skull = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createPlayerHead(teammate,
                 "<yellow>" + teammate.getName() + "</yellow>",
                 List.of(
                         "<gray>Balance: <gold>$" + String.format("%,d", teammateCoins) + "</gold></gray>",
@@ -114,7 +116,7 @@ public class TransferGUI extends AbstractGui {
         return GuiButton.of(skull).onClick(clicker -> {
             clicker.closeInventory();
             // Start sign input for transfer amount
-            TransferInputListener.getInstance().startTransferInput(clicker, teammate, session);
+            CashClashPlugin.getInstance().getTransferInputListener().startTransferInput(clicker, teammate, session);
         });
     }
 }

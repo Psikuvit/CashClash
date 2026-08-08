@@ -1,4 +1,6 @@
 package me.psikuvit.cashClash.manager.game;
+
+import me.psikuvit.cashClash.CashClashPlugin;
  
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
@@ -41,7 +43,7 @@ public class EconomyManager {
 
     public static long calculateStealAmount(GameSession session, CashClashPlayer victim) {
         int round = session.getCurrentRound();
-        ConfigManager cfg = ConfigManager.getInstance();
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
         if (round == 4 || round == 5) {
             double pct = cfg.getLateRoundStealPercentage();
             return (long) (victim.getCoins() * pct);
@@ -51,7 +53,7 @@ public class EconomyManager {
 
     public static double getTransferFee(GameSession session) {
         int round = session.getCurrentRound();
-        ConfigManager cfg = ConfigManager.getInstance();
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
         return switch (round) {
             case 1 -> cfg.getRound1TransferFee();
             case 2, 3 -> cfg.getRound23TransferFee();

@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.round.RoundData;
@@ -46,7 +48,7 @@ public abstract class ArmorSetHandler {
      */
     protected boolean isSilenced(Player player) {
         // Dead players are silenced for all items
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session != null) {
             RoundData roundData = session.getCurrentRoundData();
             if (roundData != null && !roundData.isAlive(player.getUniqueId())) {

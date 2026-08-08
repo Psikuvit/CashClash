@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.game;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
@@ -74,10 +76,10 @@ public class RoundManager {
         Team teamRed = session.getTeamRed();
         Team teamBlue = session.getTeamBlue();
 
-        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
+        Arena arena = CashClashPlugin.getInstance().getArenaManager().getArena(session.getArenaNumber());
         if (arena == null || session.getGameWorld() == null) return;
 
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(arena.getTemplateId());
         World copiedWorld = session.getGameWorld();
 
         Location teamRedShopTpl = tpl.getTeamRedShopSpawn();
@@ -156,7 +158,7 @@ public class RoundManager {
         if (phaseType == GameState.BUFF_SELECTION) {
             timeRemaining = 15; // 15 seconds for buff selection
         } else {
-            ConfigManager config = ConfigManager.getInstance();
+            ConfigManager config = CashClashPlugin.getInstance().getConfigManager();
             timeRemaining = config.getShoppingPhaseDuration();
         }
 
@@ -204,7 +206,7 @@ public class RoundManager {
             startBuffSelectionTimer(roundNumber);
         } else {
             // Disable all invisibility cloaks when shopping phase starts
-            CustomItemManager.getInstance().getHandler(InvisCloakHandler.class).disableAll();
+            CashClashPlugin.getInstance().getCustomItemManager().getHandler(InvisCloakHandler.class).disableAll();
 
             // Notify gamemode when shopping phase starts (for cleanup, banner removal, etc.)
             if (session.getGamemode() instanceof CaptureTheFlagGamemode ctf) {
@@ -275,7 +277,6 @@ public class RoundManager {
         startPhase(roundNumber, GameState.SHOPPING);
     }
 
-
     public void endShoppingPhase() {
         if (phaseTask != null) {
             phaseTask.cancel();
@@ -309,7 +310,7 @@ public class RoundManager {
             phaseTask = null;
         }
 
-        ConfigManager config = ConfigManager.getInstance();
+        ConfigManager config = CashClashPlugin.getInstance().getConfigManager();
         boolean suddenDeathRound = session.getGamemode() != null
                 && session.getGamemode().getSuddenDeathManager().isInSuddenDeath();
         timeRemaining = suddenDeathRound ? SUDDEN_DEATH_PHASE_SECONDS : config.getCombatPhaseDuration();
@@ -345,7 +346,7 @@ public class RoundManager {
             for (UUID uuid : session.getPlayers()) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null && p.isOnline()) {
-                    CustomArmorManager.getInstance().getHandler(FlamebringerSetHandler.class).onFlamebringerFireTick(p);
+                    CashClashPlugin.getInstance().getCustomArmorManager().getHandler(FlamebringerSetHandler.class).onFlamebringerFireTick(p);
                 }
             }
 
@@ -376,7 +377,7 @@ public class RoundManager {
         // Hold the win/loss result on screen (shopping-phase-parity restrictions + damage
         // off, movement stays free) before moving to the next round or ending the game.
         session.getSequenceManager().playRestricted(Sequences.roundEnd(winningTeam), () -> {
-            if (session.getCurrentRound() >= ConfigManager.getInstance().getTotalRounds()) {
+            if (session.getCurrentRound() >= CashClashPlugin.getInstance().getConfigManager().getTotalRounds()) {
                 session.end();
             } else {
                 SchedulerUtils.runTaskLater(session::nextRound, 20L);
@@ -463,7 +464,7 @@ public class RoundManager {
         int loserWins = winnerTeam == 1 ? team2Wins : team1Wins;
 
         // Total rounds in the game
-        int totalRounds = ConfigManager.getInstance().getTotalRounds();
+        int totalRounds = CashClashPlugin.getInstance().getConfigManager().getTotalRounds();
         int roundsPlayed = team1Wins + team2Wins;
         int roundsRemaining = totalRounds - roundsPlayed;
 
@@ -511,7 +512,7 @@ public class RoundManager {
      * Only applied at round 2+.
      */
     private void applyLossStreakBonuses() {
-        ConfigManager config = ConfigManager.getInstance();
+        ConfigManager config = CashClashPlugin.getInstance().getConfigManager();
         Team losingTeam;
         
         // Determine which team lost based on their loss streak
@@ -543,7 +544,6 @@ public class RoundManager {
             }
         }
     }
-
 
     public void cleanup() {
         if (phaseTask != null) {

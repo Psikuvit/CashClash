@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
@@ -61,7 +63,7 @@ public class ShopGUI extends AbstractGui {
 
         // Balance display
         long coins = getPlayerCoins();
-        setButton(53, GuiButton.of(ItemFactory.getInstance().getGuiFactory().createCoinDisplay(coins)));
+        setButton(53, GuiButton.of(CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createCoinDisplay(coins)));
 
         // Transfer money button (next to balance)
         setButton(52, createTransferButton());
@@ -71,12 +73,12 @@ public class ShopGUI extends AbstractGui {
     }
 
     private GuiButton createCategoryButton(ShopCategory category, Material icon) {
-        ItemStack item = ItemFactory.getInstance().getGuiFactory().createCategoryIcon(icon, category);
+        ItemStack item = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createCategoryIcon(icon, category);
         return GuiButton.of(item).onClick(p -> openCategory(category));
     }
 
     private GuiButton createInvestmentCategoryButton() {
-        ItemStack icon = ItemFactory.getInstance().getGuiFactory().createCategoryIcon(Material.RED_BUNDLE, ShopCategory.INVESTMENTS);
+        ItemStack icon = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createCategoryIcon(Material.RED_BUNDLE, ShopCategory.INVESTMENTS);
         return GuiButton.of(icon).onClick(p -> openCategory(ShopCategory.INVESTMENTS));
     }
 
@@ -84,7 +86,7 @@ public class ShopGUI extends AbstractGui {
         int[] legendSlots = {38, 39, 40, 41, 42};
         String[] legendColors = {"RED", "ORANGE", "YELLOW", "GREEN", "BLUE"};
 
-        GameSession session = GameManager.getInstance().getPlayerSession(viewer);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
         if (session == null) {
             return;
         }
@@ -99,17 +101,17 @@ public class ShopGUI extends AbstractGui {
         }
 
         // Round 2+ - show available mythics
-        List<MythicItem> availableMythics = MythicItemManager.getInstance().getAvailableMythics(session);
+        List<MythicItem> availableMythics = CashClashPlugin.getInstance().getMythicItemManager().getAvailableMythics(session);
         UUID playerUuid = viewer.getUniqueId();
-        boolean playerHasMythic = MythicItemManager.getInstance().hasPlayerPurchasedMythic(session, playerUuid);
-        MythicItem ownedMythic = MythicItemManager.getInstance().getPlayerMythic(session, playerUuid);
+        boolean playerHasMythic = CashClashPlugin.getInstance().getMythicItemManager().hasPlayerPurchasedMythic(session, playerUuid);
+        MythicItem ownedMythic = CashClashPlugin.getInstance().getMythicItemManager().getPlayerMythic(session, playerUuid);
 
         for (int i = 0; i < availableMythics.size() && i < legendSlots.length; i++) {
             MythicItem mythic = availableMythics.get(i);
-            boolean mythicTaken = MythicItemManager.getInstance().isUnavailable(session, mythic);
-            UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(session, mythic);
+            boolean mythicTaken = CashClashPlugin.getInstance().getMythicItemManager().isUnavailable(session, mythic);
+            UUID ownerUuid = CashClashPlugin.getInstance().getMythicItemManager().getMythicOwner(session, mythic);
 
-            ItemStack mythicItem = ItemFactory.getInstance().getGuiFactory().createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
+            ItemStack mythicItem = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
             setButton(legendSlots[i], GuiButton.of(mythicItem)
                     .onClick(p -> MythicCategoryGui.handleMythicPurchase(p, mythic, this)));
 
@@ -148,7 +150,7 @@ public class ShopGUI extends AbstractGui {
     }
 
     private long getPlayerCoins() {
-        var session = GameManager.getInstance().getPlayerSession(viewer);
+        var session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
         if (session == null) return 0;
         CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
         return ccp != null ? ccp.getCoins() : 0;
@@ -176,7 +178,7 @@ public class ShopGUI extends AbstractGui {
      * Static convenience method to open the main shop GUI.
      */
     public static void openMain(Player player) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
 
         // Check if player is in buff selection phase (PTP gamemode)
         if (session != null && session.getGamemode() instanceof me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode ptp) {

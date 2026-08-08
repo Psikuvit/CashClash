@@ -18,8 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LeaderboardManager implements Shutdownable {
 
-    private static LeaderboardManager instance;
-
     private final Map<LeaderboardType, List<PlayerData>> cached = new ConcurrentHashMap<>();
     private BukkitTask task;
 
@@ -53,11 +51,6 @@ public class LeaderboardManager implements Shutdownable {
     public LeaderboardManager(ConfigManager configManager, PlayerDataManager playerDataManager) {
         this.configManager = configManager;
         this.playerDataManager = playerDataManager;
-        instance = this;
-    }
-
-    public static LeaderboardManager getInstance() {
-        return instance;
     }
 
     public void start() {

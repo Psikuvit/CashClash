@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
@@ -63,7 +65,7 @@ public class KillConfirmGamemode extends Gamemode {
     public KillConfirmGamemode(GameSession session) {
         super(session, GamemodeType.KILL_CONFIRM);
 
-        ConfigManager cfg = ConfigManager.getInstance();
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
         this.WIN_CONDITION = cfg.getKCScoreToWin();
         this.TRIPLE_KILL_STREAK = cfg.getKCTripleKillStreak();
         this.ZONE_ACTIVATION_DELAY_MS = cfg.getKCZoneActivationDelayMs();
@@ -259,7 +261,7 @@ public class KillConfirmGamemode extends Gamemode {
         for (UUID uuid : session.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null && p.isOnline()) {
-                ScoreboardManager.getInstance().updatePlayerScoreboard(p);
+                CashClashPlugin.getInstance().getScoreboardManager().updatePlayerScoreboard(p);
                 Messages.send(p, "gamemode-kc.sudden-death-timer-start");
             }
         }

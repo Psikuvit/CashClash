@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -144,7 +146,7 @@ public class DragonSetHandler extends ArmorSetHandler {
 
         Messages.send(player, "armor.dragon-scale-used", "scales", String.valueOf(getDragonScales(player)));
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) return;
 
         Team playerTeam = session.getPlayerTeam(player);

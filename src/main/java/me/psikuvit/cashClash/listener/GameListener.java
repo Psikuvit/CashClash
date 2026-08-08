@@ -99,10 +99,19 @@ import java.util.UUID;
  */
 public class GameListener implements Listener {
 
-    private final CustomArmorManager armorManager = CustomArmorManager.getInstance();
-    private final CustomItemManager customItemManager = CustomItemManager.getInstance();
-    private final MythicItemManager mythicManager = MythicItemManager.getInstance();
-    private final WeaponItemManager weaponItemManager = WeaponItemManager.getInstance();
+    private final CashClashPlugin plugin;
+    private final CustomArmorManager armorManager;
+    private final CustomItemManager customItemManager;
+    private final MythicItemManager mythicManager;
+    private final WeaponItemManager weaponItemManager;
+
+    public GameListener(CashClashPlugin plugin) {
+        this.plugin = plugin;
+        this.armorManager = plugin.getCustomArmorManager();
+        this.customItemManager = plugin.getCustomItemManager();
+        this.mythicManager = plugin.getMythicItemManager();
+        this.weaponItemManager = plugin.getWeaponItemManager();
+    }
 
     // ==================== PLAYER DEATH ====================
 
@@ -111,7 +120,7 @@ public class GameListener implements Listener {
         if (event.isCancelled()) return;
 
         Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
 
         if (session == null) return;
 
@@ -137,7 +146,7 @@ public class GameListener implements Listener {
         // Cleanup mythic state (like Goblin Spear charge)
         mythicManager.cleanup(player);
 
-        PlayerDataManager.getInstance().incDeaths(player.getUniqueId());
+        plugin.getPlayerDataManager().incDeaths(player.getUniqueId());
 
         // A round-end/victory Sequence is holding the result on screen - deaths during
         // this window must not affect lives, bonuses, or win conditions.
@@ -167,9 +176,9 @@ public class GameListener implements Listener {
     }
 
     private Location getSpectatorLocation(GameSession session) {
-        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
+        Arena arena = plugin.getArenaManager().getArena(session.getArenaNumber());
         if (arena != null) {
-            TemplateWorld template = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+            TemplateWorld template = plugin.getArenaManager().getTemplate(arena.getTemplateId());
             if (template != null && template.getSpectatorSpawn() != null) {
                 return LocationUtils.copyToWorld(template.getSpectatorSpawn(), session.getGameWorld());
             }
@@ -183,7 +192,7 @@ public class GameListener implements Listener {
         CashClashPlayer killerCCP = session.getCashClashPlayer(killer.getUniqueId());
         if (killerCCP == null) return;
 
-        PlayerDataManager.getInstance().incKills(killer.getUniqueId());
+        plugin.getPlayerDataManager().incKills(killer.getUniqueId());
         killerCCP.handleKill();
         session.getCurrentRoundData().addKill(killer.getUniqueId());
 
@@ -209,8 +218,8 @@ public class GameListener implements Listener {
     }
 
     private void handleTemporarySpectatorAndRespawn(Player player, Location spectatorLocation) {
-        int respawnDelaySec = ConfigManager.getInstance().getRespawnDelay();
-        int respawnProtectionSec = ConfigManager.getInstance().getRespawnProtection();
+        int respawnDelaySec = plugin.getConfigManager().getRespawnDelay();
+        int respawnProtectionSec = plugin.getConfigManager().getRespawnProtection();
 
         Messages.send(player, "listener.respawn-delay", "seconds", String.valueOf(respawnDelaySec));
 
@@ -224,7 +233,7 @@ public class GameListener implements Listener {
     }
 
     private void respawnPlayer(Player player, int respawnProtectionSec) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
         if (session == null) return;
 
         // If round ended (moved to shopping phase), don't respawn into combat
@@ -289,7 +298,7 @@ public class GameListener implements Listener {
         if (event.isCancelled()) return;
 
         Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
 
         // During a game, only shop items are locked - items that aren't given by the shop
         // (base kit gear, vanilla materials) may be dropped freely.
@@ -411,7 +420,7 @@ public class GameListener implements Listener {
             return true;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        GameSession session = plugin.getGameManager().getPlayerSession(p);
         if (session == null) {
             return false;
         }
@@ -470,13 +479,13 @@ public class GameListener implements Listener {
      * @return true if not on cooldown
      */
     private boolean checkConsumableCooldown(Player p) {
-        CooldownManager cooldownManager = CooldownManager.getInstance();
+        CooldownManager cooldownManager = plugin.getCooldownManager();
         if (cooldownManager.isOnCooldown(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE)) {
             long remaining = cooldownManager.getRemainingCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE);
             Messages.send(p, "listener.consumable-cooldown", "remaining", String.valueOf(remaining));
             return false;
         }
-        int cooldownSeconds = ItemsConfig.getInstance().getConsumableCooldown();
+        int cooldownSeconds = plugin.getItemsConfig().getConsumableCooldown();
         cooldownManager.setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE, cooldownSeconds);
         return true;
     }
@@ -517,7 +526,7 @@ public class GameListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player p = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        GameSession session = plugin.getGameManager().getPlayerSession(p);
         if (session == null) return;
 
         if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) return;
@@ -577,7 +586,6 @@ public class GameListener implements Listener {
     public void onRoseStructureBreak(BlockBreakEvent event) {
         customItemManager.getHandler(BloomingRoseHandler.class).onRoseStructureBroken(event.getBlock());
     }
-
 
     // ==================== BOW SHOOT ====================
 
@@ -766,7 +774,7 @@ public class GameListener implements Listener {
         if (!PDCDetection.isShopNPC(e)) return;
 
         event.setCancelled(true);
-        ShopManager.getInstance().onPlayerInteractShop(event.getPlayer(), e);
+        plugin.getShopManager().onPlayerInteractShop(event.getPlayer(), e);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -782,7 +790,7 @@ public class GameListener implements Listener {
 
         if (!(event.getRightClicked() instanceof Player target)) return;
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
         if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) return;
 
         switch (type) {
@@ -819,7 +827,7 @@ public class GameListener implements Listener {
         Integer amount = PDCDetection.getSupplyDropAmount(current);
         if (amount == null) return false;
 
-        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        GameSession session = plugin.getGameManager().getPlayerSession(p);
         if (session == null || session.getCashClashPlayer(p.getUniqueId()) == null) return false;
 
         event.setCancelled(true);
@@ -861,7 +869,7 @@ public class GameListener implements Listener {
     @EventHandler
     public void onArmorChange(PlayerArmorChangeEvent event) {
         Player p = event.getPlayer();
-        if (GameManager.getInstance().getPlayerSession(p) == null) return;
+        if (plugin.getGameManager().getPlayerSession(p) == null) return;
 
         RuneManager.syncArmorRuneOnEquipChange(p, event.getOldItem(), event.getNewItem());
     }
@@ -901,9 +909,9 @@ public class GameListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
         if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {
-            Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 // Use centralized health system to get max health (respects modifiers)
                 var ccp = session.getCashClashPlayer(player.getUniqueId());
                 ccp.applyHealth();
@@ -915,7 +923,7 @@ public class GameListener implements Listener {
     @EventHandler
     public void onPlayerBackInGame(PlayerBackToGameEvent event) {
         Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
         if (session != null) {
             session.getGamemode().onPlayerSpawn(player);
             // Apply team outlines when player respawns (Feature #7-8)
@@ -935,12 +943,12 @@ public class GameListener implements Listener {
     public void onTotemUse(EntityResurrectEvent event) {
         if (!(event.getEntity() instanceof Player p)) return;
 
-        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        GameSession session = plugin.getGameManager().getPlayerSession(p);
         if (session == null) return;
 
         // Totem is being used (event is called before effects are applied, but we can't easily cancel just the effects)
         // Spigot applies effects AFTER the event. So we schedule a task to override them.
-        Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!p.isOnline()) return;
             
             // Remove default totem effects
@@ -1001,6 +1009,4 @@ public class GameListener implements Listener {
         }
     }
 }
-
-
 

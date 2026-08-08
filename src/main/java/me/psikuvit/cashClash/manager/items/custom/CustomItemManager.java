@@ -28,8 +28,6 @@ import java.util.function.Function;
  */
 public class CustomItemManager {
 
-    private static CustomItemManager instance;
-
     private final CooldownManager cooldownManager;
     private final ItemsConfig cfg;
     private final CustomArmorManager armorManager;
@@ -66,11 +64,6 @@ public class CustomItemManager {
         register(HuntersMarkHandler::new, CustomItem.HUNTERS_MARK);
         register(BloomingRoseHandler::new, CustomItem.BLOOMING_ROSE);
         register(OrbOfGravitationHandler::new, CustomItem.ORB_OF_GRAVITATION);
-        instance = this;
-    }
-
-    public static CustomItemManager getInstance() {
-        return instance;
     }
 
     /**

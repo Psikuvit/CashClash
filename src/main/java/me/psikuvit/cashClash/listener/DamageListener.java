@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -76,18 +78,20 @@ public class DamageListener implements Listener {
     private static final int MAX_POWER_LEVEL_REGULAR_BOW = 2;
     private static final double LEGENDARY_CROSSBOW_DAMAGE_BOOST = 1.3;
 
+    private final CashClashPlugin plugin;
     private final GameManager gameManager;
     private final CustomArmorManager armorManager;
     private final CustomItemManager customItemManager;
     private final MythicItemManager mythicManager;
     private final WeaponItemManager weaponItemManager;
 
-    public DamageListener() {
-        this.gameManager = GameManager.getInstance();
-        this.armorManager = CustomArmorManager.getInstance();
-        this.customItemManager = CustomItemManager.getInstance();
-        this.mythicManager = MythicItemManager.getInstance();
-        this.weaponItemManager = WeaponItemManager.getInstance();
+    public DamageListener(CashClashPlugin plugin) {
+        this.plugin = plugin;
+        this.gameManager = plugin.getGameManager();
+        this.armorManager = plugin.getCustomArmorManager();
+        this.customItemManager = plugin.getCustomItemManager();
+        this.mythicManager = plugin.getMythicItemManager();
+        this.weaponItemManager = plugin.getWeaponItemManager();
     }
 
     // ==================== MAIN DAMAGE HANDLER (EntityDamageEvent) ====================
@@ -137,7 +141,7 @@ public class DamageListener implements Listener {
             // chained teammates (the redirect deals the raw, unamplified amount, relying on
             // this check to apply the increase uniformly instead of double-counting it).
             if (mythicManager.getHandler(AlchemistWandHandler.class).isTaunting(player.getUniqueId())) {
-                double increase = ItemsConfig.getInstance().getAlchemistTauntDamageIncreasePercent();
+                double increase = plugin.getItemsConfig().getAlchemistTauntDamageIncreasePercent();
                 event.setDamage(event.getDamage() * (1.0 + increase / 100.0));
             }
 
@@ -288,7 +292,7 @@ public class DamageListener implements Listener {
         }
         if (event.isApplicable(EntityDamageEvent.DamageModifier.BASE)) {
             event.setDamage(EntityDamageEvent.DamageModifier.BASE,
-                    ItemsConfig.getInstance().getSoulKatanaStrikeDamage());
+                    plugin.getItemsConfig().getSoulKatanaStrikeDamage());
         }
     }
 
@@ -415,7 +419,7 @@ public class DamageListener implements Listener {
         // Wind Charge Fall Damage Fix
         if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
             // Check if player recently used or was hit by a wind charge
-            if (CooldownManager.getInstance().getRemainingCooldownMs(player.getUniqueId(), "WIND_CHARGE_PROTECTION") > 0) {
+            if (plugin.getCooldownManager().getRemainingCooldownMs(player.getUniqueId(), "WIND_CHARGE_PROTECTION") > 0) {
                 event.setCancelled(true);
                 return;
             }
@@ -542,7 +546,6 @@ public class DamageListener implements Listener {
         }
         return false;
     }
-
 
     // ==================== ARMOR EFFECTS ====================
 
@@ -694,7 +697,6 @@ public class DamageListener implements Listener {
         }
     }
 
-
     // ==================== ATTACKER EFFECTS ====================
 
     /**
@@ -718,7 +720,7 @@ public class DamageListener implements Listener {
      * Handle attacker-side effects (mythic items, custom items, combat modifiers).
      */
     private void handleAttackerEffects(EntityDamageByEntityEvent event, Player attacker, Player victim) {
-        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
+        GameSession session = plugin.getGameManager().getPlayerSession(attacker);
         ItemStack weapon = attacker.getInventory().getItemInMainHand();
 
         // Apply custom item effects
@@ -820,7 +822,6 @@ public class DamageListener implements Listener {
     private interface MythicEffectHandler {
         void apply(Player attacker, Player victim);
     }
-
 
     /**
      * Apply combat modifiers (strength nerf, power enchantment nerf/cap).

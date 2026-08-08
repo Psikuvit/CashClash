@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
@@ -25,13 +27,13 @@ public class PTPCommand extends AbstractArgCommand {
             return true;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             Messages.send(sender, "generic.not-in-game");
             return true;
         }
 
-        GamemodeManager.getInstance().setNextGamemode(session.getSessionId(), GamemodeType.PROTECT_THE_PRESIDENT);
+        CashClashPlugin.getInstance().getGamemodeManager().setNextGamemode(session.getSessionId(), GamemodeType.PROTECT_THE_PRESIDENT);
         sender.sendMessage(Messages.parse("<green>Next gamemode for this session set to Protect the President.</green>"));
         return true;
     }

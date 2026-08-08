@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import io.papermc.paper.event.player.AsyncChatEvent;
 import me.psikuvit.cashClash.chat.ChatManager;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -19,7 +21,7 @@ public class ChatListener implements Listener {
         String message = PlainTextComponentSerializer.plainText().serialize(event.message());
 
         // Let ChatManager process the message
-        boolean handled = ChatManager.getInstance().processMessage(player, message);
+        boolean handled = CashClashPlugin.getInstance().getChatManager().processMessage(player, message);
 
         if (handled) {
             // Message was sent to a specific channel, cancel the default broadcast

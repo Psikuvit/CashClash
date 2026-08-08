@@ -12,18 +12,12 @@ import java.io.File;
  */
 public class ShopConfig {
 
-    private static ShopConfig instance;
     private FileConfiguration config;
     private final ConfigValidator validator;
 
     public ShopConfig() {
         this.validator = new ConfigValidator();
         loadConfig();
-        instance = this;
-    }
-
-    public static ShopConfig getInstance() {
-        return instance;
     }
 
     private void loadConfig() {

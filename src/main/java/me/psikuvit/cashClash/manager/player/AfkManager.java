@@ -19,8 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AfkManager {
 
-    private static AfkManager instance;
-
     private final Map<UUID, Long> lastActivity = new ConcurrentHashMap<>();
     private final Set<UUID> warned = ConcurrentHashMap.newKeySet();
     private final ConfigManager configManager;
@@ -31,11 +29,6 @@ public class AfkManager {
         this.configManager = configManager;
         this.gameManager = gameManager;
         this.messagesConfig = messagesConfig;
-        instance = this;
-    }
-
-    public static AfkManager getInstance() {
-        return instance;
     }
 
     public void markActivity(Player player) {

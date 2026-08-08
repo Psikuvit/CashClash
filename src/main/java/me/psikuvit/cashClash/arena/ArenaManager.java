@@ -25,7 +25,6 @@ import java.util.Map;
  */
 public class ArenaManager {
 
-    private static ArenaManager instance;
     private final Map<Integer, Arena> arenas; // Arena number (1-5) -> Arena
     private final Map<Integer, Integer> arenaPlayerCounts; // Track player count per arena
 
@@ -51,11 +50,6 @@ public class ArenaManager {
         loadTemplates();
         loadArenas();
         loadServerLobby();
-        instance = this;
-    }
-
-    public static ArenaManager getInstance() {
-        return instance;
     }
 
     /**
@@ -421,7 +415,6 @@ public class ArenaManager {
 
         cfg.set("name", arena.getName());
         cfg.set("template", arena.getTemplateId());
-
 
         try {
             cfg.save(f);

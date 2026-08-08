@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.weapon;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -190,7 +192,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
                 if (target.getLocation().distanceSquared(vortexLocation) > radius * radius) continue;
                 if (target.getUniqueId().equals(profitVortexOwners.get(vortexLocation))) continue;
 
-                GameSession session = GameManager.getInstance().getPlayerSession(shooter);
+                GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(shooter);
                 if (session != null) {
                     Team ownerTeam = session.getPlayerTeam(shooter);
                     Team targetTeam = session.getPlayerTeam(target);
@@ -228,7 +230,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
         Location vortexLocation = playersKilledInProfitVortex.get(victim.getUniqueId());
         if (vortexLocation.distance(victim.getLocation()) > 5) return;
 
-        GameSession session = GameManager.getInstance().getPlayerSession(killer);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(killer);
         if (session == null) return;
 
         Team killerTeam = session.getPlayerTeam(killer);

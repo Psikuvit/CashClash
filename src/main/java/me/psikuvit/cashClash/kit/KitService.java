@@ -125,7 +125,7 @@ public class KitService {
      * Give kit-specific items (only called in round 1)
      */
     private static void giveKitSpecificItems(Kit kit, Player player) {
-        ItemFactory factory = ItemFactory.getInstance();
+        ItemFactory factory = CashClashPlugin.getInstance().getItemFactory();
 
         switch (kit) {
             case ARCHER -> {
@@ -289,7 +289,7 @@ public class KitService {
         player.getInventory().addItem(shears);
 
         // === FOOD ===
-        ItemFactory factory = ItemFactory.getInstance();
+        ItemFactory factory = CashClashPlugin.getInstance().getItemFactory();
         ItemStack steak = factory.createGameplayItem(FoodItem.STEAK);
         steak.setAmount(8);
         markKitItem(steak);
@@ -344,7 +344,7 @@ public class KitService {
         player.getInventory().addItem(new ItemStack(Material.SHEARS));
 
         // Food (with ITEM_ID for refund tracking)
-        ItemFactory factory = ItemFactory.getInstance();
+        ItemFactory factory = CashClashPlugin.getInstance().getItemFactory();
         ItemStack steak = factory.createGameplayItem(FoodItem.STEAK);
         steak.setAmount(8);
         player.getInventory().addItem(steak);
@@ -452,12 +452,12 @@ public class KitService {
         itemMap.put("MATERIAL:SHEARS", new ItemStack(Material.SHEARS));
 
         // === FOOD ===
-        ItemStack steak = ItemFactory.getInstance().createGameplayItem(FoodItem.STEAK);
+        ItemStack steak = CashClashPlugin.getInstance().getItemFactory().createGameplayItem(FoodItem.STEAK);
         steak.setAmount(8);
         itemMap.put("CUSTOM:STEAK", steak);
         itemMap.put("MATERIAL:COOKED_BEEF", steak); // Fallback
 
-        ItemStack bread = ItemFactory.getInstance().createGameplayItem(FoodItem.BREAD);
+        ItemStack bread = CashClashPlugin.getInstance().getItemFactory().createGameplayItem(FoodItem.BREAD);
         bread.setAmount(16);
         itemMap.put("CUSTOM:BREAD", bread);
         itemMap.put("MATERIAL:BREAD", bread); // Fallback
@@ -474,7 +474,7 @@ public class KitService {
      */
     private static void giveKitSpecificItemsWithLayout(Kit kit, Player player, Map<Integer, String> layout) {
         Map<String, ItemStack> itemMap = new HashMap<>();
-        ItemFactory factory = ItemFactory.getInstance();
+        ItemFactory factory = CashClashPlugin.getInstance().getItemFactory();
 
         switch (kit) {
             case ARCHER -> {

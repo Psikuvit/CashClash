@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.game;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
@@ -106,22 +108,25 @@ public class GameSession {
     // per-game random shield pattern. A null/absent value means "no override".
     private final Map<UUID, Boolean> shieldOverrides;
 
-    public GameSession(int arenaNumber) {
+    private final CashClashPlugin plugin;
+
+    public GameSession(int arenaNumber, CashClashPlugin plugin) {
         this.sessionId = UUID.randomUUID();
         this.arenaNumber = arenaNumber;
-        this.gamemodeManager = GamemodeManager.getInstance();
-        this.rejoinManager = RejoinManager.getInstance();
-        this.arenaManager = ArenaManager.getInstance();
-        this.shopManager = ShopManager.getInstance();
-        this.scoreboardManager = ScoreboardManager.getInstance();
-        this.configManager = ConfigManager.getInstance();
-        this.playerDataManager = PlayerDataManager.getInstance();
-        this.mythicItemManager = MythicItemManager.getInstance();
-        this.customArmorManager = CustomArmorManager.getInstance();
-        this.customItemManager = CustomItemManager.getInstance();
-        this.weaponItemManager = WeaponItemManager.getInstance();
-        this.lobbyManager = LobbyManager.getInstance();
-        this.gameManager = GameManager.getInstance();
+        this.plugin = plugin;
+        this.gamemodeManager = plugin.getGamemodeManager();
+        this.rejoinManager = plugin.getRejoinManager();
+        this.arenaManager = plugin.getArenaManager();
+        this.shopManager = plugin.getShopManager();
+        this.scoreboardManager = plugin.getScoreboardManager();
+        this.configManager = plugin.getConfigManager();
+        this.playerDataManager = plugin.getPlayerDataManager();
+        this.mythicItemManager = plugin.getMythicItemManager();
+        this.customArmorManager = plugin.getCustomArmorManager();
+        this.customItemManager = plugin.getCustomItemManager();
+        this.weaponItemManager = plugin.getWeaponItemManager();
+        this.lobbyManager = plugin.getLobbyManager();
+        this.gameManager = plugin.getGameManager();
         this.stateMachine = new GameStateMachine(GameState.WAITING);
         this.currentRound = 1;
         this.teamRed = new Team(1);
@@ -962,7 +967,6 @@ public class GameSession {
     private void applyForfeitBonus(Team winningTeam, long bonus) {
         winningTeam.getPlayers().forEach(uuid -> rewardManager.grant(uuid, RewardType.FORFEIT_BONUS, bonus));
     }
-
 
     private Kit getRandomKit() {
         Kit[] kits = Kit.values();

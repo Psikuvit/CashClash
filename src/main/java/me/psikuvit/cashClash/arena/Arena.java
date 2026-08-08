@@ -60,7 +60,7 @@ public class Arena {
     }
 
     private World getTemplateWorldInternal() {
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(templateId);
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(templateId);
         return tpl == null ? null : tpl.getWorld();
     }
 
@@ -343,7 +343,6 @@ public class Arena {
                 Messages.debug("ARENA", "Failed to unload world during shutdown: " + worldName);
             }
 
-
             try {
                 // synchronous delete (may block but we're shutting down)
                 deleteWorld(worldFolder);
@@ -420,7 +419,7 @@ public class Arena {
         // If this arena was loaded from a persisted arena file, consider it configured
         if (configuredFromFile) return true;
 
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(templateId);
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(templateId);
         return tpl != null && tpl.isConfigured();
     }
 

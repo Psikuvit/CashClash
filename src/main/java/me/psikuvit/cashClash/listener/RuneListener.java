@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -28,8 +30,8 @@ import org.bukkit.inventory.ItemStack;
 
 public class RuneListener implements Listener {
 
-    private final CustomArmorManager armorManager = CustomArmorManager.getInstance();
-    private final CustomItemManager customItemManager = CustomItemManager.getInstance();
+    private final CustomArmorManager armorManager;
+    private final CustomItemManager customItemManager;
 
     @EventHandler
     public void onRuneToggle(PlayerInteractEvent event) {
@@ -63,7 +65,7 @@ public class RuneListener implements Listener {
             return;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
         if (session != null && session.getState() == GameState.SHOPPING) {
             return;
         }
@@ -118,7 +120,7 @@ public class RuneListener implements Listener {
             return;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        GameSession session = plugin.getGameManager().getPlayerSession(p);
         if (session != null && session.getState() == GameState.SHOPPING) {
             event.setCancelled(true);
             return;
@@ -131,7 +133,7 @@ public class RuneListener implements Listener {
             return;
         }
 
-        if (CooldownManager.getInstance().isOnCooldown(p.getUniqueId(), CooldownManager.Keys.RUNE_LINK)) {
+        if (plugin.getCooldownManager().isOnCooldown(p.getUniqueId(), CooldownManager.Keys.RUNE_LINK)) {
             event.setCancelled(true);
             return;
         }
@@ -162,7 +164,7 @@ public class RuneListener implements Listener {
         ItemStack linked = RuneManager.getLinkedItem(p, cursor);
         if (linked != null && linked.isSimilar(target)) {
             RuneManager.clearRuneLink(cursor);
-            CooldownManager.getInstance().setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.RUNE_LINK, 1);
+            plugin.getCooldownManager().setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.RUNE_LINK, 1);
             event.setCancelled(true);
             p.setItemOnCursor(null);
             p.getInventory().addItem(cursor);
@@ -172,7 +174,7 @@ public class RuneListener implements Listener {
         }
 
         RuneManager.setRuneLink(cursor, target);
-        CooldownManager.getInstance().setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.RUNE_LINK, 1);
+        plugin.getCooldownManager().setCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.RUNE_LINK, 1);
         event.setCancelled(true);
         p.setItemOnCursor(null);
         p.getInventory().addItem(cursor);
@@ -180,7 +182,12 @@ public class RuneListener implements Listener {
         Messages.send(p, "rune.linked", "target", target.getType().name().toLowerCase().replace("_", " "));
     }
 
-    public RuneListener() {
+    private final CashClashPlugin plugin;
+
+    public RuneListener(CashClashPlugin plugin) {
+        this.plugin = plugin;
+        this.armorManager = plugin.getCustomArmorManager();
+        this.customItemManager = plugin.getCustomItemManager();
         RuneManager.startRuneRechargeTask();
     }
 
@@ -274,7 +281,6 @@ public class RuneListener implements Listener {
                 EnchantEntry.PIERCING.canApplyTo(crossbow)) {
             RuneManager.consumeRuneDurability(player, piercingRune);
         }
-
 
         // Quick Charge
         ItemStack quickChargeRune = RuneManager.getActiveRune(

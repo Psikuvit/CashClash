@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -22,7 +24,7 @@ public class ShopCommand extends AbstractArgCommand {
             return true;
         }
 
-        var sess = GameManager.getInstance().getPlayerSession(player);
+        var sess = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (sess == null) {
             Messages.send(player, "generic.player-not-in-game");
             player.closeInventory();

@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.shop.items;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import org.bukkit.Material;
@@ -52,7 +54,7 @@ public enum CustomItem implements Purchasable {
 
     @Override
     public long getPrice() {
-        return ShopConfig.getInstance().getCustomItemPrice(configKey);
+        return CashClashPlugin.getInstance().getShopConfig().getCustomItemPrice(configKey);
     }
 
     @Override
@@ -69,7 +71,6 @@ public enum CustomItem implements Purchasable {
     public String getDisplayName() {
         return displayName;
     }
-
 
     /**
      * Gets the maximum number of this item that can be purchased per round.

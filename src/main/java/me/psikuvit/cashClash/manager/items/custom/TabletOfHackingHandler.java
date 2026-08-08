@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gui.PlayerSelectorGUI;
@@ -25,7 +27,7 @@ public class TabletOfHackingHandler extends CustomItemHandler {
     }
 
     public void useTabletOfHacking(Player player) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             Messages.debug("TABLET", "Player " + player.getName() + " tried to use Tablet of Hacking outside of a game.");
             return;
@@ -47,7 +49,7 @@ public class TabletOfHackingHandler extends CustomItemHandler {
 
     // Called when a player selects an enemy in the PlayerSelector for Tablet of Hacking
     public void handleTabletOfHackingSelection(Player viewer, Player target) {
-        GameSession session = GameManager.getInstance().getPlayerSession(viewer);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
         if (session == null) {
             Messages.debug("TABLET", "Player " + viewer.getName() + " tried to use Tablet of Hacking outside of a game.");
             return;

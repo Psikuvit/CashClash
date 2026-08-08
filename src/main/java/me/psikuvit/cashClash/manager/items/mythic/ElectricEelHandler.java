@@ -71,7 +71,7 @@ public class ElectricEelHandler extends MythicItemHandler {
         }
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_CHAIN, cfg.getEelChainCooldown());
 
-        GameSession session = GameManager.getInstance().getPlayerSession(attacker);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(attacker);
         if (session == null) {
             Messages.debug(attacker, "ELECTRIC_EEL: No session");
             return;
@@ -152,7 +152,7 @@ public class ElectricEelHandler extends MythicItemHandler {
         Messages.send(player, "mythic.electric-eel-zap");
 
         // Scan for entities caught along the dash path while the push carries the player.
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
         double dashDamage = cfg.getEelDashDamage();
         double hitRadius = cfg.getEelDashHitRadius();

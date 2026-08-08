@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.listener.lobby;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -24,12 +26,11 @@ public class ArenaNPCListener implements Listener {
         // Check if this is an arena NPC
         if (!PDCDetection.isArenaNPC(mannequin)) return;
 
-
         event.setCancelled(true);
         Player player = event.getPlayer();
 
         // Don't open GUI if player is already in a game
-        if (GameManager.getInstance().getPlayerSession(player) != null) return;
+        if (CashClashPlugin.getInstance().getGameManager().getPlayerSession(player) != null) return;
 
         // Open the arena selection GUI
         ArenaSelectionGUI.openArenaGUI(player);

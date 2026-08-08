@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui.categories;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.gui.ShopGUI;
@@ -58,19 +60,19 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         setBackButton(45, p -> new ShopGUI(p).open());
 
         // Undo button
-        setButton(49, GuiButton.of(ItemFactory.getInstance().getGuiFactory().createUndoButton())
+        setButton(49, GuiButton.of(CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createUndoButton())
                 .onClick(p -> handleUndoPurchase()));
 
         // Coins display
         long coins = getPlayerCoins();
-        setButton(53, GuiButton.of(ItemFactory.getInstance().getGuiFactory().createCoinDisplay(coins)));
+        setButton(53, GuiButton.of(CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createCoinDisplay(coins)));
     }
 
     /**
      * Get the player's current coin balance.
      */
     protected long getPlayerCoins() {
-        GameSession session = GameManager.getInstance().getPlayerSession(viewer);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
         if (session == null) return 0;
         CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
         return ccp != null ? ccp.getCoins() : 0;
@@ -80,7 +82,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Get the CashClashPlayer for the viewer.
      */
     protected CashClashPlayer getCashClashPlayer() {
-        GameSession session = GameManager.getInstance().getPlayerSession(viewer);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
         if (session == null) return null;
         return session.getCashClashPlayer(viewer.getUniqueId());
     }
@@ -89,7 +91,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Get the current game session.
      */
     protected GameSession getSession() {
-        return GameManager.getInstance().getPlayerSession(viewer);
+        return CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
     }
 
     /**
@@ -137,15 +139,15 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
             }
         }
 
-        long totalPrice = ShopService.getInstance().calculateTotalPrice(item, qty);
+        long totalPrice = CashClashPlugin.getInstance().getShopService().calculateTotalPrice(item, qty);
 
-        if (!ShopService.getInstance().canAfford(viewer, totalPrice)) {
+        if (!CashClashPlugin.getInstance().getShopService().canAfford(viewer, totalPrice)) {
             Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", totalPrice));
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        ShopService.getInstance().processPurchase(viewer, item, qty, totalPrice);
+        CashClashPlugin.getInstance().getShopService().processPurchase(viewer, item, qty, totalPrice);
         refresh();
     }
 
@@ -176,7 +178,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         }
 
         ccp.popLastPurchase();
-        ShopService.getInstance().processRefund(viewer, rec);
+        CashClashPlugin.getInstance().getShopService().processRefund(viewer, rec);
         refresh();
     }
 
@@ -198,7 +200,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Create a purchasable button with click handler.
      */
     protected GuiButton createPurchasableButtonMaxed(Purchasable item, boolean maxed) {
-        ItemStack itemStack = ItemFactory.getInstance().createUpgradableGuiItem(item, maxed);
+        ItemStack itemStack = CashClashPlugin.getInstance().getItemFactory().createUpgradableGuiItem(item, maxed);
         return GuiButton.of(itemStack).onClick((p, clickType) -> {
             if (maxed) {
                 Messages.send(p, "shop.max-tier-reached");
@@ -213,7 +215,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Create a shop item button with click handler.
      */
     protected GuiButton createPurchasableButton(Purchasable item, int quantity) {
-        ItemStack itemStack = ItemFactory.getInstance().createGuiItem(viewer, item, quantity);
+        ItemStack itemStack = CashClashPlugin.getInstance().getItemFactory().createGuiItem(viewer, item, quantity);
         return GuiButton.of(itemStack).onClick((p, clickType) -> handlePurchasableClick(item, clickType));
     }
 
@@ -221,7 +223,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Create a button for a custom item with its unique purchase flow.
      */
     protected GuiButton createCustomItemButton(CustomItem item) {
-        ItemStack itemStack = ItemFactory.getInstance().getGuiFactory().createCustomItemIcon(item);
+        ItemStack itemStack = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createCustomItemIcon(item);
         return GuiButton.of(itemStack).onClick(p -> handleCustomItemPurchase(item));
     }
 
@@ -258,21 +260,21 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         // Totem of Haunting shares its combined-cap-of-2 with regular totems (UtilityItem.TOTEM)
         // - that check lives in ShopService since it also gates the regular totem's own purchase
         // path (processPurchase), which this custom-item flow doesn't go through.
-        if (type == CustomItem.TOTEM_OF_HAUNTING && ShopService.getInstance().isTotemCapReached(viewer)) {
+        if (type == CustomItem.TOTEM_OF_HAUNTING && CashClashPlugin.getInstance().getShopService().isTotemCapReached(viewer)) {
             return;
         }
 
         long price = type.getPrice();
-        if (!ShopService.getInstance().canAfford(viewer, price)) {
+        if (!CashClashPlugin.getInstance().getShopService().canAfford(viewer, price)) {
             Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", price));
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        ItemStack customItem = ItemFactory.getInstance().createCustomItem(type, viewer);
+        ItemStack customItem = CashClashPlugin.getInstance().getItemFactory().createCustomItem(type, viewer);
         ccp.addPurchase(new PurchaseRecord(type, 1, price, sess.getCurrentRound()));
 
-        ShopService.getInstance().deductCoins(viewer, price);
+        CashClashPlugin.getInstance().getShopService().deductCoins(viewer, price);
         viewer.getInventory().addItem(customItem);
 
         Messages.send(viewer, "shop.purchased", "item_name", type.getDisplayName(), "price", String.format("%,d", price));

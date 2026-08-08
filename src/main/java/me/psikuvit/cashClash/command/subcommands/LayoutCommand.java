@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.gui.LayoutKitSelectorGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -34,12 +36,12 @@ public class LayoutCommand extends AbstractArgCommand {
         }
 
         // Don't allow if in a game
-        if (GameManager.getInstance().getPlayerSession(player) != null) {
+        if (CashClashPlugin.getInstance().getGameManager().getPlayerSession(player) != null) {
             Messages.send(player, "command.in-game");
             return true;
         }
 
-        LayoutManager layoutManager = LayoutManager.getInstance();
+        LayoutManager layoutManager = CashClashPlugin.getInstance().getLayoutManager();
 
         if (args.length == 0) {
             // Check if already editing

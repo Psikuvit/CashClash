@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.sequence;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 
@@ -46,7 +48,7 @@ public class SequenceManager {
     }
 
     private void playInternal(Sequence sequence, Consumer<Boolean> flagSetter, Runnable onComplete) {
-        if (!ConfigManager.getInstance().isSequencesEnabled()) {
+        if (!CashClashPlugin.getInstance().getConfigManager().isSequencesEnabled()) {
             if (onComplete != null) onComplete.run();
             return;
         }
@@ -76,7 +78,7 @@ public class SequenceManager {
      * locking sequence rather than cancelling it.
      */
     public void playUntracked(Sequence sequence) {
-        if (!ConfigManager.getInstance().isSequencesEnabled()) {
+        if (!CashClashPlugin.getInstance().getConfigManager().isSequencesEnabled()) {
             return;
         }
         new SequencePlayer(session).play(sequence, null);

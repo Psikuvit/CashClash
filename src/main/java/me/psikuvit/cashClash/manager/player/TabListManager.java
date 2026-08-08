@@ -15,14 +15,7 @@ import org.bukkit.scoreboard.Scoreboard;
  */
 public final class TabListManager {
 
-    private static TabListManager instance;
-
     public TabListManager() {
-        instance = this;
-    }
-
-    public static TabListManager getInstance() {
-        return instance;
     }
 
     /**

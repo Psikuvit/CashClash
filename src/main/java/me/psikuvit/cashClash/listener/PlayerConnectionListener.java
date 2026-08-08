@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -25,26 +27,32 @@ import org.bukkit.event.player.PlayerQuitEvent;
  */
 public class PlayerConnectionListener implements Listener {
 
+    private final CashClashPlugin plugin;
+
+    public PlayerConnectionListener(CashClashPlugin plugin) {
+        this.plugin = plugin;
+    }
+
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
         // Load player data first
-        PlayerDataManager.getInstance().getOrLoadData(player.getUniqueId());
-        PlayerDataManager.getInstance().markJoined(player.getUniqueId(), System.currentTimeMillis());
+        plugin.getPlayerDataManager().getOrLoadData(player.getUniqueId());
+        plugin.getPlayerDataManager().markJoined(player.getUniqueId(), System.currentTimeMillis());
         Messages.debug(player, "SYSTEM", "Player joined and data loaded");
 
         // Check for pending rejoin
-        if (RejoinManager.getInstance().hasPendingRejoin(player.getUniqueId())) {
-            RejoinData rejoinData = RejoinManager.getInstance().getRejoinData(player.getUniqueId());
-            int timeRemaining = rejoinData.getSecondsRemaining(ConfigManager.getInstance().getRejoinTimeoutSeconds());
+        if (plugin.getRejoinManager().hasPendingRejoin(player.getUniqueId())) {
+            RejoinData rejoinData = plugin.getRejoinManager().getRejoinData(player.getUniqueId());
+            int timeRemaining = rejoinData.getSecondsRemaining(plugin.getConfigManager().getRejoinTimeoutSeconds());
 
             Messages.send(player, "lobby-messages.rejoin-available");
             Messages.send(player, "lobby-messages.rejoin-time-remaining",
                     "time_remaining", String.valueOf(timeRemaining));
 
             // Process the rejoin
-            boolean rejoined = RejoinManager.getInstance().processRejoin(player);
+            boolean rejoined = plugin.getRejoinManager().processRejoin(player);
             if (rejoined) {
                 Messages.debug(player, "REJOIN", "Successfully rejoined game");
                 return; // Don't set up lobby state if they rejoined a game
@@ -70,20 +78,20 @@ public class PlayerConnectionListener implements Listener {
         CashClashPlayer.clearAllEffects(player);
 
         // Teleport to configured server lobby spawn if present
-        var lobbyLoc = ArenaManager.getInstance().getServerLobbySpawn();
+        var lobbyLoc = plugin.getArenaManager().getServerLobbySpawn();
         if (lobbyLoc != null) {
             player.teleport(lobbyLoc);
             Messages.debug(player, "SYSTEM", "Teleported to lobby spawn");
         }
 
         // Give lobby items
-        LobbyManager.getInstance().giveLobbyItems(player);
+        plugin.getLobbyManager().giveLobbyItems(player);
 
         // Set lobby scoreboard
-        ScoreboardManager.getInstance().setScoreboard(player);
+        plugin.getScoreboardManager().setScoreboard(player);
 
         // Set lobby tab appearance
-        TabListManager.getInstance().setPlayerToLobby(player);
+        plugin.getTabListManager().setPlayerToLobby(player);
 
         Messages.send(player, "lobby-messages.welcome-title");
         Messages.send(player, "lobby-messages.welcome-arenas");
@@ -95,27 +103,27 @@ public class PlayerConnectionListener implements Listener {
         Player player = event.getPlayer();
 
         // Accumulate playtime and persist player data
-        PlayerDataManager.getInstance().markLeft(player.getUniqueId(), System.currentTimeMillis());
+        plugin.getPlayerDataManager().markLeft(player.getUniqueId(), System.currentTimeMillis());
 
         // Clean up layout editing state
-        LayoutManager.getInstance().handleDisconnect(player.getUniqueId());
+        plugin.getLayoutManager().handleDisconnect(player.getUniqueId());
 
         // Cleanup mythic state
-        me.psikuvit.cashClash.manager.items.mythic.MythicItemManager.getInstance().cleanup(player);
+        plugin.getMythicItemManager().cleanup(player);
 
         // Remove lobby scoreboard
-        ScoreboardManager.getInstance().setScoreboard(player);
+        plugin.getScoreboardManager().setScoreboard(player);
 
         // Reset tab list
-        TabListManager.getInstance().resetPlayer(player);
+        plugin.getTabListManager().resetPlayer(player);
 
         // Check if player is in a game session
-        var session = GameManager.getInstance().getPlayerSession(player);
+        var session = plugin.getGameManager().getPlayerSession(player);
         if (session != null) {
             Messages.debug(player, "GAME", "Player quit while in session " + session.getSessionId());
 
             // Try to save rejoin data
-            boolean rejoinSaved = RejoinManager.getInstance().saveRejoinData(player, session);
+            boolean rejoinSaved = plugin.getRejoinManager().saveRejoinData(player, session);
 
             if (rejoinSaved) {
                 // Mark player as disconnected but don't remove them yet
@@ -125,7 +133,7 @@ public class PlayerConnectionListener implements Listener {
             } else {
                 // Rejoin not enabled or game ending - remove immediately
                 session.removePlayer(player);
-                GameManager.getInstance().removePlayerFromSession(player);
+                plugin.getGameManager().removePlayerFromSession(player);
                 Messages.debug(player, "GAME", "Player removed from session (rejoin not applicable)");
             }
         }

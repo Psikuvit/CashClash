@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -144,7 +146,7 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
                 ParticleUtils.spawnDust(trailLoc.clone().add(0, 0.2, 0), Color.RED, 1.0f, 3, 0.15, 0.05, 0.15);
             }
 
-            GameSession session = GameManager.getInstance().getPlayerSession(p);
+            GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(p);
             Team playerTeam = session != null ? session.getPlayerTeam(p) : null;
 
             for (Entity entity : p.getNearbyEntities(1.2, 1.0, 1.2)) {
@@ -200,7 +202,7 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
             double duration = cfg.getFlamebringerPullDuration();
             double pullStrength = cfg.getFlamebringerPullStrength();
 
-            GameManager gameManager = GameManager.getInstance();
+            GameManager gameManager = CashClashPlugin.getInstance().getGameManager();
             GameSession session = gameManager.getPlayerSession(killer);
             Team killerTeam = session != null ? session.getPlayerTeam(killer) : null;
 

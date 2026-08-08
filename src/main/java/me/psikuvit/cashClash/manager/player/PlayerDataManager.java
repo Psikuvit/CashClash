@@ -24,8 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PlayerDataManager implements Shutdownable {
 
-    private static PlayerDataManager instance;
-
     private final Map<UUID, PlayerData> cache;
     private final DatabaseProvider provider;
 
@@ -34,27 +32,26 @@ public class PlayerDataManager implements Shutdownable {
         this.cache = new ConcurrentHashMap<>();
     }
 
-    public static void init(CashClashPlugin plugin) throws SQLException {
-        if (instance != null) return;
-
-        // pick provider from config
+    /**
+     * Build the PlayerDataManager for this server, picking its storage provider from config.
+     * Called once from {@link CashClashPlugin#onEnable()}'s composition root.
+     */
+    public static PlayerDataManager create(CashClashPlugin plugin) throws SQLException {
         var cfg = plugin.getConfig();
         String type = cfg.getString("storage.type", "sqlite").toLowerCase();
+        PlayerDataManager manager;
         if (type.equals("mysql")) {
             String url = cfg.getString("storage.mysql.url");
             String user = cfg.getString("storage.mysql.user");
             String pass = cfg.getString("storage.mysql.pass");
-            instance = new PlayerDataManager(new MySQLProvider(url, user, pass));
+            manager = new PlayerDataManager(new MySQLProvider(url, user, pass));
         } else {
             File dbFile = new File(plugin.getDataFolder(), "players.db");
-            instance = new PlayerDataManager(new SQLiteProvider(dbFile));
+            manager = new PlayerDataManager(new SQLiteProvider(dbFile));
         }
 
-        instance.provider.init();
-    }
-
-    public static PlayerDataManager getInstance() {
-        return instance;
+        manager.provider.init();
+        return manager;
     }
 
     public Optional<PlayerData> getCached(UUID uuid) {

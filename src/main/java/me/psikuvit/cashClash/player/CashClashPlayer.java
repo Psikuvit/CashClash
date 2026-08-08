@@ -1,4 +1,6 @@
 package me.psikuvit.cashClash.player;
+
+import me.psikuvit.cashClash.CashClashPlugin;
  
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.kit.Kit;
@@ -122,7 +124,7 @@ public class CashClashPlayer {
     public void addCoins(long amount) {
         coins += amount;
         // Track lifetime coins earned for the leaderboard (excludes refunds/admin grants)
-        PlayerDataManager manager = PlayerDataManager.getInstance();
+        PlayerDataManager manager = CashClashPlugin.getInstance().getPlayerDataManager();
         if (manager != null) manager.addEarnedCoins(uuid, amount);
         Messages.debug(player, "ECONOMY", "Added $" + amount + " (Total: $" + this.coins + ")");
     }
@@ -291,7 +293,7 @@ public class CashClashPlayer {
      */
     public double heal(double amount) {
         if (player == null || !player.isOnline() || amount <= 0) return 0.0;
-        double scaledAmount = amount * CustomItemManager.getInstance().getHealingMultiplier(uuid);
+        double scaledAmount = amount * CashClashPlugin.getInstance().getCustomItemManager().getHealingMultiplier(uuid);
         if (scaledAmount <= 0) return 0.0;
         double maxHealth = getMaxHealth();
         double healed = Math.min(scaledAmount, Math.max(0.0, maxHealth - player.getHealth()));
@@ -499,7 +501,7 @@ public class CashClashPlayer {
      */
     public static CashClashPlayer from(Player player) {
         if (player == null) return null;
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         return session == null ? null : session.getCashClashPlayer(player.getUniqueId());
     }
 
@@ -606,7 +608,7 @@ public class CashClashPlayer {
         CashClashPlayer ccp = from(player);
         if (ccp != null) return ccp.heal(amount);
         if (player == null || !player.isOnline() || amount <= 0) return 0.0;
-        double scaledAmount = amount * CustomItemManager.getInstance().getHealingMultiplier(player.getUniqueId());
+        double scaledAmount = amount * CashClashPlugin.getInstance().getCustomItemManager().getHealingMultiplier(player.getUniqueId());
         if (scaledAmount <= 0) return 0.0;
         double healed = Math.min(scaledAmount, Math.max(0.0, 20.0 - player.getHealth()));
         if (healed > 0) {

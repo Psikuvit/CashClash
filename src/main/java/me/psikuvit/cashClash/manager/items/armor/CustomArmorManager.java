@@ -18,8 +18,6 @@ import java.util.function.Function;
  */
 public class CustomArmorManager {
 
-    private static CustomArmorManager instance;
-
     private final CooldownManager cooldownManager;
 
     private final ItemsConfig cfg;
@@ -44,11 +42,6 @@ public class CustomArmorManager {
         register(InvestorSetHandler::new);
 
         this.mythicShiftLock = ConcurrentHashMap.newKeySet();
-        instance = this;
-    }
-
-    public static CustomArmorManager getInstance() {
-        return instance;
     }
 
     private void register(Function<CustomArmorManager, ? extends ArmorSetHandler> factory) {

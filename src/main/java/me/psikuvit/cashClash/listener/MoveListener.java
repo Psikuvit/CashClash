@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -25,15 +27,23 @@ import org.bukkit.event.player.PlayerMoveEvent;
  */
 public class MoveListener implements Listener {
 
-    private final CustomItemManager customItemManager = CustomItemManager.getInstance();
-    private final CustomArmorManager armorManager = CustomArmorManager.getInstance();
-    private final WeaponItemManager weaponItemManager = WeaponItemManager.getInstance();
+    private final CashClashPlugin plugin;
+    private final CustomItemManager customItemManager;
+    private final CustomArmorManager armorManager;
+    private final WeaponItemManager weaponItemManager;
+
+    public MoveListener(CashClashPlugin plugin) {
+        this.plugin = plugin;
+        this.customItemManager = plugin.getCustomItemManager();
+        this.armorManager = plugin.getCustomArmorManager();
+        this.weaponItemManager = plugin.getWeaponItemManager();
+    }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
         if (session == null) return;
 
         // A Sequence is locking players (title/reveal moments) - cancel positional

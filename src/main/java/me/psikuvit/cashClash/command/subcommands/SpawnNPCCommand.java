@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.manager.lobby.MannequinManager;
 import me.psikuvit.cashClash.util.Messages;
@@ -31,16 +33,16 @@ public class SpawnNPCCommand extends AbstractArgCommand {
             Messages.send(player, "spawnnpc.usage");
             Messages.send(player, "spawnnpc.help-arena");
             Messages.send(player, "spawnnpc.help-remove");
-            Messages.send(player, "spawnnpc.total-saved", "count", String.valueOf(MannequinManager.getInstance().getCount()));
+            Messages.send(player, "spawnnpc.total-saved", "count", String.valueOf(CashClashPlugin.getInstance().getMannequinManager().getCount()));
             return true;
         }
 
         String subAction = args[0].toLowerCase();
 
         switch (subAction) {
-            case "arena" -> MannequinManager.getInstance().createArenaMannequin(player.getLocation(), player);
+            case "arena" -> CashClashPlugin.getInstance().getMannequinManager().createArenaMannequin(player.getLocation(), player);
             case "remove" -> {
-                int removed = MannequinManager.getInstance().removeNearby(player.getLocation(), 5);
+                int removed = CashClashPlugin.getInstance().getMannequinManager().removeNearby(player.getLocation(), 5);
                 if (removed > 0) {
                     Messages.send(player, "spawnnpc.removed", "count", String.valueOf(removed));
                 } else {

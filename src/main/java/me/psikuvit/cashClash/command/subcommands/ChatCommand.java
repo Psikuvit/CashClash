@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.chat.ChatChannel;
 import me.psikuvit.cashClash.chat.ChatManager;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
@@ -39,17 +41,17 @@ public class ChatCommand extends AbstractArgCommand {
         // Check if switching channels
         switch (arg) {
             case "global", "g", "all", "a" -> {
-                ChatManager.getInstance().setPlayerChannel(player, ChatChannel.GLOBAL);
+                CashClashPlugin.getInstance().getChatManager().setPlayerChannel(player, ChatChannel.GLOBAL);
                 Messages.send(player, "chat.switched-to-global");
             }
-            case "party", "p" -> ChatManager.getInstance().toggleChannel(player, ChatChannel.PARTY);
-            case "team", "t" -> ChatManager.getInstance().toggleChannel(player, ChatChannel.TEAM);
-            case "game" -> ChatManager.getInstance().toggleChannel(player, ChatChannel.GAME);
+            case "party", "p" -> CashClashPlugin.getInstance().getChatManager().toggleChannel(player, ChatChannel.PARTY);
+            case "team", "t" -> CashClashPlugin.getInstance().getChatManager().toggleChannel(player, ChatChannel.TEAM);
+            case "game" -> CashClashPlugin.getInstance().getChatManager().toggleChannel(player, ChatChannel.GAME);
             case "help" -> showHelp(player);
             default -> {
                 // Treat as a message - try to send based on current channel
                 String message = String.join(" ", args);
-                if (!ChatManager.getInstance().processMessage(player, message)) {
+                if (!CashClashPlugin.getInstance().getChatManager().processMessage(player, message)) {
                     // Global message - just show help since we can't send it without async chat event
                     showHelp(player);
                 }
@@ -60,7 +62,7 @@ public class ChatCommand extends AbstractArgCommand {
     }
 
     private void showCurrentChannel(Player player) {
-        ChatChannel channel = ChatManager.getInstance().getPlayerChannel(player);
+        ChatChannel channel = CashClashPlugin.getInstance().getChatManager().getPlayerChannel(player);
         Messages.send(player, "chat.current-channel",
                 "channel_color", channel.getNameColor(),
                 "channel_name", channel.getDisplayName());

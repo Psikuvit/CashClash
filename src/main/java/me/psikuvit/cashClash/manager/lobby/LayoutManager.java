@@ -20,8 +20,6 @@ import java.util.UUID;
  */
 public class LayoutManager {
 
-    private static LayoutManager instance;
-
     // Tracks which kit a player is currently editing
     private final Map<UUID, Kit> editingKit;
     // Stores the original items before editing started
@@ -35,11 +33,6 @@ public class LayoutManager {
         this.lobbyManager = lobbyManager;
         this.editingKit = new HashMap<>();
         this.originalInventory = new HashMap<>();
-        instance = this;
-    }
-
-    public static LayoutManager getInstance() {
-        return instance;
     }
 
     /**

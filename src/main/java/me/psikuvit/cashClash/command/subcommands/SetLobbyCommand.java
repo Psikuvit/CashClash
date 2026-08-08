@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.util.LocationUtils;
@@ -21,7 +23,7 @@ public class SetLobbyCommand extends AbstractArgCommand {
             Messages.send(sender, "command.only-players");
             return true;
         }
-        ArenaManager.getInstance().setServerLobbySpawn(LocationUtils.clone(player.getLocation()));
+        CashClashPlugin.getInstance().getArenaManager().setServerLobbySpawn(LocationUtils.clone(player.getLocation()));
         Messages.send(player, "lobby.server-lobby-set");
         return true;
     }

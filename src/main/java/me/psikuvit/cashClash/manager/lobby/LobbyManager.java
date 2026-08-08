@@ -15,8 +15,6 @@ import org.bukkit.persistence.PersistentDataType;
  */
 public class LobbyManager {
 
-    private static LobbyManager instance;
-
     // Namespace keys for PDC
     public static final NamespacedKey LOBBY_ITEM_KEY = new NamespacedKey("cashclash", "lobby_item");
 
@@ -50,11 +48,6 @@ public class LobbyManager {
 
     public LobbyManager(ItemsConfig itemsConfig) {
         this.itemsConfig = itemsConfig;
-        instance = this;
-    }
-
-    public static LobbyManager getInstance() {
-        return instance;
     }
 
     /**

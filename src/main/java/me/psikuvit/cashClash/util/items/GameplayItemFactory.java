@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.util.items;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.Consumable;
 import io.papermc.paper.datacomponent.item.FoodProperties;
@@ -224,7 +226,6 @@ public final class GameplayItemFactory {
 
         item.setData(DataComponentTypes.CONSUMABLE, consumable.build());
 
-
         // Apply custom model data for food items with custom textures
         CustomModelDataMapper.applyCustomModel(item, foodItem);
     }
@@ -260,7 +261,7 @@ public final class GameplayItemFactory {
                 // design budget, so remaining durability is tracked as a PDC counter (mirrored
                 // onto the visual durability bar in CustomItemManager.setIceFanDurability)
                 // rather than relying on Damageable directly, like BAG_OF_POTATOES does.
-                tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, ItemsConfig.getInstance().getIceFanMaxDurability());
+                tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, CashClashPlugin.getInstance().getItemsConfig().getIceFanMaxDurability());
             }
             default -> {
                 // No special properties
@@ -333,7 +334,7 @@ public final class GameplayItemFactory {
         if (category == null || configKey == null) {
             return List.of();
         }
-        List<String> loreLinesRaw = ItemsConfig.getInstance().getItemLore(category, configKey);
+        List<String> loreLinesRaw = CashClashPlugin.getInstance().getItemsConfig().getItemLore(category, configKey);
 
         if (loreLinesRaw.isEmpty()) {
             return List.of();

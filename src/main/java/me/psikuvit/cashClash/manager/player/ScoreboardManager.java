@@ -32,8 +32,6 @@ import java.util.UUID;
  */
 public class ScoreboardManager implements Shutdownable {
 
-    private static ScoreboardManager instance;
-
     // Map of playerUUID -> (sessionId -> Scoreboard) for game scoreboards
     private final Map<UUID, Map<UUID, Scoreboard>> gamePlayerBoards;
     // Map of playerUUID -> Scoreboard for lobby scoreboards
@@ -53,11 +51,6 @@ public class ScoreboardManager implements Shutdownable {
         this.lobbyPlayerBoards = new HashMap<>();
         this.sessionUpdateTasks = new HashMap<>();
         this.playerContexts = new HashMap<>();
-        instance = this;
-    }
-
-    public static ScoreboardManager getInstance() {
-        return instance;
     }
 
     /**

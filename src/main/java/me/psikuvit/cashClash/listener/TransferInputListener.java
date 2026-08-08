@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TransferInputListener implements Listener {
 
     private static final double TRANSFER_FEE = 0.10; // 10% fee
-    private static TransferInputListener instance;
 
     private final Map<UUID, PendingTransfer> pendingTransfers;
     private final Map<UUID, Block> signBlocks;
@@ -42,11 +41,6 @@ public class TransferInputListener implements Listener {
         this.gameManager = gameManager;
         this.pendingTransfers = new ConcurrentHashMap<>();
         this.signBlocks = new ConcurrentHashMap<>();
-        instance = this;
-    }
-
-    public static TransferInputListener getInstance() {
-        return instance;
     }
 
     /**
@@ -233,7 +227,6 @@ public class TransferInputListener implements Listener {
         signBlocks.clear();
         pendingTransfers.clear();
         HandlerList.unregisterAll(this);
-        instance = null;
     }
 
     /**

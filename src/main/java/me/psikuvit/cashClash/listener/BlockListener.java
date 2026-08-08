@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -41,6 +43,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * water/lava flow restrictions, web limits, leaf blocks.
  */
 public class BlockListener implements Listener {
+
+    private final CashClashPlugin plugin;
+
+    public BlockListener(CashClashPlugin plugin) {
+        this.plugin = plugin;
+    }
 
     // Map of session UUID to set of player-placed block locations
     private static final Map<UUID, Set<Location>> placedBlocks = new ConcurrentHashMap<>();
@@ -113,7 +121,7 @@ public class BlockListener implements Listener {
      * Queue a water bucket refill for the player to receive during the next shopping phase.
      */
     private static void queueWaterBucketRefill(Player player) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             return;
         }
@@ -131,7 +139,7 @@ public class BlockListener implements Listener {
         if (bucket != Material.WATER_BUCKET && bucket != Material.LAVA_BUCKET) return;
 
         Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
         if (session == null) return;
 
         Block target = event.getBlock();
@@ -163,7 +171,7 @@ public class BlockListener implements Listener {
      * Replaces empty buckets in inventory with full ones.
      */
     public static void refillWaterBuckets(Player player) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             return;
         }
@@ -210,7 +218,7 @@ public class BlockListener implements Listener {
         if (event.isCancelled()) return;
 
         Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
 
         if (!validateBlockPlaceContext(event, player, session)) {
             return;
@@ -528,7 +536,7 @@ public class BlockListener implements Listener {
 
     private void decrementPlayerLeaf(BlockBreakEvent event, Map<UUID, Map<UUID, Integer>> playerLeafBlockCount) {
         Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
         if (session != null) {
             Map<UUID, Integer> counts = playerLeafBlockCount.get(session.getSessionId());
             if (counts != null) {
@@ -545,7 +553,7 @@ public class BlockListener implements Listener {
         if (event.isCancelled()) return;
 
         Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
 
         if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {
             event.setCancelled(true);
@@ -557,7 +565,7 @@ public class BlockListener implements Listener {
         if (event.isCancelled()) return;
 
         Player player = event.getPlayer();
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = plugin.getGameManager().getPlayerSession(player);
 
         if (session == null) return;
 

@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui.categories;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
@@ -117,7 +119,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * @return true if diamond armor can be purchased, false if the limit is reached
      */
     private boolean canBuyDiamondPiece(int currentRound, int diamondPiecesOwned) {
-        ConfigManager cfg = ConfigManager.getInstance();
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
         return !(currentRound < cfg.getDiamondUnlockRound()
                 && diamondPiecesOwned >= cfg.getMaxDiamondPiecesEarly());
     }
@@ -158,7 +160,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
             setButton(slot, createPurchasableButtonMaxed(diamondItem, true));
         } else if (hasIron) {
             if (!canBuyDiamond) {
-                ItemStack locked = ItemFactory.getInstance().createLockedDiamondGuiItem(diamondItem, currentRound);
+                ItemStack locked = CashClashPlugin.getInstance().getItemFactory().createLockedDiamondGuiItem(diamondItem, currentRound);
                 setButton(slot, GuiButton.of(locked));
             } else {
                 setButton(slot, createPurchasableButtonMaxed(diamondItem, false));
@@ -198,7 +200,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Deathmauler set consists of 2 pieces (chestplate + leggings).
      */
     private void populateDeathmaulerSet() {
-        ItemStack[] pieces = ItemFactory.getInstance().createArmorSetGuiItems(CustomArmorItem.ArmorSet.DEATHMAULER, viewer);
+        ItemStack[] pieces = CashClashPlugin.getInstance().getItemFactory().createArmorSetGuiItems(CustomArmorItem.ArmorSet.DEATHMAULER, viewer);
         int[] pieceSlots = {DEATHMAULER_PIECE_1_SLOT, DEATHMAULER_PIECE_2_SLOT};
         int[] barrierSlots = {DEATHMAULER_BARRIER_LEFT_SLOT, DEATHMAULER_BARRIER_RIGHT_SLOT};
 
@@ -210,7 +212,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Dragon set consists of 3 pieces (helmet + chestplate + boots).
      */
     private void populateDragonSet() {
-        ItemStack[] pieces = ItemFactory.getInstance().createArmorSetGuiItems(CustomArmorItem.ArmorSet.DRAGON, viewer);
+        ItemStack[] pieces = CashClashPlugin.getInstance().getItemFactory().createArmorSetGuiItems(CustomArmorItem.ArmorSet.DRAGON, viewer);
         int[] pieceSlots = {DRAGON_PIECE_1_SLOT, DRAGON_PIECE_2_SLOT, DRAGON_PIECE_3_SLOT};
         int[] barrierSlots = {DRAGON_BARRIER_SLOT};
 
@@ -222,7 +224,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Flamebringer set consists of 2 pieces (leggings + boots).
      */
     private void populateFlamebringerSet() {
-        ItemStack[] pieces = ItemFactory.getInstance().createArmorSetGuiItems(CustomArmorItem.ArmorSet.FLAMEBRINGER, viewer);
+        ItemStack[] pieces = CashClashPlugin.getInstance().getItemFactory().createArmorSetGuiItems(CustomArmorItem.ArmorSet.FLAMEBRINGER, viewer);
         int[] pieceSlots = {FLAMEBRINGER_PIECE_1_SLOT, FLAMEBRINGER_PIECE_2_SLOT};
         int[] barrierSlots = {FLAMEBRINGER_BARRIER_LEFT_SLOT, FLAMEBRINGER_BARRIER_RIGHT_SLOT};
 
@@ -274,7 +276,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Creates a button for a custom armor item that can be purchased individually.
      */
     private GuiButton createCustomArmorButton(CustomArmorItem item) {
-        ItemStack itemStack = ItemFactory.getInstance().createGuiItem(viewer, item);
+        ItemStack itemStack = CashClashPlugin.getInstance().getItemFactory().createGuiItem(viewer, item);
         return GuiButton.of(itemStack).onClick((p, clickType) -> handlePurchasableClick(item, clickType));
     }
 
@@ -315,7 +317,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * @return The game session if valid, null otherwise
      */
     private GameSession ensureInGame(Player player) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             Messages.send(player, "shop.must-be-in-game");
             player.closeInventory();
@@ -332,7 +334,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * @return true if affordable, false otherwise
      */
     private boolean ensureCanAffordSet(Player player, long totalPrice) {
-        if (ShopService.getInstance().canAfford(player, totalPrice)) {
+        if (CashClashPlugin.getInstance().getShopService().canAfford(player, totalPrice)) {
             return true;
         }
         Messages.send(player, "shop.not-enough-coins", "cost", String.format("%,d", totalPrice));
@@ -351,7 +353,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      */
     private void applySetPurchase(Player player, GameSession session, CustomArmorItem.ArmorSet armorSet,
                                    long totalPrice, CashClashPlayer ccp) {
-        ShopService.getInstance().deductCoins(player, totalPrice);
+        CashClashPlugin.getInstance().getShopService().deductCoins(player, totalPrice);
         int round = session.getCurrentRound();
 
         List<CustomArmorItem> setPieces = armorSet.getPieces();
@@ -397,7 +399,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
             }
 
             // Equip the set piece (this replaces whatever was in the slot)
-            ItemFactory.getInstance().createAndEquipCustomArmor(player, piece);
+            CashClashPlugin.getInstance().getItemFactory().createAndEquipCustomArmor(player, piece);
         }
 
         return replacedSetItems;

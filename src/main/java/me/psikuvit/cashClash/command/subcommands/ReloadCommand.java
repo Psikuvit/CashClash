@@ -39,43 +39,43 @@ public class ReloadCommand extends AbstractArgCommand {
             switch (target) {
                 case "config" -> {
                     CashClashPlugin.getInstance().reloadConfig();
-                    ConfigManager.getInstance().reload();
+                    CashClashPlugin.getInstance().getConfigManager().reload();
                     reloaded = 1;
                     Messages.send(sender, "reload.config-success");
                 }
                 case "shop" -> {
-                    ShopConfig.getInstance().reload();
+                    CashClashPlugin.getInstance().getShopConfig().reload();
                     reloaded = 1;
                     Messages.send(sender, "reload.shop-success");
                 }
                 case "items" -> {
-                    ItemsConfig.getInstance().reload();
+                    CashClashPlugin.getInstance().getItemsConfig().reload();
                     reloaded = 1;
                     Messages.send(sender, "reload.items-success");
                 }
                 case "sequences" -> {
-                    SequencesConfig.getInstance().reload();
+                    CashClashPlugin.getInstance().getSequencesConfig().reload();
                     reloaded = 1;
                     Messages.send(sender, "reload.sequences-success");
                 }
                 case "messages" -> {
-                    MessagesConfig.getInstance().reload();
+                    CashClashPlugin.getInstance().getMessagesConfig().reload();
                     reloaded = 1;
                     Messages.send(sender, "reload.messages-success");
                 }
                 case "mannequins", "npcs" -> {
-                    MannequinManager.getInstance().reload();
+                    CashClashPlugin.getInstance().getMannequinManager().reload();
                     reloaded = 1;
                     Messages.send(sender, "reload.mannequins-success");
                 }
                 case "all" -> {
                     CashClashPlugin.getInstance().reloadConfig();
-                    ConfigManager.getInstance().reload();
-                    ShopConfig.getInstance().reload();
-                    ItemsConfig.getInstance().reload();
-                    SequencesConfig.getInstance().reload();
-                    MessagesConfig.getInstance().reload();
-                    MannequinManager.getInstance().reload();
+                    CashClashPlugin.getInstance().getConfigManager().reload();
+                    CashClashPlugin.getInstance().getShopConfig().reload();
+                    CashClashPlugin.getInstance().getItemsConfig().reload();
+                    CashClashPlugin.getInstance().getSequencesConfig().reload();
+                    CashClashPlugin.getInstance().getMessagesConfig().reload();
+                    CashClashPlugin.getInstance().getMannequinManager().reload();
                     reloaded = 6;
                     Messages.send(sender, "reload.all-success");
                 }

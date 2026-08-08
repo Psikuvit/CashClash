@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -27,7 +29,7 @@ public class ForceStartCommand extends AbstractArgCommand {
             return true;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(p);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(p);
         if (session == null) {
             Messages.send(sender, "generic.not-in-game");
             return true;

@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -43,7 +45,7 @@ public class BoomboxHandler extends CustomItemHandler {
         Location placeLoc = clickedBlock.getRelative(BlockFace.UP).getLocation();
         Block placeBlock = placeLoc.getBlock();
 
-        GameSession boomboxSession = GameManager.getInstance().getPlayerSession(player);
+        GameSession boomboxSession = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (boomboxSession.getState() == GameState.SHOPPING || boomboxSession.isActionsRestricted()) {
             Messages.send(player, "customitem.cannot-place-during-shopping");
             return;
@@ -108,7 +110,7 @@ public class BoomboxHandler extends CustomItemHandler {
      * temporary speed boost.
      */
     private void applyBoomboxSpeedBoost(Player placer, Location center, World world, double radius) {
-        GameSession session = GameManager.getInstance().getPlayerSession(placer);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(placer);
         Team placerTeam = session != null ? session.getPlayerTeam(placer) : null;
         if (placerTeam == null) return;
 

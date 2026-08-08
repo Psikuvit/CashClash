@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui.categories;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
@@ -37,7 +39,7 @@ public final class MythicCategoryGui {
      * @param parentGui The parent GUI to refresh after purchase
      */
     public static void handleMythicPurchase(Player player, MythicItem mythic, AbstractGui parentGui) {
-        GameSession sess = GameManager.getInstance().getPlayerSession(player);
+        GameSession sess = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (sess == null) {
             Messages.send(player, "shop.must-be-in-game");
             player.closeInventory();
@@ -49,38 +51,38 @@ public final class MythicCategoryGui {
 
         UUID playerUuid = player.getUniqueId();
 
-        if (MythicItemManager.getInstance().isUnavailable(sess, mythic)) {
+        if (CashClashPlugin.getInstance().getMythicItemManager().isUnavailable(sess, mythic)) {
             Messages.send(player, "shop.mythic-unavailable");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        if (MythicItemManager.getInstance().isMythicPurchased(sess, mythic)) {
-            UUID ownerUuid = MythicItemManager.getInstance().getMythicOwner(sess, mythic);
+        if (CashClashPlugin.getInstance().getMythicItemManager().isMythicPurchased(sess, mythic)) {
+            UUID ownerUuid = CashClashPlugin.getInstance().getMythicItemManager().getMythicOwner(sess, mythic);
             Messages.send(player, "shop.mythic-already-purchased", "owner_name",
                 ownerUuid == null ? "Someone" : String.valueOf(Bukkit.getOfflinePlayer(ownerUuid).getName()));
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        if (MythicItemManager.getInstance().hasPlayerPurchasedMythic(sess, playerUuid)) {
-            MythicItem owned = MythicItemManager.getInstance().getPlayerMythic(sess, playerUuid);
+        if (CashClashPlugin.getInstance().getMythicItemManager().hasPlayerPurchasedMythic(sess, playerUuid)) {
+            MythicItem owned = CashClashPlugin.getInstance().getMythicItemManager().getPlayerMythic(sess, playerUuid);
             Messages.send(player, "shop.mythic-already-owned", "mythic_name", owned.getDisplayName());
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         long price = mythic.getPrice();
-        if (!ShopService.getInstance().canAfford(player, price)) {
+        if (!CashClashPlugin.getInstance().getShopService().canAfford(player, price)) {
             Messages.send(player, "shop.not-enough-coins", "cost", String.format("%,d", price));
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        ShopService.getInstance().processPurchase(player, mythic, 1, price);
-        MythicItemManager.getInstance().registerMythicPurchase(sess, playerUuid, mythic);
+        CashClashPlugin.getInstance().getShopService().processPurchase(player, mythic, 1, price);
+        CashClashPlugin.getInstance().getMythicItemManager().registerMythicPurchase(sess, playerUuid, mythic);
 
-        ItemStack mythicItem = MythicItemManager.getInstance().createMythicItem(mythic, player);
+        ItemStack mythicItem = CashClashPlugin.getInstance().getMythicItemManager().createMythicItem(mythic, player);
         ItemUtils.replaceBestMatchingTool(player, mythicItem);
 
         if (mythic == MythicItem.WIND_BOW) {

@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui.categories;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
@@ -70,7 +72,7 @@ public class WeaponsCategoryGui extends AbstractShopCategoryGui {
      * Creates a button for a unique weapon that the player can only own once.
      */
     private GuiButton createSignatureWeaponButton(WeaponItem item) {
-        ItemStack itemStack = ItemFactory.getInstance().createGuiItem(viewer, item, 1);
+        ItemStack itemStack = CashClashPlugin.getInstance().getItemFactory().createGuiItem(viewer, item, 1);
         return GuiButton.of(itemStack).onClick(p -> {
             for (ItemStack is : p.getInventory().getContents()) {
                 if (is != null && PDCDetection.getWeapon(is) == item) {

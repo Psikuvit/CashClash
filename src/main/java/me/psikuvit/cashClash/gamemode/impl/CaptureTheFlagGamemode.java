@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
@@ -70,7 +72,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public CaptureTheFlagGamemode(GameSession session) {
         super(session, GamemodeType.CAPTURE_THE_FLAG);
 
-        ConfigManager cfg = ConfigManager.getInstance();
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
         this.WIN_CONDITION = cfg.getCTFCapturesToWin();
         this.CAPTURE_BONUS = cfg.getCTFCaptureBonusCoins();
         this.CAPTURE_TIMER_MS = cfg.getCTFCaptureBonusTimerMs();
@@ -585,7 +587,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         for (UUID uuid : session.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null && p.isOnline()) {
-                ScoreboardManager.getInstance().updatePlayerScoreboard(p);
+                CashClashPlugin.getInstance().getScoreboardManager().updatePlayerScoreboard(p);
                 // Also send the timer start message to confirm cycle reset
                 Messages.send(p, "gamemode-ctf.sudden-death-timer-start");
             }
@@ -775,7 +777,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
              TimerDisplayUtils.startFlagReturnTimer(teamNumber, expiry, session.getPlayers());
          }
      }
-
 
      private boolean isDroppedFlagWaitingForReturn(int teamNumber) {
          return FlagBaseMechanicsUtils.isDroppedFlagWaitingForReturn(teamNumber, flagStates, flagBaseLocations, flagReturnExpiry);
@@ -978,7 +979,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-timer-start");
     }
 
-
      /**
       * Get bonus time remaining for a player
       */
@@ -990,8 +990,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
           }
           return TimerDisplayUtils.getBonusTimeRemaining(flagState);
       }
-
-
 
     /**
      * Award capture bonus after 45 seconds

@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.storage.PlayerData;
@@ -27,8 +29,7 @@ public class StatsCommand extends AbstractArgCommand {
                 return true;
             }
 
-
-            PlayerData data = PlayerDataManager.getInstance().getData(player.getUniqueId());
+            PlayerData data = CashClashPlugin.getInstance().getPlayerDataManager().getData(player.getUniqueId());
 
             Messages.send(player, "stats.title");
             Messages.send(player, "stats.wins", "wins", String.valueOf(data.getWins()));
@@ -53,7 +54,7 @@ public class StatsCommand extends AbstractArgCommand {
             }
 
             UUID tid = target.getUniqueId();
-            PlayerData data = PlayerDataManager.getInstance().getData(tid);
+            PlayerData data = CashClashPlugin.getInstance().getPlayerDataManager().getData(tid);
             data.setKills(0);
             data.setDeaths(0);
             data.setWins(0);

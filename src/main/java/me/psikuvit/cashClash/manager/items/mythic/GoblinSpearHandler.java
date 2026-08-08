@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -115,7 +117,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
         UUID uuid = player.getUniqueId();
 
         // Remove respawn protection when starting charge
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session != null) {
             CashClashPlayer ccp = session.getCashClashPlayer(uuid);
             if (ccp != null) {

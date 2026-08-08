@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.kit.Kit;
@@ -74,7 +76,7 @@ public class LayoutKitSelectorGUI extends AbstractGui {
 
     private void startLayoutEditing(Player player, Kit kit) {
         player.closeInventory();
-        LayoutManager.getInstance().startEditing(player, kit);
+        CashClashPlugin.getInstance().getLayoutManager().startEditing(player, kit);
     }
 
     /**

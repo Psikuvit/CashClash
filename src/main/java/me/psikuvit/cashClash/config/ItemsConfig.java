@@ -18,18 +18,12 @@ import java.util.Set;
  */
 public class ItemsConfig {
 
-    private static ItemsConfig instance;
     private FileConfiguration config;
     private final ConfigValidator validator;
 
     public ItemsConfig() {
         this.validator = new ConfigValidator();
         loadConfig();
-        instance = this;
-    }
-
-    public static ItemsConfig getInstance() {
-        return instance;
     }
 
     private void loadConfig() {

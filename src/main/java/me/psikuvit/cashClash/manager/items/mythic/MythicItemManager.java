@@ -47,8 +47,6 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class MythicItemManager {
 
-    private static MythicItemManager instance;
-
     private final ItemsConfig cfg;
     private final CooldownManager cooldownManager;
 
@@ -86,11 +84,6 @@ public class MythicItemManager {
         register(WardenGlovesHandler::new, MythicItem.WARDEN_GLOVES);
         register(BlazebiteHandler::new, MythicItem.BLAZEBITE_CROSSBOWS);
         register(AlchemistWandHandler::new, MythicItem.ALCHEMIST_WAND);
-        instance = this;
-    }
-
-    public static MythicItemManager getInstance() {
-        return instance;
     }
 
     private void register(java.util.function.Function<MythicItemManager, ? extends MythicItemHandler> factory, MythicItem item) {

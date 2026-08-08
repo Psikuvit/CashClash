@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.shop.items;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.config.ShopConfig;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import org.bukkit.Material;
@@ -43,7 +45,7 @@ public enum UtilityItem implements Purchasable {
 
     @Override
     public long getPrice() {
-        return ShopConfig.getInstance().getUtilityPrice(configKey);
+        return CashClashPlugin.getInstance().getShopConfig().getUtilityPrice(configKey);
     }
 
     @Override

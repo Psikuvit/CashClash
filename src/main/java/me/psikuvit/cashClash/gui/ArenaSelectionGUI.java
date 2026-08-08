@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.gui;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
@@ -52,7 +54,7 @@ public class ArenaSelectionGUI extends AbstractGui {
     protected void build() {
         // Add arenas to GUI (slots 11, 12, 13, 14, 15)
         for (int i = 1; i <= 5; i++) {
-            Arena arena = ArenaManager.getInstance().getArena(i);
+            Arena arena = CashClashPlugin.getInstance().getArenaManager().getArena(i);
             if (arena != null) {
                 int slot = 10 + i;
                 setButton(slot, createArenaButton(i, arena));
@@ -69,8 +71,8 @@ public class ArenaSelectionGUI extends AbstractGui {
      */
     private static void handlePartyJoin(Player owner, Party party, GameSession session, Arena arena,
                                         int arenaNumber, int capacityPerTeam, int maxPlayers) {
-        ArenaManager arenaManager = ArenaManager.getInstance();
-        GameManager gameManager = GameManager.getInstance();
+        ArenaManager arenaManager = CashClashPlugin.getInstance().getArenaManager();
+        GameManager gameManager = CashClashPlugin.getInstance().getGameManager();
 
         // Get online party members
         Set<Player> partyMembers = party.getOnlineMembers();
@@ -81,7 +83,7 @@ public class ArenaSelectionGUI extends AbstractGui {
                 Messages.send(owner, "arena.party-member-in-game", "player_name", member.getName());
                 return;
             }
-            if (LayoutManager.getInstance().isEditing(member)) {
+            if (CashClashPlugin.getInstance().getLayoutManager().isEditing(member)) {
                 Messages.send(owner, "arena.party-member-editing-layout", "player_name", member.getName());
                 return;
             }
@@ -134,7 +136,7 @@ public class ArenaSelectionGUI extends AbstractGui {
         }
 
         // Teleport location
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(arena.getTemplateId());
         Location lobbySpawn = null;
         if (tpl != null && tpl.isConfigured() && tpl.getLobbySpawn() != null && session.getGameWorld() != null) {
             lobbySpawn = LocationUtils.copyToWorld(tpl.getLobbySpawn(), session.getGameWorld());
@@ -191,12 +193,12 @@ public class ArenaSelectionGUI extends AbstractGui {
      * Handle click on arena item.
      */
     public static void handleArenaClick(Player player, int arenaNumber) {
-        ArenaManager arenaManager = ArenaManager.getInstance();
-        GameManager gameManager = GameManager.getInstance();
-        PartyManager partyManager = PartyManager.getInstance();
+        ArenaManager arenaManager = CashClashPlugin.getInstance().getArenaManager();
+        GameManager gameManager = CashClashPlugin.getInstance().getGameManager();
+        PartyManager partyManager = CashClashPlugin.getInstance().getPartyManager();
 
         // Prevent joining while editing a layout
-        if (LayoutManager.getInstance().isEditing(player)) {
+        if (CashClashPlugin.getInstance().getLayoutManager().isEditing(player)) {
             Messages.send(player, "arena.cannot-join-while-editing");
             Messages.send(player, "arena.layout-finish-help");
             player.closeInventory();
@@ -242,7 +244,7 @@ public class ArenaSelectionGUI extends AbstractGui {
             session = gameManager.createSession(arenaNumber);
         }
 
-        int maxPlayers = ConfigManager.getInstance().getMaxPlayers();
+        int maxPlayers = CashClashPlugin.getInstance().getConfigManager().getMaxPlayers();
         int capacityPerTeam = Math.max(1, maxPlayers / 2);
 
         if (isPartyOwner) {
@@ -259,8 +261,8 @@ public class ArenaSelectionGUI extends AbstractGui {
      */
     private static void handleSoloJoin(Player player, GameSession session, Arena arena,
                                        int arenaNumber, int capacityPerTeam, int maxPlayers) {
-        ArenaManager arenaManager = ArenaManager.getInstance();
-        GameManager gameManager = GameManager.getInstance();
+        ArenaManager arenaManager = CashClashPlugin.getInstance().getArenaManager();
+        GameManager gameManager = CashClashPlugin.getInstance().getGameManager();
 
         // Determine team - balanced assignment
         int t1size = session.getTeamRed().getSize();
@@ -279,7 +281,7 @@ public class ArenaSelectionGUI extends AbstractGui {
         gameManager.addPlayerToSession(player, session);
 
         // Teleport player to the copied world's lobby spawn
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(arena.getTemplateId());
         if (tpl != null && tpl.isConfigured() && tpl.getLobbySpawn() != null && session.getGameWorld() != null) {
             Location lobbyInCopiedWorld = LocationUtils.copyToWorld(tpl.getLobbySpawn(), session.getGameWorld());
             player.teleport(lobbyInCopiedWorld);
@@ -302,11 +304,11 @@ public class ArenaSelectionGUI extends AbstractGui {
     }
 
     private GuiButton createArenaButton(int arenaNumber, Arena arena) {
-        ArenaManager manager = ArenaManager.getInstance();
+        ArenaManager manager = CashClashPlugin.getInstance().getArenaManager();
         GameState state = manager.getArenaState(arenaNumber);
         int playerCount = manager.getArenaPlayerCount(arenaNumber);
         boolean isJoinable = manager.isArenaJoinable(arenaNumber);
-        int maxPlayers = ConfigManager.getInstance().getMaxPlayers();
+        int maxPlayers = CashClashPlugin.getInstance().getConfigManager().getMaxPlayers();
 
         // Determine material based on state
         Material material;
@@ -328,7 +330,7 @@ public class ArenaSelectionGUI extends AbstractGui {
         lore.add(Component.empty());
 
         // Add map name (template ID or world name)
-        TemplateWorld template = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        TemplateWorld template = CashClashPlugin.getInstance().getArenaManager().getTemplate(arena.getTemplateId());
         if (template != null) {
             String mapName = template.getId();
             if (template.getWorld() != null) {
@@ -377,7 +379,7 @@ public class ArenaSelectionGUI extends AbstractGui {
      * Check and start countdown if minimum players reached.
      */
     private static void checkAndStartCountdown(GameSession session, int playerCount) {
-        int minPlayers = ConfigManager.getInstance().getMinPlayers();
+        int minPlayers = CashClashPlugin.getInstance().getConfigManager().getMinPlayers();
         if (playerCount >= minPlayers) {
             if (!session.isStartingCountdown()) {
                 session.startCountdown(120); // 120s = 2 minutes

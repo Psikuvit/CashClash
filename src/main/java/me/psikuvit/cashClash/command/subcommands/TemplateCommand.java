@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
@@ -62,11 +64,11 @@ public class TemplateCommand extends AbstractArgCommand {
         String action = args[0].toLowerCase(Locale.ROOT);
         if (args.length == 2) {
             if (action.equals("setspawn") || action.equals("tp") || action.equals("show")) {
-                out.addAll(ArenaManager.getInstance().getAllTemplates().keySet().stream()
+                out.addAll(CashClashPlugin.getInstance().getArenaManager().getAllTemplates().keySet().stream()
                         .filter(id -> id.toLowerCase(Locale.ROOT).startsWith(last))
                         .toList());
             } else if (action.equals("set")) {
-                out.addAll(ArenaManager.getInstance().getAllTemplates().values().stream().map(TemplateWorld::getId)
+                out.addAll(CashClashPlugin.getInstance().getArenaManager().getAllTemplates().values().stream().map(TemplateWorld::getId)
                         .filter(id -> id.toLowerCase(Locale.ROOT).startsWith(last)).toList());
             }
             return out;
@@ -109,12 +111,12 @@ public class TemplateCommand extends AbstractArgCommand {
         String id = args[1];
         String worldName = args[2];
 
-        if (ArenaManager.getInstance().getTemplate(id) != null) {
+        if (CashClashPlugin.getInstance().getArenaManager().getTemplate(id) != null) {
             Messages.send(sender, "template.already-exists", "template_id", id);
             return;
         }
 
-        boolean ok = ArenaManager.getInstance().registerTemplate(id, worldName);
+        boolean ok = CashClashPlugin.getInstance().getArenaManager().registerTemplate(id, worldName);
         if (ok) {
             Messages.send(sender, "template.register-success", "template_id", id, "world_name", worldName);
         } else {
@@ -134,7 +136,7 @@ public class TemplateCommand extends AbstractArgCommand {
         }
 
         String id = args[1];
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(id);
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(id);
         if (tpl == null) {
             Messages.send(player, "template.not-found", "template_id", id);
             return;
@@ -146,7 +148,7 @@ public class TemplateCommand extends AbstractArgCommand {
 
         tpl.setSpawn(LocationUtils.clone(player.getLocation()));
         Messages.send(player, "template.setspawn-success", "template_id", id);
-        ArenaManager.getInstance().saveTemplate(id);
+        CashClashPlugin.getInstance().getArenaManager().saveTemplate(id);
     }
 
     private void templateTeleport(CommandSender sender, String[] args) {
@@ -161,7 +163,7 @@ public class TemplateCommand extends AbstractArgCommand {
         }
 
         String id = args[1];
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(id);
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(id);
         if (tpl == null) {
             Messages.send(player, "template.not-found", "template_id", id);
             return;
@@ -182,7 +184,7 @@ public class TemplateCommand extends AbstractArgCommand {
     }
 
     private void templateList(CommandSender sender) {
-        var templates = ArenaManager.getInstance().getAllTemplates();
+        var templates = CashClashPlugin.getInstance().getArenaManager().getAllTemplates();
         if (templates.isEmpty()) {
             Messages.send(sender, "template.list-empty");
             return;
@@ -209,7 +211,7 @@ public class TemplateCommand extends AbstractArgCommand {
         }
 
         String id = args[1];
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(id);
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(id);
         if (tpl == null) {
             Messages.send(player, "template.not-found", "template_id", id);
             return;
@@ -249,7 +251,7 @@ public class TemplateCommand extends AbstractArgCommand {
         String templateId = args[1];
         String type = args[2].toLowerCase(Locale.ROOT);
 
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(templateId);
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(templateId);
         if (tpl == null || tpl.getWorld() == null) {
             Messages.send(player, "template.not-found-or-not-loaded", "template_id", templateId);
             return;
@@ -333,7 +335,7 @@ public class TemplateCommand extends AbstractArgCommand {
             default -> Messages.send(player, "template.invalid-spawn-type", "spawn_type", type);
         }
 
-        ArenaManager.getInstance().saveTemplate(templateId);
+        CashClashPlugin.getInstance().getArenaManager().saveTemplate(templateId);
     }
 
     private String formatLoc(Location l) {

@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.player;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
@@ -77,7 +79,7 @@ public class RewardManager {
         }
 
         if (type.isInvestorEligible()) {
-            CustomArmorManager.getInstance().getHandler(InvestorSetHandler.class)
+            CashClashPlugin.getInstance().getCustomArmorManager().getHandler(InvestorSetHandler.class)
                     .onInvestorReward(player, session);
         }
     }
