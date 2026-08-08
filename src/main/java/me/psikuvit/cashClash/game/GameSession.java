@@ -61,7 +61,7 @@ public class GameSession {
     private final UUID sessionId;
     private final int arenaNumber;
     private final World gameWorld;
-    private GameState state;
+    private final GameStateMachine stateMachine;
     private int currentRound;
 
     private final Team teamRed;
@@ -98,7 +98,7 @@ public class GameSession {
     public GameSession(int arenaNumber) {
         this.sessionId = UUID.randomUUID();
         this.arenaNumber = arenaNumber;
-        this.state = GameState.WAITING;
+        this.stateMachine = new GameStateMachine(GameState.WAITING);
         this.currentRound = 1;
         this.teamRed = new Team(1);
         this.teamBlue = new Team(2);
@@ -120,8 +120,6 @@ public class GameSession {
         if (arena == null) {
             throw new IllegalStateException("Arena " + arenaNumber + " not found!");
         }
-
-        ArenaManager.getInstance().setArenaState(arenaNumber, GameState.WAITING);
 
         this.gameWorld = arena.createWorldCopy(sessionId);
         if (this.gameWorld == null) {
@@ -147,7 +145,7 @@ public class GameSession {
     }
 
     public GameState getState() {
-        return state;
+        return stateMachine.getCurrent();
     }
 
     public int getCurrentRound() {
@@ -299,15 +297,13 @@ public class GameSession {
      */
 
     public void start() {
-        if (state != GameState.WAITING) return;
+        if (getState() != GameState.WAITING) return;
         if (gameWorld == null) throw new IllegalStateException("Game world is null for session " + sessionId);
 
         // Play game start sound (warden sonic boom)
         SoundUtils.playTo(players.keySet(), Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.0f);
 
-        state = GameState.SHOPPING;
-
-        ArenaManager.getInstance().setArenaState(arenaNumber, GameState.SHOPPING);
+        stateMachine.transitionTo(GameState.SHOPPING);
 
         currentRoundData = new RoundData(players.keySet());
         players.values().forEach(CashClashPlayer::initializeRound1);
@@ -348,7 +344,7 @@ public class GameSession {
                 "seconds", String.valueOf(seconds));
 
         startCountdownTask = SchedulerUtils.runTaskTimer(() -> {
-            if (state != GameState.WAITING) {
+            if (getState() != GameState.WAITING) {
                 cancelStartCountdown();
                 return;
             }
@@ -407,9 +403,8 @@ public class GameSession {
     }
 
     public void startCombatPhase() {
-        state = GameState.COMBAT;
+        stateMachine.transitionTo(GameState.COMBAT);
 
-        ArenaManager.getInstance().setArenaState(arenaNumber, state);
         //if (cashQuakeManager != null) cashQuakeManager.startEventScheduler();
 
         if (gamemode != null) {
@@ -619,8 +614,7 @@ public class GameSession {
      * Transition to shopping phase
      */
     private void transitionToShoppingPhase() {
-        state = GameState.SHOPPING;
-        ArenaManager.getInstance().setArenaState(arenaNumber, state);
+        stateMachine.transitionTo(GameState.SHOPPING);
         gamemode.onRoundEnd();
 
         SchedulerUtils.runTask(() -> {
@@ -632,7 +626,7 @@ public class GameSession {
     }
 
     public void end() {
-        state = GameState.ENDING;
+        stateMachine.transitionTo(GameState.ENDING);
 
         // Clear any pending rejoins for this session
         RejoinManager.getInstance().clearSessionRejoins(sessionId);
@@ -735,7 +729,6 @@ public class GameSession {
             }
         }
 
-        ArenaManager.getInstance().setArenaState(arenaNumber, GameState.WAITING);
         ArenaManager.getInstance().setArenaPlayerCount(arenaNumber, 0);
 
         GameManager.getInstance().removeSession(sessionId);
@@ -1242,7 +1235,8 @@ public class GameSession {
         }
 
         // If one team has no players and the game is active
-        if (state != GameState.WAITING && state != GameState.ENDING) {
+        GameState currentState = getState();
+        if (currentState != GameState.WAITING && currentState != GameState.ENDING) {
             if (teamRed.getPlayers().isEmpty() || teamBlue.getPlayers().isEmpty()) {
                 Messages.broadcast(players.keySet(), "round.game-force-end");
                 end();

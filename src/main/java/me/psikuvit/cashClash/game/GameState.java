@@ -8,11 +8,6 @@ public enum GameState {
     BUFF_SELECTION,
     SHOPPING,
     COMBAT,
-    ENDING;
-
-    public int getRound() {
-        if (this == WAITING || this == ENDING) return 0;
-        return Character.getNumericValue(this.name().charAt(6));
-    }
+    ENDING
 }
 
