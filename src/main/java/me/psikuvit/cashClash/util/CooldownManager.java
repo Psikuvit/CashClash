@@ -62,6 +62,10 @@ public class CooldownManager {
 
             return !(boolean) roundData.getClass().getMethod("isAlive", UUID.class).invoke(roundData, playerId);
         } catch (Exception e) {
+            // Reflection is used here to reach into the game package without a compile-time
+            // dependency; a silent false-return would hide a real break (e.g. a renamed method)
+            // behind "this cooldown just never got skipped for dead players" with no trail.
+            Messages.debug("COOLDOWN", "isPlayerDead reflection failed: " + e);
             return false;
         }
     }
