@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.lobby;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.PDCSetter;
@@ -46,8 +47,8 @@ public class LobbyManager {
 
     private final ItemsConfig itemsConfig;
 
-    public LobbyManager(ItemsConfig itemsConfig) {
-        this.itemsConfig = itemsConfig;
+    public LobbyManager(CashClashPlugin plugin) {
+        this.itemsConfig = plugin.getItemsConfig();
     }
 
     /**

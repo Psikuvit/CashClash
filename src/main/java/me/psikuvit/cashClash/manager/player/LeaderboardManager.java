@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.player;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.storage.PlayerData;
@@ -48,9 +49,9 @@ public class LeaderboardManager implements Shutdownable {
     private final ConfigManager configManager;
     private final PlayerDataManager playerDataManager;
 
-    public LeaderboardManager(ConfigManager configManager, PlayerDataManager playerDataManager) {
-        this.configManager = configManager;
-        this.playerDataManager = playerDataManager;
+    public LeaderboardManager(CashClashPlugin plugin) {
+        this.configManager = plugin.getConfigManager();
+        this.playerDataManager = plugin.getPlayerDataManager();
     }
 
     public void start() {

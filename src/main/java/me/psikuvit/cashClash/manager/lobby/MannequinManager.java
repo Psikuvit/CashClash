@@ -36,9 +36,9 @@ public class MannequinManager implements Shutdownable {
     private YamlConfiguration data;
     private final ConfigManager configManager;
 
-    public MannequinManager(ConfigManager configManager) {
-        this.configManager = configManager;
-        this.plugin = CashClashPlugin.getInstance();
+    public MannequinManager(CashClashPlugin plugin) {
+        this.plugin = plugin;
+        this.configManager = plugin.getConfigManager();
         this.dataFile = new File(plugin.getDataFolder(), "mannequins.yml");
         loadData();
     }

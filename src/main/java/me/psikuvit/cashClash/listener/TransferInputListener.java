@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.TransferGUI;
@@ -37,8 +38,8 @@ public class TransferInputListener implements Listener {
     private final Map<UUID, Block> signBlocks;
     private final GameManager gameManager;
 
-    public TransferInputListener(GameManager gameManager) {
-        this.gameManager = gameManager;
+    public TransferInputListener(CashClashPlugin plugin) {
+        this.gameManager = plugin.getGameManager();
         this.pendingTransfers = new ConcurrentHashMap<>();
         this.signBlocks = new ConcurrentHashMap<>();
     }

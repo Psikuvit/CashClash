@@ -63,10 +63,10 @@ public class MythicItemManager {
 
     private final ItemFactory itemFactory;
 
-    public MythicItemManager(ItemsConfig cfg, CooldownManager cooldownManager, ItemFactory itemFactory) {
-        this.cfg = cfg;
-        this.cooldownManager = cooldownManager;
-        this.itemFactory = itemFactory;
+    public MythicItemManager(CashClashPlugin plugin) {
+        this.cfg = plugin.getItemsConfig();
+        this.cooldownManager = plugin.getCooldownManager();
+        this.itemFactory = plugin.getItemFactory();
 
         playerMythics = new ConcurrentHashMap<>();
         sessionPurchasedMythics = new ConcurrentHashMap<>();

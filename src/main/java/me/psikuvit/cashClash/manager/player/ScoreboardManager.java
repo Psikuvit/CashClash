@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.player;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -44,9 +45,9 @@ public class ScoreboardManager implements Shutdownable {
     private final GameManager gameManager;
     private final TabListManager tabListManager;
 
-    public ScoreboardManager(GameManager gameManager, TabListManager tabListManager) {
-        this.gameManager = gameManager;
-        this.tabListManager = tabListManager;
+    public ScoreboardManager(CashClashPlugin plugin) {
+        this.gameManager = plugin.getGameManager();
+        this.tabListManager = plugin.getTabListManager();
         this.gamePlayerBoards = new HashMap<>();
         this.lobbyPlayerBoards = new HashMap<>();
         this.sessionUpdateTasks = new HashMap<>();

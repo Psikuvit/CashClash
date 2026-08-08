@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.game;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -34,9 +35,9 @@ public class RejoinManager implements Shutdownable {
     private final ConfigManager configManager;
     private final GameManager gameManager;
 
-    public RejoinManager(ConfigManager configManager, GameManager gameManager) {
-        this.configManager = configManager;
-        this.gameManager = gameManager;
+    public RejoinManager(CashClashPlugin plugin) {
+        this.configManager = plugin.getConfigManager();
+        this.gameManager = plugin.getGameManager();
         this.pendingRejoins = new HashMap<>();
         startCleanupTask();
     }

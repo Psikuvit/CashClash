@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.player;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -25,10 +26,10 @@ public class AfkManager {
     private final GameManager gameManager;
     private final MessagesConfig messagesConfig;
 
-    public AfkManager(ConfigManager configManager, GameManager gameManager, MessagesConfig messagesConfig) {
-        this.configManager = configManager;
-        this.gameManager = gameManager;
-        this.messagesConfig = messagesConfig;
+    public AfkManager(CashClashPlugin plugin) {
+        this.configManager = plugin.getConfigManager();
+        this.gameManager = plugin.getGameManager();
+        this.messagesConfig = plugin.getMessagesConfig();
     }
 
     public void markActivity(Player player) {

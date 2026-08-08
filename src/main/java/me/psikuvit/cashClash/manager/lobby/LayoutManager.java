@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.lobby;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
@@ -28,9 +29,9 @@ public class LayoutManager {
     private final PlayerDataManager playerDataManager;
     private final LobbyManager lobbyManager;
 
-    public LayoutManager(PlayerDataManager playerDataManager, LobbyManager lobbyManager) {
-        this.playerDataManager = playerDataManager;
-        this.lobbyManager = lobbyManager;
+    public LayoutManager(CashClashPlugin plugin) {
+        this.playerDataManager = plugin.getPlayerDataManager();
+        this.lobbyManager = plugin.getLobbyManager();
         this.editingKit = new HashMap<>();
         this.originalInventory = new HashMap<>();
     }
