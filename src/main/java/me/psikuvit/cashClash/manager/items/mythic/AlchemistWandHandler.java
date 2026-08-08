@@ -459,7 +459,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
             }
 
             if (removedAny) {
-                ParticleUtils.verticalBeam(member.getLocation(), beamColor, 5.0, 4, 0.3f, 3);
+                ParticleUtils.verticalBeam(member.getLocation(), beamColor, 5.0, 6, 0.5f, 6);
                 SoundUtils.playAt(member.getLocation(), sound, 1.0f, 1.2f);
                 Messages.send(member, messageKey);
             }
