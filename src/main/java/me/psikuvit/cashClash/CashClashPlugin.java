@@ -110,108 +110,41 @@ public final class CashClashPlugin extends JavaPlugin {
 
         getLogger().info("Shutting down Cash Clash...");
 
-        // Shutdown in reverse initialization order
-        try {
-            // Step 0: Stop the AFK lobby kicker
+        shutdownStep("cancelling AFK task", null, () -> {
             if (afkTask != null) {
                 afkTask.cancel();
                 afkTask = null;
             }
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error cancelling AFK task", e);
-        }
-
-        try {
-            // Step 0.5: Stop the async leaderboard worker
-            LeaderboardManager.getInstance().stop();
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error stopping LeaderboardManager", e);
-        }
-
-        try {
-            // Step 1: Stop all active games
-            if (GameManager.getInstance() != null) {
-                GameManager.getInstance().shutdown();
-                getLogger().info("Game sessions terminated");
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error shutting down GameManager", e);
-        }
-
-        try {
-            // Step 1.5: Shutdown rejoin manager
-            if (RejoinManager.getInstance() != null) {
-                RejoinManager.getInstance().shutdown();
-                getLogger().info("Rejoin manager shut down");
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error shutting down RejoinManager", e);
-        }
-
-        try {
-            // Step 1.6: Shutdown gamemode manager
-            if (GamemodeManager.getInstance() != null) {
-                GamemodeManager.getInstance().shutdown();
-                getLogger().info("Gamemode manager shut down");
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error shutting down GamemodeManager", e);
-        }
-
-        try {
-            // Step 2: Shutdown scoreboards
-            if (ScoreboardManager.getInstance() != null) {
-                ScoreboardManager.getInstance().shutdown();
-                getLogger().info("Scoreboards cleared");
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error shutting down ScoreboardManager", e);
-        }
-
-        try {
-            // Step 3: Save and close player data
-            if (PlayerDataManager.getInstance() != null) {
-                PlayerDataManager.getInstance().shutdown();
-                getLogger().info("Player data saved");
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error shutting down PlayerDataManager", e);
-        }
-
-        try {
-            // Step 4: Clear cooldowns
-            if (CooldownManager.getInstance() != null) {
-                CooldownManager.getInstance().clearAll();
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error clearing cooldowns", e);
-        }
-
-        try {
-            // Step 5: Remove mannequins
-            MannequinManager.getInstance().shutdown();
-            getLogger().info("Mannequins removed");
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error shutting down MannequinManager", e);
-        }
-
-        try {
-            // Step 6: Shutdown party system
-            PartyManager.getInstance().shutdown();
-            getLogger().info("Party system shut down");
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error shutting down PartyManager", e);
-        }
-
-        try {
-            // Step 7: Shutdown chat manager
-            ChatManager.getInstance().shutdown();
-            getLogger().info("Chat manager shut down");
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Error shutting down ChatManager", e);
-        }
+        });
+        shutdownStep("stopping LeaderboardManager", null, () -> LeaderboardManager.getInstance().stop());
+        shutdownStep("shutting down GameManager", "Game sessions terminated", () -> GameManager.getInstance().shutdown());
+        shutdownStep("shutting down RejoinManager", "Rejoin manager shut down", () -> RejoinManager.getInstance().shutdown());
+        shutdownStep("shutting down GamemodeManager", "Gamemode manager shut down", () -> GamemodeManager.getInstance().shutdown());
+        shutdownStep("shutting down ScoreboardManager", "Scoreboards cleared", () -> ScoreboardManager.getInstance().shutdown());
+        shutdownStep("shutting down PlayerDataManager", "Player data saved", () -> PlayerDataManager.getInstance().shutdown());
+        shutdownStep("clearing cooldowns", null, () -> CooldownManager.getInstance().clearAll());
+        shutdownStep("shutting down MannequinManager", "Mannequins removed", () -> MannequinManager.getInstance().shutdown());
+        shutdownStep("shutting down PartyManager", "Party system shut down", () -> PartyManager.getInstance().shutdown());
+        shutdownStep("shutting down ChatManager", "Chat manager shut down", () -> ChatManager.getInstance().shutdown());
 
         getLogger().info("Cash Clash has been disabled!");
+    }
+
+    /**
+     * Runs one shutdown step in isolation: a failure is logged as a warning without aborting the
+     * remaining steps. {@code successMessage} is logged at info level after {@code action} runs
+     * without throwing; pass null for steps that don't need one (e.g. the AFK task cancel, which
+     * has no manager to name).
+     */
+    private void shutdownStep(String errorContext, String successMessage, Runnable action) {
+        try {
+            action.run();
+            if (successMessage != null) {
+                getLogger().info(successMessage);
+            }
+        } catch (Exception e) {
+            getLogger().log(Level.WARNING, "Error " + errorContext, e);
+        }
     }
 
     public static CashClashPlugin getInstance() {
