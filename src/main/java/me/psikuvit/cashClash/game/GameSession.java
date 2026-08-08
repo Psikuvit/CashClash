@@ -43,7 +43,6 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -816,13 +815,9 @@ public class GameSession {
             CashClashPlayer ccp = getCashClashPlayer(player.getUniqueId());
             if (ccp != null) {
                 ccp.resetHealthModifier();
-                ccp.clearPluginEffects();
-            } else {
-                player.getActivePotionEffects().stream()
-                        .map(PotionEffect::getType)
-                        .forEach(player::removePotionEffect);
             }
-            player.setHealth(20.0);
+            CashClashPlayer.clearPluginEffects(player);
+            CashClashPlayer.setHealth(player, 20.0);
 
         } catch (Exception t) {
             Messages.debug("GAME", "Failed to clear kit for player " + player.getName() + ": " + t.getMessage());
@@ -1075,9 +1070,7 @@ public class GameSession {
         for (UUID uuid : players.keySet()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
-                CashClashPlayer ccp = getCashClashPlayer(uuid);
-                double maxHealth = ccp != null ? ccp.getMaxHealth() : 20.0;
-                player.setHealth(maxHealth);
+                CashClashPlayer.healToFull(player);
                 player.setFoodLevel(20);
             }
         }
@@ -1228,7 +1221,7 @@ public class GameSession {
 
         // Reset health and food using centralized health system
         ccp.resetHealthModifier();
-        player.setHealth(20.0);
+        ccp.setHealth(20.0);
         player.setFoodLevel(20);
         player.setSaturation(20.0f);
         player.setGameMode(GameMode.SURVIVAL);

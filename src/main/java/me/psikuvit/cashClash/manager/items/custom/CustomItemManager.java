@@ -147,8 +147,9 @@ public class CustomItemManager {
 
     /**
      * Applies a temporary healing-reduction debuff to a target (e.g. Soul Katana's Phantom
-     * Slice). Any item's heal application should multiply its heal amount by
-     * {@link #getHealingMultiplier(UUID)} before applying it.
+     * Slice, Bloodwrench's heal-negation zone). {@link CashClashPlayer#heal} already scales
+     * every heal by {@link #getHealingMultiplier(UUID)} - callers don't need to apply it
+     * themselves as long as they heal through {@code CashClashPlayer}.
      */
     public void applyHealingReduction(UUID target, double multiplier, long durationSeconds) {
         healingReducedUntil.put(target, System.currentTimeMillis() + durationSeconds * 1000L);

@@ -191,9 +191,7 @@ public class RoundManager {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p == null || !p.isOnline()) continue;
 
-                CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-                double maxHealth = ccp != null ? ccp.getMaxHealth() : 20.0;
-                p.setHealth(maxHealth);
+                CashClashPlayer.healToFull(p);
                 p.setFoodLevel(20);
                 p.setSaturation(20.0f);
                 refillWaterBuckets(p);

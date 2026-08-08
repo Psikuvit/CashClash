@@ -190,8 +190,8 @@ public class BloomingRoseHandler extends CustomItemHandler {
             if (!isSameTeam(session, teamNumber, target)) continue;
             if (target.getHealth() >= floor) continue;
 
-            double heal = (floor - target.getHealth()) * manager.getHealingMultiplier(target.getUniqueId());
-            CashClashPlayer.heal(target, heal);
+            // CashClashPlayer.heal already applies the shared healing-reduction multiplier.
+            CashClashPlayer.heal(target, floor - target.getHealth());
         }
     }
 

@@ -41,13 +41,9 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
 
     public void onPlayerKill(Player killer, GameSession session) {
         if (!hasDeathmaulerSet(killer)) return;
-        UUID id = killer.getUniqueId();
 
-        // Heal 4 hearts (8 HP) using centralized health system for max health
-        CashClashPlayer killerCCP = session != null ? session.getCashClashPlayer(id) : null;
-        double maxHealth = killerCCP != null ? killerCCP.getMaxHealth() : 20.0;
-        double newHealth = Math.min(maxHealth, killer.getHealth() + 8.0);
-        killer.setHealth(newHealth);
+        // Heal 4 hearts (8 HP) through the centralized health system
+        CashClashPlayer.heal(killer, 8.0);
 
         Messages.send(killer, "armor.deathmauler-heal");
 
@@ -82,8 +78,7 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
         UUID id = attacker.getUniqueId();
 
         // Use centralized health system for correct max health
-        CashClashPlayer attackerCCP = session != null ? session.getCashClashPlayer(id) : null;
-        double max = attackerCCP != null ? attackerCCP.getMaxHealth() : 20.0;
+        double max = CashClashPlayer.getMaxHealth(attacker);
         if (attacker.getHealth() > max * 0.5) return;
 
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST)) return;
@@ -131,11 +126,8 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
 
                     hitPlayers.add(target.getUniqueId());
 
-                    double newHealth = Math.max(0.0, target.getHealth() - 3.0);
-                    target.setHealth(newHealth);
-
-                    double healAmount = Math.min(max - attacker.getHealth(), 3.0);
-                    attacker.setHealth(attacker.getHealth() + healAmount);
+                    CashClashPlayer.setHealth(target, target.getHealth() - 3.0);
+                    CashClashPlayer.heal(attacker, 3.0);
 
                     ParticleUtils.hitFeedback(target.getLocation(), 10, 0.2);
                 }

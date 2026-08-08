@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -51,7 +52,7 @@ public class PTPFinalStandUtils {
                 if (ccp != null) {
                     ccp.setLives(0);
                 }
-                player.setHealth(0);
+                CashClashPlayer.setHealth(player, 0);
                 Messages.debug("[PTP] Eliminated non-president (lives set to 0): " + player.getName());
             } else {
                 Messages.send(player, "gamemode-ptp.final-stand-president-survived",

@@ -133,8 +133,8 @@ public class RadiatingLotusHandler extends CustomItemHandler {
             Team targetTeam = session.getPlayerTeam(target);
             if (targetTeam == null || targetTeam.getTeamNumber() != team.getTeamNumber()) continue;
 
-            double heal = healAmount * manager.getHealingMultiplier(target.getUniqueId());
-            CashClashPlayer.heal(target, heal);
+            // CashClashPlayer.heal already applies the shared healing-reduction multiplier.
+            CashClashPlayer.heal(target, healAmount);
         }
     }
 

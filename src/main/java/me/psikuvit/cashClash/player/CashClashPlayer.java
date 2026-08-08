@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.player;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
@@ -281,14 +282,19 @@ public class CashClashPlayer {
     }
 
     /**
-     * Heals the player by the given amount, clamped to their max health.
+     * Heals the player by the given amount, clamped to their max health. The amount is scaled
+     * by any active healing-reduction debuff (e.g. Soul Katana's Phantom Slice, Bloodwrench's
+     * heal-negation zone) via {@link CustomItemManager#getHealingMultiplier(UUID)} - centralized
+     * here so every heal source respects it without each call site checking individually.
      * @return the amount of health actually restored (less than {@code amount} when the
      *         player was already within {@code amount} of full health)
      */
     public double heal(double amount) {
         if (player == null || !player.isOnline() || amount <= 0) return 0.0;
+        double scaledAmount = amount * CustomItemManager.getInstance().getHealingMultiplier(uuid);
+        if (scaledAmount <= 0) return 0.0;
         double maxHealth = getMaxHealth();
-        double healed = Math.min(amount, Math.max(0.0, maxHealth - player.getHealth()));
+        double healed = Math.min(scaledAmount, Math.max(0.0, maxHealth - player.getHealth()));
         if (healed > 0) {
             player.setHealth(player.getHealth() + healed);
         }
@@ -582,6 +588,15 @@ public class CashClashPlayer {
     }
 
     /**
+     * Get a player's max health through the centralized health system.
+     * Falls back to the vanilla 20 outside a game session.
+     */
+    public static double getMaxHealth(Player player) {
+        CashClashPlayer ccp = from(player);
+        return ccp != null ? ccp.getMaxHealth() : 20.0;
+    }
+
+    /**
      * Heal a player through the centralized health system (clamped to max health).
      * Falls back to clamping against the vanilla 20 health when the player is not
      * inside a game session.
@@ -591,7 +606,9 @@ public class CashClashPlayer {
         CashClashPlayer ccp = from(player);
         if (ccp != null) return ccp.heal(amount);
         if (player == null || !player.isOnline() || amount <= 0) return 0.0;
-        double healed = Math.min(amount, Math.max(0.0, 20.0 - player.getHealth()));
+        double scaledAmount = amount * CustomItemManager.getInstance().getHealingMultiplier(player.getUniqueId());
+        if (scaledAmount <= 0) return 0.0;
+        double healed = Math.min(scaledAmount, Math.max(0.0, 20.0 - player.getHealth()));
         if (healed > 0) {
             player.setHealth(player.getHealth() + healed);
         }
