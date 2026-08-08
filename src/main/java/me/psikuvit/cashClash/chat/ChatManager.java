@@ -22,15 +22,17 @@ public class ChatManager implements Shutdownable {
     private static ChatManager instance;
 
     private final Map<UUID, ChatChannel> playerChannels;
+    private final PartyManager partyManager;
+    private final GameManager gameManager;
 
-    private ChatManager() {
+    public ChatManager(PartyManager partyManager, GameManager gameManager) {
+        this.partyManager = partyManager;
+        this.gameManager = gameManager;
         this.playerChannels = new ConcurrentHashMap<>();
+        instance = this;
     }
 
     public static ChatManager getInstance() {
-        if (instance == null) {
-            instance = new ChatManager();
-        }
         return instance;
     }
 
@@ -109,7 +111,7 @@ public class ChatManager implements Shutdownable {
      * Send a message to party members.
      */
     public boolean sendPartyMessage(Player sender, String message) {
-        Party party = PartyManager.getInstance().getPlayerParty(sender);
+        Party party = partyManager.getPlayerParty(sender);
         if (party == null) {
             Messages.send(sender, "chat.not-in-party-message");
             return true;
@@ -130,7 +132,7 @@ public class ChatManager implements Shutdownable {
      * Send a message to team members in a game.
      */
     public boolean sendTeamMessage(Player sender, String message) {
-        GameSession session = GameManager.getInstance().getPlayerSession(sender);
+        GameSession session = gameManager.getPlayerSession(sender);
         if (session == null) {
             Messages.send(sender, "chat.not-in-game-message");
             return true;
@@ -148,7 +150,7 @@ public class ChatManager implements Shutdownable {
      * Send a message to all players in the same game.
      */
     public boolean sendGameMessage(Player sender, String message) {
-        GameSession session = GameManager.getInstance().getPlayerSession(sender);
+        GameSession session = gameManager.getPlayerSession(sender);
         if (session == null) {
             Messages.send(sender, "chat.not-in-game-message");
             return true;

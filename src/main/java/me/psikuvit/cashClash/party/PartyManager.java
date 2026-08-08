@@ -30,17 +30,15 @@ public class PartyManager implements Shutdownable {
     private final Map<UUID, List<PartyInvite>> pendingInvites;
     private BukkitTask cleanupTask;
 
-    private PartyManager() {
+    public PartyManager() {
         this.parties = ConcurrentHashMap.newKeySet();
         this.playerPartyMap = new ConcurrentHashMap<>();
         this.pendingInvites = new ConcurrentHashMap<>();
         startCleanupTask();
+        instance = this;
     }
 
     public static PartyManager getInstance() {
-        if (instance == null) {
-            instance = new PartyManager();
-        }
         return instance;
     }
 

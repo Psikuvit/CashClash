@@ -29,9 +29,9 @@ public class CustomArmorManager {
     // Mythic shift lock: players blocked from activating bunny shoes while a mythic shift ability is active
     private final Set<UUID> mythicShiftLock;
 
-    private CustomArmorManager() {
-        this.cooldownManager = CooldownManager.getInstance();
-        this.cfg = ItemsConfig.getInstance();
+    public CustomArmorManager(CooldownManager cooldownManager, ItemsConfig cfg) {
+        this.cooldownManager = cooldownManager;
+        this.cfg = cfg;
 
         this.allHandlers = new ArrayList<>();
         register(BunnyShoesHandler::new);
@@ -44,12 +44,10 @@ public class CustomArmorManager {
         register(InvestorSetHandler::new);
 
         this.mythicShiftLock = ConcurrentHashMap.newKeySet();
+        instance = this;
     }
 
     public static CustomArmorManager getInstance() {
-        if (instance == null) {
-            instance = new CustomArmorManager();
-        }
         return instance;
     }
 

@@ -35,21 +35,19 @@ public class WeaponItemManager {
     private final Map<WeaponItem, WeaponItemHandler> handlers;
     private final List<WeaponItemHandler> allHandlers;
 
-    private WeaponItemManager() {
-        this.cooldownManager = CooldownManager.getInstance();
-        this.cfg = ItemsConfig.getInstance();
-        this.armorManager = CustomArmorManager.getInstance();
+    public WeaponItemManager(CooldownManager cooldownManager, ItemsConfig cfg, CustomArmorManager armorManager) {
+        this.cooldownManager = cooldownManager;
+        this.cfg = cfg;
+        this.armorManager = armorManager;
         this.handlers = new EnumMap<>(WeaponItem.class);
         this.allHandlers = new ArrayList<>();
 
         register(SoulKatanaHandler::new, WeaponItem.SOUL_KATANA);
         register(CashBlasterHandler::new, WeaponItem.CASH_BLASTER);
+        instance = this;
     }
 
     public static WeaponItemManager getInstance() {
-        if (instance == null) {
-            instance = new WeaponItemManager();
-        }
         return instance;
     }
 

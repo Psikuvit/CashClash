@@ -27,15 +27,18 @@ public class LayoutManager {
     // Stores the original items before editing started
     private final Map<UUID, ItemStack[]> originalInventory;
 
-    private LayoutManager() {
+    private final PlayerDataManager playerDataManager;
+    private final LobbyManager lobbyManager;
+
+    public LayoutManager(PlayerDataManager playerDataManager, LobbyManager lobbyManager) {
+        this.playerDataManager = playerDataManager;
+        this.lobbyManager = lobbyManager;
         this.editingKit = new HashMap<>();
         this.originalInventory = new HashMap<>();
+        instance = this;
     }
 
     public static LayoutManager getInstance() {
-        if (instance == null) {
-            instance = new LayoutManager();
-        }
         return instance;
     }
 
@@ -56,7 +59,7 @@ public class LayoutManager {
         player.getInventory().clear();
 
         // Remove lobby items first
-        LobbyManager.getInstance().clearLobbyItems(player);
+        lobbyManager.clearLobbyItems(player);
 
         // Apply kit items (without armor for layout)
         KitService.applyForLayout(kit, player);
@@ -100,7 +103,7 @@ public class LayoutManager {
         }
 
         // Save to player data
-        PlayerData data = PlayerDataManager.getInstance().getData(uuid);
+        PlayerData data = playerDataManager.getData(uuid);
         if (data != null) {
             data.setKitLayout(kit.name(), slotItemMap);
         }
@@ -175,7 +178,7 @@ public class LayoutManager {
         }
 
         // Give lobby items back
-        LobbyManager.getInstance().giveLobbyItems(player);
+        lobbyManager.giveLobbyItems(player);
     }
 
     /**

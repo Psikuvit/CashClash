@@ -29,16 +29,14 @@ public class GamemodeManager implements Shutdownable {
     private final Map<GamemodeType, Function<GameSession, Gamemode>> registry = new EnumMap<>(GamemodeType.class);
     private final Random random = new Random();
 
-    private GamemodeManager() {
+    public GamemodeManager() {
         registry.put(GamemodeType.PROTECT_THE_PRESIDENT, ProtectThePresidentGamemode::new);
         registry.put(GamemodeType.CAPTURE_THE_FLAG, CaptureTheFlagGamemode::new);
         registry.put(GamemodeType.KILL_CONFIRM, KillConfirmGamemode::new);
+        instance = this;
     }
 
-    public static synchronized GamemodeManager getInstance() {
-        if (instance == null) {
-            instance = new GamemodeManager();
-        }
+    public static GamemodeManager getInstance() {
         return instance;
     }
 

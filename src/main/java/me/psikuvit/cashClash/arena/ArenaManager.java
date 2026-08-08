@@ -31,6 +31,8 @@ public class ArenaManager {
 
     // Template registry id -> TemplateWorld
     private final Map<String, TemplateWorld> templates;
+    private final GameManager gameManager;
+    private final ConfigManager configManager;
 
     // Fixed the number of arenas
     private static final int MAX_ARENAS = 5;
@@ -38,7 +40,9 @@ public class ArenaManager {
     // Server-wide lobby spawn (optional)
     private Location serverLobbySpawn;
 
-    private ArenaManager() {
+    public ArenaManager(GameManager gameManager, ConfigManager configManager) {
+        this.gameManager = gameManager;
+        this.configManager = configManager;
         this.arenas = new LinkedHashMap<>();
         this.arenaPlayerCounts = new HashMap<>();
         this.templates = new HashMap<>();
@@ -47,12 +51,10 @@ public class ArenaManager {
         loadTemplates();
         loadArenas();
         loadServerLobby();
+        instance = this;
     }
 
     public static ArenaManager getInstance() {
-        if (instance == null) {
-            instance = new ArenaManager();
-        }
         return instance;
     }
 
@@ -307,7 +309,7 @@ public class ArenaManager {
      * reports WAITING.
      */
     public GameState getArenaState(int arenaNumber) {
-        GameSession session = GameManager.getInstance().getSessionForArena(arenaNumber);
+        GameSession session = gameManager.getSessionForArena(arenaNumber);
         return session != null ? session.getState() : GameState.WAITING;
     }
 
@@ -347,7 +349,7 @@ public class ArenaManager {
         int playerCount = getArenaPlayerCount(arenaNumber);
         Arena arena = getArena(arenaNumber);
 
-        int maxPlayers = ConfigManager.getInstance().getMaxPlayers();
+        int maxPlayers = configManager.getMaxPlayers();
 
         return arena != null
             && arena.isReady()

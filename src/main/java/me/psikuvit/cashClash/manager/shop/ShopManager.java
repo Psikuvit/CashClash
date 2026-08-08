@@ -44,15 +44,20 @@ public class ShopManager {
 
     private BukkitTask lookAtPlayerTask;
 
-    private ShopManager() {
+    private final ArenaManager arenaManager;
+    private final GameManager gameManager;
+
+    public ShopManager(ArenaManager arenaManager, GameManager gameManager) {
+        this.arenaManager = arenaManager;
+        this.gameManager = gameManager;
         this.sessionShops = new HashMap<>();
         this.entityToSession = new HashMap<>();
         this.entityTeam = new HashMap<>();
         startLookAtPlayerTask();
+        instance = this;
     }
 
     public static ShopManager getInstance() {
-        if (instance == null) instance = new ShopManager();
         return instance;
     }
 
@@ -61,13 +66,13 @@ public class ShopManager {
      * Spawns villagers in the session world adjusted from the template coordinates.
      */
     public void createShopsForSession(GameSession session) {
-        Arena arena = ArenaManager.getInstance().getArena(session.getArenaNumber());
+        Arena arena = arenaManager.getArena(session.getArenaNumber());
         if (arena == null) {
             Messages.debug("SHOP", "Cannot create shops: Arena not found for session " + session.getSessionId());
             return;
         }
 
-        TemplateWorld tpl = ArenaManager.getInstance().getTemplate(arena.getTemplateId());
+        TemplateWorld tpl = arenaManager.getTemplate(arena.getTemplateId());
         if (tpl == null) {
             Messages.debug("SHOP", "Cannot create shops: Template not configured for arena " + arena.getName());
             return;
@@ -148,7 +153,7 @@ public class ShopManager {
 
         if (sessionId == null) return;
 
-        var sess = GameManager.getInstance().getActiveSessions().stream()
+        var sess = gameManager.getActiveSessions().stream()
                 .filter(s -> s.getSessionId().equals(sessionId)).findFirst().orElse(null);
         if (sess == null) return;
 

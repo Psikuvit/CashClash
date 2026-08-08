@@ -34,20 +34,18 @@ public final class ItemFactory {
     private final GameplayItemFactory gameplayFactory;
     private final GuiItemFactory guiFactory;
     
-    private ItemFactory() {
+    public ItemFactory() {
         this.gameplayFactory = new GameplayItemFactory();
         this.guiFactory = new GuiItemFactory();
+        instance = this;
     }
-    
+
     /**
      * Gets the singleton instance of ItemFactory.
-     * 
+     *
      * @return The ItemFactory instance
      */
     public static ItemFactory getInstance() {
-        if (instance == null) {
-            instance = new ItemFactory();
-        }
         return instance;
     }
     

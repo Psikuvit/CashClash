@@ -36,17 +36,17 @@ public class MannequinManager implements Shutdownable {
     private final File dataFile;
     private final List<Villager> spawnedMannequins = new ArrayList<>();
     private YamlConfiguration data;
+    private final ConfigManager configManager;
 
-    private MannequinManager() {
+    public MannequinManager(ConfigManager configManager) {
+        this.configManager = configManager;
         this.plugin = CashClashPlugin.getInstance();
         this.dataFile = new File(plugin.getDataFolder(), "mannequins.yml");
         loadData();
+        instance = this;
     }
 
     public static MannequinManager getInstance() {
-        if (instance == null) {
-            instance = new MannequinManager();
-        }
         return instance;
     }
 
@@ -167,8 +167,7 @@ public class MannequinManager implements Shutdownable {
      * Spawn an arena mannequin at the given location.
      */
     private void spawnArenaMannequin(Location loc, String id) {
-        ConfigManager config = ConfigManager.getInstance();
-        String skinUrl = config.getArenaNPCSkinURL();
+        String skinUrl = configManager.getArenaNPCSkinURL();
         loc.setYaw(90);
         loc.setPitch(0);
 

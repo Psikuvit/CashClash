@@ -19,8 +19,9 @@ public class ConfigManager {
     private FileConfiguration config;
     private final ConfigValidator validator = new ConfigValidator();
 
-    private ConfigManager() {
+    public ConfigManager() {
         loadConfig();
+        instance = this;
     }
 
     private void loadConfig() {
@@ -54,9 +55,6 @@ public class ConfigManager {
     }
 
     public static ConfigManager getInstance() {
-        if (instance == null) {
-            instance = new ConfigManager();
-        }
         return instance;
     }
 

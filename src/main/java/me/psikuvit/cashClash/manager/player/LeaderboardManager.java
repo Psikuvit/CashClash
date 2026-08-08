@@ -47,16 +47,22 @@ public class LeaderboardManager implements Shutdownable {
         }
     }
 
-    private LeaderboardManager() {}
+    private final ConfigManager configManager;
+    private final PlayerDataManager playerDataManager;
+
+    public LeaderboardManager(ConfigManager configManager, PlayerDataManager playerDataManager) {
+        this.configManager = configManager;
+        this.playerDataManager = playerDataManager;
+        instance = this;
+    }
 
     public static LeaderboardManager getInstance() {
-        if (instance == null) instance = new LeaderboardManager();
         return instance;
     }
 
     public void start() {
         refresh();
-        int minutes = ConfigManager.getInstance().getLeaderboardRefreshMinutes();
+        int minutes = configManager.getLeaderboardRefreshMinutes();
         if (minutes > 0) {
             task = SchedulerUtils.runTaskTimerAsync(this::refresh, 20L * 60 * minutes, 20L * 60 * minutes);
         }
@@ -71,8 +77,8 @@ public class LeaderboardManager implements Shutdownable {
     }
 
     private void refresh() {
-        List<PlayerData> all = PlayerDataManager.getInstance().loadAllPlayers();
-        int limit = ConfigManager.getInstance().getLeaderboardSize();
+        List<PlayerData> all = playerDataManager.loadAllPlayers();
+        int limit = configManager.getLeaderboardSize();
         cached.put(LeaderboardType.WINS, sorted(all, Comparator.comparingInt(PlayerData::getWins).reversed(), limit));
         cached.put(LeaderboardType.PLAY_TIME, sorted(all, Comparator.comparingLong(PlayerData::getPlaytimeMillis).reversed(), limit));
         cached.put(LeaderboardType.COINS_EARNED, sorted(all, Comparator.comparingLong(PlayerData::getTotalCoinsEarned).reversed(), limit));

@@ -17,10 +17,11 @@ public final class TabListManager {
 
     private static TabListManager instance;
 
-    private TabListManager() {}
+    public TabListManager() {
+        instance = this;
+    }
 
     public static TabListManager getInstance() {
-        if (instance == null) instance = new TabListManager();
         return instance;
     }
 

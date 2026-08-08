@@ -63,9 +63,12 @@ public class MythicItemManager {
     private final Map<MythicItem, MythicItemHandler> handlers;
     private final List<MythicItemHandler> allHandlers;
 
-    private MythicItemManager() {
-        cfg = ItemsConfig.getInstance();
-        cooldownManager = CooldownManager.getInstance();
+    private final ItemFactory itemFactory;
+
+    public MythicItemManager(ItemsConfig cfg, CooldownManager cooldownManager, ItemFactory itemFactory) {
+        this.cfg = cfg;
+        this.cooldownManager = cooldownManager;
+        this.itemFactory = itemFactory;
 
         playerMythics = new ConcurrentHashMap<>();
         sessionPurchasedMythics = new ConcurrentHashMap<>();
@@ -83,12 +86,10 @@ public class MythicItemManager {
         register(WardenGlovesHandler::new, MythicItem.WARDEN_GLOVES);
         register(BlazebiteHandler::new, MythicItem.BLAZEBITE_CROSSBOWS);
         register(AlchemistWandHandler::new, MythicItem.ALCHEMIST_WAND);
+        instance = this;
     }
 
     public static MythicItemManager getInstance() {
-        if (instance == null) {
-            instance = new MythicItemManager();
-        }
         return instance;
     }
 
@@ -233,7 +234,7 @@ public class MythicItemManager {
         Collections.shuffle(allMythics, ThreadLocalRandom.current());
 
         // Select first 5 (or all if less than 5 exist)
-        int count = Math.min(ItemsConfig.getInstance().getLegendsPerGame(), allMythics.size());
+        int count = Math.min(cfg.getLegendsPerGame(), allMythics.size());
         List<MythicItem> selectedMythics = new ArrayList<>(allMythics.subList(0, count));
 
         sessionAvailableMythics.put(sessionId, selectedMythics);
@@ -265,7 +266,7 @@ public class MythicItemManager {
         tags.meta().displayName(Messages.parse("<light_purple><bold>" + mythic.getDisplayName() + "</bold></light_purple>"));
 
         // Lore
-        List<Component> lore = ItemFactory.getInstance().getGameplayFactory().getConfiguredLore(mythic);
+        List<Component> lore = itemFactory.getGameplayFactory().getConfiguredLore(mythic);
         if (!lore.isEmpty()) {
             tags.meta().lore(lore);
         }

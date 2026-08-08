@@ -21,15 +21,13 @@ public class CooldownManager implements Shutdownable {
     // Maps: playerUUID -> (abilityKey -> lastActionTimeMillis) for tracking time since events
     private final Map<UUID, Map<String, Long>> playerTimestamps;
 
-    private CooldownManager() {
+    public CooldownManager() {
         this.playerCooldowns = new ConcurrentHashMap<>();
         this.playerTimestamps = new ConcurrentHashMap<>();
+        instance = this;
     }
 
     public static CooldownManager getInstance() {
-        if (instance == null) {
-            instance = new CooldownManager();
-        }
         return instance;
     }
 

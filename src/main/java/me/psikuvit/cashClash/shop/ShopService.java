@@ -34,14 +34,16 @@ import java.util.Map;
 public class ShopService {
 
     private static ShopService instance;
+    private final GameManager gameManager;
+    private final ItemFactory itemFactory;
 
-    private ShopService() {
+    public ShopService(GameManager gameManager, ItemFactory itemFactory) {
+        this.gameManager = gameManager;
+        this.itemFactory = itemFactory;
+        instance = this;
     }
 
     public static ShopService getInstance() {
-        if (instance == null) {
-            instance = new ShopService();
-        }
         return instance;
     }
 
@@ -296,7 +298,7 @@ public class ShopService {
     private void giveItemToPlayer(Player player, CashClashPlayer ccp, Purchasable item, int quantity, long totalPrice) {
         int giveQty = Math.max(1, quantity);
 
-        GameSession sess = GameManager.getInstance().getPlayerSession(player);
+        GameSession sess = gameManager.getPlayerSession(player);
         int round = sess != null ? sess.getCurrentRound() : 1;
         Messages.debug("Bought item: " + item);
 
@@ -306,7 +308,7 @@ public class ShopService {
                 // handles a bulk purchase that straddles the 8-web cap.
                 int currentWebs = countMaterial(player, Material.COBWEB);
                 int canGive = Math.min(giveQty, 8 - currentWebs);
-                ItemStack stack = ItemFactory.getInstance().createGameplayItem(item);
+                ItemStack stack = itemFactory.createGameplayItem(item);
                 stack.setAmount(canGive);
                 player.getInventory().addItem(stack);
                 ccp.addPurchase(new PurchaseRecord(item, canGive, totalPrice, round));
@@ -344,7 +346,7 @@ public class ShopService {
 
                         // Equip the set piece
                         Messages.debug(player, Messages.DebugCategory.SHOP, "Equipping set piece: " + piece.name() + " (slot=" + slot + ")");
-                        ItemFactory.getInstance().createAndEquipCustomArmor(player, piece);
+                        itemFactory.createAndEquipCustomArmor(player, piece);
                     }
                     Messages.debug(player, Messages.DebugCategory.SHOP, "Set purchase complete: " + setPieces.size() + " pieces equipped");
 
@@ -382,7 +384,7 @@ public class ShopService {
 
                     // Equip the custom armor
                     Messages.debug(player, Messages.DebugCategory.SHOP, "Equipping individual custom armor: " + customArmor.name() + " (slot=" + slot + ")");
-                    ItemFactory.getInstance().createAndEquipCustomArmor(player, customArmor);
+                    itemFactory.createAndEquipCustomArmor(player, customArmor);
                     Messages.debug(player, Messages.DebugCategory.SHOP, "Individual custom armor equip call finished: " + customArmor.name());
 
                     cachePurchase(player, ccp, item, round, replacedItem);
@@ -390,7 +392,7 @@ public class ShopService {
             }
             case ArmorItem ignored -> {
                 // Normal/upgradable armor (Iron, Diamond)
-                ItemStack armorItem = ItemFactory.getInstance().createGameplayItem(item);
+                ItemStack armorItem = itemFactory.createGameplayItem(item);
                 Messages.debug(player, Messages.DebugCategory.SHOP, "Buying normal armor: " + item.getDisplayName()
                         + " (material=" + armorItem.getType() + ", itemMeta=" + armorItem.hasItemMeta() + ")");
 
@@ -420,7 +422,7 @@ public class ShopService {
                 cachePurchase(player, ccp, item, round, replacedItem);
             }
             case WeaponItem ignored -> {
-                ItemStack weaponItem = ItemFactory.getInstance().createGameplayItem(item);
+                ItemStack weaponItem = itemFactory.createGameplayItem(item);
                 ItemStack replacedItem = replaceWeaponInInventory(player, weaponItem);
 
                 cachePurchase(player, ccp, item, round, replacedItem);
@@ -433,7 +435,7 @@ public class ShopService {
                 }
 
                 // Other items - just add to inventory
-                ItemStack stack = ItemFactory.getInstance().createGameplayItem(item);
+                ItemStack stack = itemFactory.createGameplayItem(item);
                 stack.setAmount(giveQty);
                 player.getInventory().addItem(stack);
                 ccp.addPurchase(new PurchaseRecord(item, giveQty, totalPrice, round));
@@ -510,7 +512,7 @@ public class ShopService {
     }
 
     private CashClashPlayer getCashClashPlayer(Player player) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         return session != null ? session.getCashClashPlayer(player.getUniqueId()) : null;
     }
 }

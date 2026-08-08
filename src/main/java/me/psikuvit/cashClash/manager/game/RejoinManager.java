@@ -33,16 +33,18 @@ public class RejoinManager implements Shutdownable {
 
     private final Map<UUID, RejoinData> pendingRejoins;
     private BukkitTask cleanupTask;
+    private final ConfigManager configManager;
+    private final GameManager gameManager;
 
-    private RejoinManager() {
+    public RejoinManager(ConfigManager configManager, GameManager gameManager) {
+        this.configManager = configManager;
+        this.gameManager = gameManager;
         this.pendingRejoins = new HashMap<>();
         startCleanupTask();
+        instance = this;
     }
 
     public static RejoinManager getInstance() {
-        if (instance == null) {
-            instance = new RejoinManager();
-        }
         return instance;
     }
 
@@ -58,19 +60,19 @@ public class RejoinManager implements Shutdownable {
      * Clean up expired rejoin data and notify sessions.
      */
     private void cleanupExpiredData() {
-        if (!ConfigManager.getInstance().isRejoinEnabled()) {
+        if (!configManager.isRejoinEnabled()) {
             pendingRejoins.clear();
             return;
         }
 
-        int timeout = ConfigManager.getInstance().getRejoinTimeoutSeconds();
+        int timeout = configManager.getRejoinTimeoutSeconds();
 
         for (Map.Entry<UUID, RejoinData> entry : pendingRejoins.entrySet()) {
             RejoinData data = entry.getValue();
 
             if (data.isExpired(timeout)) {
                 // Notify the session that the player didn't rejoin in time
-                GameSession session = GameManager.getInstance().getActiveSessions().stream()
+                GameSession session = gameManager.getActiveSessions().stream()
                         .filter(s -> s.getSessionId().equals(data.sessionId()))
                         .findFirst()
                         .orElse(null);
@@ -95,7 +97,7 @@ public class RejoinManager implements Shutdownable {
      * @return true if data was saved successfully
      */
     public boolean saveRejoinData(Player player, GameSession session) {
-        if (!ConfigManager.getInstance().isRejoinEnabled()) {
+        if (!configManager.isRejoinEnabled()) {
             return false;
         }
 
@@ -146,7 +148,7 @@ public class RejoinManager implements Shutdownable {
         Messages.debug("REJOIN", "Saved rejoin data for " + player.getName() + " in session " + session.getSessionId());
 
         // Notify team
-        int timeout = ConfigManager.getInstance().getRejoinTimeoutSeconds();
+        int timeout = configManager.getRejoinTimeoutSeconds();
         Messages.broadcast(session.getPlayers(), "rejoin.disconnect-warning",
                 "player_name", player.getName(), "timeout_seconds", String.valueOf(timeout));
 
@@ -160,7 +162,7 @@ public class RejoinManager implements Shutdownable {
      * @return true if they have pending rejoin data
      */
     public boolean hasPendingRejoin(UUID playerUuid) {
-        if (!ConfigManager.getInstance().isRejoinEnabled()) {
+        if (!configManager.isRejoinEnabled()) {
             return false;
         }
 
@@ -170,7 +172,7 @@ public class RejoinManager implements Shutdownable {
         }
 
         // Check if expired
-        int timeout = ConfigManager.getInstance().getRejoinTimeoutSeconds();
+        int timeout = configManager.getRejoinTimeoutSeconds();
         if (data.isExpired(timeout)) {
             pendingRejoins.remove(playerUuid);
             return false;
@@ -203,7 +205,7 @@ public class RejoinManager implements Shutdownable {
      * @return true if rejoin was successful
      */
     public boolean processRejoin(Player player) {
-        if (!ConfigManager.getInstance().isRejoinEnabled()) {
+        if (!configManager.isRejoinEnabled()) {
             return false;
         }
 
@@ -212,7 +214,7 @@ public class RejoinManager implements Shutdownable {
             return false;
         }
 
-        int timeout = ConfigManager.getInstance().getRejoinTimeoutSeconds();
+        int timeout = configManager.getRejoinTimeoutSeconds();
         if (data.isExpired(timeout)) {
             pendingRejoins.remove(player.getUniqueId());
             return false;
@@ -237,7 +239,7 @@ public class RejoinManager implements Shutdownable {
         boolean restored = session.rejoinPlayer(player, data);
         if (restored) {
             // Add player back to GameManager tracking
-            GameManager.getInstance().addPlayerToSession(player, session);
+            gameManager.addPlayerToSession(player, session);
 
             pendingRejoins.remove(player.getUniqueId());
             Messages.debug("REJOIN", "Successfully restored " + player.getName() + " to session " + session.getSessionId());
@@ -260,7 +262,7 @@ public class RejoinManager implements Shutdownable {
         }
 
         // Restore economy
-        if (ConfigManager.getInstance().isRejoinRestoreBalance()) {
+        if (configManager.isRejoinRestoreBalance()) {
             ccp.setCoins(data.coins());
         }
 
@@ -268,7 +270,7 @@ public class RejoinManager implements Shutdownable {
         ccp.setLives(data.lives());
 
         // Restore inventory
-        if (ConfigManager.getInstance().isRejoinRestoreInventory()) {
+        if (configManager.isRejoinRestoreInventory()) {
             player.getInventory().clear();
 
             if (data.inventoryContents() != null) {
@@ -344,7 +346,7 @@ public class RejoinManager implements Shutdownable {
     // ==================== HELPER METHODS ====================
 
     private GameSession findSessionById(UUID sessionId) {
-        return GameManager.getInstance().getActiveSessions().stream()
+        return gameManager.getActiveSessions().stream()
                 .filter(s -> s.getSessionId().equals(sessionId))
                 .findFirst()
                 .orElse(null);

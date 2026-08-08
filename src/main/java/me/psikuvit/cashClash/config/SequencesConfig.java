@@ -21,16 +21,14 @@ public class SequencesConfig {
     private final ConfigValidator validator;
     private final Map<String, String> messages;
 
-    private SequencesConfig() {
+    public SequencesConfig() {
         this.validator = new ConfigValidator();
         this.messages = new HashMap<>();
         loadConfig();
+        instance = this;
     }
 
     public static SequencesConfig getInstance() {
-        if (instance == null) {
-            instance = new SequencesConfig();
-        }
         return instance;
     }
 

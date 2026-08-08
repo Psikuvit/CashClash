@@ -27,14 +27,24 @@ import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
+import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
+import me.psikuvit.cashClash.manager.lobby.LayoutManager;
+import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.lobby.MannequinManager;
 import me.psikuvit.cashClash.manager.player.AfkManager;
 import me.psikuvit.cashClash.manager.player.LeaderboardManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
+import me.psikuvit.cashClash.manager.player.TabListManager;
+import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.party.PartyManager;
+import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.items.ItemFactory;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -55,19 +65,55 @@ public final class CashClashPlugin extends JavaPlugin {
         instance = this;
 
         try {
-            ConfigManager.getInstance();
-            MessagesConfig.getInstance();
-            SequencesConfig.getInstance();
-            ItemsConfig.getInstance();
-            ShopConfig.getInstance();
+            // Composition root: every manager is constructed here, once, in dependency order,
+            // instead of lazily self-constructing on first getInstance() call. Each constructor
+            // takes the managers it depends on as explicit parameters; getInstance() on each
+            // class remains for the many call sites not worth threading a constructor reference
+            // through, but it now just exposes what was built here rather than deciding when
+            // construction happens.
+
+            // Tier 0: no dependencies on any other manager.
+            ConfigManager configManager = new ConfigManager();
+            MessagesConfig messagesConfig = new MessagesConfig();
+            new SequencesConfig();
+            ItemsConfig itemsConfig = new ItemsConfig();
+            new ShopConfig();
             getLogger().info("Configuration files loaded successfully");
 
-            // Step 2: Initialize player persistence (critical)
             PlayerDataManager.init(this);
             getLogger().info("Player data storage initialized");
 
+            GameManager gameManager = new GameManager();
+            new GamemodeManager();
+            TabListManager tabListManager = new TabListManager();
+            PartyManager partyManager = new PartyManager();
+            ItemFactory itemFactory = new ItemFactory();
+            new CooldownManager();
+
+            // Tier 1: depend only on tier 0 managers.
+            ArenaManager arenaManager = new ArenaManager(gameManager, configManager);
+            new ChatManager(partyManager, gameManager);
+            new RejoinManager(configManager, gameManager);
+            new LeaderboardManager(configManager, PlayerDataManager.getInstance());
+            new AfkManager(configManager, gameManager, messagesConfig);
+            new MannequinManager(configManager);
+            LobbyManager lobbyManager = new LobbyManager(itemsConfig);
+            new ScoreboardManager(gameManager, tabListManager);
+            new ShopService(gameManager, itemFactory);
+            new TransferInputListener(gameManager);
+
+            // Tier 2: depend on tier 1 managers.
+            new ShopManager(arenaManager, gameManager);
+            new LayoutManager(PlayerDataManager.getInstance(), lobbyManager);
+            CustomArmorManager customArmorManager = new CustomArmorManager(CooldownManager.getInstance(), itemsConfig);
+            new MythicItemManager(itemsConfig, CooldownManager.getInstance(), itemFactory);
+
+            // Tier 3: depend on tier 2 managers.
+            new CustomItemManager(CooldownManager.getInstance(), itemsConfig, customArmorManager);
+            new WeaponItemManager(CooldownManager.getInstance(), itemsConfig, customArmorManager);
+
             // Step 3: Initialize arena system
-            ArenaManager.getInstance().initializeArenas();
+            arenaManager.initializeArenas();
             getLogger().info("Arena system initialized (5 arenas available)");
 
             // Step 4: Register events and commands
@@ -75,7 +121,6 @@ public final class CashClashPlugin extends JavaPlugin {
             registerCommands();
 
             // Step 4.5: Start the periodic AFK lobby kicker
-            AfkManager.getInstance();
             afkTask = SchedulerUtils.runTaskTimer(AfkManager.getInstance()::checkAndKick, 20L * 30, 20L * 30);
 
             // Step 4.6: Start the async leaderboard worker
@@ -90,7 +135,7 @@ public final class CashClashPlugin extends JavaPlugin {
 
             getLogger().info("=================================");
             getLogger().info("Cash Clash v" + getPluginMeta().getVersion() + " enabled!");
-            getLogger().info("Debug mode: " + (ConfigManager.getInstance().isDebugEnabled() ? "ENABLED" : "disabled"));
+            getLogger().info("Debug mode: " + (configManager.isDebugEnabled() ? "ENABLED" : "disabled"));
             getLogger().info("=================================");
 
         } catch (SQLException e) {

@@ -36,17 +36,16 @@ public class TransferInputListener implements Listener {
 
     private final Map<UUID, PendingTransfer> pendingTransfers;
     private final Map<UUID, Block> signBlocks;
+    private final GameManager gameManager;
 
-    public TransferInputListener() {
-        // Register this listener
+    public TransferInputListener(GameManager gameManager) {
+        this.gameManager = gameManager;
         this.pendingTransfers = new ConcurrentHashMap<>();
         this.signBlocks = new ConcurrentHashMap<>();
+        instance = this;
     }
 
     public static TransferInputListener getInstance() {
-        if (instance == null) {
-            instance = new TransferInputListener();
-        }
         return instance;
     }
 
@@ -135,7 +134,7 @@ public class TransferInputListener implements Listener {
     }
 
     private void processTransfer(Player sender, PendingTransfer pending, long amount) {
-        GameSession session = GameManager.getInstance().getActiveSessions().stream()
+        GameSession session = gameManager.getActiveSessions().stream()
                 .filter(s -> s.getSessionId().equals(pending.sessionId()))
                 .findFirst()
                 .orElse(null);

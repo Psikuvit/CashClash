@@ -20,15 +20,13 @@ public class MessagesConfig {
     private static MessagesConfig instance;
     private final Map<String, String> messages;
 
-    private MessagesConfig() {
+    public MessagesConfig() {
         this.messages = new HashMap<>();
         loadMessages();
+        instance = this;
     }
 
     public static MessagesConfig getInstance() {
-        if (instance == null) {
-            instance = new MessagesConfig();
-        }
         return instance;
     }
 

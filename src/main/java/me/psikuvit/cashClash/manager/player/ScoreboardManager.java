@@ -43,17 +43,20 @@ public class ScoreboardManager implements Shutdownable {
     // Map of playerUUID -> current context type (for detecting changes)
     private final Map<UUID, ContextType> playerContexts;
 
-    private ScoreboardManager() {
+    private final GameManager gameManager;
+    private final TabListManager tabListManager;
+
+    public ScoreboardManager(GameManager gameManager, TabListManager tabListManager) {
+        this.gameManager = gameManager;
+        this.tabListManager = tabListManager;
         this.gamePlayerBoards = new HashMap<>();
         this.lobbyPlayerBoards = new HashMap<>();
         this.sessionUpdateTasks = new HashMap<>();
         this.playerContexts = new HashMap<>();
+        instance = this;
     }
 
     public static ScoreboardManager getInstance() {
-        if (instance == null) {
-            instance = new ScoreboardManager();
-        }
         return instance;
     }
 
@@ -108,7 +111,7 @@ public class ScoreboardManager implements Shutdownable {
      * Create scoreboard for game players
      */
     private void createGameScoreboard(Player player) {
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         if (session == null || !player.isOnline()) {
             return;
         }
@@ -128,7 +131,7 @@ public class ScoreboardManager implements Shutdownable {
         player.setScoreboard(board);
 
         // Update tab list
-        TabListManager.getInstance().setPlayerToSession(player, session);
+        tabListManager.setPlayerToSession(player, session);
 
         // Update immediately
         updatePlayerScoreboard(player);
@@ -179,7 +182,7 @@ public class ScoreboardManager implements Shutdownable {
             return;
         }
 
-        GameSession session = GameManager.getInstance().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         ScoreboardContext context = ScoreboardProvider.getContext(player);
 
         Scoreboard board = null;
@@ -203,7 +206,7 @@ public class ScoreboardManager implements Shutdownable {
      * Update all scoreboards for a session
      */
     private void updateSessionScoreboards(UUID sessionId) {
-        GameSession session = GameManager.getInstance().getActiveSessions().stream()
+        GameSession session = gameManager.getActiveSessions().stream()
                 .filter(s -> s.getSessionId().equals(sessionId))
                 .findFirst()
                 .orElse(null);

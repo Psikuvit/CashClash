@@ -23,11 +23,18 @@ public class AfkManager {
 
     private final Map<UUID, Long> lastActivity = new ConcurrentHashMap<>();
     private final Set<UUID> warned = ConcurrentHashMap.newKeySet();
+    private final ConfigManager configManager;
+    private final GameManager gameManager;
+    private final MessagesConfig messagesConfig;
 
-    private AfkManager() {}
+    public AfkManager(ConfigManager configManager, GameManager gameManager, MessagesConfig messagesConfig) {
+        this.configManager = configManager;
+        this.gameManager = gameManager;
+        this.messagesConfig = messagesConfig;
+        instance = this;
+    }
 
     public static AfkManager getInstance() {
-        if (instance == null) instance = new AfkManager();
         return instance;
     }
 
@@ -48,15 +55,15 @@ public class AfkManager {
      * from the main thread. A player is only considered when they are not in a game.
      */
     public void checkAndKick() {
-        int timeoutMinutes = ConfigManager.getInstance().getAfkLobbyKickMinutes();
+        int timeoutMinutes = configManager.getAfkLobbyKickMinutes();
         if (timeoutMinutes <= 0) return;
 
         long timeoutMs = timeoutMinutes * 60_000L;
-        int warningSeconds = ConfigManager.getInstance().getAfkWarningSeconds();
+        int warningSeconds = configManager.getAfkWarningSeconds();
         long now = System.currentTimeMillis();
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (GameManager.getInstance().getPlayerSession(player) != null) continue;
+            if (gameManager.getPlayerSession(player) != null) continue;
 
             UUID uuid = player.getUniqueId();
             Long last = lastActivity.get(uuid);
@@ -69,7 +76,7 @@ public class AfkManager {
             if (idleMs >= timeoutMs) {
                 Messages.send(player, "lobby-messages.afk-kick");
                 player.kick(Messages.parse(
-                        MessagesConfig.getInstance().getRaw("lobby-messages.afk-kick-reason")));
+                        messagesConfig.getRaw("lobby-messages.afk-kick-reason")));
                 remove(uuid);
             } else if (warningSeconds > 0 && idleMs >= timeoutMs - warningSeconds * 1000L && !warned.contains(uuid)) {
                 warned.add(uuid);

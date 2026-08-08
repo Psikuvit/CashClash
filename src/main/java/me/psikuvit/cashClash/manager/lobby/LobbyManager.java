@@ -46,12 +46,14 @@ public class LobbyManager {
         }
     }
 
-    private LobbyManager() {}
+    private final ItemsConfig itemsConfig;
+
+    public LobbyManager(ItemsConfig itemsConfig) {
+        this.itemsConfig = itemsConfig;
+        instance = this;
+    }
 
     public static LobbyManager getInstance() {
-        if (instance == null) {
-            instance = new LobbyManager();
-        }
         return instance;
     }
 
@@ -63,7 +65,7 @@ public class LobbyManager {
     public void giveLobbyItems(Player player) {
         clearLobbyItems(player);
 
-        ItemsConfig config = ItemsConfig.getInstance();
+        ItemsConfig config = itemsConfig;
 
         // Stats item (slot from config, default 0)
         setLobbyItemSafely(player, config.getLobbyStatsSlot(), createStatsItem(), "stats");
@@ -132,7 +134,7 @@ public class LobbyManager {
      * Create the stats item.
      */
     private ItemStack createStatsItem() {
-        ItemsConfig config = ItemsConfig.getInstance();
+        ItemsConfig config = itemsConfig;
 
         Material material = Material.matchMaterial(config.getLobbyStatsMaterial());
         if (material == null) material = Material.PAPER;
@@ -155,7 +157,7 @@ public class LobbyManager {
      * Create the arena selector item.
      */
     private ItemStack createArenaSelectorItem() {
-        ItemsConfig config = ItemsConfig.getInstance();
+        ItemsConfig config = itemsConfig;
 
         Material material = Material.matchMaterial(config.getLobbyArenaSelectorMaterial());
         if (material == null) material = Material.COMPASS;
@@ -178,7 +180,7 @@ public class LobbyManager {
      * Create the layout configurator item.
      */
     private ItemStack createLayoutConfiguratorItem() {
-        ItemsConfig config = ItemsConfig.getInstance();
+        ItemsConfig config = itemsConfig;
 
         Material material = Material.matchMaterial(config.getLobbyLayoutConfiguratorMaterial());
         if (material == null) material = Material.ANVIL;

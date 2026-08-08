@@ -16,15 +16,13 @@ public class ShopConfig {
     private FileConfiguration config;
     private final ConfigValidator validator;
 
-    private ShopConfig() {
+    public ShopConfig() {
         this.validator = new ConfigValidator();
         loadConfig();
+        instance = this;
     }
 
     public static ShopConfig getInstance() {
-        if (instance == null) {
-            instance = new ShopConfig();
-        }
         return instance;
     }
 

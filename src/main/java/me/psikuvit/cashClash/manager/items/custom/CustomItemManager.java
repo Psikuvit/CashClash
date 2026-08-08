@@ -42,10 +42,10 @@ public class CustomItemManager {
     private final Map<UUID, Long> healingReducedUntil;
     private final Map<UUID, Double> healingReductionMultiplier;
 
-    private CustomItemManager() {
-        this.cooldownManager = CooldownManager.getInstance();
-        this.cfg = ItemsConfig.getInstance();
-        this.armorManager = CustomArmorManager.getInstance();
+    public CustomItemManager(CooldownManager cooldownManager, ItemsConfig cfg, CustomArmorManager armorManager) {
+        this.cooldownManager = cooldownManager;
+        this.cfg = cfg;
+        this.armorManager = armorManager;
         this.handlers = new EnumMap<>(CustomItem.class);
         this.allHandlers = new ArrayList<>();
         this.healingReducedUntil = new java.util.HashMap<>();
@@ -66,12 +66,10 @@ public class CustomItemManager {
         register(HuntersMarkHandler::new, CustomItem.HUNTERS_MARK);
         register(BloomingRoseHandler::new, CustomItem.BLOOMING_ROSE);
         register(OrbOfGravitationHandler::new, CustomItem.ORB_OF_GRAVITATION);
+        instance = this;
     }
 
     public static CustomItemManager getInstance() {
-        if (instance == null) {
-            instance = new CustomItemManager();
-        }
         return instance;
     }
 

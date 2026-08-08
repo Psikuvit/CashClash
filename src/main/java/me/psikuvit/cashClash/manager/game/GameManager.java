@@ -20,16 +20,19 @@ public class GameManager implements Shutdownable {
     private final Map<UUID, GameSession> playerToSession;
     private final Map<Integer, GameSession> arenaToSession;
 
-    private GameManager() {
+    /**
+     * Constructed once by {@link me.psikuvit.cashClash.CashClashPlugin} at startup (it has no
+     * dependencies on other managers). {@link #getInstance()} exposes that instance to the many
+     * call sites not worth threading a constructor reference through.
+     */
+    public GameManager() {
         this.activeSessions = new ConcurrentHashMap<>();
         this.playerToSession = new ConcurrentHashMap<>();
         this.arenaToSession = new ConcurrentHashMap<>();
+        instance = this;
     }
 
     public static GameManager getInstance() {
-        if (instance == null) {
-            instance = new GameManager();
-        }
         return instance;
     }
 

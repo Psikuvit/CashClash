@@ -22,15 +22,13 @@ public class ItemsConfig {
     private FileConfiguration config;
     private final ConfigValidator validator;
 
-    private ItemsConfig() {
+    public ItemsConfig() {
         this.validator = new ConfigValidator();
         loadConfig();
+        instance = this;
     }
 
     public static ItemsConfig getInstance() {
-        if (instance == null) {
-            instance = new ItemsConfig();
-        }
         return instance;
     }
 
