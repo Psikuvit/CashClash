@@ -114,6 +114,16 @@ mythic-items:
       duration-seconds: 20        # Ability lasts 20 seconds
       cooldown-seconds: 35        # 35 second cooldown after ability ends
       punches-for-speed: 5        # Every 5th punch increases speed
+    # Rising Fury - Shift + right-click. Base Warden Gloves damage is 0 (see the melee-mythic
+    # baseline in MythicItemManager); this ability temporarily grants diamond-sword-equivalent
+    # damage/speed and stacks reach every 3rd landed hit, up to max-stacks. Cancels on weapon
+    # swap or after no-hit-timeout-seconds without landing a hit.
+    rising-fury:
+      cooldown-seconds: 30
+      no-hit-timeout-seconds: 3
+      reach-per-stack: 0.25
+      max-stacks: 3               # 9 hits total (3 per stack) to reach full charge
+      shield-disable-ticks: 100   # 5s vanilla shield-disable on a fully-charged (max-stacks) hit
 
   # BlazeBite Crossbows
   blazebite-crossbows:

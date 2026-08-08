@@ -319,6 +319,27 @@ public class ItemsConfig {
         return config.getInt("mythic-items.warden-gloves.boxing.punches-for-speed", 5);
     }
 
+    // Warden Gloves - Rising Fury
+    public int getWardenRisingFuryCooldown() {
+        return config.getInt("mythic-items.warden-gloves.rising-fury.cooldown-seconds", 30);
+    }
+
+    public int getWardenRisingFuryNoHitTimeoutSeconds() {
+        return config.getInt("mythic-items.warden-gloves.rising-fury.no-hit-timeout-seconds", 3);
+    }
+
+    public double getWardenRisingFuryReachPerStack() {
+        return config.getDouble("mythic-items.warden-gloves.rising-fury.reach-per-stack", 0.25);
+    }
+
+    public int getWardenRisingFuryMaxStacks() {
+        return config.getInt("mythic-items.warden-gloves.rising-fury.max-stacks", 3);
+    }
+
+    public int getWardenShieldDisableTicks() {
+        return config.getInt("mythic-items.warden-gloves.rising-fury.shield-disable-ticks", 100);
+    }
+
     // BlazeBite
     public int getBlazebiteShotsPerMag() {
         return config.getInt("mythic-items.blazebite-crossbows.shots-per-magazine", 8);

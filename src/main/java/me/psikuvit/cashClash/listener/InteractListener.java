@@ -199,6 +199,19 @@ public class InteractListener implements Listener {
         }
     }
 
+    // ==================== WARDEN GLOVES BOTH-HANDS TRACKING ====================
+
+    /**
+     * Tracks main-hand slot switches for Warden Gloves' both-hands off-hand stash and Rising
+     * Fury's weapon-swap cancel - see {@link WardenGlovesHandler#onHandSwitch}.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onWardenGlovesHandSwitch(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
+        mythicManager.getHandler(WardenGlovesHandler.class).onHandSwitch(player, newItem);
+    }
+
     // ==================== MAIN INTERACT HANDLER ====================
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -614,6 +627,17 @@ public class InteractListener implements Listener {
                 }
             }
             case WARDEN_GLOVES -> {
+                if (player.isSneaking()) {
+                    if (isSilenced(player)) {
+                        event.setCancelled(true);
+                        Messages.send(player, "listener.cannot-use-abilities-while-silenced");
+                        return true;
+                    }
+                    event.setCancelled(true);
+                    armorManager.lockMythicShift(player);
+                    mythicManager.getHandler(WardenGlovesHandler.class).useRisingFury(player);
+                    return true;
+                }
                 event.setCancelled(true);
                 mythicManager.getHandler(WardenGlovesHandler.class).useWardenShockwave(player);
                 return true;

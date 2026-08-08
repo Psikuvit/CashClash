@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.manager.items.armor;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
+import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -70,6 +71,10 @@ public class BunnyShoesHandler extends ArmorSetHandler {
         // tanking for their team, not evading) - separate from the 0.5s debounce lock above,
         // which only covers the moment the shift ability itself activates.
         if (MythicItemManager.getInstance().getHandler(AlchemistWandHandler.class).isTaunting(id)) return;
+
+        // Blocked for the whole duration of an active Warden Gloves Rising Fury - same shape
+        // as the Alchemist Wand Taunt check above.
+        if (MythicItemManager.getInstance().getHandler(WardenGlovesHandler.class).isRisingFuryActive(id)) return;
 
         // Check if player is silenced (carrying enemy flag in CTF)
         if (isSilenced(p)) {

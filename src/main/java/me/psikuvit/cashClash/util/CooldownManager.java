@@ -345,6 +345,7 @@ public class CooldownManager {
         public static final String BLOODWRENCH_SUPERCHARGE_COOLDOWN = "BLOODWRENCH_SUPERCHARGE_COOLDOWN";
         public static final String WARDEN_SHOCKWAVE = "WARDEN_SHOCKWAVE";
         public static final String WARDEN_BOXING = "WARDEN_BOXING";
+        public static final String WARDEN_RISING_FURY = "WARDEN_RISING_FURY";
         public static final String BLAZEBITE_RELOAD = "BLAZEBITE_RELOAD";
         public static final String ALCHEMIST_BLINK_SWAP = "ALCHEMIST_BLINK_SWAP";
         public static final String ALCHEMIST_TAUNT = "ALCHEMIST_TAUNT";
