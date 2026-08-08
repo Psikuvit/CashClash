@@ -451,7 +451,7 @@ messages:
      wind-bow-shots-remaining: "<yellow>Wind Bow: {shots} shots remaining</yellow>"
      wind-bow-boost-cooldown: "<red>Wind boost on cooldown! ({cooldown_seconds}s)</red>"
      wind-bow-boost-activated: "<aqua>Wind boost!</aqua>"
-     electric-eel-teleport-cooldown: "<red>Teleport on cooldown! ({cooldown_seconds}s)</red>"
+     electric-eel-dash-cooldown: "<red>All dash charges on cooldown! ({cooldown_seconds}s)</red>"
      electric-eel-zap: "<aqua>Zap!</aqua>"
      goblin-spear-reloading: "<red>Goblin Spear reloading! ({cooldown_seconds}s)</red>"
      goblin-spear-reload-start: "<yellow>Goblin Spear reloading...</yellow>"

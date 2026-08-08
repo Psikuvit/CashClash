@@ -585,7 +585,7 @@ public class InteractListener implements Listener {
                     return true;
                 }
                 event.setCancelled(true);
-                mythicManager.getHandler(ElectricEelHandler.class).useElectricEelTeleport(player);
+                mythicManager.getHandler(ElectricEelHandler.class).useElectricEelDash(player);
                 return true;
             }
             case GOBLIN_SPEAR -> {

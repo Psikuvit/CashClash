@@ -137,12 +137,29 @@ public class ItemsConfig {
         return config.getInt("mythic-items.electric-eel.chain-damage.radius", 5);
     }
 
-    public int getEelTeleportCooldown() {
-        return config.getInt("mythic-items.electric-eel.teleport.cooldown-seconds", 15);
+    // Electric Eel - 3-charge zap dash (replaces the old single-cooldown teleport)
+    public int getEelDashRechargeSeconds() {
+        return config.getInt("mythic-items.electric-eel.dash.recharge-seconds", 15);
     }
 
-    public double getEelTeleportDistance() {
-        return config.getDouble("mythic-items.electric-eel.teleport.distance", 4.0);
+    public double getEelDashDistance() {
+        return config.getDouble("mythic-items.electric-eel.dash.distance", 4.0);
+    }
+
+    public double getEelDashDamage() {
+        return config.getDouble("mythic-items.electric-eel.dash.damage", 3.0);
+    }
+
+    public double getEelDashHitRadius() {
+        return config.getDouble("mythic-items.electric-eel.dash.hit-radius", 1.2);
+    }
+
+    public int getEelDashSlowPercent() {
+        return config.getInt("mythic-items.electric-eel.dash.slow-percent", 12);
+    }
+
+    public int getEelDashSlowDuration() {
+        return config.getInt("mythic-items.electric-eel.dash.slow-duration-seconds", 2) * 20;
     }
 
     // Goblin Spear

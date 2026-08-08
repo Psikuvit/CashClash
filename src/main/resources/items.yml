@@ -45,9 +45,15 @@ mythic-items:
       cooldown-seconds: 1
       damage: 1.0
       radius: 5
-    teleport:
-      cooldown-seconds: 15
+    # 3 independent dash charges (each recharges on its own timer) - replaces the old
+    # single-cooldown teleport. Damages + slows every enemy caught along the dash path.
+    dash:
+      recharge-seconds: 15
       distance: 4.0
+      damage: 3.0
+      hit-radius: 1.2
+      slow-percent: 12
+      slow-duration-seconds: 2
 
   # Goblin Spear
   goblin-spear:
