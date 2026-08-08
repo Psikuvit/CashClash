@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.manager.items.mythic;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
@@ -197,23 +198,28 @@ public class BloodwrenchHandler extends MythicItemHandler {
                     targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
             }
 
-            // Burst damage (30% boost for legendary crossbow)
-            double boostedDamage = damage * 1.3;
-            target.damage(boostedDamage, shooter);
-            Messages.debug(shooter, "BLOODWRENCH: Blood sphere damaged " + target.getName() + " for " + boostedDamage + " (base: " + damage + ")");
+            target.damage(damage, shooter);
+            Messages.debug(shooter, "BLOODWRENCH: Blood sphere damaged " + target.getName() + " for " + damage);
         }
 
         // Lingering sphere effect
         final double sphereRadius = radius;
+        int healNegationDuration = cfg.getBloodwrenchHealNegationDuration();
         BukkitTask sphereTask = SchedulerUtils.runTaskTimer(() -> {
             // Particle effect
             ParticleUtils.bloodSphereLingering(hitLocation, sphereRadius);
 
-            // Apply slowness to enemies inside
+            // Apply slowness + heal negation to enemies inside (everyone inside the sphere,
+            // not just the shooter's opponents - the sphere doesn't distinguish team once it
+            // has landed, matching its "negates healing while inside" description)
             for (Entity entity : world.getNearbyEntities(hitLocation, sphereRadius, sphereRadius, sphereRadius)) {
                 if (!(entity instanceof Player target)) continue;
-                if (target.equals(shooter)) continue;
 
+                // Refreshed every tick while inside - naturally decays `healNegationDuration`
+                // seconds after the target leaves the sphere since nothing refreshes it anymore.
+                CustomItemManager.getInstance().applyHealingReduction(target.getUniqueId(), 0.0, healNegationDuration);
+
+                if (target.equals(shooter)) continue;
                 if (session != null) {
                     Team targetTeam = session.getPlayerTeam(target);
                     if (targetTeam != null && shooterTeam != null &&
@@ -254,6 +260,8 @@ public class BloodwrenchHandler extends MythicItemHandler {
         int durationTicks = cfg.getBloodwrenchVortexDuration();
         double radius = cfg.getBloodwrenchVortexRadius();
         double damagePerTick = cfg.getBloodwrenchVortexDamage();
+        int healNegationDuration = cfg.getBloodwrenchHealNegationDuration();
+        double selfHealPercent = cfg.getBloodwrenchVortexSelfHealPercent() / 100.0;
 
         // Vortex effect with spiraling particles
         BukkitTask vortexTask = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
@@ -266,8 +274,17 @@ public class BloodwrenchHandler extends MythicItemHandler {
                 // Spiraling red particles using helper method
                 ParticleUtils.bloodVortexSpiral(hitLocation, radius, tick);
 
+                // Heal-negation zone: refreshed every tick while inside, regardless of team -
+                // decays naturally `healNegationDuration` seconds after a player leaves.
+                for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius + 2, radius)) {
+                    if (entity instanceof Player inside) {
+                        CustomItemManager.getInstance().applyHealingReduction(inside.getUniqueId(), 0.0, healNegationDuration);
+                    }
+                }
+
                 // Apply effects every 10 ticks (0.5 seconds)
                 if (tick % 10 == 0) {
+                double totalDamageDealt = 0.0;
                 for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius + 2, radius)) {
                     if (!(entity instanceof Player target)) continue;
                     if (target.equals(shooter)) continue;
@@ -278,11 +295,17 @@ public class BloodwrenchHandler extends MythicItemHandler {
                             targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
                     }
 
-                    // Levitation and damage while inside vortex (30% boost for legendary crossbow)
+                    // Levitation and damage while inside vortex
                     CashClashPlayer.applyEffect(target, PotionEffectType.LEVITATION, 30, cfg.getBloodwrenchVortexLevitationLevel() - 1);
-                    double boostedDamage = damagePerTick * 1.3;
-                    target.damage(boostedDamage, shooter);
-                    Messages.debug(shooter, "BLOODWRENCH: Vortex affecting " + target.getName() + " for " + boostedDamage + " damage");
+                    target.damage(damagePerTick, shooter);
+                    totalDamageDealt += damagePerTick;
+                    Messages.debug(shooter, "BLOODWRENCH: Vortex affecting " + target.getName() + " for " + damagePerTick + " damage");
+                }
+
+                // Wielder heals for a percentage of the damage the vortex dealt this batch -
+                // reduced by their own active healing-reduction debuff (e.g. Soul Katana).
+                if (totalDamageDealt > 0) {
+                    CashClashPlayer.heal(shooter, totalDamageDealt * selfHealPercent);
                 }
                 }
             }

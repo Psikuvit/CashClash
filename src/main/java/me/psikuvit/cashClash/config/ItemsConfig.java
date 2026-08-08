@@ -205,7 +205,7 @@ public class ItemsConfig {
     }
 
     public double getBloodwrenchSphereRadius() {
-        return config.getDouble("mythic-items.bloodwrench.rapid.sphere-radius", 3.0);
+        return config.getDouble("mythic-items.bloodwrench.rapid.sphere-radius", 2.0);
     }
 
     public int getBloodwrenchSphereDuration() {
@@ -235,6 +235,15 @@ public class ItemsConfig {
 
     public int getBloodwrenchVortexLevitationLevel() {
         return config.getInt("mythic-items.bloodwrench.supercharge.vortex-levitation-level", 3);
+    }
+
+    public int getBloodwrenchVortexSelfHealPercent() {
+        return config.getInt("mythic-items.bloodwrench.supercharge.self-heal-percent", 10);
+    }
+
+    /** Shared by both the Rapid-Fire sphere and the Supercharge vortex heal-negation zones. */
+    public int getBloodwrenchHealNegationDuration() {
+        return config.getInt("mythic-items.bloodwrench.heal-negation-duration-seconds", 2);
     }
 
     // Warden Gloves
