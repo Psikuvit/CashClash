@@ -392,6 +392,12 @@ public class DamageListener implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
         if (event.getCause() != EntityDamageEvent.DamageCause.FALL) return;
 
+        // Wind Bow: always-on fall damage negation while held, no cooldown/charge gate.
+        if (PDCDetection.getMythic(player.getInventory().getItemInMainHand()) == MythicItem.WIND_BOW) {
+            event.setCancelled(true);
+            return;
+        }
+
         armorManager.getHandler(DragonSetHandler.class).onDragonOutrageLanding(event, player);
         armorManager.getHandler(TectonicCapHandler.class).onTectonicCapFall(event, player);
     }
