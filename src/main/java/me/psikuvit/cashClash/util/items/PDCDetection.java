@@ -294,6 +294,32 @@ public final class PDCDetection {
     }
 
     /**
+     * Read a PDC double tag from an ItemStack.
+     * @return tag value or null if not present
+     */
+    public static Double readDoubleTag(ItemStack stack, NamespacedKey key) {
+        if (stack == null || stack.getType().isAir()) return null;
+        if (!stack.hasItemMeta()) return null;
+
+        ItemMeta meta = stack.getItemMeta();
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        return pdc.get(key, PersistentDataType.DOUBLE);
+    }
+
+    /**
+     * Read a PDC long tag from an ItemStack.
+     * @return tag value or null if not present
+     */
+    public static Long readLongTag(ItemStack stack, NamespacedKey key) {
+        if (stack == null || stack.getType().isAir()) return null;
+        if (!stack.hasItemMeta()) return null;
+
+        ItemMeta meta = stack.getItemMeta();
+        PersistentDataContainer pdc = meta.getPersistentDataContainer();
+        return pdc.get(key, PersistentDataType.LONG);
+    }
+
+    /**
      * Check if an ItemStack has a specific PDC key.
      * @return true if the key exists
      */
