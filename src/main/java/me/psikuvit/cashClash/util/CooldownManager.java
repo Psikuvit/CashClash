@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.util;
 
+import me.psikuvit.cashClash.manager.Shutdownable;
+
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Supports player-based cooldowns with named abilities, and optional callbacks.
  * Thread-safe implementation using ConcurrentHashMap.
  */
-public class CooldownManager {
+public class CooldownManager implements Shutdownable {
 
     private static CooldownManager instance;
 
@@ -299,7 +301,8 @@ public class CooldownManager {
     /**
      * Clear all cooldowns and timestamps (full reset).
      */
-    public void clearAll() {
+    @Override
+    public void shutdown() {
         playerCooldowns.clear();
         playerTimestamps.clear();
     }

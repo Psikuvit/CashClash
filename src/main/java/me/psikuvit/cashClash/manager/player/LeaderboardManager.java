@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager.player;
 
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.scheduler.BukkitTask;
@@ -15,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Computes leaderboards on an async worker so game logic is never slowed down.
  * The cached rankings are refreshed periodically and read synchronously on demand.
  */
-public class LeaderboardManager {
+public class LeaderboardManager implements Shutdownable {
 
     private static LeaderboardManager instance;
 
@@ -61,7 +62,8 @@ public class LeaderboardManager {
         }
     }
 
-    public void stop() {
+    @Override
+    public void shutdown() {
         if (task != null) {
             task.cancel();
             task = null;

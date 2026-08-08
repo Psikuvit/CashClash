@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.KillConfirmGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.util.Messages;
 
 import java.util.EnumMap;
@@ -20,7 +21,7 @@ import java.util.function.Function;
  * construction is a registry ({@link GamemodeType} -> factory function) rather than a switch, so
  * adding a gamemode is one registration line here instead of a switch case that's easy to forget.
  */
-public class GamemodeManager {
+public class GamemodeManager implements Shutdownable {
 
     private static GamemodeManager instance;
     private final Map<UUID, Gamemode> sessionGamemodes = new HashMap<>();

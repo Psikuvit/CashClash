@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.manager.lobby;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
@@ -27,7 +28,7 @@ import java.util.logging.Level;
  * Manages persistent mannequin NPCs that are saved/loaded with the server.
  * Mannequins are stored in mannequins.yml and respawned on server start.
  */
-public class MannequinManager {
+public class MannequinManager implements Shutdownable {
 
     private static MannequinManager instance;
 

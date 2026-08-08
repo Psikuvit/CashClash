@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager.player;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.scoreboard.ScoreboardProvider;
 import me.psikuvit.cashClash.scoreboard.context.ContextType;
@@ -29,7 +30,7 @@ import java.util.UUID;
  * Automatically switches between contexts based on player state (lobby or game).
  * Uses ScoreboardProvider to auto-detect gamemode and context.
  */
-public class ScoreboardManager {
+public class ScoreboardManager implements Shutdownable {
 
     private static ScoreboardManager instance;
 

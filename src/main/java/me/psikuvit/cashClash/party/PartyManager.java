@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.party;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -20,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Manages all parties and party invitations.
  */
-public class PartyManager {
+public class PartyManager implements Shutdownable {
 
     private static PartyManager instance;
 

@@ -23,6 +23,7 @@ import me.psikuvit.cashClash.listener.TransferInputListener;
 import me.psikuvit.cashClash.listener.lobby.ArenaNPCListener;
 import me.psikuvit.cashClash.listener.lobby.AfkListener;
 import me.psikuvit.cashClash.listener.lobby.LobbyListener;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
@@ -39,6 +40,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.sql.SQLException;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.logging.Level;
 
 public final class CashClashPlugin extends JavaPlugin {
@@ -116,16 +119,26 @@ public final class CashClashPlugin extends JavaPlugin {
                 afkTask = null;
             }
         });
-        shutdownStep("stopping LeaderboardManager", null, () -> LeaderboardManager.getInstance().stop());
-        shutdownStep("shutting down GameManager", "Game sessions terminated", () -> GameManager.getInstance().shutdown());
-        shutdownStep("shutting down RejoinManager", "Rejoin manager shut down", () -> RejoinManager.getInstance().shutdown());
-        shutdownStep("shutting down GamemodeManager", "Gamemode manager shut down", () -> GamemodeManager.getInstance().shutdown());
-        shutdownStep("shutting down ScoreboardManager", "Scoreboards cleared", () -> ScoreboardManager.getInstance().shutdown());
-        shutdownStep("shutting down PlayerDataManager", "Player data saved", () -> PlayerDataManager.getInstance().shutdown());
-        shutdownStep("clearing cooldowns", null, () -> CooldownManager.getInstance().clearAll());
-        shutdownStep("shutting down MannequinManager", "Mannequins removed", () -> MannequinManager.getInstance().shutdown());
-        shutdownStep("shutting down PartyManager", "Party system shut down", () -> PartyManager.getInstance().shutdown());
-        shutdownStep("shutting down ChatManager", "Chat manager shut down", () -> ChatManager.getInstance().shutdown());
+
+        // Order matters here (game sessions torn down before the systems they reference,
+        // player data saved last) - a LinkedHashSet keeps that order instead of leaving it
+        // to hash iteration.
+        Set<Shutdownable> managers = new LinkedHashSet<>();
+        managers.add(LeaderboardManager.getInstance());
+        managers.add(GameManager.getInstance());
+        managers.add(RejoinManager.getInstance());
+        managers.add(GamemodeManager.getInstance());
+        managers.add(ScoreboardManager.getInstance());
+        managers.add(CooldownManager.getInstance());
+        managers.add(MannequinManager.getInstance());
+        managers.add(PartyManager.getInstance());
+        managers.add(ChatManager.getInstance());
+        managers.add(PlayerDataManager.getInstance());
+
+        for (Shutdownable manager : managers) {
+            String name = manager.getClass().getSimpleName();
+            shutdownStep("shutting down " + name, name + " shut down", manager::shutdown);
+        }
 
         getLogger().info("Cash Clash has been disabled!");
     }

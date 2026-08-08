@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.kit.KitService;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
@@ -26,7 +27,7 @@ import java.util.UUID;
  * Manages player rejoin data for disconnected players.
  * Allows players to rejoin their game session if they reconnect within the timeout period.
  */
-public class RejoinManager {
+public class RejoinManager implements Shutdownable {
 
     private static RejoinManager instance;
 

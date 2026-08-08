@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager.player;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.storage.DatabaseProvider;
 import me.psikuvit.cashClash.storage.MySQLProvider;
 import me.psikuvit.cashClash.storage.PlayerData;
@@ -21,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Singleton manager responsible for caching player data and delegating persistence
  * to a configured DatabaseProvider.
  */
-public class PlayerDataManager {
+public class PlayerDataManager implements Shutdownable {
 
     private static PlayerDataManager instance;
 

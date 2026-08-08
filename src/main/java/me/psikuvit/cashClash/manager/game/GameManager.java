@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.entity.Player;
 
@@ -12,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Manages all active game sessions
  */
-public class GameManager {
+public class GameManager implements Shutdownable {
 
     private static GameManager instance;
     private final Map<UUID, GameSession> activeSessions;

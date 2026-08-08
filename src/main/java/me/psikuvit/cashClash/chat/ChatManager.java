@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.chat;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.party.Party;
 import me.psikuvit.cashClash.party.PartyManager;
@@ -16,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Manages player chat channels and message routing.
  */
-public class ChatManager {
+public class ChatManager implements Shutdownable {
 
     private static ChatManager instance;
 
