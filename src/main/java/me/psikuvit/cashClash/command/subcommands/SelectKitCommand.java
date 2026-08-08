@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.kit.Kit;
+import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -92,9 +93,9 @@ public class SelectKitCommand extends AbstractArgCommand {
 
         if (playerData.hasKitLayout(kit.name())) {
             Map<Integer, String> layout = playerData.getKitLayout(kit.name());
-            kit.applyWithLayout(target, layout, currentRound, shieldsEnabled);
+            KitService.applyWithLayout(kit, target, layout, currentRound, shieldsEnabled);
         } else {
-            kit.apply(target, currentRound, shieldsEnabled);
+            KitService.apply(kit, target, currentRound, shieldsEnabled);
         }
 
         String display = kit.getDisplayName();

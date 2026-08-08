@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager.lobby;
 
 import me.psikuvit.cashClash.kit.Kit;
+import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.util.Messages;
@@ -58,7 +59,7 @@ public class LayoutManager {
         LobbyManager.getInstance().clearLobbyItems(player);
 
         // Apply kit items (without armor for layout)
-        kit.applyForLayout(player);
+        KitService.applyForLayout(kit, player);
 
         // Track editing state
         editingKit.put(uuid, kit);

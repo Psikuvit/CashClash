@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
@@ -281,7 +282,7 @@ public class RejoinManager {
         } else {
             // Apply kit if not restoring inventory
             if (data.kit() != null) {
-                data.kit().apply(player);
+                KitService.apply(data.kit(), player);
             }
         }
 

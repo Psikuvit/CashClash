@@ -2,7 +2,7 @@ package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.kit.Kit;
+import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
@@ -64,7 +64,7 @@ public class ShieldCommand extends AbstractArgCommand {
         }
 
         session.setShieldOverride(target.getUniqueId(), give);
-        Kit.setShield(target, give);
+        KitService.setShield(target, give);
 
         String state = give ? "on" : "off";
         Messages.send(target, "shield.success", "state", state);

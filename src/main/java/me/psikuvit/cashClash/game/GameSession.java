@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.kit.Kit;
+import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -526,13 +527,13 @@ public class GameSession {
         if (currentRound == 1) {
             applyKitWithLayout(p, ccp.getUuid(), kitToApply);
         } else {
-            kitToApply.apply(p, currentRound, shieldsEnabled);
+            KitService.apply(kitToApply, p, currentRound, shieldsEnabled);
         }
 
         // Admin shield override (testing) takes precedence over the round pattern
         Boolean override = shieldOverrides.get(p.getUniqueId());
         if (override != null) {
-            Kit.setShield(p, override);
+            KitService.setShield(p, override);
         }
     }
 
@@ -543,9 +544,9 @@ public class GameSession {
         PlayerData playerData = PlayerDataManager.getInstance().getData(uuid);
         if (playerData.hasKitLayout(kit.name())) {
             Map<Integer, String> layout = playerData.getKitLayout(kit.name());
-            kit.applyWithLayout(p, layout, currentRound, shieldsEnabled);
+            KitService.applyWithLayout(kit, p, layout, currentRound, shieldsEnabled);
         } else {
-            kit.apply(p, currentRound, shieldsEnabled);
+            KitService.apply(kit, p, currentRound, shieldsEnabled);
         }
     }
 
