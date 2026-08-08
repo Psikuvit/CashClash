@@ -25,11 +25,8 @@ import me.psikuvit.cashClash.manager.player.RewardManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.player.Investment;
-import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.sequence.SequenceManager;
 import me.psikuvit.cashClash.sequence.Sequences;
-import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
@@ -166,6 +163,10 @@ public class GameSession {
 
     public CashClashPlayer getCashClashPlayer(UUID uuid) {
         return players.get(uuid);
+    }
+
+    public Collection<CashClashPlayer> getCashClashPlayers() {
+        return players.values();
     }
 
     public RoundData getCurrentRoundData() {
@@ -735,65 +736,6 @@ public class GameSession {
     }
 
     /**
-     * Resolves all player investments at end of round.
-     * Awards bonus, breaks even, or applies penalty based on deaths this round.
-     * Called at end of each combat phase, not at game end.
-     */
-    public void resolveRoundInvestments() {
-        for (CashClashPlayer ccp : players.values()) {
-            Investment investment = ccp.getCurrentInvestment();
-            if (investment == null) continue;
-
-            Player p = Bukkit.getPlayer(ccp.getUuid());
-            long returnAmount = investment.calculateReturn();
-            String typeName = investment.getType().name().replace("_", " ");
-
-            if (investment.isProfitable()) {
-                // 0-1 deaths: Bonus
-                ccp.addCoins(returnAmount);
-                if (p != null && p.isOnline()) {
-                    Messages.send(p, "round.investment-success");
-                    Messages.send(p, "round.investment-success-detail",
-                            "type_name", typeName,
-                            "amount", String.format("%,d", returnAmount));
-                    Messages.send(p, "round.investment-success-deaths",
-                            "deaths", String.valueOf(investment.getDeaths()));
-                    SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-                }
-            } else if (investment.isBreakEven()) {
-                // 2 deaths: Break even
-                ccp.addCoins(returnAmount);
-                if (p != null && p.isOnline()) {
-                    Messages.send(p, "round.investment-breakeven");
-                    Messages.send(p, "round.investment-breakeven-detail",
-                            "type_name", typeName,
-                            "amount", String.format("%,d", returnAmount));
-                    Messages.send(p, "round.investment-breakeven-deaths",
-                            "deaths", String.valueOf(investment.getDeaths()));
-                    SoundUtils.play(p, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
-                }
-            } else {
-                // 3+ deaths: Loss
-                long penalty = investment.getType().getNegativeReturn();
-                ccp.deductCoins(penalty);
-                if (p != null && p.isOnline()) {
-                    Messages.send(p, "round.investment-failed");
-                    Messages.send(p, "round.investment-failed-detail",
-                            "type_name", typeName,
-                            "amount", String.format("%,d", penalty));
-                    Messages.send(p, "round.investment-failed-deaths",
-                            "deaths", String.valueOf(investment.getDeaths()));
-                    SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
-                }
-            }
-
-            // Clear the investment after resolution
-            ccp.setCurrentInvestment(null);
-            ccp.setInvestedCoins(0);
-        }
-    }
-
-    /**
      * Remove items and potion effects granted by kits from the player.
      */
     private void clearPlayerKit(Player player) {
@@ -1136,7 +1078,7 @@ public class GameSession {
         }
 
         // Restore player state from rejoin data
-        restorePlayerState(player, existingCcp, data);
+        RejoinManager.getInstance().restorePlayerState(player, existingCcp, data);
 
         // Teleport to spawn location
         Location spawn = getSpawnForPlayer(uuid);
@@ -1159,68 +1101,6 @@ public class GameSession {
                 "lives", String.valueOf(existingCcp.getLives()));
 
         return true;
-    }
-
-    /**
-     * Restore a player's state from rejoin data.
-     */
-    private void restorePlayerState(Player player, CashClashPlayer ccp, RejoinData data) {
-        // Restore kit
-        if (data.kit() != null) {
-            ccp.setCurrentKit(data.kit());
-        }
-
-        // Restore economy
-        if (ConfigManager.getInstance().isRejoinRestoreBalance()) {
-            ccp.setCoins(data.coins());
-        }
-
-        // Restore lives and stats
-        ccp.setLives(data.lives());
-
-        // Restore inventory
-        if (ConfigManager.getInstance().isRejoinRestoreInventory()) {
-            player.getInventory().clear();
-
-            if (data.inventoryContents() != null) {
-                player.getInventory().setContents(data.inventoryContents());
-            }
-            if (data.armorContents() != null) {
-                player.getInventory().setArmorContents(data.armorContents());
-            }
-            if (data.offhandItem() != null) {
-                player.getInventory().setItemInOffHand(data.offhandItem());
-            }
-        } else {
-            // Apply kit if not restoring inventory
-            if (data.kit() != null) {
-                data.kit().apply(player);
-            }
-        }
-
-        // Restore purchase history
-        if (data.purchaseHistory() != null) {
-            for (PurchaseRecord record : data.purchaseHistory()) {
-                ccp.addPurchase(record);
-            }
-        }
-
-        // Restore owned enchants
-        if (data.ownedEnchants() != null) {
-            for (Map.Entry<EnchantEntry, Integer> entry : data.ownedEnchants().entrySet()) {
-                ccp.setOwnedEnchantLevel(entry.getKey(), entry.getValue());
-            }
-        }
-
-        // Reset health and food using centralized health system
-        ccp.resetHealthModifier();
-        ccp.setHealth(20.0);
-        player.setFoodLevel(20);
-        player.setSaturation(20.0f);
-        player.setGameMode(GameMode.SURVIVAL);
-
-        // Clear plugin-applied potion effects (selective; vanilla effects preserved)
-        ccp.clearPluginEffects();
     }
 
     /**

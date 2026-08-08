@@ -4,8 +4,13 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.player.Investment;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
+import org.bukkit.Bukkit;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
 
 import java.util.UUID;
  
@@ -82,5 +87,64 @@ public class EconomyManager {
 
     public static void giveRoundStartMoney(GameSession session, CashClashPlayer player) {
         // Obsolete: Money is now distributed at the end of the round via distributeRoundMoney
+    }
+
+    /**
+     * Resolves all player investments at end of round.
+     * Awards bonus, breaks even, or applies penalty based on deaths this round.
+     * Called at end of each combat phase, not at game end.
+     */
+    public static void resolveRoundInvestments(GameSession session) {
+        for (CashClashPlayer ccp : session.getCashClashPlayers()) {
+            Investment investment = ccp.getCurrentInvestment();
+            if (investment == null) continue;
+
+            Player p = Bukkit.getPlayer(ccp.getUuid());
+            long returnAmount = investment.calculateReturn();
+            String typeName = investment.getType().name().replace("_", " ");
+
+            if (investment.isProfitable()) {
+                // 0-1 deaths: Bonus
+                ccp.addCoins(returnAmount);
+                if (p != null && p.isOnline()) {
+                    Messages.send(p, "round.investment-success");
+                    Messages.send(p, "round.investment-success-detail",
+                            "type_name", typeName,
+                            "amount", String.format("%,d", returnAmount));
+                    Messages.send(p, "round.investment-success-deaths",
+                            "deaths", String.valueOf(investment.getDeaths()));
+                    SoundUtils.play(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                }
+            } else if (investment.isBreakEven()) {
+                // 2 deaths: Break even
+                ccp.addCoins(returnAmount);
+                if (p != null && p.isOnline()) {
+                    Messages.send(p, "round.investment-breakeven");
+                    Messages.send(p, "round.investment-breakeven-detail",
+                            "type_name", typeName,
+                            "amount", String.format("%,d", returnAmount));
+                    Messages.send(p, "round.investment-breakeven-deaths",
+                            "deaths", String.valueOf(investment.getDeaths()));
+                    SoundUtils.play(p, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+                }
+            } else {
+                // 3+ deaths: Loss
+                long penalty = investment.getType().getNegativeReturn();
+                ccp.deductCoins(penalty);
+                if (p != null && p.isOnline()) {
+                    Messages.send(p, "round.investment-failed");
+                    Messages.send(p, "round.investment-failed-detail",
+                            "type_name", typeName,
+                            "amount", String.format("%,d", penalty));
+                    Messages.send(p, "round.investment-failed-deaths",
+                            "deaths", String.valueOf(investment.getDeaths()));
+                    SoundUtils.play(p, Sound.ENTITY_VILLAGER_NO, 1.0f, 0.8f);
+                }
+            }
+
+            // Clear the investment after resolution
+            ccp.setCurrentInvestment(null);
+            ccp.setInvestedCoins(0);
+        }
     }
 }

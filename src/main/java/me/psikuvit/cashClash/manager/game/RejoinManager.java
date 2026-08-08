@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
@@ -245,6 +246,68 @@ public class RejoinManager {
         }
 
         return restored;
+    }
+
+    /**
+     * Restore a player's state from rejoin data.
+     */
+    public void restorePlayerState(Player player, CashClashPlayer ccp, RejoinData data) {
+        // Restore kit
+        if (data.kit() != null) {
+            ccp.setCurrentKit(data.kit());
+        }
+
+        // Restore economy
+        if (ConfigManager.getInstance().isRejoinRestoreBalance()) {
+            ccp.setCoins(data.coins());
+        }
+
+        // Restore lives and stats
+        ccp.setLives(data.lives());
+
+        // Restore inventory
+        if (ConfigManager.getInstance().isRejoinRestoreInventory()) {
+            player.getInventory().clear();
+
+            if (data.inventoryContents() != null) {
+                player.getInventory().setContents(data.inventoryContents());
+            }
+            if (data.armorContents() != null) {
+                player.getInventory().setArmorContents(data.armorContents());
+            }
+            if (data.offhandItem() != null) {
+                player.getInventory().setItemInOffHand(data.offhandItem());
+            }
+        } else {
+            // Apply kit if not restoring inventory
+            if (data.kit() != null) {
+                data.kit().apply(player);
+            }
+        }
+
+        // Restore purchase history
+        if (data.purchaseHistory() != null) {
+            for (PurchaseRecord record : data.purchaseHistory()) {
+                ccp.addPurchase(record);
+            }
+        }
+
+        // Restore owned enchants
+        if (data.ownedEnchants() != null) {
+            for (Map.Entry<EnchantEntry, Integer> entry : data.ownedEnchants().entrySet()) {
+                ccp.setOwnedEnchantLevel(entry.getKey(), entry.getValue());
+            }
+        }
+
+        // Reset health and food using centralized health system
+        ccp.resetHealthModifier();
+        ccp.setHealth(20.0);
+        player.setFoodLevel(20);
+        player.setSaturation(20.0f);
+        player.setGameMode(GameMode.SURVIVAL);
+
+        // Clear plugin-applied potion effects (selective; vanilla effects preserved)
+        ccp.clearPluginEffects();
     }
 
     /**

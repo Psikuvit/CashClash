@@ -370,7 +370,7 @@ public class RoundManager {
             bonusManager.awardEndRoundBonuses();
         }
 
-        session.resolveRoundInvestments();
+        EconomyManager.resolveRoundInvestments(session);
         EconomyManager.distributeRoundMoney(session);
 
         // Hold the win/loss result on screen (shopping-phase-parity restrictions + damage
