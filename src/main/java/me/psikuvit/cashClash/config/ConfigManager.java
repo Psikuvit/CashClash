@@ -233,6 +233,83 @@ public class ConfigManager {
         return config.getDouble("player.max-health-cap", 40.0);
     }
 
+    // ==================== GAMEMODE SETTINGS ====================
+
+    // Capture the Flag
+    public int getCTFCapturesToWin() {
+        return config.getInt("gamemodes.capture-the-flag.normal-captures-to-win", 2);
+    }
+
+    public long getCTFCaptureBonusCoins() {
+        return config.getLong("gamemodes.capture-the-flag.capture-bonus-coins", 15000);
+    }
+
+    public long getCTFCaptureBonusTimerMs() {
+        return config.getLong("gamemodes.capture-the-flag.capture-bonus-timer-ms", 45000);
+    }
+
+    public long getCTFPlateActivationTimeMs() {
+        return config.getLong("gamemodes.capture-the-flag.plate-activation-time-ms", 3000);
+    }
+
+    // Kill Confirm
+    public int getKCScoreToWin() {
+        return config.getInt("gamemodes.kill-confirm.score-to-win", 16);
+    }
+
+    public int getKCTripleKillStreak() {
+        return config.getInt("gamemodes.kill-confirm.triple-kill-streak", 3);
+    }
+
+    public long getKCZoneActivationDelayMs() {
+        return config.getLong("gamemodes.kill-confirm.zone-activation-delay-ms", 1000);
+    }
+
+    public long getKCZoneLifespanMs() {
+        return config.getLong("gamemodes.kill-confirm.zone-lifespan-ms", 9000);
+    }
+
+    public long getKCBonusZoneLifespanMs() {
+        return config.getLong("gamemodes.kill-confirm.bonus-zone-lifespan-ms", 13000);
+    }
+
+    public long getKCCaptureDurationMs() {
+        return config.getLong("gamemodes.kill-confirm.capture-duration-ms", 4000);
+    }
+
+    public long getKCFinalStandCaptureDurationMs() {
+        return config.getLong("gamemodes.kill-confirm.final-stand-capture-duration-ms", 2000);
+    }
+
+    public long getKCMoneyBonus() {
+        return config.getLong("gamemodes.kill-confirm.money-bonus", 15000);
+    }
+
+    public long getKCHeartBonusDurationMs() {
+        return config.getLong("gamemodes.kill-confirm.heart-bonus-duration-ms", 45000);
+    }
+
+    // Protect the President
+    public int getPTPSelectionTimeSeconds() {
+        return config.getInt("gamemodes.protect-the-president.selection-time-seconds", 15);
+    }
+
+    public int getPTPKillBonusThreshold() {
+        return config.getInt("gamemodes.protect-the-president.kill-bonus-threshold", 2);
+    }
+
+    public long getPTPKillBonusAmount() {
+        return config.getLong("gamemodes.protect-the-president.kill-bonus-amount", 15000);
+    }
+
+    public long getPTPHeartDurationMs() {
+        return config.getLong("gamemodes.protect-the-president.heart-duration-ms", 45000);
+    }
+
+    public int getPTPCapturesToWin() {
+        return config.getInt("gamemodes.protect-the-president.captures-to-win", 2);
+    }
+
     // ==================== MESSAGES ====================
 
     public String getPrefix() {

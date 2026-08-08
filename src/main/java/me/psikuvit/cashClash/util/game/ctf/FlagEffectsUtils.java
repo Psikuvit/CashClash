@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.util.game.ctf;
 import me.psikuvit.cashClash.gamemode.impl.FlagState;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -34,7 +35,7 @@ public class FlagEffectsUtils {
      * @param flagStatesSupplier Supplier for current flag states
      * @return The BukkitTask managing the glow effect
      */
-    public static BukkitTask startCarrierGlowEffectTask(Supplier<Map<Integer, FlagState>> flagStatesSupplier) {
+    public static BukkitTask startCarrierGlowEffectTask(Supplier<Map<TeamColor, FlagState>> flagStatesSupplier) {
         return SchedulerUtils.runTaskTimer(() -> applyGlowToActiveCarriers(flagStatesSupplier.get()), 0, GLOW_INTERVAL_TICKS);
     }
 
@@ -43,7 +44,7 @@ public class FlagEffectsUtils {
      *
      * @param flagStates Map of flag states
      */
-    public static void applyGlowToActiveCarriers(Map<Integer, FlagState> flagStates) {
+    public static void applyGlowToActiveCarriers(Map<TeamColor, FlagState> flagStates) {
         for (FlagState flag : flagStates.values()) {
             applyGlowIfCarrying(flag);
         }

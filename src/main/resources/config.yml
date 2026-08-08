@@ -147,13 +147,33 @@ gamemodes:
   capture-the-flag:
     # Time required to stand on capture plate (milliseconds)
     plate-activation-time-ms: 3000
-    # Win conditions
+    # Win condition (sudden death is decided by a capture-count comparison per cycle instead
+    # of a separate fixed threshold, so there's no distinct sudden-death win-condition value here)
     normal-captures-to-win: 2
-    sudden-death-captures-to-win: 4
     # Capture bonus (awarded at 45 seconds)
     capture-bonus-coins: 15000
     # Bonus timer (milliseconds)
     capture-bonus-timer-ms: 45000
+
+  # Kill Confirm settings
+  kill-confirm:
+    score-to-win: 16
+    triple-kill-streak: 3
+    zone-activation-delay-ms: 1000
+    zone-lifespan-ms: 9000
+    bonus-zone-lifespan-ms: 13000
+    capture-duration-ms: 4000
+    final-stand-capture-duration-ms: 2000
+    money-bonus: 15000
+    heart-bonus-duration-ms: 45000
+
+  # Protect the President settings
+  protect-the-president:
+    selection-time-seconds: 15
+    kill-bonus-threshold: 2
+    kill-bonus-amount: 15000
+    heart-duration-ms: 45000
+    captures-to-win: 2
 
 
 # ============================================

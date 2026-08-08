@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
 import me.psikuvit.cashClash.arena.TemplateWorld;
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
@@ -18,6 +19,7 @@ import me.psikuvit.cashClash.util.game.ctf.FlagBaseMechanicsUtils;
 import me.psikuvit.cashClash.util.game.ctf.FlagEffectsUtils;
 import me.psikuvit.cashClash.util.game.ctf.FlagPickupValidator;
 import me.psikuvit.cashClash.util.enums.RewardType;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -26,6 +28,7 @@ import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -38,18 +41,20 @@ import java.util.UUID;
  */
 public class CaptureTheFlagGamemode extends Gamemode {
 
-     private static final int WIN_CONDITION = 2;
-     private static final long CAPTURE_BONUS = 15000;
-     private static final long CAPTURE_TIMER_MS = 45 * 1000; // 45 seconds for bonus
-     private static final long FLAG_PICKUP_DURATION_MS = 3000; // 3 seconds to pick up flag
+     // Config-driven (config.yml: gamemodes.capture-the-flag) rather than hardcoded, so a server
+     // admin can retune win conditions/bonuses/timers without a rebuild.
+     private final int WIN_CONDITION;
+     private final long CAPTURE_BONUS;
+     private final long CAPTURE_TIMER_MS;
+     private final long FLAG_PICKUP_DURATION_MS;
 
-    private final Map<Integer, Integer> flagCaptures;
-    private final Map<Integer, Integer> suddenDeathCycleCaptures;
-    private final Map<Integer, FlagState> flagStates; // Red flag (team 1) and Blue flag (team 2)
-    private final Map<Integer, Location> flagBaseLocations;
-    private final Map<Integer, BukkitTask> flagReturnTasks;
-    private final Map<Integer, BukkitTask> flagReturnDisplayTasks;
-    private final Map<Integer, Long> flagReturnExpiry; // scheduled return time (ms) for dropped flags
+    private final Map<TeamColor, Integer> flagCaptures;
+    private final Map<TeamColor, Integer> suddenDeathCycleCaptures;
+    private final Map<TeamColor, FlagState> flagStates; // Red flag and Blue flag
+    private final Map<TeamColor, Location> flagBaseLocations;
+    private final Map<TeamColor, BukkitTask> flagReturnTasks;
+    private final Map<TeamColor, BukkitTask> flagReturnDisplayTasks;
+    private final Map<TeamColor, Long> flagReturnExpiry; // scheduled return time (ms) for dropped flags
     private final Map<UUID, Long> playerCircleTimestamps; // Track when each player entered the circle
     private final Map<UUID, Integer> playerNearestFlagTeam; // Track which flag team player is near
     private final Set<UUID> stalemateMsgShown; // Track players who've been told about stalemate in current state
@@ -65,14 +70,20 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public CaptureTheFlagGamemode(GameSession session) {
         super(session, GamemodeType.CAPTURE_THE_FLAG);
 
+        ConfigManager cfg = ConfigManager.getInstance();
+        this.WIN_CONDITION = cfg.getCTFCapturesToWin();
+        this.CAPTURE_BONUS = cfg.getCTFCaptureBonusCoins();
+        this.CAPTURE_TIMER_MS = cfg.getCTFCaptureBonusTimerMs();
+        this.FLAG_PICKUP_DURATION_MS = cfg.getCTFPlateActivationTimeMs();
+
         // Initialize all data structures
-        this.flagCaptures = new HashMap<>(2);
-        this.suddenDeathCycleCaptures = new HashMap<>(2);
-        this.flagStates = new HashMap<>(2);
-        this.flagBaseLocations = new HashMap<>(2);
-        this.flagReturnTasks = new HashMap<>(2);
-        this.flagReturnDisplayTasks = new HashMap<>(2);
-        this.flagReturnExpiry = new HashMap<>(2);
+        this.flagCaptures = new EnumMap<>(TeamColor.class);
+        this.suddenDeathCycleCaptures = new EnumMap<>(TeamColor.class);
+        this.flagStates = new EnumMap<>(TeamColor.class);
+        this.flagBaseLocations = new EnumMap<>(TeamColor.class);
+        this.flagReturnTasks = new EnumMap<>(TeamColor.class);
+        this.flagReturnDisplayTasks = new EnumMap<>(TeamColor.class);
+        this.flagReturnExpiry = new EnumMap<>(TeamColor.class);
         this.playerCircleTimestamps = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
         this.stalemateMsgShown = new HashSet<>();
@@ -85,12 +96,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
          this.suddenDeathWinningTeam = 0;
 
         // Pre-populate flag states and capture map
-        flagCaptures.put(1, 0);
-        flagCaptures.put(2, 0);
-        suddenDeathCycleCaptures.put(1, 0);
-        suddenDeathCycleCaptures.put(2, 0);
-        flagStates.put(1, FlagState.create());
-        flagStates.put(2, FlagState.create());
+        flagCaptures.put(TeamColor.RED, 0);
+        flagCaptures.put(TeamColor.BLUE, 0);
+        suddenDeathCycleCaptures.put(TeamColor.RED, 0);
+        suddenDeathCycleCaptures.put(TeamColor.BLUE, 0);
+        flagStates.put(TeamColor.RED, FlagState.create());
+        flagStates.put(TeamColor.BLUE, FlagState.create());
     }
 
     // ========= OVERRIDDEN METHODS =========
@@ -108,8 +119,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Messages.debug("[CTF] Combat phase started");
         if (suddenDeathManager.isInSuddenDeath()) {
             // Reset sudden death kill counters for this cycle
-            suddenDeathCycleCaptures.put(1, 0);
-            suddenDeathCycleCaptures.put(2, 0);
+            suddenDeathCycleCaptures.put(TeamColor.RED, 0);
+            suddenDeathCycleCaptures.put(TeamColor.BLUE, 0);
             Messages.debug("[CTF] Sudden death cycle started - capture counters reset");
         }
 
@@ -117,8 +128,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         initializeBanners();
 
         // Reset flag state each round
-        flagStates.put(1, flagStates.get(1).withoutHolder());
-        flagStates.put(2, flagStates.get(2).withoutHolder());
+        flagStates.put(TeamColor.RED, flagStates.get(TeamColor.RED).withoutHolder());
+        flagStates.put(TeamColor.BLUE, flagStates.get(TeamColor.BLUE).withoutHolder());
 
         // Clear circle tracking data
         playerCircleTimestamps.clear();
@@ -144,10 +155,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // Reset state for next round
         suddenDeathManager.resetForNewRound();
         finalStandManager.cancel();
-        flagCaptures.put(1, 0);
-        flagCaptures.put(2, 0);
-        suddenDeathCycleCaptures.put(1, 0);
-        suddenDeathCycleCaptures.put(2, 0);
+        flagCaptures.put(TeamColor.RED, 0);
+        flagCaptures.put(TeamColor.BLUE, 0);
+        suddenDeathCycleCaptures.put(TeamColor.RED, 0);
+        suddenDeathCycleCaptures.put(TeamColor.BLUE, 0);
         suddenDeathWinningTeam = 0;
         flagReturnTasks.values().forEach(this::cancelTask);
         flagReturnTasks.clear();
@@ -195,8 +206,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public boolean checkGameWinner() {
-        int captures1 = flagCaptures.get(1);
-        int captures2 = flagCaptures.get(2);
+        int captures1 = flagCaptures.get(TeamColor.RED);
+        int captures2 = flagCaptures.get(TeamColor.BLUE);
 
         if (suddenDeathWinningTeam > 0) {
             return true;
@@ -221,9 +232,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
             return suddenDeathWinningTeam;
         }
 
-        if ((!suddenDeathManager.isInSuddenDeath() || finalStandManager.isActive()) && flagCaptures.get(1) >= WIN_CONDITION) {
+        if ((!suddenDeathManager.isInSuddenDeath() || finalStandManager.isActive()) && flagCaptures.get(TeamColor.RED) >= WIN_CONDITION) {
             return 1;
-        } else if ((!suddenDeathManager.isInSuddenDeath() || finalStandManager.isActive()) && flagCaptures.get(2) >= WIN_CONDITION) {
+        } else if ((!suddenDeathManager.isInSuddenDeath() || finalStandManager.isActive()) && flagCaptures.get(TeamColor.BLUE) >= WIN_CONDITION) {
             return 2;
         }
         return 0;
@@ -298,21 +309,21 @@ public class CaptureTheFlagGamemode extends Gamemode {
          UUID playerUuid = player.getUniqueId();
          long now = System.currentTimeMillis();
 
-         FlagState flag = flagStates.get(enemyTeamNumber);
+         FlagState flag = flagStates.get(TeamColor.fromTeamNumber(enemyTeamNumber));
          if (flag == null) return;
          boolean pickedUpFromBase = isFlagAtBase(enemyTeamNumber, flag);
          cancelFlagReturnTask(enemyTeamNumber);
 
          FlagState updatedFlag = flag.withHolder(playerUuid, pickedUpFromBase ? now : 0L);
          if (enemyTeamNumber == 1) {
-             flagStates.put(1, updatedFlag);
+             flagStates.put(TeamColor.RED, updatedFlag);
              Messages.debug("[CTF] " + player.getName() + " picked up Team Red's flag");
              Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-stolen-red",
                      "player_name", player.getName());
 
              // Apply silenced ability if not in final stand
          } else {
-             flagStates.put(2, updatedFlag);
+             flagStates.put(TeamColor.BLUE, updatedFlag);
              Messages.debug("[CTF] " + player.getName() + " picked up Team Blue's flag");
              Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-stolen-blue",
                      "player_name", player.getName());
@@ -342,11 +353,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * Handle flag capture (returning to base)
      */
     public void flagCapture(Player player, int teamNumber) {
-        flagCaptures.merge(teamNumber, 1, Integer::sum);
+        TeamColor teamColor = TeamColor.fromTeamNumber(teamNumber);
+        flagCaptures.merge(teamColor, 1, Integer::sum);
         if (suddenDeathManager.isInSuddenDeath()) {
-            suddenDeathCycleCaptures.merge(teamNumber, 1, Integer::sum);
+            suddenDeathCycleCaptures.merge(teamColor, 1, Integer::sum);
         }
-        int captures = flagCaptures.get(teamNumber);
+        int captures = flagCaptures.get(teamColor);
         int targetCaptures = WIN_CONDITION;
 
         // Investor's Set: reward the capturing player's team on objective completion
@@ -363,7 +375,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         // ISSUE 1: Check if bonus timer has expired before awarding bonus
         long now = System.currentTimeMillis();
         int enemyTeamNumber = (teamNumber == 1) ? 2 : 1;
-        FlagState enemyFlag = flagStates.get(enemyTeamNumber);
+        FlagState enemyFlag = flagStates.get(TeamColor.fromTeamNumber(enemyTeamNumber));
         stopFlagActionBar(enemyFlag);
         ActionBarQueue.get().stopDisplay(player);
 
@@ -381,8 +393,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         // Check for 2-2 tie in sudden death to restart cycle
         if (suddenDeathManager.isInSuddenDeath()) {
-            int redC = suddenDeathCycleCaptures.getOrDefault(1, 0);
-            int blueC = suddenDeathCycleCaptures.getOrDefault(2, 0);
+            int redC = suddenDeathCycleCaptures.getOrDefault(TeamColor.RED, 0);
+            int blueC = suddenDeathCycleCaptures.getOrDefault(TeamColor.BLUE, 0);
             if (redC >= 2 && blueC >= 2) {
                 Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-restart-tie");
                 suddenDeathManager.restartCycle();
@@ -391,12 +403,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     public UUID getFlagHolder(int teamNumber) {
-        FlagState flag = flagStates.get(teamNumber);
+        FlagState flag = flagStates.get(TeamColor.fromTeamNumber(teamNumber));
         return flag != null ? flag.holder() : null;
     }
 
     public int getFlagCaptures(int teamNumber) {
-        return flagCaptures.get(teamNumber);
+        return flagCaptures.get(TeamColor.fromTeamNumber(teamNumber));
     }
 
     public boolean isSilenced(UUID playerUuid) {
@@ -405,8 +417,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
             return false;
         }
 
-        FlagState redFlag = flagStates.get(1);
-        FlagState blueFlag = flagStates.get(2);
+        FlagState redFlag = flagStates.get(TeamColor.RED);
+        FlagState blueFlag = flagStates.get(TeamColor.BLUE);
 
         return (redFlag != null && redFlag.isHeld() && redFlag.holder().equals(playerUuid)) ||
                 (blueFlag != null && blueFlag.isHeld() && blueFlag.holder().equals(playerUuid));
@@ -429,15 +441,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
          Location redFlagLoc = getRedFlagLocation();
          Location blueFlagLoc = getBlueFlagLocation();
 
-         Map<Integer, FlagState> newFlags = FlagBannerUtils.initializeFlagBanners(redFlagLoc, blueFlagLoc);
+         Map<TeamColor, FlagState> newFlags = FlagBannerUtils.initializeFlagBanners(redFlagLoc, blueFlagLoc);
          flagStates.putAll(newFlags);
 
          // Store base locations
          if (redFlagLoc != null) {
-             flagBaseLocations.put(1, redFlagLoc.clone());
+             flagBaseLocations.put(TeamColor.RED, redFlagLoc.clone());
          }
          if (blueFlagLoc != null) {
-             flagBaseLocations.put(2, blueFlagLoc.clone());
+             flagBaseLocations.put(TeamColor.BLUE, blueFlagLoc.clone());
          }
      }
 
@@ -467,7 +479,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * Handle flag holder death for a specific team
      */
     private void handleFlagHolderDeath(int teamNumber, UUID victimUuid, Player victim) {
-        FlagState flag = flagStates.get(teamNumber);
+        FlagState flag = flagStates.get(TeamColor.fromTeamNumber(teamNumber));
         if (flag == null || !flag.isHeld() || !flag.holder().equals(victimUuid)) {
             return;
         }
@@ -493,7 +505,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * Remove flag if player was carrying it
      */
     private void removeFlagIfCarriedByPlayer(int teamNumber, UUID playerUuid, Player player) {
-        FlagState flag = flagStates.get(teamNumber);
+        FlagState flag = flagStates.get(TeamColor.fromTeamNumber(teamNumber));
         if (flag == null || !flag.isHeld() || !flag.holder().equals(playerUuid)) {
             return;
         }
@@ -551,8 +563,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public void onSuddenDeathCycleEnded() {
-        int team1Captures = suddenDeathCycleCaptures.getOrDefault(1, 0);
-        int team2Captures = suddenDeathCycleCaptures.getOrDefault(2, 0);
+        int team1Captures = suddenDeathCycleCaptures.getOrDefault(TeamColor.RED, 0);
+        int team2Captures = suddenDeathCycleCaptures.getOrDefault(TeamColor.BLUE, 0);
 
         if (team1Captures != team2Captures) {
             suddenDeathWinningTeam = team1Captures > team2Captures ? 1 : 2;
@@ -564,10 +576,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public void onSuddenDeathCycleRestart() {
-        suddenDeathCycleCaptures.put(1, 0);
-        suddenDeathCycleCaptures.put(2, 0);
-        flagCaptures.put(1, 0);
-        flagCaptures.put(2, 0);
+        suddenDeathCycleCaptures.put(TeamColor.RED, 0);
+        suddenDeathCycleCaptures.put(TeamColor.BLUE, 0);
+        flagCaptures.put(TeamColor.RED, 0);
+        flagCaptures.put(TeamColor.BLUE, 0);
         
         // Reset scoreboard indicators
         for (UUID uuid : session.getPlayers()) {
@@ -581,6 +593,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
         
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
         Messages.debug("[CTF] Sudden death capture counters and scoreboard indicators reset for next cycle");
+    }
+
+    @Override
+    public String getSuddenDeathTiedRestartMessageKey() {
+        return "gamemode-ctf.sudden-death-tied-restart";
     }
 
     @Override
@@ -621,8 +638,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
      */
     private boolean tryHandleFlagCapture(Player player, int playerTeam, FlagState redFlag, FlagState blueFlag) {
         UUID playerUuid = player.getUniqueId();
-        Location redBase = flagBaseLocations.get(1);
-        Location blueBase = flagBaseLocations.get(2);
+        Location redBase = flagBaseLocations.get(TeamColor.RED);
+        Location blueBase = flagBaseLocations.get(TeamColor.BLUE);
         if (redBase == null || blueBase == null) {
             return false;
         }
@@ -687,7 +704,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
      private void returnFlagToBase(int teamNumber) {
          cancelFlagReturnTask(teamNumber);
-         FlagState flag = flagStates.get(teamNumber);
+         TeamColor color = TeamColor.fromTeamNumber(teamNumber);
+         FlagState flag = flagStates.get(color);
          stopFlagActionBar(flag);
 
          if (flag != null && flag.carryingTask() != null) {
@@ -695,19 +713,20 @@ public class CaptureTheFlagGamemode extends Gamemode {
          }
 
          FlagBaseMechanicsUtils.returnFlagToBase(teamNumber, flagStates, flagBaseLocations);
-         FlagState returnedFlag = flagStates.get(teamNumber);
+         FlagState returnedFlag = flagStates.get(color);
          if (returnedFlag != null) {
              moveBannerBack(returnedFlag.bannerDisplay(), returnedFlag.getFlagLoc());
          }
      }
 
     private void cancelFlagReturnTask(int teamNumber) {
-        BukkitTask task = flagReturnTasks.remove(teamNumber);
+        TeamColor color = TeamColor.fromTeamNumber(teamNumber);
+        BukkitTask task = flagReturnTasks.remove(color);
         if (task != null) {
             cancelTask(task);
         }
         cancelFlagReturnDisplayTask();
-        flagReturnExpiry.remove(teamNumber);
+        flagReturnExpiry.remove(color);
     }
 
      private void cancelFlagReturnDisplayTask() {
@@ -715,30 +734,32 @@ public class CaptureTheFlagGamemode extends Gamemode {
      }
 
     private void scheduleFlagReturnTimer(int teamNumber) {
-        if (flagReturnTasks.containsKey(teamNumber)) {
+        TeamColor color = TeamColor.fromTeamNumber(teamNumber);
+        if (flagReturnTasks.containsKey(color)) {
             return;
         }
         long now = System.currentTimeMillis();
         long expiryMs = now + 5_000L;
-        flagReturnExpiry.put(teamNumber, expiryMs);
+        flagReturnExpiry.put(color, expiryMs);
 
         long remainingMs = Math.max(0L, expiryMs - now);
         long remainingTicks = Math.max(1L, (remainingMs + 49L) / 50L);
 
         BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> {
-            flagReturnTasks.remove(teamNumber);
+            flagReturnTasks.remove(color);
             returnFlagToBase(teamNumber);
         }, remainingTicks);
-        flagReturnTasks.put(teamNumber, returnTask);
+        flagReturnTasks.put(color, returnTask);
         scheduleFlagReturnDisplayTimer(teamNumber);
         Messages.debug("[CTF] Scheduled return timer for Team " + teamNumber + " flag to " + (remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0)) + "s");
     }
 
     private void pauseFlagReturnTimer(int teamNumber) {
-        if (!flagReturnTasks.containsKey(teamNumber)) {
+        TeamColor color = TeamColor.fromTeamNumber(teamNumber);
+        if (!flagReturnTasks.containsKey(color)) {
             return;
         }
-        BukkitTask task = flagReturnTasks.remove(teamNumber);
+        BukkitTask task = flagReturnTasks.remove(color);
         if (task != null) {
             cancelTask(task);
         }
@@ -749,7 +770,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      private void scheduleFlagReturnDisplayTimer(int teamNumber) {
          cancelFlagReturnDisplayTask();
 
-         Long expiry = flagReturnExpiry.get(teamNumber);
+         Long expiry = flagReturnExpiry.get(TeamColor.fromTeamNumber(teamNumber));
          if (expiry != null) {
              TimerDisplayUtils.startFlagReturnTimer(teamNumber, expiry, session.getPlayers());
          }
@@ -761,7 +782,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      }
 
      private boolean isFlagAtBase(int teamNumber, FlagState flag) {
-         Location base = flagBaseLocations.get(teamNumber);
+         Location base = flagBaseLocations.get(TeamColor.fromTeamNumber(teamNumber));
          Location flagLoc = flag != null ? flag.flagLoc() : null;
          if (base == null || flagLoc == null || base.getWorld() != flagLoc.getWorld()) {
              return false;
@@ -791,8 +812,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 continue;
             }
 
-            FlagState redFlag = flagStates.get(1);
-            FlagState blueFlag = flagStates.get(2);
+            FlagState redFlag = flagStates.get(TeamColor.RED);
+            FlagState blueFlag = flagStates.get(TeamColor.BLUE);
 
             int playerTeam = session.getPlayerTeam(player).getTeamNumber();
 
@@ -840,8 +861,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     String colorTag = nearestTeam == 1 ? "red" : "blue";
                     Messages.send(player, "gamemode-ctf.flag-capturing",
                             "team_name", teamName, "color", colorTag);
-                    if (flagReturnTasks.containsKey(nearestTeam)) {
-                        Long expiry = flagReturnExpiry.get(nearestTeam);
+                    TeamColor nearestColor = TeamColor.fromTeamNumber(nearestTeam);
+                    if (flagReturnTasks.containsKey(nearestColor)) {
+                        Long expiry = flagReturnExpiry.get(nearestColor);
                         if (expiry != null) {
                             String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
                             // Use countdown timer for flag return display (priority 2)
@@ -909,7 +931,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
      private void dropFlagAtLocation(int teamNumber, Location location) {
-         FlagState flag = flagStates.get(teamNumber);
+         TeamColor color = TeamColor.fromTeamNumber(teamNumber);
+         FlagState flag = flagStates.get(color);
          if (flag == null || location == null) {
              return;
          }
@@ -926,7 +949,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          }
 
          FlagBaseMechanicsUtils.dropFlagAtLocation(teamNumber, dropLocation, flagStates);
-         FlagState droppedFlag = flagStates.get(teamNumber);
+         FlagState droppedFlag = flagStates.get(color);
 
          moveBannerBack(flag.bannerDisplay(), droppedFlag.getFlagLoc());
          scheduleFlagReturnTimer(teamNumber);
@@ -961,7 +984,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
       */
       public long getBonusTimeRemainingMs(UUID playerUuid) {
           int teamNum = session.getPlayerTeam(playerUuid).getTeamNumber();
-          FlagState flagState = flagStates.get(teamNum);
+          FlagState flagState = flagStates.get(TeamColor.fromTeamNumber(teamNum));
           if (flagState == null) {
               return 0;
           }
@@ -1007,38 +1030,38 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         // Find which flag this banner belongs to
-        Integer teamNumber = null;
-        for (int team = 1; team <= 2; team++) {
-            FlagState flag = flagStates.get(team);
+        TeamColor teamColor = null;
+        for (TeamColor color : TeamColor.values()) {
+            FlagState flag = flagStates.get(color);
             if (flag != null && flag.bannerDisplay() == banner) {
-                teamNumber = team;
+                teamColor = color;
                 break;
             }
         }
 
-        if (teamNumber == null) return;
+        if (teamColor == null) return;
 
-        FlagState flagState = flagStates.get(teamNumber);
+        FlagState flagState = flagStates.get(teamColor);
 
         // Stop existing carrying task if any
         if (flagState.carryingTask() != null) {
             flagState.carryingTask().cancel();
         }
 
-        // Make variables final for lambda capture
-        final int finalTeamNumber = teamNumber;
+        // Make variable final for lambda capture
+        final TeamColor finalTeamColor = teamColor;
 
         // Create carrying task and store it
         BukkitTask task = FlagBannerUtils.createCarryingTask(banner, player, () -> {
-            FlagState current = flagStates.get(finalTeamNumber);
+            FlagState current = flagStates.get(finalTeamColor);
             if (current != null && current.carryingTask() != null) {
-                flagStates.put(finalTeamNumber, current.withCarryingTask(null));
+                flagStates.put(finalTeamColor, current.withCarryingTask(null));
             }
         });
 
         // Store the task in flag state
         FlagState updatedFlag = flagState.withCarryingTask(task);
-        flagStates.put(teamNumber, updatedFlag);
+        flagStates.put(teamColor, updatedFlag);
 
         Messages.debug("[CTF] Started carrying task for banner on " + player.getName());
     }
@@ -1051,11 +1074,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
             return;
         }
 
-        for (int team = 1; team <= 2; team++) {
-            FlagState flag = flagStates.get(team);
+        for (TeamColor color : TeamColor.values()) {
+            FlagState flag = flagStates.get(color);
             if (flag != null && flag.bannerDisplay() == banner) {
                 FlagBannerUtils.stopCarryingBanner(banner, location, flag.carryingTask());
-                flagStates.put(team, flag.withCarryingTask(null));
+                flagStates.put(color, flag.withCarryingTask(null));
                 break;
             }
         }
@@ -1072,12 +1095,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
        * Update banner rotations and particle effects for both flags
        */
       private void updateBannerRotations() {
-          for (int team = 1; team <= 2; team++) {
-              FlagState flag = flagStates.get(team);
+          for (TeamColor color : TeamColor.values()) {
+              FlagState flag = flagStates.get(color);
 
               if (flag != null) {
                   if (flag.isHeld() && flag.holder() != null) {
-                      Location basePlate = flagBaseLocations.get(team);
+                      Location basePlate = flagBaseLocations.get(color);
                       if (basePlate != null) {
                           FlagBannerUtils.spawnBannerParticles(basePlate, 0);
                       }
@@ -1085,17 +1108,17 @@ public class CaptureTheFlagGamemode extends Gamemode {
                   }
 
                   // Use the flag's current location (either base or dropped location)
-                  Location centerPlate = flag.flagLoc() != null ? flag.flagLoc() : flagBaseLocations.get(team);
+                  Location centerPlate = flag.flagLoc() != null ? flag.flagLoc() : flagBaseLocations.get(color);
                   if (centerPlate == null) {
                       continue;
                   }
 
                   // Update banner rotation while idle/dropped.
                   FlagState rotatedFlag = FlagBannerUtils.rotateBanner(flag, centerPlate);
-                  flagStates.put(team, rotatedFlag);
+                  flagStates.put(color, rotatedFlag);
 
                   // At base/dropped, keep team identity with team-colored particles.
-                  FlagBannerUtils.spawnBannerParticles(centerPlate, team);
+                  FlagBannerUtils.spawnBannerParticles(centerPlate, color.getTeamNumber());
               }
           }
       }

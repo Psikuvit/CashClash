@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.util.game.ctf;
 
 import me.psikuvit.cashClash.gamemode.impl.FlagState;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import org.bukkit.Location;
 
 import java.util.Map;
@@ -31,12 +32,13 @@ public class FlagBaseMechanicsUtils {
      */
     public static boolean isDroppedFlagWaitingForReturn(
             int teamNumber,
-            Map<Integer, FlagState> flagStates,
-            Map<Integer, Location> flagBaseLocations,
-            Map<Integer, Long> flagReturnExpiry) {
+            Map<TeamColor, FlagState> flagStates,
+            Map<TeamColor, Location> flagBaseLocations,
+            Map<TeamColor, Long> flagReturnExpiry) {
 
-        FlagState flag = flagStates.get(teamNumber);
-        Location base = flagBaseLocations.get(teamNumber);
+        TeamColor color = TeamColor.fromTeamNumber(teamNumber);
+        FlagState flag = flagStates.get(color);
+        Location base = flagBaseLocations.get(color);
 
         if (flag == null || flag.isHeld() || flag.flagLoc() == null || base == null) {
             return false;
@@ -46,7 +48,7 @@ public class FlagBaseMechanicsUtils {
         boolean isAwayFromBase = flag.flagLoc().getWorld() == base.getWorld()
                 && flag.flagLoc().distanceSquared(base) > 0.25;
 
-        return isAwayFromBase && flagReturnExpiry.containsKey(teamNumber);
+        return isAwayFromBase && flagReturnExpiry.containsKey(color);
     }
 
     /**
@@ -56,8 +58,8 @@ public class FlagBaseMechanicsUtils {
      * @param flagReturnExpiry Map of expiry times
      * @return Remaining time in seconds, or 0 if no active timer
      */
-    public static long getRemainingReturnSeconds(int teamNumber, Map<Integer, Long> flagReturnExpiry) {
-        Long expiry = flagReturnExpiry.get(teamNumber);
+    public static long getRemainingReturnSeconds(int teamNumber, Map<TeamColor, Long> flagReturnExpiry) {
+        Long expiry = flagReturnExpiry.get(TeamColor.fromTeamNumber(teamNumber));
         if (expiry == null) {
             return 0;
         }
@@ -75,11 +77,12 @@ public class FlagBaseMechanicsUtils {
      */
     public static FlagState returnFlagToBase(
             int teamNumber,
-            Map<Integer, FlagState> flagStates,
-            Map<Integer, Location> flagBaseLocations) {
+            Map<TeamColor, FlagState> flagStates,
+            Map<TeamColor, Location> flagBaseLocations) {
 
-        FlagState flag = flagStates.get(teamNumber);
-        Location baseLocation = flagBaseLocations.get(teamNumber);
+        TeamColor color = TeamColor.fromTeamNumber(teamNumber);
+        FlagState flag = flagStates.get(color);
+        Location baseLocation = flagBaseLocations.get(color);
 
         if (flag == null || baseLocation == null) {
             return flag;
@@ -89,7 +92,7 @@ public class FlagBaseMechanicsUtils {
                 .withFlagLoc(baseLocation.clone())
                 .withCarryingTask(null);
 
-        flagStates.put(teamNumber, returnedFlag);
+        flagStates.put(color, returnedFlag);
         Messages.debug("[CTF] Returned Team " + teamNumber + " flag to base");
 
         return returnedFlag;
@@ -106,9 +109,10 @@ public class FlagBaseMechanicsUtils {
     public static FlagState dropFlagAtLocation(
             int teamNumber,
             Location dropLocation,
-            Map<Integer, FlagState> flagStates) {
+            Map<TeamColor, FlagState> flagStates) {
 
-        FlagState flag = flagStates.get(teamNumber);
+        TeamColor color = TeamColor.fromTeamNumber(teamNumber);
+        FlagState flag = flagStates.get(color);
         if (flag == null || dropLocation == null) {
             return flag;
         }
@@ -123,7 +127,7 @@ public class FlagBaseMechanicsUtils {
                 .withFlagLoc(adjustedLocation)
                 .withCarryingTask(null);
 
-        flagStates.put(teamNumber, droppedFlag);
+        flagStates.put(color, droppedFlag);
         Messages.debug("[CTF] Dropped Team " + teamNumber + " flag at " + adjustedLocation);
 
         return droppedFlag;
@@ -138,8 +142,8 @@ public class FlagBaseMechanicsUtils {
      */
     public static void resetFlagsAfterCapture(
             int capturingTeam,
-            Map<Integer, FlagState> flagStates,
-            Map<Integer, Location> flagBaseLocations) {
+            Map<TeamColor, FlagState> flagStates,
+            Map<TeamColor, Location> flagBaseLocations) {
 
         int enemyTeam = capturingTeam == 1 ? 2 : 1;
         returnFlagToBase(enemyTeam, flagStates, flagBaseLocations);

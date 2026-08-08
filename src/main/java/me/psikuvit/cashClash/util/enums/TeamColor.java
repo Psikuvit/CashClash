@@ -28,4 +28,21 @@ public enum TeamColor {
         return miniMessageColor + displayName + "</" + displayName.toLowerCase() + ">";
     }
 
+    /**
+     * The legacy numeric team identifier (1=RED, 2=BLUE) still used at the edges of the codebase
+     * (persistence, public method signatures) - prefer TeamColor itself as a map key/identity
+     * over this int wherever possible.
+     */
+    public int getTeamNumber() {
+        return this == RED ? 1 : 2;
+    }
+
+    public static TeamColor fromTeamNumber(int teamNumber) {
+        return teamNumber == 1 ? RED : BLUE;
+    }
+
+    public TeamColor opposite() {
+        return this == RED ? BLUE : RED;
+    }
+
 }

@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
@@ -13,6 +14,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import me.psikuvit.cashClash.util.game.kc.KCZoneUtils;
 import me.psikuvit.cashClash.util.game.kc.KCZoneValidator;
 import org.bukkit.Bukkit;
@@ -22,7 +24,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,24 +36,23 @@ import java.util.UUID;
  * Every kill scores a point immediately. Every death also spawns a capture zone at the death
  * location - the killer's team can confirm it for a bonus, the victim's team can deny it. A
  * player's 3rd kill in an uninterrupted streak spawns a Money Tag (or, in sudden death, a Heart
- * Tag) instead of a plain nametag. First team to {@value #WIN_CONDITION} combined points wins
- * the round.
+ * Tag) instead of a plain nametag. Win condition and all bonuses/timers are config-driven
+ * (config.yml: gamemodes.kill-confirm).
  */
 public class KillConfirmGamemode extends Gamemode {
 
-    private static final int WIN_CONDITION = 16;
-    private static final int TRIPLE_KILL_STREAK = 3;
-    private static final long ZONE_ACTIVATION_DELAY_MS = 1000;
-    private static final long ZONE_LIFESPAN_MS = 9000;
-    // Shared by MONEY and HEART zones - both are triple-kill bonus tags.
-    private static final long BONUS_ZONE_LIFESPAN_MS = 13000;
-    private static final long CAPTURE_DURATION_MS = 4000;
-    private static final long FINAL_STAND_CAPTURE_DURATION_MS = 2000;
-    private static final long MONEY_BONUS = 15000;
-    private static final long HEART_BONUS_DURATION_MS = 45 * 1000;
+    private final int WIN_CONDITION;
+    private final int TRIPLE_KILL_STREAK;
+    private final long ZONE_ACTIVATION_DELAY_MS;
+    private final long ZONE_LIFESPAN_MS;
+    private final long BONUS_ZONE_LIFESPAN_MS;
+    private final long CAPTURE_DURATION_MS;
+    private final long FINAL_STAND_CAPTURE_DURATION_MS;
+    private final long MONEY_BONUS;
+    private final long HEART_BONUS_DURATION_MS;
 
-    private final Map<Integer, Integer> teamScore;
-    private final Map<Integer, Integer> suddenDeathCycleScore;
+    private final Map<TeamColor, Integer> teamScore;
+    private final Map<TeamColor, Integer> suddenDeathCycleScore;
     private final List<KCZone> activeZones;
 
     private final SuddenDeathManager suddenDeathManager;
@@ -62,18 +63,29 @@ public class KillConfirmGamemode extends Gamemode {
     public KillConfirmGamemode(GameSession session) {
         super(session, GamemodeType.KILL_CONFIRM);
 
-        this.teamScore = new HashMap<>(2);
-        this.suddenDeathCycleScore = new HashMap<>(2);
+        ConfigManager cfg = ConfigManager.getInstance();
+        this.WIN_CONDITION = cfg.getKCScoreToWin();
+        this.TRIPLE_KILL_STREAK = cfg.getKCTripleKillStreak();
+        this.ZONE_ACTIVATION_DELAY_MS = cfg.getKCZoneActivationDelayMs();
+        this.ZONE_LIFESPAN_MS = cfg.getKCZoneLifespanMs();
+        this.BONUS_ZONE_LIFESPAN_MS = cfg.getKCBonusZoneLifespanMs();
+        this.CAPTURE_DURATION_MS = cfg.getKCCaptureDurationMs();
+        this.FINAL_STAND_CAPTURE_DURATION_MS = cfg.getKCFinalStandCaptureDurationMs();
+        this.MONEY_BONUS = cfg.getKCMoneyBonus();
+        this.HEART_BONUS_DURATION_MS = cfg.getKCHeartBonusDurationMs();
+
+        this.teamScore = new EnumMap<>(TeamColor.class);
+        this.suddenDeathCycleScore = new EnumMap<>(TeamColor.class);
         this.activeZones = new ArrayList<>();
         this.suddenDeathManager = new SuddenDeathManager(session, this);
         this.finalStandManager = new FinalStandManager(session, this);
         this.zoneTickTask = null;
         this.suddenDeathWinningTeam = 0;
 
-        teamScore.put(1, 0);
-        teamScore.put(2, 0);
-        suddenDeathCycleScore.put(1, 0);
-        suddenDeathCycleScore.put(2, 0);
+        teamScore.put(TeamColor.RED, 0);
+        teamScore.put(TeamColor.BLUE, 0);
+        suddenDeathCycleScore.put(TeamColor.RED, 0);
+        suddenDeathCycleScore.put(TeamColor.BLUE, 0);
     }
 
     // ========= OVERRIDDEN METHODS =========
@@ -90,8 +102,8 @@ public class KillConfirmGamemode extends Gamemode {
     public void onCombatPhaseStart() {
         Messages.debug("[KC] Combat phase started");
         if (suddenDeathManager.isInSuddenDeath()) {
-            suddenDeathCycleScore.put(1, 0);
-            suddenDeathCycleScore.put(2, 0);
+            suddenDeathCycleScore.put(TeamColor.RED, 0);
+            suddenDeathCycleScore.put(TeamColor.BLUE, 0);
             Messages.debug("[KC] Sudden death cycle started - score counters reset");
         }
 
@@ -106,10 +118,10 @@ public class KillConfirmGamemode extends Gamemode {
 
         suddenDeathManager.resetForNewRound();
         finalStandManager.cancel();
-        teamScore.put(1, 0);
-        teamScore.put(2, 0);
-        suddenDeathCycleScore.put(1, 0);
-        suddenDeathCycleScore.put(2, 0);
+        teamScore.put(TeamColor.RED, 0);
+        teamScore.put(TeamColor.BLUE, 0);
+        suddenDeathCycleScore.put(TeamColor.RED, 0);
+        suddenDeathCycleScore.put(TeamColor.BLUE, 0);
         suddenDeathWinningTeam = 0;
     }
 
@@ -159,8 +171,8 @@ public class KillConfirmGamemode extends Gamemode {
 
     @Override
     public boolean checkGameWinner() {
-        int score1 = teamScore.getOrDefault(1, 0);
-        int score2 = teamScore.getOrDefault(2, 0);
+        int score1 = teamScore.getOrDefault(TeamColor.RED, 0);
+        int score2 = teamScore.getOrDefault(TeamColor.BLUE, 0);
 
         if (suddenDeathWinningTeam > 0) {
             return true;
@@ -179,8 +191,8 @@ public class KillConfirmGamemode extends Gamemode {
             return suddenDeathWinningTeam;
         }
 
-        int score1 = teamScore.getOrDefault(1, 0);
-        int score2 = teamScore.getOrDefault(2, 0);
+        int score1 = teamScore.getOrDefault(TeamColor.RED, 0);
+        int score2 = teamScore.getOrDefault(TeamColor.BLUE, 0);
         boolean eligible = !suddenDeathManager.isInSuddenDeath() || finalStandManager.isActive();
 
         if (eligible && score1 >= WIN_CONDITION) {
@@ -226,8 +238,8 @@ public class KillConfirmGamemode extends Gamemode {
 
     @Override
     public void onSuddenDeathCycleEnded() {
-        int score1 = suddenDeathCycleScore.getOrDefault(1, 0);
-        int score2 = suddenDeathCycleScore.getOrDefault(2, 0);
+        int score1 = suddenDeathCycleScore.getOrDefault(TeamColor.RED, 0);
+        int score2 = suddenDeathCycleScore.getOrDefault(TeamColor.BLUE, 0);
 
         if (score1 != score2) {
             suddenDeathWinningTeam = score1 > score2 ? 1 : 2;
@@ -239,10 +251,10 @@ public class KillConfirmGamemode extends Gamemode {
 
     @Override
     public void onSuddenDeathCycleRestart() {
-        suddenDeathCycleScore.put(1, 0);
-        suddenDeathCycleScore.put(2, 0);
-        teamScore.put(1, 0);
-        teamScore.put(2, 0);
+        suddenDeathCycleScore.put(TeamColor.RED, 0);
+        suddenDeathCycleScore.put(TeamColor.BLUE, 0);
+        teamScore.put(TeamColor.RED, 0);
+        teamScore.put(TeamColor.BLUE, 0);
 
         for (UUID uuid : session.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
@@ -276,6 +288,11 @@ public class KillConfirmGamemode extends Gamemode {
     }
 
     @Override
+    public String getSuddenDeathTiedRestartMessageKey() {
+        return "gamemode-kc.sudden-death-tied-restart";
+    }
+
+    @Override
     public SuddenDeathManager getSuddenDeathManager() {
         return suddenDeathManager;
     }
@@ -288,7 +305,7 @@ public class KillConfirmGamemode extends Gamemode {
     // ========= PUBLIC ACCESSORS (for scoreboard placeholders) =========
 
     public int getTeamScore(int team) {
-        return teamScore.getOrDefault(team, 0);
+        return teamScore.getOrDefault(TeamColor.fromTeamNumber(team), 0);
     }
 
     // ========= PRIVATE HELPERS =========
@@ -300,15 +317,15 @@ public class KillConfirmGamemode extends Gamemode {
     }
 
     private void awardKillPoint(int team) {
-        teamScore.merge(team, 1, Integer::sum);
+        TeamColor color = TeamColor.fromTeamNumber(team);
+        teamScore.merge(color, 1, Integer::sum);
         if (suddenDeathManager.isInSuddenDeath()) {
-            suddenDeathCycleScore.merge(team, 1, Integer::sum);
+            suddenDeathCycleScore.merge(color, 1, Integer::sum);
         }
 
-        String teamName = team == 1 ? "Red" : "Blue";
         Messages.broadcast(session.getPlayers(), "gamemode-kc.kill-point",
-                "team_name", teamName,
-                "score", String.valueOf(teamScore.get(team)),
+                "team_name", color.getDisplayName(),
+                "score", String.valueOf(teamScore.get(color)),
                 "win_condition", String.valueOf(WIN_CONDITION));
         SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.6f, 1.0f);
     }
@@ -471,27 +488,27 @@ public class KillConfirmGamemode extends Gamemode {
     }
 
     private void resolveZoneCaptured(KCZone zone, Player capturer, int capturingTeam) {
-        String teamName = capturingTeam == 1 ? "Red" : "Blue";
+        TeamColor color = TeamColor.fromTeamNumber(capturingTeam);
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
 
         // Investor's Set: reward the confirming player's team on objective completion
         session.getRewardManager().grantKillOrObjective(capturer, RewardType.OBJECTIVE_KC_CONFIRM, 0);
 
         if (zone.getKind() == KCZone.ZoneKind.NAMETAG) {
-            teamScore.merge(capturingTeam, 1, Integer::sum);
+            teamScore.merge(color, 1, Integer::sum);
             if (suddenDeathManager.isInSuddenDeath()) {
-                suddenDeathCycleScore.merge(capturingTeam, 1, Integer::sum);
+                suddenDeathCycleScore.merge(color, 1, Integer::sum);
             }
             Messages.broadcast(session.getPlayers(), "gamemode-kc.tag-confirmed",
                     "player_name", capturer.getName(),
-                    "team_name", teamName,
-                    "score", String.valueOf(teamScore.get(capturingTeam)),
+                    "team_name", color.getDisplayName(),
+                    "score", String.valueOf(teamScore.get(color)),
                     "win_condition", String.valueOf(WIN_CONDITION));
         } else {
             awardConfirmBonus(capturingTeam, zone.getKind() == KCZone.ZoneKind.HEART);
             Messages.broadcast(session.getPlayers(), "gamemode-kc.money-tag-confirmed",
                     "player_name", capturer.getName(),
-                    "team_name", teamName);
+                    "team_name", color.getDisplayName());
         }
     }
 

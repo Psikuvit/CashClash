@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.gamemode.impl;
 
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
@@ -11,6 +12,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import me.psikuvit.cashClash.util.game.ptp.PTPFinalStandUtils;
 import me.psikuvit.cashClash.util.game.ptp.PTPInventoryUtils;
 import me.psikuvit.cashClash.util.game.ptp.PresidentialEffectsUtils;
@@ -23,6 +25,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,18 +37,18 @@ import java.util.UUID;
  */
 public class ProtectThePresidentGamemode extends Gamemode {
 
-    private static final int SELECTION_TIME = 15;
-    private static final int KILL_BONUS_THRESHOLD = 2;
-    private static final long KILL_BONUS_AMOUNT = 15000;
-    private static final long HEART_DURATION_MS = 45 * 1000;
-    private static final int WIN_CONDITION = 2;
+    private final int SELECTION_TIME;
+    private final int KILL_BONUS_THRESHOLD;
+    private final long KILL_BONUS_AMOUNT;
+    private final long HEART_DURATION_MS;
+    private final int WIN_CONDITION;
 
-    private final Map<Integer, President> presidents;
-    private final Map<Integer, Integer> teamKillCount;
-    private final Map<Integer, Integer> suddenDeathPresidentKills;
+    private final Map<TeamColor, President> presidents;
+    private final Map<TeamColor, Integer> teamKillCount;
+    private final Map<TeamColor, Integer> suddenDeathPresidentKills;
     private final Map<UUID, List<PresidentialBuff>> selectedBuffs;
     private final Map<UUID, ItemStack[]> savedInventories;
-    private final Map<Integer, BukkitTask> glowingTasks;
+    private final Map<TeamColor, BukkitTask> glowingTasks;
 
     private final SuddenDeathManager suddenDeathManager;
     private final FinalStandManager finalStandManager;
@@ -62,13 +65,19 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public ProtectThePresidentGamemode(GameSession session) {
         super(session, GamemodeType.PROTECT_THE_PRESIDENT);
 
-        // Initialize all data structures
-        this.presidents = new HashMap<>(2);
-        this.teamKillCount = new HashMap<>(2);
-        this.suddenDeathPresidentKills = new HashMap<>(2);
+        ConfigManager cfg = ConfigManager.getInstance();
+        this.SELECTION_TIME = cfg.getPTPSelectionTimeSeconds();
+        this.KILL_BONUS_THRESHOLD = cfg.getPTPKillBonusThreshold();
+        this.KILL_BONUS_AMOUNT = cfg.getPTPKillBonusAmount();
+        this.HEART_DURATION_MS = cfg.getPTPHeartDurationMs();
+        this.WIN_CONDITION = cfg.getPTPCapturesToWin();
+
+        this.presidents = new EnumMap<>(TeamColor.class);
+        this.teamKillCount = new EnumMap<>(TeamColor.class);
+        this.suddenDeathPresidentKills = new EnumMap<>(TeamColor.class);
         this.selectedBuffs = new HashMap<>();
         this.savedInventories = new HashMap<>();
-        this.glowingTasks = new HashMap<>(2);
+        this.glowingTasks = new EnumMap<>(TeamColor.class);
         this.suddenDeathManager = new SuddenDeathManager(session, this);
         this.finalStandManager = new FinalStandManager(session, this);
         this.selectionPhaseActive = false;
@@ -81,10 +90,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.recentHeartBonusAwardMs = 0L;
 
         // Pre-populate team kill count
-        teamKillCount.put(1, 0);
-        teamKillCount.put(2, 0);
-        suddenDeathPresidentKills.put(1, 0);
-        suddenDeathPresidentKills.put(2, 0);
+        teamKillCount.put(TeamColor.RED, 0);
+        teamKillCount.put(TeamColor.BLUE, 0);
+        suddenDeathPresidentKills.put(TeamColor.RED, 0);
+        suddenDeathPresidentKills.put(TeamColor.BLUE, 0);
     }
 
     @Override
@@ -101,22 +110,22 @@ public class ProtectThePresidentGamemode extends Gamemode {
         Messages.debug("[PTP] Combat phase started");
         if (suddenDeathManager.isInSuddenDeath()) {
             // Reset sudden death kill counters for this cycle
-            suddenDeathPresidentKills.put(1, 0);
-            suddenDeathPresidentKills.put(2, 0);
+            suddenDeathPresidentKills.put(TeamColor.RED, 0);
+            suddenDeathPresidentKills.put(TeamColor.BLUE, 0);
             Messages.debug("[PTP] Sudden death cycle started - kill counters reset");
         }
 
         // Apply glow and buffs to presidents now that combat has started
         for (int team = 1; team <= 2; team++) {
-            President pres = presidents.get(team);
+            President pres = presidents.get(TeamColor.fromTeamNumber(team));
             if (pres != null && pres.hasSelectedBuff()) {
                 refreshPresidentEffects(pres, true);
             }
         }
 
         // Reset kill count for round
-        teamKillCount.put(1, 0);
-        teamKillCount.put(2, 0);
+        teamKillCount.put(TeamColor.RED, 0);
+        teamKillCount.put(TeamColor.BLUE, 0);
 
         // Schedule president glowing after 15s
         for (int team = 1; team <= 2; team++) {
@@ -179,6 +188,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
      */
     private void clearPresidentialBuffs() {
         for (int team = 1; team <= 2; team++) {
+            TeamColor color = TeamColor.fromTeamNumber(team);
             Player presPlayer = getPresidentPlayerByTeam(team);
             if (presPlayer != null && presPlayer.isOnline()) {
                 clearPresidentEffects(presPlayer);
@@ -194,9 +204,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
             }
 
             // Reset buff in president record
-            President pres = presidents.get(team);
+            President pres = presidents.get(color);
             if (pres != null) {
-                presidents.put(team, pres.withResetBuff());
+                presidents.put(color, pres.withResetBuff());
             }
         }
     }
@@ -210,9 +220,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         if (presidentTeam != 0) {
             // President died - update death count and notify
-            President deadPresident = presidents.get(presidentTeam);
+            TeamColor presidentColor = TeamColor.fromTeamNumber(presidentTeam);
+            President deadPresident = presidents.get(presidentColor);
             President updatedPresident = deadPresident.withDeath();
-            presidents.put(presidentTeam, updatedPresident);
+            presidents.put(presidentColor, updatedPresident);
             int deaths = updatedPresident.deaths();
             int killerTeam = (presidentTeam == 1) ? 2 : 1;
 
@@ -236,7 +247,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
             addTeamKill(killerTeam);
             if (suddenDeathManager.isInSuddenDeath()) {
-                suddenDeathPresidentKills.merge(killerTeam, 1, Integer::sum);
+                suddenDeathPresidentKills.merge(TeamColor.fromTeamNumber(killerTeam), 1, Integer::sum);
             }
             if (finalStandManager.isActive()) {
                 suddenDeathWinningTeam = killerTeam;
@@ -267,7 +278,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Check if this player is a president
         int presidentTeam = findPresidentTeam(playerUuid);
         if (presidentTeam != 0) {
-            President pres = presidents.get(presidentTeam);
+            President pres = presidents.get(TeamColor.fromTeamNumber(presidentTeam));
             refreshPresidentEffects(pres, true);
             schedulePresidentGlow(presidentTeam, player);
             Messages.debug("[PTP] Refreshed president effects on spawn: " + player.getName());
@@ -331,8 +342,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     private void schedulePresidentGlow(int team, Player player) {
+        TeamColor color = TeamColor.fromTeamNumber(team);
         // Cancel existing task for this team if any
-        cancelTask(glowingTasks.remove(team));
+        cancelTask(glowingTasks.remove(color));
 
         // Schedule new task for 15s (300 ticks)
         BukkitTask task = SchedulerUtils.runTaskLater(() -> {
@@ -340,10 +352,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 PresidentialEffectsUtils.applyGlowEffect(player);
                 Messages.debug("[PTP] President glowing activated after 15s delay for: " + player.getName());
             }
-            glowingTasks.remove(team);
+            glowingTasks.remove(color);
         }, 300L);
 
-        glowingTasks.put(team, task);
+        glowingTasks.put(color, task);
         Messages.debug("[PTP] Scheduled glowing for " + player.getName() + " in 15s");
     }
 
@@ -359,7 +371,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     private String getPresidentName(int team) {
-        President pres = presidents.get(team);
+        President pres = presidents.get(TeamColor.fromTeamNumber(team));
         if (pres == null) return "Unknown";
         Player presPlayer = Bukkit.getPlayer(pres.uuid());
         return presPlayer != null ? presPlayer.getName() : "Unknown";
@@ -392,8 +404,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public void onSuddenDeathCycleEnded() {
-        int team1Kills = suddenDeathPresidentKills.getOrDefault(1, 0);
-        int team2Kills = suddenDeathPresidentKills.getOrDefault(2, 0);
+        int team1Kills = suddenDeathPresidentKills.getOrDefault(TeamColor.RED, 0);
+        int team2Kills = suddenDeathPresidentKills.getOrDefault(TeamColor.BLUE, 0);
 
         if (team1Kills != team2Kills) {
             suddenDeathWinningTeam = team1Kills > team2Kills ? 1 : 2;
@@ -405,8 +417,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public void onSuddenDeathCycleRestart() {
-        suddenDeathPresidentKills.put(1, 0);
-        suddenDeathPresidentKills.put(2, 0);
+        suddenDeathPresidentKills.put(TeamColor.RED, 0);
+        suddenDeathPresidentKills.put(TeamColor.BLUE, 0);
         
         // Reset scoreboard indicators and show timer start
         for (UUID uuid : session.getPlayers()) {
@@ -427,11 +439,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private void selectPresidents() {
         UUID pres1Uuid = session.getTeamRed().getPlayers().stream().findAny().orElse(null);
         President pres1 = President.create(pres1Uuid, 1);
-        presidents.put(1, pres1);
+        presidents.put(TeamColor.RED, pres1);
 
         UUID pres2Uuid = session.getTeamBlue().getPlayers().stream().findAny().orElse(null);
         President pres2 = President.create(pres2Uuid, 2);
-        presidents.put(2, pres2);
+        presidents.put(TeamColor.BLUE, pres2);
     }
 
     /**
@@ -485,7 +497,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
         PresidentialBuff[] buffs = PresidentialBuff.values();
 
         for (int team = 1; team <= 2; team++) {
-            President pres = presidents.get(team);
+            TeamColor color = TeamColor.fromTeamNumber(team);
+            President pres = presidents.get(color);
             if (pres != null && getSelectedBuffs(pres.uuid()).isEmpty()) {
                 List<PresidentialBuff> randomBuffs = new ArrayList<>(List.of(buffs));
                 Collections.shuffle(randomBuffs);
@@ -494,7 +507,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 randomBuffs = new ArrayList<>(randomBuffs.subList(0, randomBuffCount));
 
                 President updatedPres = pres.withBuff(randomBuffs.getFirst());
-                presidents.put(team, updatedPres);
+                presidents.put(color, updatedPres);
                 selectedBuffs.put(pres.uuid(), randomBuffs);
 
                 Player presPlayer = getPresidentPlayerByTeam(team);
@@ -546,7 +559,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * Add a kill for the team and check for bonuses
      */
     private void addTeamKill(int team) {
-        int killCount = teamKillCount.merge(team, 1, Integer::sum);
+        int killCount = teamKillCount.merge(TeamColor.fromTeamNumber(team), 1, Integer::sum);
         Messages.debug("[PTP] Team " + team + " kill count: " + killCount);
 
         // Every 2 kills grant bonus split among team
@@ -627,7 +640,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
      */
     private int findPresidentTeam(UUID uuid) {
         for (int team = 1; team <= 2; team++) {
-            President pres = presidents.get(team);
+            President pres = presidents.get(TeamColor.fromTeamNumber(team));
             if (pres != null && pres.uuid().equals(uuid)) {
                 return team;
             }
@@ -640,14 +653,14 @@ public class ProtectThePresidentGamemode extends Gamemode {
      */
     private President getPresidentByUUID(UUID uuid) {
         int team = findPresidentTeam(uuid);
-        return team == 0 ? null : presidents.get(team);
+        return team == 0 ? null : presidents.get(TeamColor.fromTeamNumber(team));
     }
 
     /**
      * Get the online Player for a president team
      */
     private Player getPresidentPlayerByTeam(int team) {
-        President pres = presidents.get(team);
+        President pres = presidents.get(TeamColor.fromTeamNumber(team));
         return pres != null ? Bukkit.getPlayer(pres.uuid()) : null;
     }
 
@@ -655,7 +668,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * Get death count for a president's team
      */
     private int getPresidentDeaths(int team) {
-        President pres = presidents.get(team);
+        President pres = presidents.get(TeamColor.fromTeamNumber(team));
         return pres != null ? pres.deaths() : 0;
     }
 
@@ -663,7 +676,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * Get president UUID for a specific team
      */
     public UUID getPresident(int teamNumber) {
-        President pres = presidents.get(teamNumber);
+        President pres = presidents.get(TeamColor.fromTeamNumber(teamNumber));
         return pres != null ? pres.uuid() : null;
     }
 
@@ -726,7 +739,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * Get the buff for a president's team
      */
     public String getPresidentBuff(int teamNumber) {
-        President pres = presidents.get(teamNumber);
+        President pres = presidents.get(TeamColor.fromTeamNumber(teamNumber));
         if (pres == null || getSelectedBuffs(pres.uuid()).isEmpty()) {
             return "None";
         }
@@ -772,8 +785,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
         if (presTeam == 0) {
             return false;
         }
+        TeamColor presColor = TeamColor.fromTeamNumber(presTeam);
 
-        President pres = presidents.get(presTeam);
+        President pres = presidents.get(presColor);
         if (pres == null) {
             return false;
         }
@@ -786,13 +800,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
         if (buffs.contains(buff)) {
             buffs.remove(buff);
             President updatedPres = buffs.isEmpty() ? pres.withResetBuff() : pres.withBuff(buffs.getFirst());
-            presidents.put(presTeam, updatedPres);
+            presidents.put(presColor, updatedPres);
             Messages.debug("[PTP] " + player.getName() + " deselected buff: " + buff.getName());
             Messages.send(player, "gamemode-ptp.buff-deselected");
             SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
             return true;
         }
-        
+
         // Check if we can select another buff
         if (buffs.size() >= maxBuffs) {
             Messages.send(player, "gamemode-ptp.buff-selection-limit", "max_buffs", String.valueOf(maxBuffs));
@@ -802,7 +816,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Select new buff
         buffs.add(buff);
         President updatedPres = pres.withBuff(buff);
-        presidents.put(presTeam, updatedPres);
+        presidents.put(presColor, updatedPres);
         Messages.debug("[PTP] " + player.getName() + " selected buff: " + buff.getName());
         Messages.send(player, "gamemode-ptp.buff-selected-player", "buff_name", buff.getName());
         SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
@@ -844,6 +858,11 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     public boolean isInBuffSelectionPhase() {
         return selectionPhaseActive;
+    }
+
+    @Override
+    public String getSuddenDeathTiedRestartMessageKey() {
+        return "gamemode-ptp.sudden-death-tied-restart";
     }
 
     @Override

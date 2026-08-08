@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,7 +13,7 @@ import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 /**
@@ -173,23 +174,23 @@ public class FlagBannerUtils {
       * @param blueFlagLoc Blue flag location
       * @return Map with initialized flag states, or empty map if initialization fails
       */
-     public static Map<Integer, FlagState> initializeFlagBanners(Location redFlagLoc, Location blueFlagLoc) {
-         Map<Integer, FlagState> flagStates = new HashMap<>();
+     public static Map<TeamColor, FlagState> initializeFlagBanners(Location redFlagLoc, Location blueFlagLoc) {
+         Map<TeamColor, FlagState> flagStates = new EnumMap<>(TeamColor.class);
 
-         // Red flag (Team 1)
+         // Red flag
          if (redFlagLoc != null) {
              BlockDisplay redBanner = spawnFlagBanner(redFlagLoc, Color.RED);
              if (redBanner != null) {
-                 flagStates.put(1, new FlagState(null, 0, redFlagLoc, redBanner, 0.0, null, 0.0, 0L, 3));
+                 flagStates.put(TeamColor.RED, new FlagState(null, 0, redFlagLoc, redBanner, 0.0, null, 0.0, 0L, 3));
                  Messages.debug("[CTF] Spawned Red flag banner at " + redFlagLoc);
              }
          }
 
-         // Blue flag (Team 2)
+         // Blue flag
          if (blueFlagLoc != null) {
              BlockDisplay blueBanner = spawnFlagBanner(blueFlagLoc, Color.BLUE);
              if (blueBanner != null) {
-                 flagStates.put(2, new FlagState(null, 0, blueFlagLoc, blueBanner, 0.0, null, 0.0, 0L, 3));
+                 flagStates.put(TeamColor.BLUE, new FlagState(null, 0, blueFlagLoc, blueBanner, 0.0, null, 0.0, 0L, 3));
                  Messages.debug("[CTF] Spawned Blue flag banner at " + blueFlagLoc);
              }
          }
@@ -222,7 +223,7 @@ public class FlagBannerUtils {
       * @param flagStates The current flag states
       * @param taskCanceller Function to cancel a task
       */
-     public static void removeAllBannersFromPlayers(Map<Integer, FlagState> flagStates, java.util.function.Consumer<BukkitTask> taskCanceller) {
+     public static void removeAllBannersFromPlayers(Map<TeamColor, FlagState> flagStates, java.util.function.Consumer<BukkitTask> taskCanceller) {
          for (FlagState flag : flagStates.values()) {
              if (flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
                  // Stop carrying task if active
@@ -247,7 +248,7 @@ public class FlagBannerUtils {
       *
       * @param flagStates The flag states containing banners
       */
-     public static void cleanupAllBanners(Map<Integer, FlagState> flagStates) {
+     public static void cleanupAllBanners(Map<TeamColor, FlagState> flagStates) {
          for (FlagState flag : flagStates.values()) {
              if (flag != null && flag.bannerDisplay() != null && !flag.bannerDisplay().isDead()) {
                  flag.bannerDisplay().remove();
