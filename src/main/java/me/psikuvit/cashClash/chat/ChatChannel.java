@@ -1,49 +1,49 @@
 package me.psikuvit.cashClash.chat;
 
 /**
- * Represents the available chat channels.
+ * The available chat channels. A sealed interface of singleton records rather than an enum, but
+ * behaves identically at call sites: {@code ChatChannel.GLOBAL} etc. are the shared instances to
+ * compare/store, and a {@code switch} over a ChatChannel is exhaustively checked by the compiler
+ * against the {@code permits} list, same as an enum switch would be.
  */
-public enum ChatChannel {
-    /**
-     * Global chat - visible to all players.
-     */
-    GLOBAL("Global", "<white>", ""),
+public sealed interface ChatChannel {
 
-    /**
-     * Party chat - visible only to party members.
-     */
-    PARTY("Party", "<aqua>", "<dark_aqua>[Party] </dark_aqua>"),
+    ChatChannel GLOBAL = new Global();
+    ChatChannel PARTY = new Party();
+    ChatChannel TEAM = new Team();
+    ChatChannel GAME = new Game();
 
-    /**
-     * Team chat - visible only to team members during a game.
-     */
-    TEAM("Team", "<green>", "<dark_green>[Team] </dark_green>"),
+    String getDisplayName();
 
-    /**
-     * Game chat - visible to all players in the same game.
-     */
-    GAME("Game", "<yellow>", "<gold>[Game] </gold>");
+    String getNameColor();
 
-    private final String displayName;
-    private final String nameColor;
-    private final String prefix;
+    String getPrefix();
 
-    ChatChannel(String displayName, String nameColor, String prefix) {
-        this.displayName = displayName;
-        this.nameColor = nameColor;
-        this.prefix = prefix;
+    /** Global chat - visible to all players. */
+    record Global() implements ChatChannel {
+        public String getDisplayName() { return "Global"; }
+        public String getNameColor() { return "<white>"; }
+        public String getPrefix() { return ""; }
     }
 
-    public String getDisplayName() {
-        return displayName;
+    /** Party chat - visible only to party members. */
+    record Party() implements ChatChannel {
+        public String getDisplayName() { return "Party"; }
+        public String getNameColor() { return "<aqua>"; }
+        public String getPrefix() { return "<dark_aqua>[Party] </dark_aqua>"; }
     }
 
-    public String getNameColor() {
-        return nameColor;
+    /** Team chat - visible only to team members during a game. */
+    record Team() implements ChatChannel {
+        public String getDisplayName() { return "Team"; }
+        public String getNameColor() { return "<green>"; }
+        public String getPrefix() { return "<dark_green>[Team] </dark_green>"; }
     }
 
-    public String getPrefix() {
-        return prefix;
+    /** Game chat - visible to all players in the same game. */
+    record Game() implements ChatChannel {
+        public String getDisplayName() { return "Game"; }
+        public String getNameColor() { return "<yellow>"; }
+        public String getPrefix() { return "<gold>[Game] </gold>"; }
     }
 }
-

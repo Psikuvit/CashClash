@@ -97,10 +97,10 @@ public class ChatManager {
 
         // Route based on current channel
         return switch (channel) {
-            case PARTY -> sendPartyMessage(sender, message);
-            case TEAM -> sendTeamMessage(sender, message);
-            case GAME -> sendGameMessage(sender, message);
-            case GLOBAL -> false; // Let default chat handler process it
+            case ChatChannel.Party ignored -> sendPartyMessage(sender, message);
+            case ChatChannel.Team ignored -> sendTeamMessage(sender, message);
+            case ChatChannel.Game ignored -> sendGameMessage(sender, message);
+            case ChatChannel.Global ignored -> false; // Let default chat handler process it
         };
     }
 
