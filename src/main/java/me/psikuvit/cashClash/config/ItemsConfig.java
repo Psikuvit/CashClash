@@ -195,8 +195,9 @@ public class ItemsConfig {
         return config.getInt("mythic-items.goblin-spear.charge.max-duration-ticks", 60);
     }
 
-    public double getGoblinChargeWallDamage() {
-        return config.getDouble("mythic-items.goblin-spear.charge.wall-impact-damage", 12.0);
+    /** 1 heart (2.0 hp) of recoil damage per second the charge ran before hitting a wall. */
+    public double getGoblinChargeRecoilDamagePerSecond() {
+        return config.getDouble("mythic-items.goblin-spear.charge.recoil-damage-per-second", 2.0);
     }
 
     public int getGoblinChargePoisonDuration() {

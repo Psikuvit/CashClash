@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
@@ -156,7 +157,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
             @Override
             public void run() {
                 if (!player.isOnline() || ticks >= maxDuration) {
-                    endCharge(player, false);
+                    endCharge(player, false, ticks, chargeDirection);
                     cancel();
                     return;
                 }
@@ -169,7 +170,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
                 // Check for wall collision
                 Location checkLoc = player.getLocation().add(chargeDirection.clone().multiply(0.5));
                 if (checkLoc.getBlock().getType().isSolid()) {
-                    endCharge(player, true);
+                    endCharge(player, true, ticks, chargeDirection);
                     cancel();
                     return;
                 }
@@ -203,8 +204,8 @@ public class GoblinSpearHandler extends MythicItemHandler {
                     }
                 }
 
-                // Spawn particles
-                ParticleUtils.crit(player.getLocation().add(0, 1, 0), 5, 0.3);
+                // Green trail while charging
+                ParticleUtils.spawnDust(player.getLocation().add(0, 0.2, 0), Color.fromRGB(0, 200, 0), 1.2f, 6, 0.25);
 
                 ticks++;
             }
@@ -216,47 +217,58 @@ public class GoblinSpearHandler extends MythicItemHandler {
     }
 
     /**
-     * End Goblin Spear charge, applying damage if hit wall.
+     * End Goblin Spear charge, applying recoil damage (scaled by how long the charge ran) to
+     * both the charger and any caught players if it ended on a wall.
      */
-    private void endCharge(Player player, boolean hitWall) {
+    private void endCharge(Player player, boolean hitWall, int ticksTraveled, Vector chargeDirection) {
         UUID uuid = player.getUniqueId();
         List<Player> caughtPlayers = goblinSpearCharging.remove(uuid);
 
-        if (caughtPlayers == null || caughtPlayers.isEmpty()) {
-            Messages.debug(player, "GOBLIN_SPEAR: Charge ended, no players caught");
-        } else if (hitWall) {
-            // Deal damage and poison to all caught players
-            double damage = cfg.getGoblinChargeWallDamage();
+        if (!hitWall) {
+            Messages.debug(player, "GOBLIN_SPEAR: Charge ended without wall impact");
+        } else {
+            // 1 heart (2.0 hp) of recoil damage per second the charge ran before impact.
+            double secondsTraveled = ticksTraveled / 20.0;
+            double damage = secondsTraveled * cfg.getGoblinChargeRecoilDamagePerSecond();
             int poisonDuration = cfg.getGoblinChargePoisonDuration();
             int poisonLevel = cfg.getGoblinChargePoisonLevel();
 
-            for (Player caught : caughtPlayers) {
-                if (!caught.isOnline()) continue;
+            player.setNoDamageTicks(0);
+            player.setMaximumNoDamageTicks(0);
+            player.damage(damage);
+            SchedulerUtils.runTaskLater(() -> {
+                if (player.isOnline()) player.setMaximumNoDamageTicks(20);
+            }, 1L);
 
-                caught.setNoDamageTicks(0);
-                player.setNoDamageTicks(0);
-                caught.setMaximumNoDamageTicks(0); // Ensure they can be damaged immediately
-                player.setMaximumNoDamageTicks(0);
-                caught.damage(damage, player);
-                CashClashPlayer.applyEffect(caught, PotionEffectType.POISON, poisonDuration, poisonLevel, false, true);
-
-                // Reset to default after damage is applied (vanilla is 20)
-                SchedulerUtils.runTaskLater(() -> {
-                    if (caught.isOnline()) caught.setMaximumNoDamageTicks(20);
-                    if (player.isOnline()) player.setMaximumNoDamageTicks(20);
-                }, 1L);
-
-                // Visual effects
-                ParticleUtils.damageIndicator(caught.getLocation().add(0, 1, 0), 20, 0.5);
-                SoundUtils.play(caught, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
-
-                Messages.debug(player, "GOBLIN_SPEAR: Wall impact dealt " + damage + " damage + Poison to " + caught.getName());
-            }
-
-            Messages.send(player, "mythic.wall-impact", "{damage}", String.valueOf((int) damage), "{enemy_count}", String.valueOf(caughtPlayers.size()));
+            Location impact = player.getLocation().add(0, 1, 0);
+            ParticleUtils.radialLineBurst(impact, chargeDirection, Color.fromRGB(0, 200, 0), 2.5, 6);
             SoundUtils.play(player, Sound.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, 1.0f, 0.8f);
-        } else {
-            Messages.debug(player, "GOBLIN_SPEAR: Charge ended without wall impact");
+
+            if (caughtPlayers == null || caughtPlayers.isEmpty()) {
+                Messages.debug(player, "GOBLIN_SPEAR: Charge ended, no players caught, self recoil damage " + damage);
+            } else {
+                for (Player caught : caughtPlayers) {
+                    if (!caught.isOnline()) continue;
+
+                    caught.setNoDamageTicks(0);
+                    caught.setMaximumNoDamageTicks(0); // Ensure they can be damaged immediately
+                    caught.damage(damage, player);
+                    CashClashPlayer.applyEffect(caught, PotionEffectType.POISON, poisonDuration, poisonLevel, false, true);
+
+                    // Reset to default after damage is applied (vanilla is 20)
+                    SchedulerUtils.runTaskLater(() -> {
+                        if (caught.isOnline()) caught.setMaximumNoDamageTicks(20);
+                    }, 1L);
+
+                    // Visual effects
+                    ParticleUtils.damageIndicator(caught.getLocation().add(0, 1, 0), 20, 0.5);
+                    SoundUtils.play(caught, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
+
+                    Messages.debug(player, "GOBLIN_SPEAR: Wall impact dealt " + damage + " damage + Poison to " + caught.getName());
+                }
+
+                Messages.send(player, "mythic.wall-impact", "{damage}", String.valueOf((int) damage), "{enemy_count}", String.valueOf(caughtPlayers.size()));
+            }
         }
 
         // Set cooldown
@@ -328,9 +340,9 @@ public class GoblinSpearHandler extends MythicItemHandler {
             entry.getValue().removeIf(p -> p.getUniqueId().equals(uuid));
         }
 
-        // End charge if active
+        // End charge if active (no wall impact - the charger disconnected/died mid-charge)
         if (goblinSpearCharging.containsKey(uuid)) {
-            endCharge(player, false);
+            endCharge(player, false, 0, new Vector(1, 0, 0));
         }
     }
 }

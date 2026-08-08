@@ -271,6 +271,32 @@ public final class ParticleUtils {
         }
     }
 
+    /**
+     * Fires 5 short colored-dust lines radiating out from a point: two to the sides (+/-90 deg
+     * from {@code forward}), two diagonal (+/-45 deg), and one straight up - used for Goblin
+     * Spear's wall-impact burst. Reuses {@link #beam} for each line's point-stepping.
+     */
+    public static void radialLineBurst(Location origin, Vector forward, Color color, double lineLength, int pointsPerBlock) {
+        if (origin == null || origin.getWorld() == null || forward == null) return;
+
+        Vector flatForward = forward.clone().setY(0);
+        if (flatForward.lengthSquared() < 1.0E-4) flatForward = new Vector(1, 0, 0);
+        flatForward.normalize();
+
+        Vector[] directions = new Vector[] {
+                flatForward.clone().rotateAroundY(Math.toRadians(90)),   // side
+                flatForward.clone().rotateAroundY(Math.toRadians(-90)),  // side
+                flatForward.clone().rotateAroundY(Math.toRadians(45)),   // diagonal
+                flatForward.clone().rotateAroundY(Math.toRadians(-45)),  // diagonal
+                new Vector(0, 1, 0)                                      // straight up
+        };
+
+        for (Vector direction : directions) {
+            Location end = origin.clone().add(direction.clone().multiply(lineLength));
+            beam(origin, end, color, 1.2f, pointsPerBlock);
+        }
+    }
+
     // ==================== MYTHIC ITEM EFFECTS ====================
 
     /**

@@ -71,7 +71,7 @@ mythic-items:
       cooldown-seconds: 30
       speed: 1.5                    # Charge speed multiplier
       max-duration-ticks: 60        # Max charge time (3 seconds)
-      wall-impact-damage: 12.0      # Damage when hitting wall with caught players
+      recoil-damage-per-second: 2.0 # 1 heart/second traveled - dealt to BOTH the charger and any caught players on wall impact
       poison-duration-seconds: 3
       poison-level: 1
 
