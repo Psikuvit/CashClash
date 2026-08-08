@@ -41,7 +41,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
     // Blooming Rose - placed sakura zones keyed by trunk location
     private final Map<Location, BloomingRoseZone> bloomingRoseZones;
-    private boolean bloomingRoseHpLoopStarted;
+    private BukkitTask hpRevealTask;
 
     /**
      * @param session       the game session the rose was placed in (used for team lookups on expiry)
@@ -321,14 +321,13 @@ public class BloomingRoseHandler extends CustomItemHandler {
     }
 
     /**
-     * Lazy once-per-plugin-life actionbar loop (started on first rose placement): every 10 ticks,
-     * players holding a Blooming Rose see their teammates' current HP.
+     * Lazy actionbar loop, started on first rose placement and left running until {@link #cleanup()}
+     * cancels it: every 10 ticks, players holding a Blooming Rose see their teammates' current HP.
      */
     private void startBloomingRoseHpRevealLoop() {
-        if (bloomingRoseHpLoopStarted) return;
-        bloomingRoseHpLoopStarted = true;
+        if (hpRevealTask != null) return;
 
-        SchedulerUtils.runTaskTimer(() -> {
+        hpRevealTask = SchedulerUtils.runTaskTimer(() -> {
             for (Player holder : Bukkit.getOnlinePlayers()) {
                 if (PDCDetection.getCustomItem(holder.getInventory().getItemInMainHand()) != CustomItem.BLOOMING_ROSE) continue;
                 GameSession session = GameManager.getInstance().getPlayerSession(holder);
@@ -363,5 +362,10 @@ public class BloomingRoseHandler extends CustomItemHandler {
             }
         });
         bloomingRoseZones.clear();
+
+        if (hpRevealTask != null) {
+            hpRevealTask.cancel();
+            hpRevealTask = null;
+        }
     }
 }
