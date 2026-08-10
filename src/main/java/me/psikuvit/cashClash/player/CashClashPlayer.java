@@ -1,8 +1,10 @@
 package me.psikuvit.cashClash.player;
 
 import me.psikuvit.cashClash.CashClashPlugin;
- 
+
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
+import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
@@ -198,6 +200,30 @@ public class CashClashPlayer {
 
     public long getRespawnProtectionUntil() {
         return respawnProtectionUntil;
+    }
+
+    /**
+     * Whether this player currently counts as "dead" for ability/action-gating purposes: the
+     * session is mid-combat and the current round's data has them marked not alive. Only
+     * meaningful during {@link GameState#COMBAT} - a player is never treated as dead while
+     * waiting, shopping, or between rounds, even if stale round data says otherwise.
+     */
+    public boolean isDead() {
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
+        if (session == null || session.getState() != GameState.COMBAT) return false;
+        RoundData roundData = session.getCurrentRoundData();
+        return roundData != null && !roundData.isAlive(uuid);
+    }
+
+    /**
+     * The single, canonical "is this player dead right now" check - route every dead-player
+     * gate (abilities, items, throws, consumables, cooldowns) through this instead of
+     * hand-rolling a session/state/RoundData lookup at the call site. False when the player
+     * isn't in a session at all (nothing to be dead relative to).
+     */
+    public static boolean isPlayerDead(Player player) {
+        CashClashPlayer ccp = from(player);
+        return ccp != null && ccp.isDead();
     }
 
     // Health Management System

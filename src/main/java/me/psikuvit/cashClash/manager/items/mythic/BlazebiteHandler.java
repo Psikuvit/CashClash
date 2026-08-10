@@ -52,8 +52,8 @@ public class BlazebiteHandler extends MythicItemHandler {
 
     /**
      * Handle BlazeBite shot.
-     * 8 shots per magazine, 25 second reload. Every shot applies both the Glacier freeze and
-     * Volcano fire effects on hit - there's no longer a per-crossbow mode.
+     * 8 shots per magazine, 25 second reload. Whether a shot ends up Glacier or Magma Storm is
+     * decided at hit time by what it hits, not here.
      */
     public boolean handleBlazebiteShot(Player player, ItemStack crossbow) {
         UUID uuid = player.getUniqueId();
@@ -86,17 +86,32 @@ public class BlazebiteHandler extends MythicItemHandler {
     }
 
     /**
-     * Handle BlazeBite hit effects - every hit now applies BOTH:
-     * Glacier: First hit applies frostbite for 5 seconds. Second hit while frozen freezes player in place for 3 seconds.
-     * Volcano: Explosive fire arrow (2 hearts direct, 1 heart splash in 3 blocks).
+     * Handle BlazeBite hit effects. An arrow that hits a player plays Glacier - freeze only, no
+     * magma storm. An arrow that hits a surface/block plays Magma Storm instead - fire/explosion
+     * AOE that also cleanses the freezing effect off any frozen players caught in the blast,
+     * rather than applying freeze itself.
+     *
+     * @param magmaStorm whether the arrow hit a surface (true) rather than a player (false)
      */
-    public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc) {
+    public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc, boolean magmaStorm) {
         World world = hitLoc.getWorld();
         if (world == null) return;
 
-        Messages.debug(shooter, "BLAZEBITE: Hit detected");
+        Messages.debug(shooter, "BLAZEBITE: Hit detected (magmaStorm=" + magmaStorm + ")");
 
-        // Glacier effect
+        if (magmaStorm) {
+            handleMagmaStorm(shooter, hitEntity, hitLoc, world);
+        } else {
+            handleGlacier(shooter, hitEntity);
+        }
+    }
+
+    /**
+     * Glacier mode: first hit applies frostbite for 5 seconds. Second hit while frostbitten
+     * freezes the player in place for 3 seconds and locks the shooter out of firing again for
+     * a few seconds.
+     */
+    private void handleGlacier(Player shooter, Entity hitEntity) {
         {
             if (hitEntity instanceof Player victim) {
                 UUID victimId = victim.getUniqueId();
@@ -113,7 +128,6 @@ public class BlazebiteHandler extends MythicItemHandler {
                     CashClashPlayer.applyEffect(victim, PotionEffectType.JUMP_BOOST, freezeInPlaceDuration, 128, false, true);
 
                     Messages.debug(shooter, "BLAZEBITE: Glacier DOUBLE HIT on " + victim.getName() + " - FROZEN IN PLACE for " + (freezeInPlaceDuration / 20) + "s");
-                    Messages.send(shooter, "mythic.target-frozen");
                     Messages.send(victim, "mythic.you-are-frozen");
 
                     SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
@@ -137,6 +151,12 @@ public class BlazebiteHandler extends MythicItemHandler {
 
                     manager.trackTask(victimId, particleTask);
                     glacierFrozenPlayers.remove(victimId);
+
+                    // Lock the shooter out of firing again for a few seconds after freezing someone solid
+                    UUID shooterId = shooter.getUniqueId();
+                    cooldownManager.setCooldownSeconds(shooterId, CooldownManager.Keys.BLAZEBITE_FREEZE_LOCKOUT, cfg.getBlazebiteFreezeLockoutSeconds());
+                    Messages.send(shooter, "mythic.blazebite-froze-target", "cooldown_seconds",
+                            String.valueOf(cfg.getBlazebiteFreezeLockoutSeconds()));
                 } else {
                     // FIRST HIT - Apply frostbite for 5 seconds
                     int frostbiteDuration = cfg.getBlazebiteFreezeDuration();
@@ -181,35 +201,67 @@ public class BlazebiteHandler extends MythicItemHandler {
             }
         }
 
-        // Volcano effect - fires on every hit alongside Glacier above.
-        {
-            ParticleUtils.volcanoExplosion(hitLoc);
-            ParticleUtils.volcanoFlameBurst(hitLoc);
-            SoundUtils.playAt(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
+    }
 
-            GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(shooter);
-            Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
-            int radius = cfg.getBlazebiteVolcanoRadius();
-            int fireTicks = cfg.getBlazebiteFireDuration();
-            int hitCount = 0;
+    /**
+     * Magma Storm mode: fire/explosion AOE damage, and cleanses the freezing effect off any
+     * frozen/frostbitten players it hits instead of applying freeze itself.
+     */
+    private void handleMagmaStorm(Player shooter, Entity hitEntity, Location hitLoc, World world) {
+        ParticleUtils.volcanoExplosion(hitLoc);
+        ParticleUtils.volcanoFlameBurst(hitLoc);
+        SoundUtils.playAt(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
-            for (Entity entity : world.getNearbyEntities(hitLoc, radius, radius, radius)) {
-                if (!(entity instanceof Player target)) continue;
-                if (target.equals(shooter)) continue;
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(shooter);
+        Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
+        int radius = cfg.getBlazebiteVolcanoRadius();
+        int fireTicks = cfg.getBlazebiteFireDuration();
+        int hitCount = 0;
 
-                if (session != null) {
-                    Team targetTeam = session.getPlayerTeam(target);
-                    if (targetTeam != null && shooterTeam != null &&
-                        targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
-                }
+        for (Entity entity : world.getNearbyEntities(hitLoc, radius, radius, radius)) {
+            if (!(entity instanceof Player target)) continue;
+            if (target.equals(shooter)) continue;
 
-                double damage = entity.equals(hitEntity) ? cfg.getBlazebiteVolcanoDirectDamage() : cfg.getBlazebiteVolcanoSplashDamage();
-                target.damage(damage, shooter);
-                target.setFireTicks(fireTicks);
-                hitCount++;
+            if (session != null) {
+                Team targetTeam = session.getPlayerTeam(target);
+                if (targetTeam != null && shooterTeam != null &&
+                    targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
             }
-            Messages.debug(shooter, "BLAZEBITE: Volcano explosion hit " + hitCount + " enemies, radius: " + radius);
+
+            double damage = entity.equals(hitEntity) ? cfg.getBlazebiteVolcanoDirectDamage() : cfg.getBlazebiteVolcanoSplashDamage();
+            target.damage(damage, shooter);
+            target.setFireTicks(fireTicks);
+            cleanseFreeze(target);
+            hitCount++;
         }
+        Messages.debug(shooter, "BLAZEBITE: Magma Storm explosion hit " + hitCount + " enemies, radius: " + radius);
+    }
+
+    /**
+     * Removes the Glacier freeze/frostbite state from a player - clears the tracked slowness
+     * levels applied by {@link #handleGlacier}, stops any running frostbite/freeze particle
+     * task, and forgets the frozen-tracking entry so a later shot starts fresh at "first hit".
+     */
+    private void cleanseFreeze(Player target) {
+        UUID targetId = target.getUniqueId();
+        if (!glacierFrozenPlayers.containsKey(targetId)
+                && !glacierFrostbiteParticleTasks.containsKey(targetId)
+                && !CashClashPlayer.hasEffect(target, PotionEffectType.SLOWNESS)) {
+            return;
+        }
+
+        glacierFrozenPlayers.remove(targetId);
+        CashClashPlayer.removeEffect(target, PotionEffectType.SLOWNESS);
+        CashClashPlayer.removeEffect(target, PotionEffectType.JUMP_BOOST);
+        target.setFreezeTicks(0);
+
+        BukkitTask task = glacierFrostbiteParticleTasks.remove(targetId);
+        if (task != null && !task.isCancelled()) {
+            task.cancel();
+        }
+
+        Messages.send(target, "mythic.blazebite-freeze-cleansed");
+        SoundUtils.play(target, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 1.2f);
     }
 
     @Override

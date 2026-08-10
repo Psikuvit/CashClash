@@ -5,7 +5,6 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -40,6 +39,7 @@ import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -58,11 +58,15 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerAnimationType;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -93,7 +97,6 @@ public class InteractListener implements Listener {
     public void onProjectileLaunch(ProjectileLaunchEvent event) {
         if (event.isCancelled()) return;
 
-        // Handle Ender Pearl restrictions
         if (event.getEntity() instanceof EnderPearl pearl) {
             if (pearl.getShooter() instanceof Player player) {
                 GameSession session = plugin.getGameManager().getPlayerSession(player);
@@ -114,22 +117,16 @@ public class InteractListener implements Listener {
             }
         }
 
-        // Handle Trident (Goblin Spear) shot system
         if (event.getEntity() instanceof Trident trident) {
             if (trident.getShooter() instanceof Player player) {
                 GameSession session = plugin.getGameManager().getPlayerSession(player);
                 if (session == null) return;
 
-                // Check if player is dead - cannot use any abilities
-                if (session.getState() == GameState.COMBAT) {
-                    RoundData roundData = session.getCurrentRoundData();
-                    if (roundData != null && !roundData.isAlive(player.getUniqueId())) {
-                        event.setCancelled(true);
-                        return;
-                    }
+                if (CashClashPlayer.isPlayerDead(player)) {
+                    event.setCancelled(true);
+                    return;
                 }
 
-                // Check respawn protection
                 CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
                 if (ccp != null && ccp.isRespawnProtected()) {
                     event.setCancelled(true);
@@ -141,19 +138,16 @@ public class InteractListener implements Listener {
                 MythicItem mythic = PDCDetection.getMythic(mainHand);
 
                 if (mythic == MythicItem.GOBLIN_SPEAR) {
-                    // Check if player is charging - prevent throw during charge
                     if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(player.getUniqueId())) {
                         event.setCancelled(true);
                         return;
                     }
 
-                    // Check shot system - if out of shots or reloading, cancel the throw
                     if (!mythicManager.getHandler(GoblinSpearHandler.class).handleGoblinSpearThrow(player)) {
                         event.setCancelled(true);
                         return;
                     }
 
-                    // Tag the projectile with mythic id so hit detection works even when hand is empty
                     PDCSetter.of(trident).set(Keys.ITEM_ID, PersistentDataType.STRING, mythic.getConfigKey()).apply();
                 }
             }
@@ -223,6 +217,71 @@ public class InteractListener implements Listener {
         mythicManager.getHandler(WardenGlovesHandler.class).onHandSwitch(player, newItem);
     }
 
+    /**
+     * Blocks the vanilla F-key hand swap while Warden Gloves' both-hands mode is active - see
+     * {@link WardenGlovesHandler#isBothHandsActive}. Without this, swapping hands moves the
+     * real (PDC-tagged) gloves into the off-hand and the untagged cosmetic glove into the main
+     * hand, silently breaking the gloves' mythic dispatch on every subsequent melee hit.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onWardenGlovesSwapHands(PlayerSwapHandItemsEvent event) {
+        Player player = event.getPlayer();
+        if (mythicManager.getHandler(WardenGlovesHandler.class).isBothHandsActive(player.getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Reconciles Warden Gloves' both-hands state after any inventory click that could have
+     * moved the real gloves or the cosmetic glove without going through
+     * {@link #onWardenGlovesHandSwitch} - shift-click, drag-into-slot, or a number-key
+     * hotbar-swap performed while a GUI is open all mutate the inventory without firing
+     * {@code PlayerItemHeldEvent}. Deferred a tick since the click's actual item movement hasn't
+     * applied yet at event time (cancelling here would just undo it, not read the result).
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onWardenGlovesInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        WardenGlovesHandler handler = mythicManager.getHandler(WardenGlovesHandler.class);
+        if (!handler.isBothHandsActive(player.getUniqueId())
+                && PDCDetection.getMythic(player.getInventory().getItemInMainHand()) != MythicItem.WARDEN_GLOVES) {
+            return;
+        }
+        SchedulerUtils.runTask(() -> {
+            if (player.isOnline()) handler.reconcileBothHands(player);
+        });
+    }
+
+    /**
+     * Same reconciliation as {@link #onWardenGlovesInventoryClick}, for drag-to-move actions.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onWardenGlovesInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        WardenGlovesHandler handler = mythicManager.getHandler(WardenGlovesHandler.class);
+        if (!handler.isBothHandsActive(player.getUniqueId())
+                && PDCDetection.getMythic(player.getInventory().getItemInMainHand()) != MythicItem.WARDEN_GLOVES) {
+            return;
+        }
+        SchedulerUtils.runTask(() -> {
+            if (player.isOnline()) handler.reconcileBothHands(player);
+        });
+    }
+
+    /**
+     * Same reconciliation as {@link #onWardenGlovesInventoryClick}, for the Q-key item drop
+     * (drops the real gloves out of the main hand without any hand-switch event).
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onWardenGlovesDrop(PlayerDropItemEvent event) {
+        Player player = event.getPlayer();
+        WardenGlovesHandler handler = mythicManager.getHandler(WardenGlovesHandler.class);
+        if (!handler.isBothHandsActive(player.getUniqueId())) return;
+        SchedulerUtils.runTask(() -> {
+            if (player.isOnline()) handler.reconcileBothHands(player);
+        });
+    }
+
     // ==================== MAIN INTERACT HANDLER ====================
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -240,7 +299,7 @@ public class InteractListener implements Listener {
             handleReadyUp(event, player, block);
         }
 
-        if (isPlayerDead(player)) {
+        if (CashClashPlayer.isPlayerDead(player)) {
             // Exceptions for dead players (if any)
             if (block != null && block.getType().name().contains("SIGN")) return;
 
@@ -317,7 +376,7 @@ public class InteractListener implements Listener {
         if (item.getType() != Material.FIRE_CHARGE) return false;
         if (PDCDetection.getAnyShopTag(item) == null) {
             // Prevent dead players from using fire charges
-            if (isPlayerDead(player)) {
+            if (CashClashPlayer.isPlayerDead(player)) {
                 event.setCancelled(true);
                 Messages.send(player, "listener.cannot-use-items-dead");
                 return true;
@@ -724,16 +783,8 @@ public class InteractListener implements Listener {
         return ccp != null && ccp.isRespawnProtected();
     }
 
-    private boolean isPlayerDead(Player player) {
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
-        if (session == null) return false;
-        if (session.getState() != GameState.COMBAT) return false;
-        RoundData roundData = session.getCurrentRoundData();
-        return roundData != null && !roundData.isAlive(player.getUniqueId());
-    }
-
     private boolean isSilenced(Player player) {
-        if (isPlayerDead(player)) {
+        if (CashClashPlayer.isPlayerDead(player)) {
             return true;
         }
         GameSession session = plugin.getGameManager().getPlayerSession(player);

@@ -125,6 +125,34 @@ public class Keys {
      */
     public static final NamespacedKey RUNE_FULL_CHARGE_WARNING;
 
+    /**
+     * Mythic melee weapons' ATTACK_DAMAGE/ATTACK_SPEED modifier keys, applied once at item
+     * creation in {@code MythicItemManager#applyMythicAttributes}.
+     */
+    public static final NamespacedKey MYTHIC_CARLS_BATTLEAXE_DAMAGE;
+    public static final NamespacedKey MYTHIC_CARLS_BATTLEAXE_SPEED;
+    public static final NamespacedKey MYTHIC_ELECTRIC_EEL_DAMAGE;
+    public static final NamespacedKey MYTHIC_ELECTRIC_EEL_SPEED;
+    public static final NamespacedKey MYTHIC_GOBLIN_SPEAR_DAMAGE;
+    public static final NamespacedKey MYTHIC_GOBLIN_SPEAR_SPEED;
+    public static final NamespacedKey MYTHIC_WARDEN_GLOVES_DAMAGE;
+    public static final NamespacedKey MYTHIC_WARDEN_GLOVES_SPEED;
+
+    /**
+     * Warden Gloves' Rising Fury reach-stack modifier keys (one per stack, up to 3).
+     */
+    public static final NamespacedKey WARDEN_REACH_STACK_1;
+    public static final NamespacedKey WARDEN_REACH_STACK_2;
+    public static final NamespacedKey WARDEN_REACH_STACK_3;
+
+    /**
+     * Marks the cosmetic paired-glove item placed in the off-hand while Warden Gloves' both-hands
+     * mode is active. Lets reconciliation reliably tell "this is the cosmetic" apart from any
+     * other item, regardless of in-memory bookkeeping state - see
+     * {@code WardenGlovesHandler#reconcileBothHands}.
+     */
+    public static final NamespacedKey WARDEN_GLOVES_COSMETIC;
+
 
     static {
         ITEM_ID = new NamespacedKey(CashClashPlugin.getInstance(), "item_id");
@@ -148,6 +176,18 @@ public class Keys {
         RUNE_BROKEN_TIME = new NamespacedKey(CashClashPlugin.getInstance(), "rune_broken_time");
         RUNE_OFF_TIME = new NamespacedKey(CashClashPlugin.getInstance(), "rune_off_time");
         RUNE_FULL_CHARGE_WARNING = new NamespacedKey(CashClashPlugin.getInstance(), "rune_full_charge_warning");
+        MYTHIC_CARLS_BATTLEAXE_DAMAGE = new NamespacedKey(CashClashPlugin.getInstance(), "carls_battleaxe_damage");
+        MYTHIC_CARLS_BATTLEAXE_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "carls_battleaxe_speed");
+        MYTHIC_ELECTRIC_EEL_DAMAGE = new NamespacedKey(CashClashPlugin.getInstance(), "electric_eel_sword_damage");
+        MYTHIC_ELECTRIC_EEL_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "electric_eel_sword_speed");
+        MYTHIC_GOBLIN_SPEAR_DAMAGE = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_spear_damage");
+        MYTHIC_GOBLIN_SPEAR_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_spear_speed");
+        MYTHIC_WARDEN_GLOVES_DAMAGE = new NamespacedKey(CashClashPlugin.getInstance(), "warden_gloves_damage");
+        MYTHIC_WARDEN_GLOVES_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "warden_gloves_speed");
+        WARDEN_REACH_STACK_1 = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_1");
+        WARDEN_REACH_STACK_2 = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_2");
+        WARDEN_REACH_STACK_3 = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_3");
+        WARDEN_GLOVES_COSMETIC = new NamespacedKey(CashClashPlugin.getInstance(), "warden_gloves_cosmetic");
     }
 
     private Keys() {

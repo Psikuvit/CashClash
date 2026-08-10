@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.ActionBarQueue;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -26,6 +27,7 @@ import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
@@ -37,26 +39,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Warden Gloves - boxing punch ability with Speed I, a right-click shockwave cone, and a
- * shift+right-click Rising Fury ability. Base melee damage is 0 (see
- * {@link MythicItemManager#createMythicItem}); Rising Fury is the only source of real damage,
- * temporarily swapping the item's attack attributes to diamond-sword-equivalent and stacking
- * reach on landed hits. Holding the gloves occupies both hands - the off-hand item is stashed
- * and shown a cosmetic paired glove for as long as the gloves stay in the main hand.
+ * shift+right-click Rising Fury ability. Melee damage/speed is diamond-sword-equivalent at all
+ * times (see {@link MythicItemManager#createMythicItem}); Rising Fury adds stacking reach on
+ * landed hits and shield-breaking at max stacks, on top of that baseline. Holding the gloves
+ * occupies both hands - the off-hand item is stashed and shown a cosmetic paired glove for as
+ * long as the gloves stay in the main hand.
  */
 public class WardenGlovesHandler extends MythicItemHandler {
 
-    /** Baseline (non-Rising-Fury) damage modifier key - zeroes total attack damage to 0. */
-    public static final NamespacedKey WARDEN_DAMAGE_BASELINE_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "warden_damage_baseline");
-    /** Netherite Sword base (8.0) -> 0.0 baseline damage. */
-    public static final double WARDEN_BASELINE_DAMAGE_DELTA = -8.0;
-
-    private static final NamespacedKey WARDEN_DAMAGE_RISING_FURY_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "warden_damage_rising_fury");
-    /** Netherite Sword base (8.0) -> 7.0 diamond-sword-equivalent damage while Rising Fury is active. */
-    private static final double RISING_FURY_DAMAGE_DELTA = -1.0;
     private static final NamespacedKey[] RISING_FURY_REACH_STACK_KEYS = {
-            new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_1"),
-            new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_2"),
-            new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_3"),
+            Keys.WARDEN_REACH_STACK_1,
+            Keys.WARDEN_REACH_STACK_2,
+            Keys.WARDEN_REACH_STACK_3,
     };
     private static final int PRIORITY_RISING_FURY_TIMER = 4;
 
@@ -247,26 +241,59 @@ public class WardenGlovesHandler extends MythicItemHandler {
     // ==================== BOTH-HANDS OFF-HAND STASH ====================
 
     /**
-     * Called on every main-hand slot switch: stashes the off-hand item and shows a cosmetic
-     * paired glove there while Warden Gloves is held in the main hand, and restores it once
-     * the player switches away. Also cancels Rising Fury on switching away.
+     * Called on a main-hand slot switch - forwards to {@link #reconcileBothHands} (kept as a
+     * separate entry point since {@code PlayerItemHeldEvent} hands us the new item directly,
+     * but reconciliation itself always re-reads both hands to stay idempotent).
      */
     public void onHandSwitch(Player player, ItemStack newMainHandItem) {
-        UUID uuid = player.getUniqueId();
-        boolean holdingWarden = PDCDetection.getMythic(newMainHandItem) == MythicItem.WARDEN_GLOVES;
-        boolean wasBothHands = wardenBothHandsActive.contains(uuid);
+        reconcileBothHands(player);
+    }
 
-        if (holdingWarden && !wasBothHands) {
-            ItemStack currentOffhand = player.getInventory().getItemInOffHand();
-            wardenStashedOffhand.put(uuid, currentOffhand != null ? currentOffhand.clone() : new ItemStack(Material.AIR));
+    /**
+     * Self-healing both-hands reconciliation, driven entirely by what's actually in the
+     * player's hands right now rather than a one-shot transition diff off a mutable "was this
+     * active" flag. That flag alone used to be the only source of truth, so anything that moved
+     * the real gloves or the untagged cosmetic without going through {@link #onHandSwitch}
+     * (inventory drag/shift-click/number-key hotbar-swap while a GUI is open, dropping the item,
+     * etc.) desynced it - the real, PDC-tagged item and the cosmetic could then both end up
+     * sitting in the inventory at once, looking like a duplicate. Tagging the cosmetic
+     * ({@link Keys#WARDEN_GLOVES_COSMETIC}) and re-deriving state from it plus the current
+     * main-hand item on every relevant event closes that gap: whatever triggered the call, this
+     * converges the off-hand back to "stashed item" xor "cosmetic" to match the main hand.
+     */
+    public void reconcileBothHands(Player player) {
+        UUID uuid = player.getUniqueId();
+        boolean holdingWarden = PDCDetection.getMythic(player.getInventory().getItemInMainHand()) == MythicItem.WARDEN_GLOVES;
+        ItemStack offhand = player.getInventory().getItemInOffHand();
+        boolean offhandIsCosmetic = isCosmeticGlove(offhand);
+
+        if (holdingWarden && !offhandIsCosmetic) {
+            wardenStashedOffhand.put(uuid, offhand != null && offhand.getType() != Material.AIR ? offhand.clone() : new ItemStack(Material.AIR));
             player.getInventory().setItemInOffHand(createPairedGloveCosmetic());
             wardenBothHandsActive.add(uuid);
-        } else if (!holdingWarden && wasBothHands) {
+        } else if (!holdingWarden && offhandIsCosmetic) {
             ItemStack stashed = wardenStashedOffhand.remove(uuid);
             player.getInventory().setItemInOffHand(stashed != null ? stashed : new ItemStack(Material.AIR));
             wardenBothHandsActive.remove(uuid);
-            endRisingFury(player, false);
+            endRisingFury(player);
         }
+    }
+
+    private boolean isCosmeticGlove(ItemStack item) {
+        if (item == null || item.getType() == Material.AIR || !item.hasItemMeta()) return false;
+        return item.getItemMeta().getPersistentDataContainer().has(Keys.WARDEN_GLOVES_COSMETIC, PersistentDataType.BYTE);
+    }
+
+    /**
+     * Whether Warden Gloves' both-hands mode is currently active for a player (main hand holds
+     * the real gloves, off-hand holds the cosmetic paired glove). Used to block the vanilla
+     * F-key hand swap, which would otherwise silently move the real, PDC-tagged item into the
+     * off-hand and leave the untagged cosmetic in the main hand - melee hits with the cosmetic
+     * item don't carry the {@code WARDEN_GLOVES} tag, so they'd deal plain vanilla damage with
+     * none of this class's punch/Rising Fury logic running, and no debug output either.
+     */
+    public boolean isBothHandsActive(UUID uuid) {
+        return wardenBothHandsActive.contains(uuid);
     }
 
     private ItemStack createPairedGloveCosmetic() {
@@ -275,6 +302,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         meta.displayName(Messages.parse("<light_purple><bold>Warden Gloves</bold></light_purple>"));
         meta.setUnbreakable(true);
         meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
+        meta.getPersistentDataContainer().set(Keys.WARDEN_GLOVES_COSMETIC, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
     }
@@ -301,7 +329,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
         risingFuryActive.add(uuid);
         risingFuryHitCount.put(uuid, 0);
-        applyRisingFuryAttributes(player, true, 0);
+        applyRisingFuryAttributes(player, 0);
 
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_RISING_FURY, cfg.getWardenRisingFuryCooldown());
         Messages.send(player, "mythic.warden-rising-fury-activated");
@@ -323,7 +351,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         if (existing != null && !existing.isCancelled()) existing.cancel();
 
         int timeoutTicks = cfg.getWardenRisingFuryNoHitTimeoutSeconds() * 20;
-        BukkitTask task = SchedulerUtils.runTaskLater(() -> endRisingFury(player, true), timeoutTicks);
+        BukkitTask task = SchedulerUtils.runTaskLater(() -> endRisingFury(player), timeoutTicks);
         risingFuryTimeoutTasks.put(uuid, task);
         manager.trackTask(uuid, task);
 
@@ -347,7 +375,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         risingFuryHitCount.put(uuid, hitCount);
         int stacks = hitCount / 3;
 
-        applyRisingFuryAttributes(player, true, stacks);
+        applyRisingFuryAttributes(player, stacks);
 
         if (stacks >= maxStacks) {
             tryBreakShield(victim);
@@ -363,11 +391,11 @@ public class WardenGlovesHandler extends MythicItemHandler {
     }
 
     /**
-     * Ends Rising Fury, reverting the item's attributes back to baseline-0 damage/no reach.
-     * @param natural true when ended by the no-hit timeout (sends a message/sound); false when
-     *                cancelled by a weapon swap (silent - the item is about to change anyway).
+     * Ends Rising Fury, clearing the stacked reach bonus. Notifies the player either way -
+     * whether it timed out naturally or was cancelled by swapping away from the gloves -
+     * so deactivation is never silent.
      */
-    private void endRisingFury(Player player, boolean natural) {
+    private void endRisingFury(Player player) {
         UUID uuid = player.getUniqueId();
         if (!risingFuryActive.remove(uuid)) return;
 
@@ -376,9 +404,10 @@ public class WardenGlovesHandler extends MythicItemHandler {
         if (task != null && !task.isCancelled()) task.cancel();
         ActionBarQueue.get().stopCountdownTimer(player);
 
-        applyRisingFuryAttributes(player, false, 0);
+        // No-ops safely if the player already swapped away from the gloves.
+        applyRisingFuryAttributes(player, 0);
 
-        if (natural && player.isOnline()) {
+        if (player.isOnline()) {
             Messages.send(player, "mythic.warden-rising-fury-ended");
             SoundUtils.play(player, Sound.ENTITY_WARDEN_DEATH, 0.6f, 1.2f);
         }
@@ -393,31 +422,23 @@ public class WardenGlovesHandler extends MythicItemHandler {
     }
 
     /**
-     * Swaps the Warden Gloves item's damage modifier between baseline-0 and diamond-sword-
-     * equivalent, and applies/clears reach-stack modifiers, by re-issuing the held ItemStack's
-     * meta - mythic attribute modifiers live on the item itself, not a runtime AttributeInstance.
-     * No-ops if the player is no longer actually holding Warden Gloves in their main hand.
+     * Applies (or clears, at {@code stacks == 0}) Rising Fury's reach-stack modifiers by
+     * re-issuing the held ItemStack's meta - attribute modifiers live on the item itself, not a
+     * runtime AttributeInstance. Damage/speed are untouched here; they're the item's permanent
+     * diamond-sword-equivalent baseline set once at creation. No-ops if the player is no longer
+     * actually holding Warden Gloves in their main hand.
      */
-    private void applyRisingFuryAttributes(Player player, boolean active, int stacks) {
+    private void applyRisingFuryAttributes(Player player, int stacks) {
         ItemStack item = player.getInventory().getItemInMainHand();
         if (PDCDetection.getMythic(item) != MythicItem.WARDEN_GLOVES) return;
 
         ItemMeta meta = item.getItemMeta();
-        meta.removeAttributeModifier(Attribute.ATTACK_DAMAGE);
         meta.removeAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE);
 
-        if (active) {
-            meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
-                    WARDEN_DAMAGE_RISING_FURY_KEY, RISING_FURY_DAMAGE_DELTA, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
-
-            double reachPerStack = cfg.getWardenRisingFuryReachPerStack();
-            for (int i = 0; i < stacks && i < RISING_FURY_REACH_STACK_KEYS.length; i++) {
-                meta.addAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, new AttributeModifier(
-                        RISING_FURY_REACH_STACK_KEYS[i], reachPerStack, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
-            }
-        } else {
-            meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
-                    WARDEN_DAMAGE_BASELINE_KEY, WARDEN_BASELINE_DAMAGE_DELTA, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+        double reachPerStack = cfg.getWardenRisingFuryReachPerStack();
+        for (int i = 0; i < stacks && i < RISING_FURY_REACH_STACK_KEYS.length; i++) {
+            meta.addAttributeModifier(Attribute.ENTITY_INTERACTION_RANGE, new AttributeModifier(
+                    RISING_FURY_REACH_STACK_KEYS[i], reachPerStack, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
         }
 
         item.setItemMeta(meta);
@@ -452,7 +473,15 @@ public class WardenGlovesHandler extends MythicItemHandler {
         if (task != null && !task.isCancelled()) task.cancel();
         ActionBarQueue.get().stopCountdownTimer(player);
 
-        wardenBothHandsActive.remove(uuid);
-        wardenStashedOffhand.remove(uuid);
+        // Restore whatever was stashed rather than just dropping the tracking - otherwise the
+        // stashed item is silently lost and the cosmetic is left stuck in the off-hand.
+        if (wardenBothHandsActive.remove(uuid) && player.isOnline()) {
+            ItemStack stashed = wardenStashedOffhand.remove(uuid);
+            if (isCosmeticGlove(player.getInventory().getItemInOffHand())) {
+                player.getInventory().setItemInOffHand(stashed != null ? stashed : new ItemStack(Material.AIR));
+            }
+        } else {
+            wardenStashedOffhand.remove(uuid);
+        }
     }
 }

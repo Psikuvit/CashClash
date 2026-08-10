@@ -101,7 +101,7 @@ public class ItemsConfig {
     }
 
     public double getCarlsThrowSpeedPerTick() {
-        return config.getDouble("mythic-items.carls-battleaxe.throw.speed-blocks-per-tick", 1.0);
+        return config.getDouble("mythic-items.carls-battleaxe.throw.speed-blocks-per-tick", 0.24);
     }
 
     public double getCarlsThrowDamage() {
@@ -363,6 +363,10 @@ public class ItemsConfig {
 
     public int getBlazebiteFireDuration() {
         return config.getInt("mythic-items.blazebite-crossbows.volcano.fire-duration-seconds", 5) * 20;
+    }
+
+    public int getBlazebiteFreezeLockoutSeconds() {
+        return config.getInt("mythic-items.blazebite-crossbows.glacier.freeze-lockout-seconds", 5);
     }
 
     // Alchemist Wand Tidy Up (Blink Swap stays hardcoded, not config-driven)

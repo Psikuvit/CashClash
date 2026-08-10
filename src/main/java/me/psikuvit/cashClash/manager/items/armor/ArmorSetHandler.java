@@ -4,9 +4,9 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -48,14 +48,11 @@ public abstract class ArmorSetHandler {
      */
     protected boolean isSilenced(Player player) {
         // Dead players are silenced for all items
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (session != null) {
-            RoundData roundData = session.getCurrentRoundData();
-            if (roundData != null && !roundData.isAlive(player.getUniqueId())) {
-                return true;
-            }
+        if (CashClashPlayer.isPlayerDead(player)) {
+            return true;
         }
 
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null || session.getGamemode() == null) return false;
         if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return false;
         return gamemode.isSilenced(player.getUniqueId());

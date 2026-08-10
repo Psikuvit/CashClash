@@ -39,6 +39,11 @@ public class MythicsCommand extends AbstractArgCommand {
             return true;
         }
 
+        if (args.length == 0) {
+            Messages.send(player, "generic.mythic-usage");
+            return true;
+        }
+
         MythicItem mythicItem = ShopItems.getMythic(args[0]);
 
         if (mythicItem == null) {

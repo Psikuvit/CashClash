@@ -76,7 +76,6 @@ public class DamageListener implements Listener {
     private static final double STRENGTH_NERF_MULTIPLIER = 0.5;
     private static final double POWER_NERF_MULTIPLIER = 0.2;
     private static final int MAX_POWER_LEVEL_REGULAR_BOW = 2;
-    private static final double LEGENDARY_CROSSBOW_DAMAGE_BOOST = 1.3;
 
     private final CashClashPlugin plugin;
     private final GameManager gameManager;
@@ -107,46 +106,35 @@ public class DamageListener implements Listener {
         }
 
         try {
-            // 0. Totem of Haunting - brief invincibility window after triggering
             if (customItemManager.getHandler(TotemOfHauntingHandler.class).isTotemInvincible(player.getUniqueId())) {
                 event.setCancelled(true);
                 return;
             }
 
-            // 0b. Overdrive Potion - total invincibility while active
             if (customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
                 event.setCancelled(true);
                 return;
             }
 
-            // 0c. Dragon Rush teammate rush - brief invincibility window
             if (armorManager.getHandler(DragonSetHandler.class).isDragonRushInvincible(player.getUniqueId())) {
                 event.setCancelled(true);
                 return;
             }
 
-            // 1. Check game phase protection (waiting/shopping)
             if (handleGamePhaseProtection(event, player)) {
                 return;
             }
 
-            // 1b. Hunter's Mark - marked players take extra damage (base + per missing heart)
             double vulnerability = customItemManager.getHandler(HuntersMarkHandler.class).getVulnerabilityMultiplier(player.getUniqueId());
             if (vulnerability > 1.0) {
                 event.setDamage(event.getDamage() * vulnerability);
             }
 
-            // 1b2. Alchemist Wand Taunt - the wielder takes extra damage for the whole
-            // duration, both their own direct hits and damage redirected onto them from
-            // chained teammates (the redirect deals the raw, unamplified amount, relying on
-            // this check to apply the increase uniformly instead of double-counting it).
             if (mythicManager.getHandler(AlchemistWandHandler.class).isTaunting(player.getUniqueId())) {
                 double increase = plugin.getItemsConfig().getAlchemistTauntDamageIncreasePercent();
                 event.setDamage(event.getDamage() * (1.0 + increase / 100.0));
             }
 
-            // 1c. Blooming Rose - same-team zone: reduce damage and clamp so health never drops
-            // below the 2-heart floor (the base clamp guarantees final damage can't exceed it)
             double roseReduction = customItemManager.getHandler(BloomingRoseHandler.class).getBloomingRoseDamageReduction(player);
             if (roseReduction > 0) {
                 event.setDamage(event.getDamage() * (1.0 - roseReduction / 100.0));
@@ -155,13 +143,9 @@ public class DamageListener implements Listener {
                 event.setDamage(Math.min(event.getDamage(), maxDamage));
             }
 
-            // 2. Handle custom armor defensive effects
             handleArmorDefenseEffects(event, player);
-
-            // 3. Track damage for bonus calculations
             trackDamageForBonuses(event, player);
 
-            // 4. Alchemist Wand Blink Swap protection
             if (mythicManager.getHandler(AlchemistWandHandler.class).handleAlchemistBlinkProtection(player)) {
                 event.setCancelled(true);
                 return;
@@ -195,30 +179,22 @@ public class DamageListener implements Listener {
             Player attacker = resolveAttacker(event);
             Player victim = event.getEntity() instanceof Player p ? p : null;
 
-            // Ice Fan is a pure ability-tool (gust/burst) - suppress vanilla melee swings from
-            // it entirely, only letting through damage explicitly dealt via its abilities
             if (onIceFanMeleeSuppression(event, attacker)) {
                 return;
             }
 
-            // Apply protection checks
             if (applyProtectionChecks(event, attacker, victim)) {
                 return;
             }
 
-            // Alchemist Wand Taunt - a chained teammate takes zero damage, it's all redirected
-            // to the wielder instead (amplified by the wielder's own damage-increase check above)
             if (victim != null && redirectAlchemistTauntDamage(event, victim)) {
                 return;
             }
 
-            // Soul Katana Phantom Slice: zero armor/effect-based damage modifiers so the flat
-            // ability strike lands untouched (transient flag set only around the direct damage call)
             if (attacker != null && victim != null && weaponItemManager.getHandler(SoulKatanaHandler.class).isPhantomSliceDamage(attacker.getUniqueId())) {
                 applyPhantomSliceDamageModifiers(event);
             }
 
-            // Process damage effects
             if (attacker != null && victim != null) {
                 processVictimDamageEffects(attacker, victim);
                 handleAttackerEffects(event, attacker, victim);
@@ -238,20 +214,17 @@ public class DamageListener implements Listener {
             UUID attackerId = attacker.getUniqueId();
             UUID victimId = victim.getUniqueId();
 
-            // Special case: Goblin Spear Charge
-            // If attacker is charging and victim is caught by THIS attacker, allow damage (bypass protection)
             if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(attackerId)) {
                 UUID victimCharger = mythicManager.getHandler(GoblinSpearHandler.class).getGoblinChargerOf(victimId);
                 if (attackerId.equals(victimCharger)) {
-                    return false; // Allow damage between charger and their victim
+                    return false;
                 }
             }
-            
-            // Allow chargers to be hit
+
             if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(victimId)) {
                 return false;
             }
-            
+
             if (mythicManager.getHandler(AlchemistWandHandler.class).isTidyUpActive(attackerId)
                     && PDCDetection.getMythic(attacker.getInventory().getItemInMainHand()) == MythicItem.ALCHEMIST_WAND) {
                 return false;
@@ -456,7 +429,6 @@ public class DamageListener implements Listener {
             return false;
         }
 
-        // Cancel PvP outside games
         event.setCancelled(true);
         return true;
     }
@@ -475,7 +447,6 @@ public class DamageListener implements Listener {
             return false;
         }
 
-        // Check if victim is on the same team as attacker
         if (session.getTeamRed().hasPlayer(attacker.getUniqueId()) &&
             session.getTeamRed().hasPlayer(victim.getUniqueId())) {
             event.setCancelled(true);
@@ -505,7 +476,6 @@ public class DamageListener implements Listener {
             return false;
         }
 
-        // Allow attacker to deal damage even if they are protected
         if (attacker != null) {
             CashClashPlayer attackerCcp = session.getCashClashPlayer(attacker.getUniqueId());
             if (attackerCcp != null && attackerCcp.isRespawnProtected()) {
@@ -515,7 +485,6 @@ public class DamageListener implements Listener {
 
         CashClashPlayer victimCcp = session.getCashClashPlayer(victim.getUniqueId());
         if (victimCcp != null && victimCcp.isRespawnProtected()) {
-            // Allow damage if victim is currently charging with Goblin Spear
             if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(victim.getUniqueId())) {
                 return false;
             }
@@ -561,15 +530,9 @@ public class DamageListener implements Listener {
         double healthAfter = Math.max(0, player.getHealth() - event.getFinalDamage());
         EntityDamageEvent.DamageCause cause = event.getCause();
 
-        // Dragon Set: no explosion immunity
-        
-        // Guardian's Vest: resistance when low health
         armorManager.getHandler(GuardianVestHandler.class).onPlayerDamaged(player, healthAfter);
-
-        // Deathmauler: track damage for absorption
         armorManager.getHandler(DeathmaulerSetHandler.class).onDeathmaulerDamageTaken(player);
 
-        // Flamebringer: lava trigger speed
         if (cause == EntityDamageEvent.DamageCause.LAVA) {
             armorManager.getHandler(FlamebringerSetHandler.class).onFlamebringerLavaDamage(player);
         }
@@ -584,16 +547,9 @@ public class DamageListener implements Listener {
             return;
         }
 
-        // Dragon Set: charge a scale on fully-charged melee hits
         armorManager.getHandler(DragonSetHandler.class).handleDragonHit(attacker);
-
-        // Dragon Set: apply empowered Dragon Rush strike
         armorManager.getHandler(DragonSetHandler.class).onDragonRushHit(event);
-
-        // Bullseye Pants: Storming arrow
         handleBullseyePantsEffect(event, attacker, victim);
-
-        // Deathmauler: Soul Burst
         armorManager.getHandler(DeathmaulerSetHandler.class).tryDeathmaulerSoulBurst(attacker, victim, session);
     }
 
@@ -611,7 +567,6 @@ public class DamageListener implements Listener {
             return;
         }
 
-        // ---------------- HEADSHOT CHECK ----------------
         org.bukkit.Location hitLoc = arrow.getLocation();
         double arrowY = hitLoc.getY();
         double headY = victim.getLocation().getY() + victim.getEyeHeight();
@@ -624,10 +579,8 @@ public class DamageListener implements Listener {
         }
 
         if (armorManager.getHandler(BullseyePantsHandler.class).incrementBullseyeHit(attacker)) {
-            // 4th non-headshot hit triggered
             double originalDamage = event.getDamage();
-            event.setDamage(originalDamage * 1.3); // +30% damage
-
+            event.setDamage(originalDamage * 1.3);
             triggerStorm(attacker, victim, originalDamage);
             Messages.send(attacker, "armor.bullseye-storm-triggered");
         }
@@ -723,13 +676,8 @@ public class DamageListener implements Listener {
         GameSession session = plugin.getGameManager().getPlayerSession(attacker);
         ItemStack weapon = attacker.getInventory().getItemInMainHand();
 
-        // Apply custom item effects
         handleCustomItemEffects(attacker, weapon, session);
-
-        // Apply mythic item effects
         handleMythicItemEffects(event, attacker, victim, weapon);
-
-        // Apply combat modifiers (strength/power nerfs)
         applyCombatModifiers(event, attacker, weapon);
     }
 
@@ -747,9 +695,6 @@ public class DamageListener implements Listener {
         }
     }
 
-    /**
-     * Check if weapon is valid (has item meta)
-     */
     private boolean isValidWeapon(ItemStack weapon) {
         return weapon.hasItemMeta();
     }
@@ -779,7 +724,6 @@ public class DamageListener implements Listener {
             case ELECTRIC_EEL_SWORD -> applyMythicCriticalEffect(event, attacker, victim, mythicManager.getHandler(ElectricEelHandler.class)::handleElectricEelChain);
             case WARDEN_GLOVES -> mythicManager.getHandler(WardenGlovesHandler.class).useWardenPunch(attacker, victim);
             case GOBLIN_SPEAR -> applyGoblinSpearEffect(event, attacker, victim);
-            case BLOODWRENCH_CROSSBOW, BLAZEBITE_CROSSBOWS -> applyLegendaryCrossbowBoost(event, attacker);
             case ALCHEMIST_WAND -> mythicManager.getHandler(AlchemistWandHandler.class).onAlchemistMeleeHit(attacker, victim);
             default -> { /* No special handling */ }
         }
@@ -803,17 +747,6 @@ public class DamageListener implements Listener {
         }
     }
 
-    /**
-     * Apply legendary crossbow damage boost
-     */
-    private void applyLegendaryCrossbowBoost(EntityDamageByEntityEvent event, Player attacker) {
-        if (event.getDamager() instanceof Projectile) {
-            double currentDamage = event.getDamage();
-            double boostedDamage = currentDamage * LEGENDARY_CROSSBOW_DAMAGE_BOOST;
-            event.setDamage(boostedDamage);
-            Messages.debug(attacker, "LEGENDARY_CROSSBOW: Damage boosted from " + currentDamage + " to " + boostedDamage);
-        }
-    }
 
     /**
      * Functional interface for mythic effect handlers
@@ -827,13 +760,8 @@ public class DamageListener implements Listener {
      * Apply combat modifiers (strength nerf, power enchantment nerf/cap).
      */
     private void applyCombatModifiers(EntityDamageByEntityEvent event, Player attacker, ItemStack weapon) {
-        // Nerf strength potion effect by 50%
         applyStrengthNerf(event, attacker);
-
-        // Nerf/cap power enchantment on bows
         applyPowerNerf(event, attacker, weapon);
-
-        // Investor's Set: melee damage tradeoff for the set's passive team income
         applyInvestorMeleeNerf(event, attacker);
     }
 
@@ -865,8 +793,6 @@ public class DamageListener implements Listener {
             return;
         }
 
-        // Strength adds (level + 1) * 3 damage
-        // Reduce the bonus by 50%
         double currentDamage = event.getDamage();
         double strengthBonus = (strength.getAmplifier() + 1) * 3.0;
         double nerfedStrengthBonus = strengthBonus * STRENGTH_NERF_MULTIPLIER;
@@ -896,17 +822,13 @@ public class DamageListener implements Listener {
             return;
         }
 
-        // Check if it's a legendary bow (Wind Bow has Power 3)
         MythicItem mythic = PDCDetection.getMythic(weapon);
         boolean isLegendary = mythic == MythicItem.WIND_BOW;
 
         double currentDamage = event.getDamage();
-
-        // Power formula: damage = base * (1 + level * 0.5)
         double originalMultiplier = 1.0 + (powerLevel * 0.5);
         double baseDamage = currentDamage / originalMultiplier;
 
-        // Cap power at 2 for regular bows (legendary exception)
         if (!isLegendary && powerLevel > MAX_POWER_LEVEL_REGULAR_BOW) {
             double cappedMultiplier = 1.0 + (MAX_POWER_LEVEL_REGULAR_BOW * 0.5);
             double cappedDamage = baseDamage * cappedMultiplier;
@@ -914,8 +836,6 @@ public class DamageListener implements Listener {
             Messages.debug(attacker, "POWER_CAP: Reduced from power " + powerLevel + " to power " + MAX_POWER_LEVEL_REGULAR_BOW +
                           " (damage " + currentDamage + " -> " + cappedDamage + ")");
         } else {
-            // Nerf power by 50%: reduce the power bonus multiplier by half
-            // Nerfed: damage = base * (1 + level * 0.25)
             double nerfedMultiplier = 1.0 + (powerLevel * (0.5 * POWER_NERF_MULTIPLIER));
             double nerfedDamage = baseDamage * nerfedMultiplier;
             event.setDamage(nerfedDamage);

@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -50,38 +51,14 @@ public class BlockListener implements Listener {
         this.plugin = plugin;
     }
 
-    // Map of session UUID to set of player-placed block locations
     private static final Map<UUID, Set<Location>> placedBlocks = new ConcurrentHashMap<>();
-
-    // Map of session UUID to map of team number to water/lava source count
     private static final Map<UUID, Map<Integer, Integer>> waterLavaSourceCount = new ConcurrentHashMap<>();
-
-    // Map of session UUID to map of player UUID to leaf block count
     private static final Map<UUID, Map<UUID, Integer>> playerLeafBlockCount = new ConcurrentHashMap<>();
-
-    // Map of session UUID to map of player UUID to web block count
-    private static final Map<UUID, Map<UUID, Integer>> playerWebBlockCount = new ConcurrentHashMap<>();
-
-    // Map of web location to despawn task for web blocks
     private static final Map<Location, BukkitTask> webDespawnTasks = new ConcurrentHashMap<>();
-
-    // Map of leaf location to decay task
     private static final Map<Location, BukkitTask> leafDecayTasks = new ConcurrentHashMap<>();
-
-    // Map of player UUID to water bucket refill task
     private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
-
-    // Map of water/lava block location to its origin source location
     private static final Map<Location, Location> waterLavaOrigins = new ConcurrentHashMap<>();
-
-    // Set of locations already flooded by createQuickFluid per session
     private static final Map<UUID, Set<Location>> quickFluidVisited = new ConcurrentHashMap<>();
-
-    // Map of water/lava location to cleanup task
-    private static final Map<Location, BukkitTask> waterLavaCleanupTasks = new ConcurrentHashMap<>();
-
-    // Map of arrow UUID to despawn task
-    private static final Map<UUID, BukkitTask> arrowDespawnTasks = new ConcurrentHashMap<>();
 
     // ==================== BLOCK PLACE ====================
 
@@ -99,8 +76,7 @@ public class BlockListener implements Listener {
         }
         for (Location loc : blocks) {
             if (loc == null) continue;
-            Block block = loc.getBlock();
-            block.setType(Material.AIR);
+            loc.getBlock().setType(Material.AIR);
         }
     }
 
@@ -111,10 +87,8 @@ public class BlockListener implements Listener {
         placedBlocks.remove(sessionId);
         waterLavaSourceCount.remove(sessionId);
         playerLeafBlockCount.remove(sessionId);
-        playerWebBlockCount.remove(sessionId);
         playerWaterBucketRefillCount.remove(sessionId);
         quickFluidVisited.remove(sessionId);
-        // Note: waterBucketRefillTasks are per-player and handled separately
     }
 
     /**
@@ -155,13 +129,11 @@ public class BlockListener implements Listener {
 
         if (bucket == Material.WATER_BUCKET) {
             scheduleWaterLavaCleanup(target);
-            // Track water source placement for refill
             queueWaterBucketRefill(player);
         } else {
             scheduleLavaCleanup(target);
         }
 
-        // Track the water/lava block for cleanup
         trackPlacedBlock(session.getSessionId(), target);
         createQuickFluid(target, session.getSessionId(), origin);
     }
@@ -187,7 +159,7 @@ public class BlockListener implements Listener {
         }
 
         counts.remove(player.getUniqueId());
-        
+
         ItemStack[] contents = player.getInventory().getContents();
         int refilled = 0;
         for (int i = 0; i < contents.length && refilled < refillCount; i++) {
@@ -202,13 +174,12 @@ public class BlockListener implements Listener {
                 refilled++;
             }
         }
-        
-        // If we still have more to refill but no empty buckets found, add them anyway
+
         while (refilled < refillCount) {
             player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
             refilled++;
         }
-        
+
         player.getInventory().setContents(contents);
         Messages.send(player, "listener.water-bucket-refilled");
     }
@@ -229,12 +200,10 @@ public class BlockListener implements Listener {
         UUID sessionId = session.getSessionId();
         UUID playerId = player.getUniqueId();
 
-        // Handle block type-specific placement logic
         if (handleWebPlacement(event, blockType, sessionId, playerId, block)) return;
-        if (handleLeafPlacement(blockType, sessionId, block)) return;
+        if (handleLeafPlacement(event, blockType, sessionId, playerId, block)) return;
         if (handleWaterLavaPlacement(event, blockType, sessionId, playerId, player, session)) return;
 
-        // Track other player-placed blocks
         trackPlacedBlock(sessionId, block);
     }
 
@@ -244,7 +213,6 @@ public class BlockListener implements Listener {
     private boolean validateBlockPlaceContext(BlockPlaceEvent event, Player player, GameSession session) {
         if (session == null) return false;
 
-        // Check if in correct world
         if (!player.getWorld().equals(session.getGameWorld())) {
             Messages.debug("World mismatch for player " + player.getName() + " in BlockPlaceEvent");
             event.setCancelled(true);
@@ -294,14 +262,55 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Handle leaf block placement (unlimited)
+     * Handle leaf block placement (max 64 per player, 3-block vertical stack limit).
      */
-    private boolean handleLeafPlacement(Material blockType, UUID sessionId, Block block) {
+    private boolean handleLeafPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
         if (!isLeafBlock(blockType)) return false;
 
+        GameSession session = plugin.getGameManager().getPlayerSession(Bukkit.getPlayer(playerId));
+        if (session == null) return false;
+
+        Map<UUID, Integer> counts = playerLeafBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>());
+        int currentLeafs = counts.getOrDefault(playerId, 0);
+
+        if (currentLeafs >= 64) {
+            event.setCancelled(true);
+            Player player = event.getPlayer();
+            if (player != null) {
+                Messages.send(player, "listener.max-leaf-blocks-reached");
+            }
+            return true;
+        }
+
+        if (checkVerticalLeafStack(block)) {
+            event.setCancelled(true);
+            Player player = event.getPlayer();
+            if (player != null) {
+                Messages.send(player, "listener.leaf-stack-limit");
+            }
+            return true;
+        }
+
+        counts.put(playerId, currentLeafs + 1);
         trackPlacedBlock(sessionId, block);
         scheduleLeafDecay(block);
         return true;
+    }
+
+    /**
+     * Check if placing a leaf block here would exceed 3-block vertical stack limit.
+     */
+    private boolean checkVerticalLeafStack(Block block) {
+        int stackCount = 1;
+        for (int i = -2; i <= 2; i++) {
+            if (i == 0) continue;
+            Block adjacent = block.getRelative(0, i, 0);
+            if (isLeafBlock(adjacent.getType())) {
+                stackCount++;
+                if (stackCount > 3) return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -446,7 +455,7 @@ public class BlockListener implements Listener {
     private void scheduleWaterLavaCleanup(Block block) {
         Location loc = block.getLocation().toBlockLocation();
 
-        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
+        SchedulerUtils.runTaskLater(() -> {
             if (block.getType() == Material.WATER || block.getType() == Material.LAVA) {
                 Location center = loc.clone().add(0.5, 0.5, 0.5);
                 ParticleUtils.spawn(Particle.SPLASH, center, 12, 0.3, 0.2, 0.3, 0.05);
@@ -455,10 +464,7 @@ public class BlockListener implements Listener {
                 block.setType(Material.AIR);
             }
             waterLavaOrigins.remove(loc);
-            waterLavaCleanupTasks.remove(loc);
         }, 200);
-
-        waterLavaCleanupTasks.put(loc, task);
     }
 
     /**
@@ -467,7 +473,7 @@ public class BlockListener implements Listener {
     private void scheduleLavaCleanup(Block block) {
         Location loc = block.getLocation().toBlockLocation();
 
-        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
+        SchedulerUtils.runTaskLater(() -> {
             if (block.getType() == Material.LAVA) {
                 Location center = loc.clone().add(0.5, 0.5, 0.5);
                 ParticleUtils.spawn(Particle.LAVA, center, 8, 0.25, 0.2, 0.25, 0);
@@ -476,28 +482,20 @@ public class BlockListener implements Listener {
                 block.setType(Material.AIR);
             }
             waterLavaOrigins.remove(loc);
-            waterLavaCleanupTasks.remove(loc);
         }, 200);
-
-        waterLavaCleanupTasks.put(loc, task);
     }
 
     /**
      * Schedule an arrow to despawn after 5 seconds.
      */
     private void scheduleArrowDespawn(AbstractArrow arrow) {
-        UUID id = arrow.getUniqueId();
-
-        BukkitTask task = SchedulerUtils.runTaskLater(() -> {
+        SchedulerUtils.runTaskLater(() -> {
             if (!arrow.isDead()) {
                 ParticleUtils.spawn(Particle.CRIT, arrow.getLocation(), 8, 0.2);
                 SoundUtils.playAt(arrow.getLocation(), Sound.ENTITY_ARROW_HIT, 0.5f, 1.2f);
                 arrow.remove();
             }
-            arrowDespawnTasks.remove(id);
         }, 100);
-
-        arrowDespawnTasks.put(id, task);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -654,9 +652,6 @@ public class BlockListener implements Listener {
         if (block.getType() == Material.COBWEB) {
             event.setDropItems(false);
             cancelWebDespawnTask(block.getLocation());
-
-            // Decrement player's web count
-            decrementPlayerLeaf(event, playerWebBlockCount);
         }
     }
 

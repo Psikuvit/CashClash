@@ -81,29 +81,28 @@ public class GoblinSpearHandler extends MythicItemHandler {
     }
 
     /**
-     * Handle Goblin Spear hit.
-     * Deals damage + Poison.
+     * Handle Goblin Spear hit. Ranged (thrown) hits deal damage + Poison; melee hits only deal
+     * vanilla melee damage - no poison, so meleeing with the spear doesn't get the throw-only
+     * debuff for free.
      * @param shooter The attacker
      * @param victim The victim
-     * @param isMelee Whether this is a melee hit (prevents double damage)
+     * @param isMelee Whether this is a melee hit (skips the redundant damage call and the poison)
      */
     public void handleGoblinSpearHit(Player shooter, LivingEntity victim, boolean isMelee) {
         Messages.debug(shooter, "GOBLIN_SPEAR: Hit " + victim.getName() + " (Melee: " + isMelee + ")");
 
         if (!isMelee) {
             victim.damage(cfg.getGoblinSpearDamage(), shooter);
-        }
 
-        if (victim instanceof Player victimPlayer) {
-            CashClashPlayer.applyEffect(victimPlayer, PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true);
-        } else {
-            victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true));
-        }
+            if (victim instanceof Player victimPlayer) {
+                CashClashPlayer.applyEffect(victimPlayer, PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true);
+            } else {
+                victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true));
+            }
 
-        if (!isMelee) {
             Messages.debug(shooter, "GOBLIN_SPEAR: Dealt " + cfg.getGoblinSpearDamage() + " damage + Poison " + (cfg.getGoblinPoisonLevel() + 1));
         } else {
-            Messages.debug(shooter, "GOBLIN_SPEAR: Applied Poison " + (cfg.getGoblinPoisonLevel() + 1));
+            Messages.debug(shooter, "GOBLIN_SPEAR: Melee hit - no poison");
         }
 
         ParticleUtils.slime(victim.getLocation().add(0, 1, 0), 20, 0.5);
@@ -206,8 +205,8 @@ public class GoblinSpearHandler extends MythicItemHandler {
                     }
                 }
 
-                // Green trail while charging
-                ParticleUtils.spawnDust(player.getLocation().add(0, 0.2, 0), Color.fromRGB(0, 200, 0), 1.2f, 6, 0.25);
+                // Green trail while charging - raised slightly so it reads at chest height, not underfoot
+                ParticleUtils.spawnDust(player.getLocation().add(0, 0.8, 0), Color.fromRGB(0, 200, 0), 1.2f, 6, 0.25);
 
                 ticks++;
             }

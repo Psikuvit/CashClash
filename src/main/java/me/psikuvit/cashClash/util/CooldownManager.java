@@ -1,6 +1,9 @@
 package me.psikuvit.cashClash.util;
 
 import me.psikuvit.cashClash.manager.Shutdownable;
+import me.psikuvit.cashClash.player.CashClashPlayer;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.util.Map;
 import java.util.UUID;
@@ -40,27 +43,13 @@ public class CooldownManager implements Shutdownable {
                 .put(ability, System.currentTimeMillis() + durationSeconds * 1000L);
     }
 
+    /**
+     * Thin UUID-taking wrapper around the canonical {@link CashClashPlayer#isPlayerDead(Player)}
+     * check, since this class's API is UUID-keyed throughout.
+     */
     private boolean isPlayerDead(UUID playerId) {
-        try {
-            Class<?> gmClass = Class.forName("me.psikuvit.cashClash.manager.game.GameManager");
-            Object gmInstance = gmClass.getMethod("getInstance").invoke(null);
-            Object session = gmClass.getMethod("getPlayerSession", UUID.class).invoke(gmInstance, playerId);
-            if (session == null) return false;
-
-            Object state = session.getClass().getMethod("getState").invoke(session);
-            if (!state.toString().equals("COMBAT")) return false;
-
-            Object roundData = session.getClass().getMethod("getCurrentRoundData").invoke(session);
-            if (roundData == null) return false;
-
-            return !(boolean) roundData.getClass().getMethod("isAlive", UUID.class).invoke(roundData, playerId);
-        } catch (Exception e) {
-            // Reflection is used here to reach into the game package without a compile-time
-            // dependency; a silent false-return would hide a real break (e.g. a renamed method)
-            // behind "this cooldown just never got skipped for dead players" with no trail.
-            Messages.debug("COOLDOWN", "isPlayerDead reflection failed: " + e);
-            return false;
-        }
+        Player player = Bukkit.getPlayer(playerId);
+        return player != null && CashClashPlayer.isPlayerDead(player);
     }
 
     /**
@@ -345,6 +334,7 @@ public class CooldownManager implements Shutdownable {
         public static final String WARDEN_BOXING = "WARDEN_BOXING";
         public static final String WARDEN_RISING_FURY = "WARDEN_RISING_FURY";
         public static final String BLAZEBITE_RELOAD = "BLAZEBITE_RELOAD";
+        public static final String BLAZEBITE_FREEZE_LOCKOUT = "BLAZEBITE_FREEZE_LOCKOUT";
         public static final String ALCHEMIST_BLINK_SWAP = "ALCHEMIST_BLINK_SWAP";
         public static final String ALCHEMIST_TAUNT = "ALCHEMIST_TAUNT";
         public static final String ALCHEMIST_TIDY_UP = "ALCHEMIST_TIDY_UP";

@@ -272,9 +272,13 @@ public final class ParticleUtils {
     }
 
     /**
-     * Fires 5 short colored-dust lines radiating out from a point: two to the sides (+/-90 deg
-     * from {@code forward}), two diagonal (+/-45 deg), and one straight up - used for Goblin
-     * Spear's wall-impact burst. Reuses {@link #beam} for each line's point-stepping.
+     * Fires 5 short colored-dust lines radiating out from a point, all fanned within the single
+     * vertical plane flush against the wall (perpendicular to {@code forward}) rather than
+     * poking into it: two straight to the sides (+/-90 deg), two diagonal (+/-45 deg, blended
+     * between a side and straight up - not rotated toward {@code forward} the way the sides are,
+     * which used to angle them into the wall and make them look like they "flared" instead of
+     * evenly filling the gap between a side line and the up line), and one straight up. Used for
+     * Goblin Spear's wall-impact burst. Reuses {@link #beam} for each line's point-stepping.
      */
     public static void radialLineBurst(Location origin, Vector forward, Color color, double lineLength, int pointsPerBlock) {
         if (origin == null || origin.getWorld() == null || forward == null) return;
@@ -283,16 +287,22 @@ public final class ParticleUtils {
         if (flatForward.lengthSquared() < 1.0E-4) flatForward = new Vector(1, 0, 0);
         flatForward.normalize();
 
+        Vector right = flatForward.clone().rotateAroundY(Math.toRadians(90));
+        Vector up = new Vector(0, 1, 0);
+
+        // Fan from -90 deg (left) through 0 (straight up) to +90 deg (right), all in the
+        // {right, up} plane - none of these have a forward component, so nothing pokes into
+        // the wall the burst just hit.
         Vector[] directions = new Vector[] {
-                flatForward.clone().rotateAroundY(Math.toRadians(90)),   // side
-                flatForward.clone().rotateAroundY(Math.toRadians(-90)),  // side
-                flatForward.clone().rotateAroundY(Math.toRadians(45)),   // diagonal
-                flatForward.clone().rotateAroundY(Math.toRadians(-45)),  // diagonal
-                new Vector(0, 1, 0)                                      // straight up
+                right.clone().multiply(-1),                                              // left
+                right.clone().multiply(-Math.cos(Math.toRadians(45))).add(up.clone().multiply(Math.sin(Math.toRadians(45)))), // up-left diagonal
+                up,                                                                       // straight up
+                right.clone().multiply(Math.cos(Math.toRadians(45))).add(up.clone().multiply(Math.sin(Math.toRadians(45)))),  // up-right diagonal
+                right                                                                     // right
         };
 
         for (Vector direction : directions) {
-            Location end = origin.clone().add(direction.clone().multiply(lineLength));
+            Location end = origin.clone().add(direction.clone().normalize().multiply(lineLength));
             beam(origin, end, color, 1.2f, pointsPerBlock);
         }
     }
@@ -341,6 +351,24 @@ public final class ParticleUtils {
     }
 
     /**
+     * Pulse of red particles around a player, fired each time they heal from the BloodWrench
+     * vortex - a ring at their feet plus a burst around chest height reads as one "pulse".
+     */
+    public static void bloodHealPulse(Player player) {
+        if (player == null) return;
+        Location base = player.getLocation();
+        Color color = Color.fromRGB(200, 0, 0);
+
+        for (int i = 0; i < 12; i++) {
+            double angle = Math.PI * 2 * i / 12;
+            double x = Math.cos(angle) * 0.6;
+            double z = Math.sin(angle) * 0.6;
+            spawnDust(base.clone().add(x, 1.0, z), color, 1.5f, 1, 0);
+        }
+        spawn(Particle.HEART, base.clone().add(0, 2.2, 0), 1);
+    }
+
+    /**
      * Spawn glacier frost particles (for BlazeBite Glacier).
      */
     public static void glacierFrost(Location location) {
@@ -385,19 +413,20 @@ public final class ParticleUtils {
      * Spawn volcano explosion effect (for BlazeBite Volcano).
      */
     public static void volcanoExplosion(Location location) {
-        flame(location, 50, 1);
+        flame(location, 70, 1.5);
         explosion(location);
     }
 
     /**
      * Spawn a red/orange/yellow dust burst left behind at a Volcano-mode impact point
      * (BlazeBite). Smaller/tighter than {@link #flamebringerPull} since this is a one-shot
-     * burst, not a lingering pull effect.
+     * burst, not a lingering pull effect. Spread/size bumped up so the burst reads clearly
+     * from a distance.
      */
     public static void volcanoFlameBurst(Location location) {
-        spawnDust(location, Color.fromRGB(255, 0, 0), 1.2f, 12, 0.6);
-        spawnDust(location, Color.fromRGB(255, 165, 0), 1.2f, 12, 0.6);
-        spawnDust(location, Color.fromRGB(255, 255, 0), 1.2f, 12, 0.6);
+        spawnDust(location, Color.fromRGB(255, 0, 0), 1.6f, 18, 1.0);
+        spawnDust(location, Color.fromRGB(255, 165, 0), 1.6f, 18, 1.0);
+        spawnDust(location, Color.fromRGB(255, 255, 0), 1.6f, 18, 1.0);
     }
 
     /**

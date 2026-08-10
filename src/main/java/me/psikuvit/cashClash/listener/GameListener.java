@@ -10,7 +10,6 @@ import me.psikuvit.cashClash.event.PlayerBackToGameEvent;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
@@ -436,21 +435,18 @@ public class GameListener implements Listener {
         }
 
         // Prevent dead players from consuming
-        return preventDeadPlayerConsumption(event, p, session);
+        return preventDeadPlayerConsumption(event, p);
     }
 
     /**
      * Prevent dead players from using consumables
      * @return true if consumption should be cancelled
      */
-    private boolean preventDeadPlayerConsumption(PlayerItemConsumeEvent event, Player p, GameSession session) {
-        if (session.getState() == GameState.COMBAT) {
-            RoundData roundData = session.getCurrentRoundData();
-            if (roundData != null && !roundData.isAlive(p.getUniqueId())) {
-                event.setCancelled(true);
-                Messages.send(p, "listener.cannot-use-consumables-dead");
-                return true;
-            }
+    private boolean preventDeadPlayerConsumption(PlayerItemConsumeEvent event, Player p) {
+        if (CashClashPlayer.isPlayerDead(p)) {
+            event.setCancelled(true);
+            Messages.send(p, "listener.cannot-use-consumables-dead");
+            return true;
         }
         return false;
     }
@@ -533,7 +529,7 @@ public class GameListener implements Listener {
 
         // Dead players cannot use Bunny Shoes or any abilities
         if (armorManager.getHandler(BunnyShoesHandler.class).hasBunnyShoes(p)) {
-            if (isPlayerDead(session, p)) {
+            if (CashClashPlayer.isPlayerDead(p)) {
                 Messages.send(p, "listener.cannot-use-items-dead");
                 return;
             }
@@ -545,7 +541,7 @@ public class GameListener implements Listener {
 
         // Dragon Set: sneak-start triggers Dragon Outrage at full scales, otherwise Dragon Rush
         if (event.isSneaking() && armorManager.getHandler(DragonSetHandler.class).hasDragonSet(p)) {
-            if (isPlayerDead(session, p)) {
+            if (CashClashPlayer.isPlayerDead(p)) {
                 Messages.send(p, "listener.cannot-use-items-dead");
                 return;
             }
@@ -562,12 +558,6 @@ public class GameListener implements Listener {
         }
 
         armorManager.getHandler(BunnyShoesHandler.class).onPlayerToggleSneak(p, event.isSneaking());
-    }
-
-    private boolean isPlayerDead(GameSession session, Player player) {
-        if (session == null || session.getState() != GameState.COMBAT) return false;
-        RoundData roundData = session.getCurrentRoundData();
-        return roundData != null && !roundData.isAlive(player.getUniqueId());
     }
 
     private boolean isSilenced(GameSession session, Player player) {
@@ -640,11 +630,21 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Handle BlazeBite crossbow shot. Every shot now applies both the freeze and fire effects
-     * on hit - the arrow just needs a marker tag so {@link #handleBlazebiteArrow} knows it came
-     * from a BlazeBite crossbow.
+     * Handle BlazeBite crossbow shot. Every shot can end up as either Glacier or Magma Storm -
+     * which one plays is decided at hit time by what the arrow hits (see
+     * {@link #handleBlazebiteArrow}), not at shot time. This just tags the arrow so the hit
+     * handler knows it came from a BlazeBite crossbow, and enforces the post-freeze-solid shot
+     * lockout.
      */
     private void handleBlazebiteShot(EntityShootBowEvent event, Player player, ItemStack bow) {
+        UUID uuid = player.getUniqueId();
+        if (plugin.getCooldownManager().isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_FREEZE_LOCKOUT)) {
+            event.setCancelled(true);
+            Messages.send(player, "mythic.blazebite-freeze-lockout", "cooldown_seconds",
+                    String.valueOf(plugin.getCooldownManager().getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_FREEZE_LOCKOUT)));
+            return;
+        }
+
         if (!mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteShot(player, bow)) {
             event.setCancelled(true);
         } else if (event.getProjectile() instanceof Arrow arrow) {
@@ -692,29 +692,36 @@ public class GameListener implements Listener {
         if (!(arrow.getShooter() instanceof Player shooter)) return;
 
         handleBlazebiteArrow(shooter, arrow, event);
-        handleWindBowArrow(shooter, event);
+        handleWindBowArrow(shooter, arrow, event);
         handleBloodwrenchArrow(shooter, arrow, event);
     }
 
     /**
-     * Handle BlazeBite arrow hit - applies both the freeze and fire effects on every hit.
+     * Handle BlazeBite arrow hit - dispatches to Glacier (freeze-only, on a player hit) or Magma
+     * Storm (fire/explosion + freeze cleanse, on a surface/block hit) based on what the arrow
+     * actually hit, not a mode chosen at shot time.
      */
     private void handleBlazebiteArrow(Player shooter, Arrow arrow, ProjectileHitEvent event) {
         if (PDCDetection.getArrowBlazebiteMode(arrow) == null) return;
 
+        boolean hitSurface = event.getHitEntity() == null;
         Location hitLoc = event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation();
-        mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc);
+        mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc, hitSurface);
+
+        arrow.remove();
     }
 
     /**
      * Handle Wind Bow arrow hit
      */
-    private void handleWindBowArrow(Player shooter, ProjectileHitEvent event) {
+    private void handleWindBowArrow(Player shooter, Arrow arrow, ProjectileHitEvent event) {
         ItemStack bow = shooter.getInventory().getItemInMainHand();
         MythicItem mythic = PDCDetection.getMythic(bow);
 
         if (mythic == MythicItem.WIND_BOW && event.getHitEntity() instanceof Player hitPlayer) {
             mythicManager.getHandler(WindBowHandler.class).handleWindBowHit(shooter, hitPlayer);
+
+            arrow.remove();
         }
     }
 
@@ -732,6 +739,12 @@ public class GameListener implements Listener {
         } else if ("supercharged".equals(bloodwrenchMode)) {
             mythicManager.getHandler(BloodwrenchHandler.class).handleBloodwrenchSuperchargedHit(shooter, hitLoc);
         }
+
+        // An arrow can fire ProjectileHitEvent twice (e.g. graze an entity, then embed in a
+        // block moments later) - remove it so a second event for the same arrow can't
+        // double-apply the hit (double blood sphere / double vortex), same fix already applied
+        // to Goblin Spear's trident.
+        arrow.remove();
     }
 
     /**

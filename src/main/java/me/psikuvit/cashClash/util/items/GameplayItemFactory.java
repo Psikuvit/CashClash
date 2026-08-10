@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
+import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
@@ -366,6 +367,8 @@ public final class GameplayItemFactory {
             return "food";
         } else if (purchasable instanceof UtilityItem) {
             return "utility";
+        } else if (purchasable instanceof MythicItem) {
+            return "mythic-items";
         }
         return null;
     }

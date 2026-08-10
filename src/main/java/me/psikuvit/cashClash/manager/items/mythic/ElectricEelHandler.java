@@ -33,25 +33,27 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Electric Eel Sword - chain lightning on charged hits and a 3-charge zap dash.
- * Each dash charge recharges independently (same shape as Tectonic Cap's two fall-slam
- * charges), damaging and slowing every enemy caught along the dash path.
+ * Charges recharge one at a time, in sequence - using a charge queues its refill behind
+ * whichever charge is already recharging, rather than starting a parallel independent timer
+ * per charge.
  */
 public class ElectricEelHandler extends MythicItemHandler {
 
     private static final NamespacedKey EEL_SLOW_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "electric_eel_dash_slow");
+    private static final int MAX_DASH_CHARGES = 3;
 
-    private final Map<UUID, Long> eelDashCharge1Cooldown;
-    private final Map<UUID, Long> eelDashCharge2Cooldown;
-    private final Map<UUID, Long> eelDashCharge3Cooldown;
+    // Charges currently available (0-MAX_DASH_CHARGES); absent = full
+    private final Map<UUID, Integer> eelDashCharges;
+    // Timestamp the next missing charge finishes recharging; absent = nothing recharging
+    private final Map<UUID, Long> eelNextChargeReadyAt;
 
     // Victim UUID -> scheduled task that removes their dash-slow modifier; refreshed on re-hit
     private final Map<UUID, BukkitTask> eelSlowRemovalTasks;
 
     public ElectricEelHandler(MythicItemManager manager) {
         super(manager);
-        this.eelDashCharge1Cooldown = new ConcurrentHashMap<>();
-        this.eelDashCharge2Cooldown = new ConcurrentHashMap<>();
-        this.eelDashCharge3Cooldown = new ConcurrentHashMap<>();
+        this.eelDashCharges = new ConcurrentHashMap<>();
+        this.eelNextChargeReadyAt = new ConcurrentHashMap<>();
         this.eelSlowRemovalTasks = new ConcurrentHashMap<>();
     }
 
@@ -103,35 +105,30 @@ public class ElectricEelHandler extends MythicItemHandler {
     }
 
     /**
-     * Electric Eel Sword dash. 3 independent charges (same shape as Tectonic Cap's two
-     * fall-slam charges) - blocked only when all three are on cooldown. Zaps the player
-     * forward (stopping short of walls, like the old teleport ability), and for a brief
-     * window afterward damages+slows any enemy caught along the dash path.
+     * Electric Eel Sword dash. Up to {@value #MAX_DASH_CHARGES} charges, but they recharge
+     * sequentially - only one charge is ever recharging at a time, so burning through all
+     * three takes {@code MAX_DASH_CHARGES * rechargeSeconds} to fully refill, not
+     * {@code rechargeSeconds} for all three in parallel. Blocked only when no charges remain.
+     * Zaps the player forward (stopping short of walls, like the old teleport ability), and
+     * for a brief window afterward damages+slows any enemy caught along the dash path.
      */
     public void useElectricEelDash(Player player) {
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
+        settleDashCharges(uuid, now);
 
-        boolean charge1Ready = !eelDashCharge1Cooldown.containsKey(uuid) || eelDashCharge1Cooldown.get(uuid) <= now;
-        boolean charge2Ready = !eelDashCharge2Cooldown.containsKey(uuid) || eelDashCharge2Cooldown.get(uuid) <= now;
-        boolean charge3Ready = !eelDashCharge3Cooldown.containsKey(uuid) || eelDashCharge3Cooldown.get(uuid) <= now;
-
-        if (!charge1Ready && !charge2Ready && !charge3Ready) {
-            long soonest = Math.min(eelDashCharge1Cooldown.getOrDefault(uuid, now),
-                    Math.min(eelDashCharge2Cooldown.getOrDefault(uuid, now), eelDashCharge3Cooldown.getOrDefault(uuid, now)));
-            long remaining = Math.max(0, (soonest - now) / 1000L);
-            Messages.debug(player, "ELECTRIC_EEL: All 3 dash charges on cooldown - " + remaining + "s");
+        int charges = eelDashCharges.getOrDefault(uuid, MAX_DASH_CHARGES);
+        if (charges <= 0) {
+            long readyAt = eelNextChargeReadyAt.getOrDefault(uuid, now);
+            long remaining = Math.max(0, (readyAt - now) / 1000L);
+            Messages.debug(player, "ELECTRIC_EEL: No dash charges left - next in " + remaining + "s");
             Messages.send(player, "mythic.electric-eel-dash-cooldown", "{cooldown_seconds}", String.valueOf(remaining));
             return;
         }
 
-        long cooldownEnd = now + cfg.getEelDashRechargeSeconds() * 1000L;
-        if (charge1Ready) {
-            eelDashCharge1Cooldown.put(uuid, cooldownEnd);
-        } else if (charge2Ready) {
-            eelDashCharge2Cooldown.put(uuid, cooldownEnd);
-        } else {
-            eelDashCharge3Cooldown.put(uuid, cooldownEnd);
+        eelDashCharges.put(uuid, charges - 1);
+        if (!eelNextChargeReadyAt.containsKey(uuid)) {
+            eelNextChargeReadyAt.put(uuid, now + cfg.getEelDashRechargeSeconds() * 1000L);
         }
 
         Location start = player.getEyeLocation();
@@ -149,6 +146,7 @@ public class ElectricEelHandler extends MythicItemHandler {
 
         player.setVelocity(direction.multiply(pushStrength));
         ParticleUtils.electricSpark(player.getLocation().add(0, 1, 0), 30, 0.5);
+        SoundUtils.play(player, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.6f, 1.6f);
         Messages.send(player, "mythic.electric-eel-zap");
 
         // Scan for entities caught along the dash path while the push carries the player.
@@ -192,6 +190,29 @@ public class ElectricEelHandler extends MythicItemHandler {
     }
 
     /**
+     * Applies any charges that have finished recharging since the last check, chaining the
+     * next charge's recharge timer immediately behind the one that just completed - never more
+     * than one charge recharging at once.
+     */
+    private void settleDashCharges(UUID uuid, long now) {
+        int charges = eelDashCharges.getOrDefault(uuid, MAX_DASH_CHARGES);
+        Long readyAt = eelNextChargeReadyAt.get(uuid);
+        long rechargeMillis = cfg.getEelDashRechargeSeconds() * 1000L;
+
+        while (readyAt != null && now >= readyAt && charges < MAX_DASH_CHARGES) {
+            charges++;
+            readyAt = charges < MAX_DASH_CHARGES ? readyAt + rechargeMillis : null;
+        }
+
+        eelDashCharges.put(uuid, charges);
+        if (readyAt != null) {
+            eelNextChargeReadyAt.put(uuid, readyAt);
+        } else {
+            eelNextChargeReadyAt.remove(uuid);
+        }
+    }
+
+    /**
      * Slows the target's base movement speed by an exact percentage (not a discrete vanilla
      * Slowness level) for a fixed duration, refreshing in place if they're hit again before
      * the previous slow expired.
@@ -220,9 +241,8 @@ public class ElectricEelHandler extends MythicItemHandler {
 
     @Override
     public void cleanup() {
-        eelDashCharge1Cooldown.clear();
-        eelDashCharge2Cooldown.clear();
-        eelDashCharge3Cooldown.clear();
+        eelDashCharges.clear();
+        eelNextChargeReadyAt.clear();
 
         eelSlowRemovalTasks.forEach((id, task) -> {
             if (task != null && !task.isCancelled()) task.cancel();

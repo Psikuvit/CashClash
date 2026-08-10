@@ -32,7 +32,7 @@ mythic-items:
     throw:
       cooldown-seconds: 25
       distance: 6.0
-      speed-blocks-per-tick: 1.0
+      speed-blocks-per-tick: 0.24  # ~2.5s round trip at max distance (out + back)
       damage: 8.0
       catch-radius: 1.5
       release-distance: 1.0
@@ -91,7 +91,7 @@ mythic-items:
     rapid:
       shots: 3
       reload-cooldown-seconds: 14
-      sphere-radius: 2.0  # rebalanced down from 3.0
+      sphere-radius: 2.5  # small/medium sphere - reverted up from the 2.0 rebalance
       sphere-duration-ticks: 60  # 3 seconds
       sphere-burst-damage: 4.0  # 2 hearts
     supercharge:
@@ -134,6 +134,7 @@ mythic-items:
       slowness-level: 0
       slowness-duration-seconds: 5  # First hit frostbite duration
       max-slowness-duration-seconds: 3  # Duration of freeze in place when hit while frozen
+      freeze-lockout-seconds: 5  # Can't fire again for this long after freezing someone solid
     volcano:
       direct-damage: 4.0
       splash-damage: 2.0
@@ -820,9 +821,9 @@ item-lore:
     blazebite-crossbows:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
-        - "<dark_purple>Every shot freezes AND ignites</dark_purple>"
-        - "<yellow>Freezes enemies on hit</yellow>"
-        - "<yellow>Explodes into fire on hit</yellow>"
+        - "<dark_purple>Freeze foes solid, or unleash Magma Storm</dark_purple>"
+        - "<yellow>Hit a player: Freezes them (Glacier)</yellow>"
+        - "<yellow>Hit a surface: Fire/explosion AOE, cleanses freeze (Magma Storm)</yellow>"
     alchemist-wand:
       lore:
         - "<light_purple>✦ MYTHIC UTILITY ✦</light_purple>"
