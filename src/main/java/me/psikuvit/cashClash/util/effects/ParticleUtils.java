@@ -323,24 +323,39 @@ public final class ParticleUtils {
         spawnDust(location, Color.fromRGB(139, 0, 0), 1.5f, 20, radius * 0.8);
     }
 
+    private static final int VORTEX_SPHERE_RINGS = 9;
+
     /**
-     * Spawn spiraling blood vortex particles (for BloodWrench Supercharged).
-     * @param location Center location
-     * @param radius Vortex radius
-     * @param tick Current animation tick
+     * Draws the BloodWrench Supercharged vortex as a hollow sphere shell: a stack of latitude
+     * rings whose radii follow sin(phi), spun a little per tick so the shell still reads as a
+     * vortex rather than a static bubble. Only the surface is drawn - the interior stays clear
+     * so players caught inside remain visible.
+     *
+     * @param location centre of the sphere
+     * @param radius   shell radius, matching the vortex's effect radius
+     * @param tick     current animation tick, drives the spin
      */
-    public static void bloodVortexSpiral(Location location, double radius, int tick) {
+    public static void bloodVortexSphere(Location location, double radius, int tick) {
         if (location == null || location.getWorld() == null) return;
 
-        double angle = tick * 0.3;
-        double y = (tick % 20) * 0.15; // Spiral up
-        for (int i = 0; i < 3; i++) {
-            double offsetAngle = angle + (i * (Math.PI * 2 / 3));
-            spawnDust(circlePoint(location, radius * 0.8, offsetAngle, y), Color.fromRGB(180, 0, 0), 2.0f, 5, 0.1);
+        Color shell = Color.fromRGB(180, 0, 0);
+        double spin = tick * 0.08;
+
+        for (int ring = 1; ring <= VORTEX_SPHERE_RINGS; ring++) {
+            double phi = Math.PI * ring / (VORTEX_SPHERE_RINGS + 1);
+            double ringRadius = radius * Math.sin(phi);
+            double y = radius * Math.cos(phi);
+
+            // Keep spacing even across the shell: wider rings need proportionally more points.
+            int points = Math.max(6, (int) Math.round(ringRadius * 10));
+            for (int i = 0; i < points; i++) {
+                double angle = spin + (Math.PI * 2 * i / points);
+                spawnDust(circlePoint(location, ringRadius, angle, y), shell, 1.4f, 1);
+            }
         }
 
-        // Central column of particles
-        spawnDust(location.clone().add(0, 1.5, 0), Color.fromRGB(100, 0, 0), 1.5f, 15, 0.3, 1.5, 0.3);
+        spawnDust(location.clone().add(0, radius, 0), shell, 1.4f, 1);
+        spawnDust(location.clone().subtract(0, radius, 0), shell, 1.4f, 1);
     }
 
     /**

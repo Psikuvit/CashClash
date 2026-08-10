@@ -265,7 +265,6 @@ public class BloodwrenchHandler extends MythicItemHandler {
         int healNegationDuration = cfg.getBloodwrenchHealNegationDuration();
         double selfHealPercent = cfg.getBloodwrenchVortexSelfHealPercent() / 100.0;
 
-        // Vortex effect with spiraling particles
         BukkitTask vortexTask = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             private int tick;
 
@@ -273,8 +272,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
             public void run() {
                 tick++;
 
-                // Spiraling red particles using helper method
-                ParticleUtils.bloodVortexSpiral(hitLocation, radius, tick);
+                ParticleUtils.bloodVortexSphere(hitLocation, radius, tick);
 
                 // Heal-negation zone: refreshed every tick while inside, regardless of team -
                 // decays naturally `healNegationDuration` seconds after a player leaves.
@@ -308,6 +306,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
                 // reduced by their own active healing-reduction debuff (e.g. Soul Katana).
                 if (totalDamageDealt > 0) {
                     CashClashPlayer.heal(shooter, totalDamageDealt * selfHealPercent);
+                    ParticleUtils.bloodHealPulse(shooter);
                 }
                 }
             }
