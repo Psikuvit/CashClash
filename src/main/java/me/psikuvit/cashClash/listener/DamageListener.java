@@ -722,7 +722,7 @@ public class DamageListener implements Listener {
         switch (mythic) {
             case CARLS_BATTLEAXE -> applyMythicCriticalEffect(event, attacker, victim, mythicManager.getHandler(CarlsBattleaxeHandler.class)::handleCarlsCriticalHit);
             case ELECTRIC_EEL_SWORD -> applyMythicCriticalEffect(event, attacker, victim, mythicManager.getHandler(ElectricEelHandler.class)::handleElectricEelChain);
-            case WARDEN_GLOVES -> mythicManager.getHandler(WardenGlovesHandler.class).useWardenPunch(attacker, victim);
+            case WARDEN_GLOVES -> mythicManager.getHandler(WardenGlovesHandler.class).useWardenPunch(event, attacker, victim);
             case GOBLIN_SPEAR -> applyGoblinSpearEffect(event, attacker, victim);
             case ALCHEMIST_WAND -> mythicManager.getHandler(AlchemistWandHandler.class).onAlchemistMeleeHit(attacker, victim);
             default -> { /* No special handling */ }

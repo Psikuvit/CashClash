@@ -23,6 +23,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -83,9 +84,19 @@ public class WardenGlovesHandler extends MythicItemHandler {
      * Warden Gloves boxing ability - Left click to punch.
      * Ability lasts for 20 seconds, 35 second cooldown. Also feeds Rising Fury's landed-hit
      * tracking (no-op if Rising Fury isn't active).
+     * <p>
+     * The item carries real attack damage so vanilla actually resolves the swing into a damage
+     * event - a weapon at 0 attack damage is skipped outright by vanilla's attack path, which
+     * would take the punch's knockback, the boxing ability, and Rising Fury's hit tracking down
+     * with it. Base punches therefore cancel the damage event here instead - knockback is applied
+     * manually below, so it survives the cancel - leaving Rising Fury the only source of damage.
      */
-    public void useWardenPunch(Player player, Player victim) {
+    public void useWardenPunch(EntityDamageByEntityEvent event, Player player, Player victim) {
         UUID uuid = player.getUniqueId();
+
+        if (!risingFuryActive.contains(uuid)) {
+            event.setCancelled(true);
+        }
 
         Messages.debug(player, "WARDEN_GLOVES: Punch attack on " + victim.getName());
 
