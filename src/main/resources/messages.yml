@@ -477,6 +477,10 @@ messages:
      shockwave-activated: "<dark_aqua>SHOCKWAVE!</dark_aqua>"
      warden-rising-fury-activated: "<dark_red><bold>RISING FURY ACTIVATED!</bold></dark_red>"
      warden-rising-fury-ended: "<gray>Rising Fury has ended.</gray>"
+     bloodwrench-healing-blocked: "<dark_red>✖ The blood drains your wounds - you cannot heal!</dark_red>"
+     bloodwrench-healing-restored: "<green>✔ Your blood runs clean again - you can heal.</green>"
+     warden-rising-fury-reach-gained: "<gold>⚔ Rising Fury <yellow>{stacks}/{max_stacks}</yellow> - reach <yellow>+{reach}</yellow></gold>"
+     warden-rising-fury-reach-maxed: "<dark_red><bold>MAX REACH!</bold></dark_red> <gold>Rising Fury fully stacked - reach <yellow>+{reach}</yellow></gold>"
      warden-shield-broken: "<red>Your shield was broken by Rising Fury!</red>"
      blazebite-reloading: "<red>BlazeBite reloading! ({cooldown_seconds}s)</red>"
      blazebite-reload-start: "<yellow>BlazeBite reloading...</yellow>"
@@ -941,6 +945,7 @@ messages:
     soul-katana-slice: "<light_purple><bold>PHANTOM SLICE!</bold></light_purple>"
     soul-katana-cooldown: "<red>Soul Katana is on cooldown! ({remaining}s)</red>"
     soul-katana-healing-reduced: "<blue>Your healing has been reduced by {percent}%!</blue>"
+    soul-katana-healing-restored: "<aqua>Your healing has returned to normal.</aqua>"
 
   # ============================================
   # ERROR & VALIDATION MESSAGES
