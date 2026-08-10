@@ -8,9 +8,11 @@ import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.HealingMarkUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Color;
@@ -47,7 +49,6 @@ public class SoulKatanaHandler extends WeaponItemHandler {
     private final Map<UUID, Boolean> soulKatanaLeftGround;
     private final Map<UUID, Location> soulKatanaLastLocations;
     private final Map<UUID, BukkitTask> soulKatanaTrailTasks;
-    private final Map<UUID, BukkitTask> soulKatanaMarkTasks;
 
     public SoulKatanaHandler(WeaponItemManager manager) {
         super(manager);
@@ -56,7 +57,6 @@ public class SoulKatanaHandler extends WeaponItemHandler {
         this.soulKatanaLeftGround = new HashMap<>();
         this.soulKatanaLastLocations = new HashMap<>();
         this.soulKatanaTrailTasks = new HashMap<>();
-        this.soulKatanaMarkTasks = new HashMap<>();
     }
 
     /**
@@ -126,7 +126,7 @@ public class SoulKatanaHandler extends WeaponItemHandler {
             armorManager.getHandler(DragonSetHandler.class).handleDragonHit(player);
             SoundUtils.playAt(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.0f);
 
-            CashClashPlugin.getInstance().getCustomItemManager().applyHealingReduction(target.getUniqueId(), healingMultiplier, debuffDuration);
+            CashClashPlayer.reduceHealing(target, healingMultiplier, debuffDuration);
             startSoulKatanaHealingMark(target);
         }
 
@@ -191,44 +191,13 @@ public class SoulKatanaHandler extends WeaponItemHandler {
     }
 
     /**
-     * Rotating soul mark over a marked target's head, pulsing while the healing-reduction debuff
-     * is active. Self-cancelling when the debuff expires or the target leaves.
+     * Rotating soul mark over a marked target's head, shown for as long as the healing-reduction
+     * debuff lasts - see {@link HealingMarkUtils}.
      */
     private void startSoulKatanaHealingMark(Player target) {
-        UUID id = target.getUniqueId();
-        if (soulKatanaMarkTasks.containsKey(id)) return; // already marked
-
         Messages.send(target, "customitem.soul-katana-healing-reduced", "percent", String.valueOf(cfg.getSoulKatanaHealingReductionPercent()));
-        BukkitTask task = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
-            int soundTick = 0;
-
-            @Override
-            public void run() {
-                Long endTime = CashClashPlugin.getInstance().getCustomItemManager().getHealingReducedUntil().get(id);
-                if (endTime == null || System.currentTimeMillis() >= endTime || !target.isOnline()) {
-                    cancel();
-                    soulKatanaMarkTasks.remove(id);
-                    CashClashPlugin.getInstance().getCustomItemManager().getHealingReducedUntil().remove(id);
-                    CashClashPlugin.getInstance().getCustomItemManager().getHealingReductionMultiplier().remove(id);
-                    return;
-                }
-                Location center = target.getLocation().clone().add(0, 2.4, 0);
-                long time = System.currentTimeMillis();
-                for (int i = 0; i < 12; i++) {
-                    double angle = (Math.PI * 2 / 12 * i) + (time % 1000) / 1000.0 * Math.PI * 2;
-                    double x = Math.cos(angle) * 0.35;
-                    double z = Math.sin(angle) * 0.35;
-                    ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(0, 50, 255), 1.2f, 1, 0);
-                }
-                if (++soundTick >= 15) {
-                    soundTick = 0;
-                    SoundUtils.playAt(target.getLocation(), Sound.BLOCK_SCULK_SENSOR_CLICKING, 0.8f, 0.6f);
-                }
-                ParticleUtils.spawnDust(center.clone().add((Math.random() - 0.5) * 0.4, -0.3, (Math.random() - 0.5) * 0.4),
-                        Color.fromRGB(100, 200, 255), 1.0f, 2, 0);
-            }
-        }, 0L, 2L);
-        soulKatanaMarkTasks.put(id, task);
+        HealingMarkUtils.show(target, Color.fromRGB(0, 50, 255), Color.fromRGB(100, 200, 255),
+                Sound.BLOCK_SCULK_SENSOR_CLICKING, "customitem.soul-katana-healing-restored");
     }
 
     private void endSoulKatanaDash(Player player) {
@@ -251,8 +220,7 @@ public class SoulKatanaHandler extends WeaponItemHandler {
     public void cleanup() {
         soulKatanaTrailTasks.values().forEach(BukkitTask::cancel);
         soulKatanaTrailTasks.clear();
-        soulKatanaMarkTasks.values().forEach(BukkitTask::cancel);
-        soulKatanaMarkTasks.clear();
+        HealingMarkUtils.clearAll();
         soulKatanaDashing.clear();
         soulKatanaLeftGround.clear();
         soulKatanaLastLocations.clear();

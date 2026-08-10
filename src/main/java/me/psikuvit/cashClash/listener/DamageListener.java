@@ -53,6 +53,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -164,6 +165,24 @@ public class DamageListener implements Listener {
      */
     private void logDamageError(Player player, Exception e) {
         Messages.debug("DAMAGE", "Error handling damage for " + player.getName() + ": " + e.getMessage());
+    }
+
+    /**
+     * Routes <em>vanilla</em> healing - natural regeneration, golden apples, Regeneration
+     * potions - through {@link CashClashPlayer}'s healing system, so it obeys the same
+     * healing-reduction debuffs as plugin heals. None of these sources call into the plugin on
+     * their own, so without this the debuff zones left them entirely untouched.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlayerRegainHealth(EntityRegainHealthEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+
+        double allowed = CashClashPlayer.resolveVanillaHeal(player, event.getAmount());
+        if (allowed <= 0.0) {
+            event.setCancelled(true);
+        } else if (allowed < event.getAmount()) {
+            event.setAmount(allowed);
+        }
     }
 
     // ==================== MAIN PVP DAMAGE HANDLER (EntityDamageByEntityEvent) ====================

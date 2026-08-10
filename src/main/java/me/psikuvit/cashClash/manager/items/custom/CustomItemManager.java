@@ -11,7 +11,6 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Function;
 
 /**
@@ -37,8 +36,6 @@ public class CustomItemManager {
     private final List<CustomItemHandler> allHandlers;
 
     // Shared: healing-reduction hook (e.g. Soul Katana's debuff), consumed by any item's heals
-    private final Map<UUID, Long> healingReducedUntil;
-    private final Map<UUID, Double> healingReductionMultiplier;
 
     public CustomItemManager(CooldownManager cooldownManager, ItemsConfig itemsConfig, CustomArmorManager armorManager) {
         this.cooldownManager = cooldownManager;
@@ -46,8 +43,6 @@ public class CustomItemManager {
         this.armorManager = armorManager;
         this.handlers = new EnumMap<>(CustomItem.class);
         this.allHandlers = new ArrayList<>();
-        this.healingReducedUntil = new java.util.HashMap<>();
-        this.healingReductionMultiplier = new java.util.HashMap<>();
 
         register(GrenadeHandler::new, CustomItem.GRENADE, CustomItem.SMOKE_CLOUD_GRENADE);
         register(BouncePadHandler::new, CustomItem.BOUNCE_PAD);
@@ -126,50 +121,14 @@ public class CustomItemManager {
         return armorManager;
     }
 
-    public Map<UUID, Long> getHealingReducedUntil() {
-        return healingReducedUntil;
-    }
-
-    public Map<UUID, Double> getHealingReductionMultiplier() {
-        return healingReductionMultiplier;
-    }
-
-    // ==================== SHARED EFFECT HOOKS ====================
-
-    /**
-     * Applies a temporary healing-reduction debuff to a target (e.g. Soul Katana's Phantom
-     * Slice, Bloodwrench's heal-negation zone). {@link CashClashPlayer#heal} already scales
-     * every heal by {@link #getHealingMultiplier(UUID)} - callers don't need to apply it
-     * themselves as long as they heal through {@code CashClashPlayer}.
-     */
-    public void applyHealingReduction(UUID target, double multiplier, long durationSeconds) {
-        healingReducedUntil.put(target, System.currentTimeMillis() + durationSeconds * 1000L);
-        healingReductionMultiplier.put(target, multiplier);
-    }
-
-    /**
-     * @return 1.0 if the target has no active healing-reduction debuff, else the active multiplier
-     */
-    public double getHealingMultiplier(UUID target) {
-        Long until = healingReducedUntil.get(target);
-        if (until == null || System.currentTimeMillis() >= until) {
-            healingReducedUntil.remove(target);
-            healingReductionMultiplier.remove(target);
-            return 1.0;
-        }
-        return healingReductionMultiplier.getOrDefault(target, 1.0);
-    }
-
     // ==================== CLEANUP ====================
 
     /**
-     * Fans out to every handler's cleanup and clears the shared hook state.
+     * Fans out to every handler's cleanup.
      */
     public void cleanup() {
         for (CustomItemHandler handler : allHandlers) {
             handler.cleanup();
         }
-        healingReducedUntil.clear();
-        healingReductionMultiplier.clear();
     }
 }

@@ -309,20 +309,93 @@ public class CashClashPlayer {
         applyHealth();
     }
 
+    // ================= Healing =================
+
+    /*
+     * Every heal a player receives is resolved here, from both directions:
+     *
+     *   - plugin heals (Medic Pouch, Blooming Rose, Deathmauler, ...) call heal(double)
+     *   - vanilla heals (natural regen, golden apples, Regeneration) reach resolveVanillaHeal
+     *     from the EntityRegainHealthEvent listener in DamageListener
+     *
+     * Both paths apply the same healing-reduction debuff, so a reduction can't be bypassed by
+     * whichever route the health happened to come from. The debuff lives on the player rather
+     * than in a manager-side UUID map so it dies with the session wrapper automatically.
+     */
+
+    /** 1.0 = unmodified. 0.0 fully negates healing. */
+    private double healingMultiplier = 1.0;
+    /** Epoch millis at which {@link #healingMultiplier} lapses; 0 when no debuff is active. */
+    private long healingMultiplierExpiresAt = 0L;
+
     /**
-     * Heals the player by the given amount, clamped to their max health. The amount is scaled
-     * by any active healing-reduction debuff (e.g. Soul Katana's Phantom Slice, Bloodwrench's
-     * heal-negation zone) via {@link CustomItemManager#getHealingMultiplier(UUID)} - centralized
-     * here so every heal source respects it without each call site checking individually.
-     * @return the amount of health actually restored (less than {@code amount} when the
-     *         player was already within {@code amount} of full health)
+     * Applies a temporary healing-reduction debuff (Soul Katana's Phantom Slice, Bloodwrench's
+     * blood-sphere/vortex zones). Re-applying refreshes the expiry, which is what lets a zone
+     * refresh the debuff every tick a player stands in it and have it decay on its own once
+     * they leave.
+     *
+     * @param multiplier      scale applied to incoming healing; 0.0 negates it entirely
+     * @param durationSeconds how long the debuff lasts from now
+     */
+    public void reduceHealing(double multiplier, long durationSeconds) {
+        this.healingMultiplier = multiplier;
+        this.healingMultiplierExpiresAt = System.currentTimeMillis() + durationSeconds * 1000L;
+    }
+
+    /**
+     * @return the active healing multiplier, or 1.0 when no debuff is active or it has lapsed
+     */
+    public double getHealingMultiplier() {
+        if (healingMultiplierExpiresAt == 0L) return 1.0;
+        if (System.currentTimeMillis() >= healingMultiplierExpiresAt) {
+            clearHealingReduction();
+            return 1.0;
+        }
+        return healingMultiplier;
+    }
+
+    /** Whether healing is currently fully negated. */
+    public boolean isHealingBlocked() {
+        return getHealingMultiplier() <= 0.0;
+    }
+
+    public void clearHealingReduction() {
+        this.healingMultiplier = 1.0;
+        this.healingMultiplierExpiresAt = 0L;
+    }
+
+    /**
+     * Scales a heal by the active reduction and clamps it to the headroom below max health,
+     * without applying it. Shared by both heal paths so they can't drift apart.
+     *
+     * @return the health that may actually be restored, 0.0 if none
+     */
+    public double resolveHealAmount(double amount) {
+        if (player == null || !player.isOnline() || amount <= 0) return 0.0;
+        double scaled = amount * getHealingMultiplier();
+        if (scaled <= 0) return 0.0;
+        return Math.min(scaled, Math.max(0.0, getMaxHealth() - player.getHealth()));
+    }
+
+    /**
+     * Resolves a vanilla heal that is about to be applied by the server itself. The caller
+     * applies (or cancels) the result - this only decides the permitted amount.
+     *
+     * @return the amount vanilla should be allowed to restore, 0.0 to cancel outright
+     */
+    public double resolveVanillaHeal(double amount) {
+        return resolveHealAmount(amount);
+    }
+
+    /**
+     * Heals the player by the given amount, scaled by any active healing-reduction debuff and
+     * clamped to their max health.
+     *
+     * @return the amount of health actually restored (less than {@code amount} when reduced, or
+     *         when the player was already within {@code amount} of full health)
      */
     public double heal(double amount) {
-        if (player == null || !player.isOnline() || amount <= 0) return 0.0;
-        double scaledAmount = amount * CashClashPlugin.getInstance().getCustomItemManager().getHealingMultiplier(uuid);
-        if (scaledAmount <= 0) return 0.0;
-        double maxHealth = getMaxHealth();
-        double healed = Math.min(scaledAmount, Math.max(0.0, maxHealth - player.getHealth()));
+        double healed = resolveHealAmount(amount);
         if (healed > 0) {
             player.setHealth(player.getHealth() + healed);
         }
@@ -330,7 +403,8 @@ public class CashClashPlayer {
     }
 
     /**
-     * Sets the player's health directly, clamped to [0, max health].
+     * Sets the player's health directly, clamped to [0, max health]. Deliberately bypasses the
+     * healing-reduction debuff - this is a state assignment (respawn, round reset), not a heal.
      */
     public void setHealth(double health) {
         if (player == null || !player.isOnline()) return;
@@ -338,10 +412,11 @@ public class CashClashPlayer {
     }
 
     /**
-     * Heals the player back up to their full max health.
+     * Restores the player to full max health, ignoring any healing-reduction debuff - round and
+     * respawn resets are state assignments rather than heals.
      */
     public void healToFull() {
-        heal(Double.MAX_VALUE);
+        setHealth(getMaxHealth());
     }
 
     // ================= Potion Effect Management =================
@@ -634,13 +709,52 @@ public class CashClashPlayer {
         CashClashPlayer ccp = from(player);
         if (ccp != null) return ccp.heal(amount);
         if (player == null || !player.isOnline() || amount <= 0) return 0.0;
-        double scaledAmount = amount * CashClashPlugin.getInstance().getCustomItemManager().getHealingMultiplier(player.getUniqueId());
-        if (scaledAmount <= 0) return 0.0;
-        double healed = Math.min(scaledAmount, Math.max(0.0, 20.0 - player.getHealth()));
+        double healed = Math.min(amount, Math.max(0.0, 20.0 - player.getHealth()));
         if (healed > 0) {
             player.setHealth(player.getHealth() + healed);
         }
         return healed;
+    }
+
+    /**
+     * Applies a healing-reduction debuff to a player. No-ops outside a game session, where
+     * there is no wrapper to hold the debuff - every source of one is combat-only.
+     */
+    public static void reduceHealing(Player player, double multiplier, long durationSeconds) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.reduceHealing(multiplier, durationSeconds);
+    }
+
+    /**
+     * @return the player's active healing multiplier, or 1.0 outside a game session
+     */
+    public static double getHealingMultiplier(Player player) {
+        CashClashPlayer ccp = from(player);
+        return ccp != null ? ccp.getHealingMultiplier() : 1.0;
+    }
+
+    /**
+     * @return whether a healing-reduction debuff is currently active on the player
+     */
+    public static boolean isHealingReduced(Player player) {
+        return getHealingMultiplier(player) < 1.0;
+    }
+
+    /** Clears any active healing-reduction debuff. No-ops outside a game session. */
+    public static void clearHealingReduction(Player player) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.clearHealingReduction();
+    }
+
+    /**
+     * Resolves a vanilla heal about to be applied by the server. Returns the amount unchanged
+     * outside a game session, where no debuff can be held.
+     *
+     * @return the amount vanilla should be allowed to restore, 0.0 to cancel outright
+     */
+    public static double resolveVanillaHeal(Player player, double amount) {
+        CashClashPlayer ccp = from(player);
+        return ccp != null ? ccp.resolveVanillaHeal(amount) : amount;
     }
 
     /**
@@ -659,7 +773,8 @@ public class CashClashPlayer {
 
     /**
      * Heal a player back up to full max health through the centralized health system.
-     * Falls back to the vanilla 20 health outside a game session.
+     * Falls back to the vanilla 20 health outside a game session. Ignores healing-reduction
+     * debuffs - see {@link #healToFull()}.
      */
     public static void healToFull(Player player) {
         CashClashPlayer ccp = from(player);
