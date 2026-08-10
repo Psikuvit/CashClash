@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.items;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
@@ -281,7 +282,7 @@ public class RuneManager {
 
         UUID playerUUID = player.getUniqueId();
         String cooldownKey = toggleCooldownKey(runeUUID);
-        CooldownManager cooldowns = CooldownManager.getInstance();
+        CooldownManager cooldowns = CashClashPlugin.getInstance().getCooldownManager();
 
         if (cooldowns.isOnCooldown(playerUUID, cooldownKey)) {
             long remaining = cooldowns.getRemainingCooldownSeconds(playerUUID, cooldownKey);
