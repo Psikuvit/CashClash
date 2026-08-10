@@ -260,6 +260,18 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.bloodwrench.supercharge.vortex-radius", 4.0);
     }
 
+    public int getBloodwrenchVortexParticleStrands() {
+        return config.getInt("mythic-items.bloodwrench.supercharge.vortex-particle-strands", 6);
+    }
+
+    public int getBloodwrenchVortexParticleDensity() {
+        return config.getInt("mythic-items.bloodwrench.supercharge.vortex-particle-density", 30);
+    }
+
+    public double getBloodwrenchSphereParticleDensity() {
+        return config.getDouble("mythic-items.bloodwrench.rapid.sphere-particle-density", 14);
+    }
+
     public int getBloodwrenchVortexDuration() {
         return config.getInt("mythic-items.bloodwrench.supercharge.vortex-duration-ticks", 80);
     }

@@ -10,9 +10,11 @@ import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.HealingMarkUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Location;
+import org.bukkit.Color;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -139,12 +141,42 @@ public class BloodwrenchHandler extends MythicItemHandler {
         if (shots - 1 <= 0) {
             bloodwrenchRapidFiring.remove(uuid);
             bloodwrenchRapidShotsRemaining.remove(uuid);
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD, cfg.getBloodwrenchRapidReloadCooldown());
+            startBothModeCooldowns(uuid);
             Messages.send(player, "mythic.bloodwrench-reload-start");
             Messages.debug(player, "BLOODWRENCH: Rapid burst complete, reloading for " + cfg.getBloodwrenchRapidReloadCooldown() + "s");
         }
 
         return true;
+    }
+
+    /** Light red, to read as blood against Soul Katana's blue mark. */
+    private static final Color HEAL_MARK_RING = Color.fromRGB(255, 90, 90);
+    private static final Color HEAL_MARK_WISP = Color.fromRGB(255, 160, 160);
+
+    /**
+     * Blocks a player's healing for as long as they stay in a blood zone. Both zones call this
+     * every tick to refresh the debuff, so the "healing blocked" announcement is gated on the
+     * player not already being debuffed - otherwise standing in a sphere would spam chat once
+     * per tick. The mark itself is told to announce the recovery when it lapses.
+     */
+    private void applyHealNegation(Player target, int durationSeconds) {
+        if (!CashClashPlayer.isHealingReduced(target)) {
+            Messages.send(target, "mythic.bloodwrench-healing-blocked");
+            SoundUtils.play(target, Sound.ENTITY_WITHER_HURT, 0.6f, 1.5f);
+        }
+
+        CashClashPlayer.reduceHealing(target, 0.0, durationSeconds);
+        HealingMarkUtils.show(target, HEAL_MARK_RING, HEAL_MARK_WISP, null, "mythic.bloodwrench-healing-restored");
+    }
+
+    /**
+     * Puts both firing modes on their own cooldown at once. The two modes share one weapon, so
+     * spending either one has to lock out the other - otherwise a player just toggles modes and
+     * keeps firing straight through what should have been a reload.
+     */
+    private void startBothModeCooldowns(UUID uuid) {
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD, cfg.getBloodwrenchRapidReloadCooldown());
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN, cfg.getBloodwrenchSuperchargeCooldown());
     }
 
     /**
@@ -163,7 +195,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
         }
 
         Messages.debug(player, "BLOODWRENCH: Supercharged shot fired!");
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN, cfg.getBloodwrenchSuperchargeCooldown());
+        startBothModeCooldowns(uuid);
         return true;
     }
 
@@ -207,29 +239,36 @@ public class BloodwrenchHandler extends MythicItemHandler {
         // Lingering sphere effect
         final double sphereRadius = radius;
         int healNegationDuration = cfg.getBloodwrenchHealNegationDuration();
-        BukkitTask sphereTask = SchedulerUtils.runTaskTimer(() -> {
-            // Particle effect
-            ParticleUtils.bloodSphereLingering(hitLocation, sphereRadius);
+        double sphereDensity = cfg.getBloodwrenchSphereParticleDensity();
+        BukkitTask sphereTask = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private int tick;
 
-            // Apply slowness + heal negation to enemies inside (everyone inside the sphere,
-            // not just the shooter's opponents - the sphere doesn't distinguish team once it
-            // has landed, matching its "negates healing while inside" description)
-            for (Entity entity : world.getNearbyEntities(hitLocation, sphereRadius, sphereRadius, sphereRadius)) {
-                if (!(entity instanceof Player target)) continue;
+            @Override
+            public void run() {
+                tick++;
 
-                // Refreshed every tick while inside - naturally decays `healNegationDuration`
-                // seconds after the target leaves the sphere since nothing refreshes it anymore.
-                CashClashPlugin.getInstance().getCustomItemManager().applyHealingReduction(target.getUniqueId(), 0.0, healNegationDuration);
+                ParticleUtils.bloodSphereShell(hitLocation, sphereRadius, tick, sphereDensity);
 
-                if (target.equals(shooter)) continue;
-                if (session != null) {
-                    Team targetTeam = session.getPlayerTeam(target);
-                    if (targetTeam != null && shooterTeam != null &&
-                        targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
+                // Apply slowness + heal negation to enemies inside (everyone inside the sphere,
+                // not just the shooter's opponents - the sphere doesn't distinguish team once it
+                // has landed, matching its "negates healing while inside" description)
+                for (Entity entity : world.getNearbyEntities(hitLocation, sphereRadius, sphereRadius, sphereRadius)) {
+                    if (!(entity instanceof Player target)) continue;
+
+                    // Refreshed every tick while inside - naturally decays `healNegationDuration`
+                    // seconds after the target leaves the sphere since nothing refreshes it anymore.
+                    applyHealNegation(target, healNegationDuration);
+
+                    if (target.equals(shooter)) continue;
+                    if (session != null) {
+                        Team targetTeam = session.getPlayerTeam(target);
+                        if (targetTeam != null && shooterTeam != null &&
+                            targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
+                    }
+
+                    // Slowness I while inside sphere
+                    CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, 40, 0);
                 }
-
-                // Slowness I while inside sphere
-                CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, 40, 0);
             }
         }, 0L, 10L);
 
@@ -264,6 +303,8 @@ public class BloodwrenchHandler extends MythicItemHandler {
         double damagePerTick = cfg.getBloodwrenchVortexDamage();
         int healNegationDuration = cfg.getBloodwrenchHealNegationDuration();
         double selfHealPercent = cfg.getBloodwrenchVortexSelfHealPercent() / 100.0;
+        int vortexStrands = cfg.getBloodwrenchVortexParticleStrands();
+        int vortexDensity = cfg.getBloodwrenchVortexParticleDensity();
 
         BukkitTask vortexTask = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             private int tick;
@@ -272,13 +313,13 @@ public class BloodwrenchHandler extends MythicItemHandler {
             public void run() {
                 tick++;
 
-                ParticleUtils.bloodVortexSphere(hitLocation, radius, tick);
+                ParticleUtils.bloodVortexSpiral(hitLocation, radius, tick, vortexStrands, vortexDensity);
 
                 // Heal-negation zone: refreshed every tick while inside, regardless of team -
                 // decays naturally `healNegationDuration` seconds after a player leaves.
                 for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius + 2, radius)) {
                     if (entity instanceof Player inside) {
-                        CashClashPlugin.getInstance().getCustomItemManager().applyHealingReduction(inside.getUniqueId(), 0.0, healNegationDuration);
+                        applyHealNegation(inside, healNegationDuration);
                     }
                 }
 
@@ -316,8 +357,6 @@ public class BloodwrenchHandler extends MythicItemHandler {
         SchedulerUtils.runTaskLater(() -> {
             Objects.requireNonNull(vortexTask).cancel();
             Messages.debug(shooter, "BLOODWRENCH: Blood vortex expired");
-            // Final burst effect
-            ParticleUtils.bloodVortexExplosion(hitLocation, radius);
             SoundUtils.playAt(hitLocation, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.5f);
         }, durationTicks);
 

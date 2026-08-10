@@ -316,38 +316,32 @@ public final class ParticleUtils {
         spawnDust(location, Color.fromRGB(139, 0, 0), 2.0f, count, radius);
     }
 
-    /**
-     * Spawn lingering blood sphere particles.
-     */
-    public static void bloodSphereLingering(Location location, double radius) {
-        spawnDust(location, Color.fromRGB(139, 0, 0), 1.5f, 20, radius * 0.8);
-    }
-
-    private static final int VORTEX_SPHERE_RINGS = 9;
+    private static final int BLOOD_SPHERE_RINGS = 9;
 
     /**
-     * Draws the BloodWrench Supercharged vortex as a hollow sphere shell: a stack of latitude
-     * rings whose radii follow sin(phi), spun a little per tick so the shell still reads as a
-     * vortex rather than a static bubble. Only the surface is drawn - the interior stays clear
-     * so players caught inside remain visible.
+     * Draws the BloodWrench Rapid Fire blood sphere as a hollow shell: a stack of latitude rings
+     * whose radii follow sin(phi), spun a little per tick so it reads as alive rather than as a
+     * static bubble. Only the surface is drawn - the interior stays clear so players caught
+     * inside remain visible.
      *
      * @param location centre of the sphere
-     * @param radius   shell radius, matching the vortex's effect radius
+     * @param radius   shell radius, matching the sphere's effect radius
      * @param tick     current animation tick, drives the spin
+     * @param density  points per block of ring radius - higher packs the shell tighter
      */
-    public static void bloodVortexSphere(Location location, double radius, int tick) {
+    public static void bloodSphereShell(Location location, double radius, int tick, double density) {
         if (location == null || location.getWorld() == null) return;
 
         Color shell = Color.fromRGB(180, 0, 0);
         double spin = tick * 0.08;
 
-        for (int ring = 1; ring <= VORTEX_SPHERE_RINGS; ring++) {
-            double phi = Math.PI * ring / (VORTEX_SPHERE_RINGS + 1);
+        for (int ring = 1; ring <= BLOOD_SPHERE_RINGS; ring++) {
+            double phi = Math.PI * ring / (BLOOD_SPHERE_RINGS + 1);
             double ringRadius = radius * Math.sin(phi);
             double y = radius * Math.cos(phi);
 
             // Keep spacing even across the shell: wider rings need proportionally more points.
-            int points = Math.max(6, (int) Math.round(ringRadius * 10));
+            int points = Math.max(6, (int) Math.round(ringRadius * density));
             for (int i = 0; i < points; i++) {
                 double angle = spin + (Math.PI * 2 * i / points);
                 spawnDust(circlePoint(location, ringRadius, angle, y), shell, 1.4f, 1);
@@ -359,10 +353,34 @@ public final class ParticleUtils {
     }
 
     /**
-     * Spawn blood vortex explosion effect at the end.
+     * Draws the BloodWrench Supercharged vortex as a funnel of twisting strands - narrow at the
+     * base, widening toward the top. Each strand is walked as a continuous helix rather than a
+     * single orbiting point, so the tornado reads as solid instead of as a few drifting dots.
+     *
+     * @param location centre of the funnel's base
+     * @param radius   funnel radius at its widest (the top)
+     * @param tick     current animation tick, drives the spin
+     * @param strands  number of strands winding around the funnel
+     * @param density  points drawn per strand, per call
      */
-    public static void bloodVortexExplosion(Location location, double radius) {
-        spawnDust(location.clone().add(0, 1, 0), Color.fromRGB(139, 0, 0), 3.0f, 80, radius, 2, radius);
+    public static void bloodVortexSpiral(Location location, double radius, int tick, int strands, int density) {
+        if (location == null || location.getWorld() == null) return;
+
+        Color strandColor = Color.fromRGB(180, 0, 0);
+        double baseAngle = tick * 0.3;
+
+        for (int strand = 0; strand < strands; strand++) {
+            double strandOffset = strand * (Math.PI * 2 / strands);
+            for (int i = 0; i < density; i++) {
+                double progress = (double) i / density;
+                // Climb while twisting, so consecutive points trace a helix up the funnel.
+                double angle = baseAngle + strandOffset + progress * Math.PI * 2;
+                double ringRadius = radius * (0.25 + 0.75 * progress);
+                spawnDust(circlePoint(location, ringRadius, angle, progress * radius), strandColor, 1.6f, 1);
+            }
+        }
+
+        spawnDust(location.clone().add(0, radius * 0.5, 0), Color.fromRGB(100, 0, 0), 1.5f, density, 0.3, radius * 0.5, 0.3);
     }
 
     /**

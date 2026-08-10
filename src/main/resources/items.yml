@@ -92,11 +92,14 @@ mythic-items:
       shots: 3
       reload-cooldown-seconds: 14
       sphere-radius: 2.5  # small/medium sphere - reverted up from the 2.0 rebalance
+      sphere-particle-density: 14  # points per block of ring radius on the sphere shell
       sphere-duration-ticks: 60  # 3 seconds
       sphere-burst-damage: 4.0  # 2 hearts
     supercharge:
       cooldown-seconds: 25
       vortex-radius: 4.0
+      vortex-particle-strands: 6  # strands winding around the tornado funnel
+      vortex-particle-density: 30  # points drawn per strand each render
       vortex-duration-ticks: 80  # 4 seconds
       vortex-damage-per-tick: 2.0  # 1 heart per tick (every 0.5s)
       vortex-levitation-level: 3
