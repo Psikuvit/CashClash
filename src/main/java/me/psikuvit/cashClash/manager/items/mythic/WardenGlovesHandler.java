@@ -29,6 +29,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
@@ -86,16 +87,17 @@ public class WardenGlovesHandler extends MythicItemHandler {
      * tracking (no-op if Rising Fury isn't active).
      * <p>
      * The item carries real attack damage so vanilla actually resolves the swing into a damage
-     * event - a weapon at 0 attack damage is skipped outright by vanilla's attack path, which
-     * would take the punch's knockback, the boxing ability, and Rising Fury's hit tracking down
-     * with it. Base punches therefore cancel the damage event here instead - knockback is applied
-     * manually below, so it survives the cancel - leaving Rising Fury the only source of damage.
+     * event - a weapon at 0 attack damage is skipped outright by vanilla's attack path, so
+     * nothing here would run at all. Outside Rising Fury the hit is therefore cancelled and
+     * dropped entirely: no damage, no knockback, no boxing ability, no speed. Rising Fury is the
+     * only state in which the gloves do anything on hit.
      */
     public void useWardenPunch(EntityDamageByEntityEvent event, Player player, Player victim) {
         UUID uuid = player.getUniqueId();
 
         if (!risingFuryActive.contains(uuid)) {
             event.setCancelled(true);
+            return;
         }
 
         Messages.debug(player, "WARDEN_GLOVES: Punch attack on " + victim.getName());
@@ -150,8 +152,6 @@ public class WardenGlovesHandler extends MythicItemHandler {
         int durationTicks = cfg.getWardenBoxingDuration() * 20;
         CashClashPlayer.applyEffect(player, PotionEffectType.SPEED, durationTicks, 0, false, true);
 
-        Messages.send(player, "mythic.boxing-gloves-activated");
-        Messages.send(player, "mythic.genericitem-punch");
         SoundUtils.play(player, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.5f);
 
         // End the ability after duration
@@ -173,8 +173,11 @@ public class WardenGlovesHandler extends MythicItemHandler {
         wardenBoxingActive.remove(uuid);
         wardenPunchCount.remove(uuid);
 
-        // Remove speed effect
-        CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
+        // Rising Fury owns its own infinite Speed - don't strip it out from under a still-active
+        // ability just because the shorter boxing window happened to lapse first.
+        if (!risingFuryActive.contains(uuid)) {
+            CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
+        }
 
         // Start cooldown
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING, cfg.getWardenBoxingCooldown());
@@ -252,12 +255,16 @@ public class WardenGlovesHandler extends MythicItemHandler {
     // ==================== BOTH-HANDS OFF-HAND STASH ====================
 
     /**
-     * Called on a main-hand slot switch - forwards to {@link #reconcileBothHands} (kept as a
-     * separate entry point since {@code PlayerItemHeldEvent} hands us the new item directly,
-     * but reconciliation itself always re-reads both hands to stay idempotent).
+     * Called on a main-hand slot switch. Deferred a tick because {@code PlayerItemHeldEvent}
+     * fires <em>before</em> the held slot actually moves - reconciling inline would read the old
+     * main-hand item, conclude the gloves are still held, and immediately re-stash the off-hand
+     * and put the cosmetic glove back, leaving a glove visibly stuck in the off-hand after
+     * switching away.
      */
-    public void onHandSwitch(Player player, ItemStack newMainHandItem) {
-        reconcileBothHands(player);
+    public void onHandSwitch(Player player) {
+        SchedulerUtils.runTask(() -> {
+            if (player.isOnline()) reconcileBothHands(player);
+        });
     }
 
     /**
@@ -342,6 +349,10 @@ public class WardenGlovesHandler extends MythicItemHandler {
         risingFuryHitCount.put(uuid, 0);
         applyRisingFuryAttributes(player, 0);
 
+        // Infinite rather than a fixed duration: Rising Fury ends on a no-hit timeout or a weapon
+        // swap, not on a clock we could pre-compute here, so endRisingFury owns the removal.
+        CashClashPlayer.applyEffect(player, PotionEffectType.SPEED, PotionEffect.INFINITE_DURATION, 0, false, true);
+
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_RISING_FURY, cfg.getWardenRisingFuryCooldown());
         Messages.send(player, "mythic.warden-rising-fury-activated");
         SoundUtils.play(player, Sound.ENTITY_WARDEN_ROAR, 1.0f, 1.0f);
@@ -382,14 +393,40 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
         int maxStacks = cfg.getWardenRisingFuryMaxStacks();
         int maxHits = maxStacks * 3;
-        int hitCount = Math.min(maxHits, risingFuryHitCount.getOrDefault(uuid, 0) + 1);
+        int previousHits = risingFuryHitCount.getOrDefault(uuid, 0);
+        int hitCount = Math.min(maxHits, previousHits + 1);
         risingFuryHitCount.put(uuid, hitCount);
         int stacks = hitCount / 3;
 
         applyRisingFuryAttributes(player, stacks);
 
+        // Announce only on the hit that actually crosses a stack boundary, not on every third
+        // hit once the counter has already been clamped at max.
+        if (stacks > previousHits / 3) {
+            announceReachGain(player, stacks, maxStacks);
+        }
+
         if (stacks >= maxStacks) {
             tryBreakShield(victim);
+        }
+    }
+
+    /**
+     * Feedback for a reach stack landing - a distinct message and a higher cue at the cap, so the
+     * player can tell "another stack" from "fully stacked" without counting hits.
+     */
+    private void announceReachGain(Player player, int stacks, int maxStacks) {
+        String reach = String.format("%.2f", cfg.getWardenRisingFuryReachPerStack() * stacks);
+
+        if (stacks >= maxStacks) {
+            Messages.send(player, "mythic.warden-rising-fury-reach-maxed", "{reach}", reach);
+            SoundUtils.play(player, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 1.4f);
+        } else {
+            Messages.send(player, "mythic.warden-rising-fury-reach-gained",
+                    "{stacks}", String.valueOf(stacks),
+                    "{max_stacks}", String.valueOf(maxStacks),
+                    "{reach}", reach);
+            SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BELL, 0.8f, 1.0f + (0.2f * stacks));
         }
     }
 
@@ -414,6 +451,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         BukkitTask task = risingFuryTimeoutTasks.remove(uuid);
         if (task != null && !task.isCancelled()) task.cancel();
         ActionBarQueue.get().stopCountdownTimer(player);
+        CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
 
         // No-ops safely if the player already swapped away from the gloves.
         applyRisingFuryAttributes(player, 0);
