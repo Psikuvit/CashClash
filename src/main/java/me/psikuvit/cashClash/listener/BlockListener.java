@@ -1,7 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -45,10 +44,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BlockListener implements Listener {
 
-    private final CashClashPlugin plugin;
+    private final GameManager gameManager;
 
-    public BlockListener(CashClashPlugin plugin) {
-        this.plugin = plugin;
+    public BlockListener(GameManager gameManager) {
+        this.gameManager = gameManager;
     }
 
     private static final Map<UUID, Set<Location>> placedBlocks = new ConcurrentHashMap<>();
@@ -113,7 +112,7 @@ public class BlockListener implements Listener {
         if (bucket != Material.WATER_BUCKET && bucket != Material.LAVA_BUCKET) return;
 
         Player player = event.getPlayer();
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         if (session == null) return;
 
         Block target = event.getBlock();
@@ -189,7 +188,7 @@ public class BlockListener implements Listener {
         if (event.isCancelled()) return;
 
         Player player = event.getPlayer();
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
 
         if (!validateBlockPlaceContext(event, player, session)) {
             return;
@@ -267,7 +266,7 @@ public class BlockListener implements Listener {
     private boolean handleLeafPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
         if (!isLeafBlock(blockType)) return false;
 
-        GameSession session = plugin.getGameManager().getPlayerSession(Bukkit.getPlayer(playerId));
+        GameSession session = gameManager.getPlayerSession(Bukkit.getPlayer(playerId));
         if (session == null) return false;
 
         Map<UUID, Integer> counts = playerLeafBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>());
@@ -534,7 +533,7 @@ public class BlockListener implements Listener {
 
     private void decrementPlayerLeaf(BlockBreakEvent event, Map<UUID, Map<UUID, Integer>> playerLeafBlockCount) {
         Player player = event.getPlayer();
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         if (session != null) {
             Map<UUID, Integer> counts = playerLeafBlockCount.get(session.getSessionId());
             if (counts != null) {
@@ -551,7 +550,7 @@ public class BlockListener implements Listener {
         if (event.isCancelled()) return;
 
         Player player = event.getPlayer();
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
 
         if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {
             event.setCancelled(true);
@@ -563,7 +562,7 @@ public class BlockListener implements Listener {
         if (event.isCancelled()) return;
 
         Player player = event.getPlayer();
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
 
         if (session == null) return;
 

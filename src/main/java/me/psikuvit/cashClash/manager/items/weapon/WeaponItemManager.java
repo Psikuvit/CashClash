@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.manager.items.weapon;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
@@ -34,10 +33,10 @@ public class WeaponItemManager {
     private final Map<WeaponItem, WeaponItemHandler> handlers;
     private final List<WeaponItemHandler> allHandlers;
 
-    public WeaponItemManager(CashClashPlugin plugin) {
-        this.cooldownManager = plugin.getCooldownManager();
-        this.cfg = plugin.getItemsConfig();
-        this.armorManager = plugin.getCustomArmorManager();
+    public WeaponItemManager(CooldownManager cooldownManager, ItemsConfig itemsConfig, CustomArmorManager armorManager) {
+        this.cooldownManager = cooldownManager;
+        this.cfg = itemsConfig;
+        this.armorManager = armorManager;
         this.handlers = new EnumMap<>(WeaponItem.class);
         this.allHandlers = new ArrayList<>();
 

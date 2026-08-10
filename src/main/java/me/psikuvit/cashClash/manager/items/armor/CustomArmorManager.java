@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -28,9 +27,9 @@ public class CustomArmorManager {
     // Mythic shift lock: players blocked from activating bunny shoes while a mythic shift ability is active
     private final Set<UUID> mythicShiftLock;
 
-    public CustomArmorManager(CashClashPlugin plugin) {
-        this.cooldownManager = plugin.getCooldownManager();
-        this.cfg = plugin.getItemsConfig();
+    public CustomArmorManager(CooldownManager cooldownManager, ItemsConfig itemsConfig) {
+        this.cooldownManager = cooldownManager;
+        this.cfg = itemsConfig;
 
         this.allHandlers = new ArrayList<>();
         register(BunnyShoesHandler::new);

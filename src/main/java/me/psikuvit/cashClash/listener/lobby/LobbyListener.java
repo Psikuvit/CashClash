@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.listener.lobby;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
 import me.psikuvit.cashClash.gui.LayoutKitSelectorGUI;
@@ -28,12 +27,14 @@ import org.bukkit.inventory.ItemStack;
  */
 public class LobbyListener implements Listener {
 
-    private final CashClashPlugin plugin;
+    private final GameManager gameManager;
     private final LobbyManager lobbyManager;
+    private final LayoutManager layoutManager;
 
-    public LobbyListener(CashClashPlugin plugin) {
-        this.plugin = plugin;
-        this.lobbyManager = plugin.getLobbyManager();
+    public LobbyListener(GameManager gameManager, LobbyManager lobbyManager, LayoutManager layoutManager) {
+        this.gameManager = gameManager;
+        this.lobbyManager = lobbyManager;
+        this.layoutManager = layoutManager;
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -46,7 +47,7 @@ public class LobbyListener implements Listener {
         if (item == null) return;
 
         // Only handle if player is NOT in a game
-        if (plugin.getGameManager().getPlayerSession(player) != null) return;
+        if (gameManager.getPlayerSession(player) != null) return;
 
         LobbyItemType type = lobbyManager.getLobbyItemType(item);
         if (type == null) return;
@@ -84,7 +85,7 @@ public class LobbyListener implements Listener {
      */
     private void handleLayoutConfiguratorItem(Player player) {
         // Check if already editing a layout
-        if (plugin.getLayoutManager().isEditing(player)) {
+        if (layoutManager.isEditing(player)) {
             Messages.send(player, "lobby.layout-currently-editing");
             Messages.send(player, "lobby.layout-currently-editing-help");
             return;
@@ -101,10 +102,10 @@ public class LobbyListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
         // Only protect if player is NOT in a game
-        if (plugin.getGameManager().getPlayerSession(player) != null) return;
+        if (gameManager.getPlayerSession(player) != null) return;
 
         // Allow clicks when editing a layout
-        if (plugin.getLayoutManager().isEditing(player)) return;
+        if (layoutManager.isEditing(player)) return;
 
         ItemStack clicked = event.getCurrentItem();
         ItemStack cursor = event.getCursor();
@@ -121,7 +122,7 @@ public class LobbyListener implements Listener {
         Player player = event.getPlayer();
 
         // Only protect if player is NOT in a game
-        if (plugin.getGameManager().getPlayerSession(player) != null) return;
+        if (gameManager.getPlayerSession(player) != null) return;
 
         ItemStack dropped = event.getItemDrop().getItemStack();
 
@@ -136,7 +137,7 @@ public class LobbyListener implements Listener {
         Player player = event.getPlayer();
 
         // Only protect if player is NOT in a game
-        if (plugin.getGameManager().getPlayerSession(player) != null) return;
+        if (gameManager.getPlayerSession(player) != null) return;
 
         ItemStack mainHand = event.getMainHandItem();
         ItemStack offHand = event.getOffHandItem();

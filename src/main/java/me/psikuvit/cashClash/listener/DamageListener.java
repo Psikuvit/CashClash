@@ -1,7 +1,5 @@
 package me.psikuvit.cashClash.listener;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -34,6 +32,7 @@ import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -77,20 +76,24 @@ public class DamageListener implements Listener {
     private static final double POWER_NERF_MULTIPLIER = 0.2;
     private static final int MAX_POWER_LEVEL_REGULAR_BOW = 2;
 
-    private final CashClashPlugin plugin;
     private final GameManager gameManager;
     private final CustomArmorManager armorManager;
     private final CustomItemManager customItemManager;
     private final MythicItemManager mythicManager;
     private final WeaponItemManager weaponItemManager;
+    private final CooldownManager cooldownManager;
+    private final ItemsConfig itemsConfig;
 
-    public DamageListener(CashClashPlugin plugin) {
-        this.plugin = plugin;
-        this.gameManager = plugin.getGameManager();
-        this.armorManager = plugin.getCustomArmorManager();
-        this.customItemManager = plugin.getCustomItemManager();
-        this.mythicManager = plugin.getMythicItemManager();
-        this.weaponItemManager = plugin.getWeaponItemManager();
+    public DamageListener(GameManager gameManager, CustomArmorManager armorManager, CustomItemManager customItemManager,
+                         MythicItemManager mythicManager, WeaponItemManager weaponItemManager,
+                         CooldownManager cooldownManager, ItemsConfig itemsConfig) {
+        this.gameManager = gameManager;
+        this.armorManager = armorManager;
+        this.customItemManager = customItemManager;
+        this.mythicManager = mythicManager;
+        this.weaponItemManager = weaponItemManager;
+        this.cooldownManager = cooldownManager;
+        this.itemsConfig = itemsConfig;
     }
 
     // ==================== MAIN DAMAGE HANDLER (EntityDamageEvent) ====================
@@ -131,7 +134,7 @@ public class DamageListener implements Listener {
             }
 
             if (mythicManager.getHandler(AlchemistWandHandler.class).isTaunting(player.getUniqueId())) {
-                double increase = plugin.getItemsConfig().getAlchemistTauntDamageIncreasePercent();
+                double increase = itemsConfig.getAlchemistTauntDamageIncreasePercent();
                 event.setDamage(event.getDamage() * (1.0 + increase / 100.0));
             }
 
@@ -265,7 +268,7 @@ public class DamageListener implements Listener {
         }
         if (event.isApplicable(EntityDamageEvent.DamageModifier.BASE)) {
             event.setDamage(EntityDamageEvent.DamageModifier.BASE,
-                    plugin.getItemsConfig().getSoulKatanaStrikeDamage());
+                    itemsConfig.getSoulKatanaStrikeDamage());
         }
     }
 
@@ -392,7 +395,7 @@ public class DamageListener implements Listener {
         // Wind Charge Fall Damage Fix
         if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
             // Check if player recently used or was hit by a wind charge
-            if (plugin.getCooldownManager().getRemainingCooldownMs(player.getUniqueId(), "WIND_CHARGE_PROTECTION") > 0) {
+            if (cooldownManager.getRemainingCooldownMs(player.getUniqueId(), "WIND_CHARGE_PROTECTION") > 0) {
                 event.setCancelled(true);
                 return;
             }
@@ -673,7 +676,7 @@ public class DamageListener implements Listener {
      * Handle attacker-side effects (mythic items, custom items, combat modifiers).
      */
     private void handleAttackerEffects(EntityDamageByEntityEvent event, Player attacker, Player victim) {
-        GameSession session = plugin.getGameManager().getPlayerSession(attacker);
+        GameSession session = gameManager.getPlayerSession(attacker);
         ItemStack weapon = attacker.getInventory().getItemInMainHand();
 
         handleCustomItemEffects(attacker, weapon, session);

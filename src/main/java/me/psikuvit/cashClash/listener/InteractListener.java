@@ -1,7 +1,5 @@
 package me.psikuvit.cashClash.listener;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -77,18 +75,19 @@ import org.bukkit.persistence.PersistentDataType;
  */
 public class InteractListener implements Listener {
 
-    private final CashClashPlugin plugin;
+    private final GameManager gameManager;
     private final CustomItemManager customItemManager;
     private final MythicItemManager mythicManager;
     private final CustomArmorManager armorManager;
     private final WeaponItemManager weaponItemManager;
 
-    public InteractListener(CashClashPlugin plugin) {
-        this.plugin = plugin;
-        this.customItemManager = plugin.getCustomItemManager();
-        this.mythicManager = plugin.getMythicItemManager();
-        this.armorManager = plugin.getCustomArmorManager();
-        this.weaponItemManager = plugin.getWeaponItemManager();
+    public InteractListener(GameManager gameManager, CustomItemManager customItemManager, MythicItemManager mythicManager,
+                           CustomArmorManager armorManager, WeaponItemManager weaponItemManager) {
+        this.gameManager = gameManager;
+        this.customItemManager = customItemManager;
+        this.mythicManager = mythicManager;
+        this.armorManager = armorManager;
+        this.weaponItemManager = weaponItemManager;
     }
 
     // ==================== ENDER PEARL RESTRICTIONS ====================
@@ -99,7 +98,7 @@ public class InteractListener implements Listener {
 
         if (event.getEntity() instanceof EnderPearl pearl) {
             if (pearl.getShooter() instanceof Player player) {
-                GameSession session = plugin.getGameManager().getPlayerSession(player);
+                GameSession session = gameManager.getPlayerSession(player);
                 if (session == null) return;
 
                 CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
@@ -119,7 +118,7 @@ public class InteractListener implements Listener {
 
         if (event.getEntity() instanceof Trident trident) {
             if (trident.getShooter() instanceof Player player) {
-                GameSession session = plugin.getGameManager().getPlayerSession(player);
+                GameSession session = gameManager.getPlayerSession(player);
                 if (session == null) return;
 
                 if (CashClashPlayer.isPlayerDead(player)) {
@@ -212,9 +211,7 @@ public class InteractListener implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onWardenGlovesHandSwitch(PlayerItemHeldEvent event) {
-        Player player = event.getPlayer();
-        ItemStack newItem = player.getInventory().getItem(event.getNewSlot());
-        mythicManager.getHandler(WardenGlovesHandler.class).onHandSwitch(player, newItem);
+        mythicManager.getHandler(WardenGlovesHandler.class).onHandSwitch(event.getPlayer());
     }
 
     /**
@@ -332,7 +329,7 @@ public class InteractListener implements Listener {
 
     private void handleReadyUp(PlayerInteractEvent event, Player player, Block block) {
         if (!block.getType().name().contains("SIGN")) return;
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         if (session == null) return;
 
         Team team = session.getPlayerTeam(player);
@@ -350,7 +347,7 @@ public class InteractListener implements Listener {
     private boolean handleEnderPearl(PlayerInteractEvent event, Player player, ItemStack item) {
         if (item.getType() != Material.ENDER_PEARL) return false;
 
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         if (session == null) return false;
 
         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
@@ -402,7 +399,7 @@ public class InteractListener implements Listener {
         Integer amount = PDCDetection.getSupplyDropAmount(item);
         if (amount == null) return false;
 
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         if (session == null) return false;
 
         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
@@ -449,7 +446,7 @@ public class InteractListener implements Listener {
 
         // Flag holder cannot use invisibility cloak
         if (type == CustomItem.INVIS_CLOAK) {
-            GameSession session = plugin.getGameManager().getPlayerSession(player);
+            GameSession session = gameManager.getPlayerSession(player);
             if (session != null && session.getGamemode() instanceof CaptureTheFlagGamemode ctf) {
                 if (ctf.isSilenced(player.getUniqueId())) {
                     event.setCancelled(true);
@@ -744,7 +741,7 @@ public class InteractListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPresidentBuffSelection(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         
         if (session == null || session.getGamemode() == null) return;
         if (!(session.getGamemode() instanceof ProtectThePresidentGamemode gamemode)) return;
@@ -772,12 +769,12 @@ public class InteractListener implements Listener {
     // ==================== UTILITIES ====================
 
     private boolean isInShoppingPhase(Player player) {
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         return session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted());
     }
 
     private boolean isRespawnProtected(Player player) {
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         if (session == null) return false;
         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
         return ccp != null && ccp.isRespawnProtected();
@@ -787,7 +784,7 @@ public class InteractListener implements Listener {
         if (CashClashPlayer.isPlayerDead(player)) {
             return true;
         }
-        GameSession session = plugin.getGameManager().getPlayerSession(player);
+        GameSession session = gameManager.getPlayerSession(player);
         if (session == null || session.getGamemode() == null) return false;
         if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return false;
         return gamemode.isSilenced(player.getUniqueId());

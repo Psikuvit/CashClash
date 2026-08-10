@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.shop;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -37,9 +36,9 @@ public class ShopService {
     private final GameManager gameManager;
     private final ItemFactory itemFactory;
 
-    public ShopService(CashClashPlugin plugin) {
-        this.gameManager = plugin.getGameManager();
-        this.itemFactory = plugin.getItemFactory();
+    public ShopService(GameManager gameManager, ItemFactory itemFactory) {
+        this.gameManager = gameManager;
+        this.itemFactory = itemFactory;
     }
 
     public long calculateTotalPrice(Purchasable item, int quantity) {

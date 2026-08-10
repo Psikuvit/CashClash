@@ -109,7 +109,7 @@ public final class CashClashPlugin extends JavaPlugin {
             playerDataManager = PlayerDataManager.create(this);
             getLogger().info("Player data storage initialized");
 
-            gameManager = new GameManager(this);
+            gameManager = new GameManager();
             gamemodeManager = new GamemodeManager();
             tabListManager = new TabListManager();
             partyManager = new PartyManager();
@@ -117,26 +117,26 @@ public final class CashClashPlugin extends JavaPlugin {
             cooldownManager = new CooldownManager();
 
             // Tier 1: depend only on tier 0 managers.
-            arenaManager = new ArenaManager(this);
-            chatManager = new ChatManager(this);
-            rejoinManager = new RejoinManager(this);
-            leaderboardManager = new LeaderboardManager(this);
-            afkManager = new AfkManager(this);
-            mannequinManager = new MannequinManager(this);
-            lobbyManager = new LobbyManager(this);
-            scoreboardManager = new ScoreboardManager(this);
-            shopService = new ShopService(this);
-            transferInputListener = new TransferInputListener(this);
+            arenaManager = new ArenaManager(configManager, gameManager);
+            chatManager = new ChatManager(partyManager, gameManager);
+            rejoinManager = new RejoinManager(configManager, gameManager);
+            leaderboardManager = new LeaderboardManager(configManager, playerDataManager);
+            afkManager = new AfkManager(configManager, gameManager, messagesConfig);
+            mannequinManager = new MannequinManager(this); // Legitimate: needs getDataFolder() + getLogger()
+            lobbyManager = new LobbyManager(itemsConfig);
+            scoreboardManager = new ScoreboardManager(gameManager, tabListManager);
+            shopService = new ShopService(gameManager, itemFactory);
+            transferInputListener = new TransferInputListener(gameManager);
 
             // Tier 2: depend on tier 1 managers.
-            shopManager = new ShopManager(this);
-            layoutManager = new LayoutManager(this);
-            customArmorManager = new CustomArmorManager(this);
-            mythicItemManager = new MythicItemManager(this);
+            shopManager = new ShopManager(arenaManager, gameManager);
+            layoutManager = new LayoutManager(playerDataManager, lobbyManager);
+            customArmorManager = new CustomArmorManager(cooldownManager, itemsConfig);
+            mythicItemManager = new MythicItemManager(itemsConfig, cooldownManager, itemFactory);
 
             // Tier 3: depend on tier 2 managers.
-            customItemManager = new CustomItemManager(this);
-            weaponItemManager = new WeaponItemManager(this);
+            customItemManager = new CustomItemManager(cooldownManager, itemsConfig, customArmorManager);
+            weaponItemManager = new WeaponItemManager(cooldownManager, itemsConfig, customArmorManager);
 
             // Step 3: Initialize arena system
             arenaManager.initializeArenas();
@@ -267,18 +267,18 @@ public final class CashClashPlugin extends JavaPlugin {
     private void registerEvents() {
         Listener[] listeners = {
                 new GuiListener(),
-                new BlockListener(this),
-                new DamageListener(this),
-                new InteractListener(this),
-                new MoveListener(this),
-                new GameListener(this),
+                new BlockListener(gameManager),
+                new DamageListener(gameManager, customArmorManager, customItemManager, mythicItemManager, weaponItemManager, cooldownManager, itemsConfig),
+                new InteractListener(gameManager, customItemManager, mythicItemManager, customArmorManager, weaponItemManager),
+                new MoveListener(gameManager, customItemManager, customArmorManager, weaponItemManager),
+                new GameListener(arenaManager, configManager, cooldownManager, customArmorManager, customItemManager, gameManager, itemsConfig, mythicItemManager, playerDataManager, shopManager, weaponItemManager),
                 new HungerListener(),
-                new PlayerConnectionListener(this),
-                new LobbyListener(this),
+                new PlayerConnectionListener(arenaManager, configManager, gameManager, layoutManager, lobbyManager, mythicItemManager, playerDataManager, rejoinManager, scoreboardManager, tabListManager),
+                new LobbyListener(gameManager, lobbyManager, layoutManager),
                 new AfkListener(),
                 new ArenaNPCListener(),
                 new ChatListener(),
-                new RuneListener(this),
+                new RuneListener(gameManager, cooldownManager, customArmorManager, customItemManager),
                 transferInputListener
         };
 

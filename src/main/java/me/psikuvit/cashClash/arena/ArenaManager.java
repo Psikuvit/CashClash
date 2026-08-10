@@ -39,9 +39,9 @@ public class ArenaManager {
     // Server-wide lobby spawn (optional)
     private Location serverLobbySpawn;
 
-    public ArenaManager(CashClashPlugin plugin) {
-        this.gameManager = plugin.getGameManager();
-        this.configManager = plugin.getConfigManager();
+    public ArenaManager(ConfigManager configManager, GameManager gameManager) {
+        this.gameManager = gameManager;
+        this.configManager = configManager;
         this.arenas = new LinkedHashMap<>();
         this.arenaPlayerCounts = new HashMap<>();
         this.templates = new HashMap<>();

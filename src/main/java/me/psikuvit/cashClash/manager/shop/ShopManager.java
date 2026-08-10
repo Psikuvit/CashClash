@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.manager.shop;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
@@ -46,9 +45,9 @@ public class ShopManager {
     private final ArenaManager arenaManager;
     private final GameManager gameManager;
 
-    public ShopManager(CashClashPlugin plugin) {
-        this.arenaManager = plugin.getArenaManager();
-        this.gameManager = plugin.getGameManager();
+    public ShopManager(ArenaManager arenaManager, GameManager gameManager) {
+        this.arenaManager = arenaManager;
+        this.gameManager = gameManager;
         this.sessionShops = new HashMap<>();
         this.entityToSession = new HashMap<>();
         this.entityTeam = new HashMap<>();

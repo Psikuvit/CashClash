@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class GameManager implements Shutdownable {
 
-    private final CashClashPlugin plugin;
     private final Map<UUID, GameSession> activeSessions;
     private final Map<UUID, GameSession> playerToSession;
     private final Map<Integer, GameSession> arenaToSession;
@@ -26,15 +25,14 @@ public class GameManager implements Shutdownable {
      * managers). {@link #getInstance()} exposes that instance to the many call sites not worth
      * threading a constructor reference through.
      */
-    public GameManager(CashClashPlugin plugin) {
-        this.plugin = plugin;
+    public GameManager() {
         this.activeSessions = new ConcurrentHashMap<>();
         this.playerToSession = new ConcurrentHashMap<>();
         this.arenaToSession = new ConcurrentHashMap<>();
     }
 
     public GameSession createSession(int arenaNumber) {
-        GameSession session = new GameSession(arenaNumber, plugin);
+        GameSession session = new GameSession(arenaNumber, CashClashPlugin.getInstance());
         activeSessions.put(session.getSessionId(), session);
         arenaToSession.put(arenaNumber, session);
         Messages.debug("GAME", "Registered new session " + session.getSessionId() + " for arena " + arenaNumber);

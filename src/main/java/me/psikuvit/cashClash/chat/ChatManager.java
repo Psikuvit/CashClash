@@ -1,6 +1,4 @@
 package me.psikuvit.cashClash.chat;
-
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.Shutdownable;
@@ -24,9 +22,9 @@ public class ChatManager implements Shutdownable {
     private final PartyManager partyManager;
     private final GameManager gameManager;
 
-    public ChatManager(CashClashPlugin plugin) {
-        this.partyManager = plugin.getPartyManager();
-        this.gameManager = plugin.getGameManager();
+    public ChatManager(PartyManager partyManager, GameManager gameManager) {
+        this.partyManager = partyManager;
+        this.gameManager = gameManager;
         this.playerChannels = new ConcurrentHashMap<>();
     }
 

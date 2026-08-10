@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -41,10 +40,10 @@ public class CustomItemManager {
     private final Map<UUID, Long> healingReducedUntil;
     private final Map<UUID, Double> healingReductionMultiplier;
 
-    public CustomItemManager(CashClashPlugin plugin) {
-        this.cooldownManager = plugin.getCooldownManager();
-        this.cfg = plugin.getItemsConfig();
-        this.armorManager = plugin.getCustomArmorManager();
+    public CustomItemManager(CooldownManager cooldownManager, ItemsConfig itemsConfig, CustomArmorManager armorManager) {
+        this.cooldownManager = cooldownManager;
+        this.cfg = itemsConfig;
+        this.armorManager = armorManager;
         this.handlers = new EnumMap<>(CustomItem.class);
         this.allHandlers = new ArrayList<>();
         this.healingReducedUntil = new java.util.HashMap<>();
