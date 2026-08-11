@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
+import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
@@ -196,6 +197,7 @@ public class RoundManager {
                 CashClashPlayer.healToFull(p);
                 p.setFoodLevel(20);
                 p.setSaturation(20.0f);
+                KitService.restoreStarterArmor(p);
                 refillWaterBuckets(p);
                 Messages.send(p, "round.shopping-area-teleported");
             }

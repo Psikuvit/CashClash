@@ -563,7 +563,7 @@ public final class ParticleUtils {
             double radius = 0.8 + (i * 0.25);
             for (int j = 0; j < 28; j++) {
                 Color color = (j % 7 == 0) ? orange : turquoise;
-                spawnDust(circlePoint(playerLocation, radius, ringAngle(j, 28), 1.8), color, 1.8f, 1);
+                spawnDust(circlePoint(playerLocation, radius, ringAngle(j, 28), 1.5), color, 1.8f, 1);
             }
         }
     }

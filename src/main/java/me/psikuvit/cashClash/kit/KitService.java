@@ -14,6 +14,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -225,40 +226,12 @@ public class KitService {
      * This includes armor, tools, food, and shield (fixed for the whole game session).
      */
     private static void giveBaseItems(Player player, boolean shieldsEnabled) {
-        // === ARMOR ===
-        // Leather helmet (unbreakable)
-        ItemStack leatherHelmet = new ItemStack(Material.LEATHER_HELMET);
-        ItemMeta helmetMeta = leatherHelmet.getItemMeta();
-        if (helmetMeta != null) {
-            helmetMeta.setUnbreakable(true);
-            leatherHelmet.setItemMeta(helmetMeta);
-        }
-        player.getInventory().setHelmet(leatherHelmet);
-
-        // === GOLD ARMOR (UNBREAKABLE) ===
-        ItemStack goldChestplate = new ItemStack(Material.GOLDEN_CHESTPLATE);
-        ItemMeta chestMeta = goldChestplate.getItemMeta();
-        if (chestMeta != null) {
-            chestMeta.setUnbreakable(true);
-            goldChestplate.setItemMeta(chestMeta);
-        }
-        player.getInventory().setChestplate(goldChestplate);
-
-        ItemStack goldLeggings = new ItemStack(Material.GOLDEN_LEGGINGS);
-        ItemMeta legsMeta = goldLeggings.getItemMeta();
-        if (legsMeta != null) {
-            legsMeta.setUnbreakable(true);
-            goldLeggings.setItemMeta(legsMeta);
-        }
-        player.getInventory().setLeggings(goldLeggings);
-
-        ItemStack goldBoots = new ItemStack(Material.GOLDEN_BOOTS);
-        ItemMeta bootsMeta = goldBoots.getItemMeta();
-        if (bootsMeta != null) {
-            bootsMeta.setUnbreakable(true);
-            goldBoots.setItemMeta(bootsMeta);
-        }
-        player.getInventory().setBoots(goldBoots);
+        // === ARMOR (UNBREAKABLE) ===
+        PlayerInventory inventory = player.getInventory();
+        inventory.setHelmet(createUnbreakable(Material.LEATHER_HELMET));
+        inventory.setChestplate(createUnbreakable(Material.GOLDEN_CHESTPLATE));
+        inventory.setLeggings(createUnbreakable(Material.GOLDEN_LEGGINGS));
+        inventory.setBoots(createUnbreakable(Material.GOLDEN_BOOTS));
 
         // === TOOLS (UNBREAKABLE) ===
         ItemStack stoneSword = new ItemStack(Material.STONE_SWORD);
@@ -308,6 +281,36 @@ public class KitService {
         // === SHIELD ===
         // Fixed for the whole game session - no per-round swap
         setShield(player, shieldsEnabled);
+    }
+
+    /**
+     * Re-issue the starter armor into any armor slot the player has left empty. Base items are
+     * only handed out in round 1 ({@link #apply}), so without this a player who ends up with a
+     * bare slot - a refunded or replaced purchase, a set piece swapped out - stays without that
+     * piece for the rest of the match. Occupied slots are never touched, so bought armor and
+     * custom armor survive untouched.
+     */
+    public static void restoreStarterArmor(Player player) {
+        PlayerInventory inventory = player.getInventory();
+
+        if (isEmptySlot(inventory.getHelmet())) inventory.setHelmet(createUnbreakable(Material.LEATHER_HELMET));
+        if (isEmptySlot(inventory.getChestplate())) inventory.setChestplate(createUnbreakable(Material.GOLDEN_CHESTPLATE));
+        if (isEmptySlot(inventory.getLeggings())) inventory.setLeggings(createUnbreakable(Material.GOLDEN_LEGGINGS));
+        if (isEmptySlot(inventory.getBoots())) inventory.setBoots(createUnbreakable(Material.GOLDEN_BOOTS));
+    }
+
+    private static boolean isEmptySlot(ItemStack item) {
+        return item == null || item.getType().isAir();
+    }
+
+    private static ItemStack createUnbreakable(Material material) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setUnbreakable(true);
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     private static int getSwordSlot(Player player) {
@@ -430,17 +433,12 @@ public class KitService {
      * This is similar to giveBaseItems but respects the layout.
      */
     private static void giveBaseItemsWithLayout(Player player, Map<Integer, String> layout) {
-        // === ARMOR ===
-        ItemStack leatherHelmet = new ItemStack(Material.LEATHER_HELMET);
-        ItemMeta helmetMeta = leatherHelmet.getItemMeta();
-        if (helmetMeta != null) {
-            helmetMeta.setUnbreakable(true);
-            leatherHelmet.setItemMeta(helmetMeta);
-        }
-        player.getInventory().setHelmet(leatherHelmet);
-        player.getInventory().setChestplate(new ItemStack(Material.GOLDEN_CHESTPLATE));
-        player.getInventory().setLeggings(new ItemStack(Material.GOLDEN_LEGGINGS));
-        player.getInventory().setBoots(new ItemStack(Material.GOLDEN_BOOTS));
+        // === ARMOR (UNBREAKABLE) ===
+        PlayerInventory inventory = player.getInventory();
+        inventory.setHelmet(createUnbreakable(Material.LEATHER_HELMET));
+        inventory.setChestplate(createUnbreakable(Material.GOLDEN_CHESTPLATE));
+        inventory.setLeggings(createUnbreakable(Material.GOLDEN_LEGGINGS));
+        inventory.setBoots(createUnbreakable(Material.GOLDEN_BOOTS));
 
         // Build a map of item identifier -> ItemStack for base items
         Map<String, ItemStack> itemMap = new HashMap<>();
