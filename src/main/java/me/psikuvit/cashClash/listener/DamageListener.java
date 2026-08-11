@@ -676,14 +676,6 @@ public class DamageListener implements Listener {
         }
     }
 
-    /**
-     * Check if damage is from an explosion.
-     */
-    private boolean isExplosionDamage(EntityDamageEvent.DamageCause cause) {
-        return cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION ||
-               cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION;
-    }
-
     // ==================== DAMAGE TRACKING & BONUSES ====================
 
     /**

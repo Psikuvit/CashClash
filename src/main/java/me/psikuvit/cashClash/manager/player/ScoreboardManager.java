@@ -310,21 +310,6 @@ public class ScoreboardManager implements Shutdownable {
         playerContexts.clear();
     }
 
-    private String getFlagCaptureCircles(int captures) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 2; i++) {
-            if (i < captures) {
-                sb.append("<green>●</green>");
-            } else {
-                sb.append("<gray>○</gray>");
-            }
-            if (i < 2 - 1) {
-                sb.append(" ");
-            }
-        }
-        return sb.toString();
-    }
-
     public void createBoardForSession(GameSession session) {
         for (UUID playerUuid : session.getPlayers()) {
             Player player = Bukkit.getPlayer(playerUuid);
