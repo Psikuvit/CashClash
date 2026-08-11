@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Dragon Set - fully-charged melee hits charge Dragon Scales (up to the configured max).
  * Sneaking while looking at a target consumes one scale to Dragon Rush:
- * - teammate: both players become briefly invincible
+ * - teammate: a repositioning dash only, no invincibility for either player
  * - enemy: next melee hit deals bonus damage
  * Killing with the set grants Strength for a few seconds.
  * With all scales charged, sneaking launches Dragon Outrage: the player is sent ~5 blocks into
@@ -40,11 +40,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DragonSetHandler extends ArmorSetHandler {
 
+    /** Minimum gap between two Dragon Rush reminder playbacks for the same player. */
+    private static final long RUSH_INDICATOR_INTERVAL_MS = 5_000L;
+
     private final Map<UUID, Integer> dragonScales; // Player -> charged scales (max 3)
     private final Map<UUID, Integer> dragonHitCount; // Player -> fully-charged melee hits toward next scale
     private final Map<UUID, Long> dragonRushDamageBuff; // Player -> expiry of +25% rush damage buff
-    private final Set<UUID> dragonRushInvincible; // Players invincible during teammate Dragon Rush
     private final Set<UUID> dragonRushIndicators; // Players with an active Dragon Rush reminder
+    private final Map<UUID, Long> nextRushIndicatorAt; // Player -> earliest epoch millis the reminder may replay
     private final Set<UUID> dragonOutrageIndicators; // Players with an active Dragon Outrage reminder
     private final Set<UUID> dragonOutrageActive; // Players mid Dragon Outrage flight (launch -> landing)
 
@@ -53,8 +56,8 @@ public class DragonSetHandler extends ArmorSetHandler {
         this.dragonScales = new ConcurrentHashMap<>();
         this.dragonHitCount = new ConcurrentHashMap<>();
         this.dragonRushDamageBuff = new ConcurrentHashMap<>();
-        this.dragonRushInvincible = ConcurrentHashMap.newKeySet();
         this.dragonRushIndicators = ConcurrentHashMap.newKeySet();
+        this.nextRushIndicatorAt = new ConcurrentHashMap<>();
         this.dragonOutrageIndicators = ConcurrentHashMap.newKeySet();
         this.dragonOutrageActive = ConcurrentHashMap.newKeySet();
     }
@@ -160,22 +163,14 @@ public class DragonSetHandler extends ArmorSetHandler {
         player.setAllowFlight(false);
 
         if (playerTeam.getTeamNumber() == targetTeam.getTeamNumber()) {
-            // Teammate rush: land just short of the target, both invincible briefly
+            // Teammate rush: purely a repositioning dash, landing just short of the target -
+            // neither player gains invincibility from the teleport.
             Location startLocation = player.getLocation().clone();
             destination.subtract(direction.multiply(1.5));
             ParticleUtils.dragonRushCircle(startLocation, Color.fromRGB(200, 150, 255), 1.2f);
             player.teleport(destination);
             ParticleUtils.dragonRushCircle(destination, Color.fromRGB(200, 150, 255), 1.2f);
             SoundUtils.play(player, Sound.ENTITY_ENDERMAN_TELEPORT, 2.5f, 1.5f);
-
-            dragonRushInvincible.add(player.getUniqueId());
-            dragonRushInvincible.add(targetPlayer.getUniqueId());
-            SchedulerUtils.runTaskLater(() -> {
-                dragonRushInvincible.remove(player.getUniqueId());
-                dragonRushInvincible.remove(targetPlayer.getUniqueId());
-                Messages.send(player, "armor.dragon-rush-invincibility-ended");
-                Messages.send(targetPlayer, "armor.dragon-rush-invincibility-ended");
-            }, 10L);
         } else {
             // Enemy rush: teleport onto the target and empower the next melee hit
             ParticleUtils.dragonRushCircle(player.getLocation(), Color.fromRGB(140, 0, 255), 1.5f);
@@ -219,15 +214,10 @@ public class DragonSetHandler extends ArmorSetHandler {
     }
 
     /**
-     * Check if a player is invincible from a teammate Dragon Rush.
-     */
-    public boolean isDragonRushInvincible(UUID uuid) {
-        return dragonRushInvincible.contains(uuid);
-    }
-
-    /**
      * Show periodic reminders (purple target ring) while the player has scales and is
-     * aiming at a valid rush target.
+     * aiming at a valid rush target. Rate-limited to one playback every
+     * {@link #RUSH_INDICATOR_INTERVAL_MS} - every landed hit calls in here, so without the
+     * throttle a fast attacker retriggers the reminder almost continuously.
      */
     public void startDragonRushIndicator(Player player) {
         if (cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.DRAGON_DASH)) {
@@ -237,6 +227,14 @@ public class DragonSetHandler extends ArmorSetHandler {
         if (dragonRushIndicators.contains(uuid)) {
             return;
         }
+
+        long now = System.currentTimeMillis();
+        Long nextAllowed = nextRushIndicatorAt.get(uuid);
+        if (nextAllowed != null && now < nextAllowed) {
+            return;
+        }
+        nextRushIndicatorAt.put(uuid, now + RUSH_INDICATOR_INTERVAL_MS);
+
         dragonRushIndicators.add(uuid);
 
         for (int i = 0; i < 3; i++) {
@@ -440,8 +438,8 @@ public class DragonSetHandler extends ArmorSetHandler {
         dragonScales.clear();
         dragonHitCount.clear();
         dragonRushDamageBuff.clear();
-        dragonRushInvincible.clear();
         dragonRushIndicators.clear();
+        nextRushIndicatorAt.clear();
         dragonOutrageIndicators.clear();
         dragonOutrageActive.clear();
     }
@@ -451,8 +449,8 @@ public class DragonSetHandler extends ArmorSetHandler {
         dragonScales.clear();
         dragonHitCount.clear();
         dragonRushDamageBuff.clear();
-        dragonRushInvincible.clear();
         dragonRushIndicators.clear();
+        nextRushIndicatorAt.clear();
         dragonOutrageIndicators.clear();
         dragonOutrageActive.clear();
     }
