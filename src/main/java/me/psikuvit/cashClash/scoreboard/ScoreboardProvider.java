@@ -2,9 +2,7 @@ package me.psikuvit.cashClash.scoreboard;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 
-import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.scoreboard.context.ContextType;
 import me.psikuvit.cashClash.scoreboard.context.ScoreboardContext;
 import me.psikuvit.cashClash.scoreboard.placeholder.PlaceholderRegistry;

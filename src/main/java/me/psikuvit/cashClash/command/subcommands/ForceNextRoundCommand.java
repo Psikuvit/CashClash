@@ -3,10 +3,8 @@ package me.psikuvit.cashClash.command.subcommands;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
-import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;

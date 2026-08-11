@@ -2,7 +2,6 @@ package me.psikuvit.cashClash.scoreboard.placeholder;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 
-import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.storage.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;

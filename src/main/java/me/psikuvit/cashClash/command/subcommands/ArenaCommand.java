@@ -3,11 +3,9 @@ package me.psikuvit.cashClash.command.subcommands;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.arena.Arena;
-import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Location;

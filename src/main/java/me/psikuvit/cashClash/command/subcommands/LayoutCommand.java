@@ -4,7 +4,6 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.gui.LayoutKitSelectorGUI;
-import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.lobby.LayoutManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.CommandSender;

@@ -2,9 +2,7 @@ package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 
-import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.CommandSender;

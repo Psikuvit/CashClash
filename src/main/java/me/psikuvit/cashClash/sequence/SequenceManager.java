@@ -2,7 +2,6 @@ package me.psikuvit.cashClash.sequence;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 
-import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 
 import java.util.function.Consumer;

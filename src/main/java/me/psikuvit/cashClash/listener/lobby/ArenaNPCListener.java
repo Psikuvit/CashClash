@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.listener.lobby;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
-import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;

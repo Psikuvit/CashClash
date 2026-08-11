@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.util.game.ptp;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.arena.Arena;
-import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.player.CashClashPlayer;

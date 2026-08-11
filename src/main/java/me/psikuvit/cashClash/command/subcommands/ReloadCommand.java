@@ -2,12 +2,6 @@ package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.config.ConfigManager;
-import me.psikuvit.cashClash.config.ItemsConfig;
-import me.psikuvit.cashClash.config.MessagesConfig;
-import me.psikuvit.cashClash.config.SequencesConfig;
-import me.psikuvit.cashClash.config.ShopConfig;
-import me.psikuvit.cashClash.manager.lobby.MannequinManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;

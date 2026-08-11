@@ -2,9 +2,7 @@ package me.psikuvit.cashClash.manager.items.armor;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 
-import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
-import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;

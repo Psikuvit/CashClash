@@ -1,7 +1,6 @@
 package me.psikuvit.cashClash.util;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.Team;
 import net.kyori.adventure.text.Component;
