@@ -18,7 +18,9 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.entity.AbstractArrow;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -50,6 +52,14 @@ public class BlockListener implements Listener {
         this.gameManager = gameManager;
     }
 
+    /**
+     * A floating countdown over a placed utility block. {@code colorTag} is a MiniMessage
+     * colour name rather than a {@link org.bukkit.Color} because the label is text; each
+     * utility gets the colour of the block it placed. {@code material} is what the block was
+     * when the timer went up, so the ticker can drop the label the moment it stops being that.
+     */
+    private record DespawnTimer(TextDisplay display, Material material, long expiresAt, String colorTag) {}
+
     private static final Map<UUID, Set<Location>> placedBlocks = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<Integer, Integer>> waterLavaSourceCount = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<UUID, Integer>> playerLeafBlockCount = new ConcurrentHashMap<>();
@@ -57,6 +67,8 @@ public class BlockListener implements Listener {
     private static final Map<Location, BukkitTask> leafDecayTasks = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
     private static final Map<Location, Location> waterLavaOrigins = new ConcurrentHashMap<>();
+    private static final Map<Location, DespawnTimer> despawnTimers = new ConcurrentHashMap<>();
+    private static BukkitTask despawnTimerTask;
 
     // ==================== BLOCK PLACE ====================
 
@@ -66,6 +78,7 @@ public class BlockListener implements Listener {
             for (Location loc : blocks) {
                 cancelWebDespawnTask(loc);
                 cancelLeafDecayTask(loc);
+                removeDespawnTimer(loc);
             }
         }
         if (blocks == null) {
@@ -136,11 +149,9 @@ public class BlockListener implements Listener {
 
         trackPlacedBlock(session.getSessionId(), target);
 
-        // PlayerBucketEmptyEvent fires *before* the fluid replaces the block, and the spread
-        // copies its type off the source block - reading it inline propagated plain air, so
-        // bucket-placed water never actually flowed. Wait a tick for the real block to exist.
         SchedulerUtils.runTask(() -> {
             if (target.getType() != fluid) return;
+            showDespawnTimer(target, fluid, 200, water ? "aqua" : "gold");
             createQuickFluid(target, session.getSessionId(), origin);
         });
     }
@@ -260,6 +271,7 @@ public class BlockListener implements Listener {
         // Track placed block and schedule despawn (limit handled by inventory control)
         trackPlacedBlock(sessionId, block);
         scheduleWebDespawn(block);
+        showDespawnTimer(block, Material.COBWEB, 160, "white");
         return true;
     }
 
@@ -301,6 +313,7 @@ public class BlockListener implements Listener {
         counts.put(playerId, currentLeafs + 1);
         trackPlacedBlock(sessionId, block);
         scheduleLeafDecay(block);
+        showDespawnTimer(block, blockType, 160, "green");
         return true;
     }
 
@@ -346,8 +359,10 @@ public class BlockListener implements Listener {
         waterLavaOrigins.put(origin, origin);
         if (blockType == Material.WATER) {
             scheduleWaterLavaCleanup(event.getBlock());
+            showDespawnTimer(event.getBlock(), Material.WATER, 200, "aqua");
         } else if (blockType == Material.LAVA) {
             scheduleLavaCleanup(event.getBlock());
+            showDespawnTimer(event.getBlock(), Material.LAVA, 200, "gold");
         }
         createQuickFluid(event.getBlock(), sessionId, origin);
 
@@ -356,6 +371,81 @@ public class BlockListener implements Listener {
             queueWaterBucketRefill(player);
         }
         return true;
+    }
+
+    // ==================== PLACED-UTILITY DESPAWN TIMERS ====================
+
+    /**
+     * Put a colour-matched countdown above a placed utility block so both teams can read how
+     * much longer it will be there. Only the block the player actually placed gets one - the
+     * water/lava blocks {@link #createQuickFluid} spreads out from it would otherwise stack a
+     * dozen overlapping labels on one puddle.
+     *
+     * @param material what the block is expected to be for as long as the timer runs - passed
+     *                 explicitly rather than read off {@code block}, since the bucket path
+     *                 places its fluid a tick after the event that starts the timer
+     */
+    private static void showDespawnTimer(Block block, Material material, long durationTicks, String colorTag) {
+        Location loc = block.getLocation().toBlockLocation();
+        if (loc.getWorld() == null) return;
+        removeDespawnTimer(loc);
+
+        TextDisplay display = loc.getWorld().spawn(loc.clone().add(0.5, 1.1, 0.5), TextDisplay.class, d -> {
+            d.setBillboard(Display.Billboard.CENTER);
+            d.setSeeThrough(true);
+            d.setShadowed(false);
+            d.setBrightness(new Display.Brightness(15, 15));
+            d.setPersistent(false);
+        });
+
+        despawnTimers.put(loc, new DespawnTimer(display, material,
+                System.currentTimeMillis() + durationTicks * 50L, colorTag));
+        startDespawnTimerTask();
+    }
+
+    /**
+     * One shared ticker drives every countdown label instead of a task per block - a team can
+     * easily have dozens of leaves and webs out at once. Stops itself once nothing is left to
+     * count down.
+     */
+    private static void startDespawnTimerTask() {
+        if (despawnTimerTask != null) return;
+
+        despawnTimerTask = SchedulerUtils.runTaskTimer(() -> {
+            long now = System.currentTimeMillis();
+            despawnTimers.entrySet().removeIf(entry -> {
+                Location loc = entry.getKey();
+                DespawnTimer timer = entry.getValue();
+                long remainingMs = timer.expiresAt() - now;
+
+                // isWorldLoaded() rather than a null check: a session's world copy is deleted
+                // when the game ends, and touching a block in it after that would blow up.
+                boolean finished = remainingMs <= 0
+                        || timer.display().isDead()
+                        || !loc.isWorldLoaded()
+                        || loc.getBlock().getType() != timer.material();
+                if (finished) {
+                    if (!timer.display().isDead()) timer.display().remove();
+                    return true;
+                }
+
+                long seconds = (long) Math.ceil(remainingMs / 1000.0);
+                timer.display().text(Messages.parse("<" + timer.colorTag() + ">" + seconds + "s</" + timer.colorTag() + ">"));
+                return false;
+            });
+
+            if (despawnTimers.isEmpty() && despawnTimerTask != null) {
+                despawnTimerTask.cancel();
+                despawnTimerTask = null;
+            }
+        }, 0L, 10L);
+    }
+
+    private static void removeDespawnTimer(Location loc) {
+        DespawnTimer timer = despawnTimers.remove(loc.toBlockLocation());
+        if (timer != null && !timer.display().isDead()) {
+            timer.display().remove();
+        }
     }
 
     /**
@@ -534,6 +624,7 @@ public class BlockListener implements Listener {
         if (isLeafBlock(type)) {
             event.setDropItems(false);
             cancelLeafDecayTask(block.getLocation());
+            removeDespawnTimer(block.getLocation());
 
             // Decrement player's leaf count
             decrementPlayerLeaf(event, playerLeafBlockCount);
@@ -596,6 +687,7 @@ public class BlockListener implements Listener {
 
         // Block was player-placed, allow breaking and remove from tracking
         sessionPlacedBlocks.remove(loc);
+        removeDespawnTimer(loc);
 
         // Update water/lava source count if applicable
         updateBlockTypeCountOnBreak(session, player, block);
@@ -667,6 +759,7 @@ public class BlockListener implements Listener {
         if (block.getType() == Material.COBWEB) {
             event.setDropItems(false);
             cancelWebDespawnTask(block.getLocation());
+            removeDespawnTimer(block.getLocation());
         }
     }
 
