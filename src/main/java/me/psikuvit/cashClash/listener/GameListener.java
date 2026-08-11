@@ -339,14 +339,15 @@ public class GameListener implements Listener {
         // Handle special consumables
         handleSpecialConsumable(p, consumed);
 
-        // Enchanted golden apple: clamp absorption/resistance/fire-resistance (and regen) to 45s
+        // Enchanted golden apple: clamp absorption/resistance/fire-resistance to 45s.
+        // Regeneration is deliberately left alone - stretching vanilla's 20s to 45s made the
+        // apple heal far more than it should, so it keeps its vanilla duration.
         if (consumed.getType() == Material.ENCHANTED_GOLDEN_APPLE) {
             SchedulerUtils.runTaskLater(() -> {
                 Player player = event.getPlayer();
                 player.getActivePotionEffects().forEach(effect -> {
                     PotionEffectType type = effect.getType();
                     if (type == PotionEffectType.ABSORPTION ||
-                            type == PotionEffectType.REGENERATION ||
                             type == PotionEffectType.RESISTANCE ||
                             type == PotionEffectType.FIRE_RESISTANCE) {
                         CashClashPlayer.removeEffect(player, type);
