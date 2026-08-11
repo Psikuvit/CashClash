@@ -200,7 +200,6 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
                 Team targetTeam = session.getPlayerTeam(target);
                 if (targetTeam != null && targetTeam.getTeamNumber() == team.getTeamNumber()) continue;
             }
-            CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, slownessTicks, 0);
             pulled.add(target);
         }
 
