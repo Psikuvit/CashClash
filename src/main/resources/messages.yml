@@ -746,6 +746,9 @@ messages:
     cannot-use-during-shopping: "<red>You cannot consume food during the shopping phase!</red>"
     cannot-use-consumables-during-shopping: "<red>You cannot use special consumables during the shopping phase!</red>"
     cannot-use-abilities-shopping: "<red>You cannot use mythic abilities during the shopping phase!</red>"
+    cannot-use-custom-armor-shopping: "<red>You cannot use custom armor during the shopping phase!</red>"
+    cannot-use-custom-weapons-shopping: "<red>You cannot use custom weapons during the shopping phase!</red>"
+    cannot-use-runes-shopping: "<red>You cannot use runes during the shopping phase!</red>"
     must-be-in-game: "<red>You must be in a game!</red>"
     must-be-on-team: "<red>You must be on a team to transfer money!</red>"
 

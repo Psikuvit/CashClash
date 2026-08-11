@@ -585,13 +585,11 @@ public class InteractListener implements Listener {
         WeaponItem weapon = PDCDetection.getWeapon(item);
         if (weapon == null) return false;
 
-        // Special weapon abilities cannot be used during shopping
-        if (isInShoppingPhase(player)) return false;
-
         switch (weapon) {
             case CASH_BLASTER -> {
-                if (player.isSneaking() && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK)) {
+                if (player.isSneaking() && action.isRightClick()) {
                     event.setCancelled(true);
+                    if (blockCustomWeaponInShoppingPhase(player)) return true;
                     armorManager.lockMythicShift(player);
                     weaponItemManager.getHandler(CashBlasterHandler.class).onCashBlasterToggle(player);
                     return true;
@@ -600,6 +598,7 @@ public class InteractListener implements Listener {
             case SOUL_KATANA -> {
                 if (action.isRightClick() && player.isSneaking()) {
                     event.setCancelled(true);
+                    if (blockCustomWeaponInShoppingPhase(player)) return true;
                     armorManager.lockMythicShift(player);
                     weaponItemManager.getHandler(SoulKatanaHandler.class).usePhantomSlice(player);
                     return true;
@@ -610,6 +609,18 @@ public class InteractListener implements Listener {
             }
         }
         return false;
+    }
+
+    /**
+     * Custom weapon abilities are shopping-phase-locked like mythic ones. Checked per ability
+     * rather than for the whole weapon so a plain swing/shot is still untouched.
+     *
+     * @return true if the ability must not run
+     */
+    private boolean blockCustomWeaponInShoppingPhase(Player player) {
+        if (!isInShoppingPhase(player)) return false;
+        Messages.send(player, "gamestate.cannot-use-custom-weapons-shopping");
+        return true;
     }
 
     /**

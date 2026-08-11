@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.manager.items.armor;
 
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
@@ -9,7 +10,6 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -90,6 +90,11 @@ public class TectonicCapHandler extends ArmorSetHandler {
         boolean charge2Ready = !tectonicCharge2Cooldown.containsKey(id) || tectonicCharge2Cooldown.get(id) <= now;
 
         if (!charge1Ready && !charge2Ready) return;
+
+        if (isInShoppingPhase(player)) {
+            Messages.send(player, "gamestate.cannot-use-custom-armor-shopping");
+            return;
+        }
 
         Location impact = player.getLocation().clone().add(0, 0.1, 0);
         Material feet = player.getLocation().getBlock().getType();

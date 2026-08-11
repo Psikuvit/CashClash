@@ -78,6 +78,11 @@ public class BunnyShoesHandler extends ArmorSetHandler {
         // as the Alchemist Wand Taunt check above.
         if (CashClashPlugin.getInstance().getMythicItemManager().getHandler(WardenGlovesHandler.class).isRisingFuryActive(id)) return;
 
+        if (isInShoppingPhase(p)) {
+            Messages.send(p, "gamestate.cannot-use-custom-armor-shopping");
+            return;
+        }
+
         // Check if player is silenced (carrying enemy flag in CTF)
         if (isSilenced(p)) {
             Messages.send(p, "listener.cannot-use-items-while-silenced");

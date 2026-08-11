@@ -68,6 +68,7 @@ public class RuneListener implements Listener {
 
         GameSession session = gameManager.getPlayerSession(player);
         if (session != null && session.getState() == GameState.SHOPPING) {
+            Messages.send(player, "gamestate.cannot-use-runes-shopping");
             return;
         }
 
@@ -124,6 +125,7 @@ public class RuneListener implements Listener {
         GameSession session = gameManager.getPlayerSession(p);
         if (session != null && session.getState() == GameState.SHOPPING) {
             event.setCancelled(true);
+            Messages.send(p, "gamestate.cannot-use-runes-shopping");
             return;
         }
 

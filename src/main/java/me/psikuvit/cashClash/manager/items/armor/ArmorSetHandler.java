@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -56,6 +57,15 @@ public abstract class ArmorSetHandler {
         if (session == null || session.getGamemode() == null) return false;
         if (!(session.getGamemode() instanceof CaptureTheFlagGamemode gamemode)) return false;
         return gamemode.isSilenced(player.getUniqueId());
+    }
+
+    /**
+     * Whether the player is in a phase where custom armor abilities must not fire - the
+     * shopping phase, or a sequence that mirrors its restrictions.
+     */
+    protected boolean isInShoppingPhase(Player player) {
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
+        return session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted());
     }
 
     /**
