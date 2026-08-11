@@ -67,6 +67,7 @@ public class BlockListener implements Listener {
     private static final Map<Location, BukkitTask> leafDecayTasks = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
     private static final Map<Location, Location> waterLavaOrigins = new ConcurrentHashMap<>();
+    private static final Map<UUID, Set<Location>> quickFluidVisited = new ConcurrentHashMap<>();
     private static final Map<Location, DespawnTimer> despawnTimers = new ConcurrentHashMap<>();
     private static BukkitTask despawnTimerTask;
 
@@ -99,6 +100,7 @@ public class BlockListener implements Listener {
         waterLavaSourceCount.remove(sessionId);
         playerLeafBlockCount.remove(sessionId);
         playerWaterBucketRefillCount.remove(sessionId);
+        quickFluidVisited.remove(sessionId);
     }
 
     /**
@@ -148,11 +150,11 @@ public class BlockListener implements Listener {
         }
 
         trackPlacedBlock(session.getSessionId(), target);
+        createQuickFluid(target, session.getSessionId(), origin);
 
         SchedulerUtils.runTask(() -> {
             if (target.getType() != fluid) return;
             showDespawnTimer(target, fluid, 200, water ? "aqua" : "gold");
-            createQuickFluid(target, session.getSessionId(), origin);
         });
     }
 
@@ -505,10 +507,11 @@ public class BlockListener implements Listener {
      * speed, capped at 3 blocks from the origin by the caller's distance check.
      */
     private void createQuickFluid(Block source, UUID sessionId, Location origin) {
-        createQuickFluid(source, sessionId, origin, ConcurrentHashMap.newKeySet());
-    }
+        Set<Location> visited = quickFluidVisited.computeIfAbsent(
+                sessionId,
+                k -> ConcurrentHashMap.newKeySet()
+        );
 
-    private void createQuickFluid(Block source, UUID sessionId, Location origin, Set<Location> visited) {
         Location loc = source.getLocation().toBlockLocation();
 
         if (loc.distance(origin) >= 3) {
@@ -519,12 +522,12 @@ public class BlockListener implements Listener {
             return;
         }
 
-        boolean supported = !source.getRelative(BlockFace.DOWN).getType().isAir();
-        BlockFace[] faces = supported
-                ? new BlockFace[]{BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}
-                : new BlockFace[]{BlockFace.DOWN};
-
-        for (BlockFace face : faces) {
+        for (BlockFace face : new BlockFace[]{
+                BlockFace.NORTH,
+                BlockFace.SOUTH,
+                BlockFace.EAST,
+                BlockFace.WEST
+        }) {
             Block next = source.getRelative(face);
             if (next.getBlockData() instanceof Waterlogged) {
                 continue;
@@ -539,7 +542,7 @@ public class BlockListener implements Listener {
                     scheduleLavaCleanup(next);
                 }
                 SchedulerUtils.runTaskLater(
-                        () -> createQuickFluid(next, sessionId, origin, visited),
+                        () -> createQuickFluid(next, sessionId, origin),
                         1L
                 );
             }
