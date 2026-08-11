@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.shop;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
@@ -177,6 +178,8 @@ public class ShopService {
                 }
             }
         }
+
+        KitService.restoreStarterArmor(player);
 
         SoundUtils.play(player, Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.5f);
     }
@@ -440,6 +443,8 @@ public class ShopService {
                 SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
             }
         }
+
+        KitService.restoreStarterArmor(player);
 
         ItemStack[] armorContents = player.getInventory().getArmorContents();
         Messages.debug(player, Messages.DebugCategory.SHOP, "giveItemToPlayer done for " + item
