@@ -217,9 +217,8 @@ public class InteractListener implements Listener {
     }
 
     /**
-     * Same lock, for the player's own inventory screen: Bukkit never fires
-     * {@code InventoryOpenEvent} for it, so the screen itself cannot be refused - cancelling
-     * every click and drag it produces is what actually makes it unusable.
+     * Same lock for the player's own inventory screen, which fires no
+     * {@code InventoryOpenEvent} - a click is the first the server hears of it.
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onOverdriveInventoryClick(InventoryClickEvent event) {
@@ -227,6 +226,7 @@ public class InteractListener implements Listener {
         if (!customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) return;
 
         event.setCancelled(true);
+        player.closeInventory();
     }
 
     /**

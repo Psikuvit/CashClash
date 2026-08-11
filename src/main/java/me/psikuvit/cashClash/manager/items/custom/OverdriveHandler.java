@@ -14,6 +14,7 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
@@ -68,10 +69,21 @@ public class OverdriveHandler extends CustomItemHandler {
         // Purple engulf on activation + pulsing aura while active
         ParticleUtils.spawnDust(player.getLocation().add(0, 1, 0), Color.fromRGB(150, 40, 220), 1.6f, 40, 0.6);
 
-        BukkitTask pulseTask = SchedulerUtils.runTaskTimer(() -> {
-            if (!player.isOnline() || !overdriveInvincible.contains(uuid)) return;
-            ParticleUtils.spawnDust(player.getLocation().add(0, 1, 0), Color.fromRGB(165, 70, 230), 1.2f, 12, 0.4);
-        }, 5L, 5L);
+        BukkitTask pulseTask = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private int tick;
+
+            @Override
+            public void run() {
+                if (!player.isOnline() || !overdriveInvincible.contains(uuid)) return;
+
+                // No event fires for a player's own inventory - it can only be closed back.
+                player.closeInventory();
+
+                if (tick++ % 5 == 0) {
+                    ParticleUtils.spawnDust(player.getLocation().add(0, 1, 0), Color.fromRGB(165, 70, 230), 1.2f, 12, 0.4);
+                }
+            }
+        }, 5L, 1L);
         overdrivePulseTasks.put(uuid, pulseTask);
 
         SchedulerUtils.runTaskLater(() -> endOverdrive(player), seconds * 20L);
