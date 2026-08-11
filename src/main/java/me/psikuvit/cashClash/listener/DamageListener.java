@@ -792,7 +792,7 @@ public class DamageListener implements Listener {
             case ELECTRIC_EEL_SWORD -> applyMythicCriticalEffect(event, attacker, victim, mythicManager.getHandler(ElectricEelHandler.class)::handleElectricEelChain);
             case WARDEN_GLOVES -> mythicManager.getHandler(WardenGlovesHandler.class).useWardenPunch(event, attacker, victim);
             case GOBLIN_SPEAR -> applyGoblinSpearEffect(event, attacker, victim);
-            case ALCHEMIST_WAND -> mythicManager.getHandler(AlchemistWandHandler.class).onAlchemistMeleeHit(attacker, victim);
+            case ALCHEMIST_WAND -> applyAlchemistWandMelee(event, attacker, victim);
             default -> { /* No special handling */ }
         }
     }
@@ -804,6 +804,22 @@ public class DamageListener implements Listener {
         if (event.isCritical()) {
             handler.apply(attacker, victim);
         }
+    }
+
+    /**
+     * The Alchemist Wand is a pure ability tool, like Warden Gloves: it carries real attack
+     * damage only so vanilla resolves the swing into a damage event at all (a 0-damage weapon
+     * is skipped outright by vanilla's attack path, so none of this would run). Outside an
+     * active Tidy Up window the hit is therefore dropped entirely - Tidy Up remains the one
+     * state in which a wand swing does anything.
+     */
+    private void applyAlchemistWandMelee(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        AlchemistWandHandler handler = mythicManager.getHandler(AlchemistWandHandler.class);
+        if (!handler.isTidyUpActive(attacker.getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
+        handler.onAlchemistMeleeHit(attacker, victim);
     }
 
     /**
