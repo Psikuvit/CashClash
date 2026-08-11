@@ -58,6 +58,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.player.PlayerDropItemEvent;
@@ -201,6 +202,42 @@ public class InteractListener implements Listener {
         if (customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
             event.setCancelled(true);
         }
+    }
+
+    /**
+     * Blocks opening a container/GUI while Overdrive Potion invincibility is active.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onOverdriveInventoryOpen(InventoryOpenEvent event) {
+        if (!(event.getPlayer() instanceof Player player)) return;
+        if (!customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) return;
+
+        event.setCancelled(true);
+        Messages.send(player, "customitem.overdrive-inventory-locked");
+    }
+
+    /**
+     * Same lock, for the player's own inventory screen: Bukkit never fires
+     * {@code InventoryOpenEvent} for it, so the screen itself cannot be refused - cancelling
+     * every click and drag it produces is what actually makes it unusable.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onOverdriveInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (!customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) return;
+
+        event.setCancelled(true);
+    }
+
+    /**
+     * @see #onOverdriveInventoryClick
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onOverdriveInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (!customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) return;
+
+        event.setCancelled(true);
     }
 
     // ==================== WARDEN GLOVES BOTH-HANDS TRACKING ====================

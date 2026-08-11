@@ -200,6 +200,10 @@ public class DamageListener implements Listener {
                 return;
             }
 
+            if (onOverdriveMeleeSuppression(event, attacker)) {
+                return;
+            }
+
             if (applyProtectionChecks(event, attacker, victim)) {
                 return;
             }
@@ -373,6 +377,20 @@ public class DamageListener implements Listener {
         if (attacker == null) return false;
         if (PDCDetection.getCustomItem(attacker.getInventory().getItemInMainHand()) != CustomItem.ICE_FAN) return false;
         if (customItemManager.getHandler(IceFanHandler.class).isIceFanAbilityDamage(attacker.getUniqueId())) return false;
+
+        event.setCancelled(true);
+        return true;
+    }
+
+    /**
+     * Overdrive Potion buys total invincibility by giving up all offence: while the window is
+     * up the drinker's own melee lands for nothing, the same all-or-nothing trade Warden Gloves
+     * make outside Rising Fury. Projectiles they already had in the air are untouched - this
+     * only suppresses a direct swing.
+     */
+    private boolean onOverdriveMeleeSuppression(EntityDamageByEntityEvent event, Player attacker) {
+        if (attacker == null || !(event.getDamager() instanceof Player)) return false;
+        if (!customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(attacker.getUniqueId())) return false;
 
         event.setCancelled(true);
         return true;
