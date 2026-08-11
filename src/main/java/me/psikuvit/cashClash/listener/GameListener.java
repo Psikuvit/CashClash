@@ -681,6 +681,8 @@ public class GameListener implements Listener {
     public void onProjectileHit(ProjectileHitEvent event) {
         if (event.isCancelled()) return;
 
+        if (passThroughTeammate(event)) return;
+
         if (event.getEntity() instanceof Arrow arrow) {
             // Profit Vortex: a tagged Cash Blaster arrow spawns its vortex on any impact
             // (world or entity), so handle it before the orb/charged-arrow branch.
@@ -697,6 +699,32 @@ public class GameListener implements Listener {
         } else if (event.getEntity() instanceof Snowball snowball && customItemManager.getHandler(OrbOfGravitationHandler.class).isOrbEntity(snowball)) {
             customItemManager.getHandler(OrbOfGravitationHandler.class).activateOrb(snowball);
         }
+    }
+
+    /**
+     * Lets a shot fly straight through the shooter's own teammates. Team damage was already
+     * cancelled, but the projectile still stopped dead on the body, so a teammate standing in
+     * a doorway or pushing ahead of you soaked every arrow. Cancelling the hit event instead
+     * makes the projectile ignore the collision and carry on to whatever is behind them - and
+     * with no hit registered, none of the on-hit mythic handlers below fire for it either.
+     *
+     * @return true if the projectile was waved through and the rest of the handler must skip
+     */
+    private boolean passThroughTeammate(ProjectileHitEvent event) {
+        if (!(event.getHitEntity() instanceof Player hitPlayer)) return false;
+        if (!(event.getEntity().getShooter() instanceof Player shooter)) return false;
+        if (shooter.equals(hitPlayer)) return false;
+
+        GameSession session = gameManager.getPlayerSession(shooter);
+        if (session == null) return false;
+
+        Team shooterTeam = session.getPlayerTeam(shooter);
+        Team hitTeam = session.getPlayerTeam(hitPlayer);
+        if (shooterTeam == null || hitTeam == null) return false;
+        if (shooterTeam.getTeamNumber() != hitTeam.getTeamNumber()) return false;
+
+        event.setCancelled(true);
+        return true;
     }
 
     /**
