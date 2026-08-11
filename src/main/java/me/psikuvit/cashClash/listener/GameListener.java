@@ -538,7 +538,14 @@ public class GameListener implements Listener {
         GameSession session = gameManager.getPlayerSession(p);
         if (session == null) return;
 
-        if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) return;
+        if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) {
+            boolean hasSneakAbility = armorManager.getHandler(BunnyShoesHandler.class).hasBunnyShoes(p)
+                    || armorManager.getHandler(DragonSetHandler.class).hasDragonSet(p);
+            if (event.isSneaking() && hasSneakAbility) {
+                Messages.send(p, "gamestate.cannot-use-custom-armor-shopping");
+            }
+            return;
+        }
 
         // Dead players cannot use Bunny Shoes or any abilities
         if (armorManager.getHandler(BunnyShoesHandler.class).hasBunnyShoes(p)) {
