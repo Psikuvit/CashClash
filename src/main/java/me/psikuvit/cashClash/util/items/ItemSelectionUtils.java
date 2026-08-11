@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.items;
 
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -51,8 +52,21 @@ public final class ItemSelectionUtils {
     }
 
     /**
+     * Special weapons - mythics, Soul Katana, Cash Blaster - are never valid replacement
+     * targets. They share a base material with ordinary gear (the Soul Katana is an iron sword,
+     * the Cash Blaster a bow), so a plain material-rank comparison would happily overwrite a
+     * legendary with a shop-bought upgrade.
+     */
+    private static boolean isSpecialWeapon(ItemStack item) {
+        if (PDCDetection.getMythic(item) != null) return true;
+        WeaponItem weapon = PDCDetection.getWeapon(item);
+        return weapon == WeaponItem.SOUL_KATANA || weapon == WeaponItem.CASH_BLASTER;
+    }
+
+    /**
      * Finds the inventory slot of the strongest matching tool for the given
-     * new item type. Returns -1 if none found.
+     * new item type. Returns -1 if none found (including when the only match is a special
+     * weapon, in which case the caller adds the new item to the inventory instead).
      */
     public static int findBestMatchingToolSlot(PlayerInventory inv, Material newType) {
         if (inv == null || newType == null) return -1;
@@ -65,6 +79,7 @@ public final class ItemSelectionUtils {
             if (is == null) continue;
             if (!isToolOrWeapon(is.getType())) continue;
             if (!sameCategory(is.getType(), newType)) continue;
+            if (isSpecialWeapon(is)) continue;
 
             if (best == null) {
                 best = is;
