@@ -239,10 +239,24 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
                 ParticleUtils.spawnDust(center.clone().add(0, 1, 0), pullYellow, 1.0f, 3, 0.3);
 
                 if (tick >= durationTicks) {
+                    releasePulledPlayers(pulled, slownessTicks);
                     cancel();
                 }
             }
         }, 0L, 1L);
+    }
+
+    /**
+     * The orb's grip lapsing isn't a clean getaway - everyone it held is slowed again as they
+     * walk out of it, so escaping still costs them tempo. Re-applied rather than just leaning
+     * on the Slowness from detonation, which has usually run out by the time the pull ends.
+     */
+    private void releasePulledPlayers(List<Player> pulled, int slownessTicks) {
+        for (Player target : pulled) {
+            if (!target.isOnline() || target.isDead()) continue;
+            CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, slownessTicks, 0);
+            Messages.send(target, "customitem.orb-escape-slowed");
+        }
     }
 
     /**
