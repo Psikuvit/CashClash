@@ -505,10 +505,6 @@ public class BlockListener implements Listener {
      * speed, capped at 3 blocks from the origin by the caller's distance check.
      */
     private void createQuickFluid(Block source, UUID sessionId, Location origin) {
-        // A fresh visited set per placement, not one shared for the whole session: the old
-        // session-wide set meant any spot a previous bucket had already flowed over was
-        // permanently marked, so a later bucket placed anywhere near it silently refused to
-        // spread at all.
         createQuickFluid(source, sessionId, origin, ConcurrentHashMap.newKeySet());
     }
 
@@ -523,10 +519,6 @@ public class BlockListener implements Listener {
             return;
         }
 
-        // Fluid with nothing under it falls straight down and only pools once it lands - it
-        // does not walk sideways through mid-air. Without this, placing a bucket on top of a
-        // wall/platform spilled a ring of floating source blocks off every edge instead of
-        // running down the sides.
         boolean supported = !source.getRelative(BlockFace.DOWN).getType().isAir();
         BlockFace[] faces = supported
                 ? new BlockFace[]{BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}
