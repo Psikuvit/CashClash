@@ -246,6 +246,10 @@ public class DamageListener implements Listener {
                     && PDCDetection.getMythic(attacker.getInventory().getItemInMainHand()) == MythicItem.ALCHEMIST_WAND) {
                 return false;
             }
+
+            if (handleInvincibleVictim(event, attacker, victim)) {
+                return true;
+            }
         }
 
         if (handleLobbyProtection(event, attacker)) {
@@ -433,6 +437,34 @@ public class DamageListener implements Listener {
     // ==================== PROTECTION HANDLERS ====================
 
     /**
+     * Cancels a hit on a victim who is currently untouchable (Totem of Haunting or Overdrive
+     * Potion invincibility) and gives the attacker an audible "that did nothing" cue. The main
+     * {@link #onEntityDamage} handler already cancels these, but it has no attacker to play a
+     * sound to, so the swing otherwise reads as a silent whiff.
+     *
+     * @return true if damage was cancelled
+     */
+    private boolean handleInvincibleVictim(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        UUID victimId = victim.getUniqueId();
+
+        if (!customItemManager.getHandler(TotemOfHauntingHandler.class).isTotemInvincible(victimId)
+                && !customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(victimId)) {
+            return false;
+        }
+
+        event.setCancelled(true);
+        playInvincibleHitFeedback(attacker);
+        return true;
+    }
+
+    /**
+     * The shared "you hit someone who can't be hurt right now" cue.
+     */
+    private void playInvincibleHitFeedback(Player attacker) {
+        SoundUtils.play(attacker, Sound.ITEM_SHIELD_BLOCK, 0.9f, 0.6f);
+    }
+
+    /**
      * Handle lobby protection - cancel PvP outside game sessions.
      * @return true if damage was cancelled
      */
@@ -507,6 +539,7 @@ public class DamageListener implements Listener {
             }
 
             event.setCancelled(true);
+            playInvincibleHitFeedback(attacker);
             Messages.debug(victim, "DAMAGE", "Damage cancelled due to respawn protection");
             return true;
         }
