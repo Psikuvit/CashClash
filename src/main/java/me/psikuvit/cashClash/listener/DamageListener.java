@@ -143,11 +143,6 @@ public class DamageListener implements Listener {
             handleArmorDefenseEffects(event, player);
             trackDamageForBonuses(event, player);
 
-            if (mythicManager.getHandler(AlchemistWandHandler.class).handleAlchemistBlinkProtection(player)) {
-                event.setCancelled(true);
-                return;
-            }
-
         } catch (Exception e) {
             logDamageError(player, e);
         }

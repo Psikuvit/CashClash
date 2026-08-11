@@ -63,10 +63,6 @@ public class AlchemistWandHandler extends MythicItemHandler {
             PotionEffectType.RESISTANCE, PotionEffectType.FIRE_RESISTANCE, PotionEffectType.ABSORPTION
     );
 
-    // Alchemist Blink Swap invincibility (UUID -> hits remaining)
-    private final Map<UUID, Integer> alchemistBlinkProtection;
-    private final Map<UUID, Long> alchemistBlinkProtectionExpiry;
-
     // Alchemist Wand Tidy Up tracking
     private final Map<UUID, Long> alchemistTidyUpExpiry;
     private final Map<UUID, BukkitTask> alchemistTidyUpTimeoutTasks;
@@ -81,8 +77,6 @@ public class AlchemistWandHandler extends MythicItemHandler {
 
     public AlchemistWandHandler(MythicItemManager manager) {
         super(manager);
-        this.alchemistBlinkProtection = new ConcurrentHashMap<>();
-        this.alchemistBlinkProtectionExpiry = new ConcurrentHashMap<>();
         this.alchemistTidyUpExpiry = new ConcurrentHashMap<>();
         this.alchemistTidyUpTimeoutTasks = new ConcurrentHashMap<>();
         this.alchemistTidyUpDisplayTasks = new ConcurrentHashMap<>();
@@ -151,14 +145,6 @@ public class AlchemistWandHandler extends MythicItemHandler {
         playAlchemistBlinkVisual(playerLocation);
         playAlchemistBlinkVisual(targetLocation);
 
-        long protectionExpiry = System.currentTimeMillis() + 5000;
-
-        alchemistBlinkProtection.put(uuid, 2);
-        alchemistBlinkProtection.put(target.getUniqueId(), 2);
-
-        alchemistBlinkProtectionExpiry.put(uuid, protectionExpiry);
-        alchemistBlinkProtectionExpiry.put(target.getUniqueId(), protectionExpiry);
-
         player.teleport(targetLocation);
         target.teleport(playerLocation);
 
@@ -217,39 +203,6 @@ public class AlchemistWandHandler extends MythicItemHandler {
             }
         };
         SchedulerUtils.runTaskTimer(blinkRunnable, 0L, 1L);
-    }
-
-    /**
-     * Checks and consumes Alchemist Blink Swap damage protection.
-     *
-     * @return true if the damage should be cancelled
-     */
-    public boolean handleAlchemistBlinkProtection(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        Integer hitsRemaining = alchemistBlinkProtection.get(uuid);
-        if (hitsRemaining == null || hitsRemaining <= 0) {
-            return false;
-        }
-
-        Long expiry = alchemistBlinkProtectionExpiry.get(uuid);
-        if (expiry == null || System.currentTimeMillis() >= expiry) {
-            alchemistBlinkProtection.remove(uuid);
-            alchemistBlinkProtectionExpiry.remove(uuid);
-            return false;
-        }
-
-        if (hitsRemaining <= 1) {
-            alchemistBlinkProtection.remove(uuid);
-            alchemistBlinkProtectionExpiry.remove(uuid);
-        } else {
-            alchemistBlinkProtection.put(uuid, hitsRemaining - 1);
-        }
-
-        Messages.debug(player, "ALCHEMIST_WAND: Blink protection blocked damage. Hits remaining: "
-                + Math.max(0, hitsRemaining - 1));
-
-        return true;
     }
 
     // ==================== TIDY UP ====================
@@ -790,9 +743,6 @@ public class AlchemistWandHandler extends MythicItemHandler {
 
     @Override
     public void cleanup() {
-        alchemistBlinkProtection.clear();
-        alchemistBlinkProtectionExpiry.clear();
-
         alchemistTidyUpTimeoutTasks.values().forEach(task -> { if (task != null) task.cancel(); });
         alchemistTidyUpTimeoutTasks.clear();
         alchemistTidyUpDisplayTasks.values().forEach(task -> { if (task != null) task.cancel(); });
@@ -828,9 +778,6 @@ public class AlchemistWandHandler extends MythicItemHandler {
     @Override
     public void cleanupPlayer(Player player) {
         UUID uuid = player.getUniqueId();
-
-        alchemistBlinkProtection.remove(uuid);
-        alchemistBlinkProtectionExpiry.remove(uuid);
 
         endAlchemistTidyUp(player, false);
         for (Map<UUID, Map<PotionEffectType, ItemDisplay>> perTarget : alchemistTidyUpBottles.values()) {
