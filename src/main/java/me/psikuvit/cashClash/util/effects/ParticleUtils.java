@@ -1,10 +1,13 @@
 package me.psikuvit.cashClash.util.effects;
 
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import java.util.Collection;
@@ -562,6 +565,30 @@ public final class ParticleUtils {
                 Color color = (j % 7 == 0) ? orange : turquoise;
                 spawnDust(circlePoint(playerLocation, radius, ringAngle(j, 28), 1.8), color, 1.8f, 1);
             }
+        }
+    }
+
+    /**
+     * A short ring of emeralds orbiting the player as it rises - the shared "your team was
+     * paid" flourish for Investor's Set rewards and Cash Blaster Profit Vortex payouts. Owns
+     * its own frame scheduling (unlike the single-frame ring helpers above) because both call
+     * sites want the identical animation, not their own copy of the loop.
+     */
+    public static void emeraldRing(Player player) {
+        if (player == null || !player.isOnline()) return;
+
+        ItemStack emerald = new ItemStack(Material.EMERALD);
+        for (int tick = 0; tick < 24; tick++) {
+            final int step = tick;
+            SchedulerUtils.runTaskLater(() -> {
+                if (!player.isOnline()) return;
+                double progress = step / 24.0;
+                Location center = player.getLocation().clone().add(0, 0.25 + progress * 1.4, 0);
+                for (int i = 0; i < 8; i++) {
+                    double angle = ringAngle(i, 8) + (progress * Math.PI * 2);
+                    spawn(Particle.ITEM, circlePoint(center, 0.75, angle, 0), 1, 0, 0, 0, 0, emerald);
+                }
+            }, step);
         }
     }
 

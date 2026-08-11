@@ -245,16 +245,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
 
             SoundUtils.play(teammate, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
             Messages.send(teammate, "customitem.cash-blaster-vortex-reward", "amount", String.valueOf(coins));
-            Location center = teammate.getLocation().clone().add(0, 0.6, 0);
-            for (int i = 0; i < 18; i++) {
-                int delay = i;
-                SchedulerUtils.runTaskLater(() -> {
-                    double angle = (Math.PI * 2 / 18) * delay;
-                    double x = Math.cos(angle) * 0.55;
-                    double z = Math.sin(angle) * 0.55;
-                    ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(0, 120, 40), 1.3f, 2, 0.05);
-                }, (long) (delay * 0.8));
-            }
+            ParticleUtils.emeraldRing(teammate);
         }
 
         playersKilledInProfitVortex.remove(victim.getUniqueId());
