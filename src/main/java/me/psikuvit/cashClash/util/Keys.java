@@ -63,7 +63,8 @@ public class Keys {
     public static final NamespacedKey BUFF_SELECTION_POTION;
 
     /**
-     * Byte marker on arrows shot with full draw strength (force >= 0.95).
+     * Byte marker on arrows shot with full draw strength (force >= the configurable
+     * {@code combat.fully-charged-threshold}).
      * Used by Orb of Gravitation's "destroyed by 4 fully-charged bow shots" mechanic.
      */
     public static final NamespacedKey FULLY_CHARGED_ARROW;

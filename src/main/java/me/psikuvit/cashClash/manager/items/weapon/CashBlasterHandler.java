@@ -114,7 +114,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
         }
 
         event.setCancelled(true);
-        if (event.getForce() < 0.99f) {
+        if (event.getForce() < cfg.getFullyChargedThreshold()) {
             Messages.send(player, "customitem.cash-blaster-vortex-full-charge");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;

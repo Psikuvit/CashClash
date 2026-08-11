@@ -56,6 +56,16 @@ public class ItemsConfig {
         validator.logConfigDiff("items.yml", 0); // TODO: track actual changes
     }
 
+    // ==================== GENERAL COMBAT ====================
+
+    /**
+     * How far the attack-cooldown / bow-draw meter must have filled (0.0 - 1.0) for a hit to
+     * count as fully charged. Shared by every "requires a fully charged hit" mechanic.
+     */
+    public double getFullyChargedThreshold() {
+        return config.getDouble("combat.fully-charged-threshold", 0.99);
+    }
+
     // ==================== MYTHIC ITEMS ====================
 
     public int getLegendsPerGame() {

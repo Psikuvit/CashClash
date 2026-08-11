@@ -8,6 +8,16 @@
 schema-version: 1
 
 # ============================================
+# GENERAL COMBAT
+# ============================================
+combat:
+  # How far the attack-cooldown / bow-draw meter must have filled (0.0 - 1.0) for a hit to
+  # count as "fully charged" by the mechanics that require one: Deathmauler's Soul Burst,
+  # Dragon Scale charging, Cash Blaster's Profit Vortex shot, and the fully-charged arrow tag
+  # Orb of Gravitation is destroyed by.
+  fully-charged-threshold: 0.99
+
+# ============================================
 # MYTHIC/LEGENDARY ITEMS
 # ============================================
 mythic-items:

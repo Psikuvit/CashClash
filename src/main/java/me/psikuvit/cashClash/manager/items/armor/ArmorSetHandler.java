@@ -59,12 +59,13 @@ public abstract class ArmorSetHandler {
     }
 
     /**
-     * Check if the player's melee attack is fully charged.
+     * Check if the player's melee attack is fully charged, against the configurable
+     * {@code combat.fully-charged-threshold}.
      */
     protected boolean isFullyChargedMelee(Player attacker) {
         // Bukkit exposes attack cooldown directly
         try {
-            return attacker.getAttackCooldown() >= 0.99f;
+            return attacker.getAttackCooldown() >= cfg.getFullyChargedThreshold();
         } catch (NoSuchMethodError ignored) {
             return true;
         }

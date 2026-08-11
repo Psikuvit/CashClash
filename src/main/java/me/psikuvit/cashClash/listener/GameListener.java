@@ -600,7 +600,7 @@ public class GameListener implements Listener {
 
         // Orb of Gravitation's bow-destroy mechanic needs to know about every fully-charged
         // shot regardless of which bow it came from, so tag it before the mythic check.
-        if (event.getProjectile() instanceof Arrow arrow && event.getForce() >= 0.95f) {
+        if (event.getProjectile() instanceof Arrow arrow && event.getForce() >= itemsConfig.getFullyChargedThreshold()) {
             PDCSetter.of(arrow).set(Keys.FULLY_CHARGED_ARROW, PersistentDataType.BYTE, (byte) 1).apply();
         }
 
