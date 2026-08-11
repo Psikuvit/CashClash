@@ -704,6 +704,11 @@ public class ItemsConfig {
         return config.getDouble("custom-armor.investors.melee-damage-bonus-per-piece", 0.05);
     }
 
+    // Guardian's Vest
+    public double getGuardianVestRingHeight() {
+        return config.getDouble("custom-armor.guardians-vest.ring-height", 1.5);
+    }
+
     // Dragon Set
     public int getDragonHitsForScale() {
         return config.getInt("custom-armor.dragon.hits-for-scale", 5);

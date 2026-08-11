@@ -562,9 +562,9 @@ public final class ParticleUtils {
     }
 
     /**
-     * Spawn the turquoise/orange shield rings for Guardian's Vest activation.
+     * @param height how far above the wearer's feet to draw the rings
      */
-    public static void guardianRings(Location playerLocation) {
+    public static void guardianRings(Location playerLocation, double height) {
         if (playerLocation == null || playerLocation.getWorld() == null) return;
         Color turquoise = Color.fromRGB(40, 220, 180);
         Color orange = Color.fromRGB(255, 140, 40);

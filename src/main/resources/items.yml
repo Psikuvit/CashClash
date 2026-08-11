@@ -215,6 +215,8 @@ custom-armor:
     resistance-duration-seconds: 15
     uses-per-round: 3
     cooldown-seconds: 20
+    # Height above the wearer's feet, in blocks, that the activation rings are drawn at
+    ring-height: 1.5
 
   # Deathmauler Set
   deathmauler:

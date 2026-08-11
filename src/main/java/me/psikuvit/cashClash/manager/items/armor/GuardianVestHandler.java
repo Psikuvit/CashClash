@@ -49,7 +49,7 @@ public class GuardianVestHandler extends ArmorSetHandler {
         cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.GUARDIAN_VEST, 20);
 
         Messages.send(p, "armor.guardian-vest-activated", "uses", String.valueOf(used + 1));
-        ParticleUtils.guardianRings(p.getLocation());
+        ParticleUtils.guardianRings(p.getLocation(), cfg.getGuardianVestRingHeight());
         SoundUtils.play(p, Sound.ITEM_TOTEM_USE, 0.5f, 1.5f);
     }
 
