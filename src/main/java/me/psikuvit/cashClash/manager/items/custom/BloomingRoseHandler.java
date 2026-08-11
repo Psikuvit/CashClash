@@ -274,14 +274,16 @@ public class BloomingRoseHandler extends CustomItemHandler {
     }
 
     /**
-     * Sakura formation visual: a red formingRing (zone radius) that draws in while two figure-eight
-     * cursors converge from opposite ends around the trunk. Also starts the boundary ring's
-     * continuous redraw loop, which - unlike the two animations above - never stops on its own,
-     * so its task is returned for the caller to track and cancel when the zone is destroyed.
+     * Sakura formation visual: a pink formingRing (zone radius) that draws in while two gray
+     * figure-eight cursors converge from opposite ends around the trunk. Also starts the
+     * boundary ring's continuous redraw loop, which - unlike the two animations above - never
+     * stops on its own, so its task is returned for the caller to track and cancel when the
+     * zone is destroyed.
      */
     private BukkitTask spawnRoseFormationVisual(Location center) {
         double radius = cfg.getBloomingRoseZoneRadius();
         Color pink = Color.fromRGB(255, 150, 190);
+        Color gray = Color.fromRGB(150, 150, 150);
 
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             private int formed;
@@ -310,13 +312,13 @@ public class BloomingRoseHandler extends CustomItemHandler {
                 tick++;
                 int formed = (int) Math.ceil(60.0 * tick / FIGURE_EIGHT_DURATION_TICKS);
                 if (formed >= 60) {
-                    ParticleUtils.figureEight(figureEightCenter, radius * 0.5, pink, 60, 60, false);
-                    ParticleUtils.figureEight(figureEightCenter, radius * 0.5, pink, 60, 60, true);
+                    ParticleUtils.figureEight(figureEightCenter, radius * 0.5, gray, 60, 60, false);
+                    ParticleUtils.figureEight(figureEightCenter, radius * 0.5, gray, 60, 60, true);
                     cancel();
                     return;
                 }
-                ParticleUtils.figureEight(figureEightCenter, radius * 0.5, pink, 60, formed, false);
-                ParticleUtils.figureEight(figureEightCenter, radius * 0.5, pink, 60, formed, true);
+                ParticleUtils.figureEight(figureEightCenter, radius * 0.5, gray, 60, formed, false);
+                ParticleUtils.figureEight(figureEightCenter, radius * 0.5, gray, 60, formed, true);
             }
         }, 0L, 1L);
         return SchedulerUtils.runTaskTimer(() -> spawnRoseRadiusRing(center, Color.fromRGB(220, 20, 20)), 0L, 1);
