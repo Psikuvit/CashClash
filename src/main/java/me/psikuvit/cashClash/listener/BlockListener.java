@@ -57,7 +57,6 @@ public class BlockListener implements Listener {
     private static final Map<Location, BukkitTask> leafDecayTasks = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
     private static final Map<Location, Location> waterLavaOrigins = new ConcurrentHashMap<>();
-    private static final Map<UUID, Set<Location>> quickFluidVisited = new ConcurrentHashMap<>();
 
     // ==================== BLOCK PLACE ====================
 
@@ -87,7 +86,6 @@ public class BlockListener implements Listener {
         waterLavaSourceCount.remove(sessionId);
         playerLeafBlockCount.remove(sessionId);
         playerWaterBucketRefillCount.remove(sessionId);
-        quickFluidVisited.remove(sessionId);
     }
 
     /**
@@ -126,7 +124,10 @@ public class BlockListener implements Listener {
         Location origin = target.getLocation().toBlockLocation();
         waterLavaOrigins.put(origin, origin);
 
-        if (bucket == Material.WATER_BUCKET) {
+        boolean water = bucket == Material.WATER_BUCKET;
+        Material fluid = water ? Material.WATER : Material.LAVA;
+
+        if (water) {
             scheduleWaterLavaCleanup(target);
             queueWaterBucketRefill(player);
         } else {
@@ -134,7 +135,14 @@ public class BlockListener implements Listener {
         }
 
         trackPlacedBlock(session.getSessionId(), target);
-        createQuickFluid(target, session.getSessionId(), origin);
+
+        // PlayerBucketEmptyEvent fires *before* the fluid replaces the block, and the spread
+        // copies its type off the source block - reading it inline propagated plain air, so
+        // bucket-placed water never actually flowed. Wait a tick for the real block to exist.
+        SchedulerUtils.runTask(() -> {
+            if (target.getType() != fluid) return;
+            createQuickFluid(target, session.getSessionId(), origin);
+        });
     }
 
     /**
@@ -403,14 +411,18 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Force placed water/lava to flow in all four directions.
+     * Force placed water/lava to flow outwards immediately rather than creeping at vanilla
+     * speed, capped at 3 blocks from the origin by the caller's distance check.
      */
     private void createQuickFluid(Block source, UUID sessionId, Location origin) {
-        Set<Location> visited = quickFluidVisited.computeIfAbsent(
-                sessionId,
-                k -> ConcurrentHashMap.newKeySet()
-        );
+        // A fresh visited set per placement, not one shared for the whole session: the old
+        // session-wide set meant any spot a previous bucket had already flowed over was
+        // permanently marked, so a later bucket placed anywhere near it silently refused to
+        // spread at all.
+        createQuickFluid(source, sessionId, origin, ConcurrentHashMap.newKeySet());
+    }
 
+    private void createQuickFluid(Block source, UUID sessionId, Location origin, Set<Location> visited) {
         Location loc = source.getLocation().toBlockLocation();
 
         if (loc.distance(origin) >= 3) {
@@ -421,12 +433,16 @@ public class BlockListener implements Listener {
             return;
         }
 
-        for (BlockFace face : new BlockFace[]{
-                BlockFace.NORTH,
-                BlockFace.SOUTH,
-                BlockFace.EAST,
-                BlockFace.WEST
-        }) {
+        // Fluid with nothing under it falls straight down and only pools once it lands - it
+        // does not walk sideways through mid-air. Without this, placing a bucket on top of a
+        // wall/platform spilled a ring of floating source blocks off every edge instead of
+        // running down the sides.
+        boolean supported = !source.getRelative(BlockFace.DOWN).getType().isAir();
+        BlockFace[] faces = supported
+                ? new BlockFace[]{BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}
+                : new BlockFace[]{BlockFace.DOWN};
+
+        for (BlockFace face : faces) {
             Block next = source.getRelative(face);
             if (next.getBlockData() instanceof Waterlogged) {
                 continue;
@@ -441,7 +457,7 @@ public class BlockListener implements Listener {
                     scheduleLavaCleanup(next);
                 }
                 SchedulerUtils.runTaskLater(
-                        () -> createQuickFluid(next, sessionId, origin),
+                        () -> createQuickFluid(next, sessionId, origin, visited),
                         1L
                 );
             }
