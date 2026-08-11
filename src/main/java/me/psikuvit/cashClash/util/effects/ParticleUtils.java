@@ -6,11 +6,16 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.World;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -18,6 +23,10 @@ import java.util.UUID;
  * with safe null-checking and convenience overloads.
  */
 public final class ParticleUtils {
+
+    private static final int EMERALD_RING_COUNT = 6;
+    private static final double EMERALD_RING_RADIUS = 0.9;
+    private static final int EMERALD_RING_DURATION_TICKS = 30;
 
     private ParticleUtils() {
         throw new AssertionError("Nope");
@@ -563,30 +572,50 @@ public final class ParticleUtils {
             double radius = 0.8 + (i * 0.25);
             for (int j = 0; j < 28; j++) {
                 Color color = (j % 7 == 0) ? orange : turquoise;
-                spawnDust(circlePoint(playerLocation, radius, ringAngle(j, 28), 1.5), color, 1.8f, 1);
+                spawnDust(circlePoint(playerLocation, radius, ringAngle(j, 28), height), color, 1.8f, 1);
             }
         }
     }
 
     /**
-     * A short ring of emeralds orbiting the player as it rises - the shared "your team was
-     * paid" flourish for Investor's Set rewards and Cash Blaster Profit Vortex payouts. Owns
-     * its own frame scheduling (unlike the single-frame ring helpers above) because both call
-     * sites want the identical animation, not their own copy of the loop.
+     * A ring of six solid emeralds spinning briefly around the player - the shared coin
+     * reward flourish for Investor's Set and Cash Blaster payouts. Schedules its own frames.
      */
     public static void emeraldRing(Player player) {
         if (player == null || !player.isOnline()) return;
 
+        World world = player.getWorld();
+        if (world == null) return;
+
         ItemStack emerald = new ItemStack(Material.EMERALD);
-        for (int tick = 0; tick < 24; tick++) {
+        List<ItemDisplay> ring = new ArrayList<>();
+        for (int i = 0; i < EMERALD_RING_COUNT; i++) {
+            ring.add(world.spawn(player.getLocation(), ItemDisplay.class, d -> {
+                d.setItemStack(emerald);
+                d.setBillboard(Display.Billboard.FIXED);
+                d.setBrightness(new Display.Brightness(15, 15));
+                d.setPersistent(false);
+                d.setInterpolationDuration(1);
+                d.setTeleportDuration(1);
+            }));
+        }
+
+        for (int tick = 0; tick <= EMERALD_RING_DURATION_TICKS; tick++) {
             final int step = tick;
             SchedulerUtils.runTaskLater(() -> {
-                if (!player.isOnline()) return;
-                double progress = step / 24.0;
-                Location center = player.getLocation().clone().add(0, 0.25 + progress * 1.4, 0);
-                for (int i = 0; i < 8; i++) {
-                    double angle = ringAngle(i, 8) + (progress * Math.PI * 2);
-                    spawn(Particle.ITEM, circlePoint(center, 0.75, angle, 0), 1, 0, 0, 0, 0, emerald);
+                if (step >= EMERALD_RING_DURATION_TICKS || !player.isOnline()) {
+                    ring.forEach(d -> { if (!d.isDead()) d.remove(); });
+                    return;
+                }
+                double progress = step / (double) EMERALD_RING_DURATION_TICKS;
+                Location center = player.getLocation().clone().add(0, 1.0, 0);
+                float spin = (float) Math.toDegrees(progress * Math.PI * 4);
+                for (int i = 0; i < ring.size(); i++) {
+                    ItemDisplay display = ring.get(i);
+                    if (display.isDead()) continue;
+                    double angle = ringAngle(i, ring.size()) + (progress * Math.PI * 4);
+                    display.teleport(circlePoint(center, EMERALD_RING_RADIUS, angle, 0));
+                    display.setRotation(spin, 0f);
                 }
             }, step);
         }
