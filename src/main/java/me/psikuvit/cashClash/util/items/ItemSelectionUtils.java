@@ -57,7 +57,7 @@ public final class ItemSelectionUtils {
      * the Cash Blaster a bow), so a plain material-rank comparison would happily overwrite a
      * legendary with a shop-bought upgrade.
      */
-    private static boolean isSpecialWeapon(ItemStack item) {
+    public static boolean isSpecialWeapon(ItemStack item) {
         if (PDCDetection.getMythic(item) != null) return true;
         WeaponItem weapon = PDCDetection.getWeapon(item);
         return weapon == WeaponItem.SOUL_KATANA || weapon == WeaponItem.CASH_BLASTER;

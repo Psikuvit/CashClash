@@ -478,6 +478,11 @@ public class ShopService {
         PlayerInventory inv = player.getInventory();
         Material newType = newWeapon.getType();
 
+        if (ItemSelectionUtils.isSpecialWeapon(newWeapon)) {
+            inv.addItem(newWeapon);
+            return null;
+        }
+
         // Find matching weapon slot
         int bestSlot = ItemSelectionUtils.findBestMatchingToolSlot(inv, newType);
 
