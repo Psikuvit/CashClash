@@ -18,9 +18,9 @@ import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
-import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
+import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -222,7 +222,7 @@ public final class GameplayItemFactory {
 
         // Sunscreen: play the drinking noise on a loop for the whole animation, not just on completion
         if (foodItem == FoodItem.SUNSCREEN) {
-            consumable.sound(Sound.ENTITY_GENERIC_DRINK.key());
+            consumable.sound(Registry.SOUNDS.getKey(Sound.ENTITY_GENERIC_DRINK));
         }
 
         item.setData(DataComponentTypes.CONSUMABLE, consumable.build());

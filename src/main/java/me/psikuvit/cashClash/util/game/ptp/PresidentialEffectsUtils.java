@@ -52,7 +52,7 @@ public class PresidentialEffectsUtils {
     public static void applyPotionEffect(Player player, PotionEffectType effect) {
         if (player != null && effect != null) {
             CashClashPlayer.applyEffect(player, effect, PotionEffect.INFINITE_DURATION, 0, false, false);
-            Messages.debug("[PTP] Applied " + effect.getName() + " to president: " + player.getName());
+            Messages.debug("[PTP] Applied " + effect.getKey().getKey() + " to president: " + player.getName());
         }
     }
 
