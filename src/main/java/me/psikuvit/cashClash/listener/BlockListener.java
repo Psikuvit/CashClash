@@ -150,7 +150,9 @@ public class BlockListener implements Listener {
         }
 
         trackPlacedBlock(session.getSessionId(), target);
-        createQuickFluid(target, session.getSessionId(), origin);
+        if (canQuickSpread(target, event.getBlockClicked())) {
+            createQuickFluid(target, session.getSessionId(), origin, fluid);
+        }
 
         SchedulerUtils.runTask(() -> {
             if (target.getType() != fluid) return;
@@ -366,7 +368,9 @@ public class BlockListener implements Listener {
             scheduleLavaCleanup(event.getBlock());
             showDespawnTimer(event.getBlock(), Material.LAVA, 200, "gold");
         }
-        createQuickFluid(event.getBlock(), sessionId, origin);
+        if (canQuickSpread(event.getBlock(), event.getBlockAgainst())) {
+            createQuickFluid(event.getBlock(), sessionId, origin, blockType);
+        }
 
         // Schedule water bucket refill (only for water, not lava)
         if (blockType == Material.WATER) {
@@ -506,7 +510,25 @@ public class BlockListener implements Listener {
      * Force placed water/lava to flow outwards immediately rather than creeping at vanilla
      * speed, capped at 3 blocks from the origin by the caller's distance check.
      */
-    private void createQuickFluid(Block source, UUID sessionId, Location origin) {
+    /**
+     * Whether the instant 4-way spread is safe here, or the placement should be left to vanilla
+     * flow instead. The spread only walks sideways, so a source clicked onto a plant, button or
+     * lever - or any spot with nothing solid beneath it - would otherwise pave a floating slab
+     * of source blocks out into the air.
+     */
+    private boolean canQuickSpread(Block placed, Block clickedAgainst) {
+        return clickedAgainst.getType().isSolid()
+                && placed.getRelative(BlockFace.DOWN).getType().isSolid();
+    }
+
+    private void createQuickFluid(Block source, UUID sessionId, Location origin, Material fluid) {
+        // Spreads the fluid the bucket actually held, never source.getType(). PlayerBucketEmptyEvent
+        // fires before the liquid replaces the block, so reading the type off the source stamped
+        // copies of whatever was clicked onto every neighbouring air block.
+        if (fluid != Material.WATER && fluid != Material.LAVA) {
+            return;
+        }
+
         Set<Location> visited = quickFluidVisited.computeIfAbsent(
                 sessionId,
                 k -> ConcurrentHashMap.newKeySet()
@@ -533,16 +555,16 @@ public class BlockListener implements Listener {
                 continue;
             }
             if (next.getType() == Material.AIR) {
-                next.setType(source.getType());
+                next.setType(fluid);
                 waterLavaOrigins.put(next.getLocation().toBlockLocation(), origin);
                 trackPlacedBlock(sessionId, next);
-                if (source.getType() == Material.WATER) {
+                if (fluid == Material.WATER) {
                     scheduleWaterLavaCleanup(next);
-                } else if (source.getType() == Material.LAVA) {
+                } else {
                     scheduleLavaCleanup(next);
                 }
                 SchedulerUtils.runTaskLater(
-                        () -> createQuickFluid(next, sessionId, origin),
+                        () -> createQuickFluid(next, sessionId, origin, fluid),
                         1L
                 );
             }
