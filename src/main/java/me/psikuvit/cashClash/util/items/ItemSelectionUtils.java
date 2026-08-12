@@ -64,6 +64,37 @@ public final class ItemSelectionUtils {
     }
 
     /**
+     * Clears out the ordinary weapons a newly bought special weapon supersedes: same category,
+     * not special themselves, and no better than it in material tier. A Soul Katana (iron
+     * sword) therefore takes the place of stone and iron swords but leaves a diamond one alone.
+     *
+     * @return the strongest weapon removed, or null if nothing was
+     */
+    public static ItemStack removeOutclassedMatches(PlayerInventory inv, ItemStack newWeapon) {
+        if (inv == null || newWeapon == null) return null;
+
+        Material newType = newWeapon.getType();
+        int newRank = rankMaterial(newType);
+        ItemStack best = null;
+
+        for (int i = 0; i < inv.getSize(); i++) {
+            ItemStack is = inv.getItem(i);
+
+            if (is == null) continue;
+            if (!isToolOrWeapon(is.getType())) continue;
+            if (!sameCategory(is.getType(), newType)) continue;
+            if (isSpecialWeapon(is)) continue;
+            if (rankMaterial(is.getType()) > newRank) continue;
+
+            if (best == null || rankMaterial(is.getType()) > rankMaterial(best.getType())) {
+                best = is.clone();
+            }
+            inv.setItem(i, null);
+        }
+        return best;
+    }
+
+    /**
      * Finds the inventory slot of the strongest matching tool for the given
      * new item type. Returns -1 if none found (including when the only match is a special
      * weapon, in which case the caller adds the new item to the inventory instead).

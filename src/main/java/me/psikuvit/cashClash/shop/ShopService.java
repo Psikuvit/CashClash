@@ -479,6 +479,7 @@ public class ShopService {
         Material newType = newWeapon.getType();
 
         if (ItemSelectionUtils.isSpecialWeapon(newWeapon)) {
+            ItemSelectionUtils.removeOutclassedMatches(inv, newWeapon);
             inv.addItem(newWeapon);
             return null;
         }
