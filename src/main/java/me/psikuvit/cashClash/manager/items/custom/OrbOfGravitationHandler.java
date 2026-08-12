@@ -157,7 +157,6 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         }, 0L, 1L);
         orbTrailTasks.put(orbUuid, trailTask);
 
-        Messages.send(player, "customitem.orb-thrown");
         SoundUtils.play(player, Sound.ENTITY_SNOWBALL_THROW, 1.0f, 0.8f);
     }
 
@@ -179,7 +178,6 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         Player owner = ownerUuid != null ? Bukkit.getPlayer(ownerUuid) : null;
         if (owner != null) {
             consumeOrbItem(owner);
-            Messages.send(owner, "customitem.orb-activated");
             SoundUtils.play(owner, Sound.ENTITY_ENDERMAN_TELEPORT, 0.8f, 0.6f);
         }
         SoundUtils.playAt(center, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.6f);
@@ -200,6 +198,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
                 Team targetTeam = session.getPlayerTeam(target);
                 if (targetTeam != null && targetTeam.getTeamNumber() == team.getTeamNumber()) continue;
             }
+            Messages.send(target, "customitem.orb-pulled");
             pulled.add(target);
         }
 
@@ -252,7 +251,6 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         for (Player target : pulled) {
             if (!target.isOnline() || target.isDead()) continue;
             CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, slownessTicks, 0);
-            Messages.send(target, "customitem.orb-escape-slowed");
         }
     }
 
