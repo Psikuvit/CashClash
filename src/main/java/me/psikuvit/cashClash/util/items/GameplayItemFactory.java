@@ -147,12 +147,7 @@ public final class GameplayItemFactory {
         if (player == null || armor == null) return;
 
         ItemStack item = new ItemStack(armor.getMaterial());
-        Messages.debug(player, Messages.DebugCategory.SHOP, "createAndEquipCustomArmor: " + armor.name()
-                + " material=" + armor.getMaterial() + " hasItemMeta=" + item.hasItemMeta());
-        if (item.getType().isAir()) {
-            Messages.debug(player, Messages.DebugCategory.SHOP, "!! EARLY RETURN: air material, armor NOT equipped: " + armor.name());
-            return;
-        }
+        if (item.getType().isAir()) return;
 
         PDCSetter tags = PDCSetter.of(item);
 
@@ -182,9 +177,7 @@ public final class GameplayItemFactory {
         CustomModelDataMapper.applyArmorModel(item, armor);
 
         // Equip the armor
-        Messages.debug(player, Messages.DebugCategory.SHOP, "createAndEquipCustomArmor tags applied, equipping: " + armor.name() + " meta=" + item.hasItemMeta());
         ItemUtils.equipArmorOrReplace(player, item);
-        Messages.debug(player, Messages.DebugCategory.SHOP, "createAndEquipCustomArmor finished for: " + armor.name());
     }
 
     // ==================== PRIVATE HELPER METHODS ====================

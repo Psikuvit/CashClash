@@ -315,8 +315,6 @@ public class ShopService {
                 }
             }
             case CustomArmorItem customArmor -> {
-                Messages.debug(player, Messages.DebugCategory.SHOP, "Custom armor purchase: " + customArmor.name()
-                        + " (material=" + customArmor.getMaterial() + ", partOfSet=" + customArmor.isPartOfSet() + ")");
                 // Check if this is part of a set (Deathmauler, Dragon, Flamebringer, Investor)
                 if (customArmor.isPartOfSet()) {
                     // Handle full set purchase - track all replaced items
@@ -341,10 +339,8 @@ public class ShopService {
                         }
 
                         // Equip the set piece
-                        Messages.debug(player, Messages.DebugCategory.SHOP, "Equipping set piece: " + piece.name() + " (slot=" + slot + ")");
-                        itemFactory.createAndEquipCustomArmor(player, piece);
+                            itemFactory.createAndEquipCustomArmor(player, piece);
                     }
-                    Messages.debug(player, Messages.DebugCategory.SHOP, "Set purchase complete: " + setPieces.size() + " pieces equipped");
 
                     // Create set purchase record with all replaced items
                     long setPrice = customArmor.getArmorSet().getTotalPrice();
@@ -362,26 +358,21 @@ public class ShopService {
                     // Individual custom armor piece (Bunny Shoes, Bullseye Pants, Guardian's Vest)
                     ArmorSlot slot = ItemUtils.getArmorSlot(customArmor.getMaterial());
                     ItemStack currentArmor = ItemUtils.getCurrentArmorInSlot(player, slot);
-                    Messages.debug("Current armor in slot " + slot + ": " + currentArmor);
                     ItemStack replacedItem = null;
 
                     if (currentArmor != null && currentArmor.getType() != Material.AIR) {
                         // Check if it's custom armor - return to inventory
                         if (PDCDetection.isCustomArmorItem(currentArmor)) {
-                            Messages.debug("Replacing custom armor in slot " + slot + ": " + currentArmor);
                             replacedItem = currentArmor;
                             ItemUtils.returnItemToInventoryOrDrop(player, currentArmor.clone());
                         } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
                             // Purchased vanilla armor - track but don't return (disappears)
-                            Messages.debug("Replacing vanilla armor in slot " + slot + ": " + currentArmor);
                             replacedItem = currentArmor;
                         }
                     }
 
                     // Equip the custom armor
-                    Messages.debug(player, Messages.DebugCategory.SHOP, "Equipping individual custom armor: " + customArmor.name() + " (slot=" + slot + ")");
                     itemFactory.createAndEquipCustomArmor(player, customArmor);
-                    Messages.debug(player, Messages.DebugCategory.SHOP, "Individual custom armor equip call finished: " + customArmor.name());
 
                     cachePurchase(player, ccp, item, round, replacedItem);
                 }
@@ -389,13 +380,10 @@ public class ShopService {
             case ArmorItem ignored -> {
                 // Normal/upgradable armor (Iron, Diamond)
                 ItemStack armorItem = itemFactory.createGameplayItem(item);
-                Messages.debug(player, Messages.DebugCategory.SHOP, "Buying normal armor: " + item.getDisplayName()
-                        + " (material=" + armorItem.getType() + ", itemMeta=" + armorItem.hasItemMeta() + ")");
 
                 // Get current armor before replacing
                 ArmorSlot slot = ItemUtils.getArmorSlot(armorItem.getType());
                 ItemStack currentArmor = ItemUtils.getCurrentArmorInSlot(player, slot);
-                Messages.debug(player, Messages.DebugCategory.SHOP, "Current armor in slot " + slot + ": " + currentArmor);
                 ItemStack replacedItem = null;
 
                 // Track replaced item if it was a purchased item
@@ -410,10 +398,7 @@ public class ShopService {
                 }
 
                 // Equip the armor
-                Messages.debug(player, Messages.DebugCategory.SHOP, "Equipping normal armor via equipArmorOrReplace: " + armorItem.getType());
                 ItemUtils.equipArmorOrReplace(player, armorItem);
-                Messages.debug(player, Messages.DebugCategory.SHOP, "After equip - helmet=" + player.getInventory().getHelmet()
-                        + ", chest=" + player.getInventory().getChestplate());
 
                 cachePurchase(player, ccp, item, round, replacedItem);
             }
@@ -445,13 +430,6 @@ public class ShopService {
         }
 
         KitService.restoreStarterArmor(player);
-
-        ItemStack[] armorContents = player.getInventory().getArmorContents();
-        Messages.debug(player, Messages.DebugCategory.SHOP, "giveItemToPlayer done for " + item
-                + " | armor contents -> helmet=" + armorContents[3]
-                + ", chest=" + armorContents[2]
-                + ", legs=" + armorContents[1]
-                + ", boots=" + armorContents[0]);
     }
 
     private void cachePurchase(Player player, CashClashPlayer ccp, Purchasable item, int round, ItemStack replacedItem) {

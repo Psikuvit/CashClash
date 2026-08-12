@@ -551,7 +551,6 @@ public class DamageListener implements Listener {
 
             event.setCancelled(true);
             playInvincibleHitFeedback(attacker);
-            Messages.debug(victim, "DAMAGE", "Damage cancelled due to respawn protection");
             return true;
         }
         return false;

@@ -68,28 +68,22 @@ public final class ItemUtils {
         if (player == null || newArmor == null) return;
         PlayerInventory inv = player.getInventory();
         Material m = newArmor.getType();
-        Messages.debug(player, Messages.DebugCategory.GAME, "equipArmorOrReplace: material=" + m + " hasItemMeta=" + newArmor.hasItemMeta());
 
         ItemStack old = null;
         if (m.name().endsWith("HELMET")) {
             old = inv.getHelmet();
             inv.setHelmet(newArmor);
-            Messages.debug(player, Messages.DebugCategory.GAME, "  -> helmet set to " + newArmor);
         } else if (m.name().endsWith("CHESTPLATE")) {
             old = inv.getChestplate();
             inv.setChestplate(newArmor);
-            Messages.debug(player, Messages.DebugCategory.GAME, "  -> chestplate set to " + newArmor);
         } else if (m.name().endsWith("LEGGINGS")) {
             old = inv.getLeggings();
             inv.setLeggings(newArmor);
-            Messages.debug(player, Messages.DebugCategory.GAME, "  -> leggings set to " + newArmor);
         } else if (m.name().endsWith("BOOTS")) {
             old = inv.getBoots();
             inv.setBoots(newArmor);
-            Messages.debug(player, Messages.DebugCategory.GAME, "  -> boots set to " + newArmor);
         } else {
             inv.addItem(newArmor);
-            Messages.debug(player, Messages.DebugCategory.GAME, "  -> not armor material (" + m + "), added to inventory");
         }
 
         if (old != null) {

@@ -108,12 +108,9 @@ public class GameSession {
     // per-game random shield pattern. A null/absent value means "no override".
     private final Map<UUID, Boolean> shieldOverrides;
 
-    private final CashClashPlugin plugin;
-
     public GameSession(int arenaNumber, CashClashPlugin plugin) {
         this.sessionId = UUID.randomUUID();
         this.arenaNumber = arenaNumber;
-        this.plugin = plugin;
         this.gamemodeManager = plugin.getGamemodeManager();
         this.rejoinManager = plugin.getRejoinManager();
         this.arenaManager = plugin.getArenaManager();
