@@ -449,7 +449,7 @@ public class GameSession {
     }
 
     /**
-     * Prepare all players for combat phase (teleport, protection, effects)
+     * Prepare all players for combat phase (teleport, effects)
      */
     private void preparePlayers() {
         players.keySet().forEach(uuid -> {
@@ -458,7 +458,6 @@ public class GameSession {
             if (!isPlayerOnline(p)) return;
 
             teleportPlayerToSpawn(p, uuid);
-            applyRespawnProtection(ccp);
             reapplyKitPotionEffects(p, ccp.getCurrentKit());
         });
     }
@@ -476,24 +475,6 @@ public class GameSession {
     private void teleportPlayerToSpawn(Player player, UUID uuid) {
         Location spawn = getSpawnForPlayer(uuid);
         if (spawn != null) player.teleport(spawn);
-    }
-
-    /**
-     * Apply respawn protection to player
-     */
-    public void applyRespawnProtection(CashClashPlayer ccp) {
-        int protSec = configManager.getRespawnProtection();
-        ccp.setRespawnProtection(protSec * 1000L);
-    }
-
-    /**
-     * Apply custom duration protection to player
-     */
-    public void applyRespawnProtection(UUID uuid, int seconds) {
-        CashClashPlayer ccp = players.get(uuid);
-        if (ccp != null) {
-            ccp.setRespawnProtection(seconds * 1000L);
-        }
     }
 
     /**
