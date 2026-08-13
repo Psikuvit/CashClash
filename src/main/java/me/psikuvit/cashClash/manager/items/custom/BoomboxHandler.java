@@ -98,7 +98,7 @@ public class BoomboxHandler extends CustomItemHandler {
         int formTicks = 20; // ~1s to fully form within each 3s pulse window
         for (int i = 0; i < ringPoints; i++) {
             int formed = i + 1;
-            int delay = i * Math.max(1, formTicks / ringPoints);
+            int delay = Math.round(i * (float) formTicks / ringPoints);
             SchedulerUtils.runTaskLater(() ->
                     ParticleUtils.formingRing(center, radius, ringPoints, formed, Color.fromRGB(255, 140, 0), 1.4f), delay);
         }
