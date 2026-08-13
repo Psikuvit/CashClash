@@ -64,7 +64,7 @@ public abstract class AbstractGui {
      * Set the number of rows (1-6).
      */
     protected void setRows(int rows) {
-        this.rows = Math.max(1, Math.min(6, rows));
+        this.rows = Math.clamp(rows, 1, 6);
     }
 
     /**

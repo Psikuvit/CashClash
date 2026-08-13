@@ -52,9 +52,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
             if (nextLevel > ee.getMaxLevel()) {
                 setButton(slot,
                         GuiButton.of(CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createMaxedEnchant(ee))
-                                .onClick(p -> {
-                                    Messages.send(p, "rune.max-level");
-                                })
+                                .onClick(p -> Messages.send(p, "rune.max-level"))
                 );
             } else {
                 long price = ee.getPriceForLevel(nextLevel);
@@ -120,7 +118,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
 
         ItemStack oldRune = null;
         for (ItemStack item : viewer.getInventory().getContents()) {
-            if (item != null && RuneManager.isRune(item)) {
+            if (RuneManager.isRune(item)) {
                 EnchantEntry runeEnchant = PDCDetection.getRune(item);
 
                 if (runeEnchant == ee) {

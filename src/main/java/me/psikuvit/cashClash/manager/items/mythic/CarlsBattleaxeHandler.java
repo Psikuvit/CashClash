@@ -289,7 +289,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
         Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
 
         BukkitRunnable throwRunnable = new BukkitRunnable() {
-            Vector direction = startLoc.getDirection().normalize();
+            final Vector direction = startLoc.getDirection().normalize();
             double traveled = 0;
             boolean returning = false;
             final List<Player> caught = new ArrayList<>();

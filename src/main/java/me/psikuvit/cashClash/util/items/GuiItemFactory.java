@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.util.items;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.config.ConfigManager;
-import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
@@ -17,6 +16,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 import java.util.UUID;
@@ -114,7 +114,6 @@ public final class GuiItemFactory {
                     case INVESTMENTS -> "investments";
                     case CUSTOM_ITEMS -> "custom-items";
                     case LEGENDARIES -> "mythic-items";
-                    default -> "";
                 };
             }
         }
@@ -189,17 +188,7 @@ public final class GuiItemFactory {
      * @return The configured ItemStack for display
      */
     public ItemStack createEnchantItem(EnchantEntry enchant, int level, long price) {
-        ShopItemBuilder builder = ShopItemBuilder.of(enchant.getRuneMaterial())
-                .name("<yellow>" + enchant.getDisplayName() + " " + level + "</yellow>")
-                .price(price)
-                .maxLevel(enchant.getMaxLevel());
-
-        List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore("enchants", enchant.getConfigKey());
-        if (!loreLinesFromConfig.isEmpty()) {
-            builder.configLore(loreLinesFromConfig);
-        }
-
-        return builder.purchasePrompt()
+        return runeBuilder(enchant, level, price).purchasePrompt()
                 .itemId(enchant.name())
                 .build();
     }
@@ -218,6 +207,24 @@ public final class GuiItemFactory {
         ItemStack heldItem = player.getInventory().getItemInMainHand();
         int effectiveLevel = ItemUtils.getEffectiveEnchantLevel(heldItem, enchant, level);
 
+        ShopItemBuilder builder = runeBuilder(enchant, level, price);
+
+        // Show what level this would apply to the held item
+        if (effectiveLevel > 0) {
+            String heldItemName = heldItem.getType().name().toLowerCase().replace("_", " ");
+            builder.lore("<gray>Applies to held <aqua>" + heldItemName + "</aqua>: <gold>Level " + effectiveLevel + "</gold></gray>");
+        } else {
+            // Show what items this enchant applies to
+            StringBuilder applicableItems = getStringBuilder(enchant);
+            builder.lore(applicableItems.toString());
+        }
+
+        return builder.purchasePrompt()
+                .itemId(enchant.name())
+                .build();
+    }
+
+    private ShopItemBuilder runeBuilder(EnchantEntry enchant, int level, long price) {
         ShopItemBuilder builder = ShopItemBuilder.of(enchant.getRuneMaterial())
                 .name("<yellow>" + enchant.getDisplayName() + " " + level + "</yellow>")
                 .price(price)
@@ -227,29 +234,21 @@ public final class GuiItemFactory {
         if (!loreLinesFromConfig.isEmpty()) {
             builder.configLore(loreLinesFromConfig);
         }
+        return builder;
+    }
 
-        // Show what level this would apply to the held item
-        if (effectiveLevel > 0) {
-            String heldItemName = heldItem.getType().name().toLowerCase().replace("_", " ");
-            builder.lore("<gray>Applies to held <aqua>" + heldItemName + "</aqua>: <gold>Level " + effectiveLevel + "</gold></gray>");
-        } else {
-            // Show what items this enchant applies to
-            StringBuilder applicableItems = new StringBuilder("<gray>Applies to: <aqua>");
-            List<Material> materials = enchant.getApplicableMaterials();
-            for (int i = 0; i < Math.min(materials.size(), 3); i++) {
-                if (i > 0) applicableItems.append(", ");
-                applicableItems.append(materials.get(i).name().toLowerCase().replace("_", " "));
-            }
-            if (materials.size() > 3) {
-                applicableItems.append(", ...");
-            }
-            applicableItems.append("</aqua></gray>");
-            builder.lore(applicableItems.toString());
+    private static @NonNull StringBuilder getStringBuilder(EnchantEntry enchant) {
+        StringBuilder applicableItems = new StringBuilder("<gray>Applies to: <aqua>");
+        List<Material> materials = enchant.getApplicableMaterials();
+        for (int i = 0; i < Math.min(materials.size(), 3); i++) {
+            if (i > 0) applicableItems.append(", ");
+            applicableItems.append(materials.get(i).name().toLowerCase().replace("_", " "));
         }
-
-        return builder.purchasePrompt()
-                .itemId(enchant.name())
-                .build();
+        if (materials.size() > 3) {
+            applicableItems.append(", ...");
+        }
+        applicableItems.append("</aqua></gray>");
+        return applicableItems;
     }
 
     /**

@@ -27,6 +27,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -329,7 +330,8 @@ public class BloomingRoseHandler extends CustomItemHandler {
         if (hpRevealTask != null) return;
 
         hpRevealTask = SchedulerUtils.runTaskTimer(() -> {
-            for (Player holder : Bukkit.getOnlinePlayers()) {
+            Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+            for (Player holder : onlinePlayers) {
                 if (PDCDetection.getCustomItem(holder.getInventory().getItemInMainHand()) != CustomItem.BLOOMING_ROSE) continue;
                 GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(holder);
                 if (session == null) continue;
@@ -338,7 +340,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
                 StringBuilder sb = new StringBuilder("<white>Rose HP:</white> <aqua>You</aqua> <red>❤ ")
                         .append(String.format("%.1f", holder.getHealth())).append("</red>");
-                for (Player teammate : Bukkit.getOnlinePlayers()) {
+                for (Player teammate : onlinePlayers) {
                     if (teammate.equals(holder)) continue;
                     Team t = session.getPlayerTeam(teammate);
                     if (t == null || t.getTeamNumber() != team.getTeamNumber()) continue;

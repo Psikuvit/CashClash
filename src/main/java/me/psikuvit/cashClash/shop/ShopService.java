@@ -71,12 +71,7 @@ public class ShopService {
      * Items bought in bulk that straddle the cap are still handled in giveItemToPlayer.
      */
     private boolean isUtilityCapReached(Player player, UtilityItem utilityItem) {
-        int max = switch (utilityItem) {
-            case COBWEB -> 8;
-            default -> -1;
-        };
-        if (max < 0) return false;
-
+        int max = utilityItem == UtilityItem.COBWEB ? 8 : 1;
         if (countMaterial(player, utilityItem.getMaterial()) < max) return false;
 
         Messages.send(player, "listener.max-webs-reached");

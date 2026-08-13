@@ -587,7 +587,6 @@ public final class ParticleUtils {
         if (player == null || !player.isOnline()) return;
 
         World world = player.getWorld();
-        if (world == null) return;
 
         ItemStack emerald = new ItemStack(Material.EMERALD);
         List<ItemDisplay> ring = new ArrayList<>();
@@ -605,7 +604,7 @@ public final class ParticleUtils {
         for (int tick = 0; tick <= EMERALD_RING_DURATION_TICKS; tick++) {
             final int step = tick;
             SchedulerUtils.runTaskLater(() -> {
-                if (step >= EMERALD_RING_DURATION_TICKS || !player.isOnline()) {
+                if (step == EMERALD_RING_DURATION_TICKS || !player.isOnline()) {
                     ring.forEach(d -> { if (!d.isDead()) d.remove(); });
                     return;
                 }
@@ -700,7 +699,7 @@ public final class ParticleUtils {
      */
     public static void formingRing(Location center, double radius, int totalPoints, int formedCount, Color color, float size) {
         if (center == null || center.getWorld() == null) return;
-        int clampedFormed = Math.min(totalPoints, Math.max(0, formedCount));
+        int clampedFormed = Math.clamp(formedCount, 0, totalPoints);
         for (int i = 0; i < clampedFormed; i++) {
             spawnDust(circlePoint(center, radius, ringAngle(i, totalPoints), 0), color, size, 1, 0);
         }
@@ -714,7 +713,7 @@ public final class ParticleUtils {
      */
     public static void figureEight(Location center, double size, Color color, int totalPoints, int formedCount, boolean reverse) {
         if (center == null || center.getWorld() == null) return;
-        int clampedFormed = Math.min(totalPoints, Math.max(0, formedCount));
+        int clampedFormed = Math.clamp(formedCount, 0, totalPoints);
         for (int i = 0; i < clampedFormed; i++) {
             int step = reverse ? totalPoints - 1 - i : i;
             double t = 2 * Math.PI * step / totalPoints;

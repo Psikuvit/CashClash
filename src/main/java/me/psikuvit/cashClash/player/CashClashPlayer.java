@@ -372,7 +372,7 @@ public class CashClashPlayer {
         if (player == null || !player.isOnline() || amount <= 0) return 0.0;
         double scaled = amount * getHealingMultiplier();
         if (scaled <= 0) return 0.0;
-        return Math.min(scaled, Math.max(0.0, getMaxHealth() - player.getHealth()));
+        return Math.clamp(getMaxHealth() - player.getHealth(), 0.0, scaled);
     }
 
     /**
@@ -406,7 +406,7 @@ public class CashClashPlayer {
      */
     public void setHealth(double health) {
         if (player == null || !player.isOnline()) return;
-        player.setHealth(Math.min(Math.max(0.0, health), getMaxHealth()));
+        player.setHealth(Math.clamp(health, 0.0, getMaxHealth()));
     }
 
     /**
@@ -707,7 +707,7 @@ public class CashClashPlayer {
         CashClashPlayer ccp = from(player);
         if (ccp != null) return ccp.heal(amount);
         if (player == null || !player.isOnline() || amount <= 0) return 0.0;
-        double healed = Math.min(amount, Math.max(0.0, 20.0 - player.getHealth()));
+        double healed = Math.clamp(20.0 - player.getHealth(), 0.0, amount);
         if (healed > 0) {
             player.setHealth(player.getHealth() + healed);
         }
@@ -766,7 +766,7 @@ public class CashClashPlayer {
             return;
         }
         if (player == null || !player.isOnline()) return;
-        player.setHealth(Math.min(Math.max(0.0, health), 20.0));
+        player.setHealth(Math.clamp(health, 0.0, 20.0));
     }
 
     /**

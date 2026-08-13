@@ -372,11 +372,7 @@ public class GameListener implements Listener {
                     playFoodParticles(p, Color.fromRGB(255, 120, 220));
                     SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
                 }
-                case SUNSCREEN -> {
-                    // Drinking noise now loops through the whole animation via the item's
-                    // Consumable sound component; no one-shot sound needed here.
-                    playFoodParticles(p, Color.fromRGB(255, 150, 40));
-                }
+                case SUNSCREEN -> playFoodParticles(p, Color.fromRGB(255, 150, 40));
                 case CAN_OF_SPINACH -> {
                     playFoodParticles(p, Color.fromRGB(70, 220, 70));
                     SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
@@ -909,12 +905,7 @@ public class GameListener implements Listener {
     private void handleCobwebLimitClick(InventoryClickEvent event, Player p) {
         if (event.getCursor().getType() != Material.COBWEB) return;
 
-        int currentWebs = 0;
-        for (ItemStack is : p.getInventory().getContents()) {
-            if (is != null && is.getType() == Material.COBWEB) {
-                currentWebs += is.getAmount();
-            }
-        }
+        int currentWebs = countCobwebsInInventory(p);
         if (currentWebs >= 8) {
             event.setCancelled(true);
             Messages.send(p, "listener.max-webs-reached");
@@ -942,12 +933,7 @@ public class GameListener implements Listener {
         ItemStack item = event.getItem().getItemStack();
         if (item.getType() != Material.COBWEB) return;
 
-        int currentWebs = 0;
-        for (ItemStack is : p.getInventory().getContents()) {
-            if (is != null && is.getType() == Material.COBWEB) {
-                currentWebs += is.getAmount();
-            }
-        }
+        int currentWebs = countCobwebsInInventory(p);
 
         if (currentWebs >= 8) {
             event.setCancelled(true);
@@ -965,6 +951,19 @@ public class GameListener implements Listener {
         }
     }
 
+    /**
+     * Count the total number of cobweb items in a player's inventory.
+     */
+    private int countCobwebsInInventory(Player p) {
+        int count = 0;
+        for (ItemStack is : p.getInventory().getContents()) {
+            if (is != null && is.getType() == Material.COBWEB) {
+                count += is.getAmount();
+            }
+        }
+        return count;
+    }
+
     // ==================== PLAYER RESPAWN ====================
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -975,8 +974,10 @@ public class GameListener implements Listener {
             Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
                 // Use centralized health system to get max health (respects modifiers)
                 var ccp = session.getCashClashPlayer(player.getUniqueId());
-                ccp.applyHealth();
-                player.setFoodLevel(20);
+                if (ccp != null) {
+                    ccp.applyHealth();
+                    player.setFoodLevel(20);
+                }
             }, 2L);
         }
     }
