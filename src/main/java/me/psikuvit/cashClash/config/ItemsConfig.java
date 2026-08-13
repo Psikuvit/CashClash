@@ -391,7 +391,20 @@ public class ItemsConfig {
         return config.getInt("mythic-items.blazebite-crossbows.glacier.freeze-lockout-seconds", 5);
     }
 
-    // Alchemist Wand Tidy Up (Blink Swap stays hardcoded, not config-driven)
+    // Alchemist Wand Blink Swap
+    public int getAlchemistBlinkSwapCooldown() {
+        return config.getInt("mythic-items.alchemist-wand.blink-swap.cooldown-seconds", 11);
+    }
+
+    public int getAlchemistBlinkProtectionHits() {
+        return config.getInt("mythic-items.alchemist-wand.blink-swap.protection-hits", 2);
+    }
+
+    public int getAlchemistBlinkProtectionSeconds() {
+        return config.getInt("mythic-items.alchemist-wand.blink-swap.protection-seconds", 5);
+    }
+
+    // Alchemist Wand Tidy Up
     public int getAlchemistTidyUpDuration() {
         return config.getInt("mythic-items.alchemist-wand.tidy-up.duration-seconds", 10);
     }

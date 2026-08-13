@@ -154,8 +154,14 @@ mythic-items:
       explosion-radius: 3
       fire-duration-seconds: 5
 
-  # Alchemist Wand (Blink Swap ability is not covered here - stays hardcoded)
+  # Alchemist Wand
   alchemist-wand:
+    # Blink Swap - Right click a teammate to swap places. Both players absorb the configured
+    # number of hits, for at most protection-seconds.
+    blink-swap:
+      cooldown-seconds: 11
+      protection-hits: 2
+      protection-seconds: 5
     # Tidy Up - Left click to see everyone's potion effects; your next melee hit cleanses
     # your team's debuffs (if you hit a teammate) or strips the enemy team's buffs (if you
     # hit an enemy)

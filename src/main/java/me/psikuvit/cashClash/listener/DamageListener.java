@@ -148,6 +148,11 @@ public class DamageListener implements Listener {
             handleArmorDefenseEffects(event, player);
             trackDamageForBonuses(event, player);
 
+            if (mythicManager.getHandler(AlchemistWandHandler.class).handleAlchemistBlinkProtection(player)) {
+                event.setCancelled(true);
+                return;
+            }
+
         } catch (Exception e) {
             logDamageError(player, e);
         }
@@ -463,8 +468,16 @@ public class DamageListener implements Listener {
     private boolean handleInvincibleVictim(EntityDamageByEntityEvent event, Player attacker, Player victim) {
         UUID victimId = victim.getUniqueId();
 
+        // Blink Swap is hit-based, so it only gets the cue here - cancelling would rob
+        // handleAlchemistBlinkProtection of the hit it needs to spend off the window.
+        if (mythicManager.getHandler(AlchemistWandHandler.class).isBlinkProtected(victimId)) {
+            playInvincibleHitFeedback(attacker);
+            return false;
+        }
+
         if (!customItemManager.getHandler(TotemOfHauntingHandler.class).isTotemInvincible(victimId)
-                && !customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(victimId)) {
+                && !customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(victimId)
+                && !armorManager.getHandler(DragonSetHandler.class).isDragonRushInvincible(victimId)) {
             return false;
         }
 

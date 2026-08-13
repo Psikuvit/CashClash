@@ -63,6 +63,10 @@ public class AlchemistWandHandler extends MythicItemHandler {
             PotionEffectType.RESISTANCE, PotionEffectType.FIRE_RESISTANCE, PotionEffectType.ABSORPTION
     );
 
+    // Alchemist Blink Swap protection: hits remaining, and when the window lapses
+    private final Map<UUID, Integer> alchemistBlinkProtection;
+    private final Map<UUID, Long> alchemistBlinkProtectionExpiry;
+
     // Alchemist Wand Tidy Up tracking
     private final Map<UUID, Long> alchemistTidyUpExpiry;
     private final Map<UUID, BukkitTask> alchemistTidyUpTimeoutTasks;
@@ -77,6 +81,8 @@ public class AlchemistWandHandler extends MythicItemHandler {
 
     public AlchemistWandHandler(MythicItemManager manager) {
         super(manager);
+        this.alchemistBlinkProtection = new ConcurrentHashMap<>();
+        this.alchemistBlinkProtectionExpiry = new ConcurrentHashMap<>();
         this.alchemistTidyUpExpiry = new ConcurrentHashMap<>();
         this.alchemistTidyUpTimeoutTasks = new ConcurrentHashMap<>();
         this.alchemistTidyUpDisplayTasks = new ConcurrentHashMap<>();
@@ -148,15 +154,93 @@ public class AlchemistWandHandler extends MythicItemHandler {
         player.teleport(targetLocation);
         target.teleport(playerLocation);
 
+        grantBlinkProtection(player);
+        grantBlinkProtection(target);
+
         SoundUtils.play(player, Sound.ENTITY_EVOKER_CAST_SPELL, 1.0f, 1.0f);
 
         cooldownManager.setCooldownSeconds(
                 uuid,
                 CooldownManager.Keys.ALCHEMIST_BLINK_SWAP,
-                11
+                cfg.getAlchemistBlinkSwapCooldown()
         );
 
         Messages.debug(player, "ALCHEMIST_WAND: Blink Swap successful with " + target.getName());
+    }
+
+    /**
+     * Opens a Blink Swap protection window: the configured number of hits absorbed, expiring
+     * after protection-seconds even if none are used.
+     */
+    private void grantBlinkProtection(Player player) {
+        UUID uuid = player.getUniqueId();
+        int hits = cfg.getAlchemistBlinkProtectionHits();
+        int seconds = cfg.getAlchemistBlinkProtectionSeconds();
+
+        alchemistBlinkProtection.put(uuid, hits);
+        alchemistBlinkProtectionExpiry.put(uuid, System.currentTimeMillis() + seconds * 1000L);
+
+        Messages.send(player, "mythic.alchemist-blink-protected",
+                "{hits}", String.valueOf(hits),
+                "{seconds}", String.valueOf(seconds));
+        SoundUtils.play(player, Sound.BLOCK_BEACON_ACTIVATE, 0.8f, 1.6f);
+
+        BukkitTask expiryTask = SchedulerUtils.runTaskLater(
+                () -> endBlinkProtection(player, true), seconds * 20L);
+        manager.trackTask(uuid, expiryTask);
+    }
+
+    /**
+     * Closes a protection window and tells the player, whether it ran out of hits or out of
+     * time. No-ops if it already ended, so the timeout task can fire harmlessly after the
+     * hits were spent.
+     */
+    private void endBlinkProtection(Player player, boolean expired) {
+        UUID uuid = player.getUniqueId();
+        if (alchemistBlinkProtection.remove(uuid) == null) return;
+        alchemistBlinkProtectionExpiry.remove(uuid);
+
+        if (!player.isOnline()) return;
+        Messages.send(player, expired ? "mythic.alchemist-blink-protection-expired" : "mythic.alchemist-blink-protection-used");
+        SoundUtils.play(player, Sound.BLOCK_BEACON_DEACTIVATE, 0.8f, 1.2f);
+    }
+
+    /**
+     * Read-only counterpart to {@link #handleAlchemistBlinkProtection}, for callers that want to
+     * know a hit will be absorbed without spending it - the attacker's feedback cue is decided
+     * on the PvP event, which fires separately from the one that consumes the hit.
+     */
+    public boolean isBlinkProtected(UUID uuid) {
+        Integer hitsRemaining = alchemistBlinkProtection.get(uuid);
+        if (hitsRemaining == null || hitsRemaining <= 0) return false;
+
+        Long expiry = alchemistBlinkProtectionExpiry.get(uuid);
+        return expiry != null && System.currentTimeMillis() < expiry;
+    }
+
+    /**
+     * Checks and consumes one hit of Blink Swap protection.
+     *
+     * @return true if the damage should be cancelled
+     */
+    public boolean handleAlchemistBlinkProtection(Player player) {
+        UUID uuid = player.getUniqueId();
+
+        Integer hitsRemaining = alchemistBlinkProtection.get(uuid);
+        if (hitsRemaining == null || hitsRemaining <= 0) return false;
+
+        Long expiry = alchemistBlinkProtectionExpiry.get(uuid);
+        if (expiry == null || System.currentTimeMillis() >= expiry) {
+            endBlinkProtection(player, true);
+            return false;
+        }
+
+        if (hitsRemaining <= 1) {
+            endBlinkProtection(player, false);
+        } else {
+            alchemistBlinkProtection.put(uuid, hitsRemaining - 1);
+        }
+        return true;
     }
 
     /**
@@ -743,6 +827,9 @@ public class AlchemistWandHandler extends MythicItemHandler {
 
     @Override
     public void cleanup() {
+        alchemistBlinkProtection.clear();
+        alchemistBlinkProtectionExpiry.clear();
+
         alchemistTidyUpTimeoutTasks.values().forEach(task -> { if (task != null) task.cancel(); });
         alchemistTidyUpTimeoutTasks.clear();
         alchemistTidyUpDisplayTasks.values().forEach(task -> { if (task != null) task.cancel(); });
@@ -778,6 +865,9 @@ public class AlchemistWandHandler extends MythicItemHandler {
     @Override
     public void cleanupPlayer(Player player) {
         UUID uuid = player.getUniqueId();
+
+        alchemistBlinkProtection.remove(uuid);
+        alchemistBlinkProtectionExpiry.remove(uuid);
 
         endAlchemistTidyUp(player, false);
         for (Map<UUID, Map<PotionEffectType, ItemDisplay>> perTarget : alchemistTidyUpBottles.values()) {
