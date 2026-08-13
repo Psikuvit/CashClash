@@ -562,6 +562,8 @@ public final class ParticleUtils {
     }
 
     /**
+     * Spawn the turquoise/orange shield rings for Guardian's Vest activation.
+     *
      * @param height how far above the wearer's feet to draw the rings
      */
     public static void guardianRings(Location playerLocation, double height) {
