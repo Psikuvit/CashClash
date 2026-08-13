@@ -730,6 +730,10 @@ public class ItemsConfig {
         return config.getInt("custom-armor.dragon.rush-buff-seconds", 3);
     }
 
+    public int getDragonRushTeammateInvincibilitySeconds() {
+        return config.getInt("custom-armor.dragon.rush-teammate-invincibility-seconds", 1);
+    }
+
     public int getDragonKillStrengthLevel() {
         return config.getInt("custom-armor.dragon.kill-strength-level", 0);
     }

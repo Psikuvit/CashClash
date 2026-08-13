@@ -864,6 +864,8 @@ messages:
     dragon-need-scale: "<light_purple>🐉 You need a Dragon Scale to rush! Land fully-charged melee hits to charge one.</light_purple>"
     dragon-rush-empowered: "<light_purple>🐉 Dragon Rush empowered! Next melee hit deals +25% damage.</light_purple>"
     dragon-rush-empowered-strike: "<light_purple>🐉 Dragon Fury empowered strike!</light_purple>"
+    dragon-rush-invincibility: "<light_purple>🐉 Dragon Rush! You and your teammate are invincible for {seconds}s.</light_purple>"
+    dragon-rush-invincibility-ended: "<gray>Dragon Rush invincibility ended.</gray>"
     dragon-rush-cooldown: "<red>Dragon Rush on cooldown: {remaining}s</red>"
     dragon-rush-no-target: "<red>No target found!</red>"
     dragon-outrage-activated: "<light_purple>🐉 Dragon Outrage activated! Slamming down...</light_purple>"

@@ -118,6 +118,11 @@ public class DamageListener implements Listener {
                 return;
             }
 
+            if (armorManager.getHandler(DragonSetHandler.class).isDragonRushInvincible(player.getUniqueId())) {
+                event.setCancelled(true);
+                return;
+            }
+
             if (handleGamePhaseProtection(event, player)) {
                 return;
             }

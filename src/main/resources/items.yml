@@ -234,6 +234,8 @@ custom-armor:
     rush-range: 5
     rush-damage-percentage: 0.25
     rush-buff-seconds: 3
+    # Invincibility both players get from a teammate rush
+    rush-teammate-invincibility-seconds: 1
     kill-strength-level: 0
     kill-strength-duration-seconds: 4
 
