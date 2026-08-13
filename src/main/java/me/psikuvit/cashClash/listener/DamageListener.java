@@ -150,7 +150,6 @@ public class DamageListener implements Listener {
 
             if (mythicManager.getHandler(AlchemistWandHandler.class).handleAlchemistBlinkProtection(player)) {
                 event.setCancelled(true);
-                return;
             }
 
         } catch (Exception e) {
@@ -278,8 +277,9 @@ public class DamageListener implements Listener {
     /**
      * Soul Katana Phantom Slice: zeroes the ARMOR/MAGIC/RESISTANCE/ABSORPTION damage modifiers
      * and pins BASE to the flat strike damage so armor and active effects on both sides are
-     * ignored. All calls are guarded by {@link EntityDamageEvent#isApplicable(DamageModifier)}
-     * before modifying a modifier.
+     * ignored. All calls are guarded by
+     * {@link EntityDamageEvent#isApplicable(EntityDamageEvent.DamageModifier)} before modifying a
+     * modifier.
      */
     private void applyPhantomSliceDamageModifiers(EntityDamageByEntityEvent event) {
         for (EntityDamageEvent.DamageModifier modifier : new EntityDamageEvent.DamageModifier[]{
@@ -554,11 +554,9 @@ public class DamageListener implements Listener {
             return false;
         }
 
-        if (attacker != null) {
-            CashClashPlayer attackerCcp = session.getCashClashPlayer(attacker.getUniqueId());
-            if (attackerCcp != null && attackerCcp.isRespawnProtected()) {
-                return false;
-            }
+        CashClashPlayer attackerCcp = session.getCashClashPlayer(attacker.getUniqueId());
+        if (attackerCcp != null && attackerCcp.isRespawnProtected()) {
+            return false;
         }
 
         CashClashPlayer victimCcp = session.getCashClashPlayer(victim.getUniqueId());

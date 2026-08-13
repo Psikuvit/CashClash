@@ -50,7 +50,7 @@ public class MoveListener implements Listener {
         if (session.isSequenceLocked()) {
             Location from = event.getFrom();
             Location to = event.getTo();
-            if (to != null && (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ())) {
+            if (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ()) {
                 event.setTo(new Location(to.getWorld(), from.getX(), from.getY(), from.getZ(), to.getYaw(), to.getPitch()));
             }
             return;

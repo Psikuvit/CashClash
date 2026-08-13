@@ -10,7 +10,6 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -310,27 +309,18 @@ public class BlockListener implements Listener {
     private boolean handleLeafPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
         if (!isLeafBlock(blockType)) return false;
 
-        GameSession session = gameManager.getPlayerSession(Bukkit.getPlayer(playerId));
-        if (session == null) return false;
-
         Map<UUID, Integer> counts = playerLeafBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>());
         int currentLeafs = counts.getOrDefault(playerId, 0);
 
         if (currentLeafs >= 64) {
             event.setCancelled(true);
-            Player player = event.getPlayer();
-            if (player != null) {
-                Messages.send(player, "listener.max-leaf-blocks-reached");
-            }
+            Messages.send(event.getPlayer(), "listener.max-leaf-blocks-reached");
             return true;
         }
 
         if (checkVerticalLeafStack(block)) {
             event.setCancelled(true);
-            Player player = event.getPlayer();
-            if (player != null) {
-                Messages.send(player, "listener.leaf-stack-limit");
-            }
+            Messages.send(event.getPlayer(), "listener.leaf-stack-limit");
             return true;
         }
 
@@ -384,7 +374,7 @@ public class BlockListener implements Listener {
         if (blockType == Material.WATER) {
             scheduleWaterLavaCleanup(event.getBlock());
             showDespawnTimer(event.getBlock(), Material.WATER, itemsConfig.getFluidDespawnSeconds() * 20L, "aqua");
-        } else if (blockType == Material.LAVA) {
+        } else {
             scheduleLavaCleanup(event.getBlock());
             showDespawnTimer(event.getBlock(), Material.LAVA, itemsConfig.getFluidDespawnSeconds() * 20L, "gold");
         }
@@ -501,10 +491,6 @@ public class BlockListener implements Listener {
         }
     }
 
-    /**
-     * Force placed water/lava to flow outwards immediately rather than creeping at vanilla
-     * speed, capped at 3 blocks from the origin by the caller's distance check.
-     */
     /** Compact "x,y,z" for the FLUID debug lines. */
     private static String at(Location loc) {
         return loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();

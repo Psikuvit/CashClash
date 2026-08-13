@@ -287,9 +287,7 @@ public class DragonSetHandler extends ArmorSetHandler {
             }, delay);
         }
 
-        SchedulerUtils.runTaskLater(() -> {
-            dragonRushIndicators.remove(uuid);
-        }, 300L);
+        SchedulerUtils.runTaskLater(() -> dragonRushIndicators.remove(uuid), 300L);
     }
 
     /**
@@ -329,8 +327,8 @@ public class DragonSetHandler extends ArmorSetHandler {
                 Location center = player.getLocation().clone().add(0, 0.9, 0);
                 for (int j = 0; j < 16; j++) {
                     double angle = 2 * Math.PI * j / 16;
-                    double x = Math.cos(angle) * 1.0;
-                    double z = Math.sin(angle) * 1.0;
+                    double x = Math.cos(angle);
+                    double z = Math.sin(angle);
                     ParticleUtils.spawnDust(center.clone().add(x, 0, z), Color.fromRGB(80, 0, 120), 1.2f, 1);
                 }
                 SoundUtils.play(player, Sound.ENTITY_WARDEN_HEARTBEAT, 0.5f, 0.6f);
@@ -415,7 +413,11 @@ public class DragonSetHandler extends ArmorSetHandler {
             }
         }, 0L, 1L);
 
-        SchedulerUtils.runTaskLater(explosionTask::cancel, 10L);
+        SchedulerUtils.runTaskLater(() -> {
+            if (explosionTask != null) {
+                explosionTask.cancel();
+            }
+        }, 10L);
 
         for (Entity entity : world.getNearbyEntities(location, 5, 3, 5)) {
             if (!(entity instanceof Player target)) continue;

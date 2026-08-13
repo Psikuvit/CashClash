@@ -36,7 +36,9 @@ public class SQLiteProvider implements DatabaseProvider {
         try {
             if (!dbFile.exists()) {
                 Files.createDirectories(dbFile.getParentFile().toPath());
-                dbFile.createNewFile();
+                if (!dbFile.createNewFile()) {
+                    throw new IOException("File.createNewFile() returned false for " + dbFile.getAbsolutePath());
+                }
             }
         } catch (Exception e) {
             throw new SQLException("Unable to create SQLite file", e);

@@ -285,7 +285,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         boolean offhandIsCosmetic = isCosmeticGlove(offhand);
 
         if (holdingWarden && !offhandIsCosmetic) {
-            wardenStashedOffhand.put(uuid, offhand != null && offhand.getType() != Material.AIR ? offhand.clone() : new ItemStack(Material.AIR));
+            wardenStashedOffhand.put(uuid, offhand.getType() != Material.AIR ? offhand.clone() : new ItemStack(Material.AIR));
             player.getInventory().setItemInOffHand(createPairedGloveCosmetic());
             wardenBothHandsActive.add(uuid);
         } else if (!holdingWarden && offhandIsCosmetic) {

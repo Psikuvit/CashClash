@@ -111,7 +111,7 @@ public class KitService {
     public static void setShield(Player player, boolean give) {
         ItemStack offHand = player.getInventory().getItemInOffHand();
         if (give) {
-            if (offHand != null && offHand.getType() != Material.AIR && offHand.getType() != Material.SHIELD) {
+            if (offHand.getType() != Material.AIR && offHand.getType() != Material.SHIELD) {
                 ItemUtils.returnItemToInventoryOrDrop(player, offHand);
             }
             player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));

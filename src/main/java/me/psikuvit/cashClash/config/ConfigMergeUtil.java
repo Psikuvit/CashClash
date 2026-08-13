@@ -78,7 +78,7 @@ public final class ConfigMergeUtil {
             target.set(path, defaultValue);
             added.add(path);
         } else if (defaultValue instanceof List && !((List<?>) defaultValue).isEmpty()
-                && target.isList(path) && target.getList(path).isEmpty()) {
+                && target.isList(path) && target.getList(path) != null && target.getList(path).isEmpty()) {
             // Refill a list that the admin left empty so the feature keeps working.
             target.set(path, defaultValue);
             added.add(path);

@@ -7,7 +7,6 @@ import io.papermc.paper.datacomponent.item.Consumable;
 import io.papermc.paper.datacomponent.item.FoodProperties;
 import io.papermc.paper.datacomponent.item.consumable.ConsumeEffect;
 import io.papermc.paper.datacomponent.item.consumable.ItemUseAnimation;
-import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -20,6 +19,7 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.enchantments.Enchantment;
@@ -215,7 +215,10 @@ public final class GameplayItemFactory {
 
         // Sunscreen: play the drinking noise on a loop for the whole animation, not just on completion
         if (foodItem == FoodItem.SUNSCREEN) {
-            consumable.sound(Registry.SOUNDS.getKey(Sound.ENTITY_GENERIC_DRINK));
+            NamespacedKey drinkSoundKey = Registry.SOUNDS.getKey(Sound.ENTITY_GENERIC_DRINK);
+            if (drinkSoundKey != null) {
+                consumable.sound(drinkSoundKey);
+            }
         }
 
         item.setData(DataComponentTypes.CONSUMABLE, consumable.build());
@@ -250,15 +253,8 @@ public final class GameplayItemFactory {
                 tags.meta().addEnchant(Enchantment.KNOCKBACK, 3, true);
             }
             case INVIS_CLOAK -> tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);
-            case ICE_FAN -> {
-                // The underlying material's vanilla max durability doesn't match the 75-point
-                // design budget, so remaining durability is tracked as a PDC counter (mirrored
-                // onto the visual durability bar in CustomItemManager.setIceFanDurability)
-                // rather than relying on Damageable directly, like BAG_OF_POTATOES does.
-                tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, CashClashPlugin.getInstance().getItemsConfig().getIceFanMaxDurability());
-            }
+            case ICE_FAN -> tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, CashClashPlugin.getInstance().getItemsConfig().getIceFanMaxDurability());
             default -> {
-                // No special properties
             }
         }
     }
@@ -267,11 +263,7 @@ public final class GameplayItemFactory {
      * Applies special properties to weapons based on their type.
      */
     private void applyWeaponProperties(PDCSetter tags, WeaponItem weaponItem) {
-        switch (weaponItem) {
-            default -> {
-                // No special properties
-            }
-        }
+        // No special properties
     }
 
     /**
@@ -295,17 +287,13 @@ public final class GameplayItemFactory {
                         .consumeSeconds(3.5f) // > max-charge-seconds + grace-seconds so we always release first
                         .build());
             }
-            case OVERDRIVE_POTION -> {
-                // Vanilla potions start a "drink" sequence on right-click; strip the consumable
+            case OVERDRIVE_POTION -> // Vanilla potions start a "drink" sequence on right-click; strip the consumable
                 // component so the interaction fires instantly through InteractListener instead.
-                item.unsetData(DataComponentTypes.CONSUMABLE);
-            }
-            case HUNTERS_MARK -> {
-                // A single instant right-click now applies the mark - strip the consumable
+                    item.unsetData(DataComponentTypes.CONSUMABLE);
+            case HUNTERS_MARK -> // A single instant right-click now applies the mark - strip the consumable
                 // component so the interaction fires instantly through InteractListener
                 // instead of starting a vanilla eat animation (see OVERDRIVE_POTION).
-                item.unsetData(DataComponentTypes.CONSUMABLE);
-            }
+                    item.unsetData(DataComponentTypes.CONSUMABLE);
             default -> {
                 // No special data components
             }

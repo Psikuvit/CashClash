@@ -360,7 +360,7 @@ public class InteractListener implements Listener {
             if (handleSupplyDrop(event, player, item, action)) return;
             if (handleCustomItem(event, player, item, action)) return;
             if (handleWeaponItem(event, player, item, action)) return;
-            if (handleMythicItem(event, player, item, action)) return;
+            handleMythicItem(event, player, item, action);
         }
     }
 

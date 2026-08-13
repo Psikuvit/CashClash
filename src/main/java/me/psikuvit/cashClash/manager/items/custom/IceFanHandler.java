@@ -326,7 +326,7 @@ public class IceFanHandler extends CustomItemHandler {
         if (!item.hasItemMeta()) return;
 
         int max = cfg.getIceFanMaxDurability();
-        int clamped = Math.max(0, Math.min(max, remaining));
+        int clamped = Math.clamp(remaining, 0, max);
 
         PDCSetter tags = PDCSetter.of(item);
         tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, clamped);

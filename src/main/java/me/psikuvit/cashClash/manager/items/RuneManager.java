@@ -392,13 +392,9 @@ public class RuneManager {
         EnchantEntry enchantEntry = PDCDetection.getRune(rune);
         if (enchantEntry == null) return null;
 
-        // Armor runes (PROTECTION/PROJECTILE_PROTECTION) must only ever target armor the
-        // player is currently wearing - never a spare piece sitting in the main inventory
-        // (e.g. gear replaced by a shop upgrade but still carried). Weapon/bow runes keep
-        // scanning the general inventory since they have no "equipped" slot of their own.
         if (isArmorEnchant(enchantEntry)) {
             for (ItemStack item : player.getInventory().getArmorContents()) {
-                if (item != null && enchantEntry.canApplyTo(item)) return item;
+                if (enchantEntry.canApplyTo(item)) return item;
             }
             return null;
         }
@@ -471,8 +467,7 @@ public class RuneManager {
         ItemStack[] armor = inv.getArmorContents();
         int applied = 0;
 
-        for (int i = 0; i < armor.length; i++) {
-            ItemStack piece = armor[i];
+        for (ItemStack piece : armor) {
             if (piece == null || piece.getType().isAir() || !enchantEntry.canApplyTo(piece)) continue;
 
             // Tag it now, while we know it's the piece being enchanted - lets a later unequip
@@ -620,7 +615,7 @@ public class RuneManager {
      * @return true if this hit broke the rune
      */
     public static boolean consumeRuneDurability(Player player, ItemStack rune) {
-        if (player == null || rune == null || !isRune(rune)) return false;
+        if (player == null || !isRune(rune)) return false;
 
         EnchantEntry enchant = PDCDetection.getRune(rune);
         Integer level = getRuneLevel(rune);
@@ -716,8 +711,8 @@ public class RuneManager {
                 ItemStack[] contents = player.getInventory().getContents();
                 boolean changed = false;
 
-                for (int i = 0; i < contents.length; i++) {
-                    if (rechargeOneRune(player, contents[i])) changed = true;
+                for (ItemStack item : contents) {
+                    if (rechargeOneRune(player, item)) changed = true;
                 }
 
                 if (changed) player.getInventory().setContents(contents);
@@ -732,6 +727,8 @@ public class RuneManager {
         if (!isRune(item) || isRuneActive(item) || !canRuneRecharge(item)) return false;
 
         EnchantEntry enchant = PDCDetection.getRune(item);
+        if (enchant == null) return false;
+
         double max = getMaxRuneDurability(enchant);
         double current = getRuneDurability(item);
         if (current >= max) return false;
@@ -740,7 +737,7 @@ public class RuneManager {
             setFullChargeWarning(item, false);
         }
 
-        double newAmount = Math.min(current + RECHARGE_PER_SECOND, max);
+        double newAmount = Math.clamp(current + RECHARGE_PER_SECOND, 0, max);
         setRuneDurability(item, newAmount);
         updateRuneDurabilityBar(item);
 

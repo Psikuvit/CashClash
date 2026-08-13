@@ -197,7 +197,7 @@ public class RuneListener implements Listener {
     public void onWeaponRuneUse(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player player)) return;
         ItemStack weapon = player.getInventory().getItemInMainHand();
-        if (weapon == null || weapon.getType().isAir()) return;
+        if (weapon.getType().isAir()) return;
         // Sharpness
         ItemStack sharpnessRune = RuneManager.getActiveRune(
                 player,
@@ -271,7 +271,7 @@ public class RuneListener implements Listener {
         }
 
         ItemStack crossbow = player.getInventory().getItemInMainHand();
-        if (crossbow == null || crossbow.getType().isAir()) return;
+        if (crossbow.getType().isAir()) return;
 
         // Piercing
         ItemStack piercingRune = RuneManager.getActiveRune(
