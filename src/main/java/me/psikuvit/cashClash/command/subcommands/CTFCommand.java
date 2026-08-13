@@ -1,11 +1,12 @@
 package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.command.CommandValidation;
+import me.psikuvit.cashClash.util.game.GameSessionUtils;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -20,12 +21,10 @@ public class CTFCommand extends AbstractArgCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
-        if (!(sender instanceof Player player)) {
-            Messages.send(sender, "command.only-players");
-            return true;
-        }
+        Player player = CommandValidation.getPlayerOrNull(sender);
+        if (player == null) return true;
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
+        GameSession session = GameSessionUtils.getSessionOrNull(player);
         if (session == null) {
             Messages.send(sender, "generic.not-in-game");
             return true;
