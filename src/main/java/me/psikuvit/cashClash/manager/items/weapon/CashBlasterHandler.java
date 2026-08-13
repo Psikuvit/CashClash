@@ -48,19 +48,15 @@ public class CashBlasterHandler extends WeaponItemHandler {
 
     private final Map<UUID, Boolean> cashBlasterSupercharged;
 
-    private final Map<UUID, Location> playersInProfitVortex;
     private final Map<Location, UUID> profitVortexOwners;
     private final Map<UUID, Location> playersKilledInProfitVortex;
-    private final Map<Location, Boolean> spectralProfitVortices;
     private final Map<Location, Set<UUID>> spectralVortexMarkedPlayers;
 
     public CashBlasterHandler(WeaponItemManager manager) {
         super(manager);
         this.cashBlasterSupercharged = new HashMap<>();
-        this.playersInProfitVortex = new HashMap<>();
         this.profitVortexOwners = new HashMap<>();
         this.playersKilledInProfitVortex = new HashMap<>();
-        this.spectralProfitVortices = new HashMap<>();
         this.spectralVortexMarkedPlayers = new HashMap<>();
     }
 
@@ -162,7 +158,6 @@ public class CashBlasterHandler extends WeaponItemHandler {
         int glowSeconds = arrow.getPersistentDataContainer().getOrDefault(
                 Keys.PROFIT_VORTEX_GLOW_SECONDS, PersistentDataType.INTEGER, 0);
         boolean isSpectral = glowSeconds > 0;
-        spectralProfitVortices.put(vortexLocation, isSpectral);
         spectralVortexMarkedPlayers.put(vortexLocation, new HashSet<>());
 
         arrow.remove();
@@ -207,7 +202,9 @@ public class CashBlasterHandler extends WeaponItemHandler {
         }, 0L, 5L);
 
         SchedulerUtils.runTaskLater(() -> {
-            vortexTask.cancel();
+            if (vortexTask != null) {
+                vortexTask.cancel();
+            }
             profitVortexOwners.remove(vortexLocation);
             spectralVortexMarkedPlayers.remove(vortexLocation);
             playersKilledInProfitVortex.entrySet().removeIf(entry -> entry.getValue().equals(vortexLocation));
@@ -358,10 +355,8 @@ public class CashBlasterHandler extends WeaponItemHandler {
     @Override
     public void cleanup() {
         cashBlasterSupercharged.clear();
-        playersInProfitVortex.clear();
         profitVortexOwners.clear();
         playersKilledInProfitVortex.clear();
-        spectralProfitVortices.clear();
         spectralVortexMarkedPlayers.clear();
     }
 }
