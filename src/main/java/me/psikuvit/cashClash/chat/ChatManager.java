@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.party.Party;
 import me.psikuvit.cashClash.party.PartyManager;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -135,7 +136,19 @@ public class ChatManager implements Shutdownable {
             Messages.send(sender, "chat.not-on-team-message");
             return true;
         }
-        return false;
+
+        Component chatMessage = Messages.parse(ChatChannel.TEAM.getPrefix())
+                .append(Messages.parse(ChatChannel.TEAM.getNameColor() + sender.getName()))
+                .append(Messages.parse("<gray>: </gray>"))
+                .append(Messages.parse("<white>" + message + "</white>"));
+
+        for (UUID memberId : team.getPlayers()) {
+            Player member = Bukkit.getPlayer(memberId);
+            if (member != null && member.isOnline()) {
+                member.sendMessage(chatMessage);
+            }
+        }
+        return true;
     }
 
     /**
@@ -147,7 +160,19 @@ public class ChatManager implements Shutdownable {
             Messages.send(sender, "chat.not-in-game-message");
             return true;
         }
-        return false;
+
+        Component chatMessage = Messages.parse(ChatChannel.GAME.getPrefix())
+                .append(Messages.parse(ChatChannel.GAME.getNameColor() + sender.getName()))
+                .append(Messages.parse("<gray>: </gray>"))
+                .append(Messages.parse("<white>" + message + "</white>"));
+
+        for (UUID memberId : session.getPlayers()) {
+            Player member = Bukkit.getPlayer(memberId);
+            if (member != null && member.isOnline()) {
+                member.sendMessage(chatMessage);
+            }
+        }
+        return true;
     }
 
     /**
