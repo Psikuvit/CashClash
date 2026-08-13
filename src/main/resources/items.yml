@@ -269,6 +269,20 @@ custom-armor:
     price-increase-multiplier: 1.25
 
 # ============================================
+# UTILITIES
+# ============================================
+utilities:
+  # Placed water/lava ignore vanilla flow entirely: they always step outward in all four
+  # directions, flow-distance times, regardless of the surrounding terrain.
+  fluids:
+    flow-distance: 3
+    despawn-seconds: 10
+    # Ticks between each step outward. Vanilla overworld rates are 5 for water, 30 for lava -
+    # raise these to make a placement spread more slowly.
+    water-flow-ticks: 5
+    lava-flow-ticks: 30
+
+# ============================================
 # CUSTOM ITEMS
 # ============================================
 custom-items:

@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -16,6 +17,8 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Display;
@@ -47,9 +50,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BlockListener implements Listener {
 
     private final GameManager gameManager;
+    private final ItemsConfig itemsConfig;
 
-    public BlockListener(GameManager gameManager) {
+    public BlockListener(GameManager gameManager, ItemsConfig itemsConfig) {
         this.gameManager = gameManager;
+        this.itemsConfig = itemsConfig;
     }
 
     /**
@@ -67,7 +72,9 @@ public class BlockListener implements Listener {
     private static final Map<Location, BukkitTask> leafDecayTasks = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
     private static final Map<Location, Location> waterLavaOrigins = new ConcurrentHashMap<>();
-    private static final Map<UUID, Set<Location>> quickFluidVisited = new ConcurrentHashMap<>();
+    // What a placed fluid displaced, so the map can be put back exactly as it was once the
+    // fluid despawns rather than left as a hole where a plant or lever used to be.
+    private static final Map<Location, BlockData> fluidReplacedBlocks = new ConcurrentHashMap<>();
     private static final Map<Location, DespawnTimer> despawnTimers = new ConcurrentHashMap<>();
     private static BukkitTask despawnTimerTask;
 
@@ -88,7 +95,7 @@ public class BlockListener implements Listener {
         }
         for (Location loc : blocks) {
             if (loc == null) continue;
-            loc.getBlock().setType(Material.AIR);
+            restoreAfterFluid(loc.getBlock());
         }
     }
 
@@ -100,7 +107,7 @@ public class BlockListener implements Listener {
         waterLavaSourceCount.remove(sessionId);
         playerLeafBlockCount.remove(sessionId);
         playerWaterBucketRefillCount.remove(sessionId);
-        quickFluidVisited.remove(sessionId);
+        fluidReplacedBlocks.clear();
     }
 
     /**
@@ -126,18 +133,23 @@ public class BlockListener implements Listener {
 
         Player player = event.getPlayer();
         GameSession session = gameManager.getPlayerSession(player);
-        if (session == null) return;
+        if (session == null) {
+            Messages.debug(player, "FLUID", "bucket ignored: player not in a session");
+            return;
+        }
 
         Block target = event.getBlock();
 
         if (bucket == Material.WATER_BUCKET && target.getBlockData() instanceof Waterlogged) {
             event.setCancelled(true);
+            Messages.debug(player, "FLUID", "bucket refused: " + describe(target) + " is waterloggable");
             Messages.send(player, "listener.water-bucket-waterlog-blocked");
             return;
         }
 
         Location origin = target.getLocation().toBlockLocation();
         waterLavaOrigins.put(origin, origin);
+        rememberReplacedBlock(target);
 
         boolean water = bucket == Material.WATER_BUCKET;
         Material fluid = water ? Material.WATER : Material.LAVA;
@@ -149,15 +161,23 @@ public class BlockListener implements Listener {
             scheduleLavaCleanup(target);
         }
 
+        Messages.debug(player, "FLUID", "bucket " + fluid + " at " + at(origin)
+                + " | target was " + describe(target)
+                + " | flow-distance=" + itemsConfig.getFluidFlowDistance()
+                + " despawn=" + itemsConfig.getFluidDespawnSeconds() + "s");
+
         trackPlacedBlock(session.getSessionId(), target);
-        if (canQuickSpread(target, event.getBlockClicked())) {
-            createQuickFluid(target, session.getSessionId(), origin, fluid);
-        }
+        createQuickFluid(target, session.getSessionId(), origin, fluid, itemsConfig.getFluidFlowDistance());
 
         SchedulerUtils.runTask(() -> {
+            Messages.debug(player, "FLUID", "source +1t " + at(origin) + " = " + describe(target)
+                    + (target.getType() == fluid ? "" : "  <-- SOURCE NEVER PLACED / ALREADY GONE"));
             if (target.getType() != fluid) return;
-            showDespawnTimer(target, fluid, 200, water ? "aqua" : "gold");
+            showDespawnTimer(target, fluid, itemsConfig.getFluidDespawnSeconds() * 20L, water ? "aqua" : "gold");
         });
+
+        SchedulerUtils.runTaskLater(() -> Messages.debug(player, "FLUID",
+                "source +20t " + at(origin) + " = " + describe(target)), 20L);
     }
 
     /**
@@ -363,14 +383,12 @@ public class BlockListener implements Listener {
         waterLavaOrigins.put(origin, origin);
         if (blockType == Material.WATER) {
             scheduleWaterLavaCleanup(event.getBlock());
-            showDespawnTimer(event.getBlock(), Material.WATER, 200, "aqua");
+            showDespawnTimer(event.getBlock(), Material.WATER, itemsConfig.getFluidDespawnSeconds() * 20L, "aqua");
         } else if (blockType == Material.LAVA) {
             scheduleLavaCleanup(event.getBlock());
-            showDespawnTimer(event.getBlock(), Material.LAVA, 200, "gold");
+            showDespawnTimer(event.getBlock(), Material.LAVA, itemsConfig.getFluidDespawnSeconds() * 20L, "gold");
         }
-        if (canQuickSpread(event.getBlock(), event.getBlockAgainst())) {
-            createQuickFluid(event.getBlock(), sessionId, origin, blockType);
-        }
+        createQuickFluid(event.getBlock(), sessionId, origin, blockType, itemsConfig.getFluidFlowDistance());
 
         // Schedule water bucket refill (only for water, not lava)
         if (blockType == Material.WATER) {
@@ -463,111 +481,177 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Limit water/lava vanilla spread to 3 blocks from the original source.
+     * Suppresses vanilla flow for any fluid this plugin placed. createQuickFluid already stepped
+     * it out to its full reach in every direction; letting vanilla flow on top of that is what
+     * produced the terrain-dependent, sometimes-it-does-sometimes-it-doesn't spreading that the
+     * fixed reach exists to replace.
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onWaterLavaSpread(BlockFromToEvent event) {
         if (event.isCancelled()) return;
 
-        Block source = event.getBlock();
-        Material type = source.getType();
+        Material type = event.getBlock().getType();
         if (type != Material.WATER && type != Material.LAVA) return;
 
-        Location sourceLocation = source.getLocation().toBlockLocation();
-
-        Location origin = waterLavaOrigins.get(sourceLocation);
-
-        // Try to find the origin from nearby tracked water blocks
-        if (origin == null) {
-            for (Map.Entry<Location, Location> entry : waterLavaOrigins.entrySet()) {
-                if (entry.getKey().distanceSquared(sourceLocation) <= 4) {
-                    origin = entry.getValue();
-                    waterLavaOrigins.put(sourceLocation, origin);
-                    break;
-                }
-            }
-        }
-
-        // Makes new water source origin
-        if (origin == null) {
-            origin = sourceLocation;
-            waterLavaOrigins.put(sourceLocation, origin);
-        }
-
-        Location destination = event.getToBlock().getLocation().toBlockLocation();
-
-        // Stop vanilla spread beyond 3 blocks
-        if (destination.distance(origin) > 3.0) {
+        Location from = event.getBlock().getLocation().toBlockLocation();
+        if (waterLavaOrigins.containsKey(from)) {
             event.setCancelled(true);
-            return;
+            Messages.debug("FLUID", "cancelled vanilla flow " + at(from) + " -> "
+                    + at(event.getToBlock().getLocation().toBlockLocation()));
         }
-
-        // Track newly spread water/lava so future spreads know the origin
-        waterLavaOrigins.put(destination, origin);
     }
 
     /**
      * Force placed water/lava to flow outwards immediately rather than creeping at vanilla
      * speed, capped at 3 blocks from the origin by the caller's distance check.
      */
-    /**
-     * Whether the instant 4-way spread is safe here, or the placement should be left to vanilla
-     * flow instead. The spread only walks sideways, so a source clicked onto a plant, button or
-     * lever - or any spot with nothing solid beneath it - would otherwise pave a floating slab
-     * of source blocks out into the air.
-     */
-    private boolean canQuickSpread(Block placed, Block clickedAgainst) {
-        return clickedAgainst.getType().isSolid()
-                && placed.getRelative(BlockFace.DOWN).getType().isSolid();
+    /** Compact "x,y,z" for the FLUID debug lines. */
+    private static String at(Location loc) {
+        return loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
     }
 
-    private void createQuickFluid(Block source, UUID sessionId, Location origin, Material fluid) {
-        // Spreads the fluid the bucket actually held, never source.getType(). PlayerBucketEmptyEvent
-        // fires before the liquid replaces the block, so reading the type off the source stamped
-        // copies of whatever was clicked onto every neighbouring air block.
+    private static String describe(Block block) {
+        String type = block.getType().toString();
+        if (block.getBlockData() instanceof Levelled levelled) {
+            return type + "(level=" + levelled.getLevel() + ")";
+        }
+        return type;
+    }
+
+    /** Why a direction was refused, for the FLUID trace. */
+    private static String flowBlockedReason(Block block) {
+        Material type = block.getType();
+        if (type == Material.WATER || type == Material.LAVA) return "already " + type;
+        if (block.getBlockData() instanceof Waterlogged) return "waterloggable";
+        if (type.isSolid()) return "solid " + type;
+        return "allowed";
+    }
+
+    /**
+     * Records a block the fluid is about to overwrite, unless it was only air.
+     */
+    private static void rememberReplacedBlock(Block block) {
+        if (block.getType() == Material.AIR) return;
+        fluidReplacedBlocks.putIfAbsent(block.getLocation().toBlockLocation(), block.getBlockData());
+    }
+
+    /**
+     * Puts back whatever the fluid displaced here, or clears to air if it displaced nothing.
+     */
+    private static void restoreAfterFluid(Block block) {
+        Messages.debug("FLUID", "despawn " + at(block.getLocation().toBlockLocation()) + " was " + describe(block));
+        BlockData original = fluidReplacedBlocks.remove(block.getLocation().toBlockLocation());
+        if (original != null) {
+            block.setBlockData(original, false);
+        } else {
+            block.setType(Material.AIR);
+        }
+    }
+
+    /**
+     * Whether the spread may step into a block. Anything without a collision box gives way -
+     * plants, buttons, levers, torches - so a direction is never skipped just because something
+     * is standing in it, which is the vanilla behaviour being replaced. Only real map geometry
+     * stops the flow, and waterlogging stays refused.
+     */
+    private boolean canFlowInto(Block block) {
+        Material type = block.getType();
+        if (type == Material.WATER || type == Material.LAVA) return false;
+        if (block.getBlockData() instanceof Waterlogged) return false;
+        return !type.isSolid();
+    }
+
+    /**
+     * Places one spread block as <em>flowing</em> fluid, at a depth matching how many steps out
+     * it is. Physics stays off: vanilla would immediately recompute these into its own flow
+     * pattern, which is the behaviour this whole spread exists to replace. Only the block the
+     * player placed is left as a source.
+     */
+    private void placeFlowingFluid(Block block, Material fluid, int step) {
+        rememberReplacedBlock(block);
+        block.setType(fluid, false);
+
+        if (!(block.getBlockData() instanceof Levelled levelled)) return;
+
+        levelled.setLevel(Math.clamp(step, levelled.getMinimumLevel() + 1, levelled.getMaximumLevel()));
+        block.setBlockData(levelled, false);
+    }
+
+    /**
+     * Steps the fluid outward in all four directions, once per flow tick, {@code stepsRemaining}
+     * times. Deliberately unconditional: vanilla decides per-direction whether fluid advances
+     * based on the surrounding terrain, and this replaces that entirely so a placed bucket
+     * always produces the same reach whatever it is placed against.
+     */
+    private void createQuickFluid(Block source, UUID sessionId, Location origin, Material fluid, int stepsRemaining) {
+        // A fresh visited set per placement. Sharing one across the session meant any spot a
+        // previous bucket had already flowed over stayed marked for the rest of the match, so a
+        // later bucket placed near it refused to spread at all.
+        Set<Location> visited = ConcurrentHashMap.newKeySet();
+
+        // Delayed by one interval rather than run inline: vanilla leaves the source sitting for
+        // a full flow tick before the first ring appears, and starting immediately made the
+        // whole spread land a step ahead of where real water would be.
+        SchedulerUtils.runTaskLater(
+                () -> stepFluidOutward(source, sessionId, origin, fluid, stepsRemaining, visited),
+                flowTicksFor(fluid));
+    }
+
+    /** Vanilla overworld flow rates by default, tunable per fluid in items.yml. */
+    private long flowTicksFor(Material fluid) {
+        return fluid == Material.LAVA
+                ? itemsConfig.getLavaFlowTicks()
+                : itemsConfig.getWaterFlowTicks();
+    }
+
+    private void stepFluidOutward(Block source, UUID sessionId, Location origin, Material fluid,
+                                  int stepsRemaining, Set<Location> visited) {
+        Location sourceLoc = source.getLocation().toBlockLocation();
+
         if (fluid != Material.WATER && fluid != Material.LAVA) {
+            Messages.debug("FLUID", "stop at " + at(sourceLoc) + ": not a fluid (" + fluid + ")");
+            return;
+        }
+        if (stepsRemaining <= 0) {
+            Messages.debug("FLUID", "stop at " + at(sourceLoc) + ": out of steps");
+            return;
+        }
+        if (!visited.add(sourceLoc)) {
+            Messages.debug("FLUID", "stop at " + at(sourceLoc) + ": already visited this placement");
             return;
         }
 
-        Set<Location> visited = quickFluidVisited.computeIfAbsent(
-                sessionId,
-                k -> ConcurrentHashMap.newKeySet()
-        );
+        int step = itemsConfig.getFluidFlowDistance() - stepsRemaining + 1;
+        long flowTicks = flowTicksFor(fluid);
 
-        Location loc = source.getLocation().toBlockLocation();
+        Messages.debug("FLUID", "step " + step + " from " + at(source.getLocation().toBlockLocation())
+                + " (" + describe(source) + ") stepsRemaining=" + stepsRemaining + " visited=" + visited.size());
 
-        if (loc.distance(origin) >= 3) {
-            return;
-        }
-
-        if (!visited.add(loc)) {
-            return;
-        }
-
-        for (BlockFace face : new BlockFace[]{
-                BlockFace.NORTH,
-                BlockFace.SOUTH,
-                BlockFace.EAST,
-                BlockFace.WEST
-        }) {
+        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
             Block next = source.getRelative(face);
-            if (next.getBlockData() instanceof Waterlogged) {
+            if (!canFlowInto(next)) {
+                Messages.debug("FLUID", "  " + face + " refused: " + flowBlockedReason(next));
                 continue;
             }
-            if (next.getType() == Material.AIR) {
-                next.setType(fluid);
-                waterLavaOrigins.put(next.getLocation().toBlockLocation(), origin);
-                trackPlacedBlock(sessionId, next);
-                if (fluid == Material.WATER) {
-                    scheduleWaterLavaCleanup(next);
-                } else {
-                    scheduleLavaCleanup(next);
-                }
-                SchedulerUtils.runTaskLater(
-                        () -> createQuickFluid(next, sessionId, origin, fluid),
-                        1L
-                );
+
+            placeFlowingFluid(next, fluid, step);
+            Location nextLoc = next.getLocation().toBlockLocation();
+            Messages.debug("FLUID", "  " + face + " placed " + describe(next) + " at " + at(nextLoc));
+            SchedulerUtils.runTaskLater(() -> Messages.debug("FLUID", "  verify +5t " + at(nextLoc) + " = " + describe(next)
+                    + (next.getType() == fluid ? "" : "  <-- REMOVED BY SOMETHING ELSE")), 5L);
+            waterLavaOrigins.put(next.getLocation().toBlockLocation(), origin);
+            trackPlacedBlock(sessionId, next);
+
+            if (fluid == Material.WATER) {
+                scheduleWaterLavaCleanup(next);
+            } else {
+                scheduleLavaCleanup(next);
             }
+
+            SchedulerUtils.runTaskLater(
+                    () -> stepFluidOutward(next, sessionId, origin, fluid, stepsRemaining - 1, visited),
+                    flowTicks
+            );
         }
     }
 
@@ -583,10 +667,10 @@ public class BlockListener implements Listener {
                 ParticleUtils.spawn(Particle.SPLASH, center, 12, 0.3, 0.2, 0.3, 0.05);
                 ParticleUtils.spawn(Particle.BUBBLE, center, 8, 0.2, 0.2, 0.2, 0.02);
                 SoundUtils.playAt(center, Sound.ENTITY_GENERIC_SPLASH, 0.7f, 1.0f);
-                block.setType(Material.AIR);
+                restoreAfterFluid(block);
             }
             waterLavaOrigins.remove(loc);
-        }, 200);
+        }, itemsConfig.getFluidDespawnSeconds() * 20L);
     }
 
     /**
@@ -601,10 +685,10 @@ public class BlockListener implements Listener {
                 ParticleUtils.spawn(Particle.LAVA, center, 8, 0.25, 0.2, 0.25, 0);
                 ParticleUtils.spawn(Particle.SMALL_FLAME, center, 12, 0.25, 0.2, 0.25, 0.01);
                 SoundUtils.playAt(center, Sound.BLOCK_LAVA_EXTINGUISH, 0.7f, 1.0f);
-                block.setType(Material.AIR);
+                restoreAfterFluid(block);
             }
             waterLavaOrigins.remove(loc);
-        }, 200);
+        }, itemsConfig.getFluidDespawnSeconds() * 20L);
     }
 
     /**

@@ -267,7 +267,7 @@ public final class CashClashPlugin extends JavaPlugin {
     private void registerEvents() {
         Listener[] listeners = {
                 new GuiListener(),
-                new BlockListener(gameManager),
+                new BlockListener(gameManager, itemsConfig),
                 new DamageListener(gameManager, customArmorManager, customItemManager, mythicItemManager, weaponItemManager, cooldownManager, itemsConfig),
                 new InteractListener(gameManager, customItemManager, mythicItemManager, customArmorManager, weaponItemManager),
                 new MoveListener(gameManager, customItemManager, customArmorManager, weaponItemManager),

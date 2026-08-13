@@ -66,6 +66,26 @@ public class ItemsConfig {
         return config.getDouble("combat.fully-charged-threshold", 0.99);
     }
 
+    // ==================== UTILITIES ====================
+
+    /** How many times a placed fluid steps outward from its source. */
+    public int getFluidFlowDistance() {
+        return config.getInt("utilities.fluids.flow-distance", 3);
+    }
+
+    public int getFluidDespawnSeconds() {
+        return config.getInt("utilities.fluids.despawn-seconds", 10);
+    }
+
+    /** Ticks between each outward step; vanilla overworld rates by default. */
+    public int getWaterFlowTicks() {
+        return config.getInt("utilities.fluids.water-flow-ticks", 5);
+    }
+
+    public int getLavaFlowTicks() {
+        return config.getInt("utilities.fluids.lava-flow-ticks", 30);
+    }
+
     // ==================== MYTHIC ITEMS ====================
 
     public int getLegendsPerGame() {
