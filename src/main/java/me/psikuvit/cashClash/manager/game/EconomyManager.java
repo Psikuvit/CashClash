@@ -87,10 +87,6 @@ public class EconomyManager {
         }
     }
 
-    public static void giveRoundStartMoney(GameSession session, CashClashPlayer player) {
-        // Obsolete: Money is now distributed at the end of the round via distributeRoundMoney
-    }
-
     /**
      * Resolves all player investments at end of round.
      * Awards bonus, breaks even, or applies penalty based on deaths this round.

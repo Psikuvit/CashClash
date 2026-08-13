@@ -22,8 +22,8 @@ public class GameManager implements Shutdownable {
 
     /**
      * Constructed once by {@link CashClashPlugin} at startup (it has no dependencies on other
-     * managers). {@link #getInstance()} exposes that instance to the many call sites not worth
-     * threading a constructor reference through.
+     * managers). {@link CashClashPlugin#getGameManager()} exposes that instance to call sites not
+     * worth threading a constructor reference through.
      */
     public GameManager() {
         this.activeSessions = new ConcurrentHashMap<>();

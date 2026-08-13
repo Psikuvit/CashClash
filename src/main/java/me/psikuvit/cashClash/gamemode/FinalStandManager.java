@@ -43,7 +43,7 @@ public class FinalStandManager {
      */
     public void start() {
         if (active) {
-            Messages.debug("[FinalStandManager] Final stand already active");
+            Messages.debug("[FinalStandManager] Final stand already active for session " + session.getSessionId());
             return;
         }
         active = true;
@@ -52,7 +52,7 @@ public class FinalStandManager {
 
         long ticksDelay = Math.max(1, durationMs / 50);
         task = SchedulerUtils.runTaskLater(this::activate, ticksDelay);
-        Messages.debug("[FinalStandManager] Final stand timer started for " + durationMs + "ms");
+        Messages.debug("[FinalStandManager] Final stand timer started for " + durationMs + "ms in session " + session.getSessionId());
     }
 
     /**
@@ -62,14 +62,14 @@ public class FinalStandManager {
      */
     public void startUntilWin() {
         if (active) {
-            Messages.debug("[FinalStandManager] Final stand already active");
+            Messages.debug("[FinalStandManager] Final stand already active for session " + session.getSessionId());
             return;
         }
         active = true;
         startMs = System.currentTimeMillis();
         unlimited = true;
         // Do not schedule a timer; final-stand remains until cancelled
-        Messages.debug("[FinalStandManager] Final stand started (until-win mode)");
+        Messages.debug("[FinalStandManager] Final stand started (until-win mode) for session " + session.getSessionId());
         if (gamemode != null) gamemode.onFinalStandActivated();
     }
 

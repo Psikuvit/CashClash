@@ -10,7 +10,6 @@ import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.ShopCategory;
-import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Messages;

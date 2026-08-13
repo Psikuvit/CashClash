@@ -4,7 +4,6 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
-import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;

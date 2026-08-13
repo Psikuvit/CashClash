@@ -1,7 +1,5 @@
 package me.psikuvit.cashClash.util.items;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
@@ -40,12 +38,6 @@ public final class ItemFactory {
         this.guiFactory = new GuiItemFactory();
     }
 
-    /**
-     * Gets the singleton instance of ItemFactory.
-     *
-     * @return The ItemFactory instance
-     */
-    
     // ==================== GAMEPLAY ITEMS ====================
     
     /**

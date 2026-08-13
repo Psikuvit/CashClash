@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.listener;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
-import me.psikuvit.cashClash.chat.ChatManager;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
