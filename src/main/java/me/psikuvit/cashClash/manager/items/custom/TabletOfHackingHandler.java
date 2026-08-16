@@ -12,14 +12,12 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 /**
- * Tablet of Hacking: opens the enemy-inventory viewer. Charges a 2000-coin fee,
+ * Tablet of Hacking: opens the enemy-inventory viewer. Charges the configured coin fee,
  * checked once when opening the selector and once more when a target is picked
  * (the first check is a soft gate so the coins aren't deducted until a real
  * selection happens). Stateless.
  */
 public class TabletOfHackingHandler extends CustomItemHandler {
-
-    private static final long COST = 2000L;
 
     public TabletOfHackingHandler(CustomItemManager manager) {
         super(manager);
@@ -38,7 +36,7 @@ public class TabletOfHackingHandler extends CustomItemHandler {
         if (enemyTeam == null) return;
 
         CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
-        if (ccp == null || ccp.getCoins() < COST) {
+        if (ccp == null || ccp.getCoins() < cfg.getTabletOfHackingCost()) {
             Messages.send(player, "customitem.tablet-insufficient-coins");
             return;
         }
@@ -48,17 +46,16 @@ public class TabletOfHackingHandler extends CustomItemHandler {
 
     // Called when a player selects an enemy in the PlayerSelector for Tablet of Hacking
     public void handleTabletOfHackingSelection(Player viewer, Player target) {
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
-        if (session == null) {
+        CashClashPlayer ccp = CashClashPlayer.from(viewer);
+        if (ccp == null) {
             Messages.debug("TABLET", "Player " + viewer.getName() + " tried to use Tablet of Hacking outside of a game.");
             return;
         }
-        CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
-        if (ccp == null || ccp.getCoins() < COST) {
+        if (ccp.getCoins() < cfg.getTabletOfHackingCost()) {
             Messages.send(viewer, "customitem.tablet-insufficient-coins");
             return;
         }
-        ccp.deductCoins(COST);
+        ccp.deductCoins(cfg.getTabletOfHackingCost());
         viewer.openInventory(target.getInventory());
         Messages.send(viewer, "customitem.tablet-viewing-inventory", "player_name", target.getName());
         SoundUtils.play(viewer, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.5f);

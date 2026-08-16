@@ -35,8 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GoblinSpearHandler extends MythicItemHandler {
 
     private final Map<UUID, Integer> goblinSpearShotsRemaining;
-
-    // Goblin Spear charge state tracking (player -> list of caught players)
     private final Map<UUID, List<Player>> goblinSpearCharging;
 
     public GoblinSpearHandler(MythicItemManager manager) {

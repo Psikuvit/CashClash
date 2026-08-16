@@ -63,7 +63,7 @@ public class TectonicCapHandler extends ArmorSetHandler {
         if (!hasTectonicCap(player)) return;
         if (player.isOnGround() || player.isFlying()) return;
         if (player.getVelocity().getY() >= 0) return;
-        if (player.getFallDistance() < 3.0f) return;
+        if (player.getFallDistance() < cfg.getTectonicCapFallWarningMinDistance()) return;
 
         UUID id = player.getUniqueId();
         long now = System.currentTimeMillis();
@@ -92,7 +92,7 @@ public class TectonicCapHandler extends ArmorSetHandler {
         if (!charge1Ready && !charge2Ready) return;
 
         if (isInShoppingPhase(player)) {
-            Messages.send(player, "gamestate.cannot-use-custom-armor-shopping");
+            sendShoppingPhaseRestriction(player, "gamestate.cannot-use-custom-armor-shopping");
             return;
         }
 
@@ -105,7 +105,7 @@ public class TectonicCapHandler extends ArmorSetHandler {
 
         double fallDamage = event.getFinalDamage();
         event.setCancelled(true);
-        double radius = cfg.getTectonicCapRadius() + (fallDamage * 0.3);
+        double radius = cfg.getTectonicCapRadius() + (fallDamage * cfg.getTectonicCapFallDamageRadiusScale());
 
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             int ticks = 0;
@@ -132,12 +132,13 @@ public class TectonicCapHandler extends ArmorSetHandler {
                     .toVector()
                     .subtract(impact.toVector())
                     .normalize()
-                    .setY(0.25)
-                    .multiply(0.7);
+                    .setY(cfg.getTectonicCapKnockbackUpward())
+                    .multiply(cfg.getTectonicCapKnockbackHorizontal());
 
             target.setVelocity(knockback);
-            if (target.getLocation().distance(impact) <= 2.0) {
-                CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, 20 * 4, 1, false, true, true);
+            if (target.getLocation().distance(impact) <= cfg.getTectonicCapSlowRadius()) {
+                int slowDurationTicks = cfg.getTectonicCapSlowDurationSeconds() * 20;
+                CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, slowDurationTicks, cfg.getTectonicCapSlowAmplifier(), false, true, true);
             }
         }
 

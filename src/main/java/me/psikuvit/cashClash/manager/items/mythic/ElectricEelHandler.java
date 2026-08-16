@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -11,7 +12,6 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -38,15 +38,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ElectricEelHandler extends MythicItemHandler {
 
-    private static final NamespacedKey EEL_SLOW_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "electric_eel_dash_slow");
-    private static final int MAX_DASH_CHARGES = 3;
-
-    // Charges currently available (0-MAX_DASH_CHARGES); absent = full
     private final Map<UUID, Integer> eelDashCharges;
-    // Timestamp the next missing charge finishes recharging; absent = nothing recharging
     private final Map<UUID, Long> eelNextChargeReadyAt;
-
-    // Victim UUID -> scheduled task that removes their dash-slow modifier; refreshed on re-hit
     private final Map<UUID, BukkitTask> eelSlowRemovalTasks;
 
     public ElectricEelHandler(MythicItemManager manager) {
@@ -104,10 +97,10 @@ public class ElectricEelHandler extends MythicItemHandler {
     }
 
     /**
-     * Electric Eel Sword dash. Up to {@value #MAX_DASH_CHARGES} charges, but they recharge
+     * Electric Eel Sword dash. Up to the configured max charges, but they recharge
      * sequentially - only one charge is ever recharging at a time, so burning through all
-     * three takes {@code MAX_DASH_CHARGES * rechargeSeconds} to fully refill, not
-     * {@code rechargeSeconds} for all three in parallel. Blocked only when no charges remain.
+     * of them takes {@code maxCharges * rechargeSeconds} to fully refill, not
+     * {@code rechargeSeconds} for all of them in parallel. Blocked only when no charges remain.
      * Zaps the player forward (stopping short of walls, like the old teleport ability), and
      * for a brief window afterward damages+slows any enemy caught along the dash path.
      */
@@ -116,7 +109,8 @@ public class ElectricEelHandler extends MythicItemHandler {
         long now = System.currentTimeMillis();
         settleDashCharges(uuid, now);
 
-        int charges = eelDashCharges.getOrDefault(uuid, MAX_DASH_CHARGES);
+        int maxCharges = cfg.getEelDashMaxCharges();
+        int charges = eelDashCharges.getOrDefault(uuid, maxCharges);
         if (charges <= 0) {
             long readyAt = eelNextChargeReadyAt.getOrDefault(uuid, now);
             long remaining = Math.max(0, (readyAt - now) / 1000L);
@@ -194,13 +188,14 @@ public class ElectricEelHandler extends MythicItemHandler {
      * than one charge recharging at once.
      */
     private void settleDashCharges(UUID uuid, long now) {
-        int charges = eelDashCharges.getOrDefault(uuid, MAX_DASH_CHARGES);
+        int maxCharges = cfg.getEelDashMaxCharges();
+        int charges = eelDashCharges.getOrDefault(uuid, maxCharges);
         Long readyAt = eelNextChargeReadyAt.get(uuid);
         long rechargeMillis = cfg.getEelDashRechargeSeconds() * 1000L;
 
-        while (readyAt != null && now >= readyAt && charges < MAX_DASH_CHARGES) {
+        while (readyAt != null && now >= readyAt && charges < maxCharges) {
             charges++;
-            readyAt = charges < MAX_DASH_CHARGES ? readyAt + rechargeMillis : null;
+            readyAt = charges < maxCharges ? readyAt + rechargeMillis : null;
         }
 
         eelDashCharges.put(uuid, charges);
@@ -223,15 +218,15 @@ public class ElectricEelHandler extends MythicItemHandler {
 
         BukkitTask existing = eelSlowRemovalTasks.remove(id);
         if (existing != null && !existing.isCancelled()) existing.cancel();
-        speed.removeModifier(EEL_SLOW_KEY);
+        speed.removeModifier(Keys.EEL_SLOW);
 
         double reduction = cfg.getEelDashSlowPercent() / 100.0;
-        speed.addModifier(new AttributeModifier(EEL_SLOW_KEY, -reduction, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+        speed.addModifier(new AttributeModifier(Keys.EEL_SLOW, -reduction, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
 
         int durationTicks = cfg.getEelDashSlowDuration();
         BukkitTask removalTask = SchedulerUtils.runTaskLater(() -> {
             AttributeInstance s = target.getAttribute(Attribute.MOVEMENT_SPEED);
-            if (s != null) s.removeModifier(EEL_SLOW_KEY);
+            if (s != null) s.removeModifier(Keys.EEL_SLOW);
             eelSlowRemovalTasks.remove(id);
         }, durationTicks);
         eelSlowRemovalTasks.put(id, removalTask);
@@ -248,7 +243,7 @@ public class ElectricEelHandler extends MythicItemHandler {
             Player p = Bukkit.getPlayer(id);
             if (p != null) {
                 AttributeInstance speed = p.getAttribute(Attribute.MOVEMENT_SPEED);
-                if (speed != null) speed.removeModifier(EEL_SLOW_KEY);
+                if (speed != null) speed.removeModifier(Keys.EEL_SLOW);
             }
         });
         eelSlowRemovalTasks.clear();

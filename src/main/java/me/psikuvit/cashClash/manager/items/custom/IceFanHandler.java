@@ -40,19 +40,6 @@ import java.util.UUID;
  */
 public class IceFanHandler extends CustomItemHandler {
 
-    // How long after the last swing before the gust is considered "released". Generous window -
-    // this item's swing cadence while held isn't a steady stream (~2/sec like combat), so a short
-    // timeout let the gust die between swings after only 1-2 pulses.
-    private static final long GUST_HOLD_TIMEOUT_MS = 1500L;
-    // Gust tick cadence - matches the original per-click cadence (~2/sec) this replaces
-    private static final long GUST_TICK_INTERVAL = 10L;
-    // Each gust blast that connects stacks 1.5s onto the target's freeze (1.5s -> 3s -> 4.5s
-    // ...), capped at 6s total - tracked on our own timer (see iceFanFreezeExpiresAt) rather
-    // than Bukkit's native freezeTicks, which decays on its own every tick outside powder snow
-    // and would otherwise race against the stacking.
-    private static final long GUST_HIT_FREEZE_MS = 1500L;
-    private static final long GUST_MAX_FREEZE_MS = 6000L;
-
     // Ice Fan - the continuous left-click gust's hold-state, and a transient flag suppressing
     // DamageListener's vanilla-melee cancellation for its own hits
     private final Set<UUID> iceFanAbilityDamageActive;
@@ -99,7 +86,7 @@ public class IceFanHandler extends CustomItemHandler {
             return;
         }
 
-        BukkitTask task = SchedulerUtils.runTaskTimer(() -> tickGust(player), 0L, GUST_TICK_INTERVAL);
+        BukkitTask task = SchedulerUtils.runTaskTimer(() -> tickGust(player), 0L, cfg.getIceFanGustTickIntervalMs() / 50L);
         activeGustTasks.put(uuid, task);
     }
 
@@ -112,7 +99,7 @@ public class IceFanHandler extends CustomItemHandler {
         UUID uuid = player.getUniqueId();
         Long lastSwing = gustLastSwingTime.get(uuid);
         boolean stillHolding = lastSwing != null
-                && (System.currentTimeMillis() - lastSwing) <= GUST_HOLD_TIMEOUT_MS
+                && (System.currentTimeMillis() - lastSwing) <= cfg.getIceFanGustHoldTimeoutMs()
                 && player.isOnline()
                 && PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.ICE_FAN;
 
@@ -135,7 +122,7 @@ public class IceFanHandler extends CustomItemHandler {
 
         Location origin = player.getEyeLocation();
         Vector direction = origin.getDirection();
-        for (Player target : findIceFanTargets(player, origin, direction, 3)) {
+        for (Player target : findIceFanTargets(player, origin, direction, cfg.getIceFanGustTargetRange())) {
             dealIceFanDamage(player, target, cfg.getIceFanGustDamagePerTick());
             stackIceFanFreeze(target);
         }
@@ -166,7 +153,7 @@ public class IceFanHandler extends CustomItemHandler {
 
         long currentExpiry = iceFanFreezeExpiresAt.getOrDefault(uuid, now);
         long remaining = Math.max(0, currentExpiry - now);
-        long newRemaining = Math.min(remaining + GUST_HIT_FREEZE_MS, GUST_MAX_FREEZE_MS);
+        long newRemaining = Math.min(remaining + cfg.getIceFanGustHitFreezeMs(), cfg.getIceFanGustMaxFreezeMs());
         iceFanFreezeExpiresAt.put(uuid, now + newRemaining);
 
         if (!iceFanFreezePumpTasks.containsKey(uuid)) {
@@ -193,14 +180,6 @@ public class IceFanHandler extends CustomItemHandler {
             return;
         }
 
-        // Mirrors BlazeBite Glacier's setFreezeTicks(140 + frostbiteDuration): vanilla only
-        // reaches the fully-frozen visual/mechanical state (icy screen edge, shivering,
-        // freeze damage) once freezeTicks reaches getMaxFreezeTicks() (140 - the 7s it'd take
-        // standing in powder snow). Clamping our own ticksLeft (max 120, i.e. the 6s cap) at
-        // that same ceiling meant Ice Fan's freeze never actually crossed it, so the target
-        // never looked or behaved "frozen" the way a Glacier Crossbow hit does - just added
-        // freeze-bar buildup. Adding the max as a baseline forces fully-frozen immediately,
-        // same as Blazebite, for as long as our own timer says the target should stay frozen.
         int ticksLeft = (int) ((expiresAt - now) / 50L);
         target.setFreezeTicks(140 + ticksLeft);
 
@@ -240,7 +219,7 @@ public class IceFanHandler extends CustomItemHandler {
 
         Location origin = player.getEyeLocation();
         Vector direction = origin.getDirection();
-        for (Player target : findIceFanTargets(player, origin, direction, 5)) {
+        for (Player target : findIceFanTargets(player, origin, direction, cfg.getIceFanBurstTargetRange())) {
             dealIceFanDamage(player, target, cfg.getIceFanBurstDamage());
 
             Vector knockback = target.getLocation().toVector()

@@ -37,12 +37,7 @@ import java.util.UUID;
  */
 public class SoulKatanaHandler extends WeaponItemHandler {
 
-    // Soul Katana - Phantom Slice: attackers whose damage call is the flat ability strike (set
-    // only around the direct damage call so DamageListener zeroes armor/effect modifiers there)
     private final Set<UUID> phantomSliceDamageActive;
-
-    // Soul Katana - Phantom Slice dash state: a dashing player strikes on landing (after leaving
-    // the ground); the last-location map feeds the dash trail and the mark task the debuff aura
     private final Map<UUID, Boolean> soulKatanaDashing;
     private final Map<UUID, Boolean> soulKatanaLeftGround;
     private final Map<UUID, Location> soulKatanaLastLocations;

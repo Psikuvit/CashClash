@@ -50,7 +50,7 @@ public class BouncePadHandler extends CustomItemHandler {
         if (team == null) return;
 
         if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) {
-            Messages.send(player, "customitem.cannot-place-during-shopping");
+            Messages.sendPhaseRestriction(player, session, "customitem.cannot-place-during-shopping");
             return;
         }
 
@@ -75,7 +75,7 @@ public class BouncePadHandler extends CustomItemHandler {
             if (placeBlock.getType() == Material.SLIME_BLOCK) {
                 placeBlock.setType(Material.AIR);
             }
-        }, 5 * 20L);
+        }, cfg.getBouncePadLifetimeSeconds() * 20L);
     }
 
     public void handleBouncePad(Player player, Block block) {
@@ -104,8 +104,8 @@ public class BouncePadHandler extends CustomItemHandler {
             direction = player.getLocation().getDirection();
         }
         direction.setY(0).normalize();
-        // Side bounces (wall-mounted) launch much flatter than a floor pad - 80% less vertical height.
-        double upwardVelocity = wallMounted ? cfg.getBouncePadUpwardVelocity() * 0.2 : cfg.getBouncePadUpwardVelocity();
+        // Side bounces (wall-mounted) launch much flatter than a floor pad.
+        double upwardVelocity = wallMounted ? cfg.getBouncePadUpwardVelocity() * cfg.getBouncePadWallMountUpwardScale() : cfg.getBouncePadUpwardVelocity();
         Vector velocity = direction.multiply(cfg.getBouncePadForwardVelocity()).setY(upwardVelocity);
         player.setVelocity(velocity);
 

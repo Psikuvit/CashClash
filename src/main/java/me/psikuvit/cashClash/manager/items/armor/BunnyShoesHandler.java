@@ -77,7 +77,7 @@ public class BunnyShoesHandler extends ArmorSetHandler {
         if (CashClashPlugin.getInstance().getMythicItemManager().getHandler(WardenGlovesHandler.class).isRisingFuryActive(id)) return;
 
         if (isInShoppingPhase(p)) {
-            Messages.send(p, "gamestate.cannot-use-custom-armor-shopping");
+            sendShoppingPhaseRestriction(p, "gamestate.cannot-use-custom-armor-shopping");
             return;
         }
 

@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -65,6 +66,18 @@ public abstract class ArmorSetHandler {
     protected boolean isInShoppingPhase(Player player) {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         return session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted());
+    }
+
+    /**
+     * Sends the correct denial message for {@link #isInShoppingPhase} - the real
+     * "...during the shopping phase!" wording when actually shopping, or a generic
+     * "The round is over!" when the restriction is really a round-end sequence lock.
+     */
+    protected void sendShoppingPhaseRestriction(Player player, String duringShoppingKey) {
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
+        if (session != null) {
+            Messages.sendPhaseRestriction(player, session, duringShoppingKey);
+        }
     }
 
     /**

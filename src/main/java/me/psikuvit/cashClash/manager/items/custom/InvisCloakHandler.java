@@ -2,7 +2,6 @@ package me.psikuvit.cashClash.manager.items.custom;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 
-import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
@@ -63,8 +62,7 @@ public class InvisCloakHandler extends CustomItemHandler {
             invisCloakActive.add(uuid);
             invisCloakUsesRemaining.put(uuid, uses - 1);
 
-            GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-            CashClashPlayer ccp = session != null ? session.getCashClashPlayer(uuid) : null;
+            CashClashPlayer ccp = CashClashPlayer.from(player);
 
             // Hide worn armor + off-hand - a vanilla Invisibility effect alone still shows
             // equipped/held items floating in place. The main-hand item stays untouched: it's

@@ -45,10 +45,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CarlsBattleaxeHandler extends MythicItemHandler {
 
     private final Set<UUID> spinningPlayers;
-
-    // Throw ability state, keyed by thrower - tracked at handler level (not just inside the
-    // runnable closure) so cleanup()/cleanupPlayer() can tear down entities and restore the
-    // stashed axe even if the player disconnects or the game ends mid-flight.
     private final Set<UUID> carlsThrowing;
     private final Map<UUID, ItemStack> carlsStashedAxe;
     private final Map<UUID, Entity> carlsThrowCarriers;

@@ -26,10 +26,11 @@ import java.util.Set;
  */
 public class GrenadeHandler extends CustomItemHandler {
 
-    private final Set<Item> activeGrenades = new HashSet<>();
+    private final Set<Item> activeGrenades;
 
     public GrenadeHandler(CustomItemManager manager) {
         super(manager);
+        this.activeGrenades = new HashSet<>();
     }
 
     public void throwGrenade(Player player, ItemStack item, boolean isSmoke) {
@@ -39,13 +40,13 @@ public class GrenadeHandler extends CustomItemHandler {
                 player.getEyeLocation(),
                 new ItemStack(Material.FIRE_CHARGE) // Both grenades use FIRE_CHARGE for resource pack compatibility
         );
-        thrownItem.setVelocity(player.getLocation().getDirection().multiply(1.2));
+        thrownItem.setVelocity(player.getLocation().getDirection().multiply(cfg.getGrenadeThrowVelocity()));
         thrownItem.setPickupDelay(Integer.MAX_VALUE);
         activeGrenades.add(thrownItem);
 
         SoundUtils.play(player, Sound.ENTITY_SNOWBALL_THROW, 1.0f, 0.8f);
 
-        int fuseSeconds = cfg.getGrenadeFuseSeconds();
+        int fuseSeconds = isSmoke ? cfg.getSmokeGrenadeFuseSeconds() : cfg.getGrenadeFuseSeconds();
         SchedulerUtils.runTaskLater(() -> {
             if (!thrownItem.isValid()) return;
             activeGrenades.remove(thrownItem);
@@ -68,16 +69,19 @@ public class GrenadeHandler extends CustomItemHandler {
         ParticleUtils.explosion(loc);
         SoundUtils.playAt(loc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
 
-        for (Entity entity : world.getNearbyEntities(loc, 6, 6, 6)) {
+        double innerRadius = cfg.getGrenadeInnerRadius();
+        double outerRadius = cfg.getGrenadeOuterRadius();
+
+        for (Entity entity : world.getNearbyEntities(loc, outerRadius, outerRadius, outerRadius)) {
             if (!(entity instanceof Player target)) continue;
 
             double distance = target.getLocation().distance(loc);
             double damage;
 
-            if (distance <= 4) {
-                damage = 8.0; // 4 hearts
-            } else if (distance <= 6) {
-                damage = 2.0; // 1 heart
+            if (distance <= innerRadius) {
+                damage = cfg.getGrenadeInnerDamage();
+            } else if (distance <= outerRadius) {
+                damage = cfg.getGrenadeOuterDamage();
             } else {
                 continue;
             }
@@ -93,14 +97,19 @@ public class GrenadeHandler extends CustomItemHandler {
 
         SoundUtils.playAt(loc, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 0.5f);
 
+        double radius = cfg.getSmokeGrenadeRadius();
+        int poisonLevel = cfg.getSmokeGrenadePoisonLevel();
+        int poisonDurationTicks = cfg.getSmokeGrenadePoisonDurationSeconds() * 20;
+        int blindnessDurationTicks = cfg.getSmokeGrenadeBlindnessDurationSeconds() * 20;
+
         BukkitTask cloudTask = SchedulerUtils.runTaskTimer(() -> {
             ParticleUtils.campfireSmoke(loc, 20, 2.5, 1, 2.5);
 
-            for (Entity entity : world.getNearbyEntities(loc, 5, 5, 5)) {
+            for (Entity entity : world.getNearbyEntities(loc, radius, radius, radius)) {
                 if (!(entity instanceof Player target)) continue;
 
-                CashClashPlayer.applyEffect(target, PotionEffectType.POISON, 60, 0, false, true);
-                CashClashPlayer.applyEffect(target, PotionEffectType.BLINDNESS, 60, 0, false, true);
+                CashClashPlayer.applyEffect(target, PotionEffectType.POISON, poisonDurationTicks, poisonLevel, false, true);
+                CashClashPlayer.applyEffect(target, PotionEffectType.BLINDNESS, blindnessDurationTicks, 0, false, true);
             }
         }, 0L, 20L);
 
@@ -108,7 +117,7 @@ public class GrenadeHandler extends CustomItemHandler {
             if (cloudTask != null) {
                 cloudTask.cancel();
             }
-        }, 8 * 20L);
+        }, cfg.getSmokeGrenadeCloudDurationSeconds() * 20L);
     }
 
     @Override

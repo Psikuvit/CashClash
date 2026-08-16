@@ -214,7 +214,7 @@ public class MythicItemManager {
     // ==================== RANDOM LEGENDARY SELECTION ====================
 
     /**
-     * Select 5 random legendaries for a game session.
+     * Select random legendaries (per {@link ItemsConfig#getLegendsPerGame()}) for a game session.
      * Should be called when the game starts.
      */
     public void selectLegendariesForSession(GameSession session) {
@@ -225,7 +225,7 @@ public class MythicItemManager {
         List<MythicItem> allMythics = new ArrayList<>(Arrays.asList(MythicItem.values()));
         Collections.shuffle(allMythics, ThreadLocalRandom.current());
 
-        // Select first 5 (or all if less than 5 exist)
+        // Select the configured count (or all if fewer mythics exist than that)
         int count = Math.min(cfg.getLegendsPerGame(), allMythics.size());
         List<MythicItem> selectedMythics = new ArrayList<>(allMythics.subList(0, count));
 

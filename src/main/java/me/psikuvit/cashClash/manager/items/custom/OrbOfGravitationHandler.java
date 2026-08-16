@@ -49,9 +49,6 @@ import java.util.UUID;
  */
 public class OrbOfGravitationHandler extends CustomItemHandler {
 
-    // Orb of Gravitation - live orb tracking (Snowball entity UUID -> hits remaining, owner UUID,
-    // the orb's dust-trail task, and the magma-slime ItemDisplay riding it, all cancelled/removed
-    // together when the orb resolves)
     private final Map<UUID, Integer> orbHitsRemaining;
     private final Map<UUID, UUID> orbOwners;
     private final Map<UUID, BukkitTask> orbTrailTasks;
@@ -106,12 +103,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         Snowball orb = player.launchProjectile(Snowball.class);
         Vector direction = player.getLocation().getDirection();
         orb.setVelocity(direction.multiply(cfg.getOrbThrowSpeed()));
-        // No gravity - the orb should slowly cruise straight along where the player aimed
-        // instead of arcing/dropping like a thrown snowball.
         orb.setGravity(false);
-        // Hidden entirely - it stays the real projectile/collision entity, but the magma-cream
-        // ItemDisplay below is the only thing that should actually be visible flying through
-        // the air.
         orb.setVisibleByDefault(false);
 
         PDCSetter.of(orb)

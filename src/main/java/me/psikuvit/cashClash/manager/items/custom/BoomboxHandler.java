@@ -46,7 +46,7 @@ public class BoomboxHandler extends CustomItemHandler {
 
         GameSession boomboxSession = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (boomboxSession.getState() == GameState.SHOPPING || boomboxSession.isActionsRestricted()) {
-            Messages.send(player, "customitem.cannot-place-during-shopping");
+            Messages.sendPhaseRestriction(player, boomboxSession, "customitem.cannot-place-during-shopping");
             return;
         }
 

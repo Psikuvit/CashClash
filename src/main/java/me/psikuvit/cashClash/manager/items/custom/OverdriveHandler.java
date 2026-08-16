@@ -1,13 +1,12 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
-import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
-import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -32,11 +31,8 @@ import java.util.UUID;
  */
 public class OverdriveHandler extends CustomItemHandler {
 
-    // Overdrive Potion - invincibility window + pulsing aura task (speed modifier has its own
-    // duration; cancelling early only drops the invincibility, not the speed boost)
     private final Set<UUID> overdriveInvincible;
     private final Map<UUID, BukkitTask> overdrivePulseTasks;
-    private static final NamespacedKey OVERDRIVE_SPEED_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "overdrive_speed");
 
     public OverdriveHandler(CustomItemManager manager) {
         super(manager);
@@ -123,13 +119,13 @@ public class OverdriveHandler extends CustomItemHandler {
         AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speed == null) return;
         double boost = cfg.getOverdriveSpeedPercent() / 100.0;
-        speed.addModifier(new AttributeModifier(OVERDRIVE_SPEED_KEY, boost, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+        speed.addModifier(new AttributeModifier(Keys.OVERDRIVE_SPEED, boost, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
     }
 
     private void removeOverdriveSpeed(Player player) {
         AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speed == null) return;
-        speed.removeModifier(OVERDRIVE_SPEED_KEY);
+        speed.removeModifier(Keys.OVERDRIVE_SPEED);
     }
 
     @Override

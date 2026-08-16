@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -13,7 +14,6 @@ import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -41,7 +41,6 @@ public class RadiatingLotusHandler extends CustomItemHandler {
     // Radiating Lotus - charge-hold state
     private final Map<UUID, Integer> lotusChargeTicks;
     private final Map<UUID, BukkitTask> lotusChargeTasks;
-    private static final NamespacedKey LOTUS_SLOW_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "radiating_lotus_slow");
 
     public RadiatingLotusHandler(CustomItemManager manager) {
         super(manager);
@@ -103,9 +102,6 @@ public class RadiatingLotusHandler extends CustomItemHandler {
 
         // Flat knockback regardless of charge time - charging now only affects heal radius.
         double knockbackDistance = cfg.getLotusKnockbackDistance();
-        // Mostly horizontal - a tiny vertical lift keeps this from reading as a launch, but a
-        // fully flat velocity gets killed almost instantly by ground friction while grounded,
-        // which made the knockback invisible/non-functional.
         Vector back = player.getLocation().getDirection().clone().setY(0).normalize().multiply(-knockbackDistance * 0.45);
         back.setY(0.1);
         player.setVelocity(back);
@@ -159,13 +155,13 @@ public class RadiatingLotusHandler extends CustomItemHandler {
         AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speed == null) return;
         double reduction = cfg.getLotusSlowPercentWhileCharging() / 100.0;
-        speed.addModifier(new AttributeModifier(LOTUS_SLOW_KEY, -reduction, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+        speed.addModifier(new AttributeModifier(Keys.LOTUS_SLOW, -reduction, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
     }
 
     private void removeLotusSlow(Player player) {
         AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speed == null) return;
-        speed.removeModifier(LOTUS_SLOW_KEY);
+        speed.removeModifier(Keys.LOTUS_SLOW);
     }
 
     @Override
