@@ -1,7 +1,7 @@
 package me.psikuvit.cashClash.manager.player;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
@@ -15,14 +15,13 @@ import org.bukkit.entity.Player;
 import java.util.UUID;
 
 /**
- * Tracks and awards the four bonuses in the game, each a flat 2000 coins to that player only,
- * announced only to their own team: First Blood (first kill of the round), Killstreak (every
- * 4th kill in an uninterrupted streak), and Most Kills / Most Damage (that round's leader,
+ * Tracks and awards the four bonuses in the game, each a flat amount (config:
+ * {@code rounds.player-bonus-amount}) announced only to the player who earned it: First Blood
+ * (first kill of the round), Killstreak (every Nth kill in an uninterrupted streak, config:
+ * {@code rounds.killstreak-interval}), and Most Kills / Most Damage (that round's leader,
  * awarded at round end).
  */
 public class BonusManager {
-
-    private static final int KILLSTREAK_INTERVAL = 4;
 
     private final GameSession session;
 
@@ -50,8 +49,9 @@ public class BonusManager {
             awardBonus(killer, BonusType.FIRST_BLOOD);
         }
 
-        // KILLSTREAK: every 4th kill in an uninterrupted streak (streak resets to 0 on death)
-        if (killerCcp.getKillStreak() % KILLSTREAK_INTERVAL == 0) {
+        // KILLSTREAK: every Nth kill in an uninterrupted streak (streak resets to 0 on death)
+        int killstreakInterval = CashClashPlugin.getInstance().getConfigManager().getKillstreakInterval();
+        if (killerCcp.getKillStreak() % killstreakInterval == 0) {
             awardBonus(killer, BonusType.KILLSTREAK);
         }
     }
@@ -107,23 +107,10 @@ public class BonusManager {
             Messages.send(player, "bonus.announce-spacer");
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         }
-
-        // Only the earner's own team sees the broadcast
-        Team team = session.getPlayerTeam(playerUuid);
-        if (team != null) {
-            Messages.broadcastToTeam(team, "bonus.bonus-broadcast",
-                "player_name", getPlayerName(playerUuid),
-                "bonus_name", formatBonusName(bonusType));
-        }
     }
 
     private String formatBonusName(BonusType type) {
         return type.name().replace("_", " ");
-    }
-
-    private String getPlayerName(UUID uuid) {
-        Player p = Bukkit.getPlayer(uuid);
-        return p != null ? p.getName() : "Unknown";
     }
 
     private String formatCoins(long coins) {

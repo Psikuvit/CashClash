@@ -5,7 +5,6 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Location;
@@ -120,12 +119,9 @@ public class ArenaCommand extends AbstractArgCommand {
         player.teleport(target);
         
         // Remove respawn protection when using arena tp
-        GameSession currentSession = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (currentSession != null) {
-            CashClashPlayer ccp = currentSession.getCashClashPlayer(player.getUniqueId());
-            if (ccp != null) {
-                ccp.setRespawnProtection(0L);
-            }
+        CashClashPlayer ccp = CashClashPlayer.from(player);
+        if (ccp != null) {
+            ccp.setRespawnProtection(0L);
         }
         Messages.send(player, "chat.teleported", "{arena_name}", arena.getName());
     }

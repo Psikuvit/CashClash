@@ -19,8 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AfkManager {
 
-    private final Map<UUID, Long> lastActivity = new ConcurrentHashMap<>();
-    private final Set<UUID> warned = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Long> lastActivity;
+    private final Set<UUID> warned;
     private final ConfigManager configManager;
     private final GameManager gameManager;
     private final MessagesConfig messagesConfig;
@@ -29,6 +29,8 @@ public class AfkManager {
         this.configManager = configManager;
         this.gameManager = gameManager;
         this.messagesConfig = messagesConfig;
+        this.lastActivity = new ConcurrentHashMap<>();
+        this.warned = ConcurrentHashMap.newKeySet();
     }
 
     public void markActivity(Player player) {

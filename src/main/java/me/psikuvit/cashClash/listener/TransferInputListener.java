@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.TransferGUI;
@@ -30,8 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * Listener for handling transfer money input via sign GUI.
  */
 public class TransferInputListener implements Listener {
-
-    private static final double TRANSFER_FEE = 0.10; // 10% fee
 
     private final Map<UUID, PendingTransfer> pendingTransfers;
     private final Map<UUID, Block> signBlocks;
@@ -161,7 +160,7 @@ public class TransferInputListener implements Listener {
             return;
         }
 
-        long fee = (long) (amount * TRANSFER_FEE);
+        long fee = (long) (amount * CashClashPlugin.getInstance().getConfigManager().getGuiTransferFee());
         long netAmount = amount - fee;
 
         // Deduct from sender and add to receiver

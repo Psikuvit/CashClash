@@ -1,10 +1,10 @@
 package me.psikuvit.cashClash.manager.lobby;
 
 import me.psikuvit.cashClash.config.ItemsConfig;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -14,9 +14,6 @@ import org.bukkit.persistence.PersistentDataType;
  * Handles giving lobby items, clearing them, and checking for them.
  */
 public class LobbyManager {
-
-    // Namespace keys for PDC
-    public static final NamespacedKey LOBBY_ITEM_KEY = new NamespacedKey("cashclash", "lobby_item");
 
     // Lobby item types
     public enum LobbyItemType {
@@ -108,7 +105,7 @@ public class LobbyManager {
      */
     public boolean isLobbyItem(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
-        return item.getItemMeta().getPersistentDataContainer().has(LOBBY_ITEM_KEY, PersistentDataType.STRING);
+        return item.getItemMeta().getPersistentDataContainer().has(Keys.LOBBY_ITEM, PersistentDataType.STRING);
     }
 
     /**
@@ -119,7 +116,7 @@ public class LobbyManager {
      */
     public LobbyItemType getLobbyItemType(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return null;
-        String typeId = item.getItemMeta().getPersistentDataContainer().get(LOBBY_ITEM_KEY, PersistentDataType.STRING);
+        String typeId = item.getItemMeta().getPersistentDataContainer().get(Keys.LOBBY_ITEM, PersistentDataType.STRING);
         return typeId != null ? LobbyItemType.fromId(typeId) : null;
     }
 
@@ -140,7 +137,7 @@ public class LobbyManager {
                 .map(Messages::parse)
                 .toList());
 
-        tags.set(LOBBY_ITEM_KEY, PersistentDataType.STRING, LobbyItemType.STATS.getId());
+        tags.set(Keys.LOBBY_ITEM, PersistentDataType.STRING, LobbyItemType.STATS.getId());
 
         tags.apply();
         return item;
@@ -163,7 +160,7 @@ public class LobbyManager {
                 .map(Messages::parse)
                 .toList());
 
-        tags.set(LOBBY_ITEM_KEY, PersistentDataType.STRING, LobbyItemType.ARENA_SELECTOR.getId());
+        tags.set(Keys.LOBBY_ITEM, PersistentDataType.STRING, LobbyItemType.ARENA_SELECTOR.getId());
 
         tags.apply();
         return item;
@@ -186,7 +183,7 @@ public class LobbyManager {
                 .map(Messages::parse)
                 .toList());
 
-        tags.set(LOBBY_ITEM_KEY, PersistentDataType.STRING, LobbyItemType.LAYOUT_CONFIGURATOR.getId());
+        tags.set(Keys.LOBBY_ITEM, PersistentDataType.STRING, LobbyItemType.LAYOUT_CONFIGURATOR.getId());
 
         tags.apply();
         return item;

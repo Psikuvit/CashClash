@@ -369,6 +369,11 @@ public class InteractListener implements Listener {
         GameSession session = gameManager.getPlayerSession(player);
         if (session == null) return;
 
+        if (session.isSequenceLocked() || session.isActionsRestricted()) {
+            event.setCancelled(true);
+            return;
+        }
+
         Team team = session.getPlayerTeam(player);
         if (team == null) return;
 
@@ -655,8 +660,9 @@ public class InteractListener implements Listener {
      * @return true if the ability must not run
      */
     private boolean blockCustomWeaponInShoppingPhase(Player player) {
-        if (!isInShoppingPhase(player)) return false;
-        Messages.send(player, "gamestate.cannot-use-custom-weapons-shopping");
+        GameSession session = gameManager.getPlayerSession(player);
+        if (session == null || !(session.getState() == GameState.SHOPPING || session.isActionsRestricted())) return false;
+        Messages.sendPhaseRestriction(player, session, "gamestate.cannot-use-custom-weapons-shopping");
         return true;
     }
 
@@ -680,9 +686,10 @@ public class InteractListener implements Listener {
 
         if (!action.isRightClick()) return false;
 
-        if (isInShoppingPhase(player)) {
+        GameSession mythicSession = gameManager.getPlayerSession(player);
+        if (mythicSession != null && (mythicSession.getState() == GameState.SHOPPING || mythicSession.isActionsRestricted())) {
             event.setCancelled(true);
-            Messages.send(player, "gamestate.cannot-use-abilities-shopping");
+            Messages.sendPhaseRestriction(player, mythicSession, "gamestate.cannot-use-abilities-shopping");
             return true;
         }
 
@@ -822,9 +829,7 @@ public class InteractListener implements Listener {
     }
 
     private boolean isRespawnProtected(Player player) {
-        GameSession session = gameManager.getPlayerSession(player);
-        if (session == null) return false;
-        CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
+        CashClashPlayer ccp = CashClashPlayer.from(player);
         return ccp != null && ccp.isRespawnProtected();
     }
 

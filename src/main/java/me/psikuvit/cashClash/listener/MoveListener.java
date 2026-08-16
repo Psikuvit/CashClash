@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -80,15 +81,12 @@ public class MoveListener implements Listener {
         double fracX = loc.getX() - currentBlock.getX();
         double fracZ = loc.getZ() - currentBlock.getZ();
 
-        checkWallBouncePad(player, currentBlock, BlockFace.WEST, fracX < TOUCH_THRESHOLD);
-        checkWallBouncePad(player, currentBlock, BlockFace.EAST, fracX > 1 - TOUCH_THRESHOLD);
-        checkWallBouncePad(player, currentBlock, BlockFace.NORTH, fracZ < TOUCH_THRESHOLD);
-        checkWallBouncePad(player, currentBlock, BlockFace.SOUTH, fracZ > 1 - TOUCH_THRESHOLD);
+        double touchThreshold = CashClashPlugin.getInstance().getItemsConfig().getBouncePadWallTouchThreshold();
+        checkWallBouncePad(player, currentBlock, BlockFace.WEST, fracX < touchThreshold);
+        checkWallBouncePad(player, currentBlock, BlockFace.EAST, fracX > 1 - touchThreshold);
+        checkWallBouncePad(player, currentBlock, BlockFace.NORTH, fracZ < touchThreshold);
+        checkWallBouncePad(player, currentBlock, BlockFace.SOUTH, fracZ > 1 - touchThreshold);
     }
-
-    // How close (in blocks, 0-1 within the current block) a player must be to a shared
-    // face before a wall-mounted bounce pad on the other side is considered touched.
-    private static final double TOUCH_THRESHOLD = 0.35;
 
     private void checkWallBouncePad(Player player, Block currentBlock, BlockFace face, boolean nearFace) {
         if (!nearFace) return;
