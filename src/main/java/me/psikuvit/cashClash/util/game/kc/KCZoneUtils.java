@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.game.kc;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.gamemode.impl.KCZone;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -46,13 +47,13 @@ public final class KCZoneUtils {
     // a countdown number - distinct from the -1 "not yet displayed" default and any real second count.
     private static final int CONTESTED_SENTINEL = -2;
 
-    private static final double BEAM_HEIGHT = 6.0;
     private static final int BEAM_POINTS_PER_BLOCK = 8;
     private static final float BEAM_PARTICLE_SIZE = 2.0f;
     private static final int BEAM_PARTICLES_PER_POINT = 3;
     // "Lasting" for the beam is simulated by redrawing it a few times in quick succession -
     // DUST particles are otherwise a single-tick burst with no built-in lifetime control.
-    private static final int BEAM_DURATION_TICKS = 10; // 0.5s
+    // Height, y-offset, and total duration are configurable (gamemodes.kill-confirm.beam-*);
+    // the refresh cadence itself isn't (not requested).
     private static final int BEAM_REFRESH_INTERVAL_TICKS = 2;
 
     private KCZoneUtils() {
@@ -95,14 +96,14 @@ public final class KCZoneUtils {
         Location iconLoc = flatCenter.clone().add(0, 1.2, 0);
         long pendingSeconds = pendingSecondsRemaining(zone, System.currentTimeMillis());
         Entity icon = switch (zone.getKind()) {
-            case NAMETAG -> spawnNametag(iconLoc, pendingSeconds);
+            case NAMETAG -> spawnNametag(iconLoc);
             case MONEY -> spawnIconItem(iconLoc, Material.EMERALD);
             case HEART -> spawnIconItem(iconLoc, Material.TOTEM_OF_UNDYING);
         };
         zone.setIconDisplay(icon);
 
         Location timerLoc = flatCenter.clone().add(0, timerYOffsetFor(zone.getKind()), 0);
-        zone.setTimerDisplay(spawnTimerDisplay(timerLoc, pendingSeconds));
+        zone.setTimerDisplay(spawnTimerDisplay(timerLoc, pendingSeconds, zone.getKind()));
 
         SoundUtils.playAt(flatCenter, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
     }
@@ -217,9 +218,9 @@ public final class KCZoneUtils {
         return kind == KCZone.ZoneKind.NAMETAG ? 1.7 : 2.1;
     }
 
-    private static TextDisplay spawnNametag(Location iconLoc, long pendingSeconds) {
+    private static TextDisplay spawnNametag(Location iconLoc) {
         return iconLoc.getWorld().spawn(iconLoc, TextDisplay.class, display -> {
-            display.text(Messages.parse(pendingActivationText(pendingSeconds)));
+            display.text(Messages.parse(pendingActivationText()));
             display.setBillboard(Display.Billboard.CENTER);
             display.setBrightness(PENDING_BRIGHTNESS);
             display.setSeeThrough(true);
@@ -227,60 +228,71 @@ public final class KCZoneUtils {
         });
     }
 
-    private static String pendingActivationText(long pendingSeconds) {
-        return "<gray><bold>Activating... " + pendingSeconds + "s</bold></gray>";
+    /**
+     * "Activating..." label for the NAMETAG icon - no seconds count here, since the timer
+     * display above it already shows the countdown; showing both duplicated the number.
+     */
+    private static String pendingActivationText() {
+        return "<gray><bold>Activating...</bold></gray>";
     }
 
     /**
-     * Plain "Ns" pending text (no "Activating..." wording) for the timer display, which sits
-     * above the icon and doubles as a countdown once the zone lights up.
+     * Pending countdown text for the timer display. NAMETAG zones already have the
+     * "Activating..." label on their icon below, so the timer stays a plain "Ns". MONEY/HEART
+     * zones use an item icon with no text of its own, so their timer carries the "Activating..."
+     * label itself.
      */
-    private static String pendingTimerText(long pendingSeconds) {
-        return "<gray><bold>" + pendingSeconds + "s</bold></gray>";
+    private static String pendingTimerText(long pendingSeconds, KCZone.ZoneKind kind) {
+        String prefix = kind == KCZone.ZoneKind.NAMETAG ? "" : "Activating... ";
+        return "<gray><bold>" + prefix + pendingSeconds + "s</bold></gray>";
     }
 
     /**
      * Refresh a zone's pending-activation text while it's still in its activation delay - the
      * NAMETAG icon (the only icon that's text-capable; MONEY/HEART use an item icon) shows
-     * "Activating... Ns", while the timer display above it (every zone kind has one) shows a
-     * plain "Ns" countdown.
+     * "Activating...", while the timer display above it (every zone kind has one) shows the
+     * countdown, prefixed with "Activating..." itself for MONEY/HEART zones.
      */
     public static void updatePendingActivationDisplay(KCZone zone, long now) {
         long pendingSeconds = pendingSecondsRemaining(zone, now);
 
         if (zone.getIconDisplay() instanceof TextDisplay nametag && !nametag.isDead()) {
-            nametag.text(Messages.parse(pendingActivationText(pendingSeconds)));
+            nametag.text(Messages.parse(pendingActivationText()));
         }
 
         TextDisplay timer = zone.getTimerDisplay();
         if (timer != null && !timer.isDead()) {
-            timer.text(Messages.parse(pendingTimerText(pendingSeconds)));
+            timer.text(Messages.parse(pendingTimerText(pendingSeconds, zone.getKind())));
         }
     }
 
     /**
      * A beam pulsing straight up from a zone, colored to match its kind, shown once when it
      * activates and again when its countdown timer reaches the halfway point. Redrawn every
-     * {@value #BEAM_REFRESH_INTERVAL_TICKS} ticks for {@value #BEAM_DURATION_TICKS} ticks
-     * (0.5s) so the pulse reads as a lasting beam rather than an instant flash.
+     * {@value #BEAM_REFRESH_INTERVAL_TICKS} ticks for
+     * {@code gamemodes.kill-confirm.beam-duration-ticks} ticks so the pulse reads as a lasting
+     * beam rather than an instant flash.
      */
     public static void spawnActivationBeam(KCZone zone) {
         Location center = zone.getCenter();
         if (center == null || center.getWorld() == null) return;
 
+        var cfg = CashClashPlugin.getInstance().getConfigManager();
         Color color = glowColorFor(zone.getKind());
-        Location base = center.clone().add(0, 0.2, 0);
+        Location base = center.clone().add(0, cfg.getKCBeamYOffset(), 0);
+        double beamHeight = cfg.getKCBeamHeight();
+        int beamDurationTicks = cfg.getKCBeamDurationTicks();
 
-        for (int delay = 0; delay < BEAM_DURATION_TICKS; delay += BEAM_REFRESH_INTERVAL_TICKS) {
+        for (int delay = 0; delay < beamDurationTicks; delay += BEAM_REFRESH_INTERVAL_TICKS) {
             SchedulerUtils.runTaskLater(() ->
-                    ParticleUtils.verticalBeam(base, color, BEAM_HEIGHT, BEAM_POINTS_PER_BLOCK, BEAM_PARTICLE_SIZE, BEAM_PARTICLES_PER_POINT),
+                    ParticleUtils.verticalBeam(base, color, beamHeight, BEAM_POINTS_PER_BLOCK, BEAM_PARTICLE_SIZE, BEAM_PARTICLES_PER_POINT),
                     delay);
         }
     }
 
-    private static TextDisplay spawnTimerDisplay(Location loc, long pendingSeconds) {
+    private static TextDisplay spawnTimerDisplay(Location loc, long pendingSeconds, KCZone.ZoneKind kind) {
         return loc.getWorld().spawn(loc, TextDisplay.class, display -> {
-            display.text(Messages.parse(pendingTimerText(pendingSeconds)));
+            display.text(Messages.parse(pendingTimerText(pendingSeconds, kind)));
             display.setBillboard(Display.Billboard.CENTER);
             display.setBrightness(PENDING_BRIGHTNESS);
             display.setSeeThrough(true);

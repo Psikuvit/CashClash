@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.game.kc;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -14,13 +15,6 @@ import org.bukkit.entity.Player;
  */
 public final class KCZoneValidator {
 
-    private static final double HALF_WIDTH = 1.5;
-    private static final double VERTICAL_TOLERANCE = 2.0;
-
-    // How far outward (in blocks) to search for open ground before giving up and spawning
-    // the zone at the original death location anyway.
-    private static final int MAX_SEARCH_RADIUS = 8;
-
     private KCZoneValidator() {
         throw new AssertionError("Utility class");
     }
@@ -34,15 +28,17 @@ public final class KCZoneValidator {
         double dz = Math.abs(playerLoc.getZ() - zoneCenter.getZ());
         double dy = Math.abs(playerLoc.getY() - zoneCenter.getY());
 
-        return dx <= HALF_WIDTH && dz <= HALF_WIDTH && dy <= VERTICAL_TOLERANCE;
+        double halfWidth = CashClashPlugin.getInstance().getConfigManager().getKCZoneHalfWidth();
+        double verticalTolerance = CashClashPlugin.getInstance().getConfigManager().getKCZoneVerticalTolerance();
+        return dx <= halfWidth && dz <= halfWidth && dy <= verticalTolerance;
     }
 
     /**
      * If a death location's 3x3 footprint is embedded in solid blocks (e.g. the player died
      * pressed against a wall), search outward ring by ring on the same Y level for the nearest
      * spot with a clear 3x3 footprint and return that instead. Returns the original location
-     * unchanged if it's already clear, or if no open spot is found within
-     * {@value #MAX_SEARCH_RADIUS} blocks.
+     * unchanged if it's already clear, or if no open spot is found within the configured
+     * {@code gamemodes.kill-confirm.zone-safe-spawn-search-radius}.
      */
     public static Location findSafeCenter(Location deathLoc) {
         if (deathLoc == null || deathLoc.getWorld() == null) return deathLoc;
@@ -53,7 +49,8 @@ public final class KCZoneValidator {
         int baseY = deathLoc.getBlockY();
         int baseZ = deathLoc.getBlockZ();
 
-        for (int radius = 1; radius <= MAX_SEARCH_RADIUS; radius++) {
+        int maxSearchRadius = CashClashPlugin.getInstance().getConfigManager().getKCZoneSafeSpawnSearchRadius();
+        for (int radius = 1; radius <= maxSearchRadius; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
