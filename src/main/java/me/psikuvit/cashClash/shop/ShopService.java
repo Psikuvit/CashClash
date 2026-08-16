@@ -47,7 +47,7 @@ public class ShopService {
     }
 
     public void processPurchase(Player player, Purchasable item, int quantity, long totalPrice) {
-        CashClashPlayer ccp = getCashClashPlayer(player);
+        CashClashPlayer ccp = CashClashPlayer.from(player);
         if (ccp == null) return;
 
         // Block fully-capped utility items before coins ever get deducted, so a blocked
@@ -107,7 +107,7 @@ public class ShopService {
     }
 
     public void refund(Player player, long amount) {
-        CashClashPlayer ccp = getCashClashPlayer(player);
+        CashClashPlayer ccp = CashClashPlayer.from(player);
         if (ccp != null) {
             ccp.addCoinsSilently(amount);
             Messages.send(player, "shop.refunded",
@@ -122,7 +122,7 @@ public class ShopService {
     }
 
     public void processRefund(Player player, PurchaseRecord record) {
-        CashClashPlayer ccp = getCashClashPlayer(player);
+        CashClashPlayer ccp = CashClashPlayer.from(player);
         if (ccp == null) return;
 
         // Remove the purchase record
@@ -260,7 +260,7 @@ public class ShopService {
      * @return True if the player can afford the purchase, false otherwise.
      */
     public boolean canAfford(Player player, long cost) {
-        CashClashPlayer ccp = getCashClashPlayer(player);
+        CashClashPlayer ccp = CashClashPlayer.from(player);
         return ccp != null && ccp.getCoins() >= cost;
     }
 
@@ -345,9 +345,6 @@ public class ShopService {
                     // a rune only ever affects its manually linked, currently active target
                     // (see RuneManager), same as every other purchase path.
 
-                    Messages.send(player, "shop.purchased-set",
-                        "item_name", customArmor.getArmorSet().getDisplayName(),
-                        "price", String.format("%,d", setPrice));
                     SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
                 } else {
                     // Individual custom armor piece (Bunny Shoes, Bullseye Pants, Guardian's Vest)
@@ -477,7 +474,7 @@ public class ShopService {
     }
 
     public void deductCoins(Player player, long cost) {
-        CashClashPlayer ccp = getCashClashPlayer(player);
+        CashClashPlayer ccp = CashClashPlayer.from(player);
         if (ccp != null) {
             ccp.deductCoins(cost);
             Messages.debug(player, Messages.DebugCategory.SHOP, "Coins deducted: -" + cost + " (new balance=" + ccp.getCoins() + ")");
@@ -485,10 +482,5 @@ public class ShopService {
                 "cost", String.format("%,d", cost));
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
         }
-    }
-
-    private CashClashPlayer getCashClashPlayer(Player player) {
-        GameSession session = gameManager.getPlayerSession(player);
-        return session != null ? session.getCashClashPlayer(player.getUniqueId()) : null;
     }
 }

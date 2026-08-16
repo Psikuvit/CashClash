@@ -63,11 +63,6 @@ public class StatsGUI extends AbstractGui {
         setButton(24, createLossesButton());
         setButton(25, createWinRateButton());
 
-        // Economy stats section
-        setButton(30, createCoinsEarnedButton());
-        setButton(31, createCoinsInvestedButton());
-        setButton(32, createProfitButton());
-
         // Close button
         setCloseButton(40);
     }
@@ -140,43 +135,6 @@ public class StatsGUI extends AbstractGui {
         return GuiButton.of(Material.GOLDEN_APPLE, Messages.parse("<yellow><bold>Win Rate:</bold> <white>" + winRate + "%</white></yellow>"), lore);
     }
 
-    private GuiButton createCoinsEarnedButton() {
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.empty());
-        lore.add(Messages.parse("<gray>Total coins earned from</gray>"));
-        lore.add(Messages.parse("<gray>kills and objectives.</gray>"));
-
-        return GuiButton.of(Material.GOLD_INGOT,
-                Messages.parse("<gold><bold>Coins Earned:</bold> <white>$" + formatNumber(data.getTotalCoinsEarned()) + "</white></gold>"),
-                lore);
-    }
-
-    private GuiButton createCoinsInvestedButton() {
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.empty());
-        lore.add(Messages.parse("<gray>Total coins spent on</gray>"));
-        lore.add(Messages.parse("<gray>items and upgrades.</gray>"));
-
-        return GuiButton.of(Material.GOLD_NUGGET,
-                Messages.parse("<yellow><bold>Coins Invested:</bold> <white>$" + formatNumber(data.getTotalCoinsInvested()) + "</white></yellow>"),
-                lore);
-    }
-
-    private GuiButton createProfitButton() {
-        long profit = data.getTotalCoinsEarned() - data.getTotalCoinsInvested();
-        String color = profit >= 0 ? "<green>" : "<red>";
-        String sign = profit >= 0 ? "+" : "";
-
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.empty());
-        lore.add(Messages.parse("<gray>Net profit/loss from</gray>"));
-        lore.add(Messages.parse("<gray>all your investments.</gray>"));
-
-        return GuiButton.of(Material.DIAMOND,
-                Messages.parse(color + "<bold>Profit:</bold> <white>" + sign + "$" + formatNumber(profit) + "</white>" + color.replace("<", "</")),
-                lore);
-    }
-
     // ==================== UTILITY METHODS ====================
 
     private String calculateKDR() {
@@ -194,10 +152,6 @@ public class StatsGUI extends AbstractGui {
         }
         double winRate = ((double) data.getWins() / totalGames) * 100;
         return String.format("%.1f", winRate);
-    }
-
-    private String formatNumber(long number) {
-        return String.format("%,d", number);
     }
 }
 

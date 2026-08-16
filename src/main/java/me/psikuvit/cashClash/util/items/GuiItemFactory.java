@@ -287,7 +287,7 @@ public final class GuiItemFactory {
             builder.configLore(loreLinesFromConfig);
         }
 
-        if (type.hasLimit()) {
+        if (type.hasLimit() && !type.hideLimitInLore()) {
             builder.purchaseLimit(type.getMaxPurchase());
         }
 

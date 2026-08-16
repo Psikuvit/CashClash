@@ -17,7 +17,6 @@ import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Messages;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
@@ -79,47 +78,61 @@ public class ShopGUI extends AbstractGui {
         return GuiButton.of(icon).onClick(p -> openCategory(ShopCategory.INVESTMENTS));
     }
 
-    private void addMythicItems() {
-        int[] legendSlots = {38, 39, 40, 41, 42};
-        String[] legendColors = {"RED", "ORANGE", "YELLOW", "GREEN", "BLUE"};
+    private static final int MIDDLE_MYTHIC_SLOT = 40;
+    private static final int[] MYTHIC_SLOTS = {38, 39, 41, 42};
+    private static final int FILLER_ROW_OFFSET = 9;
+    private static final Material[] MYTHIC_PANE_COLORS = {
+            Material.BLUE_STAINED_GLASS_PANE,
+            Material.YELLOW_STAINED_GLASS_PANE,
+            Material.ORANGE_STAINED_GLASS_PANE,
+            Material.LIME_STAINED_GLASS_PANE
+    };
 
+    /**
+     * Round 1 keeps the locked-mythics look (black glass under every slot, no items). Rounds 2-7
+     * show a distinct colored pane under each of the 4 purchasable mythic slots, separated by the
+     * always-black, always-empty middle slot - which mythic lands in which slot is still random.
+     */
+    private void addMythicItems() {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
         if (session == null) {
             return;
         }
 
-        if (session.getCurrentRound() == 1) {
-            // Round 1 - show locked mythics
-            for (int slot : legendSlots) {
-                setItem(slot, ItemStack.empty());
-                setItem(slot + 9, createPane(Material.BLACK_STAINED_GLASS_PANE));
+        if (session.getCurrentRound() > 1) {
+            List<MythicItem> availableMythics = CashClashPlugin.getInstance().getMythicItemManager().getAvailableMythics(session);
+            UUID playerUuid = viewer.getUniqueId();
+            boolean playerHasMythic = CashClashPlugin.getInstance().getMythicItemManager().hasPlayerPurchasedMythic(session, playerUuid);
+            MythicItem ownedMythic = CashClashPlugin.getInstance().getMythicItemManager().getPlayerMythic(session, playerUuid);
+
+            for (int i = 0; i < availableMythics.size() && i < MYTHIC_SLOTS.length; i++) {
+                MythicItem mythic = availableMythics.get(i);
+                boolean mythicTaken = CashClashPlugin.getInstance().getMythicItemManager().isUnavailable(session, mythic);
+                UUID ownerUuid = CashClashPlugin.getInstance().getMythicItemManager().getMythicOwner(session, mythic);
+
+                ItemStack mythicItem = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
+                setButton(MYTHIC_SLOTS[i], GuiButton.of(mythicItem)
+                        .onClick(p -> MythicCategoryGui.handleMythicPurchase(p, mythic, this)));
             }
-            return;
         }
 
-        // Round 2+ - show available mythics
-        List<MythicItem> availableMythics = CashClashPlugin.getInstance().getMythicItemManager().getAvailableMythics(session);
-        UUID playerUuid = viewer.getUniqueId();
-        boolean playerHasMythic = CashClashPlugin.getInstance().getMythicItemManager().hasPlayerPurchasedMythic(session, playerUuid);
-        MythicItem ownedMythic = CashClashPlugin.getInstance().getMythicItemManager().getPlayerMythic(session, playerUuid);
-
-        for (int i = 0; i < availableMythics.size() && i < legendSlots.length; i++) {
-            MythicItem mythic = availableMythics.get(i);
-            boolean mythicTaken = CashClashPlugin.getInstance().getMythicItemManager().isUnavailable(session, mythic);
-            UUID ownerUuid = CashClashPlugin.getInstance().getMythicItemManager().getMythicOwner(session, mythic);
-
-            ItemStack mythicItem = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
-            setButton(legendSlots[i], GuiButton.of(mythicItem)
-                    .onClick(p -> MythicCategoryGui.handleMythicPurchase(p, mythic, this)));
-
-            String material = legendColors[i] + "_STAINED_GLASS_PANE";
-            ItemStack itemStack = new ItemStack(Material.valueOf(material));
-            ItemMeta itemMeta = itemStack.getItemMeta();
-            itemMeta.displayName(Component.empty());
-            itemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-            itemStack.setItemMeta(itemMeta);
-            setItem(legendSlots[i] + 9, itemStack);
+        // Round 1: every candidate slot stays empty/locked with black filler, including the
+        // middle separator's top slot (left as empty rather than a pane). Round 2+: each
+        // candidate slot gets its own colored filler and the middle separator is black on top too.
+        // Set unconditionally/last so nothing above can leave a slot uncovered.
+        for (int i = 0; i < MYTHIC_SLOTS.length; i++) {
+            int slot = MYTHIC_SLOTS[i];
+            if (session.getCurrentRound() == 1) {
+                setItem(slot, ItemStack.empty());
+                setItem(slot + FILLER_ROW_OFFSET, createPane(Material.BLACK_STAINED_GLASS_PANE));
+            } else {
+                setItem(slot + FILLER_ROW_OFFSET, createPane(MYTHIC_PANE_COLORS[i]));
+            }
         }
+        setItem(MIDDLE_MYTHIC_SLOT, session.getCurrentRound() == 1
+                ? ItemStack.empty()
+                : createPane(Material.BLACK_STAINED_GLASS_PANE));
+        setItem(MIDDLE_MYTHIC_SLOT + FILLER_ROW_OFFSET, createPane(Material.BLACK_STAINED_GLASS_PANE));
     }
 
     /**
@@ -147,9 +160,7 @@ public class ShopGUI extends AbstractGui {
     }
 
     private long getPlayerCoins() {
-        var session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
-        if (session == null) return 0;
-        CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
+        CashClashPlayer ccp = CashClashPlayer.from(viewer);
         return ccp != null ? ccp.getCoins() : 0;
     }
 

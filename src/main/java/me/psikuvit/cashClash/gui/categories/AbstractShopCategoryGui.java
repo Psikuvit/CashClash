@@ -69,9 +69,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Get the player's current coin balance.
      */
     protected long getPlayerCoins() {
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
-        if (session == null) return 0;
-        CashClashPlayer ccp = session.getCashClashPlayer(viewer.getUniqueId());
+        CashClashPlayer ccp = getCashClashPlayer();
         return ccp != null ? ccp.getCoins() : 0;
     }
 
@@ -79,9 +77,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Get the CashClashPlayer for the viewer.
      */
     protected CashClashPlayer getCashClashPlayer() {
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
-        if (session == null) return null;
-        return session.getCashClashPlayer(viewer.getUniqueId());
+        return CashClashPlayer.from(viewer);
     }
 
     /**
@@ -174,7 +170,6 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
             return;
         }
 
-        ccp.popLastPurchase();
         CashClashPlugin.getInstance().getShopService().processRefund(viewer, rec);
         refresh();
     }

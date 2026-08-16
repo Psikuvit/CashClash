@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
 import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.player.RunePurchaseRecord;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.util.Keys;
@@ -122,7 +123,7 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
                 EnchantEntry runeEnchant = PDCDetection.getRune(item);
 
                 if (runeEnchant == ee) {
-                    oldRune = item;
+                    oldRune = item.clone();
                     break;
                 }
             }
@@ -145,8 +146,45 @@ public class EnchantsCategoryGui extends AbstractShopCategoryGui {
         viewer.getInventory().addItem(rune);
         ccp.setOwnedEnchantLevel(ee, nextLevel);
         CashClashPlugin.getInstance().getShopService().deductCoins(viewer, price);
+        ccp.addRunePurchase(new RunePurchaseRecord(ee, nextLevel, currentLevel, price, oldRune, sess.getCurrentRound()));
         Messages.send(viewer, "shop.enchant-purchased",
                 "enchant_name", ee.getDisplayName(), "level", String.valueOf(nextLevel), "price", String.format("%,d", price));
+        refresh();
+    }
+
+    @Override
+    protected void handleUndoPurchase() {
+        GameSession sess = getSession();
+        if (sess == null) {
+            Messages.send(viewer, "generic.player-not-in-game");
+            viewer.closeInventory();
+            return;
+        }
+
+        CashClashPlayer ccp = getCashClashPlayer();
+        if (ccp == null) return;
+
+        RunePurchaseRecord rec = ccp.peekLastRunePurchase();
+        if (rec == null || rec.round() != sess.getCurrentRound()) {
+            Messages.send(viewer, "shop.no-purchase-undo");
+            return;
+        }
+
+        ccp.popLastRunePurchase();
+        CashClashPlugin.getInstance().getShopService().refund(viewer, rec.price());
+
+        ItemUtils.removeRune(viewer, rec.enchant());
+        if (rec.previousLevel() > 0 && rec.previousRune() != null) {
+            ccp.setOwnedEnchantLevel(rec.enchant(), rec.previousLevel());
+            if (viewer.getInventory().firstEmpty() != -1) {
+                viewer.getInventory().addItem(rec.previousRune());
+            }
+        } else {
+            ccp.setOwnedEnchantLevel(rec.enchant(), 0);
+        }
+
+        Messages.send(viewer, "shop.purchase-undone", "amount", String.format("%,d", rec.price()));
+        SoundUtils.play(viewer, Sound.ENTITY_ITEM_PICKUP, 1.0f, 0.5f);
         refresh();
     }
 }

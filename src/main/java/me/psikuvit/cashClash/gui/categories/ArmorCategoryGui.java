@@ -359,7 +359,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         // Create a single set purchase record with all replaced items
         ccp.addPurchase(new PurchaseRecord(setPieces.getFirst(), totalPrice, round, replacedSetItems, setPieces));
 
-        sendSetPurchaseSuccessMessage(player, armorSet, totalPrice);
+        SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
     }
 
     /**
@@ -400,22 +400,6 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         }
 
         return replacedSetItems;
-    }
-
-    /**
-     * Sends the success message and plays sound for a successful armor set purchase.
-     *
-     * @param player     The player who made the purchase
-     * @param armorSet   The armor set that was purchased
-     * @param totalPrice The total price paid
-     */
-    private void sendSetPurchaseSuccessMessage(Player player, CustomArmorItem.ArmorSet armorSet, long totalPrice) {
-        Messages.send(player, "");
-        Messages.send(player, "shop.set-purchased-title");
-        Messages.send(player, "shop.set-purchased-name", "item_name", armorSet.getDisplayName());
-        Messages.send(player, "shop.set-purchased-cost", "price", String.format("%,d", totalPrice));
-        Messages.send(player, "");
-        SoundUtils.play(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 1.0f);
     }
 
 }
