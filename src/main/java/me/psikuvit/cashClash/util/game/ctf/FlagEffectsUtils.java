@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.game.ctf;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.gamemode.impl.FlagState;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -21,22 +22,19 @@ import java.util.function.Supplier;
  */
 public class FlagEffectsUtils {
 
-    private static final int GLOW_INTERVAL_TICKS = 100; // 5 seconds
-    private static final int GLOW_DURATION_TICKS = 10;
-    private static final int GLOW_AMPLIFIER = 0;
-
     private FlagEffectsUtils() {
         throw new AssertionError("Utility class");
     }
 
     /**
-     * Start a task that applies glow effect to flag carriers every 5 seconds
+     * Start a task that periodically applies a glow effect to flag carriers.
      *
      * @param flagStatesSupplier Supplier for current flag states
      * @return The BukkitTask managing the glow effect
      */
     public static BukkitTask startCarrierGlowEffectTask(Supplier<Map<TeamColor, FlagState>> flagStatesSupplier) {
-        return SchedulerUtils.runTaskTimer(() -> applyGlowToActiveCarriers(flagStatesSupplier.get()), 0, GLOW_INTERVAL_TICKS);
+        int intervalTicks = CashClashPlugin.getInstance().getConfigManager().getCTFCarrierGlowIntervalTicks();
+        return SchedulerUtils.runTaskTimer(() -> applyGlowToActiveCarriers(flagStatesSupplier.get()), 0, intervalTicks);
     }
 
     /**
@@ -59,7 +57,9 @@ public class FlagEffectsUtils {
         if (flag != null && flag.isHeld()) {
             Player carrier = Bukkit.getPlayer(flag.holder());
             if (carrier != null && carrier.isOnline()) {
-                CashClashPlayer.applyEffect(carrier, PotionEffectType.GLOWING, GLOW_DURATION_TICKS, GLOW_AMPLIFIER, false, false);
+                int durationTicks = CashClashPlugin.getInstance().getConfigManager().getCTFCarrierGlowDurationTicks();
+                int amplifier = CashClashPlugin.getInstance().getConfigManager().getCTFCarrierGlowAmplifier();
+                CashClashPlayer.applyEffect(carrier, PotionEffectType.GLOWING, durationTicks, amplifier, false, false);
             }
         }
     }

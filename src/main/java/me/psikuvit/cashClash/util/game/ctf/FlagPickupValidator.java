@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.game.ctf;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.util.LocationUtils;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -9,9 +10,6 @@ import org.bukkit.entity.Player;
  * Encapsulates positioning and state checking logic.
  */
 public class FlagPickupValidator {
-
-    private static final double CIRCLE_RADIUS = 1.5;
-    private static final double SCORE_ZONE_RADIUS = 1.5;
 
     private FlagPickupValidator() {
         throw new AssertionError("Utility class");
@@ -26,7 +24,7 @@ public class FlagPickupValidator {
      */
     public static boolean isPlayerNearFlag(Player player, Location flagLocation) {
         if (flagLocation == null) return false;
-        return LocationUtils.isPlayerNearLocation(player.getLocation(), flagLocation, CIRCLE_RADIUS);
+        return LocationUtils.isPlayerNearLocation(player.getLocation(), flagLocation, getPickupCircleRadius(), getMaxHeightDifference());
     }
 
     /**
@@ -37,7 +35,7 @@ public class FlagPickupValidator {
      * @return True if the player is in the scoring zone
      */
     public static boolean isPlayerInScoringZone(Player player, Location bannerLocation) {
-        return LocationUtils.isPlayerNearLocation(player.getLocation(), bannerLocation, SCORE_ZONE_RADIUS);
+        return LocationUtils.isPlayerNearLocation(player.getLocation(), bannerLocation, getScoringZoneRadius(), getMaxHeightDifference());
     }
 
     /**
@@ -46,7 +44,7 @@ public class FlagPickupValidator {
      * @return The circle radius in blocks
      */
     public static double getPickupCircleRadius() {
-        return CIRCLE_RADIUS;
+        return CashClashPlugin.getInstance().getConfigManager().getCTFPickupCircleRadius();
     }
 
     /**
@@ -55,7 +53,11 @@ public class FlagPickupValidator {
      * @return The score zone radius in blocks
      */
     public static double getScoringZoneRadius() {
-        return SCORE_ZONE_RADIUS;
+        return CashClashPlugin.getInstance().getConfigManager().getCTFScoreZoneRadius();
+    }
+
+    private static double getMaxHeightDifference() {
+        return CashClashPlugin.getInstance().getConfigManager().getCTFMaxHeightDifference();
     }
 }
 

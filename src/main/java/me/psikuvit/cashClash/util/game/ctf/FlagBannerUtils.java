@@ -24,6 +24,8 @@ public class FlagBannerUtils {
 
     private static final double BANNER_ORBIT_RADIUS = 2.0;
     private static final double BANNER_ANGULAR_SPEED = 0.03;
+    private static final double CARRIED_BANNER_HEIGHT = 2.0;
+    private static final double CARRIED_BANNER_BEHIND_DISTANCE = 0.5;
 
     private FlagBannerUtils() {
         throw new AssertionError("Utility class");
@@ -136,9 +138,9 @@ public class FlagBannerUtils {
                 return;
             }
 
-            // Position banner directly on player's head and rotate with player
+            // Position banner behind the carrying player's head and rotate with player
             Location playerLoc = player.getLocation();
-            Location bannerLoc = playerLoc.clone().add(0, 2, 0);
+            Location bannerLoc = LocationUtils.getPlayerHeadLoc(playerLoc, CARRIED_BANNER_HEIGHT, CARRIED_BANNER_BEHIND_DISTANCE);
 
             // Directly teleport banner to match player position and rotation
             banner.teleport(bannerLoc);
