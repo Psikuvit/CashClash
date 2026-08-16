@@ -240,6 +240,9 @@ gamemodes:
 # Fade-in/stay/fade-out times (milliseconds) for the titles shown during scripted sequences
 # (round start reveal, sudden death start, victory). Text content lives in sequences.yml.
 sequences:
+  # Enable scripted title/freeze sequences (round start, president reveal, round end,
+  # sudden death, victory)
+  enabled: true
   title-times:
     default-fade-in-ms: 250
     default-stay-ms: 5000
@@ -250,6 +253,24 @@ sequences:
     victory-fade-in-ms: 500
     victory-stay-ms: 9000
     victory-fade-out-ms: 500
+  # How long (seconds) each step of a sequence holds on screen before advancing to the next
+  # one - this is the pacing of the sequence itself, separate from title-times above (which
+  # only controls a single title's own fade-in/stay/fade-out animation)
+  hold-seconds:
+    # "Selecting Gamemode..." hold, and the reveal title hold afterward (round-start)
+    round-start-reveal: 4
+    # "Selecting President..." hold, and the reveal title hold afterward (president-reveal)
+    president-reveal: 3.5
+    # "Determining Shield..." hold before the countdown (shield-reveal)
+    shield-reveal-determining: 2
+    # Hold on the shield/no-shield result before clearing (shield-reveal)
+    shield-reveal-result: 3
+    # Hold on the round win/loss result before clearing (round-end)
+    round-end-result: 5
+    # Delay before the sudden-death announcement title appears (sudden-death)
+    sudden-death-pre-announcement: 1
+    # Hold on the game win/loss result, both before and after it clears (game-victory)
+    victory-result: 10
   # Blindness duration (ticks) applied during "reveal"-style sequences (round start,
   # president reveal, sudden death) - generous on purpose since it's always cleared
   # explicitly at the end of the sequence, so it only needs to outlast the sequence itself
@@ -526,9 +547,4 @@ leaderboard:
   size: 10
   # How often (minutes) the leaderboards are recomputed (async worker)
   refresh-minutes: 5
-
-sequences:
-  # Enable scripted title/freeze sequences (round start, president reveal, round end,
-  # sudden death, victory)
-  enabled: true
 

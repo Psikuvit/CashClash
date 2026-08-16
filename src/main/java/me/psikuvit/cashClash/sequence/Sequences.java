@@ -62,7 +62,7 @@ public final class Sequences {
         String subtitleKey = "round-start." + subtitleKeySuffixFor(gamemode.getType());
         // "Selecting Gamemode..." holds for as long as the reveal title does afterward, rather
         // than being visible for only ~1s before the countdown overwrites it.
-        double revealHoldSeconds = 4;
+        double revealHoldSeconds = CashClashPlugin.getInstance().getConfigManager().getRoundStartRevealHoldSeconds();
 
         return Sequence.create()
                 .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), revealBlindnessTicks()))
@@ -90,7 +90,7 @@ public final class Sequences {
     public static Sequence presidentReveal(ProtectThePresidentGamemode ptp) {
         // "Selecting President..." holds for as long as the reveal title does afterward, rather
         // than being visible for only ~1s before the countdown overwrites it.
-        double revealHoldSeconds = 3.5;
+        double revealHoldSeconds = CashClashPlugin.getInstance().getConfigManager().getPresidentRevealHoldSeconds();
 
         return Sequence.create()
                 .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), revealBlindnessTicks()))
@@ -130,14 +130,16 @@ public final class Sequences {
      * sequence, so it always arrives after the reveal rather than silently beforehand.
      */
     public static Sequence shieldReveal() {
-        double revealHoldSeconds = 2;
+        var cfg = CashClashPlugin.getInstance().getConfigManager();
+        double determiningHoldSeconds = cfg.getShieldRevealDeterminingHoldSeconds();
+        double resultHoldSeconds = cfg.getShieldRevealResultHoldSeconds();
 
         return Sequence.create()
                 .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), revealBlindnessTicks()))
                 .pause(20)
                 .run(s -> SequenceEffects.showTitle(s.getPlayers(),
                         component(MSG.getRaw("shield-reveal.determining")), Component.empty()))
-                .waitSeconds(revealHoldSeconds)
+                .waitSeconds(determiningHoldSeconds)
                 .countdown(5, count -> s -> SequenceEffects.showTitle(s.getPlayers(),
                         Component.text(count), Component.empty()))
                 .then(20L, s -> {
@@ -145,7 +147,7 @@ public final class Sequences {
                     SequenceEffects.showTitle(s.getPlayers(), component(MSG.getRaw(key)), Component.empty());
                     SoundUtils.playTo(s.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
                 })
-                .waitSeconds(3)
+                .waitSeconds(resultHoldSeconds)
                 .run(Sequences::clearLock);
     }
 
@@ -172,7 +174,7 @@ public final class Sequences {
                             component(MSG.getRaw("round-end.lose-title")), Component.empty());
                     SoundUtils.playTo(s.getPlayers(), Sound.BLOCK_END_PORTAL_SPAWN, 1.0f, 1.0f);
                 })
-                .waitSeconds(5)
+                .waitSeconds(CashClashPlugin.getInstance().getConfigManager().getRoundEndResultHoldSeconds())
                 .run(s -> SequenceEffects.clearTitle(s.getPlayers()));
     }
 
@@ -183,7 +185,7 @@ public final class Sequences {
         String objective = gamemode.getObjectiveShort();
 
         return Sequence.create()
-                .waitSeconds(1)
+                .waitSeconds(CashClashPlugin.getInstance().getConfigManager().getSuddenDeathPreAnnouncementHoldSeconds())
                 .run(s -> {
                     SequenceEffects.showTitle(s.getPlayers(),
                             component(MSG.getRaw("sudden-death.title")),
@@ -198,6 +200,8 @@ public final class Sequences {
      * it, then hold another 10s before the caller performs the deferred teleport/cleanup.
      */
     public static Sequence gameVictory(Team winner) {
+        double resultHoldSeconds = CashClashPlugin.getInstance().getConfigManager().getVictoryResultHoldSeconds();
+
         return Sequence.create()
                 .run(s -> {
                     Team loser = s.getOpposingTeam(winner);
@@ -208,9 +212,9 @@ public final class Sequences {
                             component(MSG.getRaw("victory.lose-title")), Component.empty(), victoryTimes);
                     SoundUtils.playTo(s.getPlayers(), Sound.BLOCK_END_PORTAL_SPAWN, 1.0f, 1.0f);
                 })
-                .waitSeconds(10)
+                .waitSeconds(resultHoldSeconds)
                 .run(s -> SequenceEffects.clearTitle(s.getPlayers()))
-                .waitSeconds(10);
+                .waitSeconds(resultHoldSeconds);
     }
 
     private static String subtitleKeySuffixFor(GamemodeType type) {

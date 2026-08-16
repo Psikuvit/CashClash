@@ -450,6 +450,34 @@ public class ConfigManager {
         return config.getInt("sequences.reveal-blindness-ticks", 300);
     }
 
+    public double getRoundStartRevealHoldSeconds() {
+        return config.getDouble("sequences.hold-seconds.round-start-reveal", 4);
+    }
+
+    public double getPresidentRevealHoldSeconds() {
+        return config.getDouble("sequences.hold-seconds.president-reveal", 3.5);
+    }
+
+    public double getShieldRevealDeterminingHoldSeconds() {
+        return config.getDouble("sequences.hold-seconds.shield-reveal-determining", 2);
+    }
+
+    public double getShieldRevealResultHoldSeconds() {
+        return config.getDouble("sequences.hold-seconds.shield-reveal-result", 3);
+    }
+
+    public double getRoundEndResultHoldSeconds() {
+        return config.getDouble("sequences.hold-seconds.round-end-result", 5);
+    }
+
+    public double getSuddenDeathPreAnnouncementHoldSeconds() {
+        return config.getDouble("sequences.hold-seconds.sudden-death-pre-announcement", 1);
+    }
+
+    public double getVictoryResultHoldSeconds() {
+        return config.getDouble("sequences.hold-seconds.victory-result", 10);
+    }
+
     // ==================== MESSAGES ====================
 
     public String getPrefix() {
