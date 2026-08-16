@@ -685,15 +685,23 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     /**
-     * Get assassination count for a specific team
+     * Get assassination count for a specific team - the match-wide total normally, but during
+     * sudden death this switches to the current cycle's count instead, since that's the number
+     * actually resetting and relevant at that point. This keeps the existing
+     * {@code red_assassinations}/{@code red_assassination_circles} placeholders correct during
+     * sudden death without requiring a scoreboard config change (see
+     * {@link #getSuddenDeathCycleKills} for a raw, always-per-cycle accessor).
      */
     public int getAssassinationCount(int teamNumber) {
+        if (suddenDeathManager.isInSuddenDeath()) {
+            return getSuddenDeathCycleKills(teamNumber);
+        }
         return getPresidentDeaths(teamNumber);
     }
 
     /**
      * Get this sudden-death cycle's president-kill count for a specific team - resets to 0 on
-     * every cycle restart, unlike {@link #getAssassinationCount} which is match-wide.
+     * every cycle restart, unlike the match-wide {@link #getPresidentDeaths}.
      */
     public int getSuddenDeathCycleKills(int teamNumber) {
         return suddenDeathPresidentKills.getOrDefault(TeamColor.fromTeamNumber(teamNumber), 0);
