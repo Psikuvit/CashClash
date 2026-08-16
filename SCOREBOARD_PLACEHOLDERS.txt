@@ -111,6 +111,18 @@ Example: "Time Remaining: {time} seconds"
                         ROUND DATA PLACEHOLDERS
 ================================================================================
 
+{shield_status}
+  - Shows whether this game session has shields enabled - a single coin flip decided once per
+    session and fixed for every round
+  - Returns: "Shield" or "Shield-less"
+  - Default: "?"
+
+{money_pool}
+  - Shows the current round's kill-fed money pool (1,000 coins per kill so far this
+    round, before the round-end minimum-payout floor is applied)
+  - Returns: Formatted number (e.g., "3,000")
+  - Default: "0"
+
 {round_kills}
   - Shows the player's kills in the current round only
   - Returns: Numeric value (e.g., "3")
@@ -246,6 +258,15 @@ Example: "Time Remaining: {time} seconds"
   - Returns: Buff name(s) (e.g., "Strength" or "Strength, Speed"), or "None"
   - Default: "None"
   - Use Case: PTP gamemode only
+
+{teamRed_round_kills} / {teamBlue_round_kills}
+  - Shows that team's president-kill count for the CURRENT sudden-death cycle only -
+    resets to 0 whenever the cycle restarts (tie at cycle timeout, or an immediate
+    WIN_CONDITION-WIN_CONDITION tie), unlike {red_assassinations}/{blue_assassinations}
+    which is match-wide
+  - Returns: Numeric value (e.g., "1")
+  - Default: "0"
+  - Use Case: PTP sudden-death scoreboard only
 
 {sudden_heart_team}
   - Shows which team most recently earned the sudden-death extra-heart kill bonus

@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
+import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.FormatUtils;
 import org.bukkit.entity.Player;
@@ -46,7 +47,11 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         SUPPORTED_PLACEHOLDERS.add("player_deaths");
         SUPPORTED_PLACEHOLDERS.add("kill_streak");
 
+        // Shield/shield-less status
+        SUPPORTED_PLACEHOLDERS.add("shield_status");
+
         // Round data
+        SUPPORTED_PLACEHOLDERS.add("money_pool");
         SUPPORTED_PLACEHOLDERS.add("round_kills");
         SUPPORTED_PLACEHOLDERS.add("teamRed_alive");
         SUPPORTED_PLACEHOLDERS.add("teamBlue_alive");
@@ -84,6 +89,8 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         }
 
         return switch (placeholder) {
+            case "shield_status" -> session.getShieldStatusText();
+
             // Time placeholders
             case "phase", "state" -> getPhase(session.getState());
             case "phase_number", "round" -> String.valueOf(session.getCurrentRound());
@@ -104,7 +111,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
                     getPlayerData(placeholder, player, session);
 
             // Round data
-            case "round_kills", "teamRed_alive", "teamBlue_alive", "your_team_alive", "enemy_team_alive" ->
+            case "money_pool", "round_kills", "teamRed_alive", "teamBlue_alive", "your_team_alive", "enemy_team_alive" ->
                     getRoundData(placeholder, player, session);
 
             case "players" -> String.valueOf(session.getPlayers().size());
@@ -240,6 +247,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         }
 
         return switch (placeholder) {
+            case "money_pool" -> String.format("%,d", EconomyManager.calculateCurrentPool(roundData));
             case "round_kills" -> String.valueOf(roundData.getKills(player.getUniqueId()));
             case "teamRed_alive" -> {
                 Team teamRed = session.getTeamRed();
@@ -271,7 +279,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
 
     private String getDefaultRoundValue(String placeholder) {
         return switch (placeholder) {
-            case "round_kills", "teamRed_alive", "teamBlue_alive", "your_team_alive", "enemy_team_alive" -> "0";
+            case "money_pool", "round_kills", "teamRed_alive", "teamBlue_alive", "your_team_alive", "enemy_team_alive" -> "0";
             default -> null;
         };
     }
@@ -283,6 +291,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
                  "your_team_coins", "enemy_team_coins", "player_coins", "your_team_wins", "enemy_team_wins" -> "0";
             case "phase", "state" -> "Unknown";
             case "round_won" -> "0 - 0";
+            case "shield_status" -> "?";
             default -> null;
         };
     }

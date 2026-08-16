@@ -20,9 +20,11 @@ import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -32,14 +34,11 @@ import java.util.UUID;
  */
 public class ScoreboardManager implements Shutdownable {
 
-    // Map of playerUUID -> (sessionId -> Scoreboard) for game scoreboards
     private final Map<UUID, Map<UUID, Scoreboard>> gamePlayerBoards;
-    // Map of playerUUID -> Scoreboard for lobby scoreboards
     private final Map<UUID, Scoreboard> lobbyPlayerBoards;
-    // Map of sessionId -> update task
     private final Map<UUID, BukkitTask> sessionUpdateTasks;
-    // Map of playerUUID -> current context type (for detecting changes)
     private final Map<UUID, ContextType> playerContexts;
+    private final Map<UUID, Set<String>> lastScoreboardEntries;
 
     private final GameManager gameManager;
     private final TabListManager tabListManager;
@@ -51,6 +50,7 @@ public class ScoreboardManager implements Shutdownable {
         this.lobbyPlayerBoards = new HashMap<>();
         this.sessionUpdateTasks = new HashMap<>();
         this.playerContexts = new HashMap<>();
+        this.lastScoreboardEntries = new HashMap<>();
     }
 
     /**
@@ -65,15 +65,11 @@ public class ScoreboardManager implements Shutdownable {
         ScoreboardContext context = ScoreboardProvider.getContext(player);
         ContextType contextType = context.getContextType();
 
-        // Check if context changed
-        ContextType previousContext = playerContexts.get(player.getUniqueId());
-        if (previousContext != null && previousContext == contextType) {
-            // Same context, just update
+       ContextType previousContext = playerContexts.get(player.getUniqueId());
+        if (previousContext != null && previousContext == contextType && hasCurrentBoard(player, contextType)) {
             updatePlayerScoreboard(player);
             return;
         }
-
-        // Context changed - remove old scoreboard and create new one
         removeScoreboard(player);
 
         if (contextType == ContextType.LOBBY) {
@@ -83,6 +79,26 @@ public class ScoreboardManager implements Shutdownable {
         }
 
         playerContexts.put(player.getUniqueId(), contextType);
+    }
+
+    /**
+     * Whether a board already exists for the player's current context - specifically, for game
+     * context, whether a board exists for their *current session id*, not just for their
+     * gamemode's {@link ContextType} in general (boards are keyed by session id since each game
+     * gets its own).
+     */
+    private boolean hasCurrentBoard(Player player, ContextType contextType) {
+        if (contextType == ContextType.LOBBY) {
+            return lobbyPlayerBoards.containsKey(player.getUniqueId());
+        }
+
+        GameSession session = gameManager.getPlayerSession(player);
+        if (session == null) {
+            return false;
+        }
+
+        Map<UUID, Scoreboard> playerBoards = gamePlayerBoards.get(player.getUniqueId());
+        return playerBoards != null && playerBoards.containsKey(session.getSessionId());
     }
 
     /**
@@ -129,9 +145,8 @@ public class ScoreboardManager implements Shutdownable {
         // Update immediately
         updatePlayerScoreboard(player);
 
-        // Start update task if not already running for this session
         if (!sessionUpdateTasks.containsKey(sessionId)) {
-            BukkitTask task = SchedulerUtils.runTaskTimerAsync(() -> updateSessionScoreboards(sessionId), 0L, 20L);
+            BukkitTask task = SchedulerUtils.runTaskTimer(() -> updateSessionScoreboards(sessionId), 0L, 20L);
             sessionUpdateTasks.put(sessionId, task);
         }
     }
@@ -160,6 +175,7 @@ public class ScoreboardManager implements Shutdownable {
 
         // Remove context
         playerContexts.remove(playerUuid);
+        lastScoreboardEntries.remove(playerUuid);
 
         // Reset to main scoreboard
         if (player.isOnline()) {
@@ -225,7 +241,16 @@ public class ScoreboardManager implements Shutdownable {
     }
 
     /**
-     * Internal: Update a specific scoreboard
+     * Internal: Update a specific scoreboard.
+     *
+     * Updates the existing objective/entries in place rather than unregistering and recreating
+     * the objective every call - this ran once per second via the session update task, and
+     * tearing the SIDEBAR objective down and rebuilding it that often caused a visible
+     * disappear/reappear flicker on the client. Line entries are still content-keyed (a line's
+     * entry name embeds its own text, since that's the only per-line identity a scoreboard
+     * "fake player" entry has), so a changed line becomes a *new* entry each update - the diff
+     * against the previous tick's entries is what lets stale ones get cleared individually via
+     * {@link Scoreboard#resetScores} instead of nuking everything.
      */
     private void updateScoreboard(Player player, Scoreboard board, ScoreboardContext context, GameSession session) {
         Component title = context.getTitle(player, session);
@@ -233,13 +258,16 @@ public class ScoreboardManager implements Shutdownable {
 
         String objName = "scoreboard_" + player.getUniqueId().toString().substring(0, 8);
 
-        Objective oldObj = board.getObjective(objName);
-        if (oldObj != null) {
-            oldObj.unregister();
+        Objective objective = board.getObjective(objName);
+        if (objective == null) {
+            objective = board.registerNewObjective(objName, Criteria.DUMMY, title);
+            objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        } else {
+            objective.displayName(title);
         }
 
-        Objective objective = board.registerNewObjective(objName, Criteria.DUMMY, title);
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        UUID playerUuid = player.getUniqueId();
+        Set<String> newEntries = new HashSet<>(lines.size());
 
         int score = lines.size();
         int lineIndex = 0;
@@ -256,12 +284,23 @@ public class ScoreboardManager implements Shutdownable {
             String entryName = filled.isEmpty() ? "§" + Integer.toHexString(lineIndex % 16) : filled;
             // Append line index to ensure uniqueness
             String uniqueEntry = entryName + "§r" + lineIndex;
+            newEntries.add(uniqueEntry);
 
             Score scoreObj = objective.getScore(uniqueEntry);
             scoreObj.customName(Messages.parse(filled.isEmpty() ? entryName : filled));
             scoreObj.setScore(score--);
             lineIndex++;
         }
+
+        Set<String> previousEntries = lastScoreboardEntries.get(playerUuid);
+        if (previousEntries != null) {
+            for (String stale : previousEntries) {
+                if (!newEntries.contains(stale)) {
+                    board.resetScores(stale);
+                }
+            }
+        }
+        lastScoreboardEntries.put(playerUuid, newEntries);
 
         if (player.getScoreboard() != board) {
             player.setScoreboard(board);

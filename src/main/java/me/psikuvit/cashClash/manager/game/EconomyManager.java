@@ -21,20 +21,30 @@ import java.util.UUID;
  */
 public class EconomyManager {
 
+    /**
+     * Live kill pool for the round so far (before the {@code economy.min-round-pool} floor is
+     * applied) - usable for scoreboard display while the round is still in progress.
+     */
+    public static long calculateCurrentPool(RoundData roundData) {
+        long killPoolPerKill = CashClashPlugin.getInstance().getConfigManager().getKillPoolPerKill();
+        return roundData.getTotalRoundKills() * killPoolPerKill;
+    }
+
     public static void distributeRoundMoney(GameSession session) {
         RoundData roundData = session.getCurrentRoundData();
         if (roundData == null) return;
 
-        int totalKills = roundData.getTotalRoundKills();
-        long killPool = totalKills * 1000L;
-        
-        long finalAmount = Math.max(killPool, 15000);
+        long killPool = calculateCurrentPool(roundData);
+
+        long minRoundPool = CashClashPlugin.getInstance().getConfigManager().getMinRoundPool();
+        long finalAmount = Math.max(killPool, minRoundPool);
+        roundData.setDistributedMoney(killPool, finalAmount);
 
         Messages.broadcast(session.getPlayers(), "economy.round-money-distributed",
                 "pool", String.format("%,d", killPool),
                 "amount", String.format("%,d", finalAmount));
         
-        Messages.debug("ECONOMY: Round " + session.getCurrentRound() + " - Total Kills: " + totalKills + " Pool: " + killPool + " Final per player: " + finalAmount);
+        Messages.debug("ECONOMY: Round " + session.getCurrentRound() + " - Total Kills: " + roundData.getTotalRoundKills() + " Pool: " + killPool + " Final per player: " + finalAmount);
 
         for (UUID uuid : session.getPlayers()) {
             session.getRewardManager().grant(uuid, RewardType.ROUND_DISTRIBUTION, finalAmount);

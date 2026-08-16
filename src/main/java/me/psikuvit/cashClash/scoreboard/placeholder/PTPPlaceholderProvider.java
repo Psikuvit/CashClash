@@ -27,6 +27,8 @@ public class PTPPlaceholderProvider implements PlaceholderProvider {
         SUPPORTED_PLACEHOLDERS.add("red_assassination_circles");
         SUPPORTED_PLACEHOLDERS.add("blue_assassination_circles");
         SUPPORTED_PLACEHOLDERS.add("sudden_heart_team");
+        SUPPORTED_PLACEHOLDERS.add("teamRed_round_kills");
+        SUPPORTED_PLACEHOLDERS.add("teamBlue_round_kills");
     }
 
     private final ProtectThePresidentGamemode gamemode;
@@ -53,6 +55,8 @@ public class PTPPlaceholderProvider implements PlaceholderProvider {
             case "red_assassination_circles" -> getAssassinationCircles(gamemode.getAssassinationCount(1));
             case "blue_assassination_circles" -> getAssassinationCircles(gamemode.getAssassinationCount(2));
             case "sudden_heart_team" -> getRecentHeartTeam();
+            case "teamRed_round_kills" -> String.valueOf(gamemode.getSuddenDeathCycleKills(1));
+            case "teamBlue_round_kills" -> String.valueOf(gamemode.getSuddenDeathCycleKills(2));
             default -> null;
         };
     }
@@ -103,6 +107,7 @@ public class PTPPlaceholderProvider implements PlaceholderProvider {
             case "red_president_status", "blue_president_status" -> "<red>No President</red>";
             case "red_assassinations", "blue_assassinations" -> "0";
             case "red_assassination_circles", "blue_assassination_circles" -> getAssassinationCircles(0);
+            case "teamRed_round_kills", "teamBlue_round_kills" -> "0";
             default -> null;
         };
     }

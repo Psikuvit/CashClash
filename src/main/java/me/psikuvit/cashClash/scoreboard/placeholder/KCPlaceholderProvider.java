@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.scoreboard.placeholder;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.gamemode.impl.KillConfirmGamemode;
 import org.bukkit.entity.Player;
 
@@ -11,7 +12,6 @@ import java.util.Set;
  */
 public class KCPlaceholderProvider implements PlaceholderProvider {
 
-    private static final int WIN_CONDITION = 16;
     private static final Set<String> SUPPORTED_PLACEHOLDERS = new HashSet<>();
 
     static {
@@ -36,8 +36,8 @@ public class KCPlaceholderProvider implements PlaceholderProvider {
         return switch (placeholder) {
             case "teamRed_kc_score" -> String.valueOf(gamemode.getTeamScore(1));
             case "teamBlue_kc_score" -> String.valueOf(gamemode.getTeamScore(2));
-            case "teamRed_kc_progress" -> gamemode.getTeamScore(1) + "/" + WIN_CONDITION;
-            case "teamBlue_kc_progress" -> gamemode.getTeamScore(2) + "/" + WIN_CONDITION;
+            case "teamRed_kc_progress" -> gamemode.getTeamScore(1) + "/" + gamemode.getWinCondition();
+            case "teamBlue_kc_progress" -> gamemode.getTeamScore(2) + "/" + gamemode.getWinCondition();
             default -> null;
         };
     }
@@ -50,7 +50,8 @@ public class KCPlaceholderProvider implements PlaceholderProvider {
     private String getDefaultValue(String placeholder) {
         return switch (placeholder) {
             case "teamRed_kc_score", "teamBlue_kc_score" -> "0";
-            case "teamRed_kc_progress", "teamBlue_kc_progress" -> "0/" + WIN_CONDITION;
+            case "teamRed_kc_progress", "teamBlue_kc_progress" ->
+                    "0/" + CashClashPlugin.getInstance().getConfigManager().getKCScoreToWin();
             default -> null;
         };
     }

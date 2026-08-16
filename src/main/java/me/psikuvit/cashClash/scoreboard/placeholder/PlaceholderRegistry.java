@@ -128,7 +128,7 @@ public class PlaceholderRegistry {
             "{your_team}", "{your_team_coins}", "{your_team_ready}",
             "{enemy_team}", "{enemy_team_coins}", "{enemy_team_ready}",
             "{player_coins}", "{player_kills}", "{player_lives}", "{player_deaths}", "{kill_streak}",
-            "{round_kills}", "{teamRed_alive}", "{teamBlue_alive}",
+            "{shield_status}", "{money_pool}", "{round_kills}", "{teamRed_alive}", "{teamBlue_alive}",
             "{your_team_alive}", "{enemy_team_alive}",
             "{round}", "{players}"
         ));
@@ -149,7 +149,8 @@ public class PlaceholderRegistry {
             "{red_president_status}", "{blue_president_status}",
             "{red_assassinations}", "{blue_assassinations}",
             "{red_buff}", "{blue_buff}",
-            "{red_assassination_circles}", "{blue_assassination_circles}"
+            "{red_assassination_circles}", "{blue_assassination_circles}",
+            "{teamRed_round_kills}", "{teamBlue_round_kills}"
         ));
     }
 
