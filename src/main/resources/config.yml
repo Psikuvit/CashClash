@@ -21,10 +21,23 @@ game:
   combat-phase-duration: 360
   shopping-phase-duration: 90
   first-round-shopping-duration: 120
+  buff-selection-duration: 15
+  sudden-death-phase-duration: 180
+  final-stand-duration-seconds: 180
+  sudden-death-initial-cycle-seconds: 180
+  sudden-death-repeat-cycle-seconds: 180
+
+  # How many seconds before a phase timer ends to start playing the countdown ping/message
+  phase-countdown-warning-seconds: 3
 
   # Respawn settings
   respawn-delay: 5
   respawn-protection: 5
+
+  # Death spectator rise animation: an upward boost (eases out, not a steady lift) from the
+  # player's death location, so they're quickly up at a vantage point to spectate the fight
+  death-spectator-rise-height: 4.0
+  death-spectator-rise-ticks: 16
 
   # Forfeit settings
   forfeit-enabled: true
@@ -45,6 +58,12 @@ rounds:
   # Kill team split bonus
   # Amount awarded to killer's team, split evenly among all team members
   kill-team-split-bonus: 7500
+
+  # Per-player bonuses (First Blood, Killstreak, Most Kills, Most Damage) - flat amount
+  # awarded only to the player who earned it
+  player-bonus-amount: 2000
+  # Kills needed for an uninterrupted killstreak to trigger the Killstreak bonus
+  killstreak-interval: 4
 
   # Loss streak bonuses
   # Awarded to team that lost consecutive rounds
@@ -83,6 +102,26 @@ economy:
 
   # Percentage steal for rounds 4-5
   late-round-steal-percentage: 0.25
+
+  # Round-end kill pool distribution
+  kill-pool-per-kill: 1000
+  min-round-pool: 15000
+
+  # Flat fee for the transfer GUI (chat-input money transfer), independent of the
+  # round-based transfer fees above
+  gui-transfer-fee: 0.10
+
+# ============================================
+# COMBAT SETTINGS
+# ============================================
+combat:
+  # Multiplier applied to the Strength potion effect's attack damage bonus (1.0 = no nerf)
+  strength-nerf-multiplier: 0.5
+  # Multiplier applied to the Power enchantment's damage bonus (1.0 = no nerf)
+  power-nerf-multiplier: 0.2
+  # Power enchant level a non-legendary bow is capped at (excess levels beyond this
+  # are ignored rather than nerfed) - the Wind Bow legendary is exempt
+  max-power-level-regular-bow: 2
 
 # ============================================
 # CASH QUAKE EVENTS
@@ -154,6 +193,18 @@ gamemodes:
     capture-bonus-coins: 15000
     # Bonus timer (milliseconds)
     capture-bonus-timer-ms: 45000
+    # Extra heart duration granted on capture (milliseconds)
+    heart-bonus-duration-ms: 45000
+    # Radius (blocks) for detecting a player near the flag pickup point / scoring banner,
+    # and the max vertical distance still counted as "near" (handles multi-level bases)
+    pickup-circle-radius: 1.5
+    score-zone-radius: 1.5
+    max-height-difference: 5.0
+    # Periodic glow "ping" revealing the flag carrier's position to the enemy team: how often
+    # it pulses (ticks), how long each pulse lasts (ticks), and its Glowing amplifier level
+    carrier-glow-interval-ticks: 100
+    carrier-glow-duration-ticks: 10
+    carrier-glow-amplifier: 0
 
   # Kill Confirm settings
   kill-confirm:
@@ -166,6 +217,17 @@ gamemodes:
     final-stand-capture-duration-ms: 2000
     money-bonus: 15000
     heart-bonus-duration-ms: 45000
+    # Activation beam: height (blocks), vertical offset from the zone center, and how long the
+    # pulse lasts (ticks)
+    beam-height: 6.0
+    beam-y-offset: 0.2
+    beam-duration-ticks: 10
+    # Capture zone footprint: horizontal half-width and vertical tolerance (blocks) for
+    # "standing in the zone", and how far outward to search for clear ground when a death
+    # location's footprint is blocked before giving up
+    zone-half-width: 1.5
+    zone-vertical-tolerance: 2.0
+    zone-safe-spawn-search-radius: 8
 
   # Protect the President settings
   protect-the-president:
@@ -174,6 +236,32 @@ gamemodes:
     kill-bonus-amount: 15000
     heart-duration-ms: 45000
     captures-to-win: 2
+    # Tank buff (Turtle Master-style): Resistance + Slowness amplifier levels (0 = level I)
+    tank-resistance-amplifier: 3
+    tank-slowness-amplifier: 3
+    # HP buff: instant heal amount applied once on selection (Instant Health I = 4.0)
+    hp-heal-amount: 4.0
+
+# ============================================
+# SEQUENCE TITLE DURATIONS
+# ============================================
+# Fade-in/stay/fade-out times (milliseconds) for the titles shown during scripted sequences
+# (round start reveal, sudden death start, victory). Text content lives in sequences.yml.
+sequences:
+  title-times:
+    default-fade-in-ms: 250
+    default-stay-ms: 5000
+    default-fade-out-ms: 250
+    sudden-death-fade-in-ms: 500
+    sudden-death-stay-ms: 5000
+    sudden-death-fade-out-ms: 500
+    victory-fade-in-ms: 500
+    victory-stay-ms: 9000
+    victory-fade-out-ms: 500
+  # Blindness duration (ticks) applied during "reveal"-style sequences (round start,
+  # president reveal, sudden death) - generous on purpose since it's always cleared
+  # explicitly at the end of the sequence, so it only needs to outlast the sequence itself
+  reveal-blindness-ticks: 300
 
 
 # ============================================
@@ -336,7 +424,7 @@ scoreboard:
       - "Coins: {teamBlue_coins}"
       - ""
       - "<yellow>Round {round}</yellow>"
-      - "Time: {time}"
+      - "Time: {sudden_death_timer}"
       - ""
 
   # Protect the President - Sudden Death scoreboard
@@ -360,7 +448,7 @@ scoreboard:
       - "Coins: {teamBlue_coins}"
       - ""
       - "<yellow>Round {round}</yellow>"
-      - "Time: {time}"
+      - "Time: {sudden_death_timer}"
       - ""
 
   # Kill Confirm gamemode scoreboard
@@ -400,7 +488,7 @@ scoreboard:
       - ""
       - "{player_heart_timer}"
       - "<yellow>Round {round}</yellow>"
-      - "Time: {time}"
+      - "Time: {sudden_death_timer}"
       - ""
 
 # ============================================

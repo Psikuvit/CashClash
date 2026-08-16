@@ -22,7 +22,7 @@ combat:
 # ============================================
 mythic-items:
   # Number of legendaries available per game
-  legendaries-per-game: 5
+  legendaries-per-game: 4
 
   # Carl's Battleaxe
   carls-battleaxe:
@@ -64,9 +64,10 @@ mythic-items:
       cooldown-seconds: 1
       damage: 1.0
       radius: 5
-    # 3 independent dash charges (each recharges on its own timer) - replaces the old
+    # Independent dash charges (each recharges on its own timer) - replaces the old
     # single-cooldown teleport. Damages + slows every enemy caught along the dash path.
     dash:
+      max-charges: 3
       recharge-seconds: 15
       distance: 4.0
       damage: 3.0
@@ -136,6 +137,7 @@ mythic-items:
       no-hit-timeout-seconds: 3
       reach-per-stack: 0.25
       max-stacks: 3               # 9 hits total (3 per stack) to reach full charge
+      hits-per-stack: 3
       shield-disable-ticks: 100   # 5s vanilla shield-disable on a fully-charged (max-stacks) hit
 
   # BlazeBite Crossbows - a single crossbow now; every hit applies BOTH the glacier freeze
@@ -213,6 +215,17 @@ custom-armor:
     recharge-seconds: 22
     base-damage: 4.0
     radius: 4.0
+    # Minimum fall distance (blocks) before the falling-warning aura appears
+    fall-warning-min-distance: 3.0
+    # How much of the negated fall damage is added to the slam radius (radius + damage * this)
+    fall-damage-radius-scale: 0.3
+    # Knockback applied to entities caught in the slam
+    knockback-upward: 0.25
+    knockback-horizontal: 0.7
+    # Slowness applied to targets within this distance of the impact point
+    slow-radius: 2.0
+    slow-duration-seconds: 4
+    slow-amplifier: 1
 
   # Guardian's Vest
   guardians-vest:
@@ -289,6 +302,8 @@ custom-items:
   # Grenade
   grenade:
     fuse-seconds: 3
+    # Velocity multiplier applied to the throw direction (shared by both grenade variants)
+    throw-velocity: 1.2
     damage:
       inner-radius: 4
       inner-damage: 8.0
@@ -308,6 +323,14 @@ custom-items:
   bounce-pad:
     forward-velocity: 1.2
     upward-velocity: 0.85
+    # How long a placed pad lasts before despawning (seconds)
+    lifetime-seconds: 5
+    # Wall-mounted (side) bounces launch flatter than a floor pad - this fraction of the
+    # normal upward velocity is used instead
+    wall-mount-upward-scale: 0.2
+    # How close (as a fraction of the block, 0-0.5) to a block's edge a player must be
+    # standing for a wall-mounted pad on that side to trigger
+    wall-touch-threshold: 0.35
 
   # Medic Pouch
   medic-pouch:
@@ -318,7 +341,8 @@ custom-items:
 
   # Tablet of Hacking
   tablet-of-hacking:
-    # No special configuration needed
+    # Coin fee charged when opening an enemy's inventory
+    cost: 2000
 
   # Bag of Potatoes
   bag-of-potatoes:
@@ -373,6 +397,14 @@ custom-items:
     burst-durability-cost: 25
     burst-damage: 4.5
     burst-min-durability: 25
+    # Timing and behavior
+    gust-hold-timeout-ms: 1500        # How long to wait without a swing before stopping gust
+    gust-tick-interval-ms: 10         # How often to fire a gust pulse
+    gust-hit-freeze-ms: 1500          # How long to freeze target on a gust hit
+    gust-max-freeze-ms: 6000          # Maximum total freeze duration
+    freeze-pump-interval-ticks: 1     # How often to update freeze ticks
+    gust-target-range: 3              # Radius to find targets for gust
+    burst-target-range: 3.5           # Radius to find targets for burst
 
   # Overdrive Potion
   overdrive-potion:
@@ -898,6 +930,31 @@ item-lore:
     piercing:
       lore:
         - "<gray>Crossbow bolts pierce targets</gray>"
+
+  # ==================== RUNES ====================
+  runes:
+    # Maximum number of runes a player can have active at once
+    max-active-runes: 2
+    # Cooldown in seconds between toggling a rune on/off
+    toggle-cooldown-seconds: 5
+    # Durability per second regenerated when a rune is not broken
+    recharge-per-second: 1.5
+    # How long a rune stays broken (unusable) after hitting 0 durability (milliseconds)
+    broken-duration-ms: 10000
+    # Delay after a rune is toggled off before it starts recharging (milliseconds)
+    recharge-delay-ms: 3000
+    # Per-enchant maximum durability (determines how many hits/ticks before the rune breaks)
+    max-durability:
+      sharpness: 30
+      protection: 30
+      quick-charge: 30
+      fire-aspect: 15
+      knockback: 15
+      flame: 15
+      power: 18
+      projectile-protection: 18
+      punch: 10
+      piercing: 24
 
   # ==================== INVESTMENTS ====================
   investments:

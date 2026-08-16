@@ -211,7 +211,6 @@ messages:
     set-purchase-undone: "<green>Set purchase undone. Refunded ${amount} and restored your previous armor.</green>"
     purchase-undone: "<green>Purchase undone. Refunded ${amount} and restored your previous item.</green>"
     purchase-undone-item-not-found: "<gray>(Could not find item(s) to remove from inventory.)</gray>"
-    purchased-set: "<green>Purchased {item_name} for ${price}</green>"
     purchased-quantity: "<green>Purchased {item_name} x{quantity} for ${price}</green>"
     purchased: "<green>Purchased {item_name} for ${price}</green>"
     purchase-successful: "<green>Purchase successful! Deducted ${cost}</green>"
@@ -221,9 +220,6 @@ messages:
     no-purchase-undo: "<red>No purchase to undo.</red>"
     no-purchase-undo-category: "<red>No purchase to undo in this category.</red>"
     max-tier-reached: "<yellow>You already have the maximum tier of this item!</yellow>"
-    set-purchased-title: "<green><bold>✓ SET PURCHASED</bold></green>"
-    set-purchased-name: "<yellow>{item_name}</yellow>"
-    set-purchased-cost: "<dark_gray>-${price}</dark_gray>"
     investment-round-locked: "<red>Investments cannot be purchased in Round 6 or later!</red>"
     investment-already-active: "<red>You already have an active investment! ({type})</red>"
     investment-purchased: "<green>You invested <gold>${cost}</gold> in a <yellow>{type}</yellow>!</green>"
@@ -249,7 +245,6 @@ messages:
     announce-spacer: "<dark_gray> </dark_gray>"
     bonus-earned: "<dark_purple><bold>⭐ BONUS!</bold></dark_purple> <light_purple>{bonus_name}</light_purple>"
     bonus-coins: "<gray>+${amount} coins</gray>"
-    bonus-broadcast: "<dark_purple>{player_name}</dark_purple> <dark_gray>earned</dark_gray> <light_purple>{bonus_name}</light_purple>"
 
   # ============================================
   # ENCHANTMENT MESSAGES
@@ -277,6 +272,12 @@ messages:
     max-level: "<yellow>You've already upgraded this rune to the max level</yellow>"
 
   # ============================================
+  # ECONOMY MESSAGES
+  # ============================================
+  economy:
+    round-money-distributed: "<gold>The money pool of <yellow>${pool}</yellow> was distributed - everyone receives <yellow>${amount}</yellow>!</gold>"
+
+  # ============================================
   # ROUND/GAME MESSAGES
   # ============================================
   round:
@@ -285,7 +286,6 @@ messages:
     buff-selection-time: "<gray>You have <yellow>15 seconds </yellow><gray>to select!</gray>"
     shopping-phase-title: "<yellow><bold>Round {round} - Shopping Phase!</bold></yellow>"
     shopping-phase-time: "<gray>You have <yellow>{time_remaining} seconds </yellow><gray>to shop!</gray>"
-    buff-selection-countdown: "<gold>{time_remaining} seconds to select buff!</gold>"
     both-teams-ready: "<green>Both teams are ready! Ending shopping phase early.</green>"
     shopping-countdown: "<yellow>{time_remaining} seconds remaining!</yellow>"
     buff-selection-complete: "<gold>Buff selection complete! Starting shopping phase...</gold>"
@@ -295,6 +295,7 @@ messages:
     team-blue-wins: "<red><bold>Blue Team wins the round!</bold></red>"
     team-red-wins: "<red><bold>Red Team wins the round!</bold></red>"
     team-wins-round: "<gold><bold>{team_name} Team Wins the Round!</bold></gold>"
+    team-wins-match: "<gold><bold>{team_name} Team Wins the Game! ({score})</bold></gold>"
     game-countdown-start: "<yellow>Minimum players reached! Starting game in <gold>{seconds}s</gold>. Join now!</yellow>"
     game-countdown-cancelled: "<red>Not enough players, starting countdown cancelled.</red>"
     game-countdown-tick: "<yellow>Game starting in <gold>{seconds}s</gold>...</yellow>"
@@ -336,6 +337,8 @@ messages:
   # ============================================
   gamemode-ptp:
     game-started: "<gold>Protect the President has been selected as the gamemode!</gold>"
+    round-start-message: "<gold>{president_name} is your team's president and can pick 1 bonus effect.</gold>"
+    round-start-message-sudden-death: "<gold>{president1_name} and {president2_name} are elected as your presidents! You can select up to 2 bonus effects for this final fight!</gold>"
     red-president: "<red>{president_name} is Team Red's president and can pick up to 2 bonus effects.</red>"
     blue-president: "<blue>{president_name} is Team Blue's president and can pick up to 2 bonus effects.</blue>"
     buff-selection-prompt: "<gold>Right-click an item to select your buff! Right-click again to deselect. You may select up to 2 buffs.</gold>"
@@ -353,10 +356,10 @@ messages:
     resistance-buff-name: "Resistance"
     speed-buff-name: "Speed"
     health-buff-name: "Extra Hearts"
-    strength-buff-description: "<gold>Strength I - Deal more damage</gold>"
-    speed-buff-description: "<gold>Speed I - Move faster</gold>"
-    resistance-buff-description: "<gold>Resistance I - Take less damage</gold>"
-    health-buff-description: "<gold>Extra Hearts - Gain +1 max heart</gold>"
+    strength-buff-description: "<gold>Strength - Deal more damage</gold>"
+    speed-buff-description: "<gold>Speed - Move faster</gold>"
+    resistance-buff-description: "<gold>Turtle Master - High resistance, reduced speed</gold>"
+    health-buff-description: "<gold>Instant Health - Heals you immediately</gold>"
     sudden-death: "<red><bold>SUDDEN DEATH!</bold> Eliminate the other team's president more times in 3 minutes to win the match!</red>"
     sudden-death-timer-start: "<yellow>The game has entered sudden death! Money bonuses have been replaced with an extra heart that lasts for 45 seconds. Eliminate the other team's president more times in 3 minutes to win the match!</yellow>"
     sudden-death-tied-restart: "<gold>Sudden death is tied! A new 3-minute showdown begins now.</gold>"
@@ -370,6 +373,8 @@ messages:
   # ============================================
   gamemode-ctf:
     game-started: "<gold>Capture the Flag has been selected as the gamemode!</gold>"
+    round-start-message: "<gold>Capture the Flag Round!</gold>"
+    buy-phase-message: "<yellow>Capture the enemy's flag! First team to {win_condition} captures wins!</yellow>"
     objective: "<yellow>Capture the enemy's flag and return it to your base to score!</yellow>"
     bonus-info: "<yellow>Capturing the flag 45 seconds after stealing it grants your team a split 15k bonus!</yellow>"
     flag-holder-eliminated: "<{color}><bold>Team {team_name}'s flag holder was eliminated!</bold></{color}>"
@@ -398,6 +403,8 @@ messages:
 
   gamemode-kc:
     game-started: "<gold>Kill Confirm has been selected as the gamemode!</gold>"
+    round-start-message: "<gold>Kill Confirm Round!</gold>"
+    buy-phase-message: "<yellow>Confirm your kills for points, deny the enemy's! First team to {win_condition} wins!</yellow>"
     objective: "<yellow>Capture the nametags that drop in kills for 1 extra point!</yellow>"
     bonus-info: "<yellow>A player's 3rd kill in a streak drops a Money Tag - capture it for a split 15k team bonus!</yellow>"
     kill-point: "<gray>Team {team_name} scored a kill! {score}/{win_condition}</gray>"
@@ -752,6 +759,7 @@ messages:
     cannot-use-custom-armor-shopping: "<red>You cannot use custom armor during the shopping phase!</red>"
     cannot-use-custom-weapons-shopping: "<red>You cannot use custom weapons during the shopping phase!</red>"
     cannot-use-runes-shopping: "<red>You cannot use runes during the shopping phase!</red>"
+    round-is-over: "<red>The round is over!</red>"
     must-be-in-game: "<red>You must be in a game!</red>"
     must-be-on-team: "<red>You must be on a team to transfer money!</red>"
 

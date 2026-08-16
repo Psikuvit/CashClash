@@ -2,7 +2,7 @@
 # Cash Clash Sequence Messages
 # ============================================
 # Titles/subtitles for scripted round/game presentation moments (round start,
-# president reveal, round end, round 4 shield transition, sudden death, victory).
+# president reveal, shield reveal, round end, sudden death, victory).
 # All messages use MiniMessage format.
 # Schema Version: 1 (for future migrations)
 # ============================================
@@ -12,25 +12,31 @@ schema-version: 1
 round-start:
   selecting: "<yellow>Selecting Gamemode...</yellow>"
   selected-title: "<gold><bold>{gamemode}</bold></gold>"
-  selected-subtitle: "<yellow>{objective} to win the game!</yellow>"
+  # Subtitle color is per-gamemode (CTF red, PTP blue, KC yellow) rather than the generic
+  # light-green default other sequence subtitles use, so players can recognize the objective
+  # at a glance.
+  selected-subtitle-ctf: "<red>{objective} to win the game!</red>"
+  selected-subtitle-ptp: "<blue>{objective} to win the game!</blue>"
+  selected-subtitle-kc: "<yellow>{objective} to win the game!</yellow>"
 
 president:
   selecting: "<yellow>Selecting President...</yellow>"
   selected-title: "<gold><bold>{player_name}</bold></gold>"
-  selected-subtitle: "<yellow>Has been selected as your president.</yellow>"
+  selected-subtitle: "<light_green>Has been selected as your president.</light_green>"
 
 round-end:
   win-title: "<green><bold>YOU WIN!</bold></green>"
   lose-title: "<red><bold>YOU LOSE</bold></red>"
   no-winner-title: "<gray><bold>Round Over</bold></gray>"
 
-round4:
-  title: "<gold><bold>1st Half Over</bold></gold>"
-  subtitle: "<yellow>Now transitioning to Shield / Shieldless</yellow>"
+shield-reveal:
+  determining: "<gold><bold>Determining Shield...</bold></gold>"
+  shields-given: "<green><bold>Everyone was given a shield!</bold></green>"
+  no-shields: "<red><bold>No shields were given out!</bold></red>"
 
 sudden-death:
   title: "<red><bold>SUDDEN DEATH</bold></red>"
-  subtitle: "<yellow>{objective} to win the game!</yellow>"
+  subtitle: "<light_green>{objective} to win the game!</light_green>"
 
 victory:
   win-title: "<green><bold>VICTORY!</bold></green>"
