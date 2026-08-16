@@ -158,6 +158,11 @@ public class PlayerDataManager implements Shutdownable {
         d.incWins();
     }
 
+    public void incLosses(UUID uuid) {
+        PlayerData d = getOrLoadData(uuid);
+        d.incLosses();
+    }
+
     public void incDeaths(UUID uuid) {
         PlayerData d = getOrLoadData(uuid);
         d.incDeaths();

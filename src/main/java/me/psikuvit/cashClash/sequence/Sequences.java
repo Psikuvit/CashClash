@@ -6,11 +6,14 @@ import me.psikuvit.cashClash.config.SequencesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.Gamemode;
+import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.time.Duration;
@@ -25,18 +28,28 @@ public final class Sequences {
 
     private static final SequencesConfig MSG = CashClashPlugin.getInstance().getSequencesConfig();
 
-    // Generous blindness duration for "reveal"-style sequences; always cleared explicitly
-    // at the end of the sequence, so it only needs to outlast the sequence itself.
-    private static final int REVEAL_BLINDNESS_TICKS = 300;
-
-    private static final Title.Times SUDDEN_DEATH_TIMES = Title.Times.times(
-            Duration.ofMillis(500), Duration.ofSeconds(5), Duration.ofMillis(500));
-
-    private static final Title.Times VICTORY_TIMES = Title.Times.times(
-            Duration.ofMillis(500), Duration.ofSeconds(9), Duration.ofMillis(500));
-
     private Sequences() {
         throw new AssertionError("Nope.");
+    }
+
+    private static int revealBlindnessTicks() {
+        return CashClashPlugin.getInstance().getConfigManager().getRevealBlindnessTicks();
+    }
+
+    private static Title.Times suddenDeathTimes() {
+        var cfg = CashClashPlugin.getInstance().getConfigManager();
+        return Title.Times.times(
+                Duration.ofMillis(cfg.getSuddenDeathTitleFadeInMs()),
+                Duration.ofMillis(cfg.getSuddenDeathTitleStayMs()),
+                Duration.ofMillis(cfg.getSuddenDeathTitleFadeOutMs()));
+    }
+
+    private static Title.Times victoryTimes() {
+        var cfg = CashClashPlugin.getInstance().getConfigManager();
+        return Title.Times.times(
+                Duration.ofMillis(cfg.getVictoryTitleFadeInMs()),
+                Duration.ofMillis(cfg.getVictoryTitleStayMs()),
+                Duration.ofMillis(cfg.getVictoryTitleFadeOutMs()));
     }
 
     /**
@@ -46,18 +59,26 @@ public final class Sequences {
     public static Sequence roundStart(Gamemode gamemode) {
         String gamemodeName = gamemode.getType().getDisplayName();
         String objective = gamemode.getObjectiveShort();
+        String subtitleKey = "round-start." + subtitleKeySuffixFor(gamemode.getType());
+        // "Selecting Gamemode..." holds for as long as the reveal title does afterward, rather
+        // than being visible for only ~1s before the countdown overwrites it.
+        double revealHoldSeconds = 4;
 
         return Sequence.create()
-                .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), REVEAL_BLINDNESS_TICKS))
+                .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), revealBlindnessTicks()))
                 .pause(40)
                 .run(s -> SequenceEffects.showTitle(s.getPlayers(),
                         component(MSG.getRaw("round-start.selecting")), Component.empty()))
+                .waitSeconds(revealHoldSeconds)
                 .countdown(5, count -> s -> SequenceEffects.showTitle(s.getPlayers(),
                         Component.text(count), Component.empty()))
-                .then(20L, s -> SequenceEffects.showTitle(s.getPlayers(),
-                        component(MSG.getMessage("round-start.selected-title", "gamemode", gamemodeName)),
-                        component(MSG.getMessage("round-start.selected-subtitle", "objective", objective))))
-                .waitSeconds(4)
+                .then(20L, s -> {
+                    SequenceEffects.showTitle(s.getPlayers(),
+                            component(MSG.getMessage("round-start.selected-title", "gamemode", gamemodeName)),
+                            component(MSG.getMessage(subtitleKey, "objective", objective)));
+                    SoundUtils.playTo(s.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                })
+                .waitSeconds(revealHoldSeconds)
                 .run(Sequences::clearLock);
     }
 
@@ -67,18 +88,23 @@ public final class Sequences {
      * only that team.
      */
     public static Sequence presidentReveal(ProtectThePresidentGamemode ptp) {
+        // "Selecting President..." holds for as long as the reveal title does afterward, rather
+        // than being visible for only ~1s before the countdown overwrites it.
+        double revealHoldSeconds = 3.5;
+
         return Sequence.create()
-                .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), REVEAL_BLINDNESS_TICKS))
+                .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), revealBlindnessTicks()))
                 .pause(40)
                 .run(s -> SequenceEffects.showTitle(s.getPlayers(),
                         component(MSG.getRaw("president.selecting")), Component.empty()))
+                .waitSeconds(revealHoldSeconds)
                 .countdown(5, count -> s -> SequenceEffects.showTitle(s.getPlayers(),
                         Component.text(count), Component.empty()))
                 .then(20L, s -> {
                     revealPresidentToTeam(s.getTeamRed(), ptp.getPresident(1));
                     revealPresidentToTeam(s.getTeamBlue(), ptp.getPresident(2));
                 })
-                .waitSeconds(3.5)
+                .waitSeconds(revealHoldSeconds)
                 .run(Sequences::clearLock);
     }
 
@@ -87,12 +113,40 @@ public final class Sequences {
                 "player_name", presidentName(presidentUuid)));
         Component subtitle = component(MSG.getRaw("president.selected-subtitle"));
         SequenceEffects.showTitle(team.getPlayers(), title, subtitle);
+        SoundUtils.playTo(team.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
     }
 
     private static String presidentName(UUID uuid) {
         if (uuid == null) return "Unknown";
         Player p = Bukkit.getPlayer(uuid);
         return p != null ? p.getName() : "Unknown";
+    }
+
+    /**
+     * "Determining Shield...", a 5-second countdown, then the actual outcome - "Everyone was
+     * given a shield!" or "No shields were given out!" depending on this session's coin flip.
+     * Played once at game start immediately after the round-start gamemode reveal (during buy
+     * phase 1). The shield itself is granted per the caller's completion callback, not by this
+     * sequence, so it always arrives after the reveal rather than silently beforehand.
+     */
+    public static Sequence shieldReveal() {
+        double revealHoldSeconds = 2;
+
+        return Sequence.create()
+                .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), revealBlindnessTicks()))
+                .pause(20)
+                .run(s -> SequenceEffects.showTitle(s.getPlayers(),
+                        component(MSG.getRaw("shield-reveal.determining")), Component.empty()))
+                .waitSeconds(revealHoldSeconds)
+                .countdown(5, count -> s -> SequenceEffects.showTitle(s.getPlayers(),
+                        Component.text(count), Component.empty()))
+                .then(20L, s -> {
+                    String key = s.hasShields() ? "shield-reveal.shields-given" : "shield-reveal.no-shields";
+                    SequenceEffects.showTitle(s.getPlayers(), component(MSG.getRaw(key)), Component.empty());
+                    SoundUtils.playTo(s.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                })
+                .waitSeconds(3)
+                .run(Sequences::clearLock);
     }
 
     /**
@@ -106,6 +160,7 @@ public final class Sequences {
                         // No clear winner (e.g. combat timer expired with nobody eliminated)
                         SequenceEffects.showTitle(s.getPlayers(),
                                 component(MSG.getRaw("round-end.no-winner-title")), Component.empty());
+                        SoundUtils.playTo(s.getPlayers(), Sound.BLOCK_END_PORTAL_SPAWN, 1.0f, 1.0f);
                         return;
                     }
 
@@ -115,6 +170,7 @@ public final class Sequences {
                             component(MSG.getRaw("round-end.win-title")), Component.empty());
                     SequenceEffects.showTitle(loser.getPlayers(),
                             component(MSG.getRaw("round-end.lose-title")), Component.empty());
+                    SoundUtils.playTo(s.getPlayers(), Sound.BLOCK_END_PORTAL_SPAWN, 1.0f, 1.0f);
                 })
                 .waitSeconds(5)
                 .run(s -> SequenceEffects.clearTitle(s.getPlayers()));
@@ -128,10 +184,13 @@ public final class Sequences {
 
         return Sequence.create()
                 .waitSeconds(1)
-                .run(s -> SequenceEffects.showTitle(s.getPlayers(),
-                        component(MSG.getRaw("sudden-death.title")),
-                        component(MSG.getMessage("sudden-death.subtitle", "objective", objective)),
-                        SUDDEN_DEATH_TIMES));
+                .run(s -> {
+                    SequenceEffects.showTitle(s.getPlayers(),
+                            component(MSG.getRaw("sudden-death.title")),
+                            component(MSG.getMessage("sudden-death.subtitle", "objective", objective)),
+                            suddenDeathTimes());
+                    SoundUtils.playTo(s.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                });
     }
 
     /**
@@ -142,14 +201,24 @@ public final class Sequences {
         return Sequence.create()
                 .run(s -> {
                     Team loser = s.getOpposingTeam(winner);
+                    Title.Times victoryTimes = victoryTimes();
                     SequenceEffects.showTitle(winner.getPlayers(),
-                            component(MSG.getRaw("victory.win-title")), Component.empty(), VICTORY_TIMES);
+                            component(MSG.getRaw("victory.win-title")), Component.empty(), victoryTimes);
                     SequenceEffects.showTitle(loser.getPlayers(),
-                            component(MSG.getRaw("victory.lose-title")), Component.empty(), VICTORY_TIMES);
+                            component(MSG.getRaw("victory.lose-title")), Component.empty(), victoryTimes);
+                    SoundUtils.playTo(s.getPlayers(), Sound.BLOCK_END_PORTAL_SPAWN, 1.0f, 1.0f);
                 })
                 .waitSeconds(10)
                 .run(s -> SequenceEffects.clearTitle(s.getPlayers()))
                 .waitSeconds(10);
+    }
+
+    private static String subtitleKeySuffixFor(GamemodeType type) {
+        return switch (type) {
+            case CAPTURE_THE_FLAG -> "selected-subtitle-ctf";
+            case PROTECT_THE_PRESIDENT -> "selected-subtitle-ptp";
+            case KILL_CONFIRM -> "selected-subtitle-kc";
+        };
     }
 
     private static void clearLock(GameSession session) {

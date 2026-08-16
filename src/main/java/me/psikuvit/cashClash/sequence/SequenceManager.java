@@ -23,7 +23,7 @@ public class SequenceManager {
     /**
      * Play a sequence, optionally freezing player movement (via {@link GameSession#setSequenceLocked})
      * for its duration. Used by the blind+freeze reveal moments (round start, president
-     * reveal, round 4 transition).
+     * reveal, shield reveal).
      */
     public void play(Sequence sequence, boolean lockPlayers, Runnable onComplete) {
         playInternal(sequence, lockPlayers ? session::setSequenceLocked : null, onComplete);

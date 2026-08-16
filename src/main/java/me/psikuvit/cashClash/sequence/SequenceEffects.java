@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.sequence;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -19,15 +20,20 @@ import java.util.function.Consumer;
  */
 public final class SequenceEffects {
 
-    private static final Title.Times DEFAULT_TIMES = Title.Times.times(
-            Duration.ofMillis(250), Duration.ofSeconds(5), Duration.ofMillis(250));
-
     private SequenceEffects() {
         throw new AssertionError("Nope.");
     }
 
+    private static Title.Times defaultTimes() {
+        var cfg = CashClashPlugin.getInstance().getConfigManager();
+        return Title.Times.times(
+                Duration.ofMillis(cfg.getDefaultTitleFadeInMs()),
+                Duration.ofMillis(cfg.getDefaultTitleStayMs()),
+                Duration.ofMillis(cfg.getDefaultTitleFadeOutMs()));
+    }
+
     public static void showTitle(Collection<UUID> players, Component title, Component subtitle) {
-        showTitle(players, title, subtitle, DEFAULT_TIMES);
+        showTitle(players, title, subtitle, defaultTimes());
     }
 
     public static void showTitle(Collection<UUID> players, Component title, Component subtitle, Title.Times times) {

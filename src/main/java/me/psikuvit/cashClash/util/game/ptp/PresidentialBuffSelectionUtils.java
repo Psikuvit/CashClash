@@ -1,13 +1,16 @@
 package me.psikuvit.cashClash.util.game.ptp;
 
 import io.papermc.paper.datacomponent.DataComponentTypes;
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionType;
 
 import java.util.List;
 
@@ -22,18 +25,24 @@ public class PresidentialBuffSelectionUtils {
     }
 
     /**
-     * Create a buff selection item with appropriate display and metadata
+     * Create a buff selection item with appropriate display and metadata. The item's base potion
+     * type is always set to match what the buff actually does (e.g. Strength -> a real Strength
+     * bottle, Resistance -> Turtle Master, Extra Hearts -> Healing) - not just the display name -
+     * so the bottle color/vanilla tooltip line up with the buff for every buff, not just the text.
      *
      * @param name The item name (e.g., "Strength Potion")
      * @param benefit The buff benefit description
+     * @param potionType The base potion type matching what this buff actually applies
      * @return The created ItemStack
      */
-    public static ItemStack createBuffSelectionItem(String name, String benefit) {
+    public static ItemStack createBuffSelectionItem(String name, String benefit, PotionType potionType) {
         ItemStack item = new ItemStack(Material.POTION);
 
         PDCSetter tags = PDCSetter.of(item);
-        tags.meta().displayName(Messages.parse("<yellow>" + name + "</yellow>"));
-        tags.meta().lore(List.of(
+        PotionMeta potionMeta = (PotionMeta) tags.meta();
+        potionMeta.setBasePotionType(potionType);
+        potionMeta.displayName(Messages.parse("<yellow>" + name + "</yellow>"));
+        potionMeta.lore(List.of(
                 Messages.parse(benefit),
                 Component.empty(),
                 Messages.parse("<gray>Right-click to select</gray>"),
@@ -58,8 +67,7 @@ public class PresidentialBuffSelectionUtils {
      * @return The created ItemStack
      */
     public static ItemStack createStrengthBuffItem() {
-        return createBuffSelectionItem("Strength Potion",
-                "<gold>Strength I - Deal more damage</gold>");
+        return createBuffSelectionItem("Strength Potion", description("strength-buff-description"), PotionType.STRENGTH);
     }
 
     /**
@@ -68,28 +76,31 @@ public class PresidentialBuffSelectionUtils {
      * @return The created ItemStack
      */
     public static ItemStack createSpeedBuffItem() {
-        return createBuffSelectionItem("Speed Potion",
-                "<gold>Speed I - Move faster</gold>");
+        return createBuffSelectionItem("Speed Potion", description("speed-buff-description"), PotionType.SWIFTNESS);
     }
 
     /**
-     * Create a resistance potion buff selection item
+     * Create a resistance potion buff selection item - looks like and describes what it actually
+     * applies (Turtle Master: Resistance + Slowness), not plain Resistance.
      *
      * @return The created ItemStack
      */
     public static ItemStack createResistanceBuffItem() {
-        return createBuffSelectionItem("Resistance Potion",
-                "<gold>Resistance I - Take less damage</gold>");
+        return createBuffSelectionItem("Resistance Potion", description("resistance-buff-description"), PotionType.TURTLE_MASTER);
     }
 
     /**
-     * Create extra hearts potion buff selection item
+     * Create extra hearts potion buff selection item - looks like and describes what it actually
+     * applies (a one-time instant heal), not a permanent max-health increase.
      *
      * @return The created ItemStack
      */
     public static ItemStack createExtraHeartsBuffItem() {
-        return createBuffSelectionItem("Health Potion",
-                "<gold>Extra Hearts - Gain +2 max heart</gold>");
+        return createBuffSelectionItem("Health Potion", description("health-buff-description"), PotionType.HEALING);
+    }
+
+    private static String description(String key) {
+        return CashClashPlugin.getInstance().getMessagesConfig().getRaw("gamemode-ptp." + key);
     }
 
     /**

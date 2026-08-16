@@ -43,7 +43,6 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Collection;
@@ -303,6 +302,14 @@ public class GameSession {
     }
 
     /**
+     * "Shield" or "Shield-less" - whichever this session's coin flip landed on. Shared text for
+     * the shield-reveal sequence and the {@code {shield_status}} scoreboard placeholder.
+     */
+    public String getShieldStatusText() {
+        return shieldsEnabled ? "Shield" : "Shield-less";
+    }
+
+    /**
      * Set an admin shield override for a player (testing). Pass null to clear the override.
      */
     public void setShieldOverride(UUID uuid, Boolean give) {
@@ -344,16 +351,17 @@ public class GameSession {
 
         // Select a random gamemode for this session
         gamemode = gamemodeManager.selectGamemode(this);
-        scoreboardManager.createBoardForSession(this);
 
         // Get players to the shop area before the round-start sequence freezes/blinds them
         roundManager.teleportToBuyPhase();
 
-        // Play the round-start reveal sequence, then continue into the game/shopping phase
         sequenceManager.play(Sequences.roundStart(gamemode), true, () -> {
+            scoreboardManager.createBoardForSession(this);
             gamemode.onGameStart();
-            players.keySet().forEach(this::applyKit);
-            roundManager.startShoppingPhase(currentRound);
+            sequenceManager.play(Sequences.shieldReveal(), true, () -> {
+                players.keySet().forEach(this::applyKit);
+                roundManager.startShoppingPhase(currentRound);
+            });
         });
 
         Messages.debug("GAME", "GameSession " + sessionId + " started in Arena " + arenaNumber);
@@ -455,7 +463,6 @@ public class GameSession {
             if (!isPlayerOnline(p)) return;
 
             teleportPlayerToSpawn(p, uuid);
-            reapplyKitPotionEffects(p, ccp.getCurrentKit());
         });
     }
 
@@ -472,20 +479,6 @@ public class GameSession {
     private void teleportPlayerToSpawn(Player player, UUID uuid) {
         Location spawn = getSpawnForPlayer(uuid);
         if (spawn != null) player.teleport(spawn);
-    }
-
-    /**
-     * Reapply kit-specific potion effects at the start of each round.
-     */
-    private void reapplyKitPotionEffects(Player player, Kit kit) {
-        if (kit == null) return;
-
-        switch (kit) {
-            case GHOST -> CashClashPlayer.applyEffect(player, PotionEffectType.SPEED, 60 * 20, 0);
-            case PYROMANIAC -> CashClashPlayer.applyEffect(player, PotionEffectType.FIRE_RESISTANCE, 60 * 20, 0);
-            default -> {
-            } // Other kits don't have potion effects
-        }
     }
 
     private void applyKit(UUID uuid) {
@@ -642,17 +635,11 @@ public class GameSession {
         // Clear any pending rejoins for this session
         rejoinManager.clearSessionRejoins(sessionId);
 
-        // Stop round/bonus timers immediately - the game is decided now. Gamemode
-        // cleanup is deferred (releaseGamemode below) since ScoreboardProvider still
-        // reads session.getGamemode() for players lingering through the victory sequence.
         cleanupManagers();
 
         Team winner = calculateWinner();
         Location finalSpawn = determineFinalSpawn();
 
-        // Show the victory sequence (win/loss title, then a lingering pause) before
-        // teleporting players away and tearing down the arena. No restrictions except
-        // damage - the game is already decided.
         sequenceManager.playDamageDisabled(Sequences.gameVictory(winner), () -> {
             notifyGameEnd(winner, finalSpawn);
             cleanupPlayers();
@@ -705,12 +692,16 @@ public class GameSession {
     }
 
     /**
-     * Record wins for all players on winning team
+     * Record wins for the winning team and losses for the losing team.
      */
     private void recordWins() {
         Team winner = calculateWinner();
+        Team loser = getOpposingTeam(winner);
         for (UUID u : winner.getPlayers()) {
             playerDataManager.incWins(u);
+        }
+        for (UUID u : loser.getPlayers()) {
+            playerDataManager.incLosses(u);
         }
     }
 
@@ -753,8 +744,7 @@ public class GameSession {
             if (player == null) return;
 
             // Clear inventory and armor
-            player.getInventory().clear();
-            player.getInventory().setArmorContents(new ItemStack[4]);
+            KitService.remove(null, player);
             player.getInventory().setItemInOffHand(null);
 
             CashClashPlayer ccp = getCashClashPlayer(player.getUniqueId());

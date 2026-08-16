@@ -5,13 +5,13 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.MythicItem;
-import me.psikuvit.cashClash.util.ActionBarQueue;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.TimerDisplayUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -376,7 +376,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         risingFuryTimeoutTasks.put(uuid, task);
         manager.trackTask(uuid, task);
 
-        ActionBarQueue.get().startCountdownTimer(player, timeoutTicks * 50L, PRIORITY_RISING_FURY_TIMER,
+        TimerDisplayUtils.startCountdownTimer(player, timeoutTicks * 50L, PRIORITY_RISING_FURY_TIMER,
                 seconds -> "<gold>⚔ Rising Fury: <yellow>" + seconds + "s</yellow> to land a hit</gold>", null);
     }
 
@@ -391,17 +391,18 @@ public class WardenGlovesHandler extends MythicItemHandler {
         resetRisingFuryTimeout(player);
 
         int maxStacks = cfg.getWardenRisingFuryMaxStacks();
-        int maxHits = maxStacks * 3;
+        int hitsPerStack = cfg.getWardenRisingFuryHitsPerStack();
+        int maxHits = maxStacks * hitsPerStack;
         int previousHits = risingFuryHitCount.getOrDefault(uuid, 0);
         int hitCount = Math.min(maxHits, previousHits + 1);
         risingFuryHitCount.put(uuid, hitCount);
-        int stacks = hitCount / 3;
+        int stacks = hitCount / hitsPerStack;
 
         applyRisingFuryAttributes(player, stacks);
 
         // Announce only on the hit that actually crosses a stack boundary, not on every third
         // hit once the counter has already been clamped at max.
-        if (stacks > previousHits / 3) {
+        if (stacks > previousHits / hitsPerStack) {
             announceReachGain(player, stacks, maxStacks);
         }
 
@@ -449,7 +450,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         risingFuryHitCount.remove(uuid);
         BukkitTask task = risingFuryTimeoutTasks.remove(uuid);
         if (task != null && !task.isCancelled()) task.cancel();
-        ActionBarQueue.get().stopCountdownTimer(player);
+        TimerDisplayUtils.stopCountdownTimer(player);
         CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
 
         // No-ops safely if the player already swapped away from the gloves.
@@ -519,7 +520,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         risingFuryHitCount.remove(uuid);
         BukkitTask task = risingFuryTimeoutTasks.remove(uuid);
         if (task != null && !task.isCancelled()) task.cancel();
-        ActionBarQueue.get().stopCountdownTimer(player);
+        TimerDisplayUtils.stopCountdownTimer(player);
 
         // Restore whatever was stashed rather than just dropping the tracking - otherwise the
         // stashed item is silently lost and the cosmetic is left stuck in the off-hand.

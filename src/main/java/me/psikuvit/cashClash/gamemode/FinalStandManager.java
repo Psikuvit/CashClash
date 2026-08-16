@@ -1,8 +1,11 @@
 package me.psikuvit.cashClash.gamemode;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
+import org.bukkit.Sound;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
@@ -35,7 +38,7 @@ public class FinalStandManager {
     }
 
     public FinalStandManager(GameSession session, Gamemode gamemode) {
-        this(session, gamemode, 3 * 60 * 1000L); // default 3 minutes
+        this(session, gamemode, CashClashPlugin.getInstance().getConfigManager().getFinalStandDurationSeconds() * 1000L);
     }
 
     /**
@@ -70,11 +73,16 @@ public class FinalStandManager {
         unlimited = true;
         // Do not schedule a timer; final-stand remains until cancelled
         Messages.debug("[FinalStandManager] Final stand started (until-win mode) for session " + session.getSessionId());
-        if (gamemode != null) gamemode.onFinalStandActivated();
+        announceActivation();
     }
 
     private void activate() {
         Messages.debug("[FinalStandManager] Final stand timer elapsed - activating final stand");
+        announceActivation();
+    }
+
+    private void announceActivation() {
+        SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 1.0f);
         if (gamemode != null) {
             gamemode.onFinalStandActivated();
         }

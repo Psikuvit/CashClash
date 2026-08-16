@@ -41,8 +41,6 @@ import java.util.UUID;
  */
 public class RoundManager {
 
-    private static final int SUDDEN_DEATH_PHASE_SECONDS = 180; // 3 minutes
-
     private final GameSession session;
     private BukkitTask phaseTask;
     private int timeRemaining;
@@ -111,9 +109,8 @@ public class RoundManager {
     }
 
     /**
-     * Continues the buy phase after any round-4 transition sequence: for Protect the
-     * President, reveals the president to each team first, then starts the appropriate
-     * phase.
+     * Begins the actual buy phase for a round: for Protect the President, reveals the
+     * president to each team first, then starts the appropriate phase.
      */
     private void beginBuyPhase(int roundNumber) {
         if (session.getGamemode() instanceof ProtectThePresidentGamemode ptp) {
@@ -153,10 +150,10 @@ public class RoundManager {
         }
 
         // Set duration based on phase type
+        ConfigManager config = CashClashPlugin.getInstance().getConfigManager();
         if (phaseType == GameState.BUFF_SELECTION) {
-            timeRemaining = 15; // 15 seconds for buff selection
+            timeRemaining = config.getBuffSelectionDuration();
         } else {
-            ConfigManager config = CashClashPlugin.getInstance().getConfigManager();
             timeRemaining = config.getShoppingPhaseDuration();
         }
 
@@ -219,18 +216,16 @@ public class RoundManager {
      * Timer logic for buff selection phase
      */
     private void startBuffSelectionTimer(int roundNumber) {
+        int warningSeconds = CashClashPlugin.getInstance().getConfigManager().getPhaseCountdownWarningSeconds();
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
             timeRemaining--;
 
-            if (timeRemaining <= 3 && timeRemaining > 0) {
+            if (timeRemaining <= warningSeconds && timeRemaining > 0) {
                 SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
             }
 
             if (timeRemaining <= 0) {
                 endBuffSelectionPhase(roundNumber);
-            } else if (timeRemaining <= 3) {
-                Messages.broadcast(session.getPlayers(), "round.buff-selection-countdown",
-                    "time_remaining", String.valueOf(timeRemaining));
             }
         }, 0, 20L);
     }
@@ -239,6 +234,7 @@ public class RoundManager {
      * Timer logic for shopping phase
      */
     private void startShoppingTimer(Team teamRed, Team teamBlue) {
+        int warningSeconds = CashClashPlugin.getInstance().getConfigManager().getPhaseCountdownWarningSeconds();
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
             if (teamRed.isTeamReady() && teamBlue.isTeamReady()) {
                 Messages.broadcast(session.getPlayers(), "round.both-teams-ready");
@@ -247,13 +243,13 @@ public class RoundManager {
             }
             timeRemaining--;
 
-            if (timeRemaining <= 3 && timeRemaining > 0) {
+            if (timeRemaining <= warningSeconds && timeRemaining > 0) {
                 SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
             }
 
             if (timeRemaining <= 0) {
                 endShoppingPhase();
-            } else if (timeRemaining <= 3) {
+            } else if (timeRemaining <= warningSeconds) {
                 Messages.broadcast(session.getPlayers(), "round.shopping-countdown",
                     "time_remaining", String.valueOf(timeRemaining));
             }
@@ -312,7 +308,9 @@ public class RoundManager {
         ConfigManager config = CashClashPlugin.getInstance().getConfigManager();
         boolean suddenDeathRound = session.getGamemode() != null
                 && session.getGamemode().getSuddenDeathManager().isInSuddenDeath();
-        timeRemaining = suddenDeathRound ? SUDDEN_DEATH_PHASE_SECONDS : config.getCombatPhaseDuration();
+        int suddenDeathPhaseSeconds = config.getSuddenDeathPhaseDuration();
+        int warningSeconds = config.getPhaseCountdownWarningSeconds();
+        timeRemaining = suddenDeathRound ? suddenDeathPhaseSeconds : config.getCombatPhaseDuration();
 
         // Apply team outlines to all players (Feature #7-8)
         applyTeamOutlinesToAllPlayers();
@@ -326,7 +324,7 @@ public class RoundManager {
 
             if (!finalStandActive && timeRemaining <= 0) {
                 if (suddenDeathRound) {
-                    timeRemaining = SUDDEN_DEATH_PHASE_SECONDS;
+                    timeRemaining = suddenDeathPhaseSeconds;
                     Messages.debug("[RoundManager] Sudden death cycle expired; restarting combat timer for the next cycle");
                 } else {
                     if (startFinalStandDueToTimer()) {
@@ -335,7 +333,7 @@ public class RoundManager {
                     int winningTeam = session.getGamemode() != null ? session.getGamemode().getWinningTeam() : 0;
                     endCombatPhase(winningTeam);
                 }
-            } else if (!finalStandActive && timeRemaining <= 3) {
+            } else if (!finalStandActive && timeRemaining <= warningSeconds) {
                 SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
                 Messages.broadcast(session.getPlayers(), "round.combat-countdown",
                     "time_remaining", String.valueOf(timeRemaining));

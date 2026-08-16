@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.util.ActionBarQueue;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -29,7 +30,10 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Blooming Rose: places a cherry-blossom structure that creates a healing zone.
@@ -40,9 +44,13 @@ import java.util.Map;
  */
 public class BloomingRoseHandler extends CustomItemHandler {
 
+    private static final int PRIORITY_ROSE_HP_REVEAL = 4;
+    private static final long ROSE_HP_REVEAL_DISPLAY_MS = 1000L;
+
     // Blooming Rose - placed sakura zones keyed by trunk location
     private final Map<Location, BloomingRoseZone> bloomingRoseZones;
     private BukkitTask hpRevealTask;
+    private final Set<UUID> activeRoseActionBarPlayers;
 
     /**
      * @param session       the game session the rose was placed in (used for team lookups on expiry)
@@ -61,6 +69,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
     public BloomingRoseHandler(CustomItemManager manager) {
         super(manager);
         this.bloomingRoseZones = new HashMap<>();
+        this.activeRoseActionBarPlayers = new HashSet<>();
     }
 
     public void placeBloomingRose(Player player, ItemStack item, Location loc) {
@@ -331,6 +340,8 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
         hpRevealTask = SchedulerUtils.runTaskTimer(() -> {
             Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+            Set<UUID> stillActive = new HashSet<>();
+
             for (Player holder : onlinePlayers) {
                 if (PDCDetection.getCustomItem(holder.getInventory().getItemInMainHand()) != CustomItem.BLOOMING_ROSE) continue;
                 GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(holder);
@@ -347,8 +358,17 @@ public class BloomingRoseHandler extends CustomItemHandler {
                     sb.append("  <aqua>").append(teammate.getName()).append("</aqua> <red>❤ ")
                             .append(String.format("%.1f", teammate.getHealth())).append("</red>");
                 }
-                holder.sendActionBar(Messages.parse(sb.toString()));
+                ActionBarQueue.get().startDisplay(holder, sb.toString(), PRIORITY_ROSE_HP_REVEAL, ROSE_HP_REVEAL_DISPLAY_MS);
+                stillActive.add(holder.getUniqueId());
             }
+
+            for (UUID uuid : activeRoseActionBarPlayers) {
+                if (!stillActive.contains(uuid)) {
+                    ActionBarQueue.get().stopDisplay(uuid);
+                }
+            }
+            activeRoseActionBarPlayers.clear();
+            activeRoseActionBarPlayers.addAll(stillActive);
         }, 0L, 10L);
     }
 
@@ -370,5 +390,10 @@ public class BloomingRoseHandler extends CustomItemHandler {
             hpRevealTask.cancel();
             hpRevealTask = null;
         }
+
+        for (UUID uuid : activeRoseActionBarPlayers) {
+            ActionBarQueue.get().stopDisplay(uuid);
+        }
+        activeRoseActionBarPlayers.clear();
     }
 }

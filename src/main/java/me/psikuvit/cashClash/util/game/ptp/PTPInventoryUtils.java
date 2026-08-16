@@ -1,12 +1,9 @@
 package me.psikuvit.cashClash.util.game.ptp;
 
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Utility class for Protect the President inventory handling.
@@ -20,19 +17,17 @@ public class PTPInventoryUtils {
 
     /**
      * Save a president's current inventory and replace it with the buff selection items.
+     * The snapshot lives on the president's own {@link CashClashPlayer} wrapper (see
+     * {@link CashClashPlayer#stashFullInventory()}) rather than a map kept here, so there's one
+     * canonical place a player's stuff can be "put away" instead of every caller keeping its own.
      *
      * @param president The president player
-     * @param savedInventories Map used to store original inventory contents
      */
-    public static void giveBuffSelectionItems(Player president, Map<UUID, ItemStack[]> savedInventories) {
-        UUID presUuid = president.getUniqueId();
-        savedInventories.put(presUuid, president.getInventory().getContents().clone());
+    public static void giveBuffSelectionItems(Player president) {
+        CashClashPlayer.stashFullInventory(president);
 
         SchedulerUtils.runTask(() -> {
-            Messages.debug("[PTP] Saving inventory for president: " + president.getName());
-
-            president.getInventory().clear();
-            Messages.debug("[PTP] Cleared inventory for: " + president.getName());
+            Messages.debug("[PTP] Giving buff selection items to president: " + president.getName());
 
             president.getInventory().setItem(1, PresidentialBuffSelectionUtils.createStrengthBuffItem());
             president.getInventory().setItem(3, PresidentialBuffSelectionUtils.createSpeedBuffItem());
@@ -45,25 +40,14 @@ public class PTPInventoryUtils {
     }
 
     /**
-     * Restore a player's inventory from the saved selection snapshot.
+     * Restore a player's inventory from the snapshot {@link #giveBuffSelectionItems} stashed on
+     * their {@link CashClashPlayer} wrapper. No-op if nothing is stashed.
      *
      * @param player The player to restore
-     * @param savedInventories Map containing saved inventories
      */
-    public static void restoreInventory(Player player, Map<UUID, ItemStack[]> savedInventories) {
-        UUID uuid = player.getUniqueId();
-        if (!savedInventories.containsKey(uuid)) {
-            return;
-        }
-
-        ItemStack[] savedContents = savedInventories.get(uuid);
-        player.getInventory().clear();
-        SchedulerUtils.runTaskAsync(() -> {
-            player.getInventory().setContents(savedContents);
-            Messages.debug("[PTP] Restored inventory for: " + player.getName());
-            savedInventories.remove(uuid);
-            player.updateInventory();
-        });
+    public static void restoreInventory(Player player) {
+        CashClashPlayer.restoreFullInventory(player);
+        player.updateInventory();
+        Messages.debug("[PTP] Restored inventory for: " + player.getName());
     }
 }
-

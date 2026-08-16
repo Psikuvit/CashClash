@@ -10,7 +10,7 @@ import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.util.ActionBarQueue;
+import me.psikuvit.cashClash.util.game.TimerDisplayUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
@@ -103,6 +103,7 @@ public class KillConfirmGamemode extends Gamemode {
     public void onCombatPhaseStart() {
         Messages.debug("[KC] Combat phase started");
         if (suddenDeathManager.isInSuddenDeath()) {
+            suddenDeathManager.startCycleTimer();
             suddenDeathCycleScore.put(TeamColor.RED, 0);
             suddenDeathCycleScore.put(TeamColor.BLUE, 0);
             Messages.debug("[KC] Sudden death cycle started - score counters reset");
@@ -167,7 +168,7 @@ public class KillConfirmGamemode extends Gamemode {
         for (KCZone zone : activeZones) {
             zone.getOccupantEntryTimestamps().remove(uuid);
         }
-        ActionBarQueue.get().stopDisplay(player);
+        TimerDisplayUtils.stopCountdownTimer(player);
     }
 
     @Override
@@ -219,12 +220,13 @@ public class KillConfirmGamemode extends Gamemode {
 
     @Override
     public String getRoundStartMessage() {
-        return "<gold>Kill Confirm Round!</gold>";
+        return CashClashPlugin.getInstance().getMessagesConfig().getRaw("gamemode-kc.round-start-message");
     }
 
     @Override
     public String getBuyPhaseMessage() {
-        return "<yellow>Confirm your kills for points, deny the enemy's! First team to " + WIN_CONDITION + " wins!</yellow>";
+        return CashClashPlugin.getInstance().getMessagesConfig().getMessage("gamemode-kc.buy-phase-message",
+                "win_condition", String.valueOf(WIN_CONDITION));
     }
 
     @Override
@@ -265,7 +267,21 @@ public class KillConfirmGamemode extends Gamemode {
             }
         }
 
-        Messages.broadcast(session.getPlayers(), "gamemode-kc.sudden-death-tied-restart");
+        // The tie/restart chat message and sound are already sent once by
+        // SuddenDeathManager#broadcastCycleRestartMessage() - don't duplicate them here.
+    }
+
+    /**
+     * A cycle score of WIN_CONDITION-WIN_CONDITION (both teams reaching the same score needed to
+     * win a normal round) is an immediate tie - restart the cycle right away rather than waiting
+     * for its 3-minute timeout to expire.
+     */
+    private void checkSuddenDeathCycleTie() {
+        int redScore = suddenDeathCycleScore.getOrDefault(TeamColor.RED, 0);
+        int blueScore = suddenDeathCycleScore.getOrDefault(TeamColor.BLUE, 0);
+        if (redScore >= WIN_CONDITION && blueScore >= WIN_CONDITION) {
+            suddenDeathManager.restartCycle();
+        }
     }
 
     @Override
@@ -274,6 +290,7 @@ public class KillConfirmGamemode extends Gamemode {
             return false;
         }
         prepareSuddenDeathRound();
+        suddenDeathManager.startCycleTimer();
         return true;
     }
 
@@ -309,6 +326,10 @@ public class KillConfirmGamemode extends Gamemode {
         return teamScore.getOrDefault(TeamColor.fromTeamNumber(team), 0);
     }
 
+    public int getWinCondition() {
+        return WIN_CONDITION;
+    }
+
     // ========= PRIVATE HELPERS =========
 
     private void cancelTask(BukkitTask task) {
@@ -322,6 +343,7 @@ public class KillConfirmGamemode extends Gamemode {
         teamScore.merge(color, 1, Integer::sum);
         if (suddenDeathManager.isInSuddenDeath()) {
             suddenDeathCycleScore.merge(color, 1, Integer::sum);
+            checkSuddenDeathCycleTie();
         }
 
         Messages.broadcast(session.getPlayers(), "gamemode-kc.kill-point",
@@ -443,7 +465,7 @@ public class KillConfirmGamemode extends Gamemode {
 
             if (!KCZoneValidator.isPlayerInZone(player, zone.getCenter())) {
                 if (occupants.remove(uuid) != null) {
-                    ActionBarQueue.get().stopDisplay(player);
+                    TimerDisplayUtils.stopCountdownTimer(player);
                     Messages.send(player, "gamemode-kc.zone-capture-cancelled", "victim_name", zone.getVictimName());
                 }
                 continue;
@@ -466,7 +488,7 @@ public class KillConfirmGamemode extends Gamemode {
 
             anyoneHolding = true;
             long remainingMs = requiredMs - elapsed;
-            ActionBarQueue.get().startCountdownTimer(player, remainingMs, 1,
+            TimerDisplayUtils.startCountdownTimer(player, remainingMs, 1,
                     secondsRemaining -> "<gold>Capturing: " + secondsRemaining + "s</gold>");
         }
 
@@ -499,6 +521,7 @@ public class KillConfirmGamemode extends Gamemode {
             teamScore.merge(color, 1, Integer::sum);
             if (suddenDeathManager.isInSuddenDeath()) {
                 suddenDeathCycleScore.merge(color, 1, Integer::sum);
+                checkSuddenDeathCycleTie();
             }
             Messages.broadcast(session.getPlayers(), "gamemode-kc.tag-confirmed",
                     "player_name", capturer.getName(),
@@ -530,7 +553,7 @@ public class KillConfirmGamemode extends Gamemode {
         for (UUID uuid : zone.getOccupantEntryTimestamps().keySet()) {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null) {
-                ActionBarQueue.get().stopDisplay(p);
+                TimerDisplayUtils.stopCountdownTimer(p);
             }
         }
         zone.getOccupantEntryTimestamps().clear();

@@ -20,7 +20,6 @@ import me.psikuvit.cashClash.util.game.ptp.PresidentialEffectsUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -48,7 +47,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private final Map<TeamColor, Integer> teamKillCount;
     private final Map<TeamColor, Integer> suddenDeathPresidentKills;
     private final Map<UUID, List<PresidentialBuff>> selectedBuffs;
-    private final Map<UUID, ItemStack[]> savedInventories;
     private final Map<TeamColor, BukkitTask> glowingTasks;
 
     private final SuddenDeathManager suddenDeathManager;
@@ -77,7 +75,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.teamKillCount = new EnumMap<>(TeamColor.class);
         this.suddenDeathPresidentKills = new EnumMap<>(TeamColor.class);
         this.selectedBuffs = new HashMap<>();
-        this.savedInventories = new HashMap<>();
         this.glowingTasks = new EnumMap<>(TeamColor.class);
         this.suddenDeathManager = new SuddenDeathManager(session, this);
         this.finalStandManager = new FinalStandManager(session, this);
@@ -110,6 +107,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public void onCombatPhaseStart() {
         Messages.debug("[PTP] Combat phase started");
         if (suddenDeathManager.isInSuddenDeath()) {
+            suddenDeathManager.startCycleTimer();
             // Reset sudden death kill counters for this cycle
             suddenDeathPresidentKills.put(TeamColor.RED, 0);
             suddenDeathPresidentKills.put(TeamColor.BLUE, 0);
@@ -249,6 +247,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             addTeamKill(killerTeam);
             if (suddenDeathManager.isInSuddenDeath()) {
                 suddenDeathPresidentKills.merge(TeamColor.fromTeamNumber(killerTeam), 1, Integer::sum);
+                checkSuddenDeathCycleTie();
             }
             if (finalStandManager.isActive()) {
                 suddenDeathWinningTeam = killerTeam;
@@ -330,7 +329,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         suddenDeathManager.cleanup();
         presidents.clear();
         teamKillCount.clear();
-        savedInventories.clear();
         // Reset recent heart bonus tracking on cleanup
         recentHeartBonusTeam = 0;
         recentHeartBonusAwardMs = 0L;
@@ -363,12 +361,12 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public String getRoundStartMessage() {
         if (suddenDeathManager.isInSuddenDeath()) {
-            String pres1Name = getPresidentName(1);
-            String pres2Name = getPresidentName(2);
-            return "<gold>" + pres1Name + " and " + pres2Name + " are elected as your presidents! " +
-                    "You can select up to 2 bonus effects for this final fight!</gold>";
+            return CashClashPlugin.getInstance().getMessagesConfig().getMessage("gamemode-ptp.round-start-message-sudden-death",
+                    "president1_name", getPresidentName(1),
+                    "president2_name", getPresidentName(2));
         }
-        return "<gold>" + getPresidentName(1) + " is your team's president and can pick 1 bonus effect.</gold>";
+        return CashClashPlugin.getInstance().getMessagesConfig().getMessage("gamemode-ptp.round-start-message",
+                "president_name", getPresidentName(1));
     }
 
     private String getPresidentName(int team) {
@@ -381,12 +379,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public String getBuyPhaseMessage() {
         if (suddenDeathManager.isInSuddenDeath()) {
-            return "<yellow>The game has entered sudden death. Money bonuses have been replaced with an extra heart " +
-                        "that lasts for 45 seconds. Eliminate the other team's president more times in 3 minutes to win the match!</yellow>";
+            return CashClashPlugin.getInstance().getMessagesConfig().getRaw("gamemode-ptp.sudden-death-timer-start");
         }
 
-        return "<yellow>Best of 7 series - First to 2 assassinations wins each round! " +
-                "Every 2 kills the president's team gets a split 15k bonus!</yellow>";
+        return CashClashPlugin.getInstance().getMessagesConfig().getRaw("gamemode-ptp.buy-phase-message");
     }
 
     @Override
@@ -401,6 +397,19 @@ public class ProtectThePresidentGamemode extends Gamemode {
         activateFinalStandElimination();
         startFinalStandBorder();
         Messages.debug("[PTP] Final Stand activated - non-Presidents will be eliminated");
+    }
+
+    /**
+     * A cycle score of {@code WIN_CONDITION}-{@code WIN_CONDITION} (both teams assassinating the
+     * enemy president the same number of times needed to win a normal round) is an immediate tie -
+     * restart the cycle right away rather than waiting for its 3-minute timeout to expire.
+     */
+    private void checkSuddenDeathCycleTie() {
+        int redKills = suddenDeathPresidentKills.getOrDefault(TeamColor.RED, 0);
+        int blueKills = suddenDeathPresidentKills.getOrDefault(TeamColor.BLUE, 0);
+        if (redKills >= WIN_CONDITION && blueKills >= WIN_CONDITION) {
+            suddenDeathManager.restartCycle();
+        }
     }
 
     @Override
@@ -429,8 +438,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 Messages.send(p, "gamemode-ptp.sudden-death-timer-start");
             }
         }
-        
-        Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-tied-restart");
+
+        // The tie/restart chat message and sound are already sent once by
+        // SuddenDeathManager#broadcastCycleRestartMessage() - don't duplicate them here.
         Messages.debug("[PTP] Sudden death president kill counters reset for next cycle");
     }
 
@@ -462,8 +472,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         if (presPlayer1 != null && presPlayer2 != null) {
             Messages.debug("[PTP] Both presidents found, giving buff selection items");
-            PTPInventoryUtils.giveBuffSelectionItems(presPlayer1, savedInventories);
-            PTPInventoryUtils.giveBuffSelectionItems(presPlayer2, savedInventories);
+            PTPInventoryUtils.giveBuffSelectionItems(presPlayer1);
+            PTPInventoryUtils.giveBuffSelectionItems(presPlayer2);
             Messages.debug("[PTP] Buff selection items given to both presidents");
         } else {
             Messages.debug("[PTP] ERROR: One or both presidents are null!");
@@ -527,10 +537,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
         }
         
         // Restore inventories for all presidents before combat
-        for (UUID uuid : new ArrayList<>(savedInventories.keySet())) {
-            Player presPlayer = Bukkit.getPlayer(uuid);
+        for (int team = 1; team <= 2; team++) {
+            Player presPlayer = getPresidentPlayerByTeam(team);
             if (presPlayer != null) {
-                PTPInventoryUtils.restoreInventory(presPlayer, savedInventories);
+                PTPInventoryUtils.restoreInventory(presPlayer);
             }
         }
 
@@ -615,16 +625,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
         for (PresidentialBuff buff : buffs) {
             switch (buff) {
                 case OFFENSE -> PresidentialEffectsUtils.applyPotionEffect(presPlayer, PotionEffectType.STRENGTH);
-                case TANK -> PresidentialEffectsUtils.applyPotionEffect(presPlayer, PotionEffectType.RESISTANCE);
+                case TANK -> PresidentialEffectsUtils.applyTankBuff(presPlayer);
                 case SPEED -> PresidentialEffectsUtils.applyPotionEffect(presPlayer, PotionEffectType.SPEED);
-                case HP -> {
-                    // Add 1 extra heart (permanent for this round, will be reset on round end)
-                    UUID presUuid = presPlayer.getUniqueId();
-                    var cashPlayer = session.getCashClashPlayer(presUuid);
-                    if (cashPlayer != null) {
-                        cashPlayer.addHealthModifier(4.0); // 2 health = 1 heart
-                    }
-                }
+                case HP -> PresidentialEffectsUtils.applyHpBuff(presPlayer);
             }
 
             Messages.send(presPlayer, "gamemode-ptp.buff-activated", "buff_name", buff.getName());
@@ -689,10 +692,20 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     /**
-     * Enter sudden death mode
+     * Get this sudden-death cycle's president-kill count for a specific team - resets to 0 on
+     * every cycle restart, unlike {@link #getAssassinationCount} which is match-wide.
+     */
+    public int getSuddenDeathCycleKills(int teamNumber) {
+        return suddenDeathPresidentKills.getOrDefault(TeamColor.fromTeamNumber(teamNumber), 0);
+    }
+
+    /**
+     * Enter sudden death mode immediately, including starting its cycle timer right away -
+     * used for admin-forced testing, which bypasses the normal buy-phase/combat-phase split.
      */
     public void enterSuddenDeath() {
         suddenDeathManager.enterSuddenDeath();
+        suddenDeathManager.startCycleTimer();
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
         Messages.debug("[PTP] Entered sudden death - 3-minute sudden-death initial period started");
@@ -879,25 +892,19 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * Enum for presidential buff options
      */
     public enum PresidentialBuff {
-        OFFENSE("Strength", PotionEffectType.STRENGTH),
-        TANK("Resistance", PotionEffectType.RESISTANCE),
-        SPEED("Speed", PotionEffectType.SPEED),
-        HP("Extra Hearts", null); // Special case
+        OFFENSE("Strength"),
+        TANK("Resistance"),
+        SPEED("Speed"),
+        HP("Extra Hearts");
 
         private final String name;
-        private final PotionEffectType effect;
 
-        PresidentialBuff(String name, PotionEffectType effect) {
+        PresidentialBuff(String name) {
             this.name = name;
-            this.effect = effect;
         }
 
         public String getName() {
             return name;
-        }
-
-        public PotionEffectType getEffect() {
-            return effect;
         }
     }
 }

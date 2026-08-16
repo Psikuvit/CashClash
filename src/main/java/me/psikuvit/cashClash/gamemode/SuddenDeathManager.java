@@ -1,10 +1,13 @@
 package me.psikuvit.cashClash.gamemode;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -25,9 +28,6 @@ import java.util.UUID;
  */
 public class SuddenDeathManager {
 
-    // Initial sudden-death period before repeating cycles begin (3 minutes)
-    private static final long DEFAULT_INITIAL_CYCLE_MS = 3 * 60 * 1000L;
-    private static final long DEFAULT_REPEAT_CYCLE_MS = 3 * 60 * 1000L;
     private final long initialCycleDurationMs;
 
     private final GameSession session;
@@ -42,7 +42,9 @@ public class SuddenDeathManager {
     private BukkitTask cycleTask;
     private final BukkitTask heartExpiryTask;
     public SuddenDeathManager(GameSession session, Gamemode gamemode) {
-        this(session, gamemode, DEFAULT_INITIAL_CYCLE_MS, DEFAULT_REPEAT_CYCLE_MS);
+        this(session, gamemode,
+                CashClashPlugin.getInstance().getConfigManager().getSuddenDeathInitialCycleSeconds() * 1000L,
+                CashClashPlugin.getInstance().getConfigManager().getSuddenDeathRepeatCycleSeconds() * 1000L);
     }
 
 
@@ -68,9 +70,23 @@ public class SuddenDeathManager {
         }
 
         inSuddenDeath = true;
+        Messages.debug("[SuddenDeathManager] Entering sudden death mode (buy phase) - cycle timer starts at combat phase");
+    }
+
+    /**
+     * Starts the sudden-death cycle countdown. Split out from {@link #enterSuddenDeath()} so the
+     * buy phase can announce sudden death and swap in its economy without the 3-minute clock
+     * already burning away while players are still shopping - the actual countdown only begins
+     * once the caller's combat phase starts.
+     */
+    public void startCycleTimer() {
+        if (!inSuddenDeath || cycleActive) {
+            return;
+        }
+
         cycleNumber = 1;
         startCycle(initialCycleDurationMs);
-        Messages.debug("[SuddenDeathManager] Entering sudden death mode");
+        Messages.debug("[SuddenDeathManager] Sudden death cycle timer started");
         // Schedule periodic tick to advance sudden-death cycles automatically every second
         if (cycleTask == null) {
             cycleTask = SchedulerUtils.runTaskTimer(() -> {
@@ -329,6 +345,7 @@ public class SuddenDeathManager {
             return;
         }
         Messages.broadcast(session.getPlayers(), gamemode.getSuddenDeathTiedRestartMessageKey());
+        SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_BELL_USE, 1.0f, 1.0f);
     }
 
 }

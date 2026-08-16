@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.game.ptp;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.entity.Player;
@@ -41,6 +42,32 @@ public class PresidentialEffectsUtils {
         CashClashPlayer.removeEffect(player, PotionEffectType.STRENGTH);
         CashClashPlayer.removeEffect(player, PotionEffectType.RESISTANCE);
         CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
+        CashClashPlayer.removeEffect(player, PotionEffectType.SLOWNESS);
+    }
+
+    /**
+     * Apply the Tank buff: a Turtle Master-style Resistance + Slowness combo (rather than plain
+     * Resistance), at the amplifiers configured under
+     * {@code gamemodes.protect-the-president.tank-*-amplifier}.
+     */
+    public static void applyTankBuff(Player player) {
+        if (player == null) return;
+        var cfg = CashClashPlugin.getInstance().getConfigManager();
+        CashClashPlayer.applyEffect(player, PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, cfg.getPTPTankResistanceAmplifier(), false, false);
+        CashClashPlayer.applyEffect(player, PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION, cfg.getPTPTankSlownessAmplifier(), false, false);
+        Messages.debug("[PTP] Applied Turtle Master buff (Resistance/Slowness) to president: " + player.getName());
+    }
+
+    /**
+     * Apply the HP buff: a one-time instant heal (matching what an actual Instant Health potion
+     * does) rather than a lingering max-health increase, at the amount configured under
+     * {@code gamemodes.protect-the-president.hp-heal-amount}.
+     */
+    public static void applyHpBuff(Player player) {
+        if (player == null) return;
+        double healAmount = CashClashPlugin.getInstance().getConfigManager().getPTPHpHealAmount();
+        CashClashPlayer.heal(player, healAmount);
+        Messages.debug("[PTP] Applied instant heal (+" + healAmount + ") to president: " + player.getName());
     }
 
     /**
@@ -53,18 +80,6 @@ public class PresidentialEffectsUtils {
         if (player != null && effect != null) {
             CashClashPlayer.applyEffect(player, effect, PotionEffect.INFINITE_DURATION, 0, false, false);
             Messages.debug("[PTP] Applied " + effect.getKey().getKey() + " to president: " + player.getName());
-        }
-    }
-
-    /**
-     * Apply extra hearts buff to a president
-     *
-     * @param player The president player
-     * @param healthModifier The health modifier value (2.0 = 1 heart)
-     */
-    public static void applyExtraHearts(Player player, double healthModifier) {
-        if (player != null) {
-            Messages.debug("[PTP] Applied +" + (healthModifier / 2.0) + " hearts buff to: " + player.getName());
         }
     }
 

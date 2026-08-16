@@ -1,6 +1,8 @@
 package me.psikuvit.cashClash.sequence;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.util.effects.SoundUtils;
+import org.bukkit.Sound;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,11 +56,16 @@ public class Sequence {
 
     /**
      * Unrolls a one-per-second countdown into individual steps, counting down from
-     * {@code seconds} to 1, one second apart.
+     * {@code seconds} to 1, one second apart. Each tick plays a noteblock ding alongside
+     * whatever the caller's step does (typically showing the count as a title).
      */
     public Sequence countdown(int seconds, IntFunction<Consumer<GameSession>> stepForCount) {
         for (int count = seconds; count >= 1; count--) {
-            entries.add(new Entry(20L, stepForCount.apply(count)));
+            Consumer<GameSession> step = stepForCount.apply(count);
+            entries.add(new Entry(20L, session -> {
+                SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+                step.accept(session);
+            }));
         }
         return this;
     }

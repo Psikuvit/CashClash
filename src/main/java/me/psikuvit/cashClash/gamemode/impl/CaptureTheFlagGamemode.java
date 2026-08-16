@@ -9,7 +9,6 @@ import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
-import me.psikuvit.cashClash.util.ActionBarQueue;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -48,6 +47,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      private final long CAPTURE_BONUS;
      private final long CAPTURE_TIMER_MS;
      private final long FLAG_PICKUP_DURATION_MS;
+     private final long HEART_BONUS_DURATION_MS;
 
     private final Map<TeamColor, Integer> flagCaptures;
     private final Map<TeamColor, Integer> suddenDeathCycleCaptures;
@@ -76,6 +76,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.CAPTURE_BONUS = cfg.getCTFCaptureBonusCoins();
         this.CAPTURE_TIMER_MS = cfg.getCTFCaptureBonusTimerMs();
         this.FLAG_PICKUP_DURATION_MS = cfg.getCTFPlateActivationTimeMs();
+        this.HEART_BONUS_DURATION_MS = cfg.getCTFHeartBonusDurationMs();
 
         this.flagCaptures = new EnumMap<>(TeamColor.class);
         this.suddenDeathCycleCaptures = new EnumMap<>(TeamColor.class);
@@ -117,6 +118,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void onCombatPhaseStart() {
         Messages.debug("[CTF] Combat phase started");
         if (suddenDeathManager.isInSuddenDeath()) {
+            suddenDeathManager.startCycleTimer();
             suddenDeathCycleCaptures.put(TeamColor.RED, 0);
             suddenDeathCycleCaptures.put(TeamColor.BLUE, 0);
             Messages.debug("[CTF] Sudden death cycle started - capture counters reset");
@@ -259,12 +261,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public String getRoundStartMessage() {
-        return "<gold>Capture the Flag Round!</gold>";
+        return CashClashPlugin.getInstance().getMessagesConfig().getRaw("gamemode-ctf.round-start-message");
     }
 
     @Override
     public String getBuyPhaseMessage() {
-        return "<yellow>Capture the enemy's flag! First team to " + WIN_CONDITION + " captures wins!</yellow>";
+        return CashClashPlugin.getInstance().getMessagesConfig().getMessage("gamemode-ctf.buy-phase-message",
+                "win_condition", String.valueOf(WIN_CONDITION));
     }
 
     @Override
@@ -314,7 +317,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
          if (pickedUpFromBase) {
              TimerDisplayUtils.startBonusTimer(player, updatedFlag);
          } else {
-             ActionBarQueue.get().stopDisplay(player);
              TimerDisplayUtils.stopBonusTimer(player);
          }
 
@@ -347,7 +349,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         int enemyTeamNumber = (teamNumber == 1) ? 2 : 1;
         FlagState enemyFlag = flagStates.get(TeamColor.fromTeamNumber(enemyTeamNumber));
         stopFlagActionBar(enemyFlag);
-        ActionBarQueue.get().stopDisplay(player);
+        TimerDisplayUtils.stopBonusTimer(player);
 
         boolean bonusEarned = (enemyFlag != null && enemyFlag.captureTime() > 0 &&
                 (now - enemyFlag.captureTime()) <= CAPTURE_TIMER_MS);
@@ -361,11 +363,12 @@ public class CaptureTheFlagGamemode extends Gamemode {
         resetFlagsAfterCapture(teamNumber);
 
         // A 2-2 cycle score in sudden death is a tie, which restarts the cycle.
+        // restartCycle() itself broadcasts the tie/restart message (gamemode-ctf.sudden-death-
+        // tied-restart) and sound - no separate broadcast needed here.
         if (suddenDeathManager.isInSuddenDeath()) {
             int redC = suddenDeathCycleCaptures.getOrDefault(TeamColor.RED, 0);
             int blueC = suddenDeathCycleCaptures.getOrDefault(TeamColor.BLUE, 0);
             if (redC >= 2 && blueC >= 2) {
-                Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-restart-tie");
                 suddenDeathManager.restartCycle();
             }
         }
@@ -542,8 +545,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
             }
         }
 
-
-        Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-tied-restart");
+        // The tie/restart chat message and sound are already sent once by
+        // SuddenDeathManager#broadcastCycleRestartMessage() - don't duplicate them here.
         Messages.debug("[CTF] Sudden death capture counters and scoreboard indicators reset for next cycle");
     }
 
@@ -744,7 +747,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
           if (flag != null && flag.holder() != null) {
               Player holder = Bukkit.getPlayer(flag.holder());
               if (holder != null) {
-                  ActionBarQueue.get().stopDisplay(holder);
                   TimerDisplayUtils.stopBonusTimer(holder);
               }
           }
@@ -806,7 +808,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                         if (expiry != null) {
                             String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
                             long remainingMs = Math.max(0, expiry - now);
-                            ActionBarQueue.get().startCountdownTimer(player, remainingMs, 2,
+                            TimerDisplayUtils.startCountdownTimer(player, remainingMs, 2,
                                     secondsRemaining -> flagColor + "Flag returns in " + secondsRemaining + "s");
                         }
                         pauseFlagReturnTimer(nearestTeam);
@@ -822,7 +824,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                         long remainingMs = FLAG_PICKUP_DURATION_MS - elapsedMs;
 
                         String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
-                        ActionBarQueue.get().startCountdownTimer(player, remainingMs, 0,
+                        TimerDisplayUtils.startCountdownTimer(player, remainingMs, 0,
                                 secondsRemaining -> flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s"));
                     }
                 }
@@ -836,7 +838,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                         scheduleFlagReturnTimer(previousTeam);
                     }
                 }
-                ActionBarQueue.get().stopDisplay(player);
+                TimerDisplayUtils.stopCountdownTimer(player);
                 playerCircleTimestamps.remove(playerUuid);
                 playerNearestFlagTeam.remove(playerUuid);
             }
@@ -847,16 +849,18 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * Apply extra heart to a player in CTF (for final stand)
      */
      private void applyExtraHeartCTF(Player player) {
-         suddenDeathManager.applyExtraHeart(player, 45 * 1000);
+         suddenDeathManager.applyExtraHeart(player, HEART_BONUS_DURATION_MS);
          TimerDisplayUtils.recordHeartBonus(player.getUniqueId(), playerHeartTimestamps);
          TimerDisplayUtils.startHeartTimer(player, playerHeartTimestamps);
      }
 
     /**
-     * Enter sudden death
+     * Enter sudden death immediately, including starting its cycle timer right away - used for
+     * admin-forced testing, which bypasses the normal buy-phase/combat-phase split.
      */
     private void enterSuddenDeath() {
         suddenDeathManager.enterSuddenDeath();
+        suddenDeathManager.startCycleTimer();
         Messages.debug("[CTF] Entering sudden death mode - match score is 3-3");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-timer-start");
