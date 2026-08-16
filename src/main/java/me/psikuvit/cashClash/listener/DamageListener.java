@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -71,10 +72,6 @@ import java.util.UUID;
  */
 public class DamageListener implements Listener {
 
-    private static final double STRENGTH_NERF_MULTIPLIER = 0.5;
-    private static final double POWER_NERF_MULTIPLIER = 0.2;
-    private static final int MAX_POWER_LEVEL_REGULAR_BOW = 2;
-
     private final GameManager gameManager;
     private final CustomArmorManager armorManager;
     private final CustomItemManager customItemManager;
@@ -82,10 +79,11 @@ public class DamageListener implements Listener {
     private final WeaponItemManager weaponItemManager;
     private final CooldownManager cooldownManager;
     private final ItemsConfig itemsConfig;
+    private final ConfigManager configManager;
 
     public DamageListener(GameManager gameManager, CustomArmorManager armorManager, CustomItemManager customItemManager,
                          MythicItemManager mythicManager, WeaponItemManager weaponItemManager,
-                         CooldownManager cooldownManager, ItemsConfig itemsConfig) {
+                         CooldownManager cooldownManager, ItemsConfig itemsConfig, ConfigManager configManager) {
         this.gameManager = gameManager;
         this.armorManager = armorManager;
         this.customItemManager = customItemManager;
@@ -93,6 +91,7 @@ public class DamageListener implements Listener {
         this.weaponItemManager = weaponItemManager;
         this.cooldownManager = cooldownManager;
         this.itemsConfig = itemsConfig;
+        this.configManager = configManager;
     }
 
     // ==================== MAIN DAMAGE HANDLER (EntityDamageEvent) ====================
@@ -879,7 +878,7 @@ public class DamageListener implements Listener {
 
         double currentDamage = event.getDamage();
         double strengthBonus = (strength.getAmplifier() + 1) * 3.0;
-        double nerfedStrengthBonus = strengthBonus * STRENGTH_NERF_MULTIPLIER;
+        double nerfedStrengthBonus = strengthBonus * configManager.getStrengthNerfMultiplier();
         double damageReduction = strengthBonus - nerfedStrengthBonus;
         double newDamage = Math.max(0, currentDamage - damageReduction);
 
@@ -913,14 +912,15 @@ public class DamageListener implements Listener {
         double originalMultiplier = 1.0 + (powerLevel * 0.5);
         double baseDamage = currentDamage / originalMultiplier;
 
-        if (!isLegendary && powerLevel > MAX_POWER_LEVEL_REGULAR_BOW) {
-            double cappedMultiplier = 1.0 + (MAX_POWER_LEVEL_REGULAR_BOW * 0.5);
+        int maxPowerLevelRegularBow = configManager.getMaxPowerLevelRegularBow();
+        if (!isLegendary && powerLevel > maxPowerLevelRegularBow) {
+            double cappedMultiplier = 1.0 + (maxPowerLevelRegularBow * 0.5);
             double cappedDamage = baseDamage * cappedMultiplier;
             event.setDamage(cappedDamage);
-            Messages.debug(attacker, "POWER_CAP: Reduced from power " + powerLevel + " to power " + MAX_POWER_LEVEL_REGULAR_BOW +
+            Messages.debug(attacker, "POWER_CAP: Reduced from power " + powerLevel + " to power " + maxPowerLevelRegularBow +
                           " (damage " + currentDamage + " -> " + cappedDamage + ")");
         } else {
-            double nerfedMultiplier = 1.0 + (powerLevel * (0.5 * POWER_NERF_MULTIPLIER));
+            double nerfedMultiplier = 1.0 + (powerLevel * (0.5 * configManager.getPowerNerfMultiplier()));
             double nerfedDamage = baseDamage * nerfedMultiplier;
             event.setDamage(nerfedDamage);
             Messages.debug(attacker, "POWER_NERF: Reduced damage from " + currentDamage + " to " + nerfedDamage +

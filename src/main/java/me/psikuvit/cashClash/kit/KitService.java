@@ -1,16 +1,15 @@
 package me.psikuvit.cashClash.kit;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -18,7 +17,6 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
 import java.util.HashMap;
@@ -33,7 +31,6 @@ import java.util.Set;
  */
 public class KitService {
 
-    private static final NamespacedKey KIT_ITEM_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "kit_item");
     private static final byte KIT_ITEM_FLAG = (byte) 1;
 
     private KitService() {
@@ -76,18 +73,11 @@ public class KitService {
     }
 
     /**
-     * Remove kit from a player - clears inventory and removes potion effects
+     * Remove kit from a player - clears inventory. Kits don't apply potion effects.
      */
     public static void remove(Kit kit, Player player) {
         player.getInventory().clear();
         player.getInventory().setArmorContents(new ItemStack[4]);
-
-        // Remove kit-specific potion effects
-        switch (kit) {
-            case GHOST -> CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
-            case PYROMANIAC -> CashClashPlayer.removeEffect(player, PotionEffectType.FIRE_RESISTANCE);
-            default -> {}
-        }
     }
 
     /**
@@ -644,13 +634,13 @@ public class KitService {
 
     private static void markKitItem(ItemStack item) {
         if (item == null || item.getType().isAir()) return;
-        PDCSetter.of(item).set(KIT_ITEM_KEY, PersistentDataType.BYTE, KIT_ITEM_FLAG).apply();
+        PDCSetter.of(item).set(Keys.KIT_ITEM, PersistentDataType.BYTE, KIT_ITEM_FLAG).apply();
     }
 
     private static boolean isKitItem(ItemStack item) {
         if (item == null || item.getType().isAir()) return false;
         if (!item.hasItemMeta()) return false;
-        return item.getItemMeta().getPersistentDataContainer().has(KIT_ITEM_KEY, PersistentDataType.BYTE);
+        return item.getItemMeta().getPersistentDataContainer().has(Keys.KIT_ITEM, PersistentDataType.BYTE);
     }
 
     private static void removeKitItems(Player player) {

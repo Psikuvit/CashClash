@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.command.CommandHandler;
 import me.psikuvit.cashClash.command.PartyCommandHandler;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
+import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.config.SequencesConfig;
 import me.psikuvit.cashClash.config.ShopConfig;
@@ -59,11 +60,6 @@ public final class CashClashPlugin extends JavaPlugin {
     private static CashClashPlugin instance;
     private boolean initialized = false;
     private BukkitTask afkTask;
-
-    // Composition root: every manager lives here as a field, constructed once in onEnable() in
-    // dependency order, and exposed through the getters below - this is the single place that
-    // resolves a manager instance; every other class receives it via constructor injection or
-    // one of these getters instead of holding its own static instance.
     private ConfigManager configManager;
     private MessagesConfig messagesConfig;
     private SequencesConfig sequencesConfig;
@@ -104,6 +100,7 @@ public final class CashClashPlugin extends JavaPlugin {
             sequencesConfig = new SequencesConfig();
             itemsConfig = new ItemsConfig();
             shopConfig = new ShopConfig();
+            RuneManager.initialize(itemsConfig);
             getLogger().info("Configuration files loaded successfully");
 
             playerDataManager = PlayerDataManager.create(this);
@@ -191,9 +188,6 @@ public final class CashClashPlugin extends JavaPlugin {
             }
         });
 
-        // Order matters here (game sessions torn down before the systems they reference,
-        // player data saved last) - a LinkedHashSet keeps that order instead of leaving it
-        // to hash iteration.
         Set<Shutdownable> managers = new LinkedHashSet<>();
         managers.add(leaderboardManager);
         managers.add(gameManager);
@@ -268,10 +262,10 @@ public final class CashClashPlugin extends JavaPlugin {
         Listener[] listeners = {
                 new GuiListener(),
                 new BlockListener(gameManager, itemsConfig),
-                new DamageListener(gameManager, customArmorManager, customItemManager, mythicItemManager, weaponItemManager, cooldownManager, itemsConfig),
+                new DamageListener(gameManager, customArmorManager, customItemManager, mythicItemManager, weaponItemManager, cooldownManager, itemsConfig, configManager),
                 new InteractListener(gameManager, customItemManager, mythicItemManager, customArmorManager, weaponItemManager),
                 new MoveListener(gameManager, customItemManager, customArmorManager, weaponItemManager),
-                new GameListener(arenaManager, configManager, cooldownManager, customArmorManager, customItemManager, gameManager, itemsConfig, mythicItemManager, playerDataManager, shopManager, weaponItemManager),
+                new GameListener(configManager, cooldownManager, customArmorManager, customItemManager, gameManager, itemsConfig, mythicItemManager, playerDataManager, shopManager, weaponItemManager),
                 new HungerListener(),
                 new PlayerConnectionListener(arenaManager, configManager, gameManager, layoutManager, lobbyManager, mythicItemManager, playerDataManager, rejoinManager, scoreboardManager, tabListManager),
                 new LobbyListener(gameManager, lobbyManager, layoutManager),

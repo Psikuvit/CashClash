@@ -1,9 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.arena.Arena;
-import me.psikuvit.cashClash.arena.ArenaManager;
-import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.event.PlayerBackToGameEvent;
@@ -42,7 +39,6 @@ import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
-import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -85,6 +81,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
 
@@ -96,7 +93,6 @@ import java.util.UUID;
  */
 public class GameListener implements Listener {
 
-    private final ArenaManager arenaManager;
     private final ConfigManager configManager;
     private final CooldownManager cooldownManager;
     private final CustomArmorManager armorManager;
@@ -108,11 +104,10 @@ public class GameListener implements Listener {
     private final ShopManager shopManager;
     private final WeaponItemManager weaponItemManager;
 
-    public GameListener(ArenaManager arenaManager, ConfigManager configManager, CooldownManager cooldownManager,
+    public GameListener(ConfigManager configManager, CooldownManager cooldownManager,
                        CustomArmorManager armorManager, CustomItemManager customItemManager, GameManager gameManager,
                        ItemsConfig itemsConfig, MythicItemManager mythicManager, PlayerDataManager playerDataManager,
                        ShopManager shopManager, WeaponItemManager weaponItemManager) {
-        this.arenaManager = arenaManager;
         this.configManager = configManager;
         this.cooldownManager = cooldownManager;
         this.armorManager = armorManager;
@@ -138,6 +133,8 @@ public class GameListener implements Listener {
 
         CashClashPlayer victim = session.getCashClashPlayer(player.getUniqueId());
         if (victim == null) return;
+
+        Location deathLocation = player.getLocation().clone();
 
         // Profit Vortex: a death inside a vortex credits the killer's team even though the
         // fatal blow may not be credited to the vortex owner.
@@ -178,26 +175,11 @@ public class GameListener implements Listener {
             }
         }
 
-        Location spectatorLocation = getSpectatorLocation(session);
-
         if (victim.getLives() <= 0) {
-            handlePermanentSpectator(player, spectatorLocation);
+            handlePermanentSpectator(player, deathLocation);
         } else {
-            handleTemporarySpectatorAndRespawn(player, spectatorLocation);
+            handleTemporarySpectatorAndRespawn(player, deathLocation);
         }
-    }
-
-    private Location getSpectatorLocation(GameSession session) {
-        Arena arena = arenaManager.getArena(session.getArenaNumber());
-        if (arena != null) {
-            TemplateWorld template = arenaManager.getTemplate(arena.getTemplateId());
-            if (template != null && template.getSpectatorSpawn() != null) {
-                return LocationUtils.copyToWorld(template.getSpectatorSpawn(), session.getGameWorld());
-            }
-        }
-        return session.getGameWorld() != null
-                ? session.getGameWorld().getSpawnLocation()
-                : Bukkit.getWorlds().getFirst().getSpawnLocation();
     }
 
     private void handleKillerRewards(GameSession session, Player killer) {
@@ -217,7 +199,6 @@ public class GameListener implements Listener {
         armorManager.getHandler(DeathmaulerSetHandler.class).onPlayerKill(killer, session);
         armorManager.getHandler(DragonSetHandler.class).onPlayerKillDragon(killer);
         armorManager.getHandler(FlamebringerSetHandler.class).onFlamebringerKill(killer);
-        session.getRewardManager().grantKillOrObjective(killer, RewardType.KILL, 0);
     }
 
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {
@@ -226,6 +207,7 @@ public class GameListener implements Listener {
             player.spigot().respawn();
             player.teleport(spectatorLocation);
             player.setGameMode(GameMode.SPECTATOR);
+            startSpectatorRiseAnimation(player);
         });
     }
 
@@ -239,9 +221,47 @@ public class GameListener implements Listener {
             player.spigot().respawn();
             player.teleport(spectatorLocation);
             player.setGameMode(GameMode.SPECTATOR);
+            startSpectatorRiseAnimation(player);
         });
 
         SchedulerUtils.runTaskLater(() -> respawnPlayer(player, respawnProtectionSec), respawnDelaySec * 20L);
+    }
+
+    /**
+     * Rises a freshly-spectating player a short distance straight up, instead of dropping them
+     * motionless at the spectator location - fast at the start and easing off toward the top, so
+     * it reads as an upward boost rather than a slow elevator ride, and gets them up to a
+     * spectating vantage point over the fight quickly. Spectators aren't subject to normal
+     * velocity/gravity, so this is animated via incremental teleports rather than
+     * {@code setVelocity}. Y is driven off the original death location so it isn't thrown off by
+     * the player freely flying around mid-animation (spectators can move); X/Z/facing are read
+     * fresh each tick so their own movement/looking still works normally. Self-cancels if the
+     * player leaves spectator mode (e.g. respawned) before it finishes.
+     */
+    private void startSpectatorRiseAnimation(Player player) {
+        double totalHeight = configManager.getDeathSpectatorRiseHeight();
+        int totalTicks = configManager.getDeathSpectatorRiseTicks();
+        double baseY = player.getLocation().getY();
+
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            int ticks = 0;
+
+            @Override
+            public void run() {
+                if (!player.isOnline() || player.getGameMode() != GameMode.SPECTATOR || ticks >= totalTicks) {
+                    cancel();
+                    return;
+                }
+                ticks++;
+                double progress = (double) ticks / totalTicks;
+                // Ease-out (1 - (1-x)^2): most of the climb happens in the first few ticks, then
+                // eases off - a boost, not a steady lift.
+                double eased = 1 - Math.pow(1 - progress, 2);
+                Location current = player.getLocation();
+                current.setY(baseY + totalHeight * eased);
+                player.teleport(current);
+            }
+        }, 0L, 1L);
     }
 
     private void respawnPlayer(Player player, int respawnProtectionSec) {
@@ -439,7 +459,7 @@ public class GameListener implements Listener {
             FoodItem fi = PDCDetection.getFood(consumed);
             if (fi != null) {
                 event.setCancelled(true);
-                Messages.send(p, "gamestate.cannot-use-during-shopping");
+                Messages.sendPhaseRestriction(p, session, "gamestate.cannot-use-during-shopping");
                 return true;
             }
         }
@@ -538,7 +558,7 @@ public class GameListener implements Listener {
             boolean hasSneakAbility = armorManager.getHandler(BunnyShoesHandler.class).hasBunnyShoes(p)
                     || armorManager.getHandler(DragonSetHandler.class).hasDragonSet(p);
             if (event.isSneaking() && hasSneakAbility) {
-                Messages.send(p, "gamestate.cannot-use-custom-armor-shopping");
+                Messages.sendPhaseRestriction(p, session, "gamestate.cannot-use-custom-armor-shopping");
             }
             return;
         }
@@ -799,11 +819,17 @@ public class GameListener implements Listener {
 
         MythicItem mythic = resolveTridentMythic(shooter, trident);
         if (mythic == MythicItem.GOBLIN_SPEAR && event.getHitEntity() instanceof LivingEntity target) {
+            // A trident can fire ProjectileHitEvent twice for one throw (e.g. graze an entity,
+            // then embed in a block moments later) - guard with a PDC marker instead of removing
+            // the entity, so a repeat event can't double-apply the hit while still letting
+            // Loyalty return the spear to its owner.
+            if (trident.getPersistentDataContainer().has(Keys.GOBLIN_SPEAR_HIT_PROCESSED)) {
+                return;
+            }
+            trident.getPersistentDataContainer().set(Keys.GOBLIN_SPEAR_HIT_PROCESSED, PersistentDataType.BYTE, (byte) 1);
+
             mythicManager.getHandler(GoblinSpearHandler.class).handleGoblinSpearHit(shooter, target, false);
             Messages.debug("GOBLIN_SPEAR hit handled for " + target.getName());
-            
-            // Remove the trident to prevent multi-hits
-            trident.remove();
         }
     }
 

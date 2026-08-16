@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager.items;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
@@ -49,17 +50,20 @@ import java.util.UUID;
  */
 public class RuneManager {
 
-    private static final int MAX_ACTIVE_RUNES = 2;
-    private static final int TOGGLE_COOLDOWN_SECONDS = 5;
-    private static final long BROKEN_DURATION_MS = 10_000;
-    private static final long RECHARGE_DELAY_MS = 3_000;
-    private static final double RECHARGE_PER_SECOND = 1.5;
+    private static ItemsConfig cfg;
 
     // How high above the player the activation book spawns and hovers
     private static final double BOOK_HOVER_HEIGHT = 2.75;
 
     private RuneManager() {
         throw new AssertionError("Nope.");
+    }
+
+    /**
+     * Called by CashClashPlugin during initialization to inject the config dependency.
+     */
+    public static void initialize(ItemsConfig itemsConfig) {
+        cfg = itemsConfig;
     }
 
     // ==================== ITEM IDENTITY / LINKING ====================
@@ -296,7 +300,7 @@ public class RuneManager {
                 : activateRune(player, rune, enchantEntry);
 
         if (toggledOn) {
-            cooldowns.setCooldownSeconds(playerUUID, cooldownKey, TOGGLE_COOLDOWN_SECONDS);
+            cooldowns.setCooldownSeconds(playerUUID, cooldownKey, cfg.getRunesToggleCooldownSeconds());
         }
         return toggledOn;
     }
@@ -312,7 +316,7 @@ public class RuneManager {
      * @return false if there's nothing eligible to enchant, or the max active runes are already in use
      */
     private static boolean activateRune(Player player, ItemStack rune, EnchantEntry enchantEntry) {
-        if (getActiveRuneCount(player) >= MAX_ACTIVE_RUNES) {
+        if (getActiveRuneCount(player) >= cfg.getRunesMaxActiveRunes()) {
             Messages.send(player, "rune.max-active");
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return false;
@@ -568,13 +572,8 @@ public class RuneManager {
     }
 
     private static double getMaxRuneDurability(EnchantEntry enchant) {
-        return switch (enchant) {
-            case SHARPNESS, PROTECTION, QUICK_CHARGE -> 30;
-            case FIRE_ASPECT, KNOCKBACK, FLAME -> 15;
-            case POWER, PROJECTILE_PROTECTION -> 18;
-            case PUNCH -> 10;
-            case PIERCING -> 24;
-        };
+        String enchantName = enchant.name();
+        return cfg.getRunesMaxDurability(enchantName);
     }
 
     /**
@@ -667,7 +666,7 @@ public class RuneManager {
         Long brokenTime = PDCDetection.readLongTag(rune, Keys.RUNE_BROKEN_TIME);
         if (brokenTime == null) return false;
 
-        if (System.currentTimeMillis() - brokenTime >= BROKEN_DURATION_MS) {
+        if (System.currentTimeMillis() - brokenTime >= cfg.getRunesBrokenDurationMs()) {
             clearRuneBroken(rune);
             return false;
         }
@@ -684,7 +683,7 @@ public class RuneManager {
         if (rune == null || !rune.hasItemMeta() || isRuneBroken(rune)) return false;
 
         Long offTime = PDCDetection.readLongTag(rune, Keys.RUNE_OFF_TIME);
-        return offTime != null && System.currentTimeMillis() - offTime >= RECHARGE_DELAY_MS;
+        return offTime != null && System.currentTimeMillis() - offTime >= cfg.getRunesRechargeDelayMs();
     }
 
     private static boolean hasFullChargeWarning(ItemStack rune) {
@@ -702,8 +701,8 @@ public class RuneManager {
 
     /**
      * Ticks every online player's inactive runes back up toward full durability once a second,
-     * starting {@code RECHARGE_DELAY_MS} after they were last toggled off. Notifies the player
-     * once, the first time a rune reaches full charge after recharging.
+     * starting {@code custom-items.runes.recharge-delay-ms} after they were last toggled off.
+     * Notifies the player once, the first time a rune reaches full charge after recharging.
      */
     public static void startRuneRechargeTask() {
         SchedulerUtils.runTaskTimer(() -> {
@@ -737,7 +736,7 @@ public class RuneManager {
             setFullChargeWarning(item, false);
         }
 
-        double newAmount = Math.clamp(current + RECHARGE_PER_SECOND, 0, max);
+        double newAmount = Math.clamp(current + cfg.getRunesRechargePerSecond(), 0, max);
         setRuneDurability(item, newAmount);
         updateRuneDurabilityBar(item);
 
