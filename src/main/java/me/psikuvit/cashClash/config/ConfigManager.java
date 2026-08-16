@@ -189,30 +189,6 @@ public class ConfigManager {
 
     // ==================== ECONOMY SETTINGS ====================
 
-    public long getRound1Start() {
-        return config.getLong("economy.round-1-start", 10000);
-    }
-
-    public long getRound2Bonus() {
-        return config.getLong("economy.round-2-bonus", 30000);
-    }
-
-    public long getRound3Bonus() {
-        return config.getLong("economy.round-3-bonus", 50000);
-    }
-
-    public long getRound4Bonus() {
-        return config.getLong("economy.round-4-bonus", 100000);
-    }
-
-    public long getRound5Minimum() {
-        return config.getLong("economy.round-5-minimum", 20000);
-    }
-
-    public long getRound5Bonus() {
-        return config.getLong("economy.round-5-bonus", 10000);
-    }
-
     public long getRound1KillReward() {
         return config.getLong("economy.round-1-kill-reward", 3000);
     }

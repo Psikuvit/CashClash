@@ -84,14 +84,6 @@ armor:
 # ECONOMY SETTINGS
 # ============================================
 economy:
-  # Starting/bonus money per round
-  round-1-start: 10000
-  round-2-bonus: 30000
-  round-3-bonus: 50000
-  round-4-bonus: 100000
-  round-5-minimum: 20000
-  round-5-bonus: 10000
-
   # Kill rewards
   round-1-kill-reward: 3000
 
