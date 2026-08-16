@@ -8,7 +8,6 @@ import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.shop.EnchantEntry;
-import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.BonusType;
 import org.bukkit.attribute.Attribute;
@@ -53,6 +52,7 @@ public class CashClashPlayer {
     // Special items
     private int revivalStarsUsed;
     private final Deque<PurchaseRecord> purchaseHistory;
+    private final Deque<RunePurchaseRecord> runePurchaseHistory;
     private long respawnProtectionUntil;
 
     private final Map<EnchantEntry, Integer> ownedEnchants;
@@ -63,13 +63,12 @@ public class CashClashPlayer {
     // Potion effect tracking
     private final Map<PotionEffectType, PotionEffect> trackedEffects = new HashMap<>();
 
-    // Invisibility support - visible equipment (armor + both hands) stashed here while an
-    // ability like Invis Cloak is active, so nothing gives the player's position away;
-    // restored on deactivation/death/disconnect.
     private ItemStack[] hiddenArmorContents;
     private ItemStack hiddenMainHand;
     private ItemStack hiddenOffHand;
     private boolean inventoryHidden;
+
+    private ItemStack[] stashedFullInventory;
 
     public CashClashPlayer(Player player) {
         this.uuid = player.getUniqueId();
@@ -79,6 +78,7 @@ public class CashClashPlayer {
         this.lives = 3;
         this.bonusesEarned = new HashMap<>();
         this.purchaseHistory = new ArrayDeque<>();
+        this.runePurchaseHistory = new ArrayDeque<>();
         this.respawnProtectionUntil = 0L;
         this.ownedEnchants = new HashMap<>();
     }
@@ -174,13 +174,24 @@ public class CashClashPlayer {
     }
 
     public PurchaseRecord peekLastPurchase() {
-        PurchaseRecord record = purchaseHistory.peekLast();
-        if (record != null && record.item().getCategory() == ShopCategory.ENCHANTS) return null;
-        return record;
+        return purchaseHistory.peekLast();
     }
 
     public Queue<PurchaseRecord> getPurchaseHistory() {
         return purchaseHistory;
+    }
+
+    public void addRunePurchase(RunePurchaseRecord record) {
+        if (record == null) return;
+        runePurchaseHistory.addLast(record);
+    }
+
+    public void popLastRunePurchase() {
+        runePurchaseHistory.pollLast();
+    }
+
+    public RunePurchaseRecord peekLastRunePurchase() {
+        return runePurchaseHistory.peekLast();
     }
 
     public void earnBonus(BonusType type) {
@@ -583,6 +594,51 @@ public class CashClashPlayer {
     public static void restoreInventory(Player player) {
         CashClashPlayer ccp = from(player);
         if (ccp != null) ccp.restoreInventory();
+    }
+
+    /**
+     * Stashes the player's entire inventory contents (all 36 slots) and clears them, for
+     * abilities that need to temporarily replace the whole inventory rather than just hide
+     * equipped gear (see {@link #hideInventory()} for that case). No-op if already stashed, so a
+     * repeat call can't clobber a saved snapshot with empty slots.
+     */
+    public void stashFullInventory() {
+        if (stashedFullInventory != null || player == null) return;
+        stashedFullInventory = cloneItems(player.getInventory().getContents());
+        player.getInventory().clear();
+    }
+
+    /**
+     * Restores whatever {@link #stashFullInventory()} stashed. No-op if nothing is stashed.
+     */
+    public void restoreFullInventory() {
+        if (stashedFullInventory == null || player == null) return;
+        player.getInventory().setContents(stashedFullInventory);
+        stashedFullInventory = null;
+    }
+
+    /**
+     * Whether this player's inventory is currently stashed via {@link #stashFullInventory()}.
+     */
+    public boolean hasFullInventoryStashed() {
+        return stashedFullInventory != null;
+    }
+
+    /**
+     * Stashes a player's full inventory if they're in a session; a no-op otherwise, since there
+     * is no session-scoped instance to hold the snapshot for a later restore.
+     */
+    public static void stashFullInventory(Player player) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.stashFullInventory();
+    }
+
+    /**
+     * Restores a player's inventory previously stashed by {@link #stashFullInventory(Player)}.
+     */
+    public static void restoreFullInventory(Player player) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.restoreFullInventory();
     }
 
     /**

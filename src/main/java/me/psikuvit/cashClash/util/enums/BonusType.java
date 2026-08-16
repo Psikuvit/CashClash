@@ -1,23 +1,19 @@
 package me.psikuvit.cashClash.util.enums;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+
 /**
- * The four bonuses players can earn, each a flat 2000 coins to that player only:
- * First Blood (first kill of the round), Killstreak (every 4th kill in an uninterrupted
- * streak), and Most Kills / Most Damage (session-wide, awarded once at game end).
+ * The four bonuses players can earn, each a flat amount (config: {@code rounds.player-bonus-amount})
+ * to that player only: First Blood (first kill of the round), Killstreak (every Nth kill in an
+ * uninterrupted streak), and Most Kills / Most Damage (session-wide, awarded once at game end).
  */
 public enum BonusType {
-    FIRST_BLOOD(2000),
-    KILLSTREAK(2000),
-    MOST_KILLS(2000),
-    MOST_DAMAGE(2000);
-
-    private final long reward;
-
-    BonusType(long reward) {
-        this.reward = reward;
-    }
+    FIRST_BLOOD,
+    KILLSTREAK,
+    MOST_KILLS,
+    MOST_DAMAGE;
 
     public long getReward() {
-        return reward;
+        return CashClashPlugin.getInstance().getConfigManager().getPlayerBonusAmount();
     }
 }

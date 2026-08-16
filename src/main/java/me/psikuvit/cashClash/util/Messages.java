@@ -2,6 +2,8 @@ package me.psikuvit.cashClash.util;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.MessagesConfig;
+import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -166,6 +168,26 @@ public final class Messages {
     public static void send(@Nullable Player player, @Nullable String key, @NotNull String... args) {
         if (player != null && player.isOnline()) {
             player.sendMessage(parse(config.getMessage(key, args)));
+        }
+    }
+
+    /**
+     * Send the right "you can't do that right now" message for an action blocked during
+     * {@code GameState.SHOPPING} or a round-end sequence's {@code isActionsRestricted()} lock -
+     * these two cases share one gate at most call sites, but a player who just finished a round
+     * (actions restricted, not actually shopping) was seeing a "...during the shopping phase!"
+     * message that didn't match what was actually happening.
+     *
+     * @param player The player to send to
+     * @param session The player's game session (assumed non-null - callers already resolved it
+     *                to reach this restriction check)
+     * @param duringShoppingKey The message key to use when the restriction is real shopping phase
+     */
+    public static void sendPhaseRestriction(@Nullable Player player, @NotNull GameSession session, @NotNull String duringShoppingKey) {
+        if (session.getState() == GameState.SHOPPING) {
+            send(player, duringShoppingKey);
+        } else {
+            send(player, "gamestate.round-is-over");
         }
     }
 

@@ -11,7 +11,7 @@ import org.bukkit.Material;
  */
 public enum CustomItem implements Purchasable {
     GRENADE(Material.FIRE_CHARGE, "grenade", 1, 0, "Throwable Grenade"),
-    BOUNCE_PAD(Material.SLIME_BLOCK, "bounce-pad", 1, 8, "Placeable Bounce Pad"),
+    BOUNCE_PAD(Material.SLIME_BLOCK, "bounce-pad", 1, 8, "Placeable Bounce Pad", true),
     MEDIC_POUCH(Material.RED_DYE, "medic-pouch", 1, 0, "Medic Pouch"),
     TABLET_OF_HACKING(Material.FILLED_MAP, "tablet-of-hacking", 1, 0, "Tablet of Hacking"),
     BAG_OF_POTATOES(Material.WOODEN_SWORD, "bag-of-potatoes", 1, 3, "Bag of Potatoes"),
@@ -32,13 +32,19 @@ public enum CustomItem implements Purchasable {
     private final int initialAmount;
     private final int maxPurchase;
     private final String displayName;
+    private final boolean hideLimitInLore;
 
-    CustomItem(Material material, String configKey, int initialAmount, int maxPurchase, String displayName ) {
+    CustomItem(Material material, String configKey, int initialAmount, int maxPurchase, String displayName) {
+        this(material, configKey, initialAmount, maxPurchase, displayName, false);
+    }
+
+    CustomItem(Material material, String configKey, int initialAmount, int maxPurchase, String displayName, boolean hideLimitInLore) {
         this.material = material;
         this.configKey = configKey;
         this.initialAmount = initialAmount;
         this.maxPurchase = maxPurchase;
         this.displayName = displayName;
+        this.hideLimitInLore = hideLimitInLore;
     }
 
     @Override
@@ -85,5 +91,14 @@ public enum CustomItem implements Purchasable {
      */
     public boolean hasLimit() {
         return maxPurchase > 0;
+    }
+
+    /**
+     * Whether the "Max: N per round" lore line should be suppressed even though the purchase
+     * limit itself still applies. Used for items where showing the cap in the lore is confusing
+     * or unwanted (e.g. Bounce Pad).
+     */
+    public boolean hideLimitInLore() {
+        return hideLimitInLore;
     }
 }

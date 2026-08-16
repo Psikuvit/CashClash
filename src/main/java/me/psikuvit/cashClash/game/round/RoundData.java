@@ -14,6 +14,8 @@ public class RoundData {
     private final Map<UUID, PlayerRoundStats> stats;
     private int totalRoundKills;
     private UUID firstBloodPlayer;
+    private long distributedPool;
+    private long distributedAmount;
 
     /**
      * Mutable player stats for efficient updates during gameplay.
@@ -91,6 +93,23 @@ public class RoundData {
 
     public int getTotalRoundKills() {
         return totalRoundKills;
+    }
+
+    /**
+     * Records the money pool computed at round-end distribution, so scoreboard/chat can
+     * reference it after the fact instead of recomputing it.
+     */
+    public void setDistributedMoney(long pool, long amount) {
+        this.distributedPool = pool;
+        this.distributedAmount = amount;
+    }
+
+    public long getDistributedPool() {
+        return distributedPool;
+    }
+
+    public long getDistributedAmount() {
+        return distributedAmount;
     }
 
     public UUID getMostKillsPlayer() {

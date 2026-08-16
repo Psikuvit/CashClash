@@ -156,7 +156,10 @@ public final class LocationUtils {
     }
 
     /**
-     * Check if a player is within a specific distance of a location (horizontal only)
+     * Check if a player is within a specific horizontal distance of a location, with no height
+     * limit - use {@link #isPlayerNearLocation(Location, Location, double, double)} when a
+     * vertical bound also matters (e.g. flag zones, where a player floating far overhead
+     * shouldn't count as "in" the zone).
      *
      * @param playerLoc player's location
      * @param targetLoc target location
@@ -164,6 +167,20 @@ public final class LocationUtils {
      * @return true if player is within radius horizontally
      */
     public static boolean isPlayerNearLocation(Location playerLoc, Location targetLoc, double radius) {
+        return isPlayerNearLocation(playerLoc, targetLoc, radius, Double.MAX_VALUE);
+    }
+
+    /**
+     * Check if a player is within a specific horizontal distance of a location AND within a
+     * maximum height difference of it.
+     *
+     * @param playerLoc player's location
+     * @param targetLoc target location
+     * @param radius horizontal radius to check
+     * @param maxHeightDifference maximum allowed absolute Y difference
+     * @return true if player is within radius horizontally and within the height limit
+     */
+    public static boolean isPlayerNearLocation(Location playerLoc, Location targetLoc, double radius, double maxHeightDifference) {
         if (playerLoc == null || targetLoc == null) return false;
         if (playerLoc.getWorld() != targetLoc.getWorld()) return false;
 
@@ -171,7 +188,7 @@ public final class LocationUtils {
         double dz = playerLoc.getZ() - targetLoc.getZ();
         double distance = Math.sqrt(dx * dx + dz * dz);
 
-        return distance <= radius;
+        return distance <= radius && Math.abs(playerLoc.getY() - targetLoc.getY()) <= maxHeightDifference;
     }
 
     /**

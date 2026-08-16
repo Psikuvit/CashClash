@@ -95,6 +95,30 @@ public class ConfigManager {
         return config.getInt("game.first-round-shopping-duration", 120);
     }
 
+    public int getBuffSelectionDuration() {
+        return config.getInt("game.buff-selection-duration", 15);
+    }
+
+    public int getSuddenDeathPhaseDuration() {
+        return config.getInt("game.sudden-death-phase-duration", 180);
+    }
+
+    public int getPhaseCountdownWarningSeconds() {
+        return config.getInt("game.phase-countdown-warning-seconds", 3);
+    }
+
+    public int getFinalStandDurationSeconds() {
+        return config.getInt("game.final-stand-duration-seconds", 180);
+    }
+
+    public int getSuddenDeathInitialCycleSeconds() {
+        return config.getInt("game.sudden-death-initial-cycle-seconds", 180);
+    }
+
+    public int getSuddenDeathRepeatCycleSeconds() {
+        return config.getInt("game.sudden-death-repeat-cycle-seconds", 180);
+    }
+
     public int getRespawnDelay() {
         return config.getInt("game.respawn-delay", 5);
     }
@@ -105,6 +129,14 @@ public class ConfigManager {
 
     public int getForfeitCombatGrace() {
         return config.getInt("game.forfeit-combat-grace", 5);
+    }
+
+    public double getDeathSpectatorRiseHeight() {
+        return config.getDouble("game.death-spectator-rise-height", 4.0);
+    }
+
+    public int getDeathSpectatorRiseTicks() {
+        return config.getInt("game.death-spectator-rise-ticks", 16);
     }
 
     // ==================== ROUND SETTINGS ====================
@@ -135,6 +167,14 @@ public class ConfigManager {
 
     public long getKillTeamSplitBonus() {
         return config.getLong("rounds.kill-team-split-bonus", 7500);
+    }
+
+    public long getPlayerBonusAmount() {
+        return config.getLong("rounds.player-bonus-amount", 2000);
+    }
+
+    public int getKillstreakInterval() {
+        return config.getInt("rounds.killstreak-interval", 4);
     }
 
     // ==================== ARMOR RESTRICTIONS ====================
@@ -193,6 +233,32 @@ public class ConfigManager {
         return config.getDouble("economy.late-round-steal-percentage", 0.25);
     }
 
+    public long getKillPoolPerKill() {
+        return config.getLong("economy.kill-pool-per-kill", 1000);
+    }
+
+    public long getMinRoundPool() {
+        return config.getLong("economy.min-round-pool", 15000);
+    }
+
+    public double getGuiTransferFee() {
+        return config.getDouble("economy.gui-transfer-fee", 0.10);
+    }
+
+    // ==================== COMBAT ====================
+
+    public double getStrengthNerfMultiplier() {
+        return config.getDouble("combat.strength-nerf-multiplier", 0.5);
+    }
+
+    public double getPowerNerfMultiplier() {
+        return config.getDouble("combat.power-nerf-multiplier", 0.2);
+    }
+
+    public int getMaxPowerLevelRegularBow() {
+        return config.getInt("combat.max-power-level-regular-bow", 2);
+    }
+
     // ==================== CASH QUAKE EVENTS ====================
 
     public int getMinGuaranteedEvents() {
@@ -240,6 +306,34 @@ public class ConfigManager {
         return config.getLong("gamemodes.capture-the-flag.capture-bonus-timer-ms", 45000);
     }
 
+    public long getCTFHeartBonusDurationMs() {
+        return config.getLong("gamemodes.capture-the-flag.heart-bonus-duration-ms", 45000);
+    }
+
+    public double getCTFPickupCircleRadius() {
+        return config.getDouble("gamemodes.capture-the-flag.pickup-circle-radius", 1.5);
+    }
+
+    public double getCTFScoreZoneRadius() {
+        return config.getDouble("gamemodes.capture-the-flag.score-zone-radius", 1.5);
+    }
+
+    public double getCTFMaxHeightDifference() {
+        return config.getDouble("gamemodes.capture-the-flag.max-height-difference", 5.0);
+    }
+
+    public int getCTFCarrierGlowIntervalTicks() {
+        return config.getInt("gamemodes.capture-the-flag.carrier-glow-interval-ticks", 100);
+    }
+
+    public int getCTFCarrierGlowDurationTicks() {
+        return config.getInt("gamemodes.capture-the-flag.carrier-glow-duration-ticks", 10);
+    }
+
+    public int getCTFCarrierGlowAmplifier() {
+        return config.getInt("gamemodes.capture-the-flag.carrier-glow-amplifier", 0);
+    }
+
     public long getCTFPlateActivationTimeMs() {
         return config.getLong("gamemodes.capture-the-flag.plate-activation-time-ms", 3000);
     }
@@ -281,6 +375,30 @@ public class ConfigManager {
         return config.getLong("gamemodes.kill-confirm.heart-bonus-duration-ms", 45000);
     }
 
+    public double getKCBeamHeight() {
+        return config.getDouble("gamemodes.kill-confirm.beam-height", 6.0);
+    }
+
+    public double getKCBeamYOffset() {
+        return config.getDouble("gamemodes.kill-confirm.beam-y-offset", 0.2);
+    }
+
+    public int getKCBeamDurationTicks() {
+        return config.getInt("gamemodes.kill-confirm.beam-duration-ticks", 10);
+    }
+
+    public double getKCZoneHalfWidth() {
+        return config.getDouble("gamemodes.kill-confirm.zone-half-width", 1.5);
+    }
+
+    public double getKCZoneVerticalTolerance() {
+        return config.getDouble("gamemodes.kill-confirm.zone-vertical-tolerance", 2.0);
+    }
+
+    public int getKCZoneSafeSpawnSearchRadius() {
+        return config.getInt("gamemodes.kill-confirm.zone-safe-spawn-search-radius", 8);
+    }
+
     // Protect the President
     public int getPTPSelectionTimeSeconds() {
         return config.getInt("gamemodes.protect-the-president.selection-time-seconds", 15);
@@ -300,6 +418,60 @@ public class ConfigManager {
 
     public int getPTPCapturesToWin() {
         return config.getInt("gamemodes.protect-the-president.captures-to-win", 2);
+    }
+
+    public int getPTPTankResistanceAmplifier() {
+        return config.getInt("gamemodes.protect-the-president.tank-resistance-amplifier", 3);
+    }
+
+    public int getPTPTankSlownessAmplifier() {
+        return config.getInt("gamemodes.protect-the-president.tank-slowness-amplifier", 3);
+    }
+
+    public double getPTPHpHealAmount() {
+        return config.getDouble("gamemodes.protect-the-president.hp-heal-amount", 4.0);
+    }
+
+    // ==================== SEQUENCE TITLE DURATIONS ====================
+
+    public long getDefaultTitleFadeInMs() {
+        return config.getLong("sequences.title-times.default-fade-in-ms", 250);
+    }
+
+    public long getDefaultTitleStayMs() {
+        return config.getLong("sequences.title-times.default-stay-ms", 5000);
+    }
+
+    public long getDefaultTitleFadeOutMs() {
+        return config.getLong("sequences.title-times.default-fade-out-ms", 250);
+    }
+
+    public long getSuddenDeathTitleFadeInMs() {
+        return config.getLong("sequences.title-times.sudden-death-fade-in-ms", 500);
+    }
+
+    public long getSuddenDeathTitleStayMs() {
+        return config.getLong("sequences.title-times.sudden-death-stay-ms", 5000);
+    }
+
+    public long getSuddenDeathTitleFadeOutMs() {
+        return config.getLong("sequences.title-times.sudden-death-fade-out-ms", 500);
+    }
+
+    public long getVictoryTitleFadeInMs() {
+        return config.getLong("sequences.title-times.victory-fade-in-ms", 500);
+    }
+
+    public long getVictoryTitleStayMs() {
+        return config.getLong("sequences.title-times.victory-stay-ms", 9000);
+    }
+
+    public long getVictoryTitleFadeOutMs() {
+        return config.getLong("sequences.title-times.victory-fade-out-ms", 500);
+    }
+
+    public int getRevealBlindnessTicks() {
+        return config.getInt("sequences.reveal-blindness-ticks", 300);
     }
 
     // ==================== MESSAGES ====================
@@ -458,8 +630,8 @@ public class ConfigManager {
     // ==================== SEQUENCE SETTINGS ====================
 
     /**
-     * Check if scripted title/freeze sequences (round start, president reveal, round
-     * end, round 4 transition, sudden death, victory) are enabled.
+     * Check if scripted title/freeze sequences (round start, president reveal, shield
+     * reveal, round end, sudden death, victory) are enabled.
      */
     public boolean isSequencesEnabled() {
         return config.getBoolean("sequences.enabled", true);

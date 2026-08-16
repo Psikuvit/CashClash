@@ -154,6 +154,41 @@ public class Keys {
      */
     public static final NamespacedKey WARDEN_GLOVES_COSMETIC;
 
+    /**
+     * Byte marker set on a thrown Goblin Spear trident entity the first time its hit is
+     * processed, so a second {@code ProjectileHitEvent} for the same throw (e.g. grazing an
+     * entity then embedding in a block) can't double-apply the hit - without needing to remove
+     * the entity, which would stop Loyalty from returning it to the owner.
+     */
+    public static final NamespacedKey GOBLIN_SPEAR_HIT_PROCESSED;
+
+    /**
+     * Electric Eel Sword's zap-dash slow AttributeModifier key.
+     */
+    public static final NamespacedKey EEL_SLOW;
+
+    /**
+     * Radiating Lotus's slow AttributeModifier key.
+     */
+    public static final NamespacedKey LOTUS_SLOW;
+
+    /**
+     * Overdrive Potion's speed-boost AttributeModifier key.
+     */
+    public static final NamespacedKey OVERDRIVE_SPEED;
+
+    /**
+     * Flag marking an item as a kit item (round-start gear), so it can be identified and
+     * cleared on kit reset independent of custom/shop item tags.
+     */
+    public static final NamespacedKey KIT_ITEM;
+
+    /**
+     * Identifies a lobby-only item (stats book, arena selector, layout configurator) by its
+     * {@code LobbyItemType} id.
+     */
+    public static final NamespacedKey LOBBY_ITEM;
+
 
     static {
         ITEM_ID = new NamespacedKey(CashClashPlugin.getInstance(), "item_id");
@@ -189,6 +224,12 @@ public class Keys {
         WARDEN_REACH_STACK_2 = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_2");
         WARDEN_REACH_STACK_3 = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_3");
         WARDEN_GLOVES_COSMETIC = new NamespacedKey(CashClashPlugin.getInstance(), "warden_gloves_cosmetic");
+        GOBLIN_SPEAR_HIT_PROCESSED = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_spear_hit_processed");
+        EEL_SLOW = new NamespacedKey(CashClashPlugin.getInstance(), "electric_eel_dash_slow");
+        LOTUS_SLOW = new NamespacedKey(CashClashPlugin.getInstance(), "radiating_lotus_slow");
+        OVERDRIVE_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "overdrive_speed");
+        KIT_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "kit_item");
+        LOBBY_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "lobby_item");
     }
 
     private Keys() {

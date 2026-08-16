@@ -89,7 +89,7 @@ public class ItemsConfig {
     // ==================== MYTHIC ITEMS ====================
 
     public int getLegendsPerGame() {
-        return config.getInt("mythic-items.legendaries-per-game", 5);
+        return config.getInt("mythic-items.legendaries-per-game", 4);
     }
 
     // Carl's Battleaxe
@@ -185,6 +185,10 @@ public class ItemsConfig {
     }
 
     // Electric Eel - 3-charge zap dash (replaces the old single-cooldown teleport)
+    public int getEelDashMaxCharges() {
+        return config.getInt("mythic-items.electric-eel.dash.max-charges", 3);
+    }
+
     public int getEelDashRechargeSeconds() {
         return config.getInt("mythic-items.electric-eel.dash.recharge-seconds", 15);
     }
@@ -370,6 +374,10 @@ public class ItemsConfig {
         return config.getInt("mythic-items.warden-gloves.rising-fury.max-stacks", 3);
     }
 
+    public int getWardenRisingFuryHitsPerStack() {
+        return config.getInt("mythic-items.warden-gloves.rising-fury.hits-per-stack", 3);
+    }
+
     public int getWardenShieldDisableTicks() {
         return config.getInt("mythic-items.warden-gloves.rising-fury.shield-disable-ticks", 100);
     }
@@ -461,12 +469,49 @@ public class ItemsConfig {
         return config.getInt("custom-items.grenade.fuse-seconds", 3);
     }
 
+    public double getGrenadeInnerRadius() {
+        return config.getDouble("custom-items.grenade.damage.inner-radius", 4);
+    }
+
     public double getGrenadeInnerDamage() {
         return config.getDouble("custom-items.grenade.damage.inner-damage", 8.0);
     }
 
+    public double getGrenadeOuterRadius() {
+        return config.getDouble("custom-items.grenade.damage.outer-radius", 6);
+    }
+
     public double getGrenadeOuterDamage() {
         return config.getDouble("custom-items.grenade.damage.outer-damage", 2.0);
+    }
+
+    public double getGrenadeThrowVelocity() {
+        return config.getDouble("custom-items.grenade.throw-velocity", 1.2);
+    }
+
+    // Smoke Cloud Grenade
+    public int getSmokeGrenadeFuseSeconds() {
+        return config.getInt("custom-items.smoke-grenade.fuse-seconds", 3);
+    }
+
+    public int getSmokeGrenadeCloudDurationSeconds() {
+        return config.getInt("custom-items.smoke-grenade.cloud-duration-seconds", 8);
+    }
+
+    public double getSmokeGrenadeRadius() {
+        return config.getDouble("custom-items.smoke-grenade.radius", 5);
+    }
+
+    public int getSmokeGrenadePoisonLevel() {
+        return config.getInt("custom-items.smoke-grenade.poison-level", 0);
+    }
+
+    public int getSmokeGrenadePoisonDurationSeconds() {
+        return config.getInt("custom-items.smoke-grenade.poison-duration-seconds", 3);
+    }
+
+    public int getSmokeGrenadeBlindnessDurationSeconds() {
+        return config.getInt("custom-items.smoke-grenade.blindness-duration-seconds", 3);
     }
 
     // Bounce Pad
@@ -476,6 +521,18 @@ public class ItemsConfig {
 
     public double getBouncePadUpwardVelocity() {
         return config.getDouble("custom-items.bounce-pad.upward-velocity", 0.85);
+    }
+
+    public int getBouncePadLifetimeSeconds() {
+        return config.getInt("custom-items.bounce-pad.lifetime-seconds", 5);
+    }
+
+    public double getBouncePadWallMountUpwardScale() {
+        return config.getDouble("custom-items.bounce-pad.wall-mount-upward-scale", 0.2);
+    }
+
+    public double getBouncePadWallTouchThreshold() {
+        return config.getDouble("custom-items.bounce-pad.wall-touch-threshold", 0.35);
     }
 
     // Medic Pouch
@@ -502,6 +559,11 @@ public class ItemsConfig {
 
     public double getBoomboxRadius() {
         return config.getDouble("custom-items.boombox.radius", 5);
+    }
+
+    // Tablet of Hacking
+    public long getTabletOfHackingCost() {
+        return config.getLong("custom-items.tablet-of-hacking.cost", 2000L);
     }
 
     public int getBoomboxSpeedBoostPercent() {
@@ -612,6 +674,71 @@ public class ItemsConfig {
 
     public int getIceFanBurstMinDurability() {
         return config.getInt("custom-items.ice-fan.burst-min-durability", 25);
+    }
+
+    public long getIceFanGustHoldTimeoutMs() {
+        return config.getLong("custom-items.ice-fan.gust-hold-timeout-ms", 1500L);
+    }
+
+    public long getIceFanGustTickIntervalMs() {
+        return config.getLong("custom-items.ice-fan.gust-tick-interval-ms", 10L);
+    }
+
+    public long getIceFanGustHitFreezeMs() {
+        return config.getLong("custom-items.ice-fan.gust-hit-freeze-ms", 1500L);
+    }
+
+    public long getIceFanGustMaxFreezeMs() {
+        return config.getLong("custom-items.ice-fan.gust-max-freeze-ms", 6000L);
+    }
+
+    public int getIceFanFreezePumpIntervalTicks() {
+        return config.getInt("custom-items.ice-fan.freeze-pump-interval-ticks", 1);
+    }
+
+    public int getIceFanGustTargetRange() {
+        return config.getInt("custom-items.ice-fan.gust-target-range", 3);
+    }
+
+    public double getIceFanBurstTargetRange() {
+        return config.getDouble("custom-items.ice-fan.burst-target-range", 3.5);
+    }
+
+    // Runes
+    public int getRunesMaxActiveRunes() {
+        return config.getInt("custom-items.runes.max-active-runes", 2);
+    }
+
+    public int getRunesToggleCooldownSeconds() {
+        return config.getInt("custom-items.runes.toggle-cooldown-seconds", 5);
+    }
+
+    public double getRunesRechargePerSecond() {
+        return config.getDouble("custom-items.runes.recharge-per-second", 1.5);
+    }
+
+    public long getRunesBrokenDurationMs() {
+        return config.getLong("custom-items.runes.broken-duration-ms", 10000);
+    }
+
+    public long getRunesRechargeDelayMs() {
+        return config.getLong("custom-items.runes.recharge-delay-ms", 3000);
+    }
+
+    public int getRunesMaxDurability(String enchantName) {
+        String path = "custom-items.runes.max-durability." + enchantName.toLowerCase(Locale.ROOT);
+        return config.getInt(path, getDefaultRuneMaxDurability(enchantName));
+    }
+
+    private int getDefaultRuneMaxDurability(String enchantName) {
+        return switch (enchantName.toLowerCase(Locale.ROOT)) {
+            case "sharpness", "protection", "quick-charge" -> 30;
+            case "fire-aspect", "knockback", "flame" -> 15;
+            case "power", "projectile-protection" -> 18;
+            case "punch" -> 10;
+            case "piercing" -> 24;
+            default -> 20;
+        };
     }
 
     // Overdrive Potion
@@ -730,6 +857,34 @@ public class ItemsConfig {
 
     public double getTectonicCapRadius() {
         return config.getDouble("custom-armor.tectonic-cap.radius", 4.0);
+    }
+
+    public float getTectonicCapFallWarningMinDistance() {
+        return (float) config.getDouble("custom-armor.tectonic-cap.fall-warning-min-distance", 3.0);
+    }
+
+    public double getTectonicCapFallDamageRadiusScale() {
+        return config.getDouble("custom-armor.tectonic-cap.fall-damage-radius-scale", 0.3);
+    }
+
+    public double getTectonicCapKnockbackUpward() {
+        return config.getDouble("custom-armor.tectonic-cap.knockback-upward", 0.25);
+    }
+
+    public double getTectonicCapKnockbackHorizontal() {
+        return config.getDouble("custom-armor.tectonic-cap.knockback-horizontal", 0.7);
+    }
+
+    public double getTectonicCapSlowRadius() {
+        return config.getDouble("custom-armor.tectonic-cap.slow-radius", 2.0);
+    }
+
+    public int getTectonicCapSlowDurationSeconds() {
+        return config.getInt("custom-armor.tectonic-cap.slow-duration-seconds", 4);
+    }
+
+    public int getTectonicCapSlowAmplifier() {
+        return config.getInt("custom-armor.tectonic-cap.slow-amplifier", 1);
     }
 
     // Investor's Set
