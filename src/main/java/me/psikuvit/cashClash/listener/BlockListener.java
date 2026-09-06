@@ -28,14 +28,19 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFromToEvent;
+import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
+import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -66,16 +71,39 @@ public class BlockListener implements Listener {
 
     private static final Map<UUID, Set<Location>> placedBlocks = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<Integer, Integer>> waterLavaSourceCount = new ConcurrentHashMap<>();
-    private static final Map<UUID, Map<UUID, Integer>> playerLeafBlockCount = new ConcurrentHashMap<>();
     private static final Map<Location, BukkitTask> webDespawnTasks = new ConcurrentHashMap<>();
     private static final Map<Location, BukkitTask> leafDecayTasks = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
-    private static final Map<Location, Location> waterLavaOrigins = new ConcurrentHashMap<>();
     // What a placed fluid displaced, so the map can be put back exactly as it was once the
     // fluid despawns rather than left as a hole where a plant or lever used to be.
     private static final Map<Location, BlockData> fluidReplacedBlocks = new ConcurrentHashMap<>();
     private static final Map<Location, DespawnTimer> despawnTimers = new ConcurrentHashMap<>();
     private static BukkitTask despawnTimerTask;
+
+    /**
+     * One "quick fluid" placement: gravity-first, breadth-first-outward extent computed once as
+     * a plain synchronous pass (see {@link #planQuickFluid}) rather than a live recursion racing
+     * against a possible concurrent drain. {@code rings} is reveal order - each inner list is
+     * every cell at the same hop distance from the source, revealed or removed together, one
+     * ring per flow tick. The source block itself isn't in {@code rings}; it's tracked and
+     * drained separately, always last.
+     */
+    private static final class PlacedFluid {
+        final Location origin;
+        final Material fluid;
+        final UUID sessionId;
+        final List<List<Location>> rings;
+        volatile boolean active = true;
+
+        PlacedFluid(Location origin, Material fluid, UUID sessionId, List<List<Location>> rings) {
+            this.origin = origin;
+            this.fluid = fluid;
+            this.sessionId = sessionId;
+            this.rings = rings;
+        }
+    }
+    
+    private static final Map<Location, PlacedFluid> fluidCells = new ConcurrentHashMap<>();
 
     // ==================== BLOCK PLACE ====================
 
@@ -104,9 +132,9 @@ public class BlockListener implements Listener {
     public static void cleanupSession(UUID sessionId) {
         placedBlocks.remove(sessionId);
         waterLavaSourceCount.remove(sessionId);
-        playerLeafBlockCount.remove(sessionId);
         playerWaterBucketRefillCount.remove(sessionId);
         fluidReplacedBlocks.clear();
+        fluidCells.clear();
     }
 
     /**
@@ -126,7 +154,7 @@ public class BlockListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void onBucketEmpty(org.bukkit.event.player.PlayerBucketEmptyEvent event) {
+    public void onBucketEmpty(PlayerBucketEmptyEvent event) {
         Material bucket = event.getBucket();
         if (bucket != Material.WATER_BUCKET && bucket != Material.LAVA_BUCKET) return;
 
@@ -147,17 +175,15 @@ public class BlockListener implements Listener {
         }
 
         Location origin = target.getLocation().toBlockLocation();
-        waterLavaOrigins.put(origin, origin);
-        rememberReplacedBlock(target);
-
         boolean water = bucket == Material.WATER_BUCKET;
         Material fluid = water ? Material.WATER : Material.LAVA;
 
+        rememberReplacedBlock(target);
+        trackPlacedBlock(session.getSessionId(), target);
+        placeQuickFluid(target, origin, fluid, session.getSessionId());
+
         if (water) {
-            scheduleWaterLavaCleanup(target);
             queueWaterBucketRefill(player);
-        } else {
-            scheduleLavaCleanup(target);
         }
 
         Messages.debug(player, "FLUID", "bucket " + fluid + " at " + at(origin)
@@ -165,18 +191,100 @@ public class BlockListener implements Listener {
                 + " | flow-distance=" + itemsConfig.getFluidFlowDistance()
                 + " despawn=" + itemsConfig.getFluidDespawnSeconds() + "s");
 
-        trackPlacedBlock(session.getSessionId(), target);
-        createQuickFluid(target, session.getSessionId(), origin, fluid, itemsConfig.getFluidFlowDistance());
-
+        // Bucket-empty fires before the block actually updates, so wait a tick to confirm the
+        // source really landed before putting a countdown label over it.
         SchedulerUtils.runTask(() -> {
-            Messages.debug(player, "FLUID", "source +1t " + at(origin) + " = " + describe(target)
-                    + (target.getType() == fluid ? "" : "  <-- SOURCE NEVER PLACED / ALREADY GONE"));
-            if (target.getType() != fluid) return;
+            if (target.getType() != fluid) {
+                Messages.debug(player, "FLUID", "source +1t " + at(origin) + " = " + describe(target)
+                        + "  <-- SOURCE NEVER PLACED / ALREADY GONE");
+                return;
+            }
             showDespawnTimer(target, fluid, itemsConfig.getFluidDespawnSeconds() * 20L, water ? "aqua" : "gold");
         });
+    }
 
-        SchedulerUtils.runTaskLater(() -> Messages.debug(player, "FLUID",
-                "source +20t " + at(origin) + " = " + describe(target)), 20L);
+    /**
+     * Draining the block a placement's source lives at should behave like vanilla: the whole
+     * connected body starts draining with it, right away - not linger frozen in place until its
+     * despawn timer (started back at placement time) eventually gets around to it. See
+     * {@link #drainPlacement} for how that drain is staggered rather than instant. Draining a
+     * non-source spread block instead just removes that one block; the source is still feeding
+     * the rest of the pool, same as vanilla leaves the rest of a body alone when you scoop from
+     * its edge.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBucketFill(PlayerBucketFillEvent event) {
+        Block target = event.getBlockClicked();
+        Location loc = target.getLocation().toBlockLocation();
+
+        PlacedFluid placement = fluidCells.get(loc);
+        if (placement == null) {
+            Messages.debug(event.getPlayer(), "FLUID", "drained untracked " + describe(target) + " at " + at(loc)
+                    + " - left entirely to vanilla");
+            return;
+        }
+
+        if (loc.equals(placement.origin)) {
+            drainPlacement(placement, "source scooped by " + event.getPlayer().getName());
+            return;
+        }
+
+        fluidCells.remove(loc);
+        fluidReplacedBlocks.remove(loc);
+
+        Messages.debug(event.getPlayer(), "FLUID", "scooped tracked " + describe(target) + " at " + at(loc)
+                + " (origin=" + at(placement.origin) + ", was a spread block) - untracked, no neighbors touched");
+    }
+
+    /**
+     * Drains an entire placement - source and every revealed/still-pending ring. Marking it
+     * inactive and untracking the source immediately is what stops {@link #revealRing} from
+     * placing any ring that hadn't gone out yet, so a placement drained before it even finished
+     * spreading (or before it started at all) yields no further flow, matching how vanilla
+     * behaves when a source is scooped the instant it's placed. Already-revealed rings stay
+     * tracked (still protected from vanilla reprocessing) right up until the tick they're
+     * actually restored: removal is staggered source-first, then outward ring by ring, at the
+     * same pace the fluid originally spread out - matching how vanilla recession actually
+     * cascades (the ring touching the now-missing source is the first to lose its supply and
+     * recede, which is what leaves the next ring out unsupplied a tick later, and so on outward)
+     * rather than the whole body vanishing in one instant frame.
+     */
+    private void drainPlacement(PlacedFluid placement, String reason) {
+        if (!placement.active) return;
+        placement.active = false;
+        fluidCells.remove(placement.origin);
+
+        Messages.debug("FLUID", "draining placement at " + at(placement.origin) + " (" + reason + ")");
+
+        long tickInterval = flowTicksFor(placement.fluid);
+        long delay = 0;
+        SchedulerUtils.runTaskLater(() -> removeFluidRing(List.of(placement.origin), true), delay);
+        delay += tickInterval;
+
+        for (List<Location> ring : placement.rings) {
+            SchedulerUtils.runTaskLater(() -> removeFluidRing(ring, false), delay);
+            delay += tickInterval;
+        }
+    }
+
+    /** Restores (or untracks) every block in one ring. Only the source ring gets a sound cue. */
+    private void removeFluidRing(List<Location> ring, boolean playSound) {
+        for (Location loc : ring) {
+            Block block = loc.getBlock();
+            Material type = block.getType();
+            if (type == Material.WATER || type == Material.LAVA) {
+                Location center = loc.clone().add(0.5, 0.5, 0.5);
+                if (type == Material.WATER) {
+                    ParticleUtils.spawn(Particle.SPLASH, center, 6, 0.3, 0.2, 0.3, 0.05);
+                    if (playSound) SoundUtils.playAt(center, Sound.ENTITY_GENERIC_SPLASH, 0.5f, 1.0f);
+                } else {
+                    ParticleUtils.spawn(Particle.LAVA, center, 4, 0.25, 0.2, 0.25, 0);
+                    if (playSound) SoundUtils.playAt(center, Sound.BLOCK_LAVA_EXTINGUISH, 0.5f, 1.0f);
+                }
+                restoreAfterFluid(block);
+            }
+            fluidCells.remove(loc);
+        }
     }
 
     /**
@@ -304,47 +412,15 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Handle leaf block placement (max 64 per player, 3-block vertical stack limit).
+     * Handle leaf block placement - no placement limit, just tracking for despawn/cleanup.
      */
     private boolean handleLeafPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
         if (!isLeafBlock(blockType)) return false;
 
-        Map<UUID, Integer> counts = playerLeafBlockCount.computeIfAbsent(sessionId, k -> new HashMap<>());
-        int currentLeafs = counts.getOrDefault(playerId, 0);
-
-        if (currentLeafs >= 64) {
-            event.setCancelled(true);
-            Messages.send(event.getPlayer(), "listener.max-leaf-blocks-reached");
-            return true;
-        }
-
-        if (checkVerticalLeafStack(block)) {
-            event.setCancelled(true);
-            Messages.send(event.getPlayer(), "listener.leaf-stack-limit");
-            return true;
-        }
-
-        counts.put(playerId, currentLeafs + 1);
         trackPlacedBlock(sessionId, block);
         scheduleLeafDecay(block);
         showDespawnTimer(block, blockType, 160, "green");
         return true;
-    }
-
-    /**
-     * Check if placing a leaf block here would exceed 3-block vertical stack limit.
-     */
-    private boolean checkVerticalLeafStack(Block block) {
-        int stackCount = 1;
-        for (int i = -2; i <= 2; i++) {
-            if (i == 0) continue;
-            Block adjacent = block.getRelative(0, i, 0);
-            if (isLeafBlock(adjacent.getType())) {
-                stackCount++;
-                if (stackCount > 3) return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -368,17 +444,10 @@ public class BlockListener implements Listener {
         waterLavaSourceCount.get(sessionId).put(teamNum, currentCount + 1);
         trackPlacedBlock(sessionId, event.getBlock());
 
-        // Track origin and schedule despawn so placed fluids flow then clear
         Location origin = event.getBlock().getLocation().toBlockLocation();
-        waterLavaOrigins.put(origin, origin);
-        if (blockType == Material.WATER) {
-            scheduleWaterLavaCleanup(event.getBlock());
-            showDespawnTimer(event.getBlock(), Material.WATER, itemsConfig.getFluidDespawnSeconds() * 20L, "aqua");
-        } else {
-            scheduleLavaCleanup(event.getBlock());
-            showDespawnTimer(event.getBlock(), Material.LAVA, itemsConfig.getFluidDespawnSeconds() * 20L, "gold");
-        }
-        createQuickFluid(event.getBlock(), sessionId, origin, blockType, itemsConfig.getFluidFlowDistance());
+        placeQuickFluid(event.getBlock(), origin, blockType, sessionId);
+        showDespawnTimer(event.getBlock(), blockType, itemsConfig.getFluidDespawnSeconds() * 20L,
+                blockType == Material.WATER ? "aqua" : "gold");
 
         // Schedule water bucket refill (only for water, not lava)
         if (blockType == Material.WATER) {
@@ -392,7 +461,7 @@ public class BlockListener implements Listener {
     /**
      * Put a colour-matched countdown above a placed utility block so both teams can read how
      * much longer it will be there. Only the block the player actually placed gets one - the
-     * water/lava blocks {@link #createQuickFluid} spreads out from it would otherwise stack a
+     * water/lava blocks {@link #placeQuickFluid} spreads out from it would otherwise stack a
      * dozen overlapping labels on one puddle.
      *
      * @param material what the block is expected to be for as long as the timer runs - passed
@@ -471,10 +540,10 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Suppresses vanilla flow for any fluid this plugin placed. createQuickFluid already stepped
-     * it out to its full reach in every direction; letting vanilla flow on top of that is what
-     * produced the terrain-dependent, sometimes-it-does-sometimes-it-doesn't spreading that the
-     * fixed reach exists to replace.
+     * Suppresses vanilla flow for any fluid this plugin placed. planQuickFluid already worked out
+     * its full reach in every direction; letting vanilla flow on top of that is what produced the
+     * terrain-dependent, sometimes-it-does-sometimes-it-doesn't spreading that the fixed reach
+     * exists to replace.
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onWaterLavaSpread(BlockFromToEvent event) {
@@ -484,11 +553,36 @@ public class BlockListener implements Listener {
         if (type != Material.WATER && type != Material.LAVA) return;
 
         Location from = event.getBlock().getLocation().toBlockLocation();
-        if (waterLavaOrigins.containsKey(from)) {
+        Location to = event.getToBlock().getLocation().toBlockLocation();
+        if (fluidCells.containsKey(from)) {
             event.setCancelled(true);
-            Messages.debug("FLUID", "cancelled vanilla flow " + at(from) + " -> "
-                    + at(event.getToBlock().getLocation().toBlockLocation()));
+            Messages.debug("FLUID", "cancelled vanilla flow " + at(from) + " -> " + at(to));
+        } else {
+            Messages.debug("FLUID", "untracked vanilla flow allowed " + at(from) + " -> " + at(to)
+                    + " (not a tracked block - left to vanilla)");
         }
+    }
+
+    /**
+     * A tracked fluid block is meant to be entirely frozen - never reprocessed by vanilla's own
+     * fluid logic, only ever changed by this class's own spread/despawn/restore code. Removing a
+     * neighboring block (e.g. draining a source with {@link #onBucketFill}) still fires a normal
+     * physics update to its neighbors regardless of how those neighbors were themselves placed,
+     * which is a separate notification path from {@link #onWaterLavaSpread}'s BlockFromToEvent
+     * cancellation - cancelling it here too closes that gap instead of letting vanilla's fluid
+     * tick reprocess (and reshape) the frozen ring right after a drain.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onFluidPhysics(BlockPhysicsEvent event) {
+        Block block = event.getBlock();
+        Material type = block.getType();
+        if (type != Material.WATER && type != Material.LAVA) return;
+
+        Location loc = block.getLocation().toBlockLocation();
+        if (!fluidCells.containsKey(loc)) return;
+
+        event.setCancelled(true);
+        Messages.debug("FLUID", "cancelled physics update on frozen " + describe(block) + " at " + at(loc));
     }
 
     /** Compact "x,y,z" for the FLUID debug lines. */
@@ -563,26 +657,6 @@ public class BlockListener implements Listener {
         block.setBlockData(levelled, false);
     }
 
-    /**
-     * Steps the fluid outward in all four directions, once per flow tick, {@code stepsRemaining}
-     * times. Deliberately unconditional: vanilla decides per-direction whether fluid advances
-     * based on the surrounding terrain, and this replaces that entirely so a placed bucket
-     * always produces the same reach whatever it is placed against.
-     */
-    private void createQuickFluid(Block source, UUID sessionId, Location origin, Material fluid, int stepsRemaining) {
-        // A fresh visited set per placement. Sharing one across the session meant any spot a
-        // previous bucket had already flowed over stayed marked for the rest of the match, so a
-        // later bucket placed near it refused to spread at all.
-        Set<Location> visited = ConcurrentHashMap.newKeySet();
-
-        // Delayed by one interval rather than run inline: vanilla leaves the source sitting for
-        // a full flow tick before the first ring appears, and starting immediately made the
-        // whole spread land a step ahead of where real water would be.
-        SchedulerUtils.runTaskLater(
-                () -> stepFluidOutward(source, sessionId, origin, fluid, stepsRemaining, visited),
-                flowTicksFor(fluid));
-    }
-
     /** Vanilla overworld flow rates by default, tunable per fluid in items.yml. */
     private long flowTicksFor(Material fluid) {
         return fluid == Material.LAVA
@@ -590,91 +664,123 @@ public class BlockListener implements Listener {
                 : itemsConfig.getWaterFlowTicks();
     }
 
-    private void stepFluidOutward(Block source, UUID sessionId, Location origin, Material fluid,
-                                  int stepsRemaining, Set<Location> visited) {
-        Location sourceLoc = source.getLocation().toBlockLocation();
+    /**
+     * Computes and starts revealing a "quick fluid" placement: the whole reachable extent is
+     * planned once, synchronously, up front (see {@link #planQuickFluid}) - there's no live
+     * recursion for a concurrent drain to race against, since nothing is placed until the plan is
+     * already final. The source sits alone for one full flow tick before the first ring goes
+     * out, same as vanilla - starting the reveal inline made the whole spread land a step ahead
+     * of where real water would be. Also starts the placement's despawn timer immediately, same
+     * as the source's own countdown label.
+     */
+    private void placeQuickFluid(Block source, Location origin, Material fluid, UUID sessionId) {
+        PlacedFluid placement = new PlacedFluid(origin, fluid, sessionId, planQuickFluid(source));
+        fluidCells.put(origin, placement);
 
-        if (fluid != Material.WATER && fluid != Material.LAVA) {
-            Messages.debug("FLUID", "stop at " + at(sourceLoc) + ": not a fluid (" + fluid + ")");
-            return;
+        SchedulerUtils.runTaskLater(() -> revealRing(placement, 0), flowTicksFor(fluid));
+
+        SchedulerUtils.runTaskLater(() -> drainPlacement(placement, "despawn timer"),
+                itemsConfig.getFluidDespawnSeconds() * 20L);
+    }
+
+    /**
+     * Works out the full extent of a placement in one synchronous pass: straight down first -
+     * gravity takes priority, matching vanilla (a source flows downward before it flows to its
+     * sides) - up to {@code fluid-fall-max-depth}, then breadth-first outward from wherever that
+     * landed, up to {@code fluid-flow-distance} hops. This is deliberately unconditional about
+     * direction, same as before: vanilla decides per-direction whether fluid advances based on
+     * the surrounding terrain, and a fixed reach replaces that so a placed bucket always produces
+     * the same shape whatever it's placed against. Each returned list is one ring - every cell at
+     * the same hop distance from the source - in reveal order.
+     */
+    private List<List<Location>> planQuickFluid(Block source) {
+        List<List<Location>> rings = new ArrayList<>();
+        Set<Location> seen = new HashSet<>();
+        seen.add(source.getLocation().toBlockLocation());
+
+        Block landed = source;
+        int fallRemaining = itemsConfig.getFluidFallMaxDepth();
+        while (fallRemaining > 0) {
+            Block below = landed.getRelative(BlockFace.DOWN);
+            if (!canFlowInto(below)) break;
+
+            Location loc = below.getLocation().toBlockLocation();
+            rings.add(List.of(loc));
+            seen.add(loc);
+            landed = below;
+            fallRemaining--;
         }
-        if (stepsRemaining <= 0) {
-            Messages.debug("FLUID", "stop at " + at(sourceLoc) + ": out of steps");
-            return;
+
+        List<Location> frontier = List.of(landed.getLocation().toBlockLocation());
+        for (int hop = 0; hop < itemsConfig.getFluidFlowDistance() && !frontier.isEmpty(); hop++) {
+            List<Location> ring = new ArrayList<>();
+            for (Location from : frontier) {
+                for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
+                    Location next = from.clone().add(face.getModX(), face.getModY(), face.getModZ()).toBlockLocation();
+                    if (!seen.add(next)) continue;
+                    if (!canFlowInto(next.getBlock())) continue;
+                    ring.add(next);
+                }
+            }
+            rings.add(ring);
+            frontier = ring;
         }
-        if (!visited.add(sourceLoc)) {
-            Messages.debug("FLUID", "stop at " + at(sourceLoc) + ": already visited this placement");
-            return;
-        }
 
-        int step = itemsConfig.getFluidFlowDistance() - stepsRemaining + 1;
-        long flowTicks = flowTicksFor(fluid);
+        return rings;
+    }
 
-        Messages.debug("FLUID", "step " + step + " from " + at(source.getLocation().toBlockLocation())
-                + " (" + describe(source) + ") stepsRemaining=" + stepsRemaining + " visited=" + visited.size());
+    /**
+     * Reveals one ring, then schedules the next - one ring per flow tick, matching how fluid used
+     * to spread one hop at a time. Bails out, placing nothing further, the moment the placement
+     * is drained: {@code active} is checked fresh on every call, so this stops immediately
+     * whether the drain happened before this ring's turn even came up (including before the very
+     * first ring - a placement drained the instant it's placed produces no flow at all, matching
+     * vanilla) or partway through revealing.
+     */
+    private void revealRing(PlacedFluid placement, int index) {
+        if (!placement.active || index >= placement.rings.size()) return;
 
-        for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
-            Block next = source.getRelative(face);
-            if (!canFlowInto(next)) {
-                Messages.debug("FLUID", "  " + face + " refused: " + flowBlockedReason(next));
+        int level = index + 1;
+        List<Location> ring = placement.rings.get(index);
+        for (int i = 0; i < ring.size(); i++) {
+            Location loc = ring.get(i);
+            Block block = loc.getBlock();
+            if (!canFlowInto(block)) {
+                Messages.debug("FLUID", "  ring " + level + " skip " + at(loc) + ": " + flowBlockedReason(block));
                 continue;
             }
 
-            placeFlowingFluid(next, fluid, step);
-            Location nextLoc = next.getLocation().toBlockLocation();
-            Messages.debug("FLUID", "  " + face + " placed " + describe(next) + " at " + at(nextLoc));
-            SchedulerUtils.runTaskLater(() -> Messages.debug("FLUID", "  verify +5t " + at(nextLoc) + " = " + describe(next)
-                    + (next.getType() == fluid ? "" : "  <-- REMOVED BY SOMETHING ELSE")), 5L);
-            waterLavaOrigins.put(next.getLocation().toBlockLocation(), origin);
-            trackPlacedBlock(sessionId, next);
+            placeFlowingFluid(block, placement.fluid, level);
+            fluidCells.put(loc, placement);
+            trackPlacedBlock(placement.sessionId, block);
+            Messages.debug("FLUID", "  ring " + level + " placed " + describe(block) + " at " + at(loc));
 
-            if (fluid == Material.WATER) {
-                scheduleWaterLavaCleanup(next);
-            } else {
-                scheduleLavaCleanup(next);
-            }
-
-            SchedulerUtils.runTaskLater(
-                    () -> stepFluidOutward(next, sessionId, origin, fluid, stepsRemaining - 1, visited),
-                    flowTicks
-            );
+            cascadeDown(block, placement, level, ring);
         }
+
+        SchedulerUtils.runTaskLater(() -> revealRing(placement, index + 1), flowTicksFor(placement.fluid));
     }
 
     /**
-     * Schedule a water/lava block to despawn after 10 seconds with visual effects.
+     * Any spread cell with air below it falls straight down to the next solid ground, same as
+     * the source's own initial fall - so a bucket placed on a ledge doesn't leave water hanging
+     * in mid-air past the edge. Appends the fallen cells to the same ring they cascaded from, so
+     * they drain/despawn together with it.
      */
-    private void scheduleWaterLavaCleanup(Block block) {
-        Location loc = block.getLocation().toBlockLocation();
+    private void cascadeDown(Block from, PlacedFluid placement, int level, List<Location> ring) {
+        Block current = from;
+        for (int step = 0; step < itemsConfig.getFluidFallMaxDepth(); step++) {
+            Block below = current.getRelative(BlockFace.DOWN);
+            if (!canFlowInto(below)) break;
 
-        SchedulerUtils.runTaskLater(() -> {
-            if (block.getType() == Material.WATER || block.getType() == Material.LAVA) {
-                Location center = loc.clone().add(0.5, 0.5, 0.5);
-                ParticleUtils.spawn(Particle.SPLASH, center, 12, 0.3, 0.2, 0.3, 0.05);
-                ParticleUtils.spawn(Particle.BUBBLE, center, 8, 0.2, 0.2, 0.2, 0.02);
-                SoundUtils.playAt(center, Sound.ENTITY_GENERIC_SPLASH, 0.7f, 1.0f);
-                restoreAfterFluid(block);
-            }
-            waterLavaOrigins.remove(loc);
-        }, itemsConfig.getFluidDespawnSeconds() * 20L);
-    }
+            placeFlowingFluid(below, placement.fluid, level);
+            Location belowLoc = below.getLocation().toBlockLocation();
+            fluidCells.put(belowLoc, placement);
+            trackPlacedBlock(placement.sessionId, below);
+            ring.add(belowLoc);
 
-    /**
-     * Schedule a lava block to despawn after 10 seconds with visual effects.
-     */
-    private void scheduleLavaCleanup(Block block) {
-        Location loc = block.getLocation().toBlockLocation();
-
-        SchedulerUtils.runTaskLater(() -> {
-            if (block.getType() == Material.LAVA) {
-                Location center = loc.clone().add(0.5, 0.5, 0.5);
-                ParticleUtils.spawn(Particle.LAVA, center, 8, 0.25, 0.2, 0.25, 0);
-                ParticleUtils.spawn(Particle.SMALL_FLAME, center, 12, 0.25, 0.2, 0.25, 0.01);
-                SoundUtils.playAt(center, Sound.BLOCK_LAVA_EXTINGUISH, 0.7f, 1.0f);
-                restoreAfterFluid(block);
-            }
-            waterLavaOrigins.remove(loc);
-        }, itemsConfig.getFluidDespawnSeconds() * 20L);
+            current = below;
+        }
     }
 
     /**
@@ -712,9 +818,6 @@ public class BlockListener implements Listener {
             event.setDropItems(false);
             cancelLeafDecayTask(block.getLocation());
             removeDespawnTimer(block.getLocation());
-
-            // Decrement player's leaf count
-            decrementPlayerLeaf(event, playerLeafBlockCount);
         }
     }
 
@@ -722,20 +825,6 @@ public class BlockListener implements Listener {
         BukkitTask task = leafDecayTasks.remove(loc.toBlockLocation());
         if (task != null) {
             task.cancel();
-        }
-    }
-
-    private void decrementPlayerLeaf(BlockBreakEvent event, Map<UUID, Map<UUID, Integer>> playerLeafBlockCount) {
-        Player player = event.getPlayer();
-        GameSession session = gameManager.getPlayerSession(player);
-        if (session != null) {
-            Map<UUID, Integer> counts = playerLeafBlockCount.get(session.getSessionId());
-            if (counts != null) {
-                int current = counts.getOrDefault(player.getUniqueId(), 0);
-                if (current > 0) {
-                    counts.put(player.getUniqueId(), current - 1);
-                }
-            }
         }
     }
 
