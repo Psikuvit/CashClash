@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -47,6 +48,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
     private final Set<UUID> spinningPlayers;
     private final Set<UUID> carlsThrowing;
     private final Map<UUID, ItemStack> carlsStashedAxe;
+    private final Map<UUID, Integer> carlsStashedSlot;
     private final Map<UUID, Entity> carlsThrowCarriers;
     private final Map<UUID, ItemDisplay> carlsThrowDisplays;
 
@@ -55,6 +57,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
         this.spinningPlayers = ConcurrentHashMap.newKeySet();
         this.carlsThrowing = ConcurrentHashMap.newKeySet();
         this.carlsStashedAxe = new ConcurrentHashMap<>();
+        this.carlsStashedSlot = new ConcurrentHashMap<>();
         this.carlsThrowCarriers = new ConcurrentHashMap<>();
         this.carlsThrowDisplays = new ConcurrentHashMap<>();
     }
@@ -257,6 +260,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_THROW, cfg.getCarlsThrowCooldown());
         carlsThrowing.add(uuid);
         carlsStashedAxe.put(uuid, axe.clone());
+        carlsStashedSlot.put(uuid, player.getInventory().getHeldItemSlot());
         player.getInventory().setItemInMainHand(null);
 
         Messages.send(player, "mythic.carls-battleaxe-throw-activated");
@@ -321,19 +325,20 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                         returning = true;
                     }
                 } else {
-                    Vector toPlayer = player.getEyeLocation().toVector().subtract(carrierLoc.toVector());
-                    double distanceToPlayer = toPlayer.length();
-                    if (distanceToPlayer <= releaseDistance) {
+                    Vector toAnchor = startLoc.toVector().subtract(carrierLoc.toVector());
+                    double distanceToAnchor = toAnchor.length();
+                    if (distanceToAnchor <= releaseDistance) {
                         finish(true);
                         return;
                     }
-                    Vector returnDir = toPlayer.normalize();
+                    Vector returnDir = toAnchor.normalize();
                     Location nextLoc = carrierLoc.clone().add(returnDir.clone().multiply(stepSize));
                     moveTo(nextLoc, returnDir);
                 }
 
-                // Drag caught players along every tick once caught
-                Location dragLoc = carrier.getLocation().add(0, 0.5, 0);
+                // Drag caught players along every tick once caught, centered on the axe rather
+                // than standing on top of it
+                Location dragLoc = carrier.getLocation();
                 for (Player c : caught) {
                     if (c.isOnline()) c.teleport(dragLoc);
                 }
@@ -364,7 +369,9 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                         if (!c.isOnline()) continue;
                         c.setNoDamageTicks(0);
                         c.setMaximumNoDamageTicks(0);
+                        Vector preDamageVelocity = c.getVelocity();
                         c.damage(damage, player);
+                        c.setVelocity(preDamageVelocity);
                         SchedulerUtils.runTaskLater(() -> {
                             if (c.isOnline()) c.setMaximumNoDamageTicks(20);
                         }, 1L);
@@ -374,16 +381,35 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                     Messages.send(player, "mythic.carls-battleaxe-throw-hit", "{enemy_count}", String.valueOf(caught.size()));
                 }
 
-                ItemStack stashed = carlsStashedAxe.remove(uuid);
-                if (player.isOnline() && stashed != null) {
-                    player.getInventory().setItemInMainHand(stashed);
-                }
+                restoreStashedAxe(player, uuid);
                 Messages.debug(player, "CARLS_BATTLEAXE: Throw ended, caught " + caught.size() + " players");
             }
         };
 
         BukkitTask task = SchedulerUtils.runTaskTimer(throwRunnable, 0L, 1L);
         manager.trackTask(uuid, task);
+    }
+
+    /**
+     * Returns the stashed axe to the exact hotbar slot it was thrown from, rather than whatever
+     * slot the player currently has selected. If a different item has since ended up in that
+     * slot, it's moved to the general inventory (dropped if full) instead of being overwritten.
+     */
+    private void restoreStashedAxe(Player player, UUID uuid) {
+        ItemStack stashed = carlsStashedAxe.remove(uuid);
+        Integer slot = carlsStashedSlot.remove(uuid);
+        if (stashed == null || !player.isOnline()) return;
+
+        if (slot == null) {
+            player.getInventory().setItemInMainHand(stashed);
+            return;
+        }
+
+        ItemStack occupying = player.getInventory().getItem(slot);
+        if (occupying != null && !occupying.getType().isAir()) {
+            ItemUtils.returnItemToInventoryOrDrop(player, occupying.clone());
+        }
+        player.getInventory().setItem(slot, stashed);
     }
 
     /**
@@ -436,6 +462,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
         carlsThrowDisplays.clear();
         carlsThrowing.clear();
         carlsStashedAxe.clear();
+        carlsStashedSlot.clear();
     }
 
     @Override
@@ -450,10 +477,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
             ItemDisplay display = carlsThrowDisplays.remove(uuid);
             if (display != null && display.isValid()) display.remove();
 
-            ItemStack stashed = carlsStashedAxe.remove(uuid);
-            if (player.isOnline() && stashed != null) {
-                player.getInventory().setItemInMainHand(stashed);
-            }
+            restoreStashedAxe(player, uuid);
         }
     }
 }
