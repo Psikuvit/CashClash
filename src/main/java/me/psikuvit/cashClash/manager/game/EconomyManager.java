@@ -36,8 +36,8 @@ public class EconomyManager {
 
         long killPool = calculateCurrentPool(roundData);
 
-        long minRoundPool = CashClashPlugin.getInstance().getConfigManager().getMinRoundPool();
-        long finalAmount = Math.max(killPool, minRoundPool);
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
+        long finalAmount = Math.min(Math.max(killPool, cfg.getMinRoundPool()), cfg.getMaxRoundPool());
         roundData.setDistributedMoney(killPool, finalAmount);
 
         Messages.broadcast(session.getPlayers(), "economy.round-money-distributed",
