@@ -106,18 +106,26 @@ public class DamageListener implements Listener {
             return;
         }
 
+        if (event.getCause() == EntityDamageEvent.DamageCause.VOID) {
+            event.setDamage(1000.0);
+            return;
+        }
+
         try {
             if (customItemManager.getHandler(TotemOfHauntingHandler.class).isTotemInvincible(player.getUniqueId())) {
+                playInvincibleHitFeedbackIfEntity(event);
                 event.setCancelled(true);
                 return;
             }
 
             if (customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
+                playInvincibleHitFeedbackIfEntity(event);
                 event.setCancelled(true);
                 return;
             }
 
             if (armorManager.getHandler(DragonSetHandler.class).isDragonRushInvincible(player.getUniqueId())) {
+                playInvincibleHitFeedbackIfEntity(event);
                 event.setCancelled(true);
                 return;
             }
@@ -412,6 +420,7 @@ public class DamageListener implements Listener {
 
         // Wind Bow: always-on fall damage negation while held, no cooldown/charge gate.
         if (PDCDetection.getMythic(player.getInventory().getItemInMainHand()) == MythicItem.WIND_BOW) {
+            SoundUtils.play(player, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.0f, 1.0f);
             event.setCancelled(true);
             return;
         }
@@ -493,6 +502,23 @@ public class DamageListener implements Listener {
     }
 
     /**
+     * Same cue as {@link #playInvincibleHitFeedback}, called from {@link #onEntityDamage}'s own
+     * Totem/Overdrive/Dragon-Rush cancellation. {@code EntityDamageByEntityEvent} doesn't declare
+     * its own handler list (it shares {@code EntityDamageEvent}'s), so this HIGH-priority handler
+     * and {@link #onEntityDamageByEntity}'s {@link #handleInvincibleVictim} - which cancels and
+     * cues the same three states - race at the same priority with no defined order. Playing the
+     * cue here too, rather than relying on whichever one happens to run first, means the cue is
+     * never silently dropped regardless of which one wins; the other bails out immediately on its
+     * own {@code event.isCancelled()} check, so this never double-plays.
+     */
+    private void playInvincibleHitFeedbackIfEntity(EntityDamageEvent event) {
+        if (event instanceof EntityDamageByEntityEvent byEntity) {
+            Player attacker = resolveAttacker(byEntity);
+            if (attacker != null) playInvincibleHitFeedback(attacker);
+        }
+    }
+
+    /**
      * Handle lobby protection - cancel PvP outside game sessions.
      * @return true if damage was cancelled
      */
@@ -555,6 +581,8 @@ public class DamageListener implements Listener {
 
         CashClashPlayer attackerCcp = session.getCashClashPlayer(attacker.getUniqueId());
         if (attackerCcp != null && attackerCcp.isRespawnProtected()) {
+            Messages.debug(attacker, "DAMAGE", attacker.getName() + " (attacker) is respawn-protected - hit on "
+                    + victim.getName() + " ignored, protection expires at " + attackerCcp.getRespawnProtectionUntil());
             return false;
         }
 
@@ -564,6 +592,9 @@ public class DamageListener implements Listener {
                 return false;
             }
 
+            Messages.debug(victim, "DAMAGE", victim.getName() + " (victim) is respawn-protected - hit from "
+                    + attacker.getName() + " cancelled, protection expires at " + victimCcp.getRespawnProtectionUntil()
+                    + " (now=" + System.currentTimeMillis() + ")");
             event.setCancelled(true);
             playInvincibleHitFeedback(attacker);
             return true;
@@ -585,7 +616,10 @@ public class DamageListener implements Listener {
         if (state == GameState.WAITING || state == GameState.SHOPPING
                 || session.isActionsRestricted() || session.isDamageDisabled()) {
             event.setCancelled(true);
-            Messages.debug(player, "DAMAGE", "Damage cancelled due to state: " + state);
+            Messages.debug(player, "DAMAGE", "Damage cancelled - state=" + state
+                    + " actionsRestricted=" + session.isActionsRestricted()
+                    + " damageDisabled=" + session.isDamageDisabled()
+                    + " sequenceLocked=" + session.isSequenceLocked());
             return true;
         }
         return false;
