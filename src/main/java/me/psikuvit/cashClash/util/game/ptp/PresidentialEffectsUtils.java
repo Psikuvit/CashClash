@@ -42,32 +42,35 @@ public class PresidentialEffectsUtils {
         CashClashPlayer.removeEffect(player, PotionEffectType.STRENGTH);
         CashClashPlayer.removeEffect(player, PotionEffectType.RESISTANCE);
         CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
-        CashClashPlayer.removeEffect(player, PotionEffectType.SLOWNESS);
     }
 
     /**
-     * Apply the Tank buff: a Turtle Master-style Resistance + Slowness combo (rather than plain
-     * Resistance), at the amplifiers configured under
-     * {@code gamemodes.protect-the-president.tank-*-amplifier}.
+     * Apply the Tank buff: plain Resistance I, at the amplifier configured under
+     * {@code gamemodes.protect-the-president.tank-resistance-amplifier}.
      */
     public static void applyTankBuff(Player player) {
         if (player == null) return;
         var cfg = CashClashPlugin.getInstance().getConfigManager();
         CashClashPlayer.applyEffect(player, PotionEffectType.RESISTANCE, PotionEffect.INFINITE_DURATION, cfg.getPTPTankResistanceAmplifier(), false, false);
-        CashClashPlayer.applyEffect(player, PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION, cfg.getPTPTankSlownessAmplifier(), false, false);
-        Messages.debug("[PTP] Applied Turtle Master buff (Resistance/Slowness) to president: " + player.getName());
+        Messages.debug("[PTP] Applied Resistance buff to president: " + player.getName());
     }
 
     /**
-     * Apply the HP buff: a one-time instant heal (matching what an actual Instant Health potion
-     * does) rather than a lingering max-health increase, at the amount configured under
+     * Apply the HP buff: a permanent max-health increase (through the centralized health
+     * modifier system, same as every other extra-heart bonus) topped up immediately so the new
+     * hearts show full, rather than a one-time heal - which was a no-op whenever the president
+     * was already at full health, i.e. most of the time. Amount configured under
      * {@code gamemodes.protect-the-president.hp-heal-amount}.
      */
     public static void applyHpBuff(Player player) {
         if (player == null) return;
-        double healAmount = CashClashPlugin.getInstance().getConfigManager().getPTPHpHealAmount();
-        CashClashPlayer.heal(player, healAmount);
-        Messages.debug("[PTP] Applied instant heal (+" + healAmount + ") to president: " + player.getName());
+        double extraHealth = CashClashPlugin.getInstance().getConfigManager().getPTPHpHealAmount();
+        CashClashPlayer ccp = CashClashPlayer.from(player);
+        if (ccp == null) return;
+
+        ccp.addHealthModifier(extraHealth);
+        ccp.heal(extraHealth);
+        Messages.debug("[PTP] Added +" + extraHealth + " max health to president: " + player.getName());
     }
 
     /**

@@ -409,11 +409,7 @@ public class ConfigManager {
     }
 
     public int getPTPTankResistanceAmplifier() {
-        return config.getInt("gamemodes.protect-the-president.tank-resistance-amplifier", 3);
-    }
-
-    public int getPTPTankSlownessAmplifier() {
-        return config.getInt("gamemodes.protect-the-president.tank-slowness-amplifier", 3);
+        return config.getInt("gamemodes.protect-the-president.tank-resistance-amplifier", 0);
     }
 
     public double getPTPHpHealAmount() {

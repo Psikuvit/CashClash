@@ -234,10 +234,9 @@ gamemodes:
     kill-bonus-amount: 15000
     heart-duration-ms: 45000
     captures-to-win: 2
-    # Tank buff (Turtle Master-style): Resistance + Slowness amplifier levels (0 = level I)
-    tank-resistance-amplifier: 3
-    tank-slowness-amplifier: 3
-    # HP buff: instant heal amount applied once on selection (Instant Health I = 4.0)
+    # Tank buff: Resistance amplifier level (0 = level I)
+    tank-resistance-amplifier: 0
+    # HP buff: permanent max-health increase, applied via the health modifier system (4.0 = 2 hearts)
     hp-heal-amount: 4.0
 
 # ============================================

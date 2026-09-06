@@ -29,6 +29,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -445,16 +446,27 @@ public class ProtectThePresidentGamemode extends Gamemode {
     }
 
     /**
-     * Select random presidents for each team
+     * Select random presidents for each team. {@code Stream#findAny()} on an unmodified
+     * {@code Set<UUID>} isn't actually random - it consistently returns the same element for
+     * the same set (backed by the set's iteration order, not a coin flip), which is why the
+     * same players kept getting picked round after round. Shuffling a copy of each team's
+     * roster first is what actually randomizes it.
      */
     private void selectPresidents() {
-        UUID pres1Uuid = session.getTeamRed().getPlayers().stream().findAny().orElse(null);
+        UUID pres1Uuid = randomPlayer(session.getTeamRed().getPlayers());
         President pres1 = President.create(pres1Uuid, 1);
         presidents.put(TeamColor.RED, pres1);
 
-        UUID pres2Uuid = session.getTeamBlue().getPlayers().stream().findAny().orElse(null);
+        UUID pres2Uuid = randomPlayer(session.getTeamBlue().getPlayers());
         President pres2 = President.create(pres2Uuid, 2);
         presidents.put(TeamColor.BLUE, pres2);
+    }
+
+    private UUID randomPlayer(Set<UUID> players) {
+        if (players.isEmpty()) return null;
+        List<UUID> shuffled = new ArrayList<>(players);
+        Collections.shuffle(shuffled);
+        return shuffled.getFirst();
     }
 
     /**
