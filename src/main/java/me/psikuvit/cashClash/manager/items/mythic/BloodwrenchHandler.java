@@ -20,6 +20,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 
 import java.util.Map;
 import java.util.Objects;
@@ -150,10 +151,11 @@ public class BloodwrenchHandler extends MythicItemHandler {
     private static final Color HEAL_MARK_WISP = Color.fromRGB(255, 160, 160);
 
     /**
-     * Blocks a player's healing for as long as they stay in a blood zone. Both zones call this
-     * every tick to refresh the debuff, so the "healing blocked" announcement is gated on the
-     * player not already being debuffed - otherwise standing in a sphere would spam chat once
-     * per tick. The mark itself is told to announce the recovery when it lapses.
+     * Blocks a player's healing for as long as they stay in a Blood Sphere - the only Bloodwrench
+     * zone that negates healing (Blood Vortex doesn't). Called every tick to refresh the debuff,
+     * so the "healing blocked" announcement is gated on the player not already being debuffed -
+     * otherwise standing in a sphere would spam chat once per tick. The mark itself is told to
+     * announce the recovery when it lapses.
      */
     private void applyHealNegation(Player target, int durationSeconds) {
         if (!CashClashPlayer.isHealingReduced(target)) {
@@ -245,16 +247,11 @@ public class BloodwrenchHandler extends MythicItemHandler {
 
                 ParticleUtils.bloodSphereShell(hitLocation, sphereRadius, tick, sphereDensity);
 
-                // Apply slowness + heal negation to enemies inside (everyone inside the sphere,
-                // not just the shooter's opponents - the sphere doesn't distinguish team once it
-                // has landed, matching its "negates healing while inside" description)
+                // Heal-negation zone: enemies only, refreshed every tick while inside - naturally
+                // decays `healNegationDuration` seconds after the target leaves the sphere since
+                // nothing refreshes it anymore.
                 for (Entity entity : world.getNearbyEntities(hitLocation, sphereRadius, sphereRadius, sphereRadius)) {
                     if (!(entity instanceof Player target)) continue;
-
-                    // Refreshed every tick while inside - naturally decays `healNegationDuration`
-                    // seconds after the target leaves the sphere since nothing refreshes it anymore.
-                    applyHealNegation(target, healNegationDuration);
-
                     if (target.equals(shooter)) continue;
                     if (session != null) {
                         Team targetTeam = session.getPlayerTeam(target);
@@ -262,8 +259,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
                             targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
                     }
 
-                    // Slowness I while inside sphere
-                    CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, 40, 0);
+                    applyHealNegation(target, healNegationDuration);
                 }
             }
         }, 0L, 10L);
@@ -311,14 +307,6 @@ public class BloodwrenchHandler extends MythicItemHandler {
 
                 ParticleUtils.bloodVortexSpiral(hitLocation, radius, tick, vortexStrands, vortexDensity);
 
-                // Heal-negation zone: refreshed every tick while inside, regardless of team -
-                // decays naturally `healNegationDuration` seconds after a player leaves.
-                for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius + 2, radius)) {
-                    if (entity instanceof Player inside) {
-                        applyHealNegation(inside, healNegationDuration);
-                    }
-                }
-
                 // Apply effects every 10 ticks (0.5 seconds)
                 if (tick % 10 == 0) {
                 double totalDamageDealt = 0.0;
@@ -332,9 +320,10 @@ public class BloodwrenchHandler extends MythicItemHandler {
                             targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
                     }
 
-                    // Levitation and damage while inside vortex
-                    CashClashPlayer.applyEffect(target, PotionEffectType.LEVITATION, 30, cfg.getBloodwrenchVortexLevitationLevel() - 1);
+                   CashClashPlayer.applyEffect(target, PotionEffectType.LEVITATION, 30, cfg.getBloodwrenchVortexLevitationLevel() - 1);
+                    Vector preDamageVelocity = target.getVelocity();
                     target.damage(damagePerTick, shooter);
+                    target.setVelocity(preDamageVelocity);
                     totalDamageDealt += damagePerTick;
                     Messages.debug(shooter, "BLOODWRENCH: Vortex affecting " + target.getName() + " for " + damagePerTick + " damage");
                 }
