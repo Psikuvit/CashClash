@@ -359,6 +359,14 @@ public final class PDCDetection {
     }
 
     /**
+     * Check if an entity is a "Coming Soon" mannequin.
+     */
+    public static boolean isComingSoonNPC(Entity entity) {
+        if (entity == null) return false;
+        return entity.getPersistentDataContainer().has(Keys.COMING_SOON_NPC_KEY, PersistentDataType.BYTE);
+    }
+
+    /**
      * Get the BlazeBite mode from an arrow entity.
      * @return "glacier", "volcano", or null if not set
      */

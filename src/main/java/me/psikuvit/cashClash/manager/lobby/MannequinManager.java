@@ -90,6 +90,9 @@ public class MannequinManager implements Shutdownable {
             if ("arena".equals(type)) {
                 spawnArenaMannequin(loc, id);
                 count++;
+            } else if ("coming-soon".equals(type)) {
+                spawnComingSoonMannequin(loc, id);
+                count++;
             }
         }
 
@@ -110,7 +113,7 @@ public class MannequinManager implements Shutdownable {
         // Also remove any orphaned mannequins with our key
         for (World world : Bukkit.getWorlds()) {
             for (Villager mannequin : world.getEntitiesByClass(Villager.class)) {
-                if (PDCDetection.isArenaNPC(mannequin)) {
+                if (PDCDetection.isArenaNPC(mannequin) || PDCDetection.isComingSoonNPC(mannequin)) {
                     mannequin.remove();
                 }
             }
@@ -170,6 +173,41 @@ public class MannequinManager implements Shutdownable {
             mannequin.setAI(false);
             mannequin.setSilent(true);
             PDCSetter.of(mannequin).set(Keys.ARENA_NPC_KEY, PersistentDataType.BYTE, (byte) 1).apply();
+            spawnedMannequins.add(mannequin);
+        });
+    }
+
+    /**
+     * Create and save a new "Coming Soon" mannequin at the given location.
+     */
+    public void createComingSoonMannequin(Location loc, Player creator) {
+        String id = UUID.randomUUID().toString().substring(0, 8);
+
+        String path = "mannequins." + id;
+        data.set(path + ".type", "coming-soon");
+        LocationUtils.serializeLocation(data, path + ".loc", loc);
+        data.set(path + ".created-by", creator.getName());
+        data.set(path + ".created-at", System.currentTimeMillis());
+        saveData();
+
+        spawnComingSoonMannequin(loc, id);
+
+        Messages.send(creator, "lobby.coming-soon-npc-spawned");
+        Messages.send(creator, "lobby.coming-soon-npc-spawned-id", "id", id);
+    }
+
+    /**
+     * Spawn a "Coming Soon" mannequin at the given location.
+     */
+    private void spawnComingSoonMannequin(Location loc, String id) {
+        loc.setYaw(90);
+        loc.setPitch(0);
+
+        loc.getWorld().spawn(loc, Villager.class, mannequin -> {
+            mannequin.setCustomNameVisible(false);
+            mannequin.setAI(false);
+            mannequin.setSilent(true);
+            PDCSetter.of(mannequin).set(Keys.COMING_SOON_NPC_KEY, PersistentDataType.BYTE, (byte) 1).apply();
             spawnedMannequins.add(mannequin);
         });
     }

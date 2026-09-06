@@ -12,8 +12,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Command to spawn an Arena NPC mannequin that opens the arena selection GUI when clicked.
- * Usage: /cc spawnnpc [arena|remove]
+ * Command to spawn a mannequin NPC - either the arena selector, or a "Coming Soon" placeholder.
+ * Usage: /cc spawnnpc [arena|coming-soon|remove]
  */
 public class SpawnNPCCommand extends AbstractArgCommand {
 
@@ -31,6 +31,7 @@ public class SpawnNPCCommand extends AbstractArgCommand {
         if (args.length == 0) {
             Messages.send(player, "spawnnpc.usage");
             Messages.send(player, "spawnnpc.help-arena");
+            Messages.send(player, "spawnnpc.help-coming-soon");
             Messages.send(player, "spawnnpc.help-remove");
             Messages.send(player, "spawnnpc.total-saved", "count", String.valueOf(CashClashPlugin.getInstance().getMannequinManager().getCount()));
             return true;
@@ -40,6 +41,7 @@ public class SpawnNPCCommand extends AbstractArgCommand {
 
         switch (subAction) {
             case "arena" -> CashClashPlugin.getInstance().getMannequinManager().createArenaMannequin(player.getLocation(), player);
+            case "coming-soon" -> CashClashPlugin.getInstance().getMannequinManager().createComingSoonMannequin(player.getLocation(), player);
             case "remove" -> {
                 int removed = CashClashPlugin.getInstance().getMannequinManager().removeNearby(player.getLocation(), 5);
                 if (removed > 0) {
@@ -57,7 +59,7 @@ public class SpawnNPCCommand extends AbstractArgCommand {
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, String @NotNull [] args) {
         if (args.length == 1) {
-            return List.of("arena", "remove");
+            return List.of("arena", "coming-soon", "remove");
         }
         return Collections.emptyList();
     }

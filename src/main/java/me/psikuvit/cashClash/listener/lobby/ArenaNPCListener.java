@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.listener.lobby;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
+import me.psikuvit.cashClash.gui.ComingSoonGui;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
@@ -21,6 +22,12 @@ public class ArenaNPCListener implements Listener {
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
         if (event.isCancelled()) return;
         if (!(event.getRightClicked() instanceof Villager mannequin)) return;
+
+        if (PDCDetection.isComingSoonNPC(mannequin)) {
+            event.setCancelled(true);
+            ComingSoonGui.open(event.getPlayer());
+            return;
+        }
 
         // Check if this is an arena NPC
         if (!PDCDetection.isArenaNPC(mannequin)) return;
