@@ -272,11 +272,16 @@ public class CashClashPlayer {
     }
 
     /**
-     * Reset health modifier to 0 and apply (resets to base 20)
+     * Reset health modifier to 0 and heal to the resulting base 20 max. Unlike
+     * {@link #addHealthModifier}/{@link #removeHealthModifier} (which only ever clamp current
+     * health down to a shrinking max, never top it up), this is a full state reset - used at
+     * round/buy-phase start, so a player who took damage last round doesn't carry it forward.
      */
     public void resetHealthModifier() {
         this.healthModifier = 0.0;
         applyHealth();
+        healToFull();
+        Messages.debug(player, "HEALTH", "Reset health modifier and healed to full (" + getMaxHealth() + " max health)");
     }
 
     /**
@@ -408,7 +413,9 @@ public class CashClashPlayer {
      */
     public void setHealth(double health) {
         if (player == null || !player.isOnline()) return;
-        player.setHealth(Math.clamp(health, 0.0, getMaxHealth()));
+        double clamped = Math.clamp(health, 0.0, getMaxHealth());
+        player.setHealth(clamped);
+        Messages.debug(player, "HEALTH", "setHealth(" + health + ") -> " + clamped + "/" + getMaxHealth());
     }
 
     /**
@@ -429,6 +436,9 @@ public class CashClashPlayer {
         if (effect == null || player == null) return;
         player.addPotionEffect(effect);
         trackedEffects.put(effect.getType(), effect);
+        Messages.debug(player, "POTION", "Applied " + effect.getType().getKey().getKey()
+                + " (amplifier=" + effect.getAmplifier() + ", duration=" + effect.getDuration() + "t)"
+                + " to " + player.getName() + " [" + player.getUniqueId() + "] - now tracking " + trackedEffects.size() + " effect(s)");
     }
 
     /**
@@ -459,6 +469,8 @@ public class CashClashPlayer {
         if (type == null || player == null) return;
         player.removePotionEffect(type);
         trackedEffects.remove(type);
+        Messages.debug(player, "POTION", "Removed " + type.getKey().getKey() + " from "
+                + player.getName() + " [" + player.getUniqueId() + "]");
     }
 
     /**
@@ -657,8 +669,13 @@ public class CashClashPlayer {
      */
     public static void applyEffect(Player player, PotionEffect effect) {
         CashClashPlayer ccp = from(player);
-        if (ccp != null) ccp.applyEffect(effect);
-        else if (player != null) player.addPotionEffect(effect);
+        if (ccp != null) {
+            ccp.applyEffect(effect);
+        } else if (player != null) {
+            Messages.debug(player, "POTION", "No session wrapper for " + player.getName()
+                    + " - applying " + effect.getType().getKey().getKey() + " untracked");
+            player.addPotionEffect(effect);
+        }
     }
 
     /**

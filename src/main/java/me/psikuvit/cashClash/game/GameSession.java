@@ -74,7 +74,7 @@ public class GameSession {
     private BonusManager bonusManager;
     private final RewardManager rewardManager;
     private final SequenceManager sequenceManager;
-    private boolean sequenceLocked;
+    private int sequenceLockCount;
     private boolean actionsRestricted;
     private boolean damageDisabled;
     // Shield logic: the whole game is either shield or shieldless, decided once at game
@@ -220,14 +220,28 @@ public class GameSession {
     /**
      * Whether a {@link me.psikuvit.cashClash.sequence.Sequence} is currently locking
      * players (movement cancelled in MoveListener, game-affecting death handling
-     * suppressed in GameListener). Only {@link SequenceManager} should set this.
+     * suppressed in GameListener). Only {@link SequenceManager} and the sequence bodies in
+     * {@link me.psikuvit.cashClash.sequence.Sequences} should set this - it's ref-counted so
+     * two overlapping sequences (e.g. sudden-death title over a PTP president reveal) don't
+     * unlock each other early.
      */
     public boolean isSequenceLocked() {
-        return sequenceLocked;
+        return sequenceLockCount > 0;
     }
 
-    public void setSequenceLocked(boolean sequenceLocked) {
-        this.sequenceLocked = sequenceLocked;
+    public void setSequenceLocked(boolean locked) {
+        sequenceLockCount = locked ? sequenceLockCount + 1 : Math.max(0, sequenceLockCount - 1);
+        Messages.debug("SEQUENCE", "setSequenceLocked(" + locked + ") on session " + sessionId
+                + " -> count=" + sequenceLockCount);
+    }
+
+    /**
+     * Hard reset of the sequence lock, bypassing ref-counting - used when a session ends or is
+     * force-progressed and any in-flight sequences are being abandoned outright.
+     */
+    public void resetSequenceLocked() {
+        sequenceLockCount = 0;
+        Messages.debug("SEQUENCE", "resetSequenceLocked() on session " + sessionId);
     }
 
     /**
@@ -241,6 +255,7 @@ public class GameSession {
 
     public void setActionsRestricted(boolean actionsRestricted) {
         this.actionsRestricted = actionsRestricted;
+        Messages.debug("SEQUENCE", "setActionsRestricted(" + actionsRestricted + ") on session " + sessionId);
     }
 
     /**
@@ -253,6 +268,7 @@ public class GameSession {
 
     public void setDamageDisabled(boolean damageDisabled) {
         this.damageDisabled = damageDisabled;
+        Messages.debug("SEQUENCE", "setDamageDisabled(" + damageDisabled + ") on session " + sessionId);
     }
 
     /**
@@ -574,6 +590,8 @@ public class GameSession {
     }
 
     public void nextRound() {
+        sequenceManager.cleanup(); // This make sure admin force is safe to use
+
         currentRound++;
         // check if the round number exceeds the rounds in the config
         if (currentRound > configManager.getTotalRounds()) {
@@ -642,9 +660,9 @@ public class GameSession {
 
         sequenceManager.playDamageDisabled(Sequences.gameVictory(winner), () -> {
             notifyGameEnd(winner, finalSpawn);
+            cleanupArena();
             cleanupPlayers();
             releaseGamemode();
-            cleanupArena();
 
             Messages.debug("GAME", "Arena " + arenaNumber + " reset to WAITING state after game ended");
         });
@@ -1058,22 +1076,22 @@ public class GameSession {
     public boolean rejoinPlayer(Player player, RejoinData data) {
         UUID uuid = player.getUniqueId();
 
-        // Check if player is still in our records (they should be marked as disconnected)
-        CashClashPlayer existingCcp = players.get(uuid);
+        // The CashClashPlayer kept around across the disconnect (markPlayerDisconnected
+        // deliberately leaves it in `players` so lives/coins survive until the rejoin timeout)
+        // still wraps the OLD, now-offline Player object - its `player` field is final, so every
+        // instance method that checks isOnline() (heal, setHealth, ...) silently no-ops against
+        // it forever. A fresh wrapper around the actual reconnected Player is required; all the
+        // data that matters is restored from RejoinData immediately below regardless.
+        boolean wasOnTeam = teamRed.hasPlayer(uuid) || teamBlue.hasPlayer(uuid);
+        CashClashPlayer existingCcp = new CashClashPlayer(player);
+        players.put(uuid, existingCcp);
 
-        if (existingCcp == null) {
-            // Player was already removed (e.g., game ended while they were gone)
-            // Re-add them to the appropriate team
-            CashClashPlayer newCcp = new CashClashPlayer(player);
-            players.put(uuid, newCcp);
-
+        if (!wasOnTeam) {
             if (data.teamNumber() == 1) {
                 teamRed.addPlayer(uuid);
             } else {
                 teamBlue.addPlayer(uuid);
             }
-
-            existingCcp = newCcp;
         }
 
         // Restore player state from rejoin data

@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.sequence;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.util.Messages;
 
 import java.util.function.Consumer;
 
@@ -15,6 +16,7 @@ public class SequenceManager {
 
     private final GameSession session;
     private SequencePlayer activePlayer;
+    private Runnable activeRelease;
 
     public SequenceManager(GameSession session) {
         this.session = session;
@@ -52,13 +54,15 @@ public class SequenceManager {
             return;
         }
 
-        if (activePlayer != null) {
-            activePlayer.cancel();
-        }
+        cancelActive();
 
         if (flagSetter != null) {
             flagSetter.accept(true);
+            activeRelease = () -> flagSetter.accept(false);
         }
+
+        Messages.debug("SEQUENCE", "Starting sequence playback for session " + session.getSessionId()
+                + " (" + sequence.getEntries().size() + " step(s))");
 
         activePlayer = new SequencePlayer(session);
         activePlayer.play(sequence, () -> {
@@ -66,8 +70,28 @@ public class SequenceManager {
                 flagSetter.accept(false);
             }
             activePlayer = null;
+            activeRelease = null;
+            Messages.debug("SEQUENCE", "Sequence completed normally for session " + session.getSessionId());
             if (onComplete != null) onComplete.run();
         });
+    }
+
+    /**
+     * Cancel the current sequence, if any, and immediately release whatever restriction flag it
+     * had turned on - {@link SequencePlayer#cancel} skips its own completion step, so without
+     * this a pre-empted sequence's flag would stay stuck on for the rest of the game.
+     */
+    private void cancelActive() {
+        if (activePlayer != null) {
+            activePlayer.cancel();
+            activePlayer = null;
+            Messages.debug("SEQUENCE", "Pre-empted an in-flight sequence for session " + session.getSessionId());
+        }
+        if (activeRelease != null) {
+            activeRelease.run();
+            activeRelease = null;
+            Messages.debug("SEQUENCE", "Released the pre-empted sequence's restriction flag for session " + session.getSessionId());
+        }
     }
 
     /**
@@ -88,11 +112,8 @@ public class SequenceManager {
      * force-progressed so a dangling scheduled task can't leak into the next game.
      */
     public void cleanup() {
-        if (activePlayer != null) {
-            activePlayer.cancel();
-            activePlayer = null;
-        }
-        session.setSequenceLocked(false);
+        cancelActive();
+        session.resetSequenceLocked();
         session.setActionsRestricted(false);
         session.setDamageDisabled(false);
     }

@@ -60,8 +60,7 @@ public final class Sequences {
         String gamemodeName = gamemode.getType().getDisplayName();
         String objective = gamemode.getObjectiveShort();
         String subtitleKey = "round-start." + subtitleKeySuffixFor(gamemode.getType());
-        // "Selecting Gamemode..." holds for as long as the reveal title does afterward, rather
-        // than being visible for only ~1s before the countdown overwrites it.
+
         double revealHoldSeconds = CashClashPlugin.getInstance().getConfigManager().getRoundStartRevealHoldSeconds();
 
         return Sequence.create()
