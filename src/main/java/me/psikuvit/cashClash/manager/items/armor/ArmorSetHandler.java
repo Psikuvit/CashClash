@@ -11,6 +11,8 @@ import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -82,15 +84,24 @@ public abstract class ArmorSetHandler {
 
     /**
      * Check if the player's melee attack is fully charged, against the configurable
-     * {@code combat.fully-charged-threshold}.
+     * {@code combat.fully-charged-threshold}. {@code getAttackCooldown()} is a generic
+     * attack-strength attribute that recovers to ~1.0 after any pause in swinging - including
+     * firing a bow, or an empty hand - so it reads as "fully charged" for non-melee damage too
+     * unless the held item is actually checked first.
      */
     protected boolean isFullyChargedMelee(Player attacker) {
+        if (!isMeleeWeapon(attacker.getInventory().getItemInMainHand().getType())) return false;
+
         // Bukkit exposes attack cooldown directly
         try {
             return attacker.getAttackCooldown() >= cfg.getFullyChargedThreshold();
         } catch (NoSuchMethodError ignored) {
             return true;
         }
+    }
+
+    private boolean isMeleeWeapon(Material material) {
+        return material == Material.TRIDENT || Tag.ITEMS_SWORDS.isTagged(material) || Tag.ITEMS_AXES.isTagged(material);
     }
 
     public abstract void cleanup();
