@@ -79,7 +79,7 @@ public class GameSession {
     private boolean damageDisabled;
     // Shield logic: the whole game is either shield or shieldless, decided once at game
     // start (50/50 chance) and fixed for every round - no mid-game swap
-    private final boolean shieldsEnabled;
+    private boolean shieldsEnabled;
 
     // Countdown/start preparation
     private BukkitTask startCountdownTask;
@@ -323,6 +323,21 @@ public class GameSession {
      */
     public String getShieldStatusText() {
         return shieldsEnabled ? "Shield" : "Shield-less";
+    }
+
+    /**
+     * Admin override of the whole session's shield/shieldless decision (normally a one-time coin
+     * flip at game start). Re-applies every online player's kit so the new setting takes effect
+     * immediately, not just next round.
+     */
+    public void setShieldsEnabled(boolean shieldsEnabled) {
+        this.shieldsEnabled = shieldsEnabled;
+        for (UUID uuid : players.keySet()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) {
+                KitService.setShield(p, shieldsEnabled);
+            }
+        }
     }
 
     /**

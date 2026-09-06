@@ -43,19 +43,28 @@ public class ShieldCommand extends AbstractArgCommand {
             }
         }
 
-        Player target;
-        if (args.length >= 2) {
-            target = Bukkit.getPlayer(args[1]);
-            if (target == null) {
-                Messages.send(sender, "shield.player-not-found", "player", args[1]);
-                return true;
-            }
-        } else {
-            if (!(sender instanceof Player)) {
+        if (args.length < 2) {
+            if (!(sender instanceof Player p)) {
                 Messages.send(sender, "shield.need-player-or-target");
                 return true;
             }
-            target = (Player) sender;
+
+            GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(p);
+            if (session == null) {
+                Messages.send(sender, "shield.target-not-in-game", "player_name", p.getName());
+                return true;
+            }
+
+            session.setShieldsEnabled(give);
+            String state = give ? "on" : "off";
+            Messages.broadcast(session.getPlayers(), "shield.game-success", "state", state);
+            return true;
+        }
+
+        Player target = Bukkit.getPlayer(args[1]);
+        if (target == null) {
+            Messages.send(sender, "shield.player-not-found", "player", args[1]);
+            return true;
         }
 
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(target);
