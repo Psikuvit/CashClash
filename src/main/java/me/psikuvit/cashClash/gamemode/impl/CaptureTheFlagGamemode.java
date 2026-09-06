@@ -9,6 +9,8 @@ import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
+import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -22,10 +24,13 @@ import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.enums.TeamColor;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.EnumMap;
@@ -306,12 +311,19 @@ public class CaptureTheFlagGamemode extends Gamemode {
              Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-stolen-blue",
                      "player_name", player.getName());
          }
-         if (!finalStandManager.isActive()) {
-             Messages.send(player, "gamemode-ctf.silenced-activated");
-             Messages.debug("[CTF] Applied silenced ability to flag carrier: " + player.getName());
+         Messages.send(player, "gamemode-ctf.silenced-activated");
+         Messages.debug("[CTF] Applied silenced ability to flag carrier: " + player.getName());
+         SchedulerUtils.runTaskLater(() -> updateSilencedItemDisplay(player), 1);
 
-             SchedulerUtils.runTaskLater(() -> updateSilencedItemDisplay(player), 1);
+         CashClashPlayer.applyEffect(player, PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION, 0, false, false);
+         CashClashPlayer.applyEffect(player, PotionEffectType.WEAKNESS, PotionEffect.INFINITE_DURATION, 0, false, false);
+
+         if (finalStandManager.isActive()) {
+             CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
+             if (ccp != null) ccp.removeHealthModifier(
+                     CashClashPlugin.getInstance().getConfigManager().getCTFFinalStandCarrierHealthPenalty());
          }
+
          moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
 
          if (pickedUpFromBase) {
@@ -344,6 +356,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 "win_condition", String.valueOf(targetCaptures));
 
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+        clearCarrierPenalties(player);
+        updateSilencedItemDisplay(player);
 
         long now = System.currentTimeMillis();
         int enemyTeamNumber = (teamNumber == 1) ? 2 : 1;
@@ -384,10 +398,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     public boolean isSilenced(UUID playerUuid) {
-        if (isFinalStandActive()) {
-            return false;
-        }
-
         FlagState redFlag = flagStates.get(TeamColor.RED);
         FlagState blueFlag = flagStates.get(TeamColor.BLUE);
 
@@ -452,9 +462,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 "color", colorTag,
                 "team_name", teamName);
 
-        dropFlagAtLocation(teamNumber, victim.getLocation());
+        dropFlagAtLocation(teamNumber, behindPlayer(victim));
         SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
 
+        clearCarrierPenalties(victim);
         updateSilencedItemDisplay(victim);
 
         // One flag is down again, so the both-flags-held block no longer applies.
@@ -477,7 +488,26 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
         returnFlagToBase(teamNumber);
 
+        clearCarrierPenalties(player);
         SchedulerUtils.runTaskLater(() -> updateSilencedItemDisplay(player), 1);
+    }
+
+    /** A point ~1.5 blocks behind where the player was facing, so a dropped flag doesn't spawn in front of (or inside) whoever just killed them. */
+    private Location behindPlayer(Player player) {
+        Location loc = player.getLocation();
+        return loc.clone().subtract(loc.getDirection().setY(0).normalize().multiply(1.5));
+    }
+
+    /** Removes the flag-carrier slowness/weakness and, if applied, the Final Stand health penalty. */
+    private void clearCarrierPenalties(Player player) {
+        CashClashPlayer.removeEffect(player, PotionEffectType.SLOWNESS);
+        CashClashPlayer.removeEffect(player, PotionEffectType.WEAKNESS);
+
+        if (finalStandManager.isActive()) {
+            CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
+            if (ccp != null) ccp.addHealthModifier(
+                    CashClashPlugin.getInstance().getConfigManager().getCTFFinalStandCarrierHealthPenalty());
+        }
     }
 
     private void cancelTask(BukkitTask task) {
@@ -758,7 +788,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private void checkFlagPickupProgress() {
         for (UUID playerUuid : session.getPlayers()) {
             Player player = Bukkit.getPlayer(playerUuid);
-            if (player == null || !player.isOnline()) {
+            boolean usingOverdrive = CashClashPlugin.getInstance().getCustomItemManager()
+                    .getHandler(OverdriveHandler.class).isOverdriveInvincible(playerUuid);
+            if (player == null || !player.isOnline() || player.getGameMode() == GameMode.SPECTATOR || usingOverdrive) {
                 playerCircleTimestamps.remove(playerUuid);
                 playerNearestFlagTeam.remove(playerUuid);
                 continue;
