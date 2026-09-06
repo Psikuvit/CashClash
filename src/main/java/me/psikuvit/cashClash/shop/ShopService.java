@@ -62,17 +62,23 @@ public class ShopService {
             return;
         }
 
+        if (item instanceof CustomArmorItem customArmor && isCustomArmorAlreadyOwned(player, customArmor)) {
+            return;
+        }
+
         deductCoins(player, totalPrice);
         giveItemToPlayer(player, ccp, item, quantity, totalPrice);
     }
 
     /**
-     * Check (and message/sound) a hard-capped utility item that's already at its limit.
-     * Items bought in bulk that straddle the cap are still handled in giveItemToPlayer.
+     * Check (and message/sound) the 8-web cap - the only hard-capped utility item. Every other
+     * UtilityItem (leaves, water/lava buckets, arrows, wind charges, ...) is freely repurchasable
+     * and has no ownership cap here. Bulk purchases that straddle the cap are still handled in
+     * giveItemToPlayer.
      */
     private boolean isUtilityCapReached(Player player, UtilityItem utilityItem) {
-        int max = utilityItem == UtilityItem.COBWEB ? 8 : 1;
-        if (countMaterial(player, utilityItem.getMaterial()) < max) return false;
+        if (utilityItem != UtilityItem.COBWEB) return false;
+        if (countMaterial(player, utilityItem.getMaterial()) < 8) return false;
 
         Messages.send(player, "listener.max-webs-reached");
         SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
@@ -94,6 +100,43 @@ public class ShopService {
         Messages.send(player, "listener.max-totems-reached");
         SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
         return true;
+    }
+
+    /**
+     * A player may only ever own one of a given custom armor piece/set - same cap as
+     * {@code CustomItem.INVIS_CLOAK} (see {@code AbstractShopCategoryGui
+     * #handleCustomItemPurchase}). Public because full-set purchases go through
+     * {@code ArmorCategoryGui#handleArmorSetPurchase}, a separate path from processPurchase()
+     * above that needs to check this itself, same reason {@link #isTotemCapReached} is public.
+     */
+    public boolean isCustomArmorAlreadyOwned(Player player, CustomArmorItem item) {
+        if (item.isPartOfSet()) {
+            for (CustomArmorItem piece : item.getArmorSet().getPieces()) {
+                if (ownsCustomArmorPiece(player, piece)) {
+                    Messages.send(player, "customitem.max-one-armor-set");
+                    SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (ownsCustomArmorPiece(player, item)) {
+            Messages.send(player, "customitem.max-one-armor-piece");
+            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean ownsCustomArmorPiece(Player player, CustomArmorItem piece) {
+        for (ItemStack is : player.getInventory().getContents()) {
+            if (is != null && PDCDetection.getCustomArmor(is) == piece) return true;
+        }
+        for (ItemStack is : player.getInventory().getArmorContents()) {
+            if (is != null && PDCDetection.getCustomArmor(is) == piece) return true;
+        }
+        return false;
     }
 
     private int countMaterial(Player player, Material material) {
