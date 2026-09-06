@@ -85,13 +85,17 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * General game listener for events that are only tracked once.
  * Handles: death, food, drops, sneak, flight, bow shoot, projectile hit, entity interactions, inventory clicks.
  */
 public class GameListener implements Listener {
+
+    private final Map<UUID, Location> pendingSpectatorTransition = new ConcurrentHashMap<>();
 
     private final ConfigManager configManager;
     private final CooldownManager cooldownManager;
@@ -129,7 +133,13 @@ public class GameListener implements Listener {
         Player player = event.getPlayer();
         GameSession session = gameManager.getPlayerSession(player);
 
-        if (session == null) return;
+        if (session == null) {
+            event.setKeepInventory(true);
+            event.getDrops().clear();
+            event.setKeepLevel(true);
+            event.setDroppedExp(0);
+            return;
+        }
 
         CashClashPlayer victim = session.getCashClashPlayer(player.getUniqueId());
         if (victim == null) return;
@@ -159,7 +169,11 @@ public class GameListener implements Listener {
 
         // A round-end/victory Sequence is holding the result on screen - deaths during
         // this window must not affect lives, bonuses, or win conditions.
-        if (!session.isSequenceLocked() && !session.isActionsRestricted()) {
+        boolean deathConsequencesGated = session.isSequenceLocked() || session.isActionsRestricted();
+        Messages.debug(player, "DEATH", player.getName() + " died - sequenceLocked=" + session.isSequenceLocked()
+                + " actionsRestricted=" + session.isActionsRestricted()
+                + " -> death consequences " + (deathConsequencesGated ? "SKIPPED" : "applied"));
+        if (!deathConsequencesGated) {
             victim.handleDeath();
             session.getCurrentRoundData().removeLife(player.getUniqueId());
 
@@ -203,12 +217,7 @@ public class GameListener implements Listener {
 
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {
         Messages.send(player, "listener.out-of-lives");
-        SchedulerUtils.runTask(() -> {
-            player.spigot().respawn();
-            player.teleport(spectatorLocation);
-            player.setGameMode(GameMode.SPECTATOR);
-            startSpectatorRiseAnimation(player);
-        });
+        queueSpectatorTransition(player, spectatorLocation);
     }
 
     private void handleTemporarySpectatorAndRespawn(Player player, Location spectatorLocation) {
@@ -217,14 +226,24 @@ public class GameListener implements Listener {
 
         Messages.send(player, "listener.respawn-delay", "seconds", String.valueOf(respawnDelaySec));
 
-        SchedulerUtils.runTask(() -> {
-            player.spigot().respawn();
-            player.teleport(spectatorLocation);
-            player.setGameMode(GameMode.SPECTATOR);
-            startSpectatorRiseAnimation(player);
-        });
+        queueSpectatorTransition(player, spectatorLocation);
 
         SchedulerUtils.runTaskLater(() -> respawnPlayer(player, respawnProtectionSec), respawnDelaySec * 20L);
+    }
+
+    /**
+     * Queues the death-location spectate transition, then forces it to happen right away via
+     * {@code player.spigot().respawn()} - this fires a real {@link PlayerRespawnEvent}
+     * synchronously, which {@link #onPlayerRespawn} picks the queued location up from
+     * ({@code event.setRespawnLocation}), so the teleport lands atomically as part of the same
+     * respawn transaction whatever actually triggers it (this call, a client-initiated respawn,
+     * or vanilla's own auto-respawn) rather than racing a follow-up teleport a tick later.
+     */
+    private void queueSpectatorTransition(Player player, Location spectatorLocation) {
+        pendingSpectatorTransition.put(player.getUniqueId(), spectatorLocation);
+        SchedulerUtils.runTask(() -> {
+            if (player.isOnline()) player.spigot().respawn();
+        });
     }
 
     /**
@@ -274,6 +293,8 @@ public class GameListener implements Listener {
             return;
         }
 
+        Messages.debug(player, "RESPAWN", "Respawning " + player.getName() + " with " + respawnProtectionSec + "s protection");
+
         teleportToSpawn(player, session);
         restorePlayerHealth(player, session);
         preparePlayerForCombat(player, session, respawnProtectionSec);
@@ -307,6 +328,7 @@ public class GameListener implements Listener {
         var ccp = session.getCashClashPlayer(player.getUniqueId());
         if (ccp != null) {
             ccp.applyHealth();
+            ccp.healToFull();
         }
     }
 
@@ -320,6 +342,8 @@ public class GameListener implements Listener {
         CashClashPlayer cashClashPlayer = session.getCashClashPlayer(player.getUniqueId());
         if (cashClashPlayer != null) {
             cashClashPlayer.setRespawnProtection(respawnProtectionSec * 1000L);
+            Messages.debug(player, "RESPAWN", "Set respawn protection for " + player.getName()
+                    + " until " + cashClashPlayer.getRespawnProtectionUntil() + " (now=" + System.currentTimeMillis() + ")");
         }
     }
 
@@ -995,8 +1019,34 @@ public class GameListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
+
+        Location spectatorLocation = pendingSpectatorTransition.remove(player.getUniqueId());
+        if (spectatorLocation != null) {
+            event.setRespawnLocation(spectatorLocation);
+            SchedulerUtils.runTask(() -> {
+                if (!player.isOnline()) return;
+                player.setGameMode(GameMode.SPECTATOR);
+                startSpectatorRiseAnimation(player);
+            });
+            return;
+        }
+
         GameSession session = gameManager.getPlayerSession(player);
-        if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {
+        if (session == null) {
+            Location lobbySpawn = CashClashPlugin.getInstance().getArenaManager().getServerLobbySpawn();
+            if (lobbySpawn != null) event.setRespawnLocation(lobbySpawn);
+
+            SchedulerUtils.runTask(() -> {
+                if (!player.isOnline()) return;
+                player.setGameMode(GameMode.SURVIVAL);
+                CashClashPlayer.resetToDefaultHealth(player);
+                player.setFoodLevel(20);
+                CashClashPlugin.getInstance().getLobbyManager().giveLobbyItems(player);
+            });
+            return;
+        }
+
+        if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) {
             Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
                 // Use centralized health system to get max health (respects modifiers)
                 var ccp = session.getCashClashPlayer(player.getUniqueId());
