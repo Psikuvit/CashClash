@@ -407,6 +407,13 @@ public class GameListener implements Listener {
                 case SPEED_CARROT -> {
                     playFoodParticles(p, Color.fromRGB(80, 170, 255));
                     SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
+
+                    int burstTicks = itemsConfig.getSpeedCarrotBurstDurationSeconds() * 20;
+                    int followupTicks = itemsConfig.getSpeedCarrotFollowupDurationSeconds() * 20;
+                    int followupAmplifier = itemsConfig.getSpeedCarrotFollowupAmplifier();
+                    SchedulerUtils.runTaskLater(() ->
+                            CashClashPlayer.applyEffect(p, PotionEffectType.SPEED, followupTicks, followupAmplifier, false, true),
+                            burstTicks);
                 }
                 case GOLDEN_CHICKEN -> {
                     playFoodParticles(p, Color.fromRGB(255, 220, 60));

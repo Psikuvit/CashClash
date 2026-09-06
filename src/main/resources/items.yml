@@ -366,7 +366,6 @@ custom-items:
     pulse-interval-seconds: 3
     total-duration-seconds: 12
     radius: 5
-    speed-boost-percent: 20
     speed-amplifier: 1        # Speed II
     speed-boost-duration-seconds: 5
 

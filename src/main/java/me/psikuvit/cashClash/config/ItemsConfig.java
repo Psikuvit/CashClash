@@ -572,10 +572,6 @@ public class ItemsConfig {
         return config.getLong("custom-items.tablet-of-hacking.cost", 2000L);
     }
 
-    public int getBoomboxSpeedBoostPercent() {
-        return config.getInt("custom-items.boombox.speed-boost-percent", 20);
-    }
-
     public int getBoomboxSpeedAmplifier() {
         return config.getInt("custom-items.boombox.speed-amplifier", 1);
     }

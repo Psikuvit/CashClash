@@ -114,7 +114,7 @@ public class BoomboxHandler extends CustomItemHandler {
         if (placerTeam == null) return;
 
         int durationTicks = cfg.getBoomboxSpeedBoostDuration() * 20;
-        int amplifier = speedPercentToAmplifier(cfg.getBoomboxSpeedBoostPercent());
+        int amplifier = cfg.getBoomboxSpeedAmplifier();
 
         for (Entity entity : world.getNearbyEntities(center, radius, radius, radius)) {
             if (!(entity instanceof Player target)) continue;
@@ -124,14 +124,6 @@ public class BoomboxHandler extends CustomItemHandler {
 
             CashClashPlayer.applyEffect(target, PotionEffectType.SPEED, durationTicks, amplifier, false, true);
         }
-    }
-
-    /**
-     * Vanilla Speed levels are +20% per amplifier level (Speed I = amplifier 0 = +20%), so a
-     * configured percentage is rounded to the nearest whole level.
-     */
-    private int speedPercentToAmplifier(int percent) {
-        return Math.max(0, Math.round(percent / 20.0f) - 1);
     }
 
     public boolean isBoombox(Block block) {
