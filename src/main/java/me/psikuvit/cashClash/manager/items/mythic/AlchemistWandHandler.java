@@ -710,6 +710,10 @@ public class AlchemistWandHandler extends MythicItemHandler {
                     return;
                 }
                 tickAlchemistTauntEdges(taunt);
+                if (taunt.chainedPlayers().isEmpty()) {
+                    endAlchemistTaunt(wielder, true);
+                    cancel();
+                }
             }
         }, 0L, 1L);
     }
@@ -767,8 +771,9 @@ public class AlchemistWandHandler extends MythicItemHandler {
      * Tears down an active (or expired) Taunt: cancels its tick task, unleashes and removes
      * every edge's anchor, and drops every redirect entry pointing at this wielder. Safe to
      * call for a player who never had one active. {@code natural} distinguishes the 7s timer
-     * genuinely running out (plays a deactivation sound + message) from a forced end via
-     * cleanupPlayer/cleanup (death, disconnect, plugin shutdown - no feedback needed).
+     * genuinely running out, or the chain dropping to zero connected players (both play a
+     * deactivation sound + message) from a forced end via cleanupPlayer/cleanup (death,
+     * disconnect, plugin shutdown - no feedback needed).
      */
     private void endAlchemistTaunt(Player wielder, boolean natural) {
         UUID uuid = wielder.getUniqueId();
