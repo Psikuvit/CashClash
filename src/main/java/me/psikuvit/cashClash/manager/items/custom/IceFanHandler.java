@@ -45,6 +45,7 @@ public class IceFanHandler extends CustomItemHandler {
     private final Set<UUID> iceFanAbilityDamageActive;
     private final Map<UUID, Long> gustLastSwingTime;
     private final Map<UUID, BukkitTask> activeGustTasks;
+    private final Map<UUID, Integer> gustBurstCount;
     // Independent freeze-stack timer per target, and the task pumping it into freezeTicks
     private final Map<UUID, Long> iceFanFreezeExpiresAt;
     private final Map<UUID, BukkitTask> iceFanFreezePumpTasks;
@@ -54,6 +55,7 @@ public class IceFanHandler extends CustomItemHandler {
         this.iceFanAbilityDamageActive = new HashSet<>();
         this.gustLastSwingTime = new HashMap<>();
         this.activeGustTasks = new HashMap<>();
+        this.gustBurstCount = new HashMap<>();
         this.iceFanFreezeExpiresAt = new HashMap<>();
         this.iceFanFreezePumpTasks = new HashMap<>();
     }
@@ -76,9 +78,14 @@ public class IceFanHandler extends CustomItemHandler {
      */
     public void onIceFanSwing(Player player) {
         UUID uuid = player.getUniqueId();
-        gustLastSwingTime.put(uuid, System.currentTimeMillis());
+        if (activeGustTasks.containsKey(uuid)) {
+            gustLastSwingTime.put(uuid, System.currentTimeMillis());
+            return;
+        }
 
-        if (activeGustTasks.containsKey(uuid)) return;
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ICE_FAN_GUST)) return;
+
+        gustLastSwingTime.put(uuid, System.currentTimeMillis());
 
         ItemStack item = player.getInventory().getItemInMainHand();
         if (getIceFanDurability(item) <= 0) {
@@ -122,13 +129,21 @@ public class IceFanHandler extends CustomItemHandler {
 
         Location origin = player.getEyeLocation();
         Vector direction = origin.getDirection();
-        for (Player target : findIceFanTargets(player, origin, direction, cfg.getIceFanGustTargetRange())) {
+        List<Player> targets = findIceFanTargets(player, origin, direction, cfg.getIceFanGustTargetRange());
+        for (Player target : targets) {
             dealIceFanDamage(player, target, cfg.getIceFanGustDamagePerTick());
             stackIceFanFreeze(target);
         }
 
         spawnGustParticles(player, origin, direction);
         SoundUtils.play(player, Sound.ENTITY_PHANTOM_FLAP, 0.7f, 1.6f);
+
+        int rounds = gustBurstCount.merge(uuid, 1, Integer::sum);
+        if (rounds >= cfg.getIceFanGustBurstRounds()) {
+            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ICE_FAN_GUST, cfg.getIceFanGustBurstCooldownSeconds());
+            stopGust(uuid);
+            return;
+        }
 
         if (newRemaining <= 0) {
             stopGust(uuid);
@@ -140,6 +155,7 @@ public class IceFanHandler extends CustomItemHandler {
         BukkitTask task = activeGustTasks.remove(uuid);
         if (task != null) task.cancel();
         gustLastSwingTime.remove(uuid);
+        gustBurstCount.remove(uuid);
     }
 
     /**
@@ -334,6 +350,7 @@ public class IceFanHandler extends CustomItemHandler {
         activeGustTasks.values().forEach(BukkitTask::cancel);
         activeGustTasks.clear();
         gustLastSwingTime.clear();
+        gustBurstCount.clear();
         iceFanAbilityDamageActive.clear();
 
         iceFanFreezePumpTasks.values().forEach(BukkitTask::cancel);
