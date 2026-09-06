@@ -410,6 +410,7 @@ messages:
     kill-point: "<gray>Team {team_name} scored a kill! {score}/{win_condition}</gray>"
     zone-capturing: "<gold>Confirming {victim_name}'s tag... Stand still!</gold>"
     zone-capture-cancelled: "<yellow>Capturing {victim_name}'s tag cancelled.</yellow>"
+    tag-expired: "<gray>No one captured {victim_name}'s tag!</gray>"
     money-tag-spawned: "<gold><bold>{player_name}'s kill dropped a Money Tag!</bold></gold>"
     tag-confirmed: "<gold><bold>{player_name}'s team confirmed the kill! Team {team_name} {score}/{win_condition}</bold></gold>"
     tag-denied: "<red><bold>{player_name} denied the enemy's confirm!</bold></red>"
@@ -433,6 +434,8 @@ messages:
   lobby:
     npc-spawned: "<green>Arena NPC spawned and saved!</green>"
     npc-spawned-id: "<gray>ID: {id} - Players can right-click it to open the arena selection menu.</gray>"
+    coming-soon-npc-spawned: "<green>Coming Soon NPC spawned and saved!</green>"
+    coming-soon-npc-spawned-id: "<gray>ID: {id} - Players can right-click it to see the placeholder menu.</gray>"
     layout-editing: "<green>Editing layout for <yellow>{kit_name}</yellow>.</green>"
     layout-editing-instructions: "<gray>Arrange items as you like, then use <yellow>/cc layout confirm</yellow> to save.</gray>"
     layout-editing-cancel-instructions: "<gray>Use <yellow>/cc layout cancel</yellow> to cancel without saving.</gray>"
@@ -632,10 +635,11 @@ messages:
     arena-spawned-id: "<gray>ID: {id} - Players can right-click it to open the arena selection menu.</gray>"
     removed: "<green>Removed {count} arena NPC(s) within 5 blocks.</green>"
     not-found: "<yellow>No arena NPCs found within 5 blocks.</yellow>"
-    invalid-type: "<red>Unknown NPC type. Use: arena, remove</red>"
-    usage: "<yellow>Usage: /cc spawnnpc <arena|remove></yellow>"
+    invalid-type: "<red>Unknown NPC type. Use: arena, coming-soon, remove</red>"
+    usage: "<yellow>Usage: /cc spawnnpc <arena|coming-soon|remove></yellow>"
     help-arena: "<gray>  arena - Spawn an arena selector NPC at your location</gray>"
-    help-remove: "<gray>  remove - Remove nearby arena NPCs (within 5 blocks)</gray>"
+    help-coming-soon: "<gray>  coming-soon - Spawn a \"Coming Soon\" placeholder NPC at your location</gray>"
+    help-remove: "<gray>  remove - Remove nearby mannequin NPCs (within 5 blocks)</gray>"
     total-saved: "<gray>Total saved NPCs: {count}</gray>"
 
   # ============================================
@@ -787,6 +791,7 @@ messages:
     target-not-in-game: "<red>{player_name} is not in a game.</red>"
     success: "<green>Shield preference set to <gold>{state}</gold> for this game.</green>"
     success-other: "<green>Shield preference set to <gold>{state}</gold> for {player_name}.</green>"
+    game-success: "<green>This game's shield setting was forced <gold>{state}</gold> for everyone.</green>"
 
   # ============================================
   # LEADERBOARD MESSAGES
@@ -824,8 +829,6 @@ messages:
     water-bucket-refilled: "<aqua>Water bucket refilled!</aqua>"
     max-webs-reached: "<red>You already own 8 webs!</red>"
     max-totems-reached: "<red>You already own the max of 2 totems (Mini Totem or Totem of Haunting, combined)!</red>"
-    max-leaf-blocks-reached: "<red>You have reached the maximum of 64 leaf blocks!</red>"
-    leaf-stack-limit: "<red>You cannot stack more than 3 leaf blocks vertically!</red>"
     max-water-lava-sources: "<red>Your team has reached the maximum of 4 water/lava sources!</red>"
     water-bucket-waterlog-blocked: "<red>You cannot place water on a waterloggable block!</red>"
     invisibility-lost-attacker: "<red>Invisibility lost - you dealt damage!</red>"
@@ -918,6 +921,8 @@ messages:
     invis-deactivated: "<yellow>Invisibility deactivated.</yellow>"
     invis-disabled-shopping: "<red>Invisibility disabled at start of shopping phase!</red>"
     max-one-cloak: "<red>You can only carry one Invisibility Cloak at a time!</red>"
+    max-one-armor-piece: "<red>You already own this armor piece!</red>"
+    max-one-armor-set: "<red>You already own this armor set!</red>"
     already-owned: "<red>You already own {item_name}!</red>"
     cash-blaster-supercharged: "<green>Cash Blaster supercharged!</green>"
     cash-blaster-supercharge-disabled: "<red>Cash Blaster supercharge disabled!</red>"

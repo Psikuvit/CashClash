@@ -98,6 +98,7 @@ economy:
   # Round-end kill pool distribution
   kill-pool-per-kill: 1000
   min-round-pool: 15000
+  max-round-pool: 100000
 
   # Flat fee for the transfer GUI (chat-input money transfer), independent of the
   # round-based transfer fees above
@@ -185,6 +186,8 @@ gamemodes:
     capture-bonus-coins: 15000
     # Bonus timer (milliseconds)
     capture-bonus-timer-ms: 45000
+    # Max health taken from a flag carrier during Final Stand (4.0 = 2 hearts, 20 -> 16 max)
+    final-stand-carrier-health-penalty: 4.0
     # Extra heart duration granted on capture (milliseconds)
     heart-bonus-duration-ms: 45000
     # Radius (blocks) for detecting a player near the flag pickup point / scoring banner,
@@ -220,6 +223,9 @@ gamemodes:
     zone-half-width: 1.5
     zone-vertical-tolerance: 2.0
     zone-safe-spawn-search-radius: 8
+    # How far straight down (blocks) to search for solid ground beneath an airborne death
+    # location before spawning the zone's footprint there, so a tag never floats in mid-air
+    zone-ground-search-max-depth: 64
 
   # Protect the President settings
   protect-the-president:

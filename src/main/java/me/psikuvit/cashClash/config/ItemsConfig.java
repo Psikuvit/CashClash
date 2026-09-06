@@ -86,6 +86,11 @@ public class ItemsConfig {
         return config.getInt("utilities.fluids.lava-flow-ticks", 30);
     }
 
+    /** How far a placed fluid falls straight down to find solid ground before spreading outward. */
+    public int getFluidFallMaxDepth() {
+        return config.getInt("utilities.fluids.fall-max-depth", 16);
+    }
+
     // ==================== MYTHIC ITEMS ====================
 
     public int getLegendsPerGame() {
@@ -246,9 +251,14 @@ public class ItemsConfig {
         return config.getInt("mythic-items.goblin-spear.charge.max-duration-ticks", 60);
     }
 
-    /** 1 heart (2.0 hp) of recoil damage per second the charge ran before hitting a wall. */
+    /** 1 heart (2.0 hp) of recoil damage per second the charge ran before hitting a wall - dealt to the charger themselves. */
     public double getGoblinChargeRecoilDamagePerSecond() {
         return config.getDouble("mythic-items.goblin-spear.charge.recoil-damage-per-second", 2.0);
+    }
+
+    /** Caught players take this many times the charger's own recoil damage - not the same amount. */
+    public double getGoblinChargeEnemyDamageMultiplier() {
+        return config.getDouble("mythic-items.goblin-spear.charge.enemy-damage-multiplier", 2.0);
     }
 
     public int getGoblinChargePoisonDuration() {
@@ -351,10 +361,6 @@ public class ItemsConfig {
 
     public int getWardenBoxingCooldown() {
         return config.getInt("mythic-items.warden-gloves.boxing.cooldown-seconds", 35);
-    }
-
-    public int getWardenBoxingPunchesForSpeed() {
-        return config.getInt("mythic-items.warden-gloves.boxing.punches-for-speed", 5);
     }
 
     // Warden Gloves - Rising Fury
@@ -570,6 +576,26 @@ public class ItemsConfig {
         return config.getInt("custom-items.boombox.speed-boost-percent", 20);
     }
 
+    public int getBoomboxSpeedAmplifier() {
+        return config.getInt("custom-items.boombox.speed-amplifier", 1);
+    }
+
+    public int getSpeedCarrotBurstAmplifier() {
+        return config.getInt("custom-items.speed-carrot.burst-amplifier", 2);
+    }
+
+    public int getSpeedCarrotBurstDurationSeconds() {
+        return config.getInt("custom-items.speed-carrot.burst-duration-seconds", 3);
+    }
+
+    public int getSpeedCarrotFollowupAmplifier() {
+        return config.getInt("custom-items.speed-carrot.followup-amplifier", 0);
+    }
+
+    public int getSpeedCarrotFollowupDurationSeconds() {
+        return config.getInt("custom-items.speed-carrot.followup-duration-seconds", 9);
+    }
+
     public int getBoomboxSpeedBoostDuration() {
         return config.getInt("custom-items.boombox.speed-boost-duration-seconds", 5);
     }
@@ -694,6 +720,14 @@ public class ItemsConfig {
 
     public int getIceFanFreezePumpIntervalTicks() {
         return config.getInt("custom-items.ice-fan.freeze-pump-interval-ticks", 1);
+    }
+
+    public int getIceFanGustBurstRounds() {
+        return config.getInt("custom-items.ice-fan.gust-burst-rounds", 3);
+    }
+
+    public int getIceFanGustBurstCooldownSeconds() {
+        return config.getInt("custom-items.ice-fan.gust-burst-cooldown-seconds", 3);
     }
 
     public int getIceFanGustTargetRange() {

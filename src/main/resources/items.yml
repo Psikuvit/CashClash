@@ -91,7 +91,8 @@ mythic-items:
       cooldown-seconds: 30
       speed: 1.5                    # Charge speed multiplier
       max-duration-ticks: 60        # Max charge time (3 seconds)
-      recoil-damage-per-second: 2.0 # 1 heart/second traveled - dealt to BOTH the charger and any caught players on wall impact
+      recoil-damage-per-second: 2.0 # 1 heart/second traveled - dealt to the charger themselves on wall impact
+      enemy-damage-multiplier: 2.0  # caught players take this many times the charger's own recoil damage
       poison-duration-seconds: 3
       poison-level: 1
 
@@ -123,11 +124,10 @@ mythic-items:
       damage: 12.0
       range: 8
       knockback-power: 2.5
-    # Boxing Gloves ability - Left click to punch, every 5th punch increases speed
+    # Boxing Gloves ability - Left click to punch, holds Speed I for the ability's duration
     boxing:
       duration-seconds: 20        # Ability lasts 20 seconds
       cooldown-seconds: 35        # 35 second cooldown after ability ends
-      punches-for-speed: 5        # Every 5th punch increases speed
     # Rising Fury - Shift + right-click. Base Warden Gloves damage is 0 (see the melee-mythic
     # baseline in MythicItemManager); this ability temporarily grants diamond-sword-equivalent
     # damage/speed and stacks reach every 3rd landed hit, up to max-stacks. Cancels on weapon
@@ -294,6 +294,10 @@ utilities:
     # raise these to make a placement spread more slowly.
     water-flow-ticks: 5
     lava-flow-ticks: 30
+    # How far a placed fluid falls straight down (blocks) to find solid ground before it starts
+    # spreading outward, so a bucket emptied against a wall or over a ledge settles on the floor
+    # below instead of spreading from mid-air.
+    fall-max-depth: 16
 
 # ============================================
 # CUSTOM ITEMS
@@ -350,12 +354,20 @@ custom-items:
     durability: 3
     heal-per-hit: 2.0
 
+  # Speed Carrot
+  speed-carrot:
+    burst-amplifier: 2       # Speed III
+    burst-duration-seconds: 3
+    followup-amplifier: 0    # Speed I
+    followup-duration-seconds: 9
+
   # Boombox
   boombox:
     pulse-interval-seconds: 3
     total-duration-seconds: 12
     radius: 5
     speed-boost-percent: 20
+    speed-amplifier: 1        # Speed II
     speed-boost-duration-seconds: 5
 
   # Invisibility Cloak
@@ -403,6 +415,8 @@ custom-items:
     gust-hit-freeze-ms: 1500          # How long to freeze target on a gust hit
     gust-max-freeze-ms: 6000          # Maximum total freeze duration
     freeze-pump-interval-ticks: 1     # How often to update freeze ticks
+    gust-burst-rounds: 3              # Gusts per burst before the cooldown kicks in
+    gust-burst-cooldown-seconds: 3    # Left-click lockout after a burst completes
     gust-target-range: 3              # Radius to find targets for gust
     burst-target-range: 3.5           # Radius to find targets for burst
 
@@ -886,7 +900,7 @@ item-lore:
         - "<light_purple>✦ MYTHIC ARMOR ✦</light_purple>"
         - "<dark_purple>Powerful protective gloves</dark_purple>"
         - "<yellow>Shockwave ability</yellow>"
-        - "<yellow>Boxing punches for speed</yellow>"
+        - "<yellow>Boxing: Speed I while active</yellow>"
     blazebite-crossbows:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"

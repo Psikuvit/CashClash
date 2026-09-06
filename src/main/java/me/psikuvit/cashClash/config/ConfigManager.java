@@ -217,6 +217,10 @@ public class ConfigManager {
         return config.getLong("economy.min-round-pool", 15000);
     }
 
+    public long getMaxRoundPool() {
+        return config.getLong("economy.max-round-pool", 100000);
+    }
+
     public double getGuiTransferFee() {
         return config.getDouble("economy.gui-transfer-fee", 0.10);
     }
@@ -276,6 +280,10 @@ public class ConfigManager {
 
     public long getCTFCaptureBonusCoins() {
         return config.getLong("gamemodes.capture-the-flag.capture-bonus-coins", 15000);
+    }
+
+    public double getCTFFinalStandCarrierHealthPenalty() {
+        return config.getDouble("gamemodes.capture-the-flag.final-stand-carrier-health-penalty", 4.0);
     }
 
     public long getCTFCaptureBonusTimerMs() {
@@ -373,6 +381,10 @@ public class ConfigManager {
 
     public int getKCZoneSafeSpawnSearchRadius() {
         return config.getInt("gamemodes.kill-confirm.zone-safe-spawn-search-radius", 8);
+    }
+
+    public int getKCZoneGroundSearchMaxDepth() {
+        return config.getInt("gamemodes.kill-confirm.zone-ground-search-max-depth", 64);
     }
 
     // Protect the President
