@@ -1,5 +1,8 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.Messages;
@@ -122,9 +125,16 @@ public class TectonicCapHandler extends ArmorSetHandler {
 
         SoundUtils.playAt(impact, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.9f);
 
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
+        Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
+
         for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
             if (!(entity instanceof Player target)) continue;
             if (target.equals(player)) continue;
+            if (playerTeam != null) {
+                Team targetTeam = session.getPlayerTeam(target);
+                if (targetTeam != null && targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) continue;
+            }
 
             target.damage(cfg.getTectonicCapDamage() + fallDamage, player);
 
