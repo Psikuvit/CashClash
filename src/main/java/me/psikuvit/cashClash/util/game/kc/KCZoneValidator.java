@@ -39,16 +39,32 @@ public final class KCZoneValidator {
      * spot with a clear 3x3 footprint and return that instead. Returns the original location
      * unchanged if it's already clear, or if no open spot is found within the configured
      * {@code gamemodes.kill-confirm.zone-safe-spawn-search-radius}.
+     * <p>
+     * Before any of that, a death location that's airborne (e.g. mid-fall over open ground) is
+     * first dropped straight down to the nearest solid ground via {@link #resolveGroundedY} -
+     * without this, a death location with an already-clear footprint would spawn the zone
+     * floating in mid-air, since {@link #isFootprintClear} only checks for solid *walls*, not
+     * missing ground underneath.
      */
     public static Location findSafeCenter(Location deathLoc) {
         if (deathLoc == null || deathLoc.getWorld() == null) return deathLoc;
-        if (isFootprintClear(deathLoc)) return deathLoc;
 
         World world = deathLoc.getWorld();
         int baseX = deathLoc.getBlockX();
-        int baseY = deathLoc.getBlockY();
         int baseZ = deathLoc.getBlockZ();
 
+        int maxGroundDepth = CashClashPlugin.getInstance().getConfigManager().getKCZoneGroundSearchMaxDepth();
+        int groundedY = resolveGroundedY(world, baseX, deathLoc.getBlockY(), baseZ, maxGroundDepth);
+
+        Location startingPoint = deathLoc;
+        if (groundedY != deathLoc.getBlockY()) {
+            startingPoint = new Location(world, baseX + 0.5, groundedY, baseZ + 0.5,
+                    deathLoc.getYaw(), deathLoc.getPitch());
+        }
+
+        if (isFootprintClear(startingPoint)) return startingPoint;
+
+        int baseY = startingPoint.getBlockY();
         int maxSearchRadius = CashClashPlugin.getInstance().getConfigManager().getKCZoneSafeSpawnSearchRadius();
         for (int radius = 1; radius <= maxSearchRadius; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
@@ -64,7 +80,28 @@ public final class KCZoneValidator {
             }
         }
 
-        return deathLoc;
+        return startingPoint;
+    }
+
+    /**
+     * Scans straight down from {@code startY} for the first Y with solid ground directly beneath
+     * it (i.e. where a falling entity would land), up to {@code maxDepth} blocks. Returns
+     * {@code startY} unchanged if it's already grounded (the common case - no scan needed beyond
+     * the first check) or if no ground is found within range (e.g. a death over the void), so
+     * callers never get sent further down than intended.
+     */
+    private static int resolveGroundedY(World world, int x, int startY, int z, int maxDepth) {
+        int minY = world.getMinHeight();
+        int y = startY;
+        int scanned = 0;
+        while (y > minY && scanned < maxDepth) {
+            if (world.getBlockAt(x, y - 1, z).getType().isSolid()) {
+                return y;
+            }
+            y--;
+            scanned++;
+        }
+        return startY;
     }
 
     /**

@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.gamemode.SuddenDeathManager;
+import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.game.TimerDisplayUtils;
 import me.psikuvit.cashClash.util.Messages;
@@ -129,7 +130,10 @@ public class KillConfirmGamemode extends Gamemode {
 
     @Override
     public void onPlayerDeath(Player victim, Player killer) {
-        if (killer == null) return;
+        if (killer == null) {
+            onNaturalDeath(victim);
+            return;
+        }
 
         Team killerTeamObj = session.getPlayerTeam(killer);
         if (killerTeamObj == null) return;
@@ -155,6 +159,20 @@ public class KillConfirmGamemode extends Gamemode {
         }
 
         spawnConfirmZone(victim.getLocation(), killerTeam, victim.getName(), kind);
+    }
+
+    /**
+     * A death with no killer (fall, fire, drowning, void, ...) still drops a confirmable tag -
+     * it just doesn't award an immediate kill point the way a real kill does, since nobody on
+     * either team actually landed it. The victim's enemy team can still confirm the tag for the
+     * usual NAMETAG bonus, and the victim's own team can still deny it, same as any other tag.
+     */
+    private void onNaturalDeath(Player victim) {
+        Team victimTeamObj = session.getPlayerTeam(victim);
+        if (victimTeamObj == null) return;
+
+        int enemyTeam = victimTeamObj.getTeamNumber() == 1 ? 2 : 1;
+        spawnConfirmZone(victim.getLocation(), enemyTeam, victim.getName(), KCZone.ZoneKind.NAMETAG);
     }
 
     @Override
@@ -463,7 +481,9 @@ public class KillConfirmGamemode extends Gamemode {
                 continue;
             }
 
-            if (!KCZoneValidator.isPlayerInZone(player, zone.getCenter())) {
+            boolean usingOverdrive = CashClashPlugin.getInstance().getCustomItemManager()
+                    .getHandler(OverdriveHandler.class).isOverdriveInvincible(uuid);
+            if (usingOverdrive || !KCZoneValidator.isPlayerInZone(player, zone.getCenter())) {
                 if (occupants.remove(uuid) != null) {
                     TimerDisplayUtils.stopCountdownTimer(player);
                     Messages.send(player, "gamemode-kc.zone-capture-cancelled", "victim_name", zone.getVictimName());
@@ -547,6 +567,8 @@ public class KillConfirmGamemode extends Gamemode {
     private void resolveZoneExpired(KCZone zone) {
         KCZoneUtils.despawnZoneEntities(zone);
         stopAllOccupantDisplays(zone);
+        Messages.broadcast(session.getPlayers(), "gamemode-kc.tag-expired",
+                "victim_name", zone.getVictimName());
     }
 
     private void stopAllOccupantDisplays(KCZone zone) {
