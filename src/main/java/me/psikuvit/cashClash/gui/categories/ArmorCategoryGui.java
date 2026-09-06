@@ -98,6 +98,44 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      *
      * @return The count of diamond armor pieces (0-4)
      */
+    /**
+     * Whether the piece currently equipped in the given vanilla armor slot is a custom armor SET
+     * piece (Dragon, Flamebringer, Deathmauler - not the standalone individual pieces or
+     * Investor's set, which is intentionally sold as separate pieces, see
+     * {@link CustomArmorItem#isPartOfSet()}) whose own base material is diamond-tier or better -
+     * e.g. Flamebringer's Boots/Leggings, which really are diamond-material. Those pieces are the
+     * game's top-tier gear and should max out the basic Diamond slot outright. An iron-material
+     * set piece (Dragon's Helmet/Boots) does NOT count here - see {@link #ownsIronTierSetPiece}.
+     */
+    private boolean ownsDiamondTierSetPiece(ArmorSlot slot) {
+        CustomArmorItem custom = equippedSetPiece(slot);
+        return custom != null && isDiamondTierOrBetter(custom.getMaterial());
+    }
+
+    /**
+     * Whether the piece currently equipped in the given vanilla armor slot is a custom armor SET
+     * piece whose own base material is iron (e.g. Dragon's Helmet/Boots). These pieces shouldn't
+     * be treated as owning diamond - they should behave exactly like owning the plain Iron piece,
+     * still leaving the Diamond upgrade purchasable in the basic armor column.
+     */
+    private boolean ownsIronTierSetPiece(ArmorSlot slot) {
+        CustomArmorItem custom = equippedSetPiece(slot);
+        return custom != null && custom.getMaterial().name().startsWith("IRON_");
+    }
+
+    private CustomArmorItem equippedSetPiece(ArmorSlot slot) {
+        if (slot == null) return null;
+        ItemStack equipped = ItemUtils.getCurrentArmorInSlot(viewer, slot);
+        if (equipped == null) return null;
+        CustomArmorItem custom = PDCDetection.getCustomArmor(equipped);
+        return custom != null && custom.isPartOfSet() ? custom : null;
+    }
+
+    private boolean isDiamondTierOrBetter(Material material) {
+        String name = material.name();
+        return name.startsWith("DIAMOND_") || name.startsWith("NETHERITE_");
+    }
+
     private int countDiamondPieces() {
         int count = 0;
         if (hasItem(Material.DIAMOND_HELMET)) count++;
@@ -150,8 +188,9 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      */
     private void placeProgressiveArmorButton(int slot, ArmorItem ironItem, ArmorItem diamondItem,
                                              boolean canBuyDiamond, int currentRound) {
-        boolean hasIron = hasItem(ironItem.getMaterial());
-        boolean hasDiamond = hasItem(diamondItem.getMaterial());
+        ArmorSlot armorSlot = ItemUtils.getArmorSlot(ironItem.getMaterial());
+        boolean hasDiamond = hasItem(diamondItem.getMaterial()) || ownsDiamondTierSetPiece(armorSlot);
+        boolean hasIron = !hasDiamond && (hasItem(ironItem.getMaterial()) || ownsIronTierSetPiece(armorSlot));
 
         if (hasDiamond) {
             setButton(slot, createPurchasableButtonMaxed(diamondItem, true));
@@ -299,6 +338,11 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
 
         GameSession session = ensureInGame(player);
         if (session == null) return;
+
+        if (CashClashPlugin.getInstance().getShopService()
+                .isCustomArmorAlreadyOwned(player, armorSet.getPieces().getFirst())) {
+            return;
+        }
 
         long totalPrice = armorSet.getTotalPrice();
         if (!ensureCanAffordSet(player, totalPrice)) return;

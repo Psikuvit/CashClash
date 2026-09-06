@@ -322,7 +322,7 @@ public final class GuiItemFactory {
             if (ownsSet) {
                 ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
                         .name("<green>" + piece.getDisplayName() + " <gray>(Owned)</gray></green>")
-                        .lore("<dark_purple>" + set.getDisplayName() + " Set</dark_purple>")
+                        .lore("<dark_purple>" + set.getDisplayName() + "</dark_purple>")
                         .emptyLine();
 
                 if (!loreLinesFromConfig.isEmpty()) {
@@ -337,7 +337,7 @@ public final class GuiItemFactory {
             } else {
                 ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
                         .name("<yellow>" + piece.getDisplayName() + "</yellow>")
-                        .lore("<dark_purple>" + set.getDisplayName() + " Set</dark_purple>")
+                        .lore("<dark_purple>" + set.getDisplayName() + "</dark_purple>")
                         .emptyLine();
 
                 if (!loreLinesFromConfig.isEmpty()) {
@@ -349,7 +349,6 @@ public final class GuiItemFactory {
                         .lore("<red>⚠ Must buy complete set!</red>")
                         .emptyLine()
                         .lore("<yellow>Click to purchase entire set</yellow>")
-                        .priceDetail("<dark_gray>Piece Price:</dark_gray> <gray>$" + String.format("%,d", piece.getPrice()) + "</gray>")
                         .priceDetail("<dark_gray>Set Total:</dark_gray> <gold>$" + String.format("%,d", totalPrice) + "</gold>")
                         .itemId("SET_" + set.name())
                         .build();
