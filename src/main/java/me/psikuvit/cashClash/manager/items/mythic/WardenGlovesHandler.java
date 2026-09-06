@@ -69,6 +69,8 @@ public class WardenGlovesHandler extends MythicItemHandler {
     private final Map<UUID, Integer> risingFuryHitCount;
     private final Map<UUID, BukkitTask> risingFuryTimeoutTasks;
 
+    private final Set<UUID> shockwaveDamageActive;
+
     public WardenGlovesHandler(MythicItemManager manager) {
         super(manager);
         this.wardenPunchCount = new ConcurrentHashMap<>();
@@ -78,6 +80,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         this.risingFuryActive = ConcurrentHashMap.newKeySet();
         this.risingFuryHitCount = new ConcurrentHashMap<>();
         this.risingFuryTimeoutTasks = new ConcurrentHashMap<>();
+        this.shockwaveDamageActive = ConcurrentHashMap.newKeySet();
     }
 
     /**
@@ -93,6 +96,8 @@ public class WardenGlovesHandler extends MythicItemHandler {
      */
     public void useWardenPunch(EntityDamageByEntityEvent event, Player player, Player victim) {
         UUID uuid = player.getUniqueId();
+
+        if (shockwaveDamageActive.contains(uuid)) return;
 
         if (!risingFuryActive.contains(uuid)) {
             event.setCancelled(true);
@@ -240,7 +245,12 @@ public class WardenGlovesHandler extends MythicItemHandler {
             Vector toTarget = target.getLocation().toVector().subtract(player.getLocation().toVector()).normalize();
             if (direction.dot(toTarget) < 0.3) continue; // Not in cone (about 70 degree cone)
 
-            target.damage(cfg.getWardenShockwaveDamage(), player);
+            shockwaveDamageActive.add(uuid);
+            try {
+                target.damage(cfg.getWardenShockwaveDamage(), player);
+            } finally {
+                shockwaveDamageActive.remove(uuid);
+            }
 
             Vector knockback = toTarget.multiply(cfg.getWardenKnockbackPower()).setY(0.8);
             target.setVelocity(knockback);
@@ -508,6 +518,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
         wardenBothHandsActive.clear();
         wardenStashedOffhand.clear();
+        shockwaveDamageActive.clear();
     }
 
     @Override
