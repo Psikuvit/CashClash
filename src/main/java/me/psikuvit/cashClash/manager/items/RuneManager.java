@@ -209,6 +209,22 @@ public class RuneManager {
     }
 
     /**
+     * Deactivates every active rune in the player's inventory - runes stay off for the whole
+     * shopping phase.
+     */
+    public static void deactivateAllRunes(Player player) {
+        if (player == null) return;
+
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item == null) continue;
+            EnchantEntry entry = PDCDetection.getRune(item);
+            if (entry == null || !isRuneActive(item)) continue;
+
+            deactivateRune(player, item, entry);
+        }
+    }
+
+    /**
      * Flips the rune's active flag and its own visible enchant glow. Callers are responsible for
      * applying/removing the enchant on the linked target(s) separately - see {@link #toggleRune}.
      */

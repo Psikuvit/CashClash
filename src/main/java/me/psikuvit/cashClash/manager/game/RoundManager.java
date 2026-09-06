@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.listener.BlockListener;
+import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
 import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
 import me.psikuvit.cashClash.manager.player.BonusManager;
@@ -193,6 +194,7 @@ public class RoundManager {
                 p.setSaturation(20.0f);
                 KitService.restoreStarterArmor(p);
                 refillWaterBuckets(p);
+                RuneManager.deactivateAllRunes(p);
                 Messages.send(p, "round.shopping-area-teleported");
             }
         }
