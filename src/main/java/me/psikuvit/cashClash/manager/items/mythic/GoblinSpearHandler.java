@@ -215,8 +215,8 @@ public class GoblinSpearHandler extends MythicItemHandler {
     }
 
     /**
-     * End Goblin Spear charge, applying recoil damage (scaled by how long the charge ran) to
-     * both the charger and any caught players if it ended on a wall.
+     * End Goblin Spear charge, applying recoil damage (scaled by how long the charge ran) to the
+     * charger if it ended on a wall, and a multiple of that same damage to any caught players.
      */
     private void endCharge(Player player, boolean hitWall, int ticksTraveled, Vector chargeDirection) {
         UUID uuid = player.getUniqueId();
@@ -225,9 +225,11 @@ public class GoblinSpearHandler extends MythicItemHandler {
         if (!hitWall) {
             Messages.debug(player, "GOBLIN_SPEAR: Charge ended without wall impact");
         } else {
-            // 1 heart (2.0 hp) of recoil damage per second the charge ran before impact.
+            // 1 heart (2.0 hp) of recoil damage per second the charge ran before impact - caught
+            // players take a multiple of that, not the same amount the charger takes.
             double secondsTraveled = ticksTraveled / 20.0;
             double damage = secondsTraveled * cfg.getGoblinChargeRecoilDamagePerSecond();
+            double enemyDamage = damage * cfg.getGoblinChargeEnemyDamageMultiplier();
             int poisonDuration = cfg.getGoblinChargePoisonDuration();
             int poisonLevel = cfg.getGoblinChargePoisonLevel();
 
@@ -250,7 +252,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
 
                     caught.setNoDamageTicks(0);
                     caught.setMaximumNoDamageTicks(0); // Ensure they can be damaged immediately
-                    caught.damage(damage, player);
+                    caught.damage(enemyDamage, player);
                     CashClashPlayer.applyEffect(caught, PotionEffectType.POISON, poisonDuration, poisonLevel, false, true);
 
                     // Reset to default after damage is applied (vanilla is 20)
@@ -262,10 +264,10 @@ public class GoblinSpearHandler extends MythicItemHandler {
                     ParticleUtils.damageIndicator(caught.getLocation().add(0, 1, 0), 20, 0.5);
                     SoundUtils.play(caught, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
 
-                    Messages.debug(player, "GOBLIN_SPEAR: Wall impact dealt " + damage + " damage + Poison to " + caught.getName());
+                    Messages.debug(player, "GOBLIN_SPEAR: Wall impact dealt " + enemyDamage + " damage + Poison to " + caught.getName());
                 }
 
-                Messages.send(player, "mythic.wall-impact", "{damage}", String.valueOf((int) damage), "{enemy_count}", String.valueOf(caughtPlayers.size()));
+                Messages.send(player, "mythic.wall-impact", "{damage}", String.valueOf((int) enemyDamage), "{enemy_count}", String.valueOf(caughtPlayers.size()));
             }
         }
 
