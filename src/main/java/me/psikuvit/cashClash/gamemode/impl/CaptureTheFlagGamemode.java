@@ -68,6 +68,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Set<UUID> stalemateMsgShown; // told about the both-flags-held block in the current state
     private final Map<UUID, Long> playerHeartTimestamps; // when the player last got a heart bonus
     private final List<BlockDisplay> rewardBanners; // cosmetic "a capture happened" banners, cleaned up every round
+    private final Set<UUID> finalStandPenalized; // carriers currently docked the Final Stand health penalty
 
       private final SuddenDeathManager suddenDeathManager;
       private final FinalStandManager finalStandManager;
@@ -99,6 +100,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.stalemateMsgShown = new HashSet<>();
         this.playerHeartTimestamps = new HashMap<>();
         this.rewardBanners = new ArrayList<>();
+        this.finalStandPenalized = new HashSet<>();
          this.suddenDeathManager = new SuddenDeathManager(session, this);
          this.finalStandManager = new FinalStandManager(session, this);
          this.carrierGlowTask = null;
@@ -184,6 +186,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         playerCircleTimestamps.clear();
         playerNearestFlagTeam.clear();
         playerHeartTimestamps.clear();
+        finalStandPenalized.clear();
 
          // Recreated in the next combat phase.
          this.carrierGlowTask = null;
@@ -284,6 +287,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          playerCircleTimestamps.clear();
          playerNearestFlagTeam.clear();
          playerHeartTimestamps.clear();
+         finalStandPenalized.clear();
      }
 
     @Override
@@ -341,9 +345,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          CashClashPlayer.applyEffect(player, PotionEffectType.WEAKNESS, PotionEffect.INFINITE_DURATION, 0, false, false);
 
          if (finalStandManager.isActive()) {
-             CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
-             if (ccp != null) ccp.removeHealthModifier(
-                     CashClashPlugin.getInstance().getConfigManager().getCTFFinalStandCarrierHealthPenalty());
+             applyFinalStandPenalty(playerUuid);
          }
 
          moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
@@ -539,16 +541,32 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return loc.clone().subtract(loc.getDirection().setY(0).normalize().multiply(1.5));
     }
 
-    /** Removes the flag-carrier slowness/weakness and, if applied, the Final Stand health penalty. */
+    /** Removes the flag-carrier slowness/weakness/glowing and, if applied, the Final Stand health penalty. */
     private void clearCarrierPenalties(Player player) {
         CashClashPlayer.removeEffect(player, PotionEffectType.SLOWNESS);
         CashClashPlayer.removeEffect(player, PotionEffectType.WEAKNESS);
+        CashClashPlayer.removeEffect(player, PotionEffectType.GLOWING);
 
-        if (finalStandManager.isActive()) {
-            CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
-            if (ccp != null) ccp.addHealthModifier(
-                    CashClashPlugin.getInstance().getConfigManager().getCTFFinalStandCarrierHealthPenalty());
-        }
+        removeFinalStandPenalty(player.getUniqueId());
+    }
+
+    /**
+     * Docks the Final Stand carrier health penalty (max health, not current) - a no-op if
+     * already applied to this player, since the health modifier isn't idempotent.
+     */
+    private void applyFinalStandPenalty(UUID playerUuid) {
+        if (!finalStandPenalized.add(playerUuid)) return;
+        CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
+        if (ccp != null) ccp.addHealthModifier(
+                -CashClashPlugin.getInstance().getConfigManager().getCTFFinalStandCarrierHealthPenalty());
+    }
+
+    /** Restores the Final Stand carrier health penalty - a no-op if it was never applied. */
+    private void removeFinalStandPenalty(UUID playerUuid) {
+        if (!finalStandPenalized.remove(playerUuid)) return;
+        CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
+        if (ccp != null) ccp.addHealthModifier(
+                CashClashPlugin.getInstance().getConfigManager().getCTFFinalStandCarrierHealthPenalty());
     }
 
     private void cancelTask(BukkitTask task) {
@@ -584,6 +602,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
                 ItemUtils.restoreNormalItemDisplay(player);
+            }
+        }
+
+        // A flag picked up before Final Stand started never got docked the penalty - apply it
+        // now for whoever is still holding at the moment it activates.
+        for (FlagState flag : flagStates.values()) {
+            if (flag != null && flag.isHeld()) {
+                applyFinalStandPenalty(flag.holder());
             }
         }
     }
