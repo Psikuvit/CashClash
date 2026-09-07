@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.event.PlayerBackToGameEvent;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -240,6 +241,10 @@ public class RejoinManager implements Shutdownable {
             // Notify team
             Messages.broadcast(session.getPlayers(), "rejoin.reconnected-broadcast",
                     "player_name", player.getName());
+
+            // Fired only after the GameManager mapping above is in place, so its handlers
+            // (team outlines, gamemode spawn hooks) can actually resolve this session.
+            Bukkit.getPluginManager().callEvent(new PlayerBackToGameEvent(player));
         }
 
         return restored;
@@ -303,8 +308,9 @@ public class RejoinManager implements Shutdownable {
         player.setSaturation(20.0f);
         player.setGameMode(GameMode.SURVIVAL);
 
-        // Clear plugin-applied potion effects (selective; vanilla effects preserved)
-        ccp.clearPluginEffects();
+        // Full wipe, not just tracked: a disconnect can leave an effect (e.g. carrier Weakness)
+        // active in saved NBT that this rejoin's fresh CashClashPlayer never tracked.
+        ccp.clearAllEffects();
     }
 
     /**
