@@ -232,18 +232,16 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Queues the death-location spectate transition, then forces it to happen right away via
-     * {@code player.spigot().respawn()} - this fires a real {@link PlayerRespawnEvent}
-     * synchronously, which {@link #onPlayerRespawn} picks the queued location up from
-     * ({@code event.setRespawnLocation}), so the teleport lands atomically as part of the same
-     * respawn transaction whatever actually triggers it (this call, a client-initiated respawn,
-     * or vanilla's own auto-respawn) rather than racing a follow-up teleport a tick later.
+     * Queues the death-location spectate transition. Arena worlds run with doImmediateRespawn
+     * true, so vanilla fires the real {@link PlayerRespawnEvent} on its own within a tick or two
+     * of death, no click needed - {@link #onPlayerRespawn} picks the queued location up from it
+     * ({@code event.setRespawnLocation}). Forcing it here instead via
+     * {@code player.spigot().respawn()} looked equivalent but left the client's own death screen
+     * stuck on top of an already-alive player, since that call never came from a client-side
+     * respawn click for the client to dismiss its own GUI against.
      */
     private void queueSpectatorTransition(Player player, Location spectatorLocation) {
         pendingSpectatorTransition.put(player.getUniqueId(), spectatorLocation);
-        SchedulerUtils.runTask(() -> {
-            if (player.isOnline()) player.spigot().respawn();
-        });
     }
 
     /**
