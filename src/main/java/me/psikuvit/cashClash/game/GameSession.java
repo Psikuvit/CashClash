@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.event.PlayerBackToGameEvent;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.kit.Kit;
@@ -1131,6 +1132,8 @@ public class GameSession {
         Messages.send(player, "round.rejoin-status",
                 "round", String.valueOf(currentRound),
                 "lives", String.valueOf(existingCcp.getLives()));
+
+        Bukkit.getPluginManager().callEvent(new PlayerBackToGameEvent(player));
 
         return true;
     }
