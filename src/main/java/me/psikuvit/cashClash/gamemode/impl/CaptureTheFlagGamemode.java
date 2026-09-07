@@ -764,7 +764,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
             return;
         }
         long now = System.currentTimeMillis();
-        long expiryMs = now + 5_000L;
+        Long existingExpiry = flagReturnExpiry.get(color);
+        long expiryMs = (existingExpiry != null && existingExpiry > now) ? existingExpiry : now + 5_000L;
         flagReturnExpiry.put(color, expiryMs);
 
         long remainingMs = Math.max(0L, expiryMs - now);
@@ -910,9 +911,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     if (isDroppedFlagWaitingForReturn(previousTeam)) {
                         scheduleFlagReturnTimer(previousTeam);
                     }
+                    TimerDisplayUtils.stopCountdownTimer(player);
+                    playerCircleTimestamps.remove(playerUuid);
                 }
-                TimerDisplayUtils.stopCountdownTimer(player);
-                playerCircleTimestamps.remove(playerUuid);
                 playerNearestFlagTeam.remove(playerUuid);
             }
         }
