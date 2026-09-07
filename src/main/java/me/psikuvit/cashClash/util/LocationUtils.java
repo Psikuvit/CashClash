@@ -112,8 +112,8 @@ public final class LocationUtils {
      */
     public static Location getPlayerHeadLoc(Location playerLoc, double headHeight, double behindDistance) {
         float yaw = (float) Math.toRadians(playerLoc.getYaw());
-        double x = playerLoc.getX() - Math.sin(yaw) * behindDistance;
-        double z = playerLoc.getZ() + Math.cos(yaw) * behindDistance;
+        double x = playerLoc.getX() + Math.sin(yaw) * behindDistance;
+        double z = playerLoc.getZ() - Math.cos(yaw) * behindDistance;
         double y = playerLoc.getY() + headHeight;
 
         return new Location(playerLoc.getWorld(), x, y, z);
