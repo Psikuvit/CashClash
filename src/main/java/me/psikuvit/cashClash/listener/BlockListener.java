@@ -698,20 +698,7 @@ public class BlockListener implements Listener {
         Set<Location> seen = new HashSet<>();
         seen.add(source.getLocation().toBlockLocation());
 
-        Block landed = source;
-        int fallRemaining = itemsConfig.getFluidFallMaxDepth();
-        while (fallRemaining > 0) {
-            Block below = landed.getRelative(BlockFace.DOWN);
-            if (!canFlowInto(below)) break;
-
-            Location loc = below.getLocation().toBlockLocation();
-            rings.add(List.of(loc));
-            seen.add(loc);
-            landed = below;
-            fallRemaining--;
-        }
-
-        List<Location> frontier = List.of(landed.getLocation().toBlockLocation());
+        List<Location> frontier = List.of(fallTo(source.getLocation().toBlockLocation(), seen, rings));
         for (int hop = 0; hop < itemsConfig.getFluidFlowDistance() && !frontier.isEmpty(); hop++) {
             List<Location> ring = new ArrayList<>();
             for (Location from : frontier) {
@@ -722,11 +709,38 @@ public class BlockListener implements Listener {
                     ring.add(next);
                 }
             }
+            if (ring.isEmpty()) break;
             rings.add(ring);
-            frontier = ring;
+
+            List<Location> nextFrontier = new ArrayList<>(ring.size());
+            for (Location cell : ring) {
+                nextFrontier.add(fallTo(cell, seen, rings));
+            }
+            frontier = nextFrontier;
         }
 
         return rings;
+    }
+
+    /**
+     * Falls straight down from {@code start} until solid ground or {@code fluid-fall-max-depth},
+     * adding each fallen-through cell as its own single-cell ring (a falling animation, same as
+     * the source's own initial fall) and to {@code seen}. Returns {@code start} unchanged if
+     * there's nothing to fall through.
+     */
+    private Location fallTo(Location start, Set<Location> seen, List<List<Location>> rings) {
+        Location current = start;
+        int remaining = itemsConfig.getFluidFallMaxDepth();
+        while (remaining > 0) {
+            Location below = current.clone().add(0, -1, 0);
+            if (seen.contains(below) || !canFlowInto(below.getBlock())) break;
+
+            seen.add(below);
+            rings.add(List.of(below));
+            current = below;
+            remaining--;
+        }
+        return current;
     }
 
     /**
