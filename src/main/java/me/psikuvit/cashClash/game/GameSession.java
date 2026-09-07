@@ -1061,6 +1061,12 @@ public class GameSession {
 
         // Don't remove from teams - just mark for potential rejoin
         // The RejoinManager will handle the timeout and removal if they don't return
+
+        // Gamemode-specific state tied to being physically present (e.g. CTF: drop a carried
+        // flag back to base) can't wait for a rejoin that may never come.
+        if (gamemode != null) {
+            gamemode.onPlayerRemove(player);
+        }
     }
 
     /**
