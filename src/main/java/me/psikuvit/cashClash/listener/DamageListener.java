@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.listener;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -880,6 +881,23 @@ public class DamageListener implements Listener {
         applyStrengthNerf(event, attacker);
         applyPowerNerf(event, attacker, weapon);
         applyInvestorMeleeNerf(event, attacker);
+        applyFlagCarrierMeleeNerf(event, attacker);
+    }
+
+    /**
+     * CTF flag carrier melee penalty, as a percentage rather than a flat potion effect - a flat
+     * reduction (e.g. Weakness) floors any low-base-damage item to 0, leaving only swords/axes/
+     * tridents able to land a hit at all. A percentage keeps every item usable, just weaker.
+     */
+    private void applyFlagCarrierMeleeNerf(EntityDamageByEntityEvent event, Player attacker) {
+        if (!(event.getDamager() instanceof Player)) return;
+
+        GameSession session = gameManager.getPlayerSession(attacker);
+        if (session == null || !(session.getGamemode() instanceof CaptureTheFlagGamemode ctf)) return;
+        if (!ctf.isSilenced(attacker.getUniqueId())) return;
+
+        double reduction = configManager.getCTFCarrierDamageReductionPercent() / 100.0;
+        event.setDamage(event.getDamage() * (1.0 - reduction));
     }
 
     /**

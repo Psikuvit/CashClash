@@ -286,6 +286,10 @@ public class ConfigManager {
         return config.getDouble("gamemodes.capture-the-flag.final-stand-carrier-health-penalty", 4.0);
     }
 
+    public double getCTFCarrierDamageReductionPercent() {
+        return config.getDouble("gamemodes.capture-the-flag.carrier-damage-reduction-percent", 50.0);
+    }
+
     public long getCTFCaptureBonusTimerMs() {
         return config.getLong("gamemodes.capture-the-flag.capture-bonus-timer-ms", 45000);
     }

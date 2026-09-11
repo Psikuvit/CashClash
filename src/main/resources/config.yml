@@ -188,6 +188,10 @@ gamemodes:
     capture-bonus-timer-ms: 45000
     # Max health taken from a flag carrier during Final Stand (4.0 = 2 hearts, 20 -> 16 max)
     final-stand-carrier-health-penalty: 4.0
+    # Melee damage reduction while carrying a flag, as a percentage (not a flat potion effect -
+    # a flat reduction floors small weapons/tools to 0 damage, leaving only swords/axes/tridents
+    # able to hit at all)
+    carrier-damage-reduction-percent: 50
     # Extra heart duration granted on capture (milliseconds)
     heart-bonus-duration-ms: 45000
     # Radius (blocks) for detecting a player near the flag pickup point / scoring banner,

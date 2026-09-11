@@ -325,7 +325,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
          SchedulerUtils.runTaskLater(() -> updateSilencedItemDisplay(player), 1);
 
          CashClashPlayer.applyEffect(player, PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION, 0, false, false);
-         CashClashPlayer.applyEffect(player, PotionEffectType.WEAKNESS, PotionEffect.INFINITE_DURATION, 0, false, false);
 
          if (finalStandManager.isActive()) {
              applyFinalStandPenalty(playerUuid);
@@ -505,10 +504,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return loc.clone().subtract(loc.getDirection().setY(0).normalize().multiply(1.5));
     }
 
-    /** Removes the flag-carrier slowness/weakness/glowing and, if applied, the Final Stand health penalty. */
+    /** Removes the flag-carrier slowness/glowing and, if applied, the Final Stand health penalty. */
     private void clearCarrierPenalties(Player player) {
         CashClashPlayer.removeEffect(player, PotionEffectType.SLOWNESS);
-        CashClashPlayer.removeEffect(player, PotionEffectType.WEAKNESS);
         CashClashPlayer.removeEffect(player, PotionEffectType.GLOWING);
 
         removeFinalStandPenalty(player.getUniqueId());
