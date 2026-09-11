@@ -493,6 +493,13 @@ public class GameListener implements Listener {
             }
         }
 
+        // Speed Carrot is a movement buff - flag carriers already lose movement abilities
+        if (PDCDetection.getFood(consumed) == FoodItem.SPEED_CARROT && isSilenced(session, p)) {
+            event.setCancelled(true);
+            Messages.send(p, "listener.cannot-use-abilities-while-silenced");
+            return true;
+        }
+
         // Prevent dead players from consuming
         return preventDeadPlayerConsumption(event, p);
     }

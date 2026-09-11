@@ -641,6 +641,10 @@ public class InteractListener implements Listener {
                 if (action.isRightClick() && player.isSneaking()) {
                     event.setCancelled(true);
                     if (blockCustomWeaponInShoppingPhase(player)) return true;
+                    if (isSilenced(player)) {
+                        Messages.send(player, "listener.cannot-use-abilities-while-silenced");
+                        return true;
+                    }
                     armorManager.lockMythicShift(player);
                     weaponItemManager.getHandler(SoulKatanaHandler.class).usePhantomSlice(player);
                     return true;
@@ -770,6 +774,8 @@ public class InteractListener implements Listener {
                 if (player.isSneaking()) {
                     armorManager.lockMythicShift(player);
                     mythicManager.getHandler(AlchemistWandHandler.class).useAlchemistTaunt(player);
+                } else if (isSilenced(player)) {
+                    Messages.send(player, "listener.cannot-use-abilities-while-silenced");
                 } else {
                     mythicManager.getHandler(AlchemistWandHandler.class).useAlchemistBlinkSwap(player);
                 }
