@@ -33,11 +33,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -67,7 +65,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<UUID, Integer> playerNearestFlagTeam;
     private final Set<UUID> stalemateMsgShown; // told about the both-flags-held block in the current state
     private final Map<UUID, Long> playerHeartTimestamps; // when the player last got a heart bonus
-    private final List<BlockDisplay> rewardBanners; // cosmetic "a capture happened" banners, cleaned up every round
     private final Set<UUID> finalStandPenalized; // carriers currently docked the Final Stand health penalty
 
       private final SuddenDeathManager suddenDeathManager;
@@ -76,7 +73,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
       private BukkitTask bannerRotationTask;
       private BukkitTask flagPickupTask;
       private int suddenDeathWinningTeam;
-      private boolean captureHappenedThisRound;
 
     public CaptureTheFlagGamemode(GameSession session) {
         super(session, GamemodeType.CAPTURE_THE_FLAG);
@@ -99,7 +95,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.playerNearestFlagTeam = new HashMap<>();
         this.stalemateMsgShown = new HashSet<>();
         this.playerHeartTimestamps = new HashMap<>();
-        this.rewardBanners = new ArrayList<>();
         this.finalStandPenalized = new HashSet<>();
          this.suddenDeathManager = new SuddenDeathManager(session, this);
          this.finalStandManager = new FinalStandManager(session, this);
@@ -107,7 +102,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
          this.bannerRotationTask = null;
          this.flagPickupTask = null;
          this.suddenDeathWinningTeam = 0;
-         this.captureHappenedThisRound = false;
 
         flagCaptures.put(TeamColor.RED, 0);
         flagCaptures.put(TeamColor.BLUE, 0);
@@ -138,9 +132,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         initializeBanners();
-        if (captureHappenedThisRound) {
-            spawnRewardBanners();
-        }
 
         flagStates.put(TeamColor.RED, flagStates.get(TeamColor.RED).withoutHolder());
         flagStates.put(TeamColor.BLUE, flagStates.get(TeamColor.BLUE).withoutHolder());
@@ -158,13 +149,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     @Override
     public void onRoundEnd() {
         removeBannersFromPlayers();
-
-        // Whether next round's reward banners should appear is decided from this round's
-        // captures, before the counters below reset to 0 - and every reward banner spawned for
-        // *this* round is cleaned up here regardless, never carried over.
-        captureHappenedThisRound = flagCaptures.getOrDefault(TeamColor.RED, 0) > 0
-                || flagCaptures.getOrDefault(TeamColor.BLUE, 0) > 0;
-        clearRewardBanners();
 
         suddenDeathManager.resetForNewRound();
         finalStandManager.cancel();
@@ -254,7 +238,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
      @Override
      public void cleanup() {
          removeBannersFromPlayers();
-         clearRewardBanners();
 
          cancelTask(carrierGlowTask);
          cancelTask(bannerRotationTask);
@@ -455,25 +438,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
          if (blueFlagLoc != null) {
              flagBaseLocations.put(TeamColor.BLUE, blueFlagLoc.clone());
          }
-     }
-
-     /** Spawns one cosmetic random-colored banner at each team's capture circle. */
-     private void spawnRewardBanners() {
-         addRewardBanner(flagBaseLocations.get(TeamColor.RED));
-         addRewardBanner(flagBaseLocations.get(TeamColor.BLUE));
-     }
-
-     private void addRewardBanner(Location base) {
-         if (base == null) return;
-         BlockDisplay banner = FlagBannerUtils.spawnRandomBanner(base);
-         if (banner != null) rewardBanners.add(banner);
-     }
-
-     private void clearRewardBanners() {
-         for (BlockDisplay banner : rewardBanners) {
-             if (banner != null && !banner.isDead()) banner.remove();
-         }
-         rewardBanners.clear();
      }
 
     private Location getRedFlagLocation() {

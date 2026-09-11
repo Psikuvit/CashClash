@@ -53,30 +53,6 @@ public class FlagBannerUtils {
         });
     }
 
-    private static final Material[] BANNER_MATERIALS = {
-            Material.WHITE_BANNER, Material.ORANGE_BANNER, Material.MAGENTA_BANNER, Material.LIGHT_BLUE_BANNER,
-            Material.YELLOW_BANNER, Material.LIME_BANNER, Material.PINK_BANNER, Material.GRAY_BANNER,
-            Material.LIGHT_GRAY_BANNER, Material.CYAN_BANNER, Material.PURPLE_BANNER, Material.BLUE_BANNER,
-            Material.BROWN_BANNER, Material.GREEN_BANNER, Material.RED_BANNER, Material.BLACK_BANNER
-    };
-
-    /**
-     * Spawn a purely cosmetic, randomly-colored banner (BlockDisplay) at a location - used for
-     * the "a capture happened last round" reward banner, unrelated to either team's own flag
-     * banner.
-     */
-    public static BlockDisplay spawnRandomBanner(Location location) {
-        if (location == null || location.getWorld() == null) {
-            return null;
-        }
-
-        Location bannerLoc = location.clone().add(0, 2, 0);
-        Material material = BANNER_MATERIALS[(int) (Math.random() * BANNER_MATERIALS.length)];
-
-        return location.getWorld().spawn(bannerLoc, BlockDisplay.class, banner ->
-                banner.setBlock(material.createBlockData()));
-    }
-
     /**
      * Check if a banner is able to be rotated (not held by player, not dead, etc.)
      *
