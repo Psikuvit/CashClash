@@ -768,33 +768,9 @@ public class BlockListener implements Listener {
             fluidCells.put(loc, placement);
             trackPlacedBlock(placement.sessionId, block);
             Messages.debug("FLUID", "  ring " + level + " placed " + describe(block) + " at " + at(loc));
-
-            cascadeDown(block, placement, level, ring);
         }
 
         SchedulerUtils.runTaskLater(() -> revealRing(placement, index + 1), flowTicksFor(placement.fluid));
-    }
-
-    /**
-     * Any spread cell with air below it falls straight down to the next solid ground, same as
-     * the source's own initial fall - so a bucket placed on a ledge doesn't leave water hanging
-     * in mid-air past the edge. Appends the fallen cells to the same ring they cascaded from, so
-     * they drain/despawn together with it.
-     */
-    private void cascadeDown(Block from, PlacedFluid placement, int level, List<Location> ring) {
-        Block current = from;
-        for (int step = 0; step < itemsConfig.getFluidFallMaxDepth(); step++) {
-            Block below = current.getRelative(BlockFace.DOWN);
-            if (!canFlowInto(below)) break;
-
-            placeFlowingFluid(below, placement.fluid, level);
-            Location belowLoc = below.getLocation().toBlockLocation();
-            fluidCells.put(belowLoc, placement);
-            trackPlacedBlock(placement.sessionId, below);
-            ring.add(belowLoc);
-
-            current = below;
-        }
     }
 
     /**
