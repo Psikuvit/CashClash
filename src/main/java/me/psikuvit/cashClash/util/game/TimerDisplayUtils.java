@@ -75,6 +75,15 @@ public class TimerDisplayUtils {
         if (player == null || !player.isOnline() || durationMs <= 0 || messageFormatter == null) return;
 
         UUID playerUuid = player.getUniqueId();
+
+        // Lower priority number wins: a higher-precedence display already showing (e.g. a flag
+        // return countdown) must not be stomped by a lower-precedence one (e.g. a bonus timer)
+        // starting or refreshing elsewhere.
+        TimerDisplay currentDisplay = timerDisplays.get(playerUuid);
+        if (currentDisplay != null && currentDisplay.priority() < priority) {
+            return;
+        }
+
         long expiryMs = System.currentTimeMillis() + durationMs;
         TimerDisplay existingDisplay = timerDisplays.get(playerUuid);
         Long existingLastSeconds = lastDisplayedSeconds.get(playerUuid);
@@ -151,6 +160,19 @@ public class TimerDisplayUtils {
 
         if (hadTimer) {
             ActionBarQueue.get().sendRaw(playerUuid, "");
+        }
+    }
+
+    /**
+     * Stop a player's countdown timer only if it's currently showing the given priority - so a
+     * broadcast stop (e.g. every session player, when a flag return pauses) can't wipe an
+     * unrelated timer (e.g. that player's own bonus timer) it never started.
+     */
+    private static synchronized void stopCountdownTimerIfPriority(UUID playerUuid, int priority) {
+        if (playerUuid == null) return;
+        TimerDisplay display = timerDisplays.get(playerUuid);
+        if (display != null && display.priority() == priority) {
+            stopCountdownTimer(playerUuid);
         }
     }
 
@@ -261,7 +283,7 @@ public class TimerDisplayUtils {
      */
     public static void stopBonusTimer(Player player) {
         if (player != null) {
-            stopCountdownTimer(player);
+            stopCountdownTimerIfPriority(player.getUniqueId(), PRIORITY_BONUS_TIMER);
         }
     }
 
@@ -329,7 +351,7 @@ public class TimerDisplayUtils {
         if (player != null) {
             UUID playerUuid = player.getUniqueId();
             playerHeartTimestamps.remove(playerUuid);
-            stopCountdownTimer(player);
+            stopCountdownTimerIfPriority(playerUuid, PRIORITY_HEART_TIMER);
         }
     }
 
@@ -418,10 +440,7 @@ public class TimerDisplayUtils {
         }
 
         for (UUID playerUuid : playerUuids) {
-            Player player = Bukkit.getPlayer(playerUuid);
-            if (player != null) {
-                stopCountdownTimer(player);
-            }
+            stopCountdownTimerIfPriority(playerUuid, PRIORITY_FLAG_RETURN);
         }
     }
 }
