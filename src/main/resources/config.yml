@@ -110,6 +110,9 @@ economy:
 combat:
   # Multiplier applied to the Strength potion effect's attack damage bonus (1.0 = no nerf)
   strength-nerf-multiplier: 0.5
+  # Multiplier applied to the Weakness potion effect's attack damage penalty (1.0 = no nerf,
+  # 0.0 = Weakness deals no damage penalty at all)
+  weakness-nerf-multiplier: 0.5
   # Multiplier applied to the Power enchantment's damage bonus (1.0 = no nerf)
   power-nerf-multiplier: 0.2
   # Power enchant level a non-legendary bow is capped at (excess levels beyond this
@@ -188,12 +191,12 @@ gamemodes:
     capture-bonus-timer-ms: 45000
     # Max health taken from a flag carrier during Final Stand (4.0 = 2 hearts, 20 -> 16 max)
     final-stand-carrier-health-penalty: 4.0
-    # Melee damage reduction while carrying a flag, as a percentage (not a flat potion effect -
-    # a flat reduction floors small weapons/tools to 0 damage, leaving only swords/axes/tridents
-    # able to hit at all)
-    carrier-damage-reduction-percent: 50
-    # Extra heart duration granted on capture (milliseconds)
-    heart-bonus-duration-ms: 45000
+    # Weakness (see flag pickup) floors any item dealing less than this to 0 damage - this
+    # guarantees a minimum hit gets through regardless of what's in hand
+    carrier-minimum-melee-damage: 1.0
+    # Slowness/Weakness level applied while carrying a flag (0 = level I, 1 = level II, ...)
+    carrier-slowness-amplifier: 0
+    carrier-weakness-amplifier: 0
     # Radius (blocks) for detecting a player near the flag pickup point / scoring banner,
     # and the max vertical distance still counted as "near" (handles multi-level bases)
     pickup-circle-radius: 1.5
@@ -215,7 +218,6 @@ gamemodes:
     capture-duration-ms: 4000
     final-stand-capture-duration-ms: 2000
     money-bonus: 15000
-    heart-bonus-duration-ms: 45000
     # Activation beam: height (blocks), vertical offset from the zone center, and how long the
     # pulse lasts (ticks)
     beam-height: 6.0
@@ -236,7 +238,6 @@ gamemodes:
     selection-time-seconds: 15
     kill-bonus-threshold: 2
     kill-bonus-amount: 15000
-    heart-duration-ms: 45000
     captures-to-win: 2
     # Tank buff: Resistance amplifier level (0 = level I)
     tank-resistance-amplifier: 0

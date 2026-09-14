@@ -39,14 +39,9 @@ public class TimerDisplayUtils {
         return CashClashPlugin.getInstance().getConfigManager().getCTFCaptureBonusTimerMs();
     }
 
-    private static long extraHeartDurationMs() {
-        return CashClashPlugin.getInstance().getConfigManager().getCTFHeartBonusDurationMs();
-    }
-
     // Priorities for actionbar display (lower = higher priority)
     private static final int PRIORITY_FLAG_RETURN = 2;     // Shows when flag is dropping
     private static final int PRIORITY_BONUS_TIMER = 5;     // Shows when flag is held
-    private static final int PRIORITY_HEART_TIMER = 3;     // Shows when heart is active
 
     // ==================== TIMER ENGINE (moved from ActionBarQueue) ====================
 
@@ -247,6 +242,26 @@ public class TimerDisplayUtils {
      * @param flag The flag state containing the capture time
      */
     public static void startBonusTimer(Player player, FlagState flag) {
+        startBonusTimer(player, flag,
+            seconds -> seconds > 0
+                    ? "<green>⏰ Bonus expires in: <gold>" + seconds + "s</gold></green>"
+                    : "<red>❌ No bonus - score won't grant extra money</red>",
+            "<green>✓ You will receive money bonus!</green>");
+    }
+
+    /**
+     * Same 45s pickup-to-capture bonus window as {@link #startBonusTimer(Player, FlagState)},
+     * but worded for sudden death's heart reward instead of coins.
+     */
+    public static void startHeartBonusTimer(Player player, FlagState flag) {
+        startBonusTimer(player, flag,
+            seconds -> seconds > 0
+                    ? "<green>❤ Heart Timer: <gold>" + seconds + "s</gold></green>"
+                    : "<red>❌ No bonus - score won't grant an extra heart</red>",
+            "<green>✓ You will receive an extra heart!</green>");
+    }
+
+    private static void startBonusTimer(Player player, FlagState flag, Function<Long, String> messageFormatter, String completionMessage) {
         if (player == null || !player.isOnline() || flag == null || !flag.isHeld()) {
             return;
         }
@@ -260,24 +275,12 @@ public class TimerDisplayUtils {
             return; // Bonus window already expired
         }
 
-        // Start countdown timer with custom message formatter and completion message
-        startCountdownTimer(
-            player,
-            remaining,
-            PRIORITY_BONUS_TIMER,
-            seconds -> {
-                if (seconds > 0) {
-                    return "<green>⏰ Bonus expires in: <gold>" + seconds + "s</gold></green>";
-                } else {
-                    return "<red>❌ No bonus - score won't grant extra money</red>";
-                }
-            },
-            "<green>✓ You will receive money bonus!</green>"
-        );
+        startCountdownTimer(player, remaining, PRIORITY_BONUS_TIMER, messageFormatter, completionMessage);
     }
 
     /**
-     * Stop a bonus timer for a player
+     * Stop a bonus timer for a player - covers both {@link #startBonusTimer(Player, FlagState)}
+     * and {@link #startHeartBonusTimer(Player, FlagState)}, which share a priority.
      *
      * @param player The player to stop the timer for
      */
@@ -310,84 +313,6 @@ public class TimerDisplayUtils {
      */
     public static boolean isWithinBonusWindow(FlagState flag) {
         return flag != null && flag.isHeld() && getBonusTimeRemaining(flag) > 0;
-    }
-
-    // ========= HEART TIMER METHODS =========
-
-    /**
-     * Start a heart timer display for a player who just received an extra heart.
-     * The timer automatically manages itself and updates only when seconds change.
-     *
-     * @param player The player who received the extra heart
-     * @param playerHeartTimestamps Map to track when heart was received
-     */
-    public static void startHeartTimer(Player player, Map<UUID, Long> playerHeartTimestamps) {
-        if (player == null || !player.isOnline()) {
-            return;
-        }
-
-        UUID playerUuid = player.getUniqueId();
-
-        // Record the heart timestamp
-        long now = System.currentTimeMillis();
-        playerHeartTimestamps.put(playerUuid, now);
-
-        // Start countdown timer with custom message formatter
-        startCountdownTimer(
-            player,
-            extraHeartDurationMs(),
-            PRIORITY_HEART_TIMER,
-            seconds -> "<red>❤ Extra Heart expires in: <gold>" + seconds + "s</gold></red>"
-        );
-    }
-
-    /**
-     * Stop a heart timer for a player
-     *
-     * @param player The player to stop the timer for
-     * @param playerHeartTimestamps Map to clean up
-     */
-    public static void stopHeartTimer(Player player, Map<UUID, Long> playerHeartTimestamps) {
-        if (player != null) {
-            UUID playerUuid = player.getUniqueId();
-            playerHeartTimestamps.remove(playerUuid);
-            stopCountdownTimerIfPriority(playerUuid, PRIORITY_HEART_TIMER);
-        }
-    }
-
-    /**
-     * Record that a player received an extra heart bonus
-     *
-     * @param playerUuid The player's UUID
-     * @param playerHeartTimestamps Map to track heart timestamps
-     */
-    public static void recordHeartBonus(UUID playerUuid, Map<UUID, Long> playerHeartTimestamps) {
-        playerHeartTimestamps.put(playerUuid, System.currentTimeMillis());
-    }
-
-    /**
-     * Get remaining heart duration for a player
-     *
-     * @param playerUuid The player's UUID
-     * @param playerHeartTimestamps Map of heart timestamps
-     * @return Remaining duration in milliseconds, or 0 if no active heart
-     */
-    public static long getHeartTimeRemaining(UUID playerUuid, Map<UUID, Long> playerHeartTimestamps) {
-        Long heartTime = playerHeartTimestamps.get(playerUuid);
-        if (heartTime == null) {
-            return 0;
-        }
-        long elapsed = System.currentTimeMillis() - heartTime;
-        return Math.max(0, extraHeartDurationMs() - elapsed);
-    }
-
-    /**
-     * Clear all heart timers
-     *
-     * @param playerHeartTimestamps Map to clear
-     */
-    public static void clearAllHeartTimers(Map<UUID, Long> playerHeartTimestamps) {
-        playerHeartTimestamps.clear();
     }
 
     // ========= FLAG RETURN TIMER METHODS =========

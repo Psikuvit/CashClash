@@ -51,8 +51,9 @@ public class CTFPlaceholderProvider implements PlaceholderProvider {
             case "blue_flag_status" -> getFlagStatus(gamemode.getFlagHolder(2));
             case "money_bonus_timer" -> {
                 long remaining = gamemode.getBonusTimeRemainingMs(player.getUniqueId());
-                // Only show timer when player actually has an active extra heart
-                yield remaining > 0 ? "Money Bonus: " + FormatUtils.formatMillis(remaining) : "";
+                if (remaining <= 0) yield "";
+                String label = gamemode.getSuddenDeathManager().isInSuddenDeath() ? "Heart Bonus: " : "Money Bonus: ";
+                yield label + FormatUtils.formatMillis(remaining);
             }
             default -> null;
         };

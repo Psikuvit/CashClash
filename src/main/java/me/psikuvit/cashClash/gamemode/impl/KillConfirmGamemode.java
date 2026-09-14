@@ -51,7 +51,6 @@ public class KillConfirmGamemode extends Gamemode {
     private final long CAPTURE_DURATION_MS;
     private final long FINAL_STAND_CAPTURE_DURATION_MS;
     private final long MONEY_BONUS;
-    private final long HEART_BONUS_DURATION_MS;
 
     private final Map<TeamColor, Integer> teamScore;
     private final Map<TeamColor, Integer> suddenDeathCycleScore;
@@ -74,7 +73,6 @@ public class KillConfirmGamemode extends Gamemode {
         this.CAPTURE_DURATION_MS = cfg.getKCCaptureDurationMs();
         this.FINAL_STAND_CAPTURE_DURATION_MS = cfg.getKCFinalStandCaptureDurationMs();
         this.MONEY_BONUS = cfg.getKCMoneyBonus();
-        this.HEART_BONUS_DURATION_MS = cfg.getKCHeartBonusDurationMs();
 
         this.teamScore = new EnumMap<>(TeamColor.class);
         this.suddenDeathCycleScore = new EnumMap<>(TeamColor.class);
@@ -597,7 +595,7 @@ public class KillConfirmGamemode extends Gamemode {
             if (p == null || !p.isOnline()) continue;
 
             if (heartVariant) {
-                suddenDeathManager.applyExtraHeart(p, HEART_BONUS_DURATION_MS);
+                suddenDeathManager.applyExtraHeart(p);
                 Messages.send(p, "gamemode-kc.money-tag-bonus-heart");
             } else {
                 session.getRewardManager().grant(p, RewardType.KC_CONFIRM_BONUS, share,

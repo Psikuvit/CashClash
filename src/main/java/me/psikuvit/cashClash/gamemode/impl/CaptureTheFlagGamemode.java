@@ -52,7 +52,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
      private final long CAPTURE_BONUS;
      private final long CAPTURE_TIMER_MS;
      private final long FLAG_PICKUP_DURATION_MS;
-     private final long HEART_BONUS_DURATION_MS;
 
     private final Map<TeamColor, Integer> flagCaptures;
     private final Map<TeamColor, Integer> suddenDeathCycleCaptures;
@@ -64,7 +63,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<UUID, Long> playerCircleTimestamps; // when the player entered a pickup circle
     private final Map<UUID, Integer> playerNearestFlagTeam;
     private final Set<UUID> stalemateMsgShown; // told about the both-flags-held block in the current state
-    private final Map<UUID, Long> playerHeartTimestamps; // when the player last got a heart bonus
     private final Set<UUID> finalStandPenalized; // carriers currently docked the Final Stand health penalty
 
       private final SuddenDeathManager suddenDeathManager;
@@ -82,7 +80,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.CAPTURE_BONUS = cfg.getCTFCaptureBonusCoins();
         this.CAPTURE_TIMER_MS = cfg.getCTFCaptureBonusTimerMs();
         this.FLAG_PICKUP_DURATION_MS = cfg.getCTFPlateActivationTimeMs();
-        this.HEART_BONUS_DURATION_MS = cfg.getCTFHeartBonusDurationMs();
 
         this.flagCaptures = new EnumMap<>(TeamColor.class);
         this.suddenDeathCycleCaptures = new EnumMap<>(TeamColor.class);
@@ -94,7 +91,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.playerCircleTimestamps = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
         this.stalemateMsgShown = new HashSet<>();
-        this.playerHeartTimestamps = new HashMap<>();
         this.finalStandPenalized = new HashSet<>();
          this.suddenDeathManager = new SuddenDeathManager(session, this);
          this.finalStandManager = new FinalStandManager(session, this);
@@ -139,7 +135,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         playerCircleTimestamps.clear();
         playerNearestFlagTeam.clear();
         stalemateMsgShown.clear();
-        playerHeartTimestamps.clear();
 
          startCarrierGlowEffect();
          startBannerRotationTask();
@@ -169,7 +164,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         playerCircleTimestamps.clear();
         playerNearestFlagTeam.clear();
-        playerHeartTimestamps.clear();
         finalStandPenalized.clear();
 
          // Recreated in the next combat phase.
@@ -269,7 +263,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
          flagCaptures.clear();
          playerCircleTimestamps.clear();
          playerNearestFlagTeam.clear();
-         playerHeartTimestamps.clear();
          finalStandPenalized.clear();
      }
 
@@ -324,7 +317,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
          Messages.debug("[CTF] Applied silenced ability to flag carrier: " + player.getName());
          SchedulerUtils.runTaskLater(() -> updateSilencedItemDisplay(player), 1);
 
-         CashClashPlayer.applyEffect(player, PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION, 0, false, false);
+         ConfigManager carrierCfg = CashClashPlugin.getInstance().getConfigManager();
+         CashClashPlayer.applyEffect(player, PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION,
+                 carrierCfg.getCTFCarrierSlownessAmplifier(), false, false);
+         CashClashPlayer.applyEffect(player, PotionEffectType.WEAKNESS, PotionEffect.INFINITE_DURATION,
+                 carrierCfg.getCTFCarrierWeaknessAmplifier(), false, false);
 
          if (finalStandManager.isActive()) {
              applyFinalStandPenalty(playerUuid);
@@ -333,7 +330,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
          moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
 
          if (pickedUpFromBase) {
-             TimerDisplayUtils.startBonusTimer(player, updatedFlag);
+             if (suddenDeathManager.isInSuddenDeath()) {
+                 TimerDisplayUtils.startHeartBonusTimer(player, updatedFlag);
+             } else {
+                 TimerDisplayUtils.startBonusTimer(player, updatedFlag);
+             }
          } else {
              TimerDisplayUtils.stopBonusTimer(player);
          }
@@ -504,9 +505,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return loc.clone().subtract(loc.getDirection().setY(0).normalize().multiply(1.5));
     }
 
-    /** Removes the flag-carrier slowness/glowing and, if applied, the Final Stand health penalty. */
+    /** Removes the flag-carrier slowness/weakness/glowing and, if applied, the Final Stand health penalty. */
     private void clearCarrierPenalties(Player player) {
         CashClashPlayer.removeEffect(player, PotionEffectType.SLOWNESS);
+        CashClashPlayer.removeEffect(player, PotionEffectType.WEAKNESS);
         CashClashPlayer.removeEffect(player, PotionEffectType.GLOWING);
 
         removeFinalStandPenalty(player.getUniqueId());
@@ -879,6 +881,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     long elapsedMs = now - prevTime;
 
                     if (elapsedMs >= FLAG_PICKUP_DURATION_MS) {
+                        TimerDisplayUtils.stopCountdownTimer(player);
                         flagPickup(player, nearestTeam);
                         playerCircleTimestamps.remove(playerUuid);
                         playerNearestFlagTeam.remove(playerUuid);
@@ -911,9 +914,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      * Apply extra heart to a player in CTF (for final stand)
      */
      private void applyExtraHeartCTF(Player player) {
-         suddenDeathManager.applyExtraHeart(player, HEART_BONUS_DURATION_MS);
-         TimerDisplayUtils.recordHeartBonus(player.getUniqueId(), playerHeartTimestamps);
-         TimerDisplayUtils.startHeartTimer(player, playerHeartTimestamps);
+         suddenDeathManager.applyExtraHeart(player);
      }
 
     /**

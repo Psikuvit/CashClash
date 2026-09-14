@@ -138,13 +138,12 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             case "teamRed_captures" -> String.valueOf(session.getRoundWins(1));
             case "teamBlue_captures" -> String.valueOf(session.getRoundWins(2));
 
-            // Sudden death heart timer - placeholder for use in CTF
+            // Sudden death extra heart is permanent (see SuddenDeathManager) - just an indicator now.
             case "player_heart_timer" -> {
                 var gamemode = session.getGamemode();
                 var manager = gamemode == null ? null : gamemode.getSuddenDeathManager();
-                long remaining = manager == null ? -1 : manager.getExtraHeartRemainingMs(player.getUniqueId());
-                // Only show timer when player actually has an active extra heart
-                yield remaining > 0 ? "Heart Timer: " + FormatUtils.formatMillis(remaining) : "";
+                boolean hasHeart = manager != null && manager.hasExtraHeart(player.getUniqueId());
+                yield hasHeart ? "Heart Timer: Permanent" : "";
             }
             case "sudden_death_timer" -> {
                 var gamemode = session.getGamemode();

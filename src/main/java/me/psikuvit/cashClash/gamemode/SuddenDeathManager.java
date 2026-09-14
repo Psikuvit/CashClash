@@ -13,9 +13,9 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -34,13 +34,12 @@ public class SuddenDeathManager {
     private final Gamemode gamemode;
     private final long repeatCycleDurationMs;
     private boolean cycleActive;
-    private final Map<UUID, Long> extraHeartExpiry; // Player UUID -> expiry time in ms
+    private final Set<UUID> extraHeartHolders; // players currently holding a sudden-death extra heart
     private boolean inSuddenDeath;
     private int cycleNumber;
     private long cycleDurationMs;
     private long cycleEndsAtMs;
     private BukkitTask cycleTask;
-    private final BukkitTask heartExpiryTask;
     public SuddenDeathManager(GameSession session, Gamemode gamemode) {
         this(session, gamemode,
                 CashClashPlugin.getInstance().getConfigManager().getSuddenDeathInitialCycleSeconds() * 1000L,
@@ -58,8 +57,7 @@ public class SuddenDeathManager {
         this.cycleNumber = 0;
         this.cycleDurationMs = 0L;
         this.cycleEndsAtMs = 0L;
-        this.extraHeartExpiry = new HashMap<>();
-        this.heartExpiryTask = SchedulerUtils.runTaskTimer(this::removeExpiredHearts, 20L, 20L);
+        this.extraHeartHolders = new HashSet<>();
         this.cycleTask = null;
     }
 
@@ -135,40 +133,20 @@ public class SuddenDeathManager {
     }
 
     /**
-     * Apply extra heart with custom duration
+     * Grant a permanent sudden-death extra heart - lasts for the rest of the match (cleared only
+     * on round reset / game end), not a timed bonus.
      */
-    public void applyExtraHeart(Player player, long durationMs) {
+    public void applyExtraHeart(Player player) {
         UUID uuid = player.getUniqueId();
-        long expiryTime = System.currentTimeMillis() + durationMs;
-        extraHeartExpiry.put(uuid, expiryTime);
-        CashClashPlayer.applyEffect(player, PotionEffectType.GLOWING, (int) (durationMs / 50), 0, false, false);
+        extraHeartHolders.add(uuid);
 
-        Messages.debug("[SuddenDeathManager] Applied extra heart to: " + player.getName() + " for " + durationMs + "ms");
+        Messages.debug("[SuddenDeathManager] Granted permanent extra heart to: " + player.getName());
 
         var ccp = session.getCashClashPlayer(uuid);
         if (ccp != null) {
             ccp.addHealthModifier(2.0);
             Messages.debug("[SuddenDeathManager] Added +2 health to " + player.getName() + " via health modifier system");
         }
-    }
-
-    /**
-     * Check if player has an active extra heart and remove it if expired
-     *
-     * @return true if player has an active extra heart
-     */
-    public boolean updateAndCheckExtraHeart(UUID playerUuid) {
-        if (!extraHeartExpiry.containsKey(playerUuid)) {
-            return false;
-        }
-
-        long expiryTime = extraHeartExpiry.get(playerUuid);
-        if (System.currentTimeMillis() >= expiryTime) {
-            removeExtraHeart(playerUuid);
-            return false;
-        }
-
-        return true;
     }
 
     public boolean isSuddenDeathCycleActive() {
@@ -188,7 +166,7 @@ public class SuddenDeathManager {
                 Messages.debug("[SuddenDeathManager] Removed +2 health from " + p.getName() + " via health modifier system");
             }
         }
-        extraHeartExpiry.remove(playerUuid);
+        extraHeartHolders.remove(playerUuid);
     }
 
     /**
@@ -197,20 +175,13 @@ public class SuddenDeathManager {
     public void onPlayerSpawn(Player player) {
         UUID playerUuid = player.getUniqueId();
 
-        if (inSuddenDeath && extraHeartExpiry.containsKey(playerUuid)) {
-            long expiryTime = extraHeartExpiry.get(playerUuid);
-            long remainingMs = expiryTime - System.currentTimeMillis();
-
-            if (remainingMs > 0) {
-                // Reapply only current health state; do not stack another temporary modifier on each respawn
-                var ccp = session.getCashClashPlayer(playerUuid);
-                if (ccp != null) {
-                    ccp.applyHealth();
-                }
-                Messages.debug("[SuddenDeathManager] Reapplied extra heart to respawned player: " + player.getName());
-            } else {
-                removeExtraHeart(playerUuid);
+        if (inSuddenDeath && extraHeartHolders.contains(playerUuid)) {
+            // Reapply only current health state; do not stack another modifier on each respawn
+            var ccp = session.getCashClashPlayer(playerUuid);
+            if (ccp != null) {
+                ccp.applyHealth();
             }
+            Messages.debug("[SuddenDeathManager] Reapplied extra heart to respawned player: " + player.getName());
         }
     }
 
@@ -252,11 +223,11 @@ public class SuddenDeathManager {
         cycleTask = null;
 
         // Clear all extra hearts - create a list to avoid ConcurrentModificationException
-        List<UUID> playersWithHearts = new ArrayList<>(extraHeartExpiry.keySet());
+        List<UUID> playersWithHearts = new ArrayList<>(extraHeartHolders);
         for (UUID uuid : playersWithHearts) {
             removeExtraHeart(uuid);
         }
-        extraHeartExpiry.clear();
+        extraHeartHolders.clear();
 
         Messages.debug("[SuddenDeathManager] Reset for new round");
     }
@@ -265,16 +236,15 @@ public class SuddenDeathManager {
      * Cleanup when game ends
      */
     public void cleanup() {
-        cancelTask(heartExpiryTask);
         cancelTask(cycleTask);
         cycleActive = false;
 
         // Remove extra heart effects from all players - create a list to avoid ConcurrentModificationException
-        List<UUID> playersWithHearts = new ArrayList<>(extraHeartExpiry.keySet());
+        List<UUID> playersWithHearts = new ArrayList<>(extraHeartHolders);
         for (UUID uuid : playersWithHearts) {
             removeExtraHeart(uuid);
         }
-        extraHeartExpiry.clear();
+        extraHeartHolders.clear();
 
         Messages.debug("[SuddenDeathManager] Cleaned up");
     }
@@ -295,36 +265,11 @@ public class SuddenDeathManager {
         }
     }
 
-    private void removeExpiredHearts() {
-        long now = System.currentTimeMillis();
-        List<UUID> expired = extraHeartExpiry.entrySet().stream()
-                .filter(entry -> now >= entry.getValue())
-                .map(Map.Entry::getKey)
-                .toList();
-
-        for (UUID uuid : expired) {
-            removeExtraHeart(uuid);
-        }
-    }
-
     /**
-     * Get remaining time for a player's extra heart in milliseconds
-     */
-    public long getExtraHeartRemainingMs(UUID playerUuid) {
-        if (!extraHeartExpiry.containsKey(playerUuid)) {
-            return -1;
-        }
-
-        long expiryTime = extraHeartExpiry.get(playerUuid);
-        long remaining = expiryTime - System.currentTimeMillis();
-        return Math.max(remaining, 0);
-    }
-
-    /**
-     * Check if player has an extra heart
+     * Check if player has a (permanent) extra heart
      */
     public boolean hasExtraHeart(UUID playerUuid) {
-        return extraHeartExpiry.containsKey(playerUuid);
+        return extraHeartHolders.contains(playerUuid);
     }
 
     public void restartCycle() {

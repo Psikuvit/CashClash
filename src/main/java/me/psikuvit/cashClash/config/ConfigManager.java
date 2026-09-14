@@ -231,6 +231,10 @@ public class ConfigManager {
         return config.getDouble("combat.strength-nerf-multiplier", 0.5);
     }
 
+    public double getWeaknessNerfMultiplier() {
+        return config.getDouble("combat.weakness-nerf-multiplier", 0.5);
+    }
+
     public double getPowerNerfMultiplier() {
         return config.getDouble("combat.power-nerf-multiplier", 0.2);
     }
@@ -286,16 +290,20 @@ public class ConfigManager {
         return config.getDouble("gamemodes.capture-the-flag.final-stand-carrier-health-penalty", 4.0);
     }
 
-    public double getCTFCarrierDamageReductionPercent() {
-        return config.getDouble("gamemodes.capture-the-flag.carrier-damage-reduction-percent", 50.0);
+    public double getCTFCarrierMinimumMeleeDamage() {
+        return config.getDouble("gamemodes.capture-the-flag.carrier-minimum-melee-damage", 1.0);
+    }
+
+    public int getCTFCarrierSlownessAmplifier() {
+        return config.getInt("gamemodes.capture-the-flag.carrier-slowness-amplifier", 0);
+    }
+
+    public int getCTFCarrierWeaknessAmplifier() {
+        return config.getInt("gamemodes.capture-the-flag.carrier-weakness-amplifier", 0);
     }
 
     public long getCTFCaptureBonusTimerMs() {
         return config.getLong("gamemodes.capture-the-flag.capture-bonus-timer-ms", 45000);
-    }
-
-    public long getCTFHeartBonusDurationMs() {
-        return config.getLong("gamemodes.capture-the-flag.heart-bonus-duration-ms", 45000);
     }
 
     public double getCTFPickupCircleRadius() {
@@ -359,10 +367,6 @@ public class ConfigManager {
         return config.getLong("gamemodes.kill-confirm.money-bonus", 15000);
     }
 
-    public long getKCHeartBonusDurationMs() {
-        return config.getLong("gamemodes.kill-confirm.heart-bonus-duration-ms", 45000);
-    }
-
     public double getKCBeamHeight() {
         return config.getDouble("gamemodes.kill-confirm.beam-height", 6.0);
     }
@@ -402,10 +406,6 @@ public class ConfigManager {
 
     public long getPTPKillBonusAmount() {
         return config.getLong("gamemodes.protect-the-president.kill-bonus-amount", 15000);
-    }
-
-    public long getPTPHeartDurationMs() {
-        return config.getLong("gamemodes.protect-the-president.heart-duration-ms", 45000);
     }
 
     public int getPTPCapturesToWin() {

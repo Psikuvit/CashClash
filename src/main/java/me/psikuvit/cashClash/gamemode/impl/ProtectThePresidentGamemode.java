@@ -41,7 +41,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private final int SELECTION_TIME;
     private final int KILL_BONUS_THRESHOLD;
     private final long KILL_BONUS_AMOUNT;
-    private final long HEART_DURATION_MS;
     private final int WIN_CONDITION;
 
     private final Map<TeamColor, President> presidents;
@@ -69,7 +68,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.SELECTION_TIME = cfg.getPTPSelectionTimeSeconds();
         this.KILL_BONUS_THRESHOLD = cfg.getPTPKillBonusThreshold();
         this.KILL_BONUS_AMOUNT = cfg.getPTPKillBonusAmount();
-        this.HEART_DURATION_MS = cfg.getPTPHeartDurationMs();
         this.WIN_CONDITION = cfg.getPTPCapturesToWin();
 
         this.presidents = new EnumMap<>(TeamColor.class);
@@ -599,7 +597,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 for (UUID uuid : teamObj.getPlayers()) {
                     Player p = Bukkit.getPlayer(uuid);
                     if (p != null && p.isOnline()) {
-                        suddenDeathManager.applyExtraHeart(p, HEART_DURATION_MS);
+                        suddenDeathManager.applyExtraHeart(p);
                         Messages.send(p, "gamemode-ptp.kill-bonus-heart");
                         Messages.debug("[PTP] Applied extra heart bonus to: " + p.getName());
                     }

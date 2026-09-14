@@ -879,15 +879,17 @@ public class DamageListener implements Listener {
      */
     private void applyCombatModifiers(EntityDamageByEntityEvent event, Player attacker, ItemStack weapon) {
         applyStrengthNerf(event, attacker);
+        applyWeaknessNerf(event, attacker);
         applyPowerNerf(event, attacker, weapon);
         applyInvestorMeleeNerf(event, attacker);
         applyFlagCarrierMeleeNerf(event, attacker);
     }
 
     /**
-     * CTF flag carrier melee penalty, as a percentage rather than a flat potion effect - a flat
-     * reduction (e.g. Weakness) floors any low-base-damage item to 0, leaving only swords/axes/
-     * tridents able to land a hit at all. A percentage keeps every item usable, just weaker.
+     * The flag carrier's Weakness effect is a flat -4 damage subtraction, which floors any
+     * low-base-damage item to 0 - only swords/axes/tridents have enough headroom to survive it.
+     * This guarantees every item still lands something, without touching Weakness itself (it
+     * stays as the single, visible reason the carrier hits softer).
      */
     private void applyFlagCarrierMeleeNerf(EntityDamageByEntityEvent event, Player attacker) {
         if (!(event.getDamager() instanceof Player)) return;
@@ -896,8 +898,10 @@ public class DamageListener implements Listener {
         if (session == null || !(session.getGamemode() instanceof CaptureTheFlagGamemode ctf)) return;
         if (!ctf.isSilenced(attacker.getUniqueId())) return;
 
-        double reduction = configManager.getCTFCarrierDamageReductionPercent() / 100.0;
-        event.setDamage(event.getDamage() * (1.0 - reduction));
+        double minimum = configManager.getCTFCarrierMinimumMeleeDamage();
+        if (event.getDamage() < minimum) {
+            event.setDamage(minimum);
+        }
     }
 
     /**
@@ -937,6 +941,31 @@ public class DamageListener implements Listener {
         event.setDamage(newDamage);
         Messages.debug(attacker, "STRENGTH_NERF: Reduced damage from " + currentDamage + " to " + newDamage +
                       " (strength level " + (strength.getAmplifier() + 1) + ")");
+    }
+
+    /**
+     * Apply weakness potion nerf, mirroring {@link #applyStrengthNerf} - restores part of the
+     * damage Weakness already subtracted, scaled by the same kind of multiplier.
+     */
+    private void applyWeaknessNerf(EntityDamageByEntityEvent event, Player attacker) {
+        if (!CashClashPlayer.hasEffect(attacker, PotionEffectType.WEAKNESS)) {
+            return;
+        }
+
+        PotionEffect weakness = CashClashPlayer.getEffect(attacker, PotionEffectType.WEAKNESS);
+        if (weakness == null || weakness.getAmplifier() < 0) {
+            return;
+        }
+
+        double currentDamage = event.getDamage();
+        double weaknessPenalty = (weakness.getAmplifier() + 1) * 4.0;
+        double nerfedWeaknessPenalty = weaknessPenalty * configManager.getWeaknessNerfMultiplier();
+        double damageRestored = weaknessPenalty - nerfedWeaknessPenalty;
+        double newDamage = currentDamage + damageRestored;
+
+        event.setDamage(newDamage);
+        Messages.debug(attacker, "WEAKNESS_NERF: Restored damage from " + currentDamage + " to " + newDamage +
+                      " (weakness level " + (weakness.getAmplifier() + 1) + ")");
     }
 
     /**
