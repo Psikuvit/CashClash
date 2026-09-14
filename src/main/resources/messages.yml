@@ -817,6 +817,7 @@ messages:
   # LISTENER MESSAGES
   # ============================================
   listener:
+    you-died-title: "<red><bold>YOU DIED!</bold></red>"
     out-of-lives: "<red>You are out of lives for this round!</red>"
     respawn-delay: "<yellow>You will respawn in {seconds} seconds...</yellow>"
     round-ended-no-respawn: "<red>The round ended. You cannot respawn.</red>"

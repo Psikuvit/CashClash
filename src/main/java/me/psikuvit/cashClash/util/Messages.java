@@ -9,12 +9,14 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -169,6 +171,24 @@ public final class Messages {
         if (player != null && player.isOnline()) {
             player.sendMessage(parse(config.getMessage(key, args)));
         }
+    }
+
+    /**
+     * Show a title/subtitle to a player using the default title timing
+     * ({@link me.psikuvit.cashClash.config.ConfigManager#getDefaultTitleFadeInMs()} etc.),
+     * resolved from messages.yml keys. Pass a null/blank subtitleKey for title-only.
+     */
+    public static void sendTitle(@Nullable Player player, @Nullable String titleKey, @Nullable String subtitleKey) {
+        if (player == null || !player.isOnline()) return;
+
+        var cfg = CashClashPlugin.getInstance().getConfigManager();
+        Title.Times times = Title.Times.times(
+                Duration.ofMillis(cfg.getDefaultTitleFadeInMs()),
+                Duration.ofMillis(cfg.getDefaultTitleStayMs()),
+                Duration.ofMillis(cfg.getDefaultTitleFadeOutMs()));
+
+        Component subtitle = subtitleKey == null ? Component.empty() : parse(config.getRaw(subtitleKey));
+        player.showTitle(Title.title(parse(config.getRaw(titleKey)), subtitle, times));
     }
 
     /**

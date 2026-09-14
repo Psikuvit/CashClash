@@ -144,6 +144,10 @@ public class GameListener implements Listener {
         CashClashPlayer victim = session.getCashClashPlayer(player.getUniqueId());
         if (victim == null) return;
 
+        // doImmediateRespawn skips vanilla's own death screen/title entirely - this is a plain
+        // title overlay, unrelated to that screen, so it can't reintroduce the stuck-screen bug.
+        Messages.sendTitle(player, "listener.you-died-title", null);
+
         Location deathLocation = player.getLocation().clone();
 
         // Profit Vortex: a death inside a vortex credits the killer's team even though the
