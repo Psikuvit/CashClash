@@ -229,10 +229,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
             Messages.debug("[PTP] President died! Team " + presidentTeam + " - Deaths: " + deaths + " | Killer team: " + killerTeam);
 
-            // Clear health modifier when president dies so they don't keep extra hearts on respawn
+            // Clear health modifier when president dies so they don't keep extra hearts on
+            // respawn - value only, not a full reset: this runs mid PlayerDeathEvent, and
+            // resetHealthModifier()'s healToFull() would set their HP back up while they're
+            // still dying, leaving the client's own death screen stuck over an "alive" player.
             var cashPlayer = session.getCashClashPlayer(victimUuid);
             if (cashPlayer != null) {
-                cashPlayer.resetHealthModifier();
+                cashPlayer.clearHealthModifierValue();
                 Messages.debug("[PTP] Cleared health modifier for deceased president: " + victim.getName());
             }
 

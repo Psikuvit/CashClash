@@ -285,6 +285,17 @@ public class CashClashPlayer {
     }
 
     /**
+     * Zeroes the health modifier value only - no {@link #applyHealth()}, no {@link #healToFull()}.
+     * Safe to call while the player is currently dying (mid {@code PlayerDeathEvent}): unlike
+     * {@link #resetHealthModifier()}, this can't revive them server-side out from under their own
+     * death screen. The actual max-health attribute and HP catch up to the cleared modifier on
+     * their own at the next respawn, which already calls both.
+     */
+    public void clearHealthModifierValue() {
+        this.healthModifier = 0.0;
+    }
+
+    /**
      * Reset a player's max health back to the vanilla default (20) and heal them to full.
      * Used outside a game session (e.g. the lobby), where no CashClashPlayer exists, so all
      * max-health resets still go through this class instead of touching the attribute directly.
