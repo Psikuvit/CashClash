@@ -102,6 +102,16 @@ public class ScoreboardManager implements Shutdownable {
     }
 
     /**
+     * Registers the below-nametag health indicator on a freshly-created board. Uses vanilla's
+     * own {@link Criteria#HEALTH} - the client keeps every visible entity's score in sync with
+     * their actual health on its own, no manual updates needed.
+     */
+    private void registerHealthIndicator(Scoreboard board) {
+        Objective health = board.registerNewObjective("health", Criteria.HEALTH, Messages.parse("<red>❤</red>"));
+        health.setDisplaySlot(DisplaySlot.BELOW_NAME);
+    }
+
+    /**
      * Create scoreboard for lobby players
      */
     private void createLobbyScoreboard(Player player) {
@@ -129,6 +139,7 @@ public class ScoreboardManager implements Shutdownable {
         removeScoreboard(player);
 
         Scoreboard board = Objects.requireNonNull(Bukkit.getScoreboardManager()).getNewScoreboard();
+        registerHealthIndicator(board);
 
         // Setup team colors
         TeamColorUtils.assignPlayersToTeams(board, session);
