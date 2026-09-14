@@ -82,6 +82,18 @@ public class BlazebiteHandler extends MythicItemHandler {
     }
 
     /**
+     * Whether the magazine is empty and the reload cooldown is active - used to refuse even
+     * starting to charge (load) the crossbow, not just firing it once loaded.
+     */
+    public boolean isReloading(UUID uuid) {
+        return cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD);
+    }
+
+    public long getReloadSecondsRemaining(UUID uuid) {
+        return cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD);
+    }
+
+    /**
      * Handle BlazeBite hit effects. An arrow that hits a player plays Glacier - freeze only, no
      * magma storm. An arrow that hits a surface/block plays Magma Storm instead - fire/explosion
      * AOE that also cleanses the freezing effect off any frozen players caught in the blast,
