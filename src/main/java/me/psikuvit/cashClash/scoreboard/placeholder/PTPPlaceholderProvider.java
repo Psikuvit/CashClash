@@ -90,7 +90,7 @@ public class PTPPlaceholderProvider implements PlaceholderProvider {
         int maxAssassinations = 2; // Adjust based on your game logic
         for (int i = 0; i < maxAssassinations; i++) {
             if (i < assassinations) {
-                sb.append("<green>●</green>");
+                sb.append("<green>☠</green>");
             } else {
                 sb.append("<gray>○</gray>");
             }

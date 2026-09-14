@@ -68,7 +68,7 @@ public class CTFPlaceholderProvider implements PlaceholderProvider {
         int maxCaptures = 2;
         for (int i = 0; i < maxCaptures; i++) {
             if (i < captures) {
-                sb.append("<green>●</green>");
+                sb.append("<green>⚑</green>");
             } else {
                 sb.append("<gray>○</gray>");
             }
