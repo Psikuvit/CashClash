@@ -97,7 +97,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
     /**
      * Alchemist Wand Blink Swap.
      * Swaps positions with the player directly under the crosshair.
-     * Target must be within 10 blocks and have line of sight.
+     * Target must be within the configured range (blink-swap.range) and have line of sight.
      */
     public void useAlchemistBlinkSwap(Player player) {
         UUID uuid = player.getUniqueId();
@@ -128,7 +128,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
         RayTraceResult result = player.getWorld().rayTraceEntities(
                 start,
                 direction,
-                10.0,
+                cfg.getAlchemistBlinkSwapRange(),
                 0.1,
                 entity -> entity instanceof Player target
                         && !target.equals(player)

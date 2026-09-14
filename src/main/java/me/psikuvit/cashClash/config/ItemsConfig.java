@@ -438,6 +438,10 @@ public class ItemsConfig {
         return config.getInt("mythic-items.alchemist-wand.blink-swap.protection-seconds", 5);
     }
 
+    public double getAlchemistBlinkSwapRange() {
+        return config.getDouble("mythic-items.alchemist-wand.blink-swap.range", 10.0);
+    }
+
     // Alchemist Wand Tidy Up
     public int getAlchemistTidyUpDuration() {
         return config.getInt("mythic-items.alchemist-wand.tidy-up.duration-seconds", 10);
