@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Messages;
@@ -50,11 +51,13 @@ public final class GuiItemFactory {
         boolean owned = ItemUtils.isItemOwned(player, item);
 
         if (owned) {
-            return ShopItemBuilder.of(item.getMaterial(), quantity)
+            ItemStack ownedItem = ShopItemBuilder.of(item.getMaterial(), quantity)
                     .name("<green>" + item.getDisplayName() + " <gray>(Owned)</gray></green>")
                     .owned()
                     .itemId(item.name())
                     .build();
+            applyDisplayTexture(ownedItem, item);
+            return ownedItem;
         }
 
         ShopItemBuilder builder = ShopItemBuilder.of(item.getMaterial(), quantity)
@@ -79,9 +82,26 @@ public final class GuiItemFactory {
             builder.configLore(loreLinesFromConfig);
         }
 
-        return builder.purchasePrompt()
+        ItemStack shopItem = builder.purchasePrompt()
                 .itemId(item.name())
                 .build();
+        applyDisplayTexture(shopItem, item);
+        return shopItem;
+    }
+
+    /**
+     * Applies the same custom texture a purchased/equipped copy of this item would get, so the
+     * shop GUI icon matches what the player actually receives instead of showing a plain vanilla
+     * material. A no-op for types with no custom texture mapping (weapons, utility items).
+     */
+    private void applyDisplayTexture(ItemStack item, Purchasable source) {
+        switch (source) {
+            case CustomArmorItem armor -> CustomModelDataMapper.applyArmorModel(item, armor);
+            case CustomItem custom -> CustomModelDataMapper.applyCustomModel(item, custom);
+            case MythicItem mythic -> CustomModelDataMapper.applyCustomModel(item, mythic);
+            case FoodItem food -> CustomModelDataMapper.applyCustomModel(item, food);
+            default -> { /* no custom texture mapping for this type */ }
+        }
     }
     
     /**
@@ -128,11 +148,13 @@ public final class GuiItemFactory {
      */
     public ItemStack createUpgradableItem(Purchasable item, boolean maxed) {
         if (maxed) {
-            return ShopItemBuilder.of(item.getMaterial())
+            ItemStack maxedItem = ShopItemBuilder.of(item.getMaterial())
                     .name("<green>" + item.getDisplayName() + " <gray>(Max)</gray></green>")
                     .maxed("<gray>Maximum tier reached!</gray>")
                     .itemId(item.name())
                     .build();
+            applyDisplayTexture(maxedItem, item);
+            return maxedItem;
         }
 
         ShopItemBuilder builder = ShopItemBuilder.of(item.getMaterial())
@@ -153,9 +175,11 @@ public final class GuiItemFactory {
             builder.finalTier();
         }
 
-        return builder.purchasePrompt()
+        ItemStack upgradableItem = builder.purchasePrompt()
                 .itemId(item.name())
                 .build();
+        applyDisplayTexture(upgradableItem, item);
+        return upgradableItem;
     }
     
     /**
@@ -167,7 +191,7 @@ public final class GuiItemFactory {
      */
     public ItemStack createLockedDiamondItem(Purchasable item, int currentRound) {
         ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
-        return ShopItemBuilder.of(item.getMaterial())
+        ItemStack lockedItem = ShopItemBuilder.of(item.getMaterial())
                 .name("<red>" + item.getDisplayName() + " <gray>(Locked)</gray></red>")
                 .price(item.getPrice())
                 .emptyLine()
@@ -177,6 +201,8 @@ public final class GuiItemFactory {
                 .lore("<gray>Current round: <yellow>" + currentRound + "</yellow></gray>")
                 .itemId(item.name())
                 .build();
+        applyDisplayTexture(lockedItem, item);
+        return lockedItem;
     }
     
     /**
@@ -291,9 +317,11 @@ public final class GuiItemFactory {
             builder.purchaseLimit(type.getMaxPurchase());
         }
 
-        return builder.purchasePrompt()
+        ItemStack item = builder.purchasePrompt()
                 .itemId(type.name())
                 .build();
+        CustomModelDataMapper.applyCustomModel(item, type);
+        return item;
     }
     
     /**
@@ -334,6 +362,7 @@ public final class GuiItemFactory {
                         .lore("<green>✓ Set owned</green>")
                         .itemId("SET_" + set.name())
                         .build();
+                CustomModelDataMapper.applyArmorModel(items[i], piece);
             } else {
                 ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
                         .name("<yellow>" + piece.getDisplayName() + "</yellow>")
@@ -352,6 +381,7 @@ public final class GuiItemFactory {
                         .priceDetail("<dark_gray>Set Total:</dark_gray> <gold>$" + String.format("%,d", totalPrice) + "</gold>")
                         .itemId("SET_" + set.name())
                         .build();
+                CustomModelDataMapper.applyArmorModel(items[i], piece);
             }
         }
 
@@ -484,7 +514,7 @@ public final class GuiItemFactory {
                     .build();
         } else {
             // Available for purchase
-            return ShopItemBuilder.of(mythic.getMaterial())
+            ItemStack item = ShopItemBuilder.of(mythic.getMaterial())
                     .hideAttributes()
                     .hideEnchants()
                     .itemId(mythic.name())
@@ -496,6 +526,8 @@ public final class GuiItemFactory {
                     .lore("<yellow>Click to purchase</yellow>")
                     .price(mythic.getPrice())
                     .build();
+            CustomModelDataMapper.applyCustomModel(item, mythic);
+            return item;
         }
     }
     
