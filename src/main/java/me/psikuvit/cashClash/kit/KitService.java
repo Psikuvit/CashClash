@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCSetter;
@@ -104,7 +105,9 @@ public class KitService {
             if (offHand.getType() != Material.AIR && offHand.getType() != Material.SHIELD) {
                 ItemUtils.returnItemToInventoryOrDrop(player, offHand);
             }
-            player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
+            ItemStack shield = new ItemStack(Material.SHIELD);
+            CustomModelDataMapper.applyParryShieldModel(shield);
+            player.getInventory().setItemInOffHand(shield);
         } else {
             if (offHand.getType() == Material.SHIELD) {
                 player.getInventory().setItemInOffHand(null);
