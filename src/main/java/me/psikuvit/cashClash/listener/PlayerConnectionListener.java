@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.manager.player.TabListManager;
+import me.psikuvit.cashClash.manager.player.WorldVisibilityManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.GameMode;
@@ -18,6 +19,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -36,11 +38,13 @@ public class PlayerConnectionListener implements Listener {
     private final RejoinManager rejoinManager;
     private final ScoreboardManager scoreboardManager;
     private final TabListManager tabListManager;
+    private final WorldVisibilityManager worldVisibilityManager;
 
     public PlayerConnectionListener(ArenaManager arenaManager, ConfigManager configManager, GameManager gameManager,
                                    LayoutManager layoutManager, LobbyManager lobbyManager, MythicItemManager mythicItemManager,
                                    PlayerDataManager playerDataManager, RejoinManager rejoinManager,
-                                   ScoreboardManager scoreboardManager, TabListManager tabListManager) {
+                                   ScoreboardManager scoreboardManager, TabListManager tabListManager,
+                                   WorldVisibilityManager worldVisibilityManager) {
         this.arenaManager = arenaManager;
         this.configManager = configManager;
         this.gameManager = gameManager;
@@ -51,11 +55,15 @@ public class PlayerConnectionListener implements Listener {
         this.rejoinManager = rejoinManager;
         this.scoreboardManager = scoreboardManager;
         this.tabListManager = tabListManager;
+        this.worldVisibilityManager = worldVisibilityManager;
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+
+        // No join broadcast at all.
+        event.joinMessage(null);
 
         // Load player data first
         playerDataManager.getOrLoadData(player.getUniqueId());
@@ -75,6 +83,7 @@ public class PlayerConnectionListener implements Listener {
             boolean rejoined = rejoinManager.processRejoin(player);
             if (rejoined) {
                 Messages.debug(player, "REJOIN", "Successfully rejoined game");
+                worldVisibilityManager.refreshVisibility(player);
                 return; // Don't set up lobby state if they rejoined a game
             } else {
                 Messages.send(player, "lobby-messages.rejoin-failed");
@@ -83,6 +92,7 @@ public class PlayerConnectionListener implements Listener {
 
         // Standard join - set up lobby state
         setupLobbyState(player);
+        worldVisibilityManager.refreshVisibility(player);
     }
 
     /**
@@ -119,8 +129,16 @@ public class PlayerConnectionListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGH)
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+        worldVisibilityManager.refreshVisibility(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+
+        // No quit broadcast at all.
+        event.quitMessage(null);
 
         // Accumulate playtime and persist player data
         playerDataManager.markLeft(player.getUniqueId(), System.currentTimeMillis());

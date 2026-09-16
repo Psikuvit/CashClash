@@ -19,7 +19,7 @@ public sealed interface ChatChannel {
 
     String getPrefix();
 
-    /** Global chat - visible to all players. */
+    /** Global chat - visible to every player in the sender's own world (see ChatListener). */
     record Global() implements ChatChannel {
         public String getDisplayName() { return "Global"; }
         public String getNameColor() { return "<white>"; }

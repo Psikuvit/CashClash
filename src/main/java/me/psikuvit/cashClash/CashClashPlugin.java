@@ -40,6 +40,7 @@ import me.psikuvit.cashClash.manager.player.LeaderboardManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.manager.player.TabListManager;
+import me.psikuvit.cashClash.manager.player.WorldVisibilityManager;
 import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.party.PartyManager;
 import me.psikuvit.cashClash.shop.ShopService;
@@ -69,6 +70,7 @@ public final class CashClashPlugin extends JavaPlugin {
     private GameManager gameManager;
     private GamemodeManager gamemodeManager;
     private TabListManager tabListManager;
+    private WorldVisibilityManager worldVisibilityManager;
     private PartyManager partyManager;
     private ItemFactory itemFactory;
     private CooldownManager cooldownManager;
@@ -109,6 +111,7 @@ public final class CashClashPlugin extends JavaPlugin {
             gameManager = new GameManager();
             gamemodeManager = new GamemodeManager();
             tabListManager = new TabListManager();
+            worldVisibilityManager = new WorldVisibilityManager(this); // Legitimate: needs the Plugin instance itself for hidePlayer/showPlayer
             partyManager = new PartyManager();
             itemFactory = new ItemFactory();
             cooldownManager = new CooldownManager();
@@ -238,6 +241,7 @@ public final class CashClashPlugin extends JavaPlugin {
     public GameManager getGameManager() { return gameManager; }
     public GamemodeManager getGamemodeManager() { return gamemodeManager; }
     public TabListManager getTabListManager() { return tabListManager; }
+    public WorldVisibilityManager getWorldVisibilityManager() { return worldVisibilityManager; }
     public PartyManager getPartyManager() { return partyManager; }
     public ItemFactory getItemFactory() { return itemFactory; }
     public CooldownManager getCooldownManager() { return cooldownManager; }
@@ -267,7 +271,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new MoveListener(gameManager, customItemManager, customArmorManager, weaponItemManager),
                 new GameListener(configManager, cooldownManager, customArmorManager, customItemManager, gameManager, itemsConfig, mythicItemManager, playerDataManager, shopManager, weaponItemManager),
                 new HungerListener(),
-                new PlayerConnectionListener(arenaManager, configManager, gameManager, layoutManager, lobbyManager, mythicItemManager, playerDataManager, rejoinManager, scoreboardManager, tabListManager),
+                new PlayerConnectionListener(arenaManager, configManager, gameManager, layoutManager, lobbyManager, mythicItemManager, playerDataManager, rejoinManager, scoreboardManager, tabListManager, worldVisibilityManager),
                 new LobbyListener(gameManager, lobbyManager, layoutManager),
                 new AfkListener(),
                 new ArenaNPCListener(),

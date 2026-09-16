@@ -25,6 +25,10 @@ public class ChatListener implements Listener {
         if (handled) {
             // Message was sent to a specific channel, cancel the default broadcast
             event.setCancelled(true);
+        } else {
+            // Global chat is scoped to the sender's own world - the lobby and each arena's
+            // copied game world are separate audiences, same as the tab list.
+            event.viewers().removeIf(viewer -> viewer instanceof Player other && !other.getWorld().equals(player.getWorld()));
         }
     }
 }
