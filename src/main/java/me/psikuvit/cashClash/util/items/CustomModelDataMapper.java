@@ -67,8 +67,8 @@ public final class CustomModelDataMapper {
 
         // assets/minecraft/items/diamond_sword.json     when: "electriceelsword"
         MYTHIC_KEYS.put(MythicItem.ELECTRIC_EEL_SWORD, "electriceelsword");
-        // assets/minecraft/items/bone.json              when: "carlsbattleaxe"
-        MYTHIC_KEYS.put(MythicItem.CARLS_BATTLEAXE,    "carlsbattleaxe");
+        // assets/minecraft/items/netherite_axe.json     when: "carls"
+        MYTHIC_KEYS.put(MythicItem.CARLS_BATTLEAXE,    "carls");
         // assets/minecraft/items/trident.json           when: "goblinspear"
         MYTHIC_KEYS.put(MythicItem.GOBLIN_SPEAR,       "goblinspear");
         // assets/minecraft/items/netherite_sword.json   when: "wardengloves"
