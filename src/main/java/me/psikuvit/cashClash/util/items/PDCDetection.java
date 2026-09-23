@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.ShopItems;
+import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.enums.InvestmentType;
@@ -84,6 +85,15 @@ public final class PDCDetection {
     public static InvestmentType getInvestment(ItemStack stack) {
         String tag = readTag(stack, Keys.ITEM_ID);
         return tag != null ? ShopItems.getInvestment(tag) : null;
+    }
+
+    /**
+     * Get utility item type from an ItemStack.
+     * @return UtilityItem or null if not a utility item
+     */
+    public static UtilityItem getUtility(ItemStack stack) {
+        String tag = readTag(stack, Keys.ITEM_ID);
+        return tag != null ? ShopItems.getUtility(tag) : null;
     }
 
     public static Byte getMaxedFlag(ItemStack stack) {

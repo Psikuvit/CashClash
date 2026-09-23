@@ -88,6 +88,12 @@ public final class GameplayItemFactory {
         }
 
         tags.apply();
+        if (purchasable instanceof WeaponItem weaponModel) {
+            CustomModelDataMapper.applyCustomModel(item, weaponModel);
+        }
+        if (purchasable instanceof UtilityItem utilityItem) {
+            CustomModelDataMapper.applyCustomModel(item, utilityItem);
+        }
         return item;
     }
 

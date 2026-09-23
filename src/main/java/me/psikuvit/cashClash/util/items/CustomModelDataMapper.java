@@ -7,6 +7,8 @@ import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.shop.items.UtilityItem;
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.enums.InvestmentType;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
@@ -25,6 +27,8 @@ public final class CustomModelDataMapper {
     private static final Map<MythicItem, String> MYTHIC_KEYS = new HashMap<>();
     private static final Map<FoodItem, String> FOOD_KEYS = new HashMap<>();
     private static final Map<InvestmentType, String> INVESTMENT_KEYS = new HashMap<>();
+    private static final Map<UtilityItem, String> UTILITY_KEYS = new HashMap<>();
+    private static final Map<WeaponItem, String> WEAPON_KEYS = new HashMap<>();
 
     // Armor uses setItemModel() pointing to assets/cc/items/<name>.json
     private static final Map<CustomArmorItem, NamespacedKey> ARMOR_MODELS = new HashMap<>();
@@ -33,7 +37,8 @@ public final class CustomModelDataMapper {
     // A handful of mythics use setItemModel() (a full item definition with charge/pull states)
     // instead of the CUSTOM_MODEL_DATA string predicate the others use.
     private static final Map<MythicItem, NamespacedKey> MYTHIC_ITEM_MODELS = new HashMap<>();
-    private static final NamespacedKey PARRY_SHIELD_MODEL = new NamespacedKey("cc", "parry_shield");
+    // Cash Blaster uses setItemModel() too (pull-frame states), same reason as Wind Bow/BloodWrench.
+    private static final Map<WeaponItem, NamespacedKey> WEAPON_ITEM_MODELS = new HashMap<>();
 
     static {
         // assets/minecraft/items/fire_charge.json      when: "dynamite"
@@ -48,31 +53,35 @@ public final class CustomModelDataMapper {
         CUSTOM_ITEM_KEYS.put(CustomItem.TABLET_OF_HACKING,   "tabletofhacking");
         // assets/minecraft/items/phantom_membrane.json  when: "invisibilitycloak"
         CUSTOM_ITEM_KEYS.put(CustomItem.INVIS_CLOAK,         "invisibilitycloak");
-        // assets/minecraft/items/nether_star.json       when: "totemofhaunting"
-        // CUSTOM_ITEM_KEYS.put(CustomItem.TOTEM_OF_HAUNTING,   "totemofhaunting");
-        // assets/minecraft/items/glow_berries.json      when: "radiatinglotus"
-        // CUSTOM_ITEM_KEYS.put(CustomItem.RADIATING_LOTUS,     "radiatinglotus");
-        // assets/minecraft/items/shears.json            when: "icefan"
-        // CUSTOM_ITEM_KEYS.put(CustomItem.ICE_FAN,             "icefan");
-        // assets/minecraft/items/potion.json            when: "overdrivepotion"
-        // CUSTOM_ITEM_KEYS.put(CustomItem.OVERDRIVE_POTION,    "overdrivepotion");
-        // assets/minecraft/items/feather.json           when: "huntersmark"
-        // CUSTOM_ITEM_KEYS.put(CustomItem.HUNTERS_MARK,        "huntersmark");
-        // assets/minecraft/items/cherry_sapling.json     when: "bloomingrose"
-        // CUSTOM_ITEM_KEYS.put(CustomItem.BLOOMING_ROSE,       "bloomingrose");
-        // assets/minecraft/items/magma_cream.json        when: "orbofgravitation"
-        // CUSTOM_ITEM_KEYS.put(CustomItem.ORB_OF_GRAVITATION,  "orbofgravitation");
+        // assets/minecraft/items/feather.json           when: "totem_of_haunting"
+        CUSTOM_ITEM_KEYS.put(CustomItem.TOTEM_OF_HAUNTING,   "totem_of_haunting");
+        // assets/minecraft/items/glowstone.json         when: "radiating_lotus"
+        CUSTOM_ITEM_KEYS.put(CustomItem.RADIATING_LOTUS,     "radiating_lotus");
+        // assets/minecraft/items/gunpowder.json         when: "ice_fan"
+        CUSTOM_ITEM_KEYS.put(CustomItem.ICE_FAN,             "ice_fan");
+        // assets/minecraft/items/gunpowder.json         when: "overdrive"
+        CUSTOM_ITEM_KEYS.put(CustomItem.OVERDRIVE_POTION,    "overdrive");
+        // assets/minecraft/items/gunpowder.json         when: "hunters_mark"
+        CUSTOM_ITEM_KEYS.put(CustomItem.HUNTERS_MARK,        "hunters_mark");
+        // assets/minecraft/items/cherry_sapling.json    when: "blooming_rose"
+        CUSTOM_ITEM_KEYS.put(CustomItem.BLOOMING_ROSE,       "blooming_rose");
+        // assets/minecraft/items/gunpowder.json         when: "orbofgravitation"
+        CUSTOM_ITEM_KEYS.put(CustomItem.ORB_OF_GRAVITATION,  "orbofgravitation");
+        // assets/minecraft/items/jukebox.json           when: "speed_box"
+        CUSTOM_ITEM_KEYS.put(CustomItem.BOOMBOX,             "speed_box");
         // assets/minecraft/items/iron_sword.json         when: "soulkatana"
-        // WEAPON_KEYS.put(WeaponItem.SOUL_KATANA,                "soulkatana");
+        WEAPON_KEYS.put(WeaponItem.SOUL_KATANA,           "soulkatana");
 
         // assets/minecraft/items/diamond_sword.json     when: "electriceelsword"
         MYTHIC_KEYS.put(MythicItem.ELECTRIC_EEL_SWORD, "electriceelsword");
-        // assets/minecraft/items/netherite_axe.json     when: "carls"
-        MYTHIC_KEYS.put(MythicItem.CARLS_BATTLEAXE,    "carls");
+        // assets/minecraft/items/netherite_axe.json     when: "carls_battleaxe"
+        MYTHIC_KEYS.put(MythicItem.CARLS_BATTLEAXE,    "carls_battleaxe");
         // assets/minecraft/items/trident.json           when: "goblinspear"
         MYTHIC_KEYS.put(MythicItem.GOBLIN_SPEAR,       "goblinspear");
-        // assets/minecraft/items/netherite_sword.json   when: "wardengloves"
-        MYTHIC_KEYS.put(MythicItem.WARDEN_GLOVES,      "wardengloves");
+        // assets/minecraft/items/netherite_sword.json   when: "warden_gloves"
+        MYTHIC_KEYS.put(MythicItem.WARDEN_GLOVES,      "warden_gloves");
+        // assets/minecraft/items/stick.json             when: "alchemist_wand"
+        MYTHIC_KEYS.put(MythicItem.ALCHEMIST_WAND,     "alchemist_wand");
 
         // assets/minecraft/items/carrot.json            when: "speedcarrot"
         FOOD_KEYS.put(FoodItem.SPEED_CARROT,       "speedcarrot");
@@ -92,6 +101,9 @@ public final class CustomModelDataMapper {
         // assets/minecraft/items/popped_chorus_fruit.json when: "enderbag"
         INVESTMENT_KEYS.put(InvestmentType.ENDER_BAG, "enderbag");
 
+        // assets/minecraft/items/feather.json           when: "mini_totem"
+        UTILITY_KEYS.put(UtilityItem.TOTEM, "mini_totem");
+
         // Armor: setItemModel() -> assets/cc/items/<name>.json. The item_model component's key
         // is the item DEFINITION id (namespace:id -> assets/<namespace>/items/<id>.json), which is
         // flat with no "item/" segment - that segment only belongs inside a model reference
@@ -109,9 +121,8 @@ public final class CustomModelDataMapper {
         ARMOR_MODELS.put(CustomArmorItem.INVESTORS_CHESTPLATE,   new NamespacedKey("cc", "investors_chestplate"));
         ARMOR_MODELS.put(CustomArmorItem.INVESTORS_HELMET,       new NamespacedKey("cc", "investors_helmet"));
         ARMOR_MODELS.put(CustomArmorItem.INVESTORS_LEGGINGS,     new NamespacedKey("cc", "investors_leggings"));
-        // Bullseye Pants is "Tax Evasion Pants" in the resource pack/lore (see CustomArmorItem's
-        // class javadoc) - the code kept the old identifier name, the pack uses the new one.
-        ARMOR_MODELS.put(CustomArmorItem.BULLSEYE_PANTS,         new NamespacedKey("cc", "taxevasion_leggings"));
+        ARMOR_MODELS.put(CustomArmorItem.BULLSEYE_PANTS,         new NamespacedKey("cc", "bullseye_leggings"));
+        ARMOR_MODELS.put(CustomArmorItem.TECTONIC_CAP,           new NamespacedKey("cc", "tectonic_helmet"));
 
         // Worn-armor skin: one equipment asset id per set, shared by every piece of that set
         // (assets/cc/equipment/<name>.json lists a texture per body-part layer, not per piece).
@@ -128,12 +139,15 @@ public final class CustomModelDataMapper {
         ARMOR_EQUIPMENT_ASSETS.put(CustomArmorItem.INVESTORS_CHESTPLATE,   new NamespacedKey("cc", "investors"));
         ARMOR_EQUIPMENT_ASSETS.put(CustomArmorItem.INVESTORS_HELMET,       new NamespacedKey("cc", "investors"));
         ARMOR_EQUIPMENT_ASSETS.put(CustomArmorItem.INVESTORS_LEGGINGS,     new NamespacedKey("cc", "investors"));
-        ARMOR_EQUIPMENT_ASSETS.put(CustomArmorItem.BULLSEYE_PANTS,         new NamespacedKey("cc", "taxevasion"));
+        ARMOR_EQUIPMENT_ASSETS.put(CustomArmorItem.BULLSEYE_PANTS,         new NamespacedKey("cc", "bullseye"));
+        ARMOR_EQUIPMENT_ASSETS.put(CustomArmorItem.TECTONIC_CAP,           new NamespacedKey("cc", "tectonic"));
 
         // Wind Bow / BloodWrench: item definitions with pull/charge state models, not a flat
         // CUSTOM_MODEL_DATA string predicate.
         MYTHIC_ITEM_MODELS.put(MythicItem.WIND_BOW,             new NamespacedKey("cc", "wind_bow"));
         MYTHIC_ITEM_MODELS.put(MythicItem.BLOODWRENCH_CROSSBOW, new NamespacedKey("cc", "bloodwrench_standby"));
+
+        WEAPON_ITEM_MODELS.put(WeaponItem.CASH_BLASTER, new NamespacedKey("cc", "cashblaster"));
     }
 
     public static String getItemKey(CustomItem item) {
@@ -151,6 +165,14 @@ public final class CustomModelDataMapper {
 
     public static String getItemKey(InvestmentType type) {
         return INVESTMENT_KEYS.get(type);
+    }
+
+    public static String getItemKey(WeaponItem item) {
+        return WEAPON_KEYS.get(item);
+    }
+
+    public static String getItemKey(UtilityItem item) {
+        return UTILITY_KEYS.get(item);
     }
 
     public static NamespacedKey getItemModel(CustomArmorItem item) {
@@ -177,6 +199,21 @@ public final class CustomModelDataMapper {
         if (key != null) applyStringModelData(item, key);
     }
 
+    public static void applyCustomModel(ItemStack item, WeaponItem weapon) {
+        String key = getItemKey(weapon);
+        if (key != null) {
+            applyStringModelData(item, key);
+            return;
+        }
+        NamespacedKey modelKey = WEAPON_ITEM_MODELS.get(weapon);
+        if (modelKey != null) applyItemModel(item, modelKey);
+    }
+
+    public static void applyCustomModel(ItemStack item, UtilityItem utility) {
+        String key = getItemKey(utility);
+        if (key != null) applyStringModelData(item, key);
+    }
+
     public static void applyCustomModel(ItemStack item, InvestmentType investment) {
         String key = getItemKey(investment);
         if (key != null) applyStringModelData(item, key);
@@ -189,10 +226,6 @@ public final class CustomModelDataMapper {
 
         NamespacedKey equipmentKey = ARMOR_EQUIPMENT_ASSETS.get(armor);
         if (equipmentKey != null) applyEquipmentAsset(item, equipmentKey);
-    }
-
-    public static void applyParryShieldModel(ItemStack item) {
-        applyItemModel(item, PARRY_SHIELD_MODEL);
     }
 
     private static void applyItemModel(ItemStack item, NamespacedKey key) {

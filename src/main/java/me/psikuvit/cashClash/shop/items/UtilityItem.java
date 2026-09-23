@@ -14,7 +14,10 @@ public enum UtilityItem implements Purchasable {
     COBWEB(Material.COBWEB, "cobweb", 1, "Short cobwebs"),
     SPECTRAL_ARROW(Material.SPECTRAL_ARROW, "spectral-arrow", 5, "Timed spectral arrows"),
     LEAVES(Material.OAK_LEAVES, "leaves", 16, "Short leaves"),
-    TOTEM(Material.TOTEM_OF_UNDYING, "totem", 1, "Mini totem"),
+    // A real TOTEM_OF_UNDYING would trigger vanilla's own resurrection; this is a FEATHER so the
+    // pack's "mini_totem" texture (an assets/minecraft/items/feather.json override) applies, and
+    // the death-save itself is replicated manually - see DamageListener#onLethalDamageMiniTotemCheck.
+    TOTEM(Material.FEATHER, "totem", 1, "Mini totem"),
     ARROWS(Material.ARROW, "arrow", 5, "Timed arrow"),
     // Sold from the Weapons tab (WeaponsCategoryGui), not Utility - category must match that so
     // the shop's "undo last purchase" (category-gated per GUI) can find and refund them there.

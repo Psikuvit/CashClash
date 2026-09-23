@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -119,7 +120,9 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         // invisible Snowball, which stays the real projectile/collision entity underneath so all
         // existing hit-detection (ProjectileHitEvent, charged-arrow hits) keeps working unchanged.
         ItemDisplay orbDisplay = orb.getWorld().spawn(orb.getLocation(), ItemDisplay.class, d -> {
-            d.setItemStack(new ItemStack(Material.MAGMA_CREAM));
+            ItemStack orbItem = new ItemStack(Material.GUNPOWDER);
+            CustomModelDataMapper.applyCustomModel(orbItem, CustomItem.ORB_OF_GRAVITATION);
+            d.setItemStack(orbItem);
             d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.GROUND);
             d.setBillboard(Display.Billboard.CENTER);
             d.setBrightness(new Display.Brightness(15, 15));

@@ -10,6 +10,8 @@ import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
+import me.psikuvit.cashClash.shop.items.UtilityItem;
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.InvestmentType;
 import org.bukkit.Bukkit;
@@ -100,6 +102,8 @@ public final class GuiItemFactory {
             case CustomItem custom -> CustomModelDataMapper.applyCustomModel(item, custom);
             case MythicItem mythic -> CustomModelDataMapper.applyCustomModel(item, mythic);
             case FoodItem food -> CustomModelDataMapper.applyCustomModel(item, food);
+            case UtilityItem utility -> CustomModelDataMapper.applyCustomModel(item, utility);
+            case WeaponItem weapon -> CustomModelDataMapper.applyCustomModel(item, weapon);
             default -> { /* no custom texture mapping for this type */ }
         }
     }

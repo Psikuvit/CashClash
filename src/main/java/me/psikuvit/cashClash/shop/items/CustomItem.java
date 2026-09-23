@@ -11,21 +11,27 @@ import org.bukkit.Material;
  */
 public enum CustomItem implements Purchasable {
     GRENADE(Material.FIRE_CHARGE, "grenade", 1, 0, "Throwable Grenade"),
-    BOUNCE_PAD(Material.SLIME_BLOCK, "bounce-pad", 1, 8, "Placeable Bounce Pad", true),
+    // BLACK_CONCRETE just for the pack texture - the placed pad is always a real SLIME_BLOCK
+    // (hardcoded in BouncePadHandler#placeBouncePad) so vanilla bounce physics are unaffected.
+    BOUNCE_PAD(Material.BLACK_CONCRETE, "bounce-pad", 1, 8, "Placeable Bounce Pad", true),
     MEDIC_POUCH(Material.RED_DYE, "medic-pouch", 1, 0, "Medic Pouch"),
     TABLET_OF_HACKING(Material.FILLED_MAP, "tablet-of-hacking", 1, 0, "Tablet of Hacking"),
     BAG_OF_POTATOES(Material.WOODEN_SWORD, "bag-of-potatoes", 1, 3, "Bag of Potatoes"),
     SMOKE_CLOUD_GRENADE(Material.GRAY_DYE, "smoke-grenade", 1, 0, "Smoke Cloud Grenade"),
-    BOOMBOX(Material.JUKEBOX, "boombox", 1, 0, "Boombox"),
+    // Renamed "Speedbox" in the pack/lore - configKey/enum identifier kept as-is.
+    BOOMBOX(Material.JUKEBOX, "boombox", 1, 0, "Speedbox"),
     INVIS_CLOAK(Material.PHANTOM_MEMBRANE, "invis-cloak", 1, 5, "Invisibility Cloak"),
     RESPAWN_ANCHOR(Material.RESPAWN_ANCHOR, "respawn-anchor", 1, 2, "Respawn Anchor"),
-    TOTEM_OF_HAUNTING(Material.NETHER_STAR, "totem-of-haunting", 1, 2, "Totem of Haunting"),
-    RADIATING_LOTUS(Material.GLOW_BERRIES, "radiating-lotus", 1, 0, "Radiating Lotus"),
-    ICE_FAN(Material.BRUSH, "ice-fan", 1, 0, "Ice Fan"),
-    OVERDRIVE_POTION(Material.POTION, "overdrive-potion", 1, 0, "Overdrive Potion"),
-    HUNTERS_MARK(Material.FEATHER, "hunters-mark", 1, 0, "Hunter's Mark"),
+    // FEATHER now, not NETHER_STAR - the pack's "totem_of_haunting" override lives on feather.json
+    // (shared with UtilityItem.TOTEM's "mini_totem", disambiguated by PDC identity, not material).
+    TOTEM_OF_HAUNTING(Material.FEATHER, "totem-of-haunting", 1, 2, "Totem of Haunting"),
+    RADIATING_LOTUS(Material.GLOWSTONE, "radiating-lotus", 1, 0, "Radiating Lotus"),
+    ICE_FAN(Material.GUNPOWDER, "ice-fan", 1, 0, "Ice Fan"),
+    OVERDRIVE_POTION(Material.GUNPOWDER, "overdrive-potion", 1, 0, "Overdrive Potion"),
+    HUNTERS_MARK(Material.GUNPOWDER, "hunters-mark", 1, 0, "Hunter's Mark"),
+    // Back to CHERRY_SAPLING - the pack's "blooming_rose" override moved to cherry_sapling.json.
     BLOOMING_ROSE(Material.CHERRY_SAPLING, "blooming-rose", 1, 0, "Blooming Rose"),
-    ORB_OF_GRAVITATION(Material.MAGMA_CREAM, "orb-of-gravitation", 1, 0, "Orb of Gravitation");
+    ORB_OF_GRAVITATION(Material.GUNPOWDER, "orb-of-gravitation", 1, 0, "Orb of Gravitation");
 
     private final Material material;
     private final String configKey;
