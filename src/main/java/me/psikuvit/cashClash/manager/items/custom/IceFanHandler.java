@@ -119,7 +119,7 @@ public class IceFanHandler extends CustomItemHandler {
         int remaining = getIceFanDurability(item);
         if (remaining <= 0) {
             stopGust(uuid);
-            breakIceFan(player, item);
+            breakIceFan(player);
             return;
         }
 
@@ -147,7 +147,7 @@ public class IceFanHandler extends CustomItemHandler {
 
         if (newRemaining <= 0) {
             stopGust(uuid);
-            breakIceFan(player, item);
+            breakIceFan(player);
         }
     }
 
@@ -249,7 +249,7 @@ public class IceFanHandler extends CustomItemHandler {
         spawnBurstShootParticles(player, origin, direction);
         SoundUtils.play(player, Sound.ENTITY_GLOW_SQUID_SQUIRT, 1.0f, 0.6f);
 
-        if (newRemaining <= 0) breakIceFan(player, item);
+        if (newRemaining <= 0) breakIceFan(player);
     }
 
     /**
@@ -334,13 +334,17 @@ public class IceFanHandler extends CustomItemHandler {
         tags.apply();
     }
 
-    private void breakIceFan(Player player, ItemStack item) {
+    private void breakIceFan(Player player) {
         Messages.send(player, "customitem.ice-fan-broken");
         SoundUtils.play(player, Sound.ITEM_SHIELD_BREAK, 1.0f, 1.0f);
 
-        if (item.equals(player.getInventory().getItemInMainHand())) {
+        // Identity check (is an Ice Fan still sitting in that hand) rather than an exact
+        // ItemStack#equals match against the (possibly stale/copied) reference passed in -
+        // getItemInMainHand()/getItemInOffHand() aren't guaranteed to return the same object
+        // setIceFanDurability just mutated.
+        if (PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.ICE_FAN) {
             player.getInventory().setItemInMainHand(null);
-        } else if (item.equals(player.getInventory().getItemInOffHand())) {
+        } else if (PDCDetection.getCustomItem(player.getInventory().getItemInOffHand()) == CustomItem.ICE_FAN) {
             player.getInventory().setItemInOffHand(null);
         }
     }
