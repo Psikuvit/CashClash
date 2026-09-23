@@ -80,7 +80,17 @@ public final class MythicCategoryGui {
         CashClashPlugin.getInstance().getMythicItemManager().registerMythicPurchase(sess, playerUuid, mythic);
 
         ItemStack mythicItem = CashClashPlugin.getInstance().getMythicItemManager().createMythicItem(mythic, player);
-        ItemUtils.replaceBestMatchingTool(player, mythicItem);
+        if (mythic == MythicItem.WARDEN_GLOVES) {
+            // Warden Gloves land in the off-hand rather than overwriting whatever sword the
+            // player already bought - replaceBestMatchingTool would otherwise happily consume it.
+            ItemStack offHand = player.getInventory().getItemInOffHand();
+            if (offHand.getType() != Material.AIR) {
+                ItemUtils.returnItemToInventoryOrDrop(player, offHand);
+            }
+            player.getInventory().setItemInOffHand(mythicItem);
+        } else {
+            ItemUtils.replaceBestMatchingTool(player, mythicItem);
+        }
 
         if (mythic == MythicItem.WIND_BOW) {
             player.getInventory().addItem(new ItemStack(Material.ARROW, 20));

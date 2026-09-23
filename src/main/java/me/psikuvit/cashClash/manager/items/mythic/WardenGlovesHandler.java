@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.TimerDisplayUtils;
+import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -331,6 +332,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
         meta.getPersistentDataContainer().set(Keys.WARDEN_GLOVES_COSMETIC, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
+        CustomModelDataMapper.applyCustomModel(item, MythicItem.WARDEN_GLOVES);
         return item;
     }
 
