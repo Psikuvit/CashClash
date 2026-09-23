@@ -10,9 +10,19 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.Trident;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Transformation;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -344,5 +354,59 @@ public class GoblinSpearHandler extends MythicItemHandler {
         if (goblinSpearCharging.containsKey(uuid)) {
             endCharge(player, false, 0, new Vector(1, 0, 0));
         }
+    }
+
+    /**
+     * A thrown trident is a vanilla projectile entity, which always renders the hardcoded
+     * trident model no matter what item model the held item has. So the real trident (still
+     * needed server-side for flight and hit detection) is hidden from every client in its world
+     * and an ItemDisplay showing the Goblin Spear model follows it instead.
+     */
+    public void attachThrownSpearDisplay(Trident trident) {
+        ItemStack spear = new ItemStack(Material.TRIDENT);
+        CustomModelDataMapper.applyCustomModel(spear, MythicItem.GOBLIN_SPEAR);
+
+        ItemDisplay display = trident.getWorld().spawn(trident.getLocation(), ItemDisplay.class, d -> {
+            d.setItemStack(spear);
+            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE); // raw model space: spear axis is +Y, tip up
+            d.setBillboard(Display.Billboard.FIXED);
+            d.setBrightness(new Display.Brightness(15, 15));
+        });
+
+        for (Player viewer : trident.getWorld().getPlayers()) {
+            viewer.hideEntity(CashClashPlugin.getInstance(), trident);
+        }
+
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!trident.isValid() || !display.isValid()) {
+                    display.remove();
+                    cancel();
+                    return;
+                }
+
+                display.teleport(trident.getLocation());
+
+                // Display entities are oriented entirely through the Transformation - the
+                // entity's own yaw/pitch (setRotation) is not part of how they're rendered, so
+                // that never actually reoriented this as the trident's flight direction changed.
+                // Rebuild the facing quaternion from the live velocity every tick instead.
+                Vector velocity = trident.getVelocity();
+                if (velocity.lengthSquared() > 1.0E-6) {
+                    Location facing = trident.getLocation().clone();
+                    facing.setDirection(velocity);
+                    Quaternionf rotation = new Quaternionf()
+                            .rotationYXZ((float) Math.toRadians(facing.getYaw()), (float) Math.toRadians(facing.getPitch()), 0f)
+                            // Model space has the spear's tip along +Y (point up) - rotate that
+                            // into the facing quaternion's forward axis so the tip leads flight.
+                            .rotateX((float) Math.toRadians(-90));
+
+                    Transformation t = display.getTransformation();
+                    display.setTransformation(new Transformation(t.getTranslation(), rotation,
+                            new Vector3f(1.0f, 1.0f, 1.0f), t.getRightRotation()));
+                }
+            }
+        }, 0L, 1L);
     }
 }

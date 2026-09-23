@@ -151,6 +151,7 @@ public class InteractListener implements Listener {
                     }
 
                     PDCSetter.of(trident).set(Keys.ITEM_ID, PersistentDataType.STRING, mythic.getConfigKey()).apply();
+                    mythicManager.getHandler(GoblinSpearHandler.class).attachThrownSpearDisplay(trident);
                 }
             }
         }

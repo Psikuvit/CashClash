@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Color;
@@ -130,16 +131,20 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
 
                     double x = Math.cos(angle) * 1.2;
                     double z = Math.sin(angle) * 1.2;
-                    Location newLoc = attacker.getLocation().add(x, 1.0 + heightOffset, z);
-
-                    // Make the axe face the player (handle towards player)
-                    float yaw = (float) Math.toDegrees(Math.atan2(-x, -z));
-                    newLoc.setYaw(yaw);
-                    newLoc.setPitch(0);
-
+                    Location newLoc = attacker.getLocation().add(x, 1.5 + heightOffset, z);
                     axeDisplay.teleport(newLoc);
-                    // Rotate the axe itself for spinning visual
-                    axeDisplay.setRotation(yaw + (ticks * 15), 90); // Vertical orientation with spin
+
+                    // Display entities are oriented entirely through the Transformation - the
+                    // entity's own yaw/pitch (setRotation) isn't part of how they're rendered, so
+                    // this never actually turned to face the player or spin. Rebuild the facing
+                    // quaternion (orbit-facing yaw + continuous spin) every tick instead.
+                    float yaw = (float) Math.toDegrees(Math.atan2(-x, -z));
+                    float spinYaw = yaw + (ticks * 15);
+                    Quaternionf rotation = new Quaternionf()
+                            .rotationYXZ((float) Math.toRadians(spinYaw), 0f, 0f)
+                            .rotateX((float) Math.toRadians(-90)); // vertical, tip up
+                    Transformation t = axeDisplay.getTransformation();
+                    axeDisplay.setTransformation(new Transformation(t.getTranslation(), rotation, t.getScale(), t.getRightRotation()));
                 }
 
                 // Deal damage every hitInterval ticks
@@ -203,11 +208,14 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
      * Spawn an ItemDisplay entity showing Carl's Battleaxe spinning around the player.
      */
     private ItemDisplay spawnSpinningAxeDisplay(Player player) {
-        Location spawnLoc = player.getLocation().add(1.2, 1.0, 0);
+        // Y offset raised from 1.0: the vertical (handle-down) 1.5x-scaled item was rendering
+        // with roughly half its height below this anchor point, sinking it into the ground.
+        Location spawnLoc = player.getLocation().add(1.2, 1.5, 0);
 
         return player.getWorld().spawn(spawnLoc, ItemDisplay.class, display -> {
             // Create the axe item
             ItemStack axe = new ItemStack(Material.NETHERITE_AXE);
+            CustomModelDataMapper.applyCustomModel(axe, MythicItem.CARLS_BATTLEAXE);
             display.setItemStack(axe);
 
             // Set the transformation for vertical orientation (handle facing player)
@@ -349,10 +357,13 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
             private void moveTo(Location nextLoc, Vector facing) {
                 carrier.teleport(nextLoc);
                 if (display.isValid()) {
-                    float yaw = (float) Math.toDegrees(Math.atan2(-facing.getX(), -facing.getZ()));
-                    nextLoc.setYaw(yaw);
                     display.teleport(nextLoc);
-                    display.setRotation(yaw, 90);
+                    float yaw = (float) Math.toDegrees(Math.atan2(-facing.getX(), -facing.getZ()));
+                    Quaternionf rotation = new Quaternionf()
+                            .rotationYXZ((float) Math.toRadians(yaw), 0f, 0f)
+                            .rotateX((float) Math.toRadians(-90)); // vertical, tip up
+                    Transformation t = display.getTransformation();
+                    display.setTransformation(new Transformation(t.getTranslation(), rotation, t.getScale(), t.getRightRotation()));
                 }
             }
 
@@ -418,7 +429,9 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
      */
     private ItemDisplay spawnThrownAxeDisplay(Location loc) {
         return loc.getWorld().spawn(loc, ItemDisplay.class, display -> {
-            display.setItemStack(new ItemStack(Material.NETHERITE_AXE));
+            ItemStack axe = new ItemStack(Material.NETHERITE_AXE);
+            CustomModelDataMapper.applyCustomModel(axe, MythicItem.CARLS_BATTLEAXE);
+            display.setItemStack(axe);
             display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
 
             Transformation transform = display.getTransformation();
