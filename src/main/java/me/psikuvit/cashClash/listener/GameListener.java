@@ -614,14 +614,23 @@ public class GameListener implements Listener {
             }
         }
 
-        // Dragon Set: sneak-start triggers Dragon Outrage at full scales, otherwise Dragon Rush
-        if (event.isSneaking() && armorManager.getHandler(DragonSetHandler.class).hasDragonSet(p)) {
+        // Dragon Set: like Bunny Shoes, sneak-start only arms it and the release fires it - so a
+        // shift-ability used mid-sneak (which locks/cancels the pending activation) wins over it.
+        DragonSetHandler dragon = armorManager.getHandler(DragonSetHandler.class);
+        if (event.isSneaking() && dragon.hasDragonSet(p)) {
+            dragon.markSneakReady(p.getUniqueId());
+            return;
+        }
+        if (!event.isSneaking() && dragon.consumeSneakReady(p.getUniqueId()) && dragon.hasDragonSet(p)) {
             if (CashClashPlayer.isPlayerDead(p)) {
                 Messages.send(p, "listener.cannot-use-items-dead");
                 return;
             }
             if (isSilenced(session, p)) {
                 Messages.send(p, "listener.cannot-use-abilities-while-silenced");
+                return;
+            }
+            if (armorManager.getHandler(DragonSetHandler.class).isBlockedByOtherAbility(p.getUniqueId())) {
                 return;
             }
             if (armorManager.getHandler(DragonSetHandler.class).getDragonScales(p) >= armorManager.getHandler(DragonSetHandler.class).getMaxDragonScales()) {

@@ -4,6 +4,8 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
+import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -42,6 +44,7 @@ public class DragonSetHandler extends ArmorSetHandler {
     /** Minimum gap between two Dragon Rush reminder playbacks for the same player. */
     private static final long RUSH_INDICATOR_INTERVAL_MS = 5_000L;
 
+    private final Set<UUID> sneakReady = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Integer> dragonScales; // Player -> charged scales (max 3)
     private final Map<UUID, Integer> dragonHitCount; // Player -> fully-charged melee hits toward next scale
     private final Map<UUID, Long> dragonRushDamageBuff; // Player -> expiry of +25% rush damage buff
@@ -339,6 +342,30 @@ public class DragonSetHandler extends ArmorSetHandler {
     }
 
     /**
+     * Whether Dragon Rush/Outrage is currently blocked by another exclusive ability - same
+     * cross-ability guards {@link BunnyShoesHandler} checks before activating.
+     */
+    /** Sneak-start marks a Dragon activation as pending; it only fires on release, like Bunny Shoes. */
+    public void markSneakReady(UUID id) {
+        sneakReady.add(id);
+    }
+
+    /** Consumes the pending sneak; false if another ability cancelled it (or it never started). */
+    public boolean consumeSneakReady(UUID id) {
+        return sneakReady.remove(id);
+    }
+
+    public void cancelPendingSneak(UUID id) {
+        sneakReady.remove(id);
+    }
+
+    public boolean isBlockedByOtherAbility(UUID id) {
+        if (manager.isMythicShiftLocked(id)) return true;
+        if (CashClashPlugin.getInstance().getMythicItemManager().getHandler(AlchemistWandHandler.class).isTaunting(id)) return true;
+        return CashClashPlugin.getInstance().getMythicItemManager().getHandler(WardenGlovesHandler.class).isRisingFuryActive(id);
+    }
+
+    /**
      * Dragon Outrage: with all scales charged, sneak to launch ~5 blocks into the air. The
      * storm releases on landing (see {@link #onDragonOutrageLanding}), which also cancels the
      * fall damage from that landing.
@@ -466,6 +493,7 @@ public class DragonSetHandler extends ArmorSetHandler {
 
     @Override
     public void cleanup() {
+        sneakReady.clear();
         dragonScales.clear();
         dragonHitCount.clear();
         dragonRushDamageBuff.clear();

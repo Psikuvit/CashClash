@@ -80,6 +80,8 @@ public class CustomArmorManager {
     public void lockMythicShift(Player player) {
         UUID id = player.getUniqueId();
         mythicShiftLock.add(id);
+        // A pending Dragon sneak-activation belongs to this same sneak - the ability just used it up.
+        getHandler(DragonSetHandler.class).cancelPendingSneak(id);
         SchedulerUtils.runTaskLater(() -> mythicShiftLock.remove(id), 10L);
     }
 
