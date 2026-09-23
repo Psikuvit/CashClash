@@ -322,11 +322,17 @@ public class InteractListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (event.useItemInHand() == Event.Result.DENY) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
 
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
+
+        // Other plugins can cancel a click before we see it - VoxelSniper claims gunpowder as its
+        // tool item, which the gunpowder-based custom items fall victim to. In a match, a shop
+        // custom item is still honoured when the event arrives pre-denied.
+        boolean customItemInGame = item != null && PDCDetection.getCustomItem(item) != null
+                && gameManager.getPlayerSession(player) != null;
+        if (event.useItemInHand() == Event.Result.DENY && !customItemInGame) return;
         Block block = event.getClickedBlock();
         Action action = event.getAction();
 
