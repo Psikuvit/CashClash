@@ -34,6 +34,7 @@ import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -378,6 +379,70 @@ public class DamageListener implements Listener {
 
         event.setCancelled(true);
         customItemManager.getHandler(TotemOfHauntingHandler.class).triggerTotemOfHaunting(victim, totem);
+    }
+
+    // ==================== MINI TOTEM (shop utility item) ====================
+
+    /**
+     * Cancels any would-be-lethal damage when the victim holds the shop's "Mini totem". It's a
+     * FEATHER (see {@link UtilityItem#TOTEM}), not a real totem of undying, so
+     * {@code EntityResurrectEvent} never fires for it - this replicates a real totem's save by
+     * hand: health drops to 1, the totem is consumed, and the same nerfed Regen/Fire
+     * Res/Absorption effects apply that a real totem's own effects used to be overridden with.
+     * Runs on the base {@code EntityDamageEvent} (not just by-entity) so fall/fire/lava/void
+     * deaths are covered too, matching what a real totem would have saved from.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onLethalDamageMiniTotemCheck(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) {
+            return;
+        }
+        if (gameManager.getPlayerSession(victim) == null) {
+            return;
+        }
+        if (victim.getHealth() - event.getFinalDamage() > 0) {
+            return;
+        }
+
+        ItemStack main = victim.getInventory().getItemInMainHand();
+        ItemStack off = victim.getInventory().getItemInOffHand();
+        ItemStack totem;
+        if (PDCDetection.getUtility(main) == UtilityItem.TOTEM) {
+            totem = main;
+        } else if (PDCDetection.getUtility(off) == UtilityItem.TOTEM) {
+            totem = off;
+        } else {
+            return;
+        }
+
+        event.setCancelled(true);
+        consumeMiniTotem(victim, totem);
+        CashClashPlayer.setHealth(victim, 1.0);
+
+        SoundUtils.play(victim, Sound.ITEM_TOTEM_USE, 1.0f, 1.0f);
+        ParticleUtils.totem(victim.getLocation().add(0, 1, 0), 30, 0.5);
+
+        SchedulerUtils.runTaskLater(() -> {
+            if (!victim.isOnline()) return;
+            CashClashPlayer.applyEffect(victim, PotionEffectType.REGENERATION, 10 * 20, 1); // 10s Regen II
+            CashClashPlayer.applyEffect(victim, PotionEffectType.FIRE_RESISTANCE, 10 * 20, 0); // 10s Fire Res
+            CashClashPlayer.applyEffect(victim, PotionEffectType.ABSORPTION, 10 * 20, 0); // 10s Absorption I (2 hearts)
+        }, 1L);
+    }
+
+    /**
+     * Removes one Mini totem from whichever hand held it (main or off hand).
+     */
+    private void consumeMiniTotem(Player player, ItemStack totem) {
+        if (totem.getAmount() > 1) {
+            totem.setAmount(totem.getAmount() - 1);
+            return;
+        }
+        if (player.getInventory().getItemInMainHand().equals(totem)) {
+            player.getInventory().setItemInMainHand(null);
+        } else {
+            player.getInventory().setItemInOffHand(null);
+        }
     }
 
     /**

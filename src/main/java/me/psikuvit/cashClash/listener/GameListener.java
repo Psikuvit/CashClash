@@ -66,7 +66,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -1091,35 +1090,6 @@ public class GameListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerItemDamage(PlayerItemDamageEvent event) {
         event.setCancelled(true);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onTotemUse(EntityResurrectEvent event) {
-        if (!(event.getEntity() instanceof Player p)) return;
-
-        GameSession session = gameManager.getPlayerSession(p);
-        if (session == null) return;
-
-        // Totem is being used (event is called before effects are applied, but we can't easily cancel just the effects)
-        // Spigot applies effects AFTER the event. So we schedule a task to override them.
-        Bukkit.getScheduler().runTaskLater(CashClashPlugin.getInstance(), () -> {
-            if (!p.isOnline()) return;
-            
-            // Remove default totem effects
-            CashClashPlayer.removeEffect(p, PotionEffectType.REGENERATION);
-            CashClashPlayer.removeEffect(p, PotionEffectType.FIRE_RESISTANCE);
-            CashClashPlayer.removeEffect(p, PotionEffectType.ABSORPTION);
-
-            // Apply nerfed effects (Feature requirement: 10s each)
-            CashClashPlayer.applyEffect(p, PotionEffectType.REGENERATION, 10 * 20, 1); // 10s Regen II (standard is II, nerfed to 10s)
-            CashClashPlayer.applyEffect(p, PotionEffectType.FIRE_RESISTANCE, 10 * 20, 0); // 10s Fire Res
-            
-            // Absorption hearts: 2 hearts = 4 HP. 
-            // Absorption I gives 2 hearts (4 HP).
-            CashClashPlayer.applyEffect(p, PotionEffectType.ABSORPTION, 10 * 20, 0); // 10s Absorption I (2 hearts)
-            
-            Messages.debug("Totem effects nerfed for " + p.getName() + ": 10s Regen, 10s Fire Res, 2 Absorption hearts");
-        }, 1L);
     }
 
     /**

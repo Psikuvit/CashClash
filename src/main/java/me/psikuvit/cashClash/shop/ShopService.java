@@ -86,15 +86,18 @@ public class ShopService {
     }
 
     /**
-     * Regular totems (Material.TOTEM_OF_UNDYING) and Totems of Haunting (Material.NETHER_STAR)
-     * share one combined cap of 2 owned at once - owning one counts against the other. Public
-     * because CustomItem purchases (Totem of Haunting) go through
-     * AbstractShopCategoryGui#handleCustomItemPurchase, a separate path from processPurchase()
-     * above that needs to check this itself rather than going through it.
+     * Mini totems (UtilityItem.TOTEM) and Totems of Haunting (CustomItem.TOTEM_OF_HAUNTING)
+     * share one combined cap of 2 owned at once - owning one counts against the other. Counted
+     * by PDC identity, not material: UtilityItem.TOTEM is a plain FEATHER (so the pack's
+     * "mini_totem" texture applies), the same base material CustomItem.HUNTERS_MARK uses, so a
+     * raw material count would double-count against an unrelated item. Public because CustomItem
+     * purchases (Totem of Haunting) go through AbstractShopCategoryGui#handleCustomItemPurchase,
+     * a separate path from processPurchase() above that needs to check this itself rather than
+     * going through it.
      */
     public boolean isTotemCapReached(Player player) {
-        int combined = countMaterial(player, UtilityItem.TOTEM.getMaterial())
-                + countMaterial(player, CustomItem.TOTEM_OF_HAUNTING.getMaterial());
+        int combined = countUtilityItem(player, UtilityItem.TOTEM)
+                + countCustomItem(player, CustomItem.TOTEM_OF_HAUNTING);
         if (combined < 2) return false;
 
         Messages.send(player, "listener.max-totems-reached");
@@ -143,6 +146,26 @@ public class ShopService {
         int count = 0;
         for (ItemStack is : player.getInventory().getContents()) {
             if (is != null && is.getType() == material) {
+                count += is.getAmount();
+            }
+        }
+        return count;
+    }
+
+    private int countUtilityItem(Player player, UtilityItem item) {
+        int count = 0;
+        for (ItemStack is : player.getInventory().getContents()) {
+            if (is != null && PDCDetection.getUtility(is) == item) {
+                count += is.getAmount();
+            }
+        }
+        return count;
+    }
+
+    private int countCustomItem(Player player, CustomItem item) {
+        int count = 0;
+        for (ItemStack is : player.getInventory().getContents()) {
+            if (is != null && PDCDetection.getCustomItem(is) == item) {
                 count += is.getAmount();
             }
         }
