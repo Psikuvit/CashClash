@@ -26,6 +26,7 @@ import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.RewardManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
+import me.psikuvit.cashClash.manager.player.TabListManager;
 import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.sequence.SequenceManager;
@@ -45,8 +46,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -91,6 +94,7 @@ public class GameSession {
     private final ArenaManager arenaManager;
     private final ShopManager shopManager;
     private final ScoreboardManager scoreboardManager;
+    private final TabListManager tabListManager;
     private final ConfigManager configManager;
     private final PlayerDataManager playerDataManager;
     private final MythicItemManager mythicItemManager;
@@ -115,6 +119,7 @@ public class GameSession {
         this.arenaManager = plugin.getArenaManager();
         this.shopManager = plugin.getShopManager();
         this.scoreboardManager = plugin.getScoreboardManager();
+        this.tabListManager = plugin.getTabListManager();
         this.configManager = plugin.getConfigManager();
         this.playerDataManager = plugin.getPlayerDataManager();
         this.mythicItemManager = plugin.getMythicItemManager();
@@ -712,7 +717,9 @@ public class GameSession {
      * Clean up all players and teams
      */
     private void cleanupPlayers() {
-        for (UUID u : players.keySet()) {
+        List<UUID> uuids = new ArrayList<>(players.keySet());
+
+        for (UUID u : uuids) {
             Player p = Bukkit.getPlayer(u);
             if (p != null && p.isOnline()) {
                 clearPlayerKit(p);
@@ -722,6 +729,18 @@ public class GameSession {
 
         recordWins();
         removeAllPlayersFromTeams();
+
+        // Only now (after team/players membership is actually cleared) is a returning player's
+        // tab list / scoreboard eligible to resolve back to the lobby - resolving it any earlier
+        // would still detect this now-ending session and rebuild a game-context board instead.
+        for (UUID u : uuids) {
+            Player p = Bukkit.getPlayer(u);
+            if (p != null && p.isOnline()) {
+                gameManager.removePlayerFromSession(p);
+                scoreboardManager.setScoreboard(p);
+                tabListManager.setPlayerToLobby(p);
+            }
+        }
     }
 
     /**
