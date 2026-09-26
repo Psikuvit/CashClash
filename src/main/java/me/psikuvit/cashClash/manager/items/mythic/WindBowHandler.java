@@ -26,6 +26,14 @@ public class WindBowHandler extends MythicItemHandler {
         this.windBowShotsRemaining = new ConcurrentHashMap<>();
     }
 
+    public boolean isReloading(UUID uuid) {
+        return cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_RELOAD);
+    }
+
+    public long getReloadSecondsRemaining(UUID uuid) {
+        return cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD);
+    }
+
     /**
      * Handle Wind Bow shot.
      * 10 shots per magazine, then 30 second reload cooldown.

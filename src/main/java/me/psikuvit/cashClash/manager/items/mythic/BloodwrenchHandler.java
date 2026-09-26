@@ -92,6 +92,25 @@ public class BloodwrenchHandler extends MythicItemHandler {
     }
 
     /**
+     * Whether the currently-selected mode (rapid or supercharged) is on its reload cooldown -
+     * both cooldowns are always set together by {@link #startBothModeCooldowns}, but which one
+     * is relevant to show/block depends on which mode the player is actually in.
+     */
+    public boolean isReloading(Player player) {
+        String key = isBloodwrenchRapidMode(player)
+                ? CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD
+                : CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN;
+        return cooldownManager.isOnCooldown(player.getUniqueId(), key);
+    }
+
+    public long getReloadSecondsRemaining(Player player) {
+        String key = isBloodwrenchRapidMode(player)
+                ? CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD
+                : CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN;
+        return cooldownManager.getRemainingCooldownSeconds(player.getUniqueId(), key);
+    }
+
+    /**
      * Handle BloodWrench shot based on current mode.
      */
     public boolean handleBloodwrenchShot(Player player) {
