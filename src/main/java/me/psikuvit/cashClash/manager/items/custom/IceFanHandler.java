@@ -88,6 +88,9 @@ public class IceFanHandler extends CustomItemHandler {
         gustLastSwingTime.put(uuid, System.currentTimeMillis());
 
         ItemStack item = player.getInventory().getItemInMainHand();
+        // Once broken/removed, the main hand is air - getIceFanDurability() would otherwise fall
+        // back to max (no ITEM_USES tag on air) and spin up a gust with nothing actually held.
+        if (PDCDetection.getCustomItem(item) != CustomItem.ICE_FAN) return;
         if (getIceFanDurability(item) <= 0) {
             Messages.send(player, "customitem.ice-fan-broken");
             return;
@@ -126,6 +129,7 @@ public class IceFanHandler extends CustomItemHandler {
         int drainThisTick = Math.max(1, cfg.getIceFanGustDurabilityPerSecond() / 2);
         int newRemaining = remaining - drainThisTick;
         setIceFanDurability(item, newRemaining);
+        player.getInventory().setItemInMainHand(item);
 
         Location origin = player.getEyeLocation();
         Vector direction = origin.getDirection();
@@ -138,16 +142,16 @@ public class IceFanHandler extends CustomItemHandler {
         spawnGustParticles(player, origin, direction);
         SoundUtils.play(player, Sound.ENTITY_PHANTOM_FLAP, 0.7f, 1.6f);
 
+        if (newRemaining <= 0) {
+            stopGust(uuid);
+            breakIceFan(player);
+            return;
+        }
+
         int rounds = gustBurstCount.merge(uuid, 1, Integer::sum);
         if (rounds >= cfg.getIceFanGustBurstRounds()) {
             cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ICE_FAN_GUST, cfg.getIceFanGustBurstCooldownSeconds());
             stopGust(uuid);
-            return;
-        }
-
-        if (newRemaining <= 0) {
-            stopGust(uuid);
-            breakIceFan(player);
         }
     }
 
@@ -231,6 +235,7 @@ public class IceFanHandler extends CustomItemHandler {
 
         int newRemaining = remaining - cfg.getIceFanBurstDurabilityCost();
         setIceFanDurability(item, newRemaining);
+        player.getInventory().setItemInMainHand(item);
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ICE_FAN_BURST, 1);
 
         Location origin = player.getEyeLocation();
