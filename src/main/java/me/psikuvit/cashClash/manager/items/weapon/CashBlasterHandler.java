@@ -89,6 +89,20 @@ public class CashBlasterHandler extends WeaponItemHandler {
         return PDCDetection.getWeapon(player.getInventory().getItemInMainHand()) == WeaponItem.CASH_BLASTER;
     }
 
+    public boolean isSupercharged(Player player) {
+        return cashBlasterSupercharged.getOrDefault(player.getUniqueId(), false);
+    }
+
+    /**
+     * Whether the player has enough arrows to actually complete a supercharged shot: the arrows
+     * the vortex itself consumes on landing, plus the 1 arrow vanilla consumes just to nock and
+     * fire the bow (already gone from the inventory by the time {@link #onCashBlasterShoot}'s
+     * EntityShootBowEvent check runs, with no way to refund it once spent).
+     */
+    public boolean hasEnoughArrowsToCharge(Player player) {
+        return getProfitVortexArrowCount(player) >= cfg.getCashBlasterVortexArrowCost() + 1;
+    }
+
     /**
      * Handle a Cash Blaster shot. Normal mode: +10% arrow damage.
      * Supercharged mode: requires a fully charged shot, consumes 4 arrows and launches a
@@ -120,14 +134,15 @@ public class CashBlasterHandler extends WeaponItemHandler {
             return;
         }
 
-        if (getProfitVortexArrowCount(player) < 4) {
+        int arrowCost = cfg.getCashBlasterVortexArrowCost();
+        if (getProfitVortexArrowCount(player) < arrowCost) {
             Messages.send(player, "customitem.cash-blaster-vortex-need-arrows");
             return;
         }
 
-        SchedulerUtils.runTaskLater(() -> removeProfitVortexArrows(player, 4), 1L);
+        SchedulerUtils.runTaskLater(() -> removeProfitVortexArrows(player, arrowCost), 1L);
         boolean firedArrowWasSpectral = arrow instanceof SpectralArrow;
-        int spectralArrowsConsumed = countSpectralArrowsConsumed(player, 4) + (firedArrowWasSpectral ? 1 : 0);
+        int spectralArrowsConsumed = countSpectralArrowsConsumed(player, arrowCost) + (firedArrowWasSpectral ? 1 : 0);
         Arrow vortexArrow = player.launchProjectile(Arrow.class);
         vortexArrow.setDamage(vortexArrow.getDamage() * 1.10);
         vortexArrow.setCritical(false);

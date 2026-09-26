@@ -649,6 +649,19 @@ public class InteractListener implements Listener {
                     weaponItemManager.getHandler(CashBlasterHandler.class).onCashBlasterToggle(player);
                     return true;
                 }
+
+                // Not the toggle - about to draw the bow. Supercharged mode needs enough arrows
+                // to actually land the vortex shot (see hasEnoughArrowsToCharge); block the draw
+                // itself instead of letting the player nock an arrow that gets wasted when the
+                // shot is refused on release.
+                if (!player.isSneaking() && action.isRightClick()) {
+                    CashBlasterHandler handler = weaponItemManager.getHandler(CashBlasterHandler.class);
+                    if (handler.isSupercharged(player) && !handler.hasEnoughArrowsToCharge(player)) {
+                        event.setCancelled(true);
+                        Messages.send(player, "customitem.cash-blaster-vortex-need-arrows");
+                        return true;
+                    }
+                }
             }
             case SOUL_KATANA -> {
                 if (action.isRightClick() && player.isSneaking()) {

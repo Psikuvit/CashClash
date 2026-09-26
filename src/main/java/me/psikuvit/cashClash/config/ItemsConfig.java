@@ -626,6 +626,10 @@ public class ItemsConfig {
         return config.getInt("weapons.cash-blaster.vortex-kill-reward", 400);
     }
 
+    public int getCashBlasterVortexArrowCost() {
+        return config.getInt("weapons.cash-blaster.vortex-arrow-cost", 4);
+    }
+
     // Respawn Anchor
     public int getRespawnAnchorDuration() {
         return config.getInt("custom-items.respawn-anchor.revive-duration-seconds", 10);

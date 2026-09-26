@@ -191,6 +191,7 @@ weapons:
     vortex-radius: 3.5
     vortex-duration-ticks: 80
     vortex-kill-reward: 400
+    vortex-arrow-cost: 4
 
   # Soul Katana
   soul-katana:
