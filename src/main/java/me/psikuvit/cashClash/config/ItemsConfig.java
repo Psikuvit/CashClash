@@ -596,6 +596,42 @@ public class ItemsConfig {
         return config.getInt("custom-items.speed-carrot.followup-duration-seconds", 9);
     }
 
+    public int getGoldenChickenAmplifier() {
+        return config.getInt("custom-items.golden-chicken.amplifier", 1);
+    }
+
+    public int getGoldenChickenDurationSeconds() {
+        return config.getInt("custom-items.golden-chicken.duration-seconds", 11);
+    }
+
+    public int getCookieOfLifeAmplifier() {
+        return config.getInt("custom-items.cookie-of-life.amplifier", 0);
+    }
+
+    public int getCookieOfLifeDurationSeconds() {
+        return config.getInt("custom-items.cookie-of-life.duration-seconds", 11);
+    }
+
+    public int getSunscreenAmplifier() {
+        return config.getInt("custom-items.sunscreen.amplifier", 0);
+    }
+
+    public int getSunscreenDurationSeconds() {
+        return config.getInt("custom-items.sunscreen.duration-seconds", 11);
+    }
+
+    public int getCanOfSpinachAmplifier() {
+        return config.getInt("custom-items.can-of-spinach.amplifier", 0);
+    }
+
+    public int getCanOfSpinachDurationSeconds() {
+        return config.getInt("custom-items.can-of-spinach.duration-seconds", 11);
+    }
+
+    public int getEnchantedGoldenAppleEffectDurationSeconds() {
+        return config.getInt("custom-items.enchanted-golden-apple.effect-duration-seconds", 45);
+    }
+
     public int getBoomboxSpeedBoostDuration() {
         return config.getInt("custom-items.boombox.speed-boost-duration-seconds", 5);
     }

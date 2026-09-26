@@ -363,6 +363,31 @@ custom-items:
     followup-amplifier: 0    # Speed I
     followup-duration-seconds: 9
 
+  # Golden Chicken
+  golden-chicken:
+    amplifier: 1              # Absorption II
+    duration-seconds: 11
+
+  # Cookie of Life
+  cookie-of-life:
+    amplifier: 0              # Regeneration I
+    duration-seconds: 11
+
+  # Sunscreen
+  sunscreen:
+    amplifier: 0              # Fire Resistance I
+    duration-seconds: 11
+
+  # Can of Spinach
+  can-of-spinach:
+    amplifier: 0              # Strength I
+    duration-seconds: 11
+
+  # Enchanted Golden Apple - stretched absorption/resistance/fire-resistance duration
+  # (regeneration is deliberately left at vanilla's duration, see GameListener)
+  enchanted-golden-apple:
+    effect-duration-seconds: 45
+
   # Boombox
   boombox:
     pulse-interval-seconds: 3

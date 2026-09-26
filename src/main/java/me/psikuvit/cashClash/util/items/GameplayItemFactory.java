@@ -194,17 +194,19 @@ public final class GameplayItemFactory {
     private void applyFoodProperties(ItemStack item, FoodItem foodItem) {
         // Only apply custom properties to special consumables
         // Vanilla food items should keep their Minecraft default food properties
+        var itemsCfg = CashClashPlugin.getInstance().getItemsConfig();
         PotionEffect potionEffect;
         switch (foodItem) {
-            case SPEED_CARROT -> {
-                var itemsCfg = CashClashPlugin.getInstance().getItemsConfig();
-                potionEffect = new PotionEffect(PotionEffectType.SPEED,
-                        itemsCfg.getSpeedCarrotBurstDurationSeconds() * 20, itemsCfg.getSpeedCarrotBurstAmplifier());
-            }
-            case GOLDEN_CHICKEN -> potionEffect = new PotionEffect(PotionEffectType.ABSORPTION, 11 * 20, 1);
-            case COOKIE_OF_LIFE -> potionEffect = new PotionEffect(PotionEffectType.REGENERATION, 11 * 20, 0);
-            case SUNSCREEN -> potionEffect = new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 11 * 20, 0);
-            case CAN_OF_SPINACH -> potionEffect = new PotionEffect(PotionEffectType.STRENGTH, 11 * 20, 0);
+            case SPEED_CARROT -> potionEffect = new PotionEffect(PotionEffectType.SPEED,
+                    itemsCfg.getSpeedCarrotBurstDurationSeconds() * 20, itemsCfg.getSpeedCarrotBurstAmplifier());
+            case GOLDEN_CHICKEN -> potionEffect = new PotionEffect(PotionEffectType.ABSORPTION,
+                    itemsCfg.getGoldenChickenDurationSeconds() * 20, itemsCfg.getGoldenChickenAmplifier());
+            case COOKIE_OF_LIFE -> potionEffect = new PotionEffect(PotionEffectType.REGENERATION,
+                    itemsCfg.getCookieOfLifeDurationSeconds() * 20, itemsCfg.getCookieOfLifeAmplifier());
+            case SUNSCREEN -> potionEffect = new PotionEffect(PotionEffectType.FIRE_RESISTANCE,
+                    itemsCfg.getSunscreenDurationSeconds() * 20, itemsCfg.getSunscreenAmplifier());
+            case CAN_OF_SPINACH -> potionEffect = new PotionEffect(PotionEffectType.STRENGTH,
+                    itemsCfg.getCanOfSpinachDurationSeconds() * 20, itemsCfg.getCanOfSpinachAmplifier());
             default -> {
                 // No custom food properties needed - they have Minecraft defaults
                 return;
@@ -263,7 +265,10 @@ public final class GameplayItemFactory {
                 tags.meta().addEnchant(Enchantment.KNOCKBACK, 3, true);
             }
             case INVIS_CLOAK -> tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);
-            case ICE_FAN -> tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, CashClashPlugin.getInstance().getItemsConfig().getIceFanMaxDurability());
+            case ICE_FAN -> {
+                tags.meta().setMaxStackSize(1);
+                tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, CashClashPlugin.getInstance().getItemsConfig().getIceFanMaxDurability());
+            }
             default -> {
             }
         }
