@@ -41,6 +41,9 @@ public final class CustomModelDataMapper {
     private static final Map<MythicItem, NamespacedKey> MYTHIC_ITEM_MODELS = new HashMap<>();
     // Cash Blaster uses setItemModel() too (pull-frame states), same reason as Wind Bow/BloodWrench.
     private static final Map<WeaponItem, NamespacedKey> WEAPON_ITEM_MODELS = new HashMap<>();
+    // Placeable-style custom items with a 3D "block" item model (assets/cc/items/<name>.json ->
+    // assets/cc/models/block/<name>.json) instead of a flat CUSTOM_MODEL_DATA icon swap.
+    private static final Map<CustomItem, NamespacedKey> CUSTOM_ITEM_MODELS = new HashMap<>();
 
     static {
         // assets/minecraft/items/fire_charge.json      when: "dynamite"
@@ -65,14 +68,15 @@ public final class CustomModelDataMapper {
         CUSTOM_ITEM_KEYS.put(CustomItem.OVERDRIVE_POTION,    "overdrive");
         // assets/minecraft/items/gunpowder.json         when: "hunters_mark"
         CUSTOM_ITEM_KEYS.put(CustomItem.HUNTERS_MARK,        "hunters_mark");
-        // assets/minecraft/items/cherry_sapling.json    when: "blooming_rose"
-        CUSTOM_ITEM_KEYS.put(CustomItem.BLOOMING_ROSE,       "blooming_rose");
         // assets/minecraft/items/gunpowder.json         when: "orbofgravitation"
         CUSTOM_ITEM_KEYS.put(CustomItem.ORB_OF_GRAVITATION,  "orbofgravitation");
-        // assets/minecraft/items/jukebox.json           when: "speed_box"
-        CUSTOM_ITEM_KEYS.put(CustomItem.BOOMBOX,             "speed_box");
         // assets/minecraft/items/iron_sword.json         when: "soulkatana"
         WEAPON_KEYS.put(WeaponItem.SOUL_KATANA,           "soulkatana");
+
+        // Blooming Rose and Boombox used to key off assets/minecraft/items/cherry_sapling.json
+        // and jukebox.json respectively, but the pack now ships their real 3D block-style item
+        // models instead (see CUSTOM_ITEM_MODELS below) - those two vanilla-item override files
+        // are gone from the pack, so the old CUSTOM_MODEL_DATA string entries would no-op.
 
         // assets/minecraft/items/diamond_sword.json     when: "electriceelsword"
         MYTHIC_KEYS.put(MythicItem.ELECTRIC_EEL_SWORD, "electriceelsword");
@@ -157,12 +161,21 @@ public final class CustomModelDataMapper {
         ARMOR_EQUIPMENT_ASSETS.put(CustomArmorItem.BULLSEYE_PANTS,         new NamespacedKey("cc", "bullseye"));
         ARMOR_EQUIPMENT_ASSETS.put(CustomArmorItem.TECTONIC_CAP,           new NamespacedKey("cc", "tectonic"));
 
-        // Wind Bow / BloodWrench: item definitions with pull/charge state models, not a flat
-        // CUSTOM_MODEL_DATA string predicate.
+        // Wind Bow / BloodWrench / BlazeBite: item definitions with pull/charge state models,
+        // not a flat CUSTOM_MODEL_DATA string predicate.
         MYTHIC_ITEM_MODELS.put(MythicItem.WIND_BOW,             new NamespacedKey("cc", "wind_bow"));
         MYTHIC_ITEM_MODELS.put(MythicItem.BLOODWRENCH_CROSSBOW, new NamespacedKey("cc", "bloodwrench_standby"));
+        MYTHIC_ITEM_MODELS.put(MythicItem.BLAZEBITE_CROSSBOWS,  new NamespacedKey("cc", "blazebite_standby"));
 
         WEAPON_ITEM_MODELS.put(WeaponItem.CASH_BLASTER, new NamespacedKey("cc", "cashblaster"));
+
+        // Placeable-style custom items whose held/inventory icon is a 3D block-cube model
+        // instead of a flat 2D CUSTOM_MODEL_DATA icon swap - the physical block each of these
+        // places in the world (slime block, cherry log/leaves, jukebox) has its own separate,
+        // untouched vanilla appearance; this only changes how the item looks in hand/inventory.
+        CUSTOM_ITEM_MODELS.put(CustomItem.BOUNCE_PAD,     new NamespacedKey("cc", "bounce_pad"));
+        CUSTOM_ITEM_MODELS.put(CustomItem.BLOOMING_ROSE,  new NamespacedKey("cc", "blooming_rose"));
+        CUSTOM_ITEM_MODELS.put(CustomItem.BOOMBOX,        new NamespacedKey("cc", "speed_box"));
     }
 
     public static String getItemKey(CustomItem item) {
@@ -196,7 +209,12 @@ public final class CustomModelDataMapper {
 
     public static void applyCustomModel(ItemStack item, CustomItem customItem) {
         String key = getItemKey(customItem);
-        if (key != null) applyStringModelData(item, key);
+        if (key != null) {
+            applyStringModelData(item, key);
+            return;
+        }
+        NamespacedKey modelKey = CUSTOM_ITEM_MODELS.get(customItem);
+        if (modelKey != null) applyItemModel(item, modelKey);
     }
 
     public static void applyCustomModel(ItemStack item, EnchantEntry rune) {
