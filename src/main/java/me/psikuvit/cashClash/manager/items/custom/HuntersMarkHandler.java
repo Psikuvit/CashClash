@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -29,8 +30,8 @@ import java.util.UUID;
 /**
  * Hunter's Mark: a single right-click within range of an enemy instantly marks them,
  * making them take a flat 15% more damage for the mark's duration. The mark is tracked
- * by a rotating coal block over the target's head plus a floating vulnerability % and
- * self-tears down on expiry or death.
+ * by a rotating marked-block icon over the target's head plus a floating vulnerability %
+ * and self-tears down on expiry or death.
  */
 public class HuntersMarkHandler extends CustomItemHandler {
 
@@ -110,8 +111,11 @@ public class HuntersMarkHandler extends CustomItemHandler {
         long expiresAt = System.currentTimeMillis() + durationMillis;
         World world = target.getWorld();
 
+        ItemStack markIcon = new ItemStack(Material.COAL_BLOCK);
+        CustomModelDataMapper.applyHuntersMarkDisplayModel(markIcon);
+
         ItemDisplay coalDisplay = world.spawn(target.getEyeLocation(), ItemDisplay.class, display -> {
-            display.setItemStack(new ItemStack(Material.COAL_BLOCK));
+            display.setItemStack(markIcon);
             display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
             display.setBillboard(Display.Billboard.FIXED);
             display.setBrightness(new Display.Brightness(15, 15));

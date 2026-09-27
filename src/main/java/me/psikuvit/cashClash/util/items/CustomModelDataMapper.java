@@ -239,6 +239,19 @@ public final class CustomModelDataMapper {
         if (key != null) applyStringModelData(item, key);
     }
 
+    private static final NamespacedKey HUNTERS_MARK_DISPLAY_MODEL = new NamespacedKey("cc", "hunters_mark");
+
+    /**
+     * Applies the Hunter's Mark block-style model to the floating ItemDisplay shown above a
+     * marked player's head. Distinct from the shop item's own icon (still the gunpowder
+     * CUSTOM_MODEL_DATA case, applied via {@link #applyCustomModel(ItemStack, CustomItem)}) -
+     * that display entity builds its own throwaway ItemStack rather than going through
+     * GameplayItemFactory, so it needs its model applied directly.
+     */
+    public static void applyHuntersMarkDisplayModel(ItemStack item) {
+        applyItemModel(item, HUNTERS_MARK_DISPLAY_MODEL);
+    }
+
     public static void applyArmorModel(ItemStack item, CustomArmorItem armor) {
         if (item == null) return;
         NamespacedKey modelKey = getItemModel(armor);
