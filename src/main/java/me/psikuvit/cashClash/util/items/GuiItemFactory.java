@@ -218,9 +218,11 @@ public final class GuiItemFactory {
      * @return The configured ItemStack for display
      */
     public ItemStack createEnchantItem(EnchantEntry enchant, int level, long price) {
-        return runeBuilder(enchant, level, price).purchasePrompt()
+        ItemStack item = runeBuilder(enchant, level, price).purchasePrompt()
                 .itemId(enchant.name())
                 .build();
+        CustomModelDataMapper.applyCustomModel(item, enchant);
+        return item;
     }
     
     /**
@@ -249,9 +251,11 @@ public final class GuiItemFactory {
             builder.lore(applicableItems.toString());
         }
 
-        return builder.purchasePrompt()
+        ItemStack item = builder.purchasePrompt()
                 .itemId(enchant.name())
                 .build();
+        CustomModelDataMapper.applyCustomModel(item, enchant);
+        return item;
     }
 
     private ShopItemBuilder runeBuilder(EnchantEntry enchant, int level, long price) {
@@ -288,12 +292,14 @@ public final class GuiItemFactory {
      * @return The configured ItemStack for display
      */
     public ItemStack createMaxedEnchant(EnchantEntry enchant) {
-        return ShopItemBuilder.of(enchant.getRuneMaterial())
+        ItemStack item = ShopItemBuilder.of(enchant.getRuneMaterial())
                 .enchant(enchant.getEnchantment(), enchant.getMaxLevel())
                 .name("<green>" + enchant.getDisplayName() + " <gray>(Max)</gray></green>")
                 .maxed("<gray>Maximum level reached!</gray>")
                 .itemId(enchant.name())
                 .build();
+        CustomModelDataMapper.applyCustomModel(item, enchant);
+        return item;
     }
     
     /**

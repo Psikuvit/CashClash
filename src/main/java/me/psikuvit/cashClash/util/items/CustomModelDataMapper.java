@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.util.items;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.CustomModelData;
 import io.papermc.paper.datacomponent.item.Equippable;
+import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
@@ -29,6 +30,7 @@ public final class CustomModelDataMapper {
     private static final Map<InvestmentType, String> INVESTMENT_KEYS = new HashMap<>();
     private static final Map<UtilityItem, String> UTILITY_KEYS = new HashMap<>();
     private static final Map<WeaponItem, String> WEAPON_KEYS = new HashMap<>();
+    private static final Map<EnchantEntry, String> RUNE_KEYS = new HashMap<>();
 
     // Armor uses setItemModel() pointing to assets/cc/items/<name>.json
     private static final Map<CustomArmorItem, NamespacedKey> ARMOR_MODELS = new HashMap<>();
@@ -103,6 +105,19 @@ public final class CustomModelDataMapper {
 
         // assets/minecraft/items/feather.json           when: "mini_totem"
         UTILITY_KEYS.put(UtilityItem.TOTEM, "mini_totem");
+
+        // assets/minecraft/items/sugar.json - all 10 runes key off one shared vanilla override
+        // (see EnchantEntry's rune-material comment for why they all use Material.SUGAR now).
+        RUNE_KEYS.put(EnchantEntry.SHARPNESS,               "sharpness_rune");
+        RUNE_KEYS.put(EnchantEntry.FIRE_ASPECT,             "fire_aspect_rune");
+        RUNE_KEYS.put(EnchantEntry.KNOCKBACK,               "knockback_rune");
+        RUNE_KEYS.put(EnchantEntry.PUNCH,                   "punch_rune");
+        RUNE_KEYS.put(EnchantEntry.POWER,                   "power_rune");
+        RUNE_KEYS.put(EnchantEntry.FLAME,                   "flame_rune");
+        RUNE_KEYS.put(EnchantEntry.PROTECTION,              "protection_rune");
+        RUNE_KEYS.put(EnchantEntry.PROJECTILE_PROTECTION,   "projectile_protection_rune");
+        RUNE_KEYS.put(EnchantEntry.PIERCING,                "piercing_rune");
+        RUNE_KEYS.put(EnchantEntry.QUICK_CHARGE,            "quick_charge_rune");
 
         // Armor: setItemModel() -> assets/cc/items/<name>.json. The item_model component's key
         // is the item DEFINITION id (namespace:id -> assets/<namespace>/items/<id>.json), which is
@@ -181,6 +196,11 @@ public final class CustomModelDataMapper {
 
     public static void applyCustomModel(ItemStack item, CustomItem customItem) {
         String key = getItemKey(customItem);
+        if (key != null) applyStringModelData(item, key);
+    }
+
+    public static void applyCustomModel(ItemStack item, EnchantEntry rune) {
+        String key = RUNE_KEYS.get(rune);
         if (key != null) applyStringModelData(item, key);
     }
 

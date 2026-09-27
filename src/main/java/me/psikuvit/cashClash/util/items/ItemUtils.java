@@ -224,6 +224,7 @@ public final class ItemUtils {
         tags.apply();
 
         RuneManager.initializeRuneDurability(rune, ee);
+        CustomModelDataMapper.applyCustomModel(rune, ee);
 
         return rune;
     }

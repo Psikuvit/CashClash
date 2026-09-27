@@ -10,32 +10,32 @@ import java.util.List;
 
 public enum EnchantEntry {
     SHARPNESS(Enchantment.SHARPNESS, "sharpness", "Sharpness", 3,
-            Material.SHEARS,
+            Material.SUGAR,
             Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD,
             Material.WOODEN_AXE, Material.STONE_AXE, Material.IRON_AXE, Material.DIAMOND_AXE, Material.NETHERITE_AXE
     ),
     FIRE_ASPECT(Enchantment.FIRE_ASPECT, "fire-aspect", "Fire Aspect", 1,
-            Material.FLINT_AND_STEEL,
+            Material.SUGAR,
             Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
     KNOCKBACK(Enchantment.KNOCKBACK, "knockback", "Knockback", 1,
-            Material.FISHING_ROD,
+            Material.SUGAR,
             Material.WOODEN_SWORD, Material.STONE_SWORD, Material.IRON_SWORD, Material.DIAMOND_SWORD, Material.NETHERITE_SWORD
     ),
     PUNCH(Enchantment.PUNCH, "punch", "Punch", 1,
-            Material.CARROT_ON_A_STICK,
+            Material.SUGAR,
             Material.BOW
     ),
     POWER(Enchantment.POWER, "power", "Power", 2,
-            Material.WARPED_FUNGUS_ON_A_STICK,
+            Material.SUGAR,
             Material.BOW
     ),
     FLAME(Enchantment.FLAME, "flame", "Flame", 1,
-            Material.SHIELD,
+            Material.SUGAR,
             Material.BOW
     ),
     PROTECTION(Enchantment.PROTECTION, "protection", "Protection", 3,
-            Material.WOODEN_HOE,
+            Material.SUGAR,
             Material.LEATHER_HELMET, Material.LEATHER_CHESTPLATE, Material.LEATHER_LEGGINGS, Material.LEATHER_BOOTS,
             Material.GOLDEN_HELMET, Material.GOLDEN_CHESTPLATE, Material.GOLDEN_LEGGINGS, Material.GOLDEN_BOOTS,
             Material.IRON_CHESTPLATE, Material.IRON_HELMET, Material.IRON_LEGGINGS, Material.IRON_BOOTS,
@@ -43,19 +43,19 @@ public enum EnchantEntry {
             Material.NETHERITE_CHESTPLATE, Material.NETHERITE_HELMET, Material.NETHERITE_LEGGINGS, Material.NETHERITE_BOOTS
     ),
     PROJECTILE_PROTECTION(Enchantment.PROJECTILE_PROTECTION, "projectile_protection", "Projectile Protection", 2,
-            Material.WOODEN_PICKAXE,
+            Material.SUGAR,
             Material.LEATHER_HELMET, Material.GOLDEN_HELMET, Material.GOLDEN_CHESTPLATE, Material.GOLDEN_LEGGINGS, Material.GOLDEN_BOOTS,
             Material.IRON_CHESTPLATE, Material.IRON_HELMET, Material.IRON_LEGGINGS, Material.IRON_BOOTS,
             Material.DIAMOND_CHESTPLATE, Material.DIAMOND_HELMET, Material.DIAMOND_LEGGINGS, Material.DIAMOND_BOOTS,
             Material.NETHERITE_CHESTPLATE, Material.NETHERITE_HELMET, Material.NETHERITE_LEGGINGS, Material.NETHERITE_BOOTS
     ),
     PIERCING(Enchantment.PIERCING, "piercing", "Piercing", 3,
-            Material.DIAMOND_HOE,
+            Material.SUGAR,
             Material.CROSSBOW
     ),
 
     QUICK_CHARGE(Enchantment.QUICK_CHARGE, "quick-charge", "Quick Charge", 2,
-            Material.DIAMOND_PICKAXE,
+            Material.SUGAR,
             Material.CROSSBOW
     );
 
