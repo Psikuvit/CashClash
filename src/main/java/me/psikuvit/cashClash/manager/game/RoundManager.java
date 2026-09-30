@@ -507,9 +507,11 @@ public class RoundManager {
      /**
       * Apply team outlines (glowing effect) to all players when combat starts (Feature #7-8).
       * Teammates get a GREEN glowing effect visible through walls.
-      * Enemies have NO outline.
+      * Enemies have NO outline. Skipped for gamemodes that turn teammate outlines off (PTP).
       */
      private void applyTeamOutlinesToAllPlayers() {
+         if (session.getGamemode() != null && !session.getGamemode().showsTeammateOutlines()) return;
+
          Team teamRed = session.getTeamRed();
          Team teamBlue = session.getTeamBlue();
 

@@ -1074,7 +1074,9 @@ public class GameListener implements Listener {
         if (session != null) {
             session.getGamemode().onPlayerSpawn(player);
             // Apply team outlines when player respawns (Feature #7-8)
-            applyTeamOutlines(player, session);
+            if (session.getGamemode().showsTeammateOutlines()) {
+                applyTeamOutlines(player, session);
+            }
         }
     }
 

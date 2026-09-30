@@ -58,6 +58,15 @@ public abstract class Gamemode {
     }
 
     /**
+     * Whether teammates get the green outline at combat start and on respawn. Vanilla glowing is
+     * one flag per player that every viewer sees - only its colour is per viewer - so a gamemode
+     * that needs glowing to single out specific players turns the outline off.
+     */
+    public boolean showsTeammateOutlines() {
+        return true;
+    }
+
+    /**
      * Check if the game has a winner (returns true if game should end)
      * This is called periodically during combat
      */
