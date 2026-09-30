@@ -292,8 +292,9 @@ custom-armor:
 # UTILITIES
 # ============================================
 utilities:
-  # Placed water/lava ignore vanilla flow entirely: they always step outward in all four
-  # directions, flow-distance times, regardless of the surrounding terrain.
+  # Placed water/lava ignore vanilla flow entirely: they fall straight down through open space,
+  # and only a block sitting on solid ground steps outward - in all four directions,
+  # flow-distance times in total, regardless of the surrounding terrain.
   fluids:
     flow-distance: 3
     despawn-seconds: 10
@@ -303,7 +304,7 @@ utilities:
     lava-flow-ticks: 30
     # How far a placed fluid falls straight down (blocks) to find solid ground before it starts
     # spreading outward, so a bucket emptied against a wall or over a ledge settles on the floor
-    # below instead of spreading from mid-air.
+    # below instead of spreading from mid-air. A fall that hasn't landed by then just stops.
     fall-max-depth: 16
 
 # ============================================

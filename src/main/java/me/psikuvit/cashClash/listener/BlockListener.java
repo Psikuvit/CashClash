@@ -83,28 +83,38 @@ public class BlockListener implements Listener {
     private static BukkitTask despawnTimerTask;
 
     /**
-     * One "quick fluid" placement: gravity-first, breadth-first-outward extent computed once as
-     * a plain synchronous pass (see {@link #planQuickFluid}) rather than a live recursion racing
-     * against a possible concurrent drain. {@code rings} is reveal order - each inner list is
-     * every cell at the same hop distance from the source, revealed or removed together, one
-     * ring per flow tick. The source block itself isn't in {@code rings}; it's tracked and
-     * drained separately, always last.
+     * One "quick fluid" placement: its whole extent computed once as a plain synchronous pass
+     * (see {@link #planQuickFluid}) rather than a live recursion racing against a possible
+     * concurrent drain. {@code rings} is reveal order - each inner list is every cell the fluid
+     * reaches on the same flow tick, revealed or removed together, one ring per flow tick. The
+     * source block itself isn't in {@code rings}; it's tracked and drained separately, always
+     * last.
      */
     private static final class PlacedFluid {
         final Location origin;
         final Material fluid;
         final UUID sessionId;
-        final List<List<Location>> rings;
+        final List<List<FluidStep>> rings;
         volatile boolean active = true;
 
-        PlacedFluid(Location origin, Material fluid, UUID sessionId, List<List<Location>> rings) {
+        PlacedFluid(Location origin, Material fluid, UUID sessionId, List<List<FluidStep>> rings) {
             this.origin = origin;
             this.fluid = fluid;
             this.sessionId = sessionId;
             this.rings = rings;
         }
     }
-    
+
+    /**
+     * One planned cell and the fluid level it's placed at: the horizontal hop count for a cell
+     * the fluid spreads into, {@link #FALLING_FLUID_LEVEL} for one it falls through.
+     */
+    private record FluidStep(Location location, int level) {}
+
+    private static final int MAX_FLOWING_FLUID_LEVEL = 7;
+    private static final int FALLING_FLUID_LEVEL = 8;
+    private static final BlockFace[] HORIZONTAL_FACES = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
+
     private static final Map<Location, PlacedFluid> fluidCells = new ConcurrentHashMap<>();
 
     // ==================== BLOCK PLACE ====================
@@ -263,8 +273,9 @@ public class BlockListener implements Listener {
         SchedulerUtils.runTaskLater(() -> removeFluidRing(List.of(placement.origin), true), delay);
         delay += tickInterval;
 
-        for (List<Location> ring : placement.rings) {
-            SchedulerUtils.runTaskLater(() -> removeFluidRing(ring, false), delay);
+        for (List<FluidStep> ring : placement.rings) {
+            List<Location> cells = ring.stream().map(FluidStep::location).toList();
+            SchedulerUtils.runTaskLater(() -> removeFluidRing(cells, false), delay);
             delay += tickInterval;
         }
     }
@@ -650,18 +661,18 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Places one spread block as <em>flowing</em> fluid, at a depth matching how many steps out
-     * it is. Physics stays off: vanilla would immediately recompute these into its own flow
-     * pattern, which is the behaviour this whole spread exists to replace. Only the block the
-     * player placed is left as a source.
+     * Places one spread block as <em>flowing</em> fluid at the level the plan gave it - its
+     * horizontal hop count while spreading, falling while it drops. Physics stays off: vanilla
+     * would immediately recompute these into its own flow pattern, which is the behaviour this
+     * whole spread exists to replace. Only the block the player placed is left as a source.
      */
-    private void placeFlowingFluid(Block block, Material fluid, int step) {
+    private void placeFlowingFluid(Block block, Material fluid, int level) {
         rememberReplacedBlock(block);
         block.setType(fluid, false);
 
         if (!(block.getBlockData() instanceof Levelled levelled)) return;
 
-        levelled.setLevel(Math.clamp(step, levelled.getMinimumLevel() + 1, levelled.getMaximumLevel()));
+        levelled.setLevel(Math.clamp(level, levelled.getMinimumLevel() + 1, levelled.getMaximumLevel()));
         block.setBlockData(levelled, false);
     }
 
@@ -692,63 +703,60 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Works out the full extent of a placement in one synchronous pass: straight down first -
-     * gravity takes priority, matching vanilla (a source flows downward before it flows to its
-     * sides) - up to {@code fluid-fall-max-depth}, then breadth-first outward from wherever that
-     * landed, up to {@code fluid-flow-distance} hops. This is deliberately unconditional about
-     * direction, same as before: vanilla decides per-direction whether fluid advances based on
-     * the surrounding terrain, and a fixed reach replaces that so a placed bucket always produces
-     * the same shape whatever it's placed against. Each returned list is one ring - every cell at
-     * the same hop distance from the source - in reveal order.
+     * Works out the full extent of a placement in one synchronous pass, as rings in reveal
+     * order - each ring is every cell the fluid reaches on the same flow tick. A cell with open
+     * space under it only falls, one block per tick, at most {@code fall-max-depth} below where
+     * it went over the edge. Only a cell sitting on solid ground spreads sideways, up to
+     * {@code flow-distance} hops from the source in total. A column that never lands (runs out of
+     * fall depth, or drops into other fluid) therefore never spreads from mid-air, and columns
+     * fall side by side instead of one after another. Beyond that the reach is deliberately
+     * unconditional: vanilla decides per-direction whether fluid advances based on the
+     * surrounding terrain, and a fixed reach replaces that so a placed bucket always produces the
+     * same shape whatever it's placed against.
      */
-    private List<List<Location>> planQuickFluid(Block source) {
-        List<List<Location>> rings = new ArrayList<>();
-        Set<Location> seen = new HashSet<>();
-        seen.add(source.getLocation().toBlockLocation());
+    private List<List<FluidStep>> planQuickFluid(Block source) {
+        record Front(Location location, int hops, int fallLeft) {}
 
-        List<Location> frontier = List.of(fallTo(source.getLocation().toBlockLocation(), seen, rings));
-        for (int hop = 0; hop < itemsConfig.getFluidFlowDistance() && !frontier.isEmpty(); hop++) {
-            List<Location> ring = new ArrayList<>();
-            for (Location from : frontier) {
-                for (BlockFace face : new BlockFace[]{BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
-                    Location next = from.clone().add(face.getModX(), face.getModY(), face.getModZ()).toBlockLocation();
-                    if (!seen.add(next)) continue;
-                    if (!canFlowInto(next.getBlock())) continue;
-                    ring.add(next);
+        int flowDistance = itemsConfig.getFluidFlowDistance();
+        int fallMaxDepth = itemsConfig.getFluidFallMaxDepth();
+
+        Location origin = source.getLocation().toBlockLocation();
+        Set<Location> seen = new HashSet<>();
+        seen.add(origin);
+
+        List<List<FluidStep>> rings = new ArrayList<>();
+        List<Front> frontier = List.of(new Front(origin, 0, fallMaxDepth));
+        while (!frontier.isEmpty()) {
+            List<FluidStep> ring = new ArrayList<>();
+            List<Front> nextFrontier = new ArrayList<>();
+
+            for (Front cell : frontier) {
+                Location below = cell.location().clone().add(0, -1, 0);
+                Block belowBlock = below.getBlock();
+                if (canFlowInto(belowBlock)) {
+                    if (cell.fallLeft() > 0 && seen.add(below)) {
+                        ring.add(new FluidStep(below, FALLING_FLUID_LEVEL));
+                        nextFrontier.add(new Front(below, cell.hops(), cell.fallLeft() - 1));
+                    }
+                    continue;
+                }
+                if (!belowBlock.getType().isSolid() || cell.hops() >= flowDistance) continue;
+
+                int hops = cell.hops() + 1;
+                for (BlockFace face : HORIZONTAL_FACES) {
+                    Location side = cell.location().clone().add(face.getModX(), 0, face.getModZ());
+                    if (!seen.add(side) || !canFlowInto(side.getBlock())) continue;
+                    ring.add(new FluidStep(side, Math.min(hops, MAX_FLOWING_FLUID_LEVEL)));
+                    nextFrontier.add(new Front(side, hops, fallMaxDepth));
                 }
             }
+
             if (ring.isEmpty()) break;
             rings.add(ring);
-
-            List<Location> nextFrontier = new ArrayList<>(ring.size());
-            for (Location cell : ring) {
-                nextFrontier.add(fallTo(cell, seen, rings));
-            }
             frontier = nextFrontier;
         }
 
         return rings;
-    }
-
-    /**
-     * Falls straight down from {@code start} until solid ground or {@code fluid-fall-max-depth},
-     * adding each fallen-through cell as its own single-cell ring (a falling animation, same as
-     * the source's own initial fall) and to {@code seen}. Returns {@code start} unchanged if
-     * there's nothing to fall through.
-     */
-    private Location fallTo(Location start, Set<Location> seen, List<List<Location>> rings) {
-        Location current = start;
-        int remaining = itemsConfig.getFluidFallMaxDepth();
-        while (remaining > 0) {
-            Location below = current.clone().add(0, -1, 0);
-            if (seen.contains(below) || !canFlowInto(below.getBlock())) break;
-
-            seen.add(below);
-            rings.add(List.of(below));
-            current = below;
-            remaining--;
-        }
-        return current;
     }
 
     /**
@@ -762,20 +770,19 @@ public class BlockListener implements Listener {
     private void revealRing(PlacedFluid placement, int index) {
         if (!placement.active || index >= placement.rings.size()) return;
 
-        int level = index + 1;
-        List<Location> ring = placement.rings.get(index);
-        for (int i = 0; i < ring.size(); i++) {
-            Location loc = ring.get(i);
+        int ringNumber = index + 1;
+        for (FluidStep step : placement.rings.get(index)) {
+            Location loc = step.location();
             Block block = loc.getBlock();
             if (!canFlowInto(block)) {
-                Messages.debug("FLUID", "  ring " + level + " skip " + at(loc) + ": " + flowBlockedReason(block));
+                Messages.debug("FLUID", "  ring " + ringNumber + " skip " + at(loc) + ": " + flowBlockedReason(block));
                 continue;
             }
 
-            placeFlowingFluid(block, placement.fluid, level);
+            placeFlowingFluid(block, placement.fluid, step.level());
             fluidCells.put(loc, placement);
             trackPlacedBlock(placement.sessionId, block);
-            Messages.debug("FLUID", "  ring " + level + " placed " + describe(block) + " at " + at(loc));
+            Messages.debug("FLUID", "  ring " + ringNumber + " placed " + describe(block) + " at " + at(loc));
         }
 
         SchedulerUtils.runTaskLater(() -> revealRing(placement, index + 1), flowTicksFor(placement.fluid));
