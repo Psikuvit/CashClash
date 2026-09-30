@@ -13,8 +13,8 @@ import org.bukkit.entity.Player;
 import java.util.UUID;
 
 /**
- * Single funnel for every achievement-style coin reward (kills, bonuses, objective
- * completions, round-end distribution, weapon rewards, supply drops).
+ * Single funnel for every achievement-style coin reward (kills, assists, bonuses, objective
+ * completions, the buy-phase round share, weapon rewards, supply drops).
  * Shop refunds/purchases, money transfers, admin coin grants, and investment payouts are
  * transactions rather than earned rewards and don't go through here.
  *
@@ -47,8 +47,8 @@ public class RewardManager {
 
     /**
      * Same as {@link #grant(Player, RewardType, long, String...)}, but works from a UUID so
-     * a disconnected-but-still-in-session player still gets credited (e.g. round-end pool
-     * distribution) - the message is simply skipped if they're not online to see it.
+     * a disconnected-but-still-in-session player still gets credited (e.g. the buy-phase round
+     * share) - the message is simply skipped if they're not online to see it.
      */
     public void grant(UUID playerUuid, RewardType type, long amount, String... placeholders) {
         CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
@@ -70,16 +70,25 @@ public class RewardManager {
      * and, for investor-eligible types, always runs the Investor's Set bonus check -
      * replaces direct {@code InvestorSetHandler} calls from gamemode/listener code.
      */
-    public void grantKillOrObjective(Player player, RewardType type, long amount) {
+    public void grantKillOrObjective(Player player, RewardType type, long amount, String... placeholders) {
         if (player == null) return;
 
         if (amount > 0) {
-            grant(player, type, amount);
+            grant(player, type, amount, placeholders);
         }
 
         if (type.isInvestorEligible()) {
             CashClashPlugin.getInstance().getCustomArmorManager().getHandler(InvestorSetHandler.class)
                     .onInvestorReward(player, session);
+        }
+    }
+
+    /**
+     * Kill assist: grants the assister's share of a kill transfer (if positive).
+     */
+    public void grantAssist(UUID playerUuid, long amount, String... placeholders) {
+        if (amount > 0) {
+            grant(playerUuid, RewardType.KILL_ASSIST, amount, placeholders);
         }
     }
 

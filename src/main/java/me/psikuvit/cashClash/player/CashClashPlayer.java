@@ -78,7 +78,7 @@ public class CashClashPlayer {
     }
 
     public void initializeRound1() {
-        this.coins = 10000;
+        this.coins = 0;
         this.lives = 99999; // Infinite lives
         this.deathsThisRound = 0;
     }

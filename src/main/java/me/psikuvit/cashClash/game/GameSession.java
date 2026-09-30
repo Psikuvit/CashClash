@@ -74,6 +74,7 @@ public class GameSession {
     //private CashQuakeManager cashQuakeManager;
     private BonusManager bonusManager;
     private final RewardManager rewardManager;
+    private final AssistTracker assistTracker;
     private final SequenceManager sequenceManager;
     private int sequenceLockCount;
     private boolean actionsRestricted;
@@ -131,6 +132,7 @@ public class GameSession {
         this.startingCountdown = false;
         this.sequenceManager = new SequenceManager(this);
         this.rewardManager = new RewardManager(this);
+        this.assistTracker = new AssistTracker();
 
         // Get the fixed arena
         Arena arena = arenaManager.getArena(arenaNumber);
@@ -199,6 +201,10 @@ public class GameSession {
 
     public RewardManager getRewardManager() {
         return rewardManager;
+    }
+
+    public AssistTracker getAssistTracker() {
+        return assistTracker;
     }
 
     public Gamemode getGamemode() {

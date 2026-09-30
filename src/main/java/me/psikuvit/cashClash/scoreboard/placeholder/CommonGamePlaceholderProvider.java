@@ -241,7 +241,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         }
 
         return switch (placeholder) {
-            case "money_pool" -> String.format("%,d", EconomyManager.calculateCurrentPool(roundData));
+            case "money_pool" -> String.format("%,d", EconomyManager.getRoundPool(session));
             case "round_kills" -> String.valueOf(roundData.getKills(player.getUniqueId()));
             case "teamRed_alive" -> {
                 Team teamRed = session.getTeamRed();

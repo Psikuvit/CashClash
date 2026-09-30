@@ -346,6 +346,26 @@ public class DamageListener implements Listener {
         return null;
     }
 
+    // ==================== KILL ASSISTS ====================
+
+    /**
+     * Remembers who landed damage on whom, so a kill can credit assisting teammates. Runs at
+     * MONITOR so only hits that actually went through count.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDamageRecordAssist(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;
+        if (event.getFinalDamage() <= 0) return;
+
+        Player attacker = resolveAttacker(event);
+        if (attacker == null || attacker.equals(victim)) return;
+
+        GameSession session = gameManager.getPlayerSession(victim);
+        if (session == null || session != gameManager.getPlayerSession(attacker)) return;
+
+        session.getAssistTracker().recordDamage(attacker.getUniqueId(), victim.getUniqueId());
+    }
+
     // ==================== TOTEM OF HAUNTING ====================
 
     /**

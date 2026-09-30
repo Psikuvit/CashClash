@@ -2,12 +2,15 @@ package me.psikuvit.cashClash.config;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.util.Messages;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 /**
  * Configuration manager for Cash Clash.
@@ -169,8 +172,49 @@ public class ConfigManager {
 
     // ==================== ECONOMY SETTINGS ====================
 
-    public long getRound1KillReward() {
-        return config.getLong("economy.round-1-kill-reward", 3000);
+    /**
+     * The fixed money pool for a round, or 0 if the round has none configured.
+     */
+    public long getRoundPool(int round) {
+        return config.getLong("economy.round-pools." + round, 0);
+    }
+
+    /**
+     * How many equal shares each round pool is split into.
+     */
+    public int getRoundPoolSplit() {
+        return config.getInt("economy.pool-split", 8);
+    }
+
+    public double getKillTransferBasePercent() {
+        return config.getDouble("economy.kill-transfer.base-percent", 0.75);
+    }
+
+    public double getKillTransferAssistSharePercent() {
+        return config.getDouble("economy.kill-transfer.assist-share-percent", 20);
+    }
+
+    public int getAssistWindowSeconds() {
+        return config.getInt("economy.kill-transfer.assist-window-seconds", 5);
+    }
+
+    /**
+     * Comeback kill-transfer rates, keyed by the minimum team money deficit (percent) each one
+     * applies from.
+     */
+    public NavigableMap<Double, Double> getComebackTransferPercents() {
+        NavigableMap<Double, Double> tiers = new TreeMap<>();
+        ConfigurationSection section = config.getConfigurationSection("economy.kill-transfer.comeback-tiers");
+        if (section == null) return tiers;
+
+        for (String key : section.getKeys(false)) {
+            try {
+                tiers.put(Double.parseDouble(key), section.getDouble(key));
+            } catch (NumberFormatException e) {
+                Messages.debug("CONFIG", "Ignoring non-numeric comeback tier '" + key + "'");
+            }
+        }
+        return tiers;
     }
 
     public double getRound1TransferFee() {
@@ -187,18 +231,6 @@ public class ConfigManager {
 
     public double getLateRoundStealPercentage() {
         return config.getDouble("economy.late-round-steal-percentage", 0.25);
-    }
-
-    public long getKillPoolPerKill() {
-        return config.getLong("economy.kill-pool-per-kill", 1000);
-    }
-
-    public long getMinRoundPool() {
-        return config.getLong("economy.min-round-pool", 15000);
-    }
-
-    public long getMaxRoundPool() {
-        return config.getLong("economy.max-round-pool", 100000);
     }
 
     public double getGuiTransferFee() {

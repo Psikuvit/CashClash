@@ -70,21 +70,45 @@ armor:
 # ECONOMY SETTINGS
 # ============================================
 economy:
-  # Kill rewards
-  round-1-kill-reward: 3000
+  # Each round has a fixed money pool. At the start of the buy phase before that round, every
+  # player is paid an equal share (pool / pool-split), added to whatever they have left over.
+  round-pools:
+    1: 120000
+    2: 200000
+    3: 320000
+    4: 320000
+    5: 320000
+    6: 400000
+    7: 500000
+  # Number of shares a pool is split into. Pools are sized for a full 4v4 match, so smaller
+  # matches still pay the same amount per player.
+  pool-split: 8
+
+  # A kill moves money from the victim to the killer (and assisting teammates). It is always
+  # taken from the victim, so kills never create money.
+  kill-transfer:
+    # Percent of the current round's pool moved per kill (0.75 = 0.75%)
+    base-percent: 0.75
+    # Percent of the transfer each assisting teammate receives; the killer keeps the rest
+    assist-share-percent: 20
+    # A teammate of the killer who damaged the victim this many seconds before the kill assists
+    assist-window-seconds: 5
+    # Comeback rates: when the killer's team has less money than the other team, its kills use
+    # the rate of the highest threshold reached instead of base-percent.
+    # Deficit % = (richer team money - poorer team money) / richer team money * 100
+    # Format: <minimum deficit percent (whole number)>: <transfer percent>
+    comeback-tiers:
+      10: 1.00
+      20: 1.25
+      30: 1.50
 
   # Transfer fees (percentage, 0.5 = 50%)
   round-1-transfer-fee: 0.50
   round-2-3-transfer-fee: 0.10
   round-4-5-transfer-fee: 0.05
 
-  # Percentage steal for rounds 4-5
+  # Transfer fee for rounds 6-7
   late-round-steal-percentage: 0.25
-
-  # Round-end kill pool distribution
-  kill-pool-per-kill: 1000
-  min-round-pool: 15000
-  max-round-pool: 100000
 
   # Flat fee for the transfer GUI (chat-input money transfer), independent of the
   # round-based transfer fees above

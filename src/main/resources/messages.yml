@@ -244,6 +244,9 @@ messages:
   # ============================================
   economy:
     round-money-distributed: "<gold>The money pool of <yellow>${pool}</yellow> was distributed - everyone receives <yellow>${amount}</yellow>!</gold>"
+    kill-transfer-received: "<gold>+${amount}</gold> <gray>for killing <white>{victim}</white></gray>"
+    kill-transfer-lost: "<red>-${amount}</red> <gray>taken by <white>{killer}</white></gray>"
+    kill-transfer-assist: "<gold>+${amount}</gold> <gray>for assisting on <white>{victim}</white></gray>"
 
   # ============================================
   # ROUND/GAME MESSAGES

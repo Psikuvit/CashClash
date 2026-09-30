@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
+import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.armor.BunnyShoesHandler;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
@@ -180,7 +181,7 @@ public class GameListener implements Listener {
 
             Player killer = player.getKiller();
             if (killer != null) {
-                handleKillerRewards(session, killer);
+                handleKillerRewards(session, player, killer);
             }
 
             // Notify gamemode of death
@@ -189,6 +190,7 @@ public class GameListener implements Listener {
                 gamemode.onPlayerDeath(player, killer);
             }
         }
+        session.getAssistTracker().clearVictim(player.getUniqueId());
 
         if (victim.getLives() <= 0) {
             handlePermanentSpectator(player, deathLocation);
@@ -197,9 +199,11 @@ public class GameListener implements Listener {
         }
     }
 
-    private void handleKillerRewards(GameSession session, Player killer) {
+    private void handleKillerRewards(GameSession session, Player victim, Player killer) {
         CashClashPlayer killerCCP = session.getCashClashPlayer(killer.getUniqueId());
         if (killerCCP == null) return;
+
+        EconomyManager.transferKillMoney(session, victim, killer);
 
         playerDataManager.incKills(killer.getUniqueId());
         killerCCP.handleKill();

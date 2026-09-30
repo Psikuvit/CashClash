@@ -167,6 +167,7 @@ public class RoundManager {
                 "round", String.valueOf(roundNumber));
             Messages.broadcast(session.getPlayers(), "round.shopping-phase-time",
                 "time_remaining", String.valueOf(timeRemaining));
+            EconomyManager.payRoundShare(session);
         }
 
         // Players are already teleported to their team's shop area by teleportToBuyPhase()
@@ -364,7 +365,6 @@ public class RoundManager {
         }
 
         EconomyManager.resolveRoundInvestments(session);
-        EconomyManager.distributeRoundMoney(session);
 
         // Hold the win/loss result on screen (shopping-phase-parity restrictions + damage
         // off, movement stays free) before moving to the next round or ending the game.

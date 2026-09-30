@@ -112,9 +112,9 @@ Example: "Time Remaining: {time} seconds"
 ================================================================================
 
 {money_pool}
-  - Shows the current round's kill-fed money pool (1,000 coins per kill so far this
-    round, before the round-end minimum-payout floor is applied)
-  - Returns: Formatted number (e.g., "3,000")
+  - Shows the current round's fixed money pool (economy.round-pools in config.yml) - the
+    amount split between every player at the start of that round's buy phase
+  - Returns: Formatted number (e.g., "320,000")
   - Default: "0"
 
 {round_kills}

@@ -7,7 +7,8 @@ package me.psikuvit.cashClash.util.enums;
  * own message) and whether it's eligible to also trigger the Investor's Set bonus.
  */
 public enum RewardType {
-    KILL(null, true),
+    KILL("economy.kill-transfer-received", true),
+    KILL_ASSIST("economy.kill-transfer-assist", false),
     OBJECTIVE_CTF_CAPTURE(null, true),
     OBJECTIVE_KC_CONFIRM(null, true),
     BONUS(null, false),
