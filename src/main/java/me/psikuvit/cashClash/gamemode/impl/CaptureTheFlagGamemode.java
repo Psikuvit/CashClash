@@ -63,6 +63,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<UUID, Long> playerCircleTimestamps; // when the player entered a pickup circle
     private final Map<UUID, Integer> playerNearestFlagTeam;
     private final Set<UUID> stalemateMsgShown; // told about the both-flags-held block in the current state
+    private final Set<UUID> blockedCarrierWarned; // carriers shown "Kill {name}" on their current visit to their capture area
     private final Set<UUID> finalStandPenalized; // carriers currently docked the Final Stand health penalty
 
       private final SuddenDeathManager suddenDeathManager;
@@ -91,6 +92,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.playerCircleTimestamps = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
         this.stalemateMsgShown = new HashSet<>();
+        this.blockedCarrierWarned = new HashSet<>();
         this.finalStandPenalized = new HashSet<>();
          this.suddenDeathManager = new SuddenDeathManager(session, this);
          this.finalStandManager = new FinalStandManager(session, this);
@@ -135,6 +137,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         playerCircleTimestamps.clear();
         playerNearestFlagTeam.clear();
         stalemateMsgShown.clear();
+        blockedCarrierWarned.clear();
 
          startCarrierGlowEffect();
          startBannerRotationTask();
@@ -161,6 +164,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         returnFlagToBase(1);
         returnFlagToBase(2);
         stalemateMsgShown.clear();
+        blockedCarrierWarned.clear();
 
         playerCircleTimestamps.clear();
         playerNearestFlagTeam.clear();
@@ -477,6 +481,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         // One flag is down again, so the both-flags-held block no longer applies.
         stalemateMsgShown.clear();
+        blockedCarrierWarned.clear();
     }
 
     private void removeFlagIfCarriedByPlayer(int teamNumber, UUID playerUuid, Player player) {
@@ -667,11 +672,17 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 Messages.send(player, "gamemode-ctf.both-flags-held");
                 stalemateMsgShown.add(playerUuid);
             }
+            if (playerTeam == 1) {
+                warnBlockedCarrier(player, blueFlag, redFlag, redBase);
+            } else {
+                warnBlockedCarrier(player, redFlag, blueFlag, blueBase);
+            }
             FlagBannerUtils.spawnBannerParticles(redFlag.flagLoc(), 0);
             FlagBannerUtils.spawnBannerParticles(blueFlag.flagLoc(), 0);
             return false;
         } else {
             stalemateMsgShown.remove(playerUuid);
+            blockedCarrierWarned.remove(playerUuid);
         }
 
         // A team whose own flag is away from base - held or dropped and counting down -
@@ -707,6 +718,27 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
 
         return false;
+    }
+
+    /**
+     * Tells a carrier standing on their own capture area while the enemy holds their flag who
+     * they have to take out before they can score. Shown once per visit to the area rather than
+     * on every check, which would restart the title four times a second.
+     */
+    private void warnBlockedCarrier(Player player, FlagState carriedFlag, FlagState ownFlag, Location ownBase) {
+        UUID playerUuid = player.getUniqueId();
+        if (!playerUuid.equals(carriedFlag.holder()) || !isPlayerInScoringZone(player, ownBase)) {
+            blockedCarrierWarned.remove(playerUuid);
+            return;
+        }
+        if (blockedCarrierWarned.contains(playerUuid)) return;
+
+        Player enemyCarrier = Bukkit.getPlayer(ownFlag.holder());
+        if (enemyCarrier == null) return;
+
+        blockedCarrierWarned.add(playerUuid);
+        Messages.sendTitle(player, "gamemode-ctf.kill-flag-carrier-title", "gamemode-ctf.kill-flag-carrier-subtitle",
+                "name", enemyCarrier.getName());
     }
 
      /**

@@ -176,9 +176,10 @@ public final class Messages {
     /**
      * Show a title/subtitle to a player using the default title timing
      * ({@link me.psikuvit.cashClash.config.ConfigManager#getDefaultTitleFadeInMs()} etc.),
-     * resolved from messages.yml keys. Pass a null/blank subtitleKey for title-only.
+     * resolved from messages.yml keys, with any placeholders applied to both. Pass a null/blank
+     * subtitleKey for title-only.
      */
-    public static void sendTitle(@Nullable Player player, @Nullable String titleKey, @Nullable String subtitleKey) {
+    public static void sendTitle(@Nullable Player player, @Nullable String titleKey, @Nullable String subtitleKey, @NotNull String... args) {
         if (player == null || !player.isOnline()) return;
 
         var cfg = CashClashPlugin.getInstance().getConfigManager();
@@ -187,8 +188,8 @@ public final class Messages {
                 Duration.ofMillis(cfg.getDefaultTitleStayMs()),
                 Duration.ofMillis(cfg.getDefaultTitleFadeOutMs()));
 
-        Component subtitle = subtitleKey == null ? Component.empty() : parse(config.getRaw(subtitleKey));
-        player.showTitle(Title.title(parse(config.getRaw(titleKey)), subtitle, times));
+        Component subtitle = subtitleKey == null ? Component.empty() : parse(config.getMessage(subtitleKey, args));
+        player.showTitle(Title.title(parse(config.getMessage(titleKey, args)), subtitle, times));
     }
 
     /**

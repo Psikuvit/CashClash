@@ -361,6 +361,8 @@ messages:
     final-stand-activated: "<gold><bold>FINAL STAND! The flag holder has no more restrictions!</bold></gold>"
     capture-bonus-team-broadcast: "<yellow>Team {team_name} earned a 45-second capture bonus!</yellow>"
     both-flags-held: "<red>You must kill the other flag holder in order to score!</red>"
+    kill-flag-carrier-title: "<red><bold>Kill {name}</bold></red>"
+    kill-flag-carrier-subtitle: "<yellow>He has your flag!</yellow>"
     flag-drop-timer-reset: "<gold>{team_name} team has reset the dropped flag return timer!</gold>"
     cannot-use-while-carrying-flag: "<red>You cannot use this while carrying the flag!</red>"
     cannot-use-invis-with-flag: "<red>You cannot use Invisibility Cloak while carrying the flag!</red>"
