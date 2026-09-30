@@ -289,14 +289,14 @@ public class ShopItemBuilder {
     }
 
     /**
-     * Adds an enchantment to the item.
+     * Adds an enchantment to the item, without the enchant glint.
      *
      * @param enchantment The enchantment to add
      * @param level The enchantment level
      * @return This builder for chaining
      */
     public ShopItemBuilder enchant(Enchantment enchantment, int level) {
-        meta.addEnchant(enchantment, level, true);
+        ItemUtils.addEnchantWithoutGlint(meta, enchantment, level);
         return this;
     }
 

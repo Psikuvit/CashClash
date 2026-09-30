@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -49,6 +50,14 @@ public final class ItemUtils {
     public static void applyPermanentEnchants(ItemMeta meta, String itemKey) {
         CashClashPlugin.getInstance().getItemsConfig().getPermanentEnchants(itemKey)
                 .forEach((enchantment, level) -> meta.addEnchant(enchantment, level, true));
+        meta.setEnchantmentGlintOverride(false);
+    }
+
+    /**
+     * Adds one enchant without the enchant glint, like every other enchanted item in the game.
+     */
+    public static void addEnchantWithoutGlint(ItemMeta meta, Enchantment enchantment, int level) {
+        meta.addEnchant(enchantment, level, true);
         meta.setEnchantmentGlintOverride(false);
     }
 

@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.ItemFactory;
+import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -107,7 +108,7 @@ public class KitService {
                     if (piece != null && !piece.getType().isAir()) {
                         ItemMeta m = piece.getItemMeta();
                         if (m != null) {
-                            m.addEnchant(Enchantment.PROTECTION, 1, true);
+                            ItemUtils.addEnchantWithoutGlint(m, Enchantment.PROTECTION, 1);
                             piece.setItemMeta(m);
                         }
                     }
@@ -129,7 +130,7 @@ public class KitService {
                     if (axe != null) {
                         ItemMeta meta = axe.getItemMeta();
                         if (meta != null) {
-                            meta.addEnchant(Enchantment.SHARPNESS, 1, true);
+                            ItemUtils.addEnchantWithoutGlint(meta, Enchantment.SHARPNESS, 1);
                             axe.setItemMeta(meta);
                         }
                     }
@@ -151,7 +152,7 @@ public class KitService {
                     if (sword != null) {
                         ItemMeta meta = sword.getItemMeta();
                         if (meta != null) {
-                            meta.addEnchant(Enchantment.SHARPNESS, 1, true);
+                            ItemUtils.addEnchantWithoutGlint(meta, Enchantment.SHARPNESS, 1);
                             sword.setItemMeta(meta);
                         }
                     }
@@ -326,7 +327,7 @@ public class KitService {
             case SCOUT -> {
                 ItemStack crossbow = new ItemStack(Material.CROSSBOW);
                 ItemMeta meta = crossbow.getItemMeta();
-                if (meta != null) meta.addEnchant(Enchantment.QUICK_CHARGE, 1, true);
+                if (meta != null) ItemUtils.addEnchantWithoutGlint(meta, Enchantment.QUICK_CHARGE, 1);
                 crossbow.setItemMeta(meta);
                 player.getInventory().addItem(crossbow);
                 player.getInventory().addItem(new ItemStack(Material.ARROW, 10));
@@ -458,7 +459,7 @@ public class KitService {
                     if (axe != null) {
                         ItemMeta meta = axe.getItemMeta();
                         if (meta != null) {
-                            meta.addEnchant(Enchantment.SHARPNESS, 1, true);
+                            ItemUtils.addEnchantWithoutGlint(meta, Enchantment.SHARPNESS, 1);
                             axe.setItemMeta(meta);
                         }
                     }
@@ -481,7 +482,7 @@ public class KitService {
                     if (sword != null) {
                         ItemMeta meta = sword.getItemMeta();
                         if (meta != null) {
-                            meta.addEnchant(Enchantment.SHARPNESS, 1, true);
+                            ItemUtils.addEnchantWithoutGlint(meta, Enchantment.SHARPNESS, 1);
                             sword.setItemMeta(meta);
                         }
                     }
@@ -555,7 +556,7 @@ public class KitService {
         if (helmet != null && !helmet.getType().isAir()) {
             ItemMeta m = helmet.getItemMeta();
             if (m != null) {
-                m.addEnchant(Enchantment.PROTECTION, 1, true);
+                ItemUtils.addEnchantWithoutGlint(m, Enchantment.PROTECTION, 1);
                 helmet.setItemMeta(m);
                 player.getInventory().setHelmet(helmet);
             }
@@ -563,7 +564,7 @@ public class KitService {
         if (chest != null && !chest.getType().isAir()) {
             ItemMeta m = chest.getItemMeta();
             if (m != null) {
-                m.addEnchant(Enchantment.PROTECTION, 1, true);
+                ItemUtils.addEnchantWithoutGlint(m, Enchantment.PROTECTION, 1);
                 chest.setItemMeta(m);
                 player.getInventory().setChestplate(chest);
             }
@@ -571,7 +572,7 @@ public class KitService {
         if (legs != null && !legs.getType().isAir()) {
             ItemMeta m = legs.getItemMeta();
             if (m != null) {
-                m.addEnchant(Enchantment.PROTECTION, 1, true);
+                ItemUtils.addEnchantWithoutGlint(m, Enchantment.PROTECTION, 1);
                 legs.setItemMeta(m);
                 player.getInventory().setLeggings(legs);
             }
@@ -579,7 +580,7 @@ public class KitService {
         if (boots != null && !boots.getType().isAir()) {
             ItemMeta m = boots.getItemMeta();
             if (m != null) {
-                m.addEnchant(Enchantment.PROTECTION, 1, true);
+                ItemUtils.addEnchantWithoutGlint(m, Enchantment.PROTECTION, 1);
                 boots.setItemMeta(m);
                 player.getInventory().setBoots(boots);
             }
