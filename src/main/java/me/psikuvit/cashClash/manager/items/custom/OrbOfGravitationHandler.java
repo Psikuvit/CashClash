@@ -19,7 +19,7 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.entity.Arrow;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
@@ -253,7 +253,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
      * A fully-charged bow shot hitting a live orb decrements its hits-remaining counter; on the
      * configured final hit the orb shatters (destroyed = fully resolved, so the item is consumed).
      */
-    public void handleOrbHitByChargedArrow(Arrow arrow, Snowball orb) {
+    public void handleOrbHitByChargedArrow(AbstractArrow arrow, Snowball orb) {
         UUID orbUuid = orb.getUniqueId();
         if (!orbHitsRemaining.containsKey(orbUuid)) return;
         if (arrow.getPersistentDataContainer().get(Keys.FULLY_CHARGED_ARROW, PersistentDataType.BYTE) == null) return;

@@ -54,7 +54,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.entity.Arrow;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -671,7 +671,7 @@ public class GameListener implements Listener {
 
         // Orb of Gravitation's bow-destroy mechanic needs to know about every fully-charged
         // shot regardless of which bow it came from, so tag it before the mythic check.
-        if (event.getProjectile() instanceof Arrow arrow && event.getForce() >= itemsConfig.getFullyChargedThreshold()) {
+        if (event.getProjectile() instanceof AbstractArrow arrow && event.getForce() >= itemsConfig.getFullyChargedThreshold()) {
             PDCSetter.of(arrow).set(Keys.FULLY_CHARGED_ARROW, PersistentDataType.BYTE, (byte) 1).apply();
         }
 
@@ -708,7 +708,7 @@ public class GameListener implements Listener {
     private void handleBloodwrenchShot(EntityShootBowEvent event, Player player) {
         if (!mythicManager.getHandler(BloodwrenchHandler.class).handleBloodwrenchShot(player)) {
             event.setCancelled(true);
-        } else if (event.getProjectile() instanceof Arrow arrow) {
+        } else if (event.getProjectile() instanceof AbstractArrow arrow) {
             String mode = mythicManager.getHandler(BloodwrenchHandler.class).isBloodwrenchRapidMode(player) ? "rapid" : "supercharged";
             PDCSetter.of(arrow).set(Keys.BLOODWRENCH_MODE, PersistentDataType.STRING, mode).apply();
         }
@@ -732,7 +732,7 @@ public class GameListener implements Listener {
 
         if (!mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteShot(player, bow)) {
             event.setCancelled(true);
-        } else if (event.getProjectile() instanceof Arrow arrow) {
+        } else if (event.getProjectile() instanceof AbstractArrow arrow) {
             PDCSetter.of(arrow).set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, "active").apply();
         }
     }
@@ -754,7 +754,7 @@ public class GameListener implements Listener {
 
         if (passThroughTeammate(event)) return;
 
-        if (event.getEntity() instanceof Arrow arrow) {
+        if (event.getEntity() instanceof AbstractArrow arrow) {
             // Profit Vortex: a tagged Cash Blaster arrow spawns its vortex on any impact
             // (world or entity), so handle it before the orb/charged-arrow branch.
             weaponItemManager.getHandler(CashBlasterHandler.class).onProfitVortexArrowHit(arrow);
@@ -801,7 +801,7 @@ public class GameListener implements Listener {
     /**
      * Handle arrow hit with mythic effects
      */
-    private void handleArrowHit(Arrow arrow, ProjectileHitEvent event) {
+    private void handleArrowHit(AbstractArrow arrow, ProjectileHitEvent event) {
         if (!(arrow.getShooter() instanceof Player shooter)) return;
 
         handleBlazebiteArrow(shooter, arrow, event);
@@ -814,7 +814,7 @@ public class GameListener implements Listener {
      * Storm (fire/explosion + freeze cleanse, on a surface/block hit) based on what the arrow
      * actually hit, not a mode chosen at shot time.
      */
-    private void handleBlazebiteArrow(Player shooter, Arrow arrow, ProjectileHitEvent event) {
+    private void handleBlazebiteArrow(Player shooter, AbstractArrow arrow, ProjectileHitEvent event) {
         if (PDCDetection.getArrowBlazebiteMode(arrow) == null) return;
 
         boolean hitSurface = event.getHitEntity() == null;
@@ -827,7 +827,7 @@ public class GameListener implements Listener {
     /**
      * Handle Wind Bow arrow hit
      */
-    private void handleWindBowArrow(Player shooter, Arrow arrow, ProjectileHitEvent event) {
+    private void handleWindBowArrow(Player shooter, AbstractArrow arrow, ProjectileHitEvent event) {
         ItemStack bow = shooter.getInventory().getItemInMainHand();
         MythicItem mythic = PDCDetection.getMythic(bow);
 
@@ -841,7 +841,7 @@ public class GameListener implements Listener {
     /**
      * Handle BloodWrench arrow hit
      */
-    private void handleBloodwrenchArrow(Player shooter, Arrow arrow, ProjectileHitEvent event) {
+    private void handleBloodwrenchArrow(Player shooter, AbstractArrow arrow, ProjectileHitEvent event) {
         String bloodwrenchMode = PDCDetection.getArrowBloodwrenchMode(arrow);
         if (bloodwrenchMode == null) return;
 

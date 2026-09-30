@@ -159,7 +159,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
      * A tagged Profit Vortex arrow hit the ground/wall: spawn the vortex at the impact point.
      * Runs a particle spiral for the vortex duration, slowing and crediting enemies inside it.
      */
-    public void onProfitVortexArrowHit(Arrow arrow) {
+    public void onProfitVortexArrowHit(AbstractArrow arrow) {
         if (!arrow.getPersistentDataContainer().has(Keys.PROFIT_VORTEX_ARROW, PersistentDataType.BYTE)) {
             return;
         }
