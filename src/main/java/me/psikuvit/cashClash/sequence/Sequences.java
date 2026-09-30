@@ -122,35 +122,6 @@ public final class Sequences {
     }
 
     /**
-     * "Determining Shield...", a 5-second countdown, then the actual outcome - "Everyone was
-     * given a shield!" or "No shields were given out!" depending on this session's coin flip.
-     * Played once at game start immediately after the round-start gamemode reveal (during buy
-     * phase 1). The shield itself is granted per the caller's completion callback, not by this
-     * sequence, so it always arrives after the reveal rather than silently beforehand.
-     */
-    public static Sequence shieldReveal() {
-        var cfg = CashClashPlugin.getInstance().getConfigManager();
-        double determiningHoldSeconds = cfg.getShieldRevealDeterminingHoldSeconds();
-        double resultHoldSeconds = cfg.getShieldRevealResultHoldSeconds();
-
-        return Sequence.create()
-                .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), revealBlindnessTicks()))
-                .pause(20)
-                .run(s -> SequenceEffects.showTitle(s.getPlayers(),
-                        component(MSG.getRaw("shield-reveal.determining")), Component.empty()))
-                .waitSeconds(determiningHoldSeconds)
-                .countdown(5, count -> s -> SequenceEffects.showTitle(s.getPlayers(),
-                        Component.text(count), Component.empty()))
-                .then(20L, s -> {
-                    String key = s.hasShields() ? "shield-reveal.shields-given" : "shield-reveal.no-shields";
-                    SequenceEffects.showTitle(s.getPlayers(), component(MSG.getRaw(key)), Component.empty());
-                    SoundUtils.playTo(s.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-                })
-                .waitSeconds(resultHoldSeconds)
-                .run(Sequences::clearLock);
-    }
-
-    /**
      * Round end: freeze input (no blindness), hold the win/loss result on screen for the
      * remainder of the 5-second window, then clear.
      */

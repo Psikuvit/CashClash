@@ -31,7 +31,6 @@ messages:
     help-forcestart: "<yellow>/cc forcestart <gray>- Force start a game immediately</gray>"
     help-forcenextround: "<yellow>/cc forcenextround <gray>- Force the next round to start</gray>"
     help-selectkit: "<yellow>/cc selectkit <gray>- Select a kit for all players</gray>"
-    help-shield: "<yellow>/cc shield <gray>- Force shields on/off for a player (testing)</gray>"
     help-setlobby: "<yellow>/cc setlobby <gray>- Set the lobby spawn point</gray>"
     help-reload: "<yellow>/cc reload [config|shop|items|all] <gray>- Reload configs</gray>"
     help-debug: "<yellow>/cc debug <gray>- Toggle debug mode</gray>"
@@ -492,7 +491,6 @@ messages:
      bloodwrench-healing-restored: "<green>✔ Your blood runs clean again - you can heal.</green>"
      warden-rising-fury-reach-gained: "<gold>⚔ Rising Fury <yellow>{stacks}/{max_stacks}</yellow> - reach <yellow>+{reach}</yellow></gold>"
      warden-rising-fury-reach-maxed: "<dark_red><bold>MAX REACH!</bold></dark_red> <gold>Rising Fury fully stacked - reach <yellow>+{reach}</yellow></gold>"
-     warden-shield-broken: "<red>Your shield was broken by Rising Fury!</red>"
      blazebite-reloading: "<red>BlazeBite reloading! ({cooldown_seconds}s)</red>"
      blazebite-reload-start: "<yellow>BlazeBite reloading...</yellow>"
      blazebite-freeze-lockout: "<red>BlazeBite locked - your last shot froze a target solid! ({cooldown_seconds}s)</red>"
@@ -781,18 +779,6 @@ messages:
     afk-kick-warning: "<yellow>You are AFK! You will be kicked in <gold>{seconds}s</gold>.</yellow>"
     afk-kick: "<red>You were kicked for being AFK in the lobby.</red>"
     afk-kick-reason: "<red>AFK in lobby</red>"
-
-  # ============================================
-  # SHIELD MESSAGES
-  # ============================================
-  shield:
-    usage: "<red>Usage: /cc shield <on|off> [player]</red>"
-    player-not-found: "<red>Player '{player}' not found.</red>"
-    need-player-or-target: "<red>You must specify a target player.</red>"
-    target-not-in-game: "<red>{player_name} is not in a game.</red>"
-    success: "<green>Shield preference set to <gold>{state}</gold> for this game.</green>"
-    success-other: "<green>Shield preference set to <gold>{state}</gold> for {player_name}.</green>"
-    game-success: "<green>This game's shield setting was forced <gold>{state}</gold> for everyone.</green>"
 
   # ============================================
   # LEADERBOARD MESSAGES

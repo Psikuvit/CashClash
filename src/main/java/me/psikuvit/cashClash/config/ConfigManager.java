@@ -470,14 +470,6 @@ public class ConfigManager {
         return config.getDouble("sequences.hold-seconds.president-reveal", 3.5);
     }
 
-    public double getShieldRevealDeterminingHoldSeconds() {
-        return config.getDouble("sequences.hold-seconds.shield-reveal-determining", 2);
-    }
-
-    public double getShieldRevealResultHoldSeconds() {
-        return config.getDouble("sequences.hold-seconds.shield-reveal-result", 3);
-    }
-
     public double getRoundEndResultHoldSeconds() {
         return config.getDouble("sequences.hold-seconds.round-end-result", 5);
     }
@@ -646,8 +638,8 @@ public class ConfigManager {
     // ==================== SEQUENCE SETTINGS ====================
 
     /**
-     * Check if scripted title/freeze sequences (round start, president reveal, shield
-     * reveal, round end, sudden death, victory) are enabled.
+     * Check if scripted title/freeze sequences (round start, president reveal, round end,
+     * sudden death, victory) are enabled.
      */
     public boolean isSequencesEnabled() {
         return config.getBoolean("sequences.enabled", true);

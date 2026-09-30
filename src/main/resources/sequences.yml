@@ -2,7 +2,7 @@
 # Cash Clash Sequence Messages
 # ============================================
 # Titles/subtitles for scripted round/game presentation moments (round start,
-# president reveal, shield reveal, round end, sudden death, victory).
+# president reveal, round end, sudden death, victory).
 # All messages use MiniMessage format.
 # Schema Version: 1 (for future migrations)
 # ============================================
@@ -28,11 +28,6 @@ round-end:
   win-title: "<green><bold>YOU WIN!</bold></green>"
   lose-title: "<red><bold>YOU LOSE</bold></red>"
   no-winner-title: "<gray><bold>Round Over</bold></gray>"
-
-shield-reveal:
-  determining: "<gold><bold>Determining Shield...</bold></gold>"
-  shields-given: "<green><bold>Everyone was given a shield!</bold></green>"
-  no-shields: "<red><bold>No shields were given out!</bold></red>"
 
 sudden-death:
   title: "<red><bold>SUDDEN DEATH</bold></red>"

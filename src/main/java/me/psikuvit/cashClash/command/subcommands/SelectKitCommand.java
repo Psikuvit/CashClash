@@ -89,13 +89,12 @@ public class SelectKitCommand extends AbstractArgCommand {
 
         PlayerData playerData = CashClashPlugin.getInstance().getPlayerDataManager().getData(target.getUniqueId());
         int currentRound = session.getCurrentRound();
-        boolean shieldsEnabled = session.hasShields();
 
         if (playerData.hasKitLayout(kit.name())) {
             Map<Integer, String> layout = playerData.getKitLayout(kit.name());
-            KitService.applyWithLayout(kit, target, layout, currentRound, shieldsEnabled);
+            KitService.applyWithLayout(kit, target, layout, currentRound);
         } else {
-            KitService.apply(kit, target, currentRound, shieldsEnabled);
+            KitService.apply(kit, target, currentRound);
         }
 
         String display = kit.getDisplayName();

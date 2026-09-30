@@ -7,7 +7,6 @@ import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.ItemFactory;
-import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -25,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Mutation logic for {@link Kit} - giving/removing kit items, potion effects, and shield state.
+ * Mutation logic for {@link Kit} - giving/removing kit items and potion effects.
  * Kit itself stays a plain enum (display name only); every behavior that used to live on the
  * enum's instance methods lives here instead, taking the Kit as an explicit parameter.
  */
@@ -41,15 +40,13 @@ public class KitService {
      * Apply kit to a player. This is the main method to give kit items.
      * Round 1: Clear inventory and give base items (kit-specific items disabled for now)
      * Round 2+: Don't reissue base items - the player already has (or has spent/upgraded)
-     *   whatever they were given in round 1, so only the shield toggle re-runs
-     * Always: Apply shield logic
+     *   whatever they were given in round 1
      *
      * @param kit The kit to apply
      * @param player The player to give the kit to
      * @param round The current round number
-     * @param shieldsEnabled Whether this game session has shields (fixed for every round)
      */
-    public static void apply(Kit kit, Player player, int round, boolean shieldsEnabled) {
+    public static void apply(Kit kit, Player player, int round) {
         if (round == 1) {
             // Round 1 kits removed temporarily - all rounds get base items
             player.getInventory().clear();
@@ -58,18 +55,15 @@ public class KitService {
             removeKitItems(player);
             removeKitSpecificEnhancements(kit, player);
 
-            giveBaseItems(player, shieldsEnabled);
+            giveBaseItems(player);
         }
-
-        // Always apply shield logic each round
-        toggleShield(player, shieldsEnabled);
     }
 
     /**
-     * Backward compatibility method - defaults to round 1 with shields
+     * Backward compatibility method - defaults to round 1
      */
     public static void apply(Kit kit, Player player) {
-        apply(kit, player, 1, true);
+        apply(kit, player, 1);
     }
 
     /**
@@ -78,38 +72,6 @@ public class KitService {
     public static void remove(Kit kit, Player player) {
         player.getInventory().clear();
         player.getInventory().setArmorContents(new ItemStack[4]);
-    }
-
-    /**
-     * Toggle shield in the offhand based on this session's fixed shield setting.
-     * This is called at the start of each shopping phase to reapply the shield.
-     *
-     * @param player The player to update
-     * @param shieldsEnabled Whether this game session has shields (fixed for every round)
-     */
-    public static void toggleShield(Player player, boolean shieldsEnabled) {
-        setShield(player, shieldsEnabled);
-    }
-
-    /**
-     * Give or remove a shield from a player's offhand.
-     * Used by the round-based shield toggle and the admin shield override command.
-     *
-     * @param player The player to update
-     * @param give True to equip a shield, false to remove one
-     */
-    public static void setShield(Player player, boolean give) {
-        ItemStack offHand = player.getInventory().getItemInOffHand();
-        if (give) {
-            if (offHand.getType() != Material.AIR && offHand.getType() != Material.SHIELD) {
-                ItemUtils.returnItemToInventoryOrDrop(player, offHand);
-            }
-            player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
-        } else {
-            if (offHand.getType() == Material.SHIELD) {
-                player.getInventory().setItemInOffHand(null);
-            }
-        }
     }
 
     /**
@@ -213,9 +175,9 @@ public class KitService {
 
     /**
      * Give base items that all kits receive every round.
-     * This includes armor, tools, food, and shield (fixed for the whole game session).
+     * This includes armor, tools and food.
      */
-    private static void giveBaseItems(Player player, boolean shieldsEnabled) {
+    private static void giveBaseItems(Player player) {
         // === ARMOR (UNBREAKABLE) ===
         PlayerInventory inventory = player.getInventory();
         inventory.setHelmet(createUnbreakable(Material.LEATHER_HELMET));
@@ -267,10 +229,6 @@ public class KitService {
         ItemStack waterBucket = new ItemStack(Material.WATER_BUCKET);
         markKitItem(waterBucket);
         player.getInventory().addItem(waterBucket);
-
-        // === SHIELD ===
-        // Fixed for the whole game session - no per-round swap
-        setShield(player, shieldsEnabled);
     }
 
     /**
@@ -393,16 +351,15 @@ public class KitService {
     /**
      * Apply kit with a custom layout and round number.
      * Items are placed according to the slot -> item identifier mapping.
-     * Round 1: Clear inventory, place base items with layout, apply shield
-     * Round 2+: Don't reissue base items (see {@link #apply}), just re-run the shield toggle
+     * Round 1: Clear inventory, place base items with layout
+     * Round 2+: Don't reissue base items (see {@link #apply})
      *
      * @param kit The kit to apply
      * @param player The player to give the kit to
      * @param layout Map of slot -> item identifier
      * @param round The current round number
-     * @param shieldsEnabled Whether this game session has shields (fixed for every round)
      */
-    public static void applyWithLayout(Kit kit, Player player, Map<Integer, String> layout, int round, boolean shieldsEnabled) {
+    public static void applyWithLayout(Kit kit, Player player, Map<Integer, String> layout, int round) {
         if (round == 1) {
             // Round 1 kits removed temporarily - all rounds get base items
             player.getInventory().clear();
@@ -413,9 +370,6 @@ public class KitService {
 
             giveBaseItemsWithLayout(player, layout);
         }
-
-        // Always apply shield logic each round
-        toggleShield(player, shieldsEnabled);
     }
 
     /**

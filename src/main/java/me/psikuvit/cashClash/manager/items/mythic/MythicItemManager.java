@@ -314,7 +314,7 @@ public class MythicItemManager {
             }
             case WARDEN_GLOVES ->
                 // Netherite Sword base pulled down to diamond-sword-equivalent; Rising Fury only
-                // adds reach/shield-break on top.
+                // adds reach on top.
                     addAttackModifiers(meta, Keys.MYTHIC_WARDEN_GLOVES_DAMAGE, Keys.MYTHIC_WARDEN_GLOVES_SPEED, DIAMOND_SWORD_DAMAGE, DIAMOND_SWORD_SPEED);
             case BLOODWRENCH_CROSSBOW -> {
                 // No enchantments - mode system handles functionality

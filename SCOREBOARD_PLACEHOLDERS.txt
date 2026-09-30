@@ -111,12 +111,6 @@ Example: "Time Remaining: {time} seconds"
                         ROUND DATA PLACEHOLDERS
 ================================================================================
 
-{shield_status}
-  - Shows whether this game session has shields enabled - a single coin flip decided once per
-    session and fixed for every round
-  - Returns: "Shield" or "Shield-less"
-  - Default: "?"
-
 {money_pool}
   - Shows the current round's kill-fed money pool (1,000 coins per kill so far this
     round, before the round-end minimum-payout floor is applied)

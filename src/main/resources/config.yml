@@ -271,10 +271,6 @@ sequences:
     round-start-reveal: 4
     # "Selecting President..." hold, and the reveal title hold afterward (president-reveal)
     president-reveal: 3.5
-    # "Determining Shield..." hold before the countdown (shield-reveal)
-    shield-reveal-determining: 2
-    # Hold on the shield/no-shield result before clearing (shield-reveal)
-    shield-reveal-result: 3
     # Hold on the round win/loss result before clearing (round-end)
     round-end-result: 5
     # Delay before the sudden-death announcement title appears (sudden-death)

@@ -384,10 +384,6 @@ public class ItemsConfig {
         return config.getInt("mythic-items.warden-gloves.rising-fury.hits-per-stack", 3);
     }
 
-    public int getWardenShieldDisableTicks() {
-        return config.getInt("mythic-items.warden-gloves.rising-fury.shield-disable-ticks", 100);
-    }
-
     // BlazeBite
     public int getBlazebiteShotsPerMag() {
         return config.getInt("mythic-items.blazebite-crossbows.shots-per-magazine", 8);

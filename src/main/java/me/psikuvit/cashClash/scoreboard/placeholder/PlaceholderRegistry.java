@@ -128,7 +128,7 @@ public class PlaceholderRegistry {
             "{your_team}", "{your_team_coins}", "{your_team_ready}",
             "{enemy_team}", "{enemy_team_coins}", "{enemy_team_ready}",
             "{player_coins}", "{player_kills}", "{player_lives}", "{player_deaths}", "{kill_streak}",
-            "{shield_status}", "{money_pool}", "{round_kills}", "{teamRed_alive}", "{teamBlue_alive}",
+            "{money_pool}", "{round_kills}", "{teamRed_alive}", "{teamBlue_alive}",
             "{your_team_alive}", "{enemy_team_alive}",
             "{round}", "{players}"
         ));

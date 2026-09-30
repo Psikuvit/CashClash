@@ -80,9 +80,6 @@ public class GameSession {
     private int sequenceLockCount;
     private boolean actionsRestricted;
     private boolean damageDisabled;
-    // Shield logic: the whole game is either shield or shieldless, decided once at game
-    // start (50/50 chance) and fixed for every round - no mid-game swap
-    private boolean shieldsEnabled;
 
     // Countdown/start preparation
     private BukkitTask startCountdownTask;
@@ -106,10 +103,6 @@ public class GameSession {
 
     // Track round wins for each team (incremented when team wins a round)
     private final Map<Integer, Integer> roundWins; // 1 = Red, 2 = Blue
-
-    // Admin shield overrides for testing (UUID -> give shield). Takes precedence over the
-    // per-game random shield pattern. A null/absent value means "no override".
-    private final Map<UUID, Boolean> shieldOverrides;
 
     public GameSession(int arenaNumber, CashClashPlugin plugin) {
         this.sessionId = UUID.randomUUID();
@@ -136,14 +129,10 @@ public class GameSession {
         this.roundWins = new HashMap<>();
         this.roundWins.put(1, 0);
         this.roundWins.put(2, 0);
-        this.shieldOverrides = new HashMap<>();
 
         this.startingCountdown = false;
         this.sequenceManager = new SequenceManager(this);
         this.rewardManager = new RewardManager(this);
-
-        // Determine shield preference for this game (50/50 chance), fixed for every round
-        this.shieldsEnabled = new Random().nextBoolean();
 
         // Get the fixed arena
         Arena arena = arenaManager.getArena(arenaNumber);
@@ -316,54 +305,6 @@ public class GameSession {
     }
 
     /**
-     * Returns whether shields are enabled for this game session (fixed for every round).
-     */
-    public boolean hasShields() {
-        return shieldsEnabled;
-    }
-
-    /**
-     * "Shield" or "Shield-less" - whichever this session's coin flip landed on. Shared text for
-     * the shield-reveal sequence and the {@code {shield_status}} scoreboard placeholder.
-     */
-    public String getShieldStatusText() {
-        return shieldsEnabled ? "Shield" : "Shield-less";
-    }
-
-    /**
-     * Admin override of the whole session's shield/shieldless decision (normally a one-time coin
-     * flip at game start). Re-applies every online player's kit so the new setting takes effect
-     * immediately, not just next round.
-     */
-    public void setShieldsEnabled(boolean shieldsEnabled) {
-        this.shieldsEnabled = shieldsEnabled;
-        for (UUID uuid : players.keySet()) {
-            Player p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline()) {
-                KitService.setShield(p, shieldsEnabled);
-            }
-        }
-    }
-
-    /**
-     * Set an admin shield override for a player (testing). Pass null to clear the override.
-     */
-    public void setShieldOverride(UUID uuid, Boolean give) {
-        if (give == null) {
-            shieldOverrides.remove(uuid);
-        } else {
-            shieldOverrides.put(uuid, give);
-        }
-    }
-
-    /**
-     * Get the admin shield override for a player, or null if none is set.
-     */
-    public Boolean getShieldOverride(UUID uuid) {
-        return shieldOverrides.get(uuid);
-    }
-
-    /**
      * public CashQuakeManager getCashQuakeManager() {
      * return cashQuakeManager;
      * }
@@ -394,10 +335,8 @@ public class GameSession {
         sequenceManager.play(Sequences.roundStart(gamemode), true, () -> {
             scoreboardManager.createBoardForSession(this);
             gamemode.onGameStart();
-            sequenceManager.play(Sequences.shieldReveal(), true, () -> {
-                players.keySet().forEach(this::applyKit);
-                roundManager.startShoppingPhase(currentRound);
-            });
+            players.keySet().forEach(this::applyKit);
+            roundManager.startShoppingPhase(currentRound);
         });
 
         Messages.debug("GAME", "GameSession " + sessionId + " started in Arena " + arenaNumber);
@@ -565,13 +504,7 @@ public class GameSession {
         if (currentRound == 1) {
             applyKitWithLayout(p, ccp.getUuid(), kitToApply);
         } else {
-            KitService.apply(kitToApply, p, currentRound, shieldsEnabled);
-        }
-
-        // Admin shield override (testing) takes precedence over the round pattern
-        Boolean override = shieldOverrides.get(p.getUniqueId());
-        if (override != null) {
-            KitService.setShield(p, override);
+            KitService.apply(kitToApply, p, currentRound);
         }
     }
 
@@ -582,9 +515,9 @@ public class GameSession {
         PlayerData playerData = playerDataManager.getData(uuid);
         if (playerData.hasKitLayout(kit.name())) {
             Map<Integer, String> layout = playerData.getKitLayout(kit.name());
-            KitService.applyWithLayout(kit, p, layout, currentRound, shieldsEnabled);
+            KitService.applyWithLayout(kit, p, layout, currentRound);
         } else {
-            KitService.apply(kit, p, currentRound, shieldsEnabled);
+            KitService.apply(kit, p, currentRound);
         }
     }
 

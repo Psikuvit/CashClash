@@ -12,7 +12,7 @@ import java.util.Map;
 
 /**
  * Manages sequences.yml - titles/subtitles for scripted round/game presentation moments
- * (round start, president reveal, shield reveal, round end, sudden death, victory).
+ * (round start, president reveal, round end, sudden death, victory).
  */
 public class SequencesConfig {
 

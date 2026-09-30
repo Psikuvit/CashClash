@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Warden Gloves - boxing punch ability with Speed I, a right-click shockwave cone, and a
  * shift+right-click Rising Fury ability. Melee damage/speed is diamond-sword-equivalent at all
  * times (see {@link MythicItemManager#createMythicItem}); Rising Fury adds stacking reach on
- * landed hits and shield-breaking at max stacks, on top of that baseline. Holding the gloves
+ * landed hits on top of that baseline. Holding the gloves
  * occupies both hands - the off-hand item is stashed and shown a cosmetic paired glove for as
  * long as the gloves stay in the main hand.
  */
@@ -107,7 +107,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
         Messages.debug(player, "WARDEN_GLOVES: Punch attack on " + victim.getName());
 
-        onRisingFuryHit(player, victim);
+        onRisingFuryHit(player);
 
         // Check if boxing ability is on cooldown (ability hasn't been started yet)
         if (!wardenBoxingActive.contains(uuid) && cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_BOXING)) {
@@ -396,7 +396,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
      * Called from {@link #useWardenPunch} on every landed hit - no-op if Rising Fury isn't
      * active. Resets the no-hit timeout and advances the reach-stacking counter.
      */
-    private void onRisingFuryHit(Player player, Player victim) {
+    private void onRisingFuryHit(Player player) {
         UUID uuid = player.getUniqueId();
         if (!risingFuryActive.contains(uuid)) return;
 
@@ -417,10 +417,6 @@ public class WardenGlovesHandler extends MythicItemHandler {
         if (stacks > previousHits / hitsPerStack) {
             announceReachGain(player, stacks, maxStacks);
         }
-
-        if (stacks >= maxStacks) {
-            tryBreakShield(victim);
-        }
     }
 
     /**
@@ -440,14 +436,6 @@ public class WardenGlovesHandler extends MythicItemHandler {
                     "{reach}", reach);
             SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BELL, 0.8f, 1.0f + (0.2f * stacks));
         }
-    }
-
-    private void tryBreakShield(Player victim) {
-        if (victim == null || !victim.isOnline() || !victim.isBlocking()) return;
-
-        victim.setCooldown(Material.SHIELD, cfg.getWardenShieldDisableTicks());
-        Messages.send(victim, "mythic.warden-shield-broken");
-        SoundUtils.play(victim, Sound.ITEM_SHIELD_BREAK, 1.0f, 1.0f);
     }
 
     /**

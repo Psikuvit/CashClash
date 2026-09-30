@@ -47,9 +47,6 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         SUPPORTED_PLACEHOLDERS.add("player_deaths");
         SUPPORTED_PLACEHOLDERS.add("kill_streak");
 
-        // Shield/shield-less status
-        SUPPORTED_PLACEHOLDERS.add("shield_status");
-
         // Round data
         SUPPORTED_PLACEHOLDERS.add("money_pool");
         SUPPORTED_PLACEHOLDERS.add("round_kills");
@@ -89,8 +86,6 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         }
 
         return switch (placeholder) {
-            case "shield_status" -> session.getShieldStatusText();
-
             // Time placeholders
             case "phase", "state" -> getPhase(session.getState());
             case "phase_number", "round" -> String.valueOf(session.getCurrentRound());
@@ -290,7 +285,6 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
                  "your_team_coins", "enemy_team_coins", "player_coins", "your_team_wins", "enemy_team_wins" -> "0";
             case "phase", "state" -> "Unknown";
             case "round_won" -> "0 - 0";
-            case "shield_status" -> "?";
             default -> null;
         };
     }

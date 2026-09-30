@@ -138,7 +138,6 @@ mythic-items:
       reach-per-stack: 0.25
       max-stacks: 3               # 9 hits total (3 per stack) to reach full charge
       hits-per-stack: 3
-      shield-disable-ticks: 100   # 5s vanilla shield-disable on a fully-charged (max-stacks) hit
 
   # BlazeBite Crossbows - a single crossbow now; every hit applies BOTH the glacier freeze
   # and volcano fire/splash effects below (no more separate Glacier/Volcano items or modes).
