@@ -909,3 +909,25 @@ messages:
     invalid-input: "<red>Invalid input!</red>"
     invalid-number: "<red>'{input}' is not a valid number.</red>"
 
+# ============================================
+# HOVER GLOSSARY
+# ============================================
+# Words that show an explanation when a player hovers over them in chat. Each entry's word is
+# matched as a whole word, in any capitalisation, in every chat message. Add your own:
+#   my-entry:
+#     word: "Word or phrase"
+#     text: "<gray>What it means</gray>"
+# To turn an entry off, set its text to "" - a deleted entry is added back on the next reload.
+hover-glossary:
+  first-blood:
+    word: "First Blood"
+    text: "<gray>Bonus for the first kill of the round.</gray>"
+  killstreak:
+    word: "Killstreak"
+    text: "<gray>Bonus for every few kills in a row without dying.</gray>"
+  most-kills:
+    word: "Most Kills"
+    text: "<gray>End-of-game bonus for the player with the most kills.</gray>"
+  most-damage:
+    word: "Most Damage"
+    text: "<gray>End-of-game bonus for the player who dealt the most damage.</gray>"

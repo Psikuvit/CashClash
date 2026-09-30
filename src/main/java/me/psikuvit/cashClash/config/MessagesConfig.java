@@ -4,12 +4,18 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Configuration manager for all in-game messages.
@@ -18,9 +24,12 @@ import java.util.Map;
 public class MessagesConfig {
 
     private final Map<String, String> messages;
+    private final Map<String, String> hoverGlossary;
+    private Pattern hoverGlossaryPattern;
 
     public MessagesConfig() {
         this.messages = new HashMap<>();
+        this.hoverGlossary = new HashMap<>();
         loadMessages();
     }
 
@@ -60,6 +69,50 @@ public class MessagesConfig {
         if (messagesConfig.contains("messages")) {
             loadMessagesFromSection(messagesConfig.getConfigurationSection("messages"), "");
         }
+        loadHoverGlossary(messagesConfig.getConfigurationSection("hover-glossary"));
+    }
+
+    /**
+     * Loads {@code hover-glossary}: each entry's {@code word} shows its {@code text} on hover
+     * wherever it appears in chat. Entries with a blank word or text are skipped - that's how an
+     * operator turns off a bundled entry, since deleting one only gets it merged back in on the
+     * next load.
+     */
+    private void loadHoverGlossary(@Nullable ConfigurationSection section) {
+        hoverGlossary.clear();
+        hoverGlossaryPattern = null;
+        if (section == null) return;
+
+        for (String id : section.getKeys(false)) {
+            String word = section.getString(id + ".word", "").trim();
+            String text = section.getString(id + ".text", "");
+            if (word.isEmpty() || text.isBlank()) continue;
+            hoverGlossary.put(word.toLowerCase(Locale.ROOT), text);
+        }
+        if (hoverGlossary.isEmpty()) return;
+
+        String words = hoverGlossary.keySet().stream()
+                .sorted(Comparator.comparingInt(String::length).reversed())
+                .map(Pattern::quote)
+                .collect(Collectors.joining("|"));
+        hoverGlossaryPattern = Pattern.compile("(?<!\\w)(?:" + words + ")(?!\\w)",
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+    }
+
+    /**
+     * Hover text for each glossary word, keyed by the lower-cased word.
+     */
+    public Map<String, String> getHoverGlossary() {
+        return Collections.unmodifiableMap(hoverGlossary);
+    }
+
+    /**
+     * Matches any glossary word as a whole word, ignoring case, longest first so a phrase wins
+     * over a shorter word inside it; null when the glossary is empty.
+     */
+    @Nullable
+    public Pattern getHoverGlossaryPattern() {
+        return hoverGlossaryPattern;
     }
 
     /**

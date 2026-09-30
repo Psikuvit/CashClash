@@ -6,6 +6,8 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -21,7 +23,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * Utility for creating and sending components using MiniMessage with italics disabled.
@@ -136,6 +141,27 @@ public final class Messages {
         return comp.decoration(TextDecoration.ITALIC, false);
     }
 
+    /**
+     * {@link #parse} for a chat line, giving every {@code hover-glossary} word in it its hover
+     * text. Works on the parsed component, so it never touches MiniMessage tags and each word
+     * keeps its own styling. Chat only - hover text does nothing in titles, lore or scoreboards.
+     */
+    @NotNull
+    private static Component parseChat(@Nullable String miniMsg) {
+        Component message = parse(miniMsg);
+        Pattern glossary = config.getHoverGlossaryPattern();
+        if (glossary == null) return message;
+
+        Map<String, String> hoverText = config.getHoverGlossary();
+        return message.replaceText(TextReplacementConfig.builder()
+                .match(glossary)
+                .replacement((match, word) -> {
+                    String text = hoverText.get(match.group().toLowerCase(Locale.ROOT));
+                    return text == null ? word : word.hoverEvent(HoverEvent.showText(parse(text)));
+                })
+                .build());
+    }
+
     // ==================== PARSING ====================
 
     /**
@@ -157,7 +183,7 @@ public final class Messages {
      */
     public static void send(@Nullable Player player, @Nullable String key) {
         if (player != null && player.isOnline()) {
-            player.sendMessage(parse(config.getRaw(key)));
+            player.sendMessage(parseChat(config.getRaw(key)));
         }
     }
 
@@ -169,7 +195,7 @@ public final class Messages {
      */
     public static void send(@Nullable Player player, @Nullable String key, @NotNull String... args) {
         if (player != null && player.isOnline()) {
-            player.sendMessage(parse(config.getMessage(key, args)));
+            player.sendMessage(parseChat(config.getMessage(key, args)));
         }
     }
 
@@ -221,7 +247,7 @@ public final class Messages {
      */
     public static void send(@Nullable CommandSender sender, @Nullable String key) {
         if (sender != null) {
-            sender.sendMessage(parse(config.getRaw(key)));
+            sender.sendMessage(parseChat(config.getRaw(key)));
         }
     }
 
@@ -234,7 +260,7 @@ public final class Messages {
      */
     public static void send(@Nullable CommandSender sender, @Nullable String key, @NotNull String... args) {
         if (sender != null) {
-            sender.sendMessage(parse(config.getMessage(key, args)));
+            sender.sendMessage(parseChat(config.getMessage(key, args)));
         }
     }
 
