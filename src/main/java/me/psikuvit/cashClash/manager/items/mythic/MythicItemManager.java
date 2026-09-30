@@ -9,12 +9,12 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.ItemFactory;
+import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
@@ -269,6 +269,7 @@ public class MythicItemManager {
 
         // Apply special attributes based on mythic type
         applyMythicAttributes(mythic, tags.meta());
+        ItemUtils.applyPermanentEnchants(tags.meta(), mythic.getConfigKey());
 
         tags.meta().setUnbreakable(true);
         tags.meta().addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
@@ -305,26 +306,13 @@ public class MythicItemManager {
             case ELECTRIC_EEL_SWORD ->
                 // Diamond Sword stats.
                     addAttackModifiers(meta, Keys.MYTHIC_ELECTRIC_EEL_DAMAGE, Keys.MYTHIC_ELECTRIC_EEL_SPEED, DIAMOND_SWORD_DAMAGE, DIAMOND_SWORD_SPEED);
-            case GOBLIN_SPEAR -> {
+            case GOBLIN_SPEAR ->
                 // Trident stats.
-                addAttackModifiers(meta, Keys.MYTHIC_GOBLIN_SPEAR_DAMAGE, Keys.MYTHIC_GOBLIN_SPEAR_SPEED, 9.0, 1.1);
-
-                // Loyalty makes the thrown spear return to the wielder - kept.
-                meta.addEnchant(Enchantment.LOYALTY, 3, true);
-            }
+                    addAttackModifiers(meta, Keys.MYTHIC_GOBLIN_SPEAR_DAMAGE, Keys.MYTHIC_GOBLIN_SPEAR_SPEED, 9.0, 1.1);
             case WARDEN_GLOVES ->
                 // Netherite Sword base pulled down to diamond-sword-equivalent; Rising Fury only
                 // adds reach on top.
                     addAttackModifiers(meta, Keys.MYTHIC_WARDEN_GLOVES_DAMAGE, Keys.MYTHIC_WARDEN_GLOVES_SPEED, DIAMOND_SWORD_DAMAGE, DIAMOND_SWORD_SPEED);
-            case BLOODWRENCH_CROSSBOW -> {
-                // No enchantments - mode system handles functionality
-            }
-            case WIND_BOW -> // Legendary bow gets Power 3
-                    meta.addEnchant(Enchantment.POWER, 3, true);
-            case BLAZEBITE_CROSSBOWS -> {
-                // No enchantments - Glacier/Magma Storm effects are handled entirely in the hit
-                // handler, based on what the arrow hits.
-            }
             default -> {
             }
         }

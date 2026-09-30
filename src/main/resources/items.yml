@@ -360,7 +360,6 @@ custom-items:
 
   # Bag of Potatoes
   bag-of-potatoes:
-    knockback-level: 3
     durability: 3
     heal-per-hit: 2.0
 
@@ -472,6 +471,36 @@ custom-items:
     slowness-duration-seconds: 5
     hits-to-destroy: 4
 
+# ============================================
+# PERMANENT ENCHANTS
+# ============================================
+# Enchants built into an item when it's created: <item id>: { <enchantment>: <level> }.
+# Enchantment names are Minecraft's own ids (protection, fire_protection, projectile_protection,
+# sharpness, power, quick_charge, loyalty, knockback, ...). Set a level to 0 to remove one.
+# Items never show the enchant glint - their enchants still work.
+permanent-enchants:
+  bullseye-pants:
+    projectile_protection: 2
+  flamebringer-leggings:
+    fire_protection: 2
+  flamebringer-boots:
+    fire_protection: 2
+  dragon-head:
+    protection: 1
+  dragon-chestplate:
+    protection: 1
+  dragon-boots:
+    protection: 1
+  electric-eel-sword:
+    sharpness: 1
+  wind-bow:
+    power: 1
+  blazebite-crossbows:
+    quick_charge: 1
+  goblin-spear:
+    loyalty: 3
+  bag-of-potatoes:
+    knockback: 3
 
 # ============================================
 # CONSUMABLES

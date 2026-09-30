@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.items;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
@@ -39,6 +40,16 @@ public final class ItemUtils {
         } else {
             player.getWorld().dropItemNaturally(player.getLocation(), item);
         }
+    }
+
+    /**
+     * Adds an item's permanent enchants from items.yml ({@code permanent-enchants.<itemKey>}) and
+     * turns its enchant glint off - items keep what their enchants do, without the shine.
+     */
+    public static void applyPermanentEnchants(ItemMeta meta, String itemKey) {
+        CashClashPlugin.getInstance().getItemsConfig().getPermanentEnchants(itemKey)
+                .forEach((enchantment, level) -> meta.addEnchant(enchantment, level, true));
+        meta.setEnchantmentGlintOverride(false);
     }
 
     /**

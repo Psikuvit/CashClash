@@ -1,16 +1,24 @@
 package me.psikuvit.cashClash.config;
 
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.util.Messages;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.enchantments.Enchantment;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -992,6 +1000,32 @@ public class ItemsConfig {
 
     public int getFlamebringerAbilityCooldownSeconds() {
         return config.getInt("custom-armor.flamebringer.ability-cooldown-seconds", 15);
+    }
+
+    // ==================== PERMANENT ENCHANTS ====================
+
+    /**
+     * Enchants built into an item when it's created, from {@code permanent-enchants.<itemKey>}
+     * (Minecraft enchantment id -> level). Unknown ids and levels of 0 or less are skipped.
+     */
+    public Map<Enchantment, Integer> getPermanentEnchants(String itemKey) {
+        Map<Enchantment, Integer> enchants = new LinkedHashMap<>();
+        ConfigurationSection section = config.getConfigurationSection("permanent-enchants." + itemKey);
+        if (section == null) return enchants;
+
+        Registry<Enchantment> registry = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
+        for (String key : section.getKeys(false)) {
+            int level = section.getInt(key);
+            if (level <= 0) continue;
+
+            Enchantment enchantment = registry.get(NamespacedKey.minecraft(key.toLowerCase(Locale.ROOT)));
+            if (enchantment == null) {
+                Messages.debug("CONFIG", "Unknown permanent enchant '" + key + "' on " + itemKey);
+                continue;
+            }
+            enchants.put(enchantment, level);
+        }
+        return enchants;
     }
 
     // ==================== CONSUMABLES ====================

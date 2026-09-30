@@ -22,7 +22,6 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.Sound;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -128,6 +127,7 @@ public final class GameplayItemFactory {
 
         // Apply special properties based on item type
         applyCustomItemProperties(tags, customItem, item);
+        ItemUtils.applyPermanentEnchants(tags.meta(), customItem.getConfigKey());
 
         tags.meta().addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
         tags.apply();
@@ -177,6 +177,7 @@ public final class GameplayItemFactory {
         // Make unbreakable and hide flags
         tags.meta().setUnbreakable(true);
         tags.meta().addItemFlags(ItemFlag.HIDE_UNBREAKABLE, ItemFlag.HIDE_ATTRIBUTES);
+        ItemUtils.applyPermanentEnchants(tags.meta(), armor.getConfigKey());
 
         tags.apply();
 
@@ -262,7 +263,6 @@ public final class GameplayItemFactory {
                 if (tags.meta() instanceof Damageable damageable) {
                     damageable.setDamage(item.getType().getMaxDurability() - 3);
                 }
-                tags.meta().addEnchant(Enchantment.KNOCKBACK, 3, true);
             }
             case INVIS_CLOAK -> tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);
             case ICE_FAN -> {
