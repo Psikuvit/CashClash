@@ -204,6 +204,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
             @Override
             public void run() {
                 tick++;
+                boolean pullingAnyone = false;
 
                 for (Player target : new ArrayList<>(pulled)) {
                     if (!target.isOnline() || target.isDead()) continue;
@@ -225,9 +226,12 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
                     // Slower pull than before, and the beam stays yellow throughout - only its
                     // length (naturally shrinking as the target closes in) signals progress.
                     target.setVelocity(toCenter.normalize().multiply(0.3));
-                    ParticleUtils.beam(center.clone().add(0, 1, 0), target.getLocation().add(0, 1, 0), pullYellow, 0.15f, 2);
+                    ParticleUtils.beam(center.clone().add(0, 1, 0), target.getLocation().add(0, 1, 0), pullYellow,
+                            (float) cfg.getOrbPullBeamParticleSize(), 2);
+                    pullingAnyone = true;
                 }
-                ParticleUtils.spawnDust(center.clone().add(0, 1, 0), pullYellow, 1.0f, 3, 0.3);
+                float centerSize = pullingAnyone ? (float) cfg.getOrbPullCenterParticleSize() : 1.0f;
+                ParticleUtils.spawnDust(center.clone().add(0, 1, 0), pullYellow, centerSize, 3, 0.3);
 
                 if (tick >= durationTicks) {
                     releasePulledPlayers(pulled, slownessTicks);

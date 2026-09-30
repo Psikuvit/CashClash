@@ -829,6 +829,14 @@ public class ItemsConfig {
         return config.getInt("custom-items.orb-of-gravitation.hits-to-destroy", 4);
     }
 
+    public double getOrbPullBeamParticleSize() {
+        return config.getDouble("custom-items.orb-of-gravitation.pull-beam-particle-size", 0.5);
+    }
+
+    public double getOrbPullCenterParticleSize() {
+        return config.getDouble("custom-items.orb-of-gravitation.pull-center-particle-size", 1.6);
+    }
+
     // Soul Katana
     public double getSoulKatanaLeapDistance() {
         return config.getDouble("weapons.soul-katana.leap-distance", 3);

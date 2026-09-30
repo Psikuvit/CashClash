@@ -479,6 +479,9 @@ custom-items:
     pull-duration-ticks: 40
     slowness-duration-seconds: 5
     hits-to-destroy: 4
+    # Particle sizes while the orb is pulling someone in (its other particles are unchanged)
+    pull-beam-particle-size: 0.5      # Beam drawn to each player being pulled (was 0.15)
+    pull-center-particle-size: 1.6    # Swirl at the orb's centre (1.0 when nobody is being pulled)
 
 # ============================================
 # PERMANENT ENCHANTS
