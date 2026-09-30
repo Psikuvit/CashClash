@@ -6,7 +6,9 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.shop.DiscountService;
 import me.psikuvit.cashClash.shop.items.MythicItem;
+import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.ItemUtils;
@@ -69,7 +71,7 @@ public final class MythicCategoryGui {
             return;
         }
 
-        long price = mythic.getPrice();
+        long price = DiscountService.getFinalPrice(player, mythic, 1);
         if (!CashClashPlugin.getInstance().getShopService().canAfford(player, price)) {
             Messages.send(player, "shop.not-enough-coins", "cost", String.format("%,d", price));
             SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
@@ -81,8 +83,12 @@ public final class MythicCategoryGui {
 
         ItemStack mythicItem = CashClashPlugin.getInstance().getMythicItemManager().createMythicItem(mythic, player);
         if (mythic == MythicItem.WARDEN_GLOVES) {
-            // Warden Gloves land in the off-hand rather than overwriting whatever sword the
-            // player already bought - replaceBestMatchingTool would otherwise happily consume it.
+            // Warden Gloves land in the off-hand, so nothing else takes the sword they were
+            // discounted by - it has to be removed here.
+            WeaponItem tradedIn = DiscountService.bestOwnedWeapon(player, WeaponItem.IRON_SWORD, WeaponItem.DIAMOND_SWORD);
+            if (tradedIn != null) {
+                ItemUtils.removeItemFromPlayer(player, tradedIn.name(), 1);
+            }
             ItemStack offHand = player.getInventory().getItemInOffHand();
             if (offHand.getType() != Material.AIR) {
                 ItemUtils.returnItemToInventoryOrDrop(player, offHand);

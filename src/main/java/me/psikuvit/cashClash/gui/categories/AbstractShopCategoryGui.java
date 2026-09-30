@@ -132,7 +132,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
             }
         }
 
-        long totalPrice = CashClashPlugin.getInstance().getShopService().calculateTotalPrice(item, qty);
+        long totalPrice = CashClashPlugin.getInstance().getShopService().calculateTotalPrice(viewer, item, qty);
 
         if (!CashClashPlugin.getInstance().getShopService().canAfford(viewer, totalPrice)) {
             Messages.send(viewer, "shop.not-enough-coins", "cost", String.format("%,d", totalPrice));

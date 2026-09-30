@@ -103,6 +103,22 @@ public class ShopItemBuilder {
     }
 
     /**
+     * Adds a price line for a possibly discounted price: the original price crossed out with the
+     * discounted price on the line under it, or a plain price line when nothing is discounted.
+     *
+     * @param basePrice The undiscounted price
+     * @param finalPrice The price actually charged
+     * @return This builder for chaining
+     */
+    public ShopItemBuilder price(long basePrice, long finalPrice) {
+        if (finalPrice >= basePrice) return price(basePrice);
+
+        priceLore.add(Messages.parse("<gray>Price: <dark_gray><st>$" + String.format("%,d", basePrice) + "</st></dark_gray></gray>"));
+        priceLore.add(Messages.parse("<gray>Trade-in price: <gold>$" + String.format("%,d", finalPrice) + "</gold></gray>"));
+        return this;
+    }
+
+    /**
      * Adds a price detail line that should appear at the bottom of the lore.
      *
      * @param miniMessage The price detail text in MiniMessage format

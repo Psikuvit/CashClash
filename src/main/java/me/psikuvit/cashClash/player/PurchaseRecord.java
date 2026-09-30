@@ -17,6 +17,9 @@ import java.util.Map;
  * @param round The round in which the purchase was made
  * @param replacedSetItems Map of armor slot to replaced item for set purchases (null for non-sets)
  * @param setItems List of set pieces purchased (null for non-sets)
+ * @param displacedItem The strongest weapon a special-weapon purchase cleared out (null if none) -
+ *                      handed straight back to the inventory on refund, never through the
+ *                      replace-best-match path {@code replacedItem} takes
  */
 public record PurchaseRecord(
         Purchasable item,
@@ -25,28 +28,36 @@ public record PurchaseRecord(
         ItemStack replacedItem,
         int round,
         Map<ArmorSlot, ItemStack> replacedSetItems,
-        List<CustomArmorItem> setItems
+        List<CustomArmorItem> setItems,
+        ItemStack displacedItem
 ) {
 
     /**
      * Constructor for purchases that don't replace anything.
      */
     public PurchaseRecord(Purchasable item, int quantity, long price, int round) {
-        this(item, quantity, price, null, round, null, null);
+        this(item, quantity, price, null, round, null, null, null);
     }
 
     /**
      * Constructor for single item purchases with replacement.
      */
     public PurchaseRecord(Purchasable item, int quantity, long price, ItemStack replacedItem, int round) {
-        this(item, quantity, price, replacedItem, round, null, null);
+        this(item, quantity, price, replacedItem, round, null, null, null);
     }
 
     /**
      * Constructor for armor set purchases.
      */
     public PurchaseRecord(Purchasable item, long price, int round, Map<ArmorSlot, ItemStack> replacedSetItems, List<CustomArmorItem> setItems) {
-        this(item, 1, price, null, round, replacedSetItems, setItems);
+        this(item, 1, price, null, round, replacedSetItems, setItems, null);
+    }
+
+    /**
+     * Special-weapon purchase that cleared out the weaker weapons of its type.
+     */
+    public static PurchaseRecord displacing(Purchasable item, long price, int round, ItemStack displacedItem) {
+        return new PurchaseRecord(item, 1, price, null, round, null, null, displacedItem);
     }
 
     /**

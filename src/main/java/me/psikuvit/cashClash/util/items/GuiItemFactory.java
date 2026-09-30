@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.util.items;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.shop.DiscountService;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -69,7 +70,7 @@ public final class GuiItemFactory {
             builder.price(totalPrice);
             builder.priceDetail("<gray>Price per item: $" + String.format("%,d", item.getPrice()) + "</gray>");
         } else {
-            builder.price(item.getPrice());
+            builder.price(item.getPrice(), DiscountService.getFinalPrice(player, item, 1));
         }
 
         // Use ItemsConfig to get lore based on category and configKey
@@ -252,6 +253,7 @@ public final class GuiItemFactory {
 
         boolean ownsSet = ItemUtils.playerOwnsArmorSet(player, set);
         long totalPrice = set.getTotalPrice();
+        long finalPrice = DiscountService.getSetFinalPrice(player, set);
 
         for (int i = 0; i < pieces.size(); i++) {
             CustomArmorItem piece = pieces.get(i);
@@ -287,12 +289,19 @@ public final class GuiItemFactory {
                     builder.configLore(loreLinesFromConfig);
                 }
 
-                items[i] = builder
-                        .emptyLine()
+                builder.emptyLine()
                         .lore("<red>⚠ Must buy complete set!</red>")
                         .emptyLine()
-                        .lore("<yellow>Click to purchase entire set</yellow>")
-                        .priceDetail("<dark_gray>Set Total:</dark_gray> <gold>$" + String.format("%,d", totalPrice) + "</gold>")
+                        .lore("<yellow>Click to purchase entire set</yellow>");
+
+                if (finalPrice < totalPrice) {
+                    builder.priceDetail("<dark_gray>Set Total:</dark_gray> <dark_gray><st>$" + String.format("%,d", totalPrice) + "</st></dark_gray>")
+                            .priceDetail("<dark_gray>Trade-in price:</dark_gray> <gold>$" + String.format("%,d", finalPrice) + "</gold>");
+                } else {
+                    builder.priceDetail("<dark_gray>Set Total:</dark_gray> <gold>$" + String.format("%,d", totalPrice) + "</gold>");
+                }
+
+                items[i] = builder
                         .itemId("SET_" + set.name())
                         .build();
                 CustomModelDataMapper.applyArmorModel(items[i], piece);
@@ -358,7 +367,8 @@ public final class GuiItemFactory {
     
     /**
      * Creates a mythic/legendary item shop display.
-     * 
+     *
+     * @param viewer The player viewing the shop (for their trade-in discount)
      * @param mythic The mythic item
      * @param playerHasMythic Whether player already owns a mythic
      * @param ownedMythic The mythic the player owns (can be null)
@@ -366,7 +376,8 @@ public final class GuiItemFactory {
      * @param ownerUuid The UUID of the owner (if taken)
      * @return The configured mythic shop item
      */
-    public ItemStack createMythicShopItem(MythicItem mythic,
+    public ItemStack createMythicShopItem(Player viewer,
+                                         MythicItem mythic,
                                          boolean playerHasMythic,
                                          MythicItem ownedMythic,
                                          boolean mythicTaken,
@@ -438,7 +449,7 @@ public final class GuiItemFactory {
                     .configLore(loreLinesFromConfig)
                     .emptyLine()
                     .lore("<yellow>Click to purchase</yellow>")
-                    .price(mythic.getPrice())
+                    .price(mythic.getPrice(), DiscountService.getFinalPrice(viewer, mythic, 1))
                     .build();
             CustomModelDataMapper.applyCustomModel(item, mythic);
             return item;

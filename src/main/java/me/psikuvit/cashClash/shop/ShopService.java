@@ -42,8 +42,8 @@ public class ShopService {
         this.itemFactory = itemFactory;
     }
 
-    public long calculateTotalPrice(Purchasable item, int quantity) {
-        return item.getPrice() * Math.max(1, quantity);
+    public long calculateTotalPrice(Player player, Purchasable item, int quantity) {
+        return DiscountService.getFinalPrice(player, item, quantity);
     }
 
     public void processPurchase(Player player, Purchasable item, int quantity, long totalPrice) {
@@ -224,6 +224,13 @@ public class ShopService {
                 restoreReplacedItem(player, record);
                 Messages.send(player, "shop.purchase-undone",
                     "amount", String.format("%,d", record.price()));
+            } else if (record.displacedItem() != null) {
+                player.getInventory().addItem(record.displacedItem());
+                Messages.send(player, "shop.purchase-undone",
+                    "amount", String.format("%,d", record.price()));
+                if (!removed) {
+                    Messages.send(player, "shop.purchase-undone-item-not-found");
+                }
             } else {
                 // No purchased item to restore - restore round 1 starter gear if applicable
                 restoreStarterGear(player, record.item());
@@ -399,8 +406,7 @@ public class ShopService {
                     }
 
                     // Create set purchase record with all replaced items
-                    long setPrice = customArmor.getArmorSet().getTotalPrice();
-                    ccp.addPurchase(new PurchaseRecord(setPieces.getFirst(), setPrice, round, replacedSetItems, setPieces));
+                    ccp.addPurchase(new PurchaseRecord(setPieces.getFirst(), totalPrice, round, replacedSetItems, setPieces));
 
                     SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
                 } else {
@@ -423,7 +429,7 @@ public class ShopService {
                     // Equip the custom armor
                     itemFactory.createAndEquipCustomArmor(player, customArmor);
 
-                    cachePurchase(player, ccp, item, round, replacedItem);
+                    cachePurchase(player, ccp, new PurchaseRecord(item, 1, totalPrice, replacedItem, round));
                 }
             }
             case ArmorItem ignored -> {
@@ -449,13 +455,19 @@ public class ShopService {
                 // Equip the armor
                 ItemUtils.equipArmorOrReplace(player, armorItem);
 
-                cachePurchase(player, ccp, item, round, replacedItem);
+                cachePurchase(player, ccp, new PurchaseRecord(item, 1, totalPrice, replacedItem, round));
             }
             case WeaponItem ignored -> {
                 ItemStack weaponItem = itemFactory.createGameplayItem(item);
-                ItemStack replacedItem = replaceWeaponInInventory(player, weaponItem);
 
-                cachePurchase(player, ccp, item, round, replacedItem);
+                if (ItemSelectionUtils.isSpecialWeapon(weaponItem)) {
+                    ItemStack displacedItem = ItemSelectionUtils.removeOutclassedMatches(player.getInventory(), weaponItem);
+                    player.getInventory().addItem(weaponItem);
+                    cachePurchase(player, ccp, PurchaseRecord.displacing(item, totalPrice, round, displacedItem));
+                } else {
+                    ItemStack replacedItem = replaceWeaponInInventory(player, weaponItem);
+                    cachePurchase(player, ccp, new PurchaseRecord(item, 1, totalPrice, replacedItem, round));
+                }
             }
             default -> {
                 // Skip mythic items - they are handled by MythicCategoryGui
@@ -481,17 +493,17 @@ public class ShopService {
         KitService.restoreStarterArmor(player);
     }
 
-    private void cachePurchase(Player player, CashClashPlayer ccp, Purchasable item, int round, ItemStack replacedItem) {
-        ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
+    private void cachePurchase(Player player, CashClashPlayer ccp, PurchaseRecord record) {
+        ccp.addPurchase(record);
 
         Messages.send(player, "shop.purchased",
-            "item_name", item.getDisplayName(),
-            "price", String.format("%,d", item.getPrice()));
+            "item_name", record.item().getDisplayName(),
+            "price", String.format("%,d", record.price()));
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
     }
 
     /**
-     * Replace a weapon in the player's inventory with a new one.
+     * Replace an ordinary weapon in the player's inventory with a new one.
      * Finds the matching weapon category (sword/axe) and replaces it.
      * The old weapon is discarded (not returned to inventory).
      *
@@ -502,12 +514,6 @@ public class ShopService {
     private ItemStack replaceWeaponInInventory(Player player, ItemStack newWeapon) {
         PlayerInventory inv = player.getInventory();
         Material newType = newWeapon.getType();
-
-        if (ItemSelectionUtils.isSpecialWeapon(newWeapon)) {
-            ItemSelectionUtils.removeOutclassedMatches(inv, newWeapon);
-            inv.addItem(newWeapon);
-            return null;
-        }
 
         // Find matching weapon slot
         int bestSlot = ItemSelectionUtils.findBestMatchingToolSlot(inv, newType);

@@ -108,7 +108,7 @@ public class ShopGUI extends AbstractGui {
                 boolean mythicTaken = CashClashPlugin.getInstance().getMythicItemManager().isMythicPurchased(session, mythic);
                 UUID ownerUuid = CashClashPlugin.getInstance().getMythicItemManager().getMythicOwner(session, mythic);
 
-                ItemStack mythicItem = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createMythicShopItem(mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
+                ItemStack mythicItem = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createMythicShopItem(viewer, mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
                 setButton(MYTHIC_SLOTS[i], GuiButton.of(mythicItem)
                         .onClick(p -> MythicCategoryGui.handleMythicPurchase(p, mythic, this)));
             }

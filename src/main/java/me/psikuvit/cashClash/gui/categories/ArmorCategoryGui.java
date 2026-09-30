@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import me.psikuvit.cashClash.player.PurchaseRecord.ArmorSlot;
+import me.psikuvit.cashClash.shop.DiscountService;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
@@ -344,7 +345,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
             return;
         }
 
-        long totalPrice = armorSet.getTotalPrice();
+        long totalPrice = DiscountService.getSetFinalPrice(player, armorSet);
         if (!ensureCanAffordSet(player, totalPrice)) return;
 
         applySetPurchase(player, session, armorSet, totalPrice, ccp);
