@@ -298,7 +298,6 @@ messages:
     game-force-end: "<yellow>Game ending - one team has no remaining players.</yellow>"
     shopping-area-missing: "<red>Your team's shopping area is not set. Teleporting to spectator area.</red>"
     shopping-area-teleported: "<yellow>Teleported to your team's shopping area.</yellow>"
-    loss-streak-bonus: "<gold>Loss Streak Bonus: +${bonus}</gold>"
     water-refilled-shopping: "<aqua>Water buckets refilled for shopping phase!</aqua>"
 
   # ============================================

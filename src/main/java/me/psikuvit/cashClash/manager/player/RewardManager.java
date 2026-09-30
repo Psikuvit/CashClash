@@ -14,7 +14,7 @@ import java.util.UUID;
 
 /**
  * Single funnel for every achievement-style coin reward (kills, bonuses, objective
- * completions, round-end distribution, loss-streak comeback, weapon rewards, supply drops).
+ * completions, round-end distribution, weapon rewards, supply drops).
  * Shop refunds/purchases, money transfers, admin coin grants, and investment payouts are
  * transactions rather than earned rewards and don't go through here.
  *

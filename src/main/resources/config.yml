@@ -65,12 +65,6 @@ rounds:
   # Kills needed for an uninterrupted killstreak to trigger the Killstreak bonus
   killstreak-interval: 4
 
-  # Loss streak bonuses
-  # Awarded to team that lost consecutive rounds
-  loss-streak-1-bonus: 5000
-  loss-streak-2-bonus: 7500
-  loss-streak-3-bonus: 10000
-
 # ============================================
 # ARMOR RESTRICTIONS
 # ============================================

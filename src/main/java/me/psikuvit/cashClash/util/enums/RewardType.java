@@ -17,7 +17,6 @@ public enum RewardType {
     // "economy.round-money-distributed" is sent once as a session-wide broadcast (it needs
     // both a "pool" and a per-player "amount" placeholder), not per grant - see EconomyManager.
     ROUND_DISTRIBUTION(null, false),
-    LOSS_STREAK("round.loss-streak-bonus", false),
     // "round.forfeit-executed" is a single session-wide broadcast (see GameSession), not a
     // per-grant message.
     FORFEIT_BONUS(null, false),

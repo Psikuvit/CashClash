@@ -22,7 +22,6 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
-import me.psikuvit.cashClash.util.enums.RewardType;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -164,10 +163,6 @@ public class RoundManager {
             Messages.broadcast(session.getPlayers(), "round.buff-selection-prompt");
             Messages.broadcast(session.getPlayers(), "round.buff-selection-time");
         } else {
-            // Apply loss streak bonuses at start of shopping phase (round 2+)
-            if (roundNumber > 1) {
-                applyLossStreakBonuses();
-            }
             Messages.broadcast(session.getPlayers(), "round.shopping-phase-title",
                 "round", String.valueOf(roundNumber));
             Messages.broadcast(session.getPlayers(), "round.shopping-phase-time",
@@ -392,14 +387,6 @@ public class RoundManager {
                         "team_name", winnerName);
                 // Track round wins for this winner
                 session.incrementRoundWins(winnerTeam);
-                // Update loss streaks for this round
-                if (winnerTeam == 1) {
-                    session.getTeamRed().resetLossStreak();
-                    session.getTeamBlue().incrementLossStreak();
-                } else {
-                    session.getTeamBlue().resetLossStreak();
-                    session.getTeamRed().incrementLossStreak();
-                }
 
                 // Check if game should end early based on dynamic win condition
                 if (checkGameEndCondition(winnerTeam)) {
@@ -424,8 +411,6 @@ public class RoundManager {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcast(session.getPlayers(), "round.team-blue-wins");
             session.incrementRoundWins(2);
-            session.getTeamBlue().resetLossStreak();
-            session.getTeamRed().incrementLossStreak();
 
             // Check if game should end early based on dynamic win condition
             if (checkGameEndCondition(2)) {
@@ -437,8 +422,6 @@ public class RoundManager {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcast(session.getPlayers(), "round.team-red-wins");
             session.incrementRoundWins(1);
-            session.getTeamRed().resetLossStreak();
-            session.getTeamBlue().incrementLossStreak();
 
             // Check if game should end early based on dynamic win condition
             if (checkGameEndCondition(1)) {
@@ -501,45 +484,6 @@ public class RoundManager {
         Messages.debug("[RoundManager] Starting final-stand for session due to round timer ending with no winner");
         fsm.startUntilWin();
         return true;
-    }
-
-    /**
-     * Apply loss streak bonuses to team that lost.
-     * Winners get no bonus.
-     * Only applied at round 2+.
-     */
-    private void applyLossStreakBonuses() {
-        ConfigManager config = CashClashPlugin.getInstance().getConfigManager();
-        Team losingTeam;
-        
-        // Determine which team lost based on their loss streak
-        int teamRedStreak = session.getTeamRed().getLossStreak();
-        int teamBlueStreak = session.getTeamBlue().getLossStreak();
-        
-        if (teamRedStreak > 0 && teamBlueStreak == 0) {
-            losingTeam = session.getTeamRed();
-        } else if (teamBlueStreak > 0 && teamRedStreak == 0) {
-            losingTeam = session.getTeamBlue();
-        } else {
-            // Both teams have the same streak (shouldn't happen, but handle gracefully)
-            return;
-        }
-        
-        long bonus = 0;
-        int streak = Math.max(teamRedStreak, teamBlueStreak);
-        
-        switch (streak) {
-            case 1 -> bonus = config.getLossStreak1Bonus();
-            case 2 -> bonus = config.getLossStreak2Bonus();
-            case 3, 4, 5, 6, 7 -> bonus = config.getLossStreak3Bonus();
-        }
-        
-        if (bonus > 0) {
-            for (UUID uuid : losingTeam.getPlayers()) {
-                session.getRewardManager().grant(uuid, RewardType.LOSS_STREAK, bonus,
-                        "bonus", String.format("%,d", bonus));
-            }
-        }
     }
 
     public void cleanup() {
