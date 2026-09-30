@@ -139,11 +139,9 @@ mythic-items:
       max-stacks: 3               # 9 hits total (3 per stack) to reach full charge
       hits-per-stack: 3
 
-  # BlazeBite Crossbows - a single crossbow now; every hit applies BOTH the glacier freeze
-  # and volcano fire/splash effects below (no more separate Glacier/Volcano items or modes).
+  # BlazeBite Crossbows - no shot limit; each player's shots alternate between a Glacier arrow
+  # (frostbite/freeze) and a Volcano arrow (Magma Storm), whatever they hit.
   blazebite-crossbows:
-    shots-per-magazine: 8
-    reload-cooldown-seconds: 25
     glacier:
       slowness-level: 0
       slowness-duration-seconds: 5  # First hit frostbite duration
@@ -971,9 +969,9 @@ item-lore:
     blazebite-crossbows:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
-        - "<dark_purple>Freeze foes solid, or unleash Magma Storm</dark_purple>"
-        - "<yellow>Hit a player: Freezes them (Glacier)</yellow>"
-        - "<yellow>Hit a surface: Fire/explosion AOE, cleanses freeze (Magma Storm)</yellow>"
+        - "<dark_purple>Shots alternate between ice and fire</dark_purple>"
+        - "<yellow>Glacier arrow: frostbites the player it hits</yellow>"
+        - "<yellow>Volcano arrow: fire/explosion AOE, cleanses freeze (Magma Storm)</yellow>"
     alchemist-wand:
       lore:
         - "<light_purple>✦ MYTHIC UTILITY ✦</light_purple>"

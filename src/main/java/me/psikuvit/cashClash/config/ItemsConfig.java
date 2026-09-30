@@ -385,14 +385,6 @@ public class ItemsConfig {
     }
 
     // BlazeBite
-    public int getBlazebiteShotsPerMag() {
-        return config.getInt("mythic-items.blazebite-crossbows.shots-per-magazine", 8);
-    }
-
-    public int getBlazebiteReloadCooldown() {
-        return config.getInt("mythic-items.blazebite-crossbows.reload-cooldown-seconds", 25);
-    }
-
     public int getBlazebiteFreezeDuration() {
         return config.getInt("mythic-items.blazebite-crossbows.glacier.slowness-duration-seconds", 3) * 20;
     }

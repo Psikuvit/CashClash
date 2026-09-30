@@ -16,7 +16,6 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -25,13 +24,16 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * BlazeBite Crossbows - a Glacier/Volcano dual crossbow with frostbite/freeze
- * and explosive fire arrow modes.
+ * BlazeBite Crossbows - each player's shots alternate between Glacier (frostbite/freeze) and
+ * Volcano (Magma Storm fire explosion) arrows.
  */
 public class BlazebiteHandler extends MythicItemHandler {
 
-    // BlazeBite shots tracking (shared between both crossbows)
-    private final Map<UUID, Integer> blazebiteShotsRemaining;
+    public static final String GLACIER_MODE = "glacier";
+    public static final String VOLCANO_MODE = "volcano";
+
+    // Whether each player's last shot was a Volcano arrow (absent = next shot is Glacier)
+    private final Map<UUID, Boolean> lastShotVolcano;
 
     // BlazeBite Glacier frozen players tracking (UUID -> expiration timestamp)
     private final Map<UUID, Long> glacierFrozenPlayers;
@@ -41,73 +43,33 @@ public class BlazebiteHandler extends MythicItemHandler {
 
     public BlazebiteHandler(MythicItemManager manager) {
         super(manager);
-        this.blazebiteShotsRemaining = new ConcurrentHashMap<>();
+        this.lastShotVolcano = new ConcurrentHashMap<>();
         this.glacierFrozenPlayers = new ConcurrentHashMap<>();
         this.glacierFrostbiteParticleTasks = new ConcurrentHashMap<>();
     }
 
     /**
-     * Handle BlazeBite shot.
-     * 8 shots per magazine, 25 second reload. Whether a shot ends up Glacier or Magma Storm is
-     * decided at hit time by what it hits, not here.
+     * The mode of the player's next shot - Glacier and Volcano take turns, starting with Glacier.
      */
-    public boolean handleBlazebiteShot(Player player, ItemStack crossbow) {
-        UUID uuid = player.getUniqueId();
-
-        Messages.debug(player, "BLAZEBITE: Shot triggered");
-
-        int shots = blazebiteShotsRemaining.getOrDefault(uuid, cfg.getBlazebiteShotsPerMag());
-        if (shots <= 0) {
-            if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD)) {
-                Messages.debug(player, "BLAZEBITE: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD) + "s");
-                Messages.send(player, "mythic.blazebite-reloading", "cooldown_seconds",
-                        String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD)));
-                return false;
-            }
-            blazebiteShotsRemaining.put(uuid, cfg.getBlazebiteShotsPerMag());
-            shots = cfg.getBlazebiteShotsPerMag();
-            Messages.debug(player, "BLAZEBITE: Magazine reloaded to " + shots);
-        }
-
-        blazebiteShotsRemaining.put(uuid, shots - 1);
-        Messages.debug(player, "BLAZEBITE: Shot fired! Remaining: " + (shots - 1));
-
-        if (shots - 1 <= 0) {
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD, cfg.getBlazebiteReloadCooldown());
-            Messages.debug(player, "BLAZEBITE: Out of shots, reloading for " + cfg.getBlazebiteReloadCooldown() + "s");
-            Messages.send(player, "mythic.blazebite-reload-start");
-        }
-
-        return true;
+    public String nextShotMode(Player player) {
+        boolean volcano = !lastShotVolcano.getOrDefault(player.getUniqueId(), true);
+        lastShotVolcano.put(player.getUniqueId(), volcano);
+        return volcano ? VOLCANO_MODE : GLACIER_MODE;
     }
 
     /**
-     * Whether the magazine is empty and the reload cooldown is active - used to refuse even
-     * starting to charge (load) the crossbow, not just firing it once loaded.
+     * Handle BlazeBite hit effects for the mode the arrow was shot with, wherever it lands. A
+     * Glacier arrow frostbites/freezes the player it hits. A Volcano arrow sets off a Magma Storm
+     * - a fire/explosion AOE that also cleanses the freezing effect off any frozen players caught
+     * in the blast, rather than applying freeze itself.
      */
-    public boolean isReloading(UUID uuid) {
-        return cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD);
-    }
-
-    public long getReloadSecondsRemaining(UUID uuid) {
-        return cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_RELOAD);
-    }
-
-    /**
-     * Handle BlazeBite hit effects. An arrow that hits a player plays Glacier - freeze only, no
-     * magma storm. An arrow that hits a surface/block plays Magma Storm instead - fire/explosion
-     * AOE that also cleanses the freezing effect off any frozen players caught in the blast,
-     * rather than applying freeze itself.
-     *
-     * @param magmaStorm whether the arrow hit a surface (true) rather than a player (false)
-     */
-    public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc, boolean magmaStorm) {
+    public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc, String mode) {
         World world = hitLoc.getWorld();
         if (world == null) return;
 
-        Messages.debug(shooter, "BLAZEBITE: Hit detected (magmaStorm=" + magmaStorm + ")");
+        Messages.debug(shooter, "BLAZEBITE: " + mode + " arrow hit");
 
-        if (magmaStorm) {
+        if (VOLCANO_MODE.equals(mode)) {
             handleMagmaStorm(shooter, hitEntity, hitLoc, world);
         } else {
             handleGlacier(shooter, hitEntity);
@@ -274,7 +236,7 @@ public class BlazebiteHandler extends MythicItemHandler {
 
     @Override
     public void cleanup() {
-        blazebiteShotsRemaining.clear();
+        lastShotVolcano.clear();
         glacierFrozenPlayers.clear();
 
         // Cancel and clear frostbite particle tasks
@@ -287,7 +249,7 @@ public class BlazebiteHandler extends MythicItemHandler {
     @Override
     public void cleanupPlayer(Player player) {
         UUID uuid = player.getUniqueId();
-        blazebiteShotsRemaining.remove(uuid);
+        lastShotVolcano.remove(uuid);
         glacierFrozenPlayers.remove(uuid);
 
         BukkitTask task = glacierFrostbiteParticleTasks.remove(uuid);

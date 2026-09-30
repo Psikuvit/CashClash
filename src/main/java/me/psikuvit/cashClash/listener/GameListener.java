@@ -712,7 +712,7 @@ public class GameListener implements Listener {
     private void handleMythicBowShot(EntityShootBowEvent event, Player player, MythicItem mythic) {
         switch (mythic) {
             case BLOODWRENCH_CROSSBOW -> handleBloodwrenchShot(event, player);
-            case BLAZEBITE_CROSSBOWS -> handleBlazebiteShot(event, player, event.getBow());
+            case BLAZEBITE_CROSSBOWS -> handleBlazebiteShot(event, player);
             case WIND_BOW -> handleWindBowShot(event, player);
             default -> { /* No special handling */ }
         }
@@ -731,13 +731,11 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Handle BlazeBite crossbow shot. Every shot can end up as either Glacier or Magma Storm -
-     * which one plays is decided at hit time by what the arrow hits (see
-     * {@link #handleBlazebiteArrow}), not at shot time. This just tags the arrow so the hit
-     * handler knows it came from a BlazeBite crossbow, and enforces the post-freeze-solid shot
-     * lockout.
+     * Handle BlazeBite crossbow shot: tags the arrow with this shot's mode - Glacier and Volcano
+     * take turns - which {@link #handleBlazebiteArrow} plays wherever it lands, and enforces the
+     * post-freeze-solid shot lockout.
      */
-    private void handleBlazebiteShot(EntityShootBowEvent event, Player player, ItemStack bow) {
+    private void handleBlazebiteShot(EntityShootBowEvent event, Player player) {
         UUID uuid = player.getUniqueId();
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_FREEZE_LOCKOUT)) {
             event.setCancelled(true);
@@ -746,10 +744,9 @@ public class GameListener implements Listener {
             return;
         }
 
-        if (!mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteShot(player, bow)) {
-            event.setCancelled(true);
-        } else if (event.getProjectile() instanceof AbstractArrow arrow) {
-            PDCSetter.of(arrow).set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, "active").apply();
+        if (event.getProjectile() instanceof AbstractArrow arrow) {
+            String mode = mythicManager.getHandler(BlazebiteHandler.class).nextShotMode(player);
+            PDCSetter.of(arrow).set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, mode).apply();
         }
     }
 
@@ -827,16 +824,15 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Handle BlazeBite arrow hit - dispatches to Glacier (freeze-only, on a player hit) or Magma
-     * Storm (fire/explosion + freeze cleanse, on a surface/block hit) based on what the arrow
-     * actually hit, not a mode chosen at shot time.
+     * Handle BlazeBite arrow hit - plays the Glacier or Magma Storm effect the arrow was tagged
+     * with when it was shot, whatever it lands on.
      */
     private void handleBlazebiteArrow(Player shooter, AbstractArrow arrow, ProjectileHitEvent event) {
-        if (PDCDetection.getArrowBlazebiteMode(arrow) == null) return;
+        String mode = PDCDetection.getArrowBlazebiteMode(arrow);
+        if (mode == null) return;
 
-        boolean hitSurface = event.getHitEntity() == null;
         Location hitLoc = event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation();
-        mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc, hitSurface);
+        mythicManager.getHandler(BlazebiteHandler.class).handleBlazebiteHit(shooter, event.getHitEntity(), hitLoc, mode);
 
         arrow.remove();
     }
