@@ -157,30 +157,12 @@ public class InteractListener implements Listener {
         }
     }
 
-    // ==================== ICE FAN CONTINUOUS GUST ====================
-
-    /**
-     * Drives Ice Fan's continuous left-click gust. PlayerAnimationEvent fires on every arm
-     * swing regardless of whether a block, air, or a player is under the cursor, so aiming
-     * directly at a player still gusts instead of throwing a vanilla punch or doing nothing.
-     */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onIceFanSwing(PlayerAnimationEvent event) {
-        if (event.getAnimationType() != PlayerAnimationType.ARM_SWING) return;
-
-        Player player = event.getPlayer();
-        if (PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) != CustomItem.ICE_FAN) return;
-        if (isInShoppingPhase(player)) return;
-
-        customItemManager.getHandler(IceFanHandler.class).onIceFanSwing(player);
-    }
-
     // ==================== ALCHEMIST WAND TIDY UP ====================
 
     /**
-     * Left-click activation for Alchemist Wand's Tidy Up ability - mirrors onIceFanSwing's
-     * PlayerAnimationEvent trigger since mythic item right-clicks are handled separately in
-     * handleMythicItem, which never sees left-clicks.
+     * Left-click activation for Alchemist Wand's Tidy Up ability - uses a PlayerAnimationEvent
+     * trigger since mythic item right-clicks are handled separately in handleMythicItem, which
+     * never sees left-clicks.
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onAlchemistWandSwing(PlayerAnimationEvent event) {
@@ -573,9 +555,8 @@ public class InteractListener implements Listener {
             }
             case ICE_FAN -> {
                 if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
-                    // The gust itself is driven by onIceFanSwing (PlayerAnimationEvent) so it
-                    // also fires when aiming directly at a player; this just suppresses the
-                    // item's own vanilla block interaction on left-click.
+                    // Ice Fan is a right-click-only ability tool; just suppress its own vanilla
+                    // block interaction on left-click.
                     event.setCancelled(true);
                     return true;
                 } else if (action.isRightClick()) {

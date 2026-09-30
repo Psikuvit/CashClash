@@ -718,64 +718,32 @@ public class ItemsConfig {
     }
 
     // Ice Fan
-    public int getIceFanMaxDurability() {
-        return config.getInt("custom-items.ice-fan.max-durability", 75);
-    }
-
-    public int getIceFanGustDurabilityPerSecond() {
-        return config.getInt("custom-items.ice-fan.gust-durability-per-second", 5);
-    }
-
-    public double getIceFanGustDamagePerTick() {
-        return config.getDouble("custom-items.ice-fan.gust-damage-per-tick", 1.0);
-    }
-
-    public int getIceFanBurstDurabilityCost() {
-        return config.getInt("custom-items.ice-fan.burst-durability-cost", 25);
+    public int getIceFanMaxUses() {
+        return config.getInt("custom-items.ice-fan.max-uses", 3);
     }
 
     public double getIceFanBurstDamage() {
         return config.getDouble("custom-items.ice-fan.burst-damage", 4.5);
     }
 
-    public int getIceFanBurstMinDurability() {
-        return config.getInt("custom-items.ice-fan.burst-min-durability", 25);
+    public long getIceFanFreezeDurationMs() {
+        return config.getLong("custom-items.ice-fan.freeze-duration-ms", 1500L);
     }
 
-    public long getIceFanGustHoldTimeoutMs() {
-        return config.getLong("custom-items.ice-fan.gust-hold-timeout-ms", 1500L);
-    }
-
-    public long getIceFanGustTickIntervalMs() {
-        return config.getLong("custom-items.ice-fan.gust-tick-interval-ms", 10L);
-    }
-
-    public long getIceFanGustHitFreezeMs() {
-        return config.getLong("custom-items.ice-fan.gust-hit-freeze-ms", 1500L);
-    }
-
-    public long getIceFanGustMaxFreezeMs() {
-        return config.getLong("custom-items.ice-fan.gust-max-freeze-ms", 6000L);
+    public long getIceFanMaxFreezeMs() {
+        return config.getLong("custom-items.ice-fan.max-freeze-ms", 6000L);
     }
 
     public int getIceFanFreezePumpIntervalTicks() {
         return config.getInt("custom-items.ice-fan.freeze-pump-interval-ticks", 1);
     }
 
-    public int getIceFanGustBurstRounds() {
-        return config.getInt("custom-items.ice-fan.gust-burst-rounds", 3);
+    public int getIceFanCooldownSeconds() {
+        return config.getInt("custom-items.ice-fan.cooldown-seconds", 1);
     }
 
-    public int getIceFanGustBurstCooldownSeconds() {
-        return config.getInt("custom-items.ice-fan.gust-burst-cooldown-seconds", 3);
-    }
-
-    public int getIceFanGustTargetRange() {
-        return config.getInt("custom-items.ice-fan.gust-target-range", 3);
-    }
-
-    public double getIceFanBurstTargetRange() {
-        return config.getDouble("custom-items.ice-fan.burst-target-range", 3.5);
+    public double getIceFanRange() {
+        return config.getDouble("custom-items.ice-fan.range", 3.5);
     }
 
     // Runes

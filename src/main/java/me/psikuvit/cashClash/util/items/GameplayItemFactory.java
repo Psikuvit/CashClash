@@ -267,7 +267,7 @@ public final class GameplayItemFactory {
             case INVIS_CLOAK -> tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, 5);
             case ICE_FAN -> {
                 tags.meta().setMaxStackSize(1);
-                tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, CashClashPlugin.getInstance().getItemsConfig().getIceFanMaxDurability());
+                tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, CashClashPlugin.getInstance().getItemsConfig().getIceFanMaxUses());
             }
             default -> {
             }

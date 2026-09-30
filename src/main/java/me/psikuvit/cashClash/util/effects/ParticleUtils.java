@@ -743,16 +743,6 @@ public final class ParticleUtils {
     }
 
     /**
-     * Light-blue, chaotically-scattered gust particles - used by Ice Fan's continuous
-     * left-click gust.
-     */
-    public static void iceFanGust(Location location) {
-        spawnDust(location, Color.fromRGB(0, 255, 255), 1.2f, 8, 0.5, 0.4, 0.5);
-        spawnDust(location, Color.fromRGB(255, 255, 255), 1.0f, 6, 0.5, 0.4, 0.5);
-        spawn(Particle.SNOWFLAKE, location, 6, 0.4, 0.3, 0.4, 0.02);
-    }
-
-    /**
      * Dark-blue, tightly-condensed burst particles - used by Ice Fan's right-click burst.
      */
     public static void iceFanBurst(Location location) {

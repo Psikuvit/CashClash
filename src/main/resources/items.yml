@@ -429,22 +429,13 @@ custom-items:
 
   # Ice Fan
   ice-fan:
-    max-durability: 75
-    gust-durability-per-second: 5
-    gust-damage-per-tick: 1.0
-    burst-durability-cost: 25
+    max-uses: 3                       # Number of activations before it breaks
     burst-damage: 4.5
-    burst-min-durability: 25
-    # Timing and behavior
-    gust-hold-timeout-ms: 1500        # How long to wait without a swing before stopping gust
-    gust-tick-interval-ms: 10         # How often to fire a gust pulse
-    gust-hit-freeze-ms: 1500          # How long to freeze target on a gust hit
-    gust-max-freeze-ms: 6000          # Maximum total freeze duration
+    freeze-duration-ms: 1500          # Freeze applied to each target hit
+    max-freeze-ms: 6000               # Maximum total freeze duration
     freeze-pump-interval-ticks: 1     # How often to update freeze ticks
-    gust-burst-rounds: 3              # Gusts per burst before the cooldown kicks in
-    gust-burst-cooldown-seconds: 3    # Left-click lockout after a burst completes
-    gust-target-range: 3              # Radius to find targets for gust
-    burst-target-range: 3.5           # Radius to find targets for burst
+    cooldown-seconds: 1               # Cooldown between activations
+    range: 3.5                        # Range to find targets in the half-circle sweep
 
   # Overdrive Potion
   overdrive-potion:
@@ -772,9 +763,9 @@ item-lore:
         - "<dark_gray>Cannot be used while holding the flag</dark_gray>"
     ice-fan:
       lore:
-        - "<gray>Left-click: continuous cold gust</gray>"
-        - "<yellow>Each blast that hits freezes for 1.5s</yellow>"
-        - "<gray>Right-click: burst of cold wind + knockback</gray>"
+        - "<gray>Right-click: half-circle burst of cold wind</gray>"
+        - "<yellow>Freezes and knocks back everyone it hits</yellow>"
+        - "<gray>3 uses before it breaks</gray>"
     overdrive-potion:
       lore:
         - "<gray>Drink to become invincible</gray>"

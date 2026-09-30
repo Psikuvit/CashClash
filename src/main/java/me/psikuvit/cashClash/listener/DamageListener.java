@@ -446,8 +446,8 @@ public class DamageListener implements Listener {
     }
 
     /**
-     * Cancels vanilla melee damage from Ice Fan (a pure ability-tool - its own gust/burst hits
-     * flow through {@link IceFanHandler#isIceFanAbilityDamage(UUID)} and are let through).
+     * Cancels vanilla melee damage from Ice Fan (a pure ability-tool - its own burst hits flow
+     * through {@link IceFanHandler#isIceFanAbilityDamage(UUID)} and are let through).
      */
     private boolean onIceFanMeleeSuppression(EntityDamageByEntityEvent event, Player attacker) {
         if (attacker == null) return false;

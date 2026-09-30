@@ -18,7 +18,6 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
@@ -32,20 +31,20 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Ice Fan: an ability-only tool. Holding left-click sustains a continuous gust (driven by
- * repeated PlayerAnimationEvent swings, which fire regardless of whether a block, air, or a
- * player is under the cursor) that deals damage and grants 1.5s of freeze directly on every
- * blast that connects; right-click fires a damaging/knockback burst (no freeze). Both consume
- * a PDC-backed 75-point durability budget mirrored onto the visual bar.
+ * Ice Fan: a single right-click ability - a half-circle burst of cold wind swept out in front
+ * of the player, damaging, freezing and knocking back everyone it hits. Has a fixed number of
+ * uses (a plain PDC counter, no vanilla/visual durability bar) before it breaks.
  */
 public class IceFanHandler extends CustomItemHandler {
 
-    // Ice Fan - the continuous left-click gust's hold-state, and a transient flag suppressing
-    // DamageListener's vanilla-melee cancellation for its own hits
+    // Half the arc's total angular width - 90 either side of the aim direction makes a full
+    // 180 semicircle swept out in front of the player.
+    private static final double HALF_CIRCLE_HALF_ANGLE_DEGREES = 90;
+    private static final double ARC_STEP_DEGREES = 15;
+
+    // A transient flag suppressing DamageListener's vanilla-melee cancellation for the burst's
+    // own hits
     private final Set<UUID> iceFanAbilityDamageActive;
-    private final Map<UUID, Long> gustLastSwingTime;
-    private final Map<UUID, BukkitTask> activeGustTasks;
-    private final Map<UUID, Integer> gustBurstCount;
     // Independent freeze-stack timer per target, and the task pumping it into freezeTicks
     private final Map<UUID, Long> iceFanFreezeExpiresAt;
     private final Map<UUID, BukkitTask> iceFanFreezePumpTasks;
@@ -53,119 +52,64 @@ public class IceFanHandler extends CustomItemHandler {
     public IceFanHandler(CustomItemManager manager) {
         super(manager);
         this.iceFanAbilityDamageActive = new HashSet<>();
-        this.gustLastSwingTime = new HashMap<>();
-        this.activeGustTasks = new HashMap<>();
-        this.gustBurstCount = new HashMap<>();
         this.iceFanFreezeExpiresAt = new HashMap<>();
         this.iceFanFreezePumpTasks = new HashMap<>();
     }
 
     /**
-     * @return true if the attacker is currently mid-swing with Ice Fan's own gust/burst
-     * ability (used by DamageListener to distinguish that from a vanilla melee swing, which
-     * Ice Fan should never deal - it's a pure ability-tool).
+     * @return true if the attacker is currently mid-swing with Ice Fan's own burst ability
+     * (used by DamageListener to distinguish that from a vanilla melee swing, which Ice Fan
+     * should never deal - it's a pure ability-tool).
      */
     public boolean isIceFanAbilityDamage(UUID attackerUuid) {
         return iceFanAbilityDamageActive.contains(attackerUuid);
     }
 
     /**
-     * Called on every arm swing while holding Ice Fan (from PlayerAnimationEvent, which fires
-     * regardless of whether a block, air, or a player is under the cursor - so aiming directly
-     * at a player still gusts instead of silently doing nothing or throwing a vanilla punch).
-     * Starts the continuous gust tick loop if it isn't already running; otherwise just refreshes
-     * the "still holding" timer the loop is watching.
+     * Right-click: sweeps a half-circle burst of cold wind out in front of the player, damaging,
+     * freezing and knocking back every enemy caught in it. Consumes one of the item's fixed
+     * number of uses, breaking it once they run out.
      */
-    public void onIceFanSwing(Player player) {
+    public void handleIceFanRightClick(Player player, ItemStack item) {
         UUID uuid = player.getUniqueId();
-        if (activeGustTasks.containsKey(uuid)) {
-            gustLastSwingTime.put(uuid, System.currentTimeMillis());
-            return;
-        }
+        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ICE_FAN_BURST)) return;
 
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ICE_FAN_GUST)) return;
-
-        gustLastSwingTime.put(uuid, System.currentTimeMillis());
-
-        ItemStack item = player.getInventory().getItemInMainHand();
-        // Once broken/removed, the main hand is air - getIceFanDurability() would otherwise fall
-        // back to max (no ITEM_USES tag on air) and spin up a gust with nothing actually held.
-        if (PDCDetection.getCustomItem(item) != CustomItem.ICE_FAN) return;
-        if (getIceFanDurability(item) <= 0) {
+        int usesRemaining = getIceFanUsesRemaining(item);
+        if (usesRemaining <= 0) {
             Messages.send(player, "customitem.ice-fan-broken");
             return;
         }
 
-        BukkitTask task = SchedulerUtils.runTaskTimer(() -> tickGust(player), 0L, cfg.getIceFanGustTickIntervalMs() / 50L);
-        activeGustTasks.put(uuid, task);
-    }
-
-    /**
-     * One gust pulse - reuses the exact damage/durability numbers the old per-click design used,
-     * just fired automatically on a timer instead of needing a fresh click each time. Stops
-     * itself once no swing has landed within the hold timeout (release) or the fan breaks.
-     */
-    private void tickGust(Player player) {
-        UUID uuid = player.getUniqueId();
-        Long lastSwing = gustLastSwingTime.get(uuid);
-        boolean stillHolding = lastSwing != null
-                && (System.currentTimeMillis() - lastSwing) <= cfg.getIceFanGustHoldTimeoutMs()
-                && player.isOnline()
-                && PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.ICE_FAN;
-
-        if (!stillHolding) {
-            stopGust(uuid);
-            return;
-        }
-
-        ItemStack item = player.getInventory().getItemInMainHand();
-        int remaining = getIceFanDurability(item);
-        if (remaining <= 0) {
-            stopGust(uuid);
-            breakIceFan(player);
-            return;
-        }
-
-        int drainThisTick = Math.max(1, cfg.getIceFanGustDurabilityPerSecond() / 2);
-        int newRemaining = remaining - drainThisTick;
-        setIceFanDurability(item, newRemaining);
+        int newUses = usesRemaining - 1;
+        setIceFanUsesRemaining(item, newUses);
         player.getInventory().setItemInMainHand(item);
+        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ICE_FAN_BURST, cfg.getIceFanCooldownSeconds());
 
         Location origin = player.getEyeLocation();
         Vector direction = origin.getDirection();
-        List<Player> targets = findIceFanTargets(player, origin, direction, cfg.getIceFanGustTargetRange());
-        for (Player target : targets) {
-            dealIceFanDamage(player, target, cfg.getIceFanGustDamagePerTick());
+        for (Player target : findIceFanTargets(player, origin, direction, cfg.getIceFanRange())) {
+            dealIceFanDamage(player, target, cfg.getIceFanBurstDamage());
             stackIceFanFreeze(target);
+
+            Vector knockback = target.getLocation().toVector()
+                    .subtract(player.getLocation().toVector())
+                    .normalize()
+                    .multiply(0.45)
+                    .setY(0.25);
+            target.setVelocity(target.getVelocity().add(knockback));
         }
 
-        spawnGustParticles(player, origin, direction);
-        SoundUtils.play(player, Sound.ENTITY_PHANTOM_FLAP, 0.7f, 1.6f);
+        spawnBurstShootParticles(player, origin, direction);
+        SoundUtils.play(player, Sound.ENTITY_GLOW_SQUID_SQUIRT, 1.0f, 0.6f);
 
-        if (newRemaining <= 0) {
-            stopGust(uuid);
-            breakIceFan(player);
-            return;
-        }
-
-        int rounds = gustBurstCount.merge(uuid, 1, Integer::sum);
-        if (rounds >= cfg.getIceFanGustBurstRounds()) {
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ICE_FAN_GUST, cfg.getIceFanGustBurstCooldownSeconds());
-            stopGust(uuid);
-        }
-    }
-
-    private void stopGust(UUID uuid) {
-        BukkitTask task = activeGustTasks.remove(uuid);
-        if (task != null) task.cancel();
-        gustLastSwingTime.remove(uuid);
-        gustBurstCount.remove(uuid);
+        if (newUses <= 0) breakIceFan(player);
     }
 
     /**
-     * Stacks 1.5s onto the target's remaining Ice Fan freeze time, capped at 6s total, and
-     * starts the pump task (if not already running) that keeps freezeTicks synced to it every
-     * tick - directly setting freezeTicks here would just get overwritten by the next pump.
+     * Stacks freeze duration onto the target's remaining Ice Fan freeze time, capped at a
+     * configured max, and starts the pump task (if not already running) that keeps freezeTicks
+     * synced to it every tick - directly setting freezeTicks here would just get overwritten by
+     * the next pump.
      */
     private void stackIceFanFreeze(Player target) {
         UUID uuid = target.getUniqueId();
@@ -173,11 +117,11 @@ public class IceFanHandler extends CustomItemHandler {
 
         long currentExpiry = iceFanFreezeExpiresAt.getOrDefault(uuid, now);
         long remaining = Math.max(0, currentExpiry - now);
-        long newRemaining = Math.min(remaining + cfg.getIceFanGustHitFreezeMs(), cfg.getIceFanGustMaxFreezeMs());
+        long newRemaining = Math.min(remaining + cfg.getIceFanFreezeDurationMs(), cfg.getIceFanMaxFreezeMs());
         iceFanFreezeExpiresAt.put(uuid, now + newRemaining);
 
         if (!iceFanFreezePumpTasks.containsKey(uuid)) {
-            BukkitTask task = SchedulerUtils.runTaskTimer(() -> pumpIceFanFreeze(target), 0L, 1L);
+            BukkitTask task = SchedulerUtils.runTaskTimer(() -> pumpIceFanFreeze(target), 0L, cfg.getIceFanFreezePumpIntervalTicks());
             iceFanFreezePumpTasks.put(uuid, task);
         }
     }
@@ -209,71 +153,39 @@ public class IceFanHandler extends CustomItemHandler {
     }
 
     /**
-     * Cyan/white gust particles shooting straight out from the player along the aim direction,
-     * matching the right-click burst's outward look instead of a fixed-point puff.
-     */
-    private void spawnGustParticles(Player player, Location origin, Vector direction) {
-        for (double d = 0.6; d <= 3.0; d += 0.7) {
-            Location point = origin.clone().add(direction.clone().multiply(d));
-            ParticleUtils.iceFanGust(point);
-        }
-    }
-
-    /**
-     * Right-click: a single burst hit, instantly freezing targets. Requires >= 25 durability
-     * remaining and costs 25 durability.
-     */
-    public void handleIceFanRightClick(Player player, ItemStack item) {
-        UUID uuid = player.getUniqueId();
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ICE_FAN_BURST)) return;
-
-        int remaining = getIceFanDurability(item);
-        if (remaining < cfg.getIceFanBurstMinDurability()) {
-            Messages.send(player, "customitem.ice-fan-not-enough-durability");
-            return;
-        }
-
-        int newRemaining = remaining - cfg.getIceFanBurstDurabilityCost();
-        setIceFanDurability(item, newRemaining);
-        player.getInventory().setItemInMainHand(item);
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ICE_FAN_BURST, 1);
-
-        Location origin = player.getEyeLocation();
-        Vector direction = origin.getDirection();
-        for (Player target : findIceFanTargets(player, origin, direction, cfg.getIceFanBurstTargetRange())) {
-            dealIceFanDamage(player, target, cfg.getIceFanBurstDamage());
-
-            Vector knockback = target.getLocation().toVector()
-                    .subtract(player.getLocation().toVector())
-                    .normalize()
-                    .multiply(0.45)
-                    .setY(0.25);
-            target.setVelocity(target.getVelocity().add(knockback));
-        }
-
-        spawnBurstShootParticles(player, origin, direction);
-        SoundUtils.play(player, Sound.ENTITY_GLOW_SQUID_SQUIRT, 1.0f, 0.6f);
-
-        if (newRemaining <= 0) breakIceFan(player);
-    }
-
-    /**
-     * Burst particles that travel outward from the player along the aim direction instead of
-     * appearing as one static point.
+     * Half-circle sweep of burst particles shooting outward from the player - same per-step
+     * distance, stagger, color and density as before, just swept across a 180 arc in front of
+     * the player at each step instead of a single point along a straight line.
      */
     private void spawnBurstShootParticles(Player player, Location origin, Vector direction) {
+        Vector flatDirection = direction.clone().setY(0);
+        if (flatDirection.lengthSquared() < 1.0E-4) flatDirection = new Vector(0, 0, 1);
+        Vector arcDirection = flatDirection.normalize();
+
         for (int i = 0; i < 5; i++) {
             double distance = 0.6 + (i * 0.7);
             SchedulerUtils.runTaskLater(() -> {
                 if (!player.isOnline()) return;
-                ParticleUtils.iceFanBurst(origin.clone().add(direction.clone().multiply(distance)));
+                for (double angle = -HALF_CIRCLE_HALF_ANGLE_DEGREES; angle <= HALF_CIRCLE_HALF_ANGLE_DEGREES; angle += ARC_STEP_DEGREES) {
+                    Vector rotated = rotateAroundY(arcDirection, Math.toRadians(angle));
+                    ParticleUtils.iceFanBurst(origin.clone().add(rotated.multiply(distance)));
+                }
             }, i);
         }
     }
 
     /**
-     * Finds enemy players within range and within a narrow forward-facing cone, so the gust/burst
-     * only hit what the player is actually aiming at.
+     * Rotates a horizontal vector around the world Y axis by the given angle (radians).
+     */
+    private Vector rotateAroundY(Vector v, double angleRadians) {
+        double cos = Math.cos(angleRadians);
+        double sin = Math.sin(angleRadians);
+        return new Vector(v.getX() * cos + v.getZ() * sin, v.getY(), -v.getX() * sin + v.getZ() * cos);
+    }
+
+    /**
+     * Finds enemy players within range and within the half-circle arc swept in front of the
+     * player, matching the burst's visual.
      */
     private List<Player> findIceFanTargets(Player player, Location origin, Vector direction, double range) {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
@@ -286,7 +198,7 @@ public class IceFanHandler extends CustomItemHandler {
                 Team targetTeam = session.getPlayerTeam(target);
                 if (targetTeam == null || targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) continue;
             }
-            if (!isInCone(origin, direction, target.getEyeLocation(), 30)) continue;
+            if (!isInCone(origin, direction, target.getEyeLocation(), HALF_CIRCLE_HALF_ANGLE_DEGREES)) continue;
             targets.add(target);
         }
         return targets;
@@ -312,31 +224,15 @@ public class IceFanHandler extends CustomItemHandler {
         }
     }
 
-    private int getIceFanDurability(ItemStack item) {
+    private int getIceFanUsesRemaining(ItemStack item) {
         Integer remaining = PDCDetection.getItemUses(item);
-        return remaining != null ? remaining : cfg.getIceFanMaxDurability();
+        return remaining != null ? remaining : cfg.getIceFanMaxUses();
     }
 
-    /**
-     * Persists remaining durability as a PDC counter and mirrors it onto the visual durability
-     * bar proportionally, since the underlying material's vanilla max durability doesn't match
-     * the 75-point budget.
-     */
-    private void setIceFanDurability(ItemStack item, int remaining) {
+    private void setIceFanUsesRemaining(ItemStack item, int remaining) {
         if (!item.hasItemMeta()) return;
-
-        int max = cfg.getIceFanMaxDurability();
-        int clamped = Math.clamp(remaining, 0, max);
-
-        PDCSetter tags = PDCSetter.of(item);
-        tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, clamped);
-
-        if (tags.meta() instanceof Damageable damageable) {
-            int maxDurability = item.getType().getMaxDurability();
-            double fractionUsed = 1.0 - ((double) clamped / max);
-            damageable.setDamage((int) Math.round(fractionUsed * maxDurability));
-        }
-        tags.apply();
+        int clamped = Math.clamp(remaining, 0, cfg.getIceFanMaxUses());
+        PDCSetter.of(item).set(Keys.ITEM_USES, PersistentDataType.INTEGER, clamped).apply();
     }
 
     private void breakIceFan(Player player) {
@@ -346,7 +242,7 @@ public class IceFanHandler extends CustomItemHandler {
         // Identity check (is an Ice Fan still sitting in that hand) rather than an exact
         // ItemStack#equals match against the (possibly stale/copied) reference passed in -
         // getItemInMainHand()/getItemInOffHand() aren't guaranteed to return the same object
-        // setIceFanDurability just mutated.
+        // setIceFanUsesRemaining just mutated.
         if (PDCDetection.getCustomItem(player.getInventory().getItemInMainHand()) == CustomItem.ICE_FAN) {
             player.getInventory().setItemInMainHand(null);
         } else if (PDCDetection.getCustomItem(player.getInventory().getItemInOffHand()) == CustomItem.ICE_FAN) {
@@ -356,10 +252,6 @@ public class IceFanHandler extends CustomItemHandler {
 
     @Override
     public void cleanup() {
-        activeGustTasks.values().forEach(BukkitTask::cancel);
-        activeGustTasks.clear();
-        gustLastSwingTime.clear();
-        gustBurstCount.clear();
         iceFanAbilityDamageActive.clear();
 
         iceFanFreezePumpTasks.values().forEach(BukkitTask::cancel);
