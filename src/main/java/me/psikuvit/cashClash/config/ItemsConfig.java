@@ -278,6 +278,10 @@ public class ItemsConfig {
         return config.getInt("mythic-items.bloodwrench.tornado-on-hit", 7);
     }
 
+    public double getBloodwrenchDamageBonusPercent() {
+        return config.getDouble("mythic-items.bloodwrench.damage-bonus-percent", 20);
+    }
+
     // BloodWrench Crossbow - Blood Bubble
     public double getBloodwrenchSphereRadius() {
         return config.getDouble("mythic-items.bloodwrench.rapid.sphere-radius", 2.0);
@@ -377,6 +381,10 @@ public class ItemsConfig {
     }
 
     // BlazeBite
+    public double getBlazebiteDamageBonusPercent() {
+        return config.getDouble("mythic-items.blazebite-crossbows.damage-bonus-percent", 20);
+    }
+
     public int getBlazebiteFreezeDuration() {
         return config.getInt("mythic-items.blazebite-crossbows.glacier.slowness-duration-seconds", 3) * 20;
     }

@@ -102,6 +102,7 @@ mythic-items:
   bloodwrench:
     bubble-on-hit: 3
     tornado-on-hit: 7
+    damage-bonus-percent: 20  # BloodWrench arrows deal this much more than a plain crossbow bolt
     heal-negation-duration-seconds: 2  # standing inside the blood bubble blocks healing; persists this long after leaving
     # Blood bubble
     rapid:
@@ -144,6 +145,7 @@ mythic-items:
   # BlazeBite Crossbows - no shot limit; each player's shots alternate between a Glacier arrow
   # (frostbite/freeze) and a Volcano arrow (Magma Storm), whatever they hit.
   blazebite-crossbows:
+    damage-bonus-percent: 20  # BlazeBite arrows deal this much more than a plain crossbow bolt
     glacier:
       slowness-level: 0
       slowness-duration-seconds: 5  # First hit frostbite duration

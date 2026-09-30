@@ -230,6 +230,7 @@ public class DamageListener implements Listener {
             }
 
             if (attacker != null && victim != null) {
+                applyMythicCrossbowDamageBonus(event);
                 processVictimDamageEffects(attacker, victim);
                 handleAttackerEffects(event, attacker, victim);
                 handleAttackerArmorEffects(event, attacker, victim);
@@ -276,6 +277,24 @@ public class DamageListener implements Listener {
             return true;
         }
         return handleRespawnProtection(event, attacker, victim);
+    }
+
+    /**
+     * BlazeBite and BloodWrench arrows hit harder than a plain crossbow bolt, by their configured
+     * damage bonus.
+     */
+    private void applyMythicCrossbowDamageBonus(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof AbstractArrow arrow)) return;
+
+        double bonusPercent;
+        if (PDCDetection.getArrowBlazebiteMode(arrow) != null) {
+            bonusPercent = itemsConfig.getBlazebiteDamageBonusPercent();
+        } else if (PDCDetection.getArrowBloodwrenchMode(arrow) != null) {
+            bonusPercent = itemsConfig.getBloodwrenchDamageBonusPercent();
+        } else {
+            return;
+        }
+        event.setDamage(event.getDamage() * (1.0 + bonusPercent / 100.0));
     }
 
     /**
