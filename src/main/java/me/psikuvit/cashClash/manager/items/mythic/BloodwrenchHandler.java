@@ -5,7 +5,6 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.HealingMarkUtils;
@@ -24,145 +23,39 @@ import org.bukkit.util.Vector;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * BloodWrench Crossbow - dual-mode crossbow (Rapid Fire vs Supercharged) with
- * lingering blood spheres and a blood vortex.
+ * BloodWrench Crossbow - counts the hits its wielder lands on players: one set hit releases a
+ * lingering blood bubble, a later one a blood tornado, and then the count starts over. Every
+ * other hit is a plain crossbow hit.
  */
 public class BloodwrenchHandler extends MythicItemHandler {
 
-    // BloodWrench mode tracking (true = rapid fire, false = supercharged)
-    private final Map<UUID, Boolean> bloodwrenchRapidMode;
-
-    // BloodWrench rapid fire shots remaining (must fire all 3 before switching)
-    private final Map<UUID, Integer> bloodwrenchRapidShotsRemaining;
-
-    // BloodWrench rapid fire in progress (cannot switch modes while firing)
-    private final Set<UUID> bloodwrenchRapidFiring;
+    // Hits each wielder has landed so far in the current bubble/tornado cycle
+    private final Map<UUID, Integer> landedHits;
 
     public BloodwrenchHandler(MythicItemManager manager) {
         super(manager);
-        this.bloodwrenchRapidMode = new ConcurrentHashMap<>();
-        this.bloodwrenchRapidShotsRemaining = new ConcurrentHashMap<>();
-        this.bloodwrenchRapidFiring = ConcurrentHashMap.newKeySet();
+        this.landedHits = new ConcurrentHashMap<>();
     }
 
     /**
-     * Toggle BloodWrench mode between Rapid Fire and Supercharged.
-     * Cannot switch modes while rapid firing or on cooldown.
-     * 1 second cooldown between toggles.
+     * Counts a BloodWrench arrow that hit a player: the bubble-on-hit'th hit releases a blood
+     * bubble where it landed, the tornado-on-hit'th a blood tornado, after which the count starts
+     * over.
      */
-    public void toggleBloodwrenchMode(Player player) {
-        UUID uuid = player.getUniqueId();
+    public void onHitLanded(Player shooter, Location hitLocation) {
+        UUID uuid = shooter.getUniqueId();
+        int hits = landedHits.merge(uuid, 1, Integer::sum);
 
-        // Cannot switch while in rapid fire burst
-        if (bloodwrenchRapidFiring.contains(uuid)) {
-            Messages.send(player, "mythic.cannot-switch-modes");
-            return;
+        if (hits >= cfg.getBloodwrenchTornadoOnHit()) {
+            landedHits.remove(uuid);
+            releaseBloodTornado(shooter, hitLocation);
+        } else if (hits == cfg.getBloodwrenchBubbleOnHit()) {
+            releaseBloodBubble(shooter, hitLocation);
         }
-
-        // Check toggle cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE)) {
-            Messages.send(player, "mythic.mode-switch-cooldown", "{remaining}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE)));
-            return;
-        }
-
-        // Toggle mode (default is rapid mode = true)
-        boolean currentRapid = bloodwrenchRapidMode.getOrDefault(uuid, true);
-        boolean newRapid = !currentRapid;
-        bloodwrenchRapidMode.put(uuid, newRapid);
-
-        // Set toggle cooldown
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_MODE_TOGGLE, cfg.getBloodwrenchModeToggleCooldown());
-
-        String modeName = newRapid ? "Rapid Fire" : "Supercharged";
-        Messages.send(player, "mythic.bloodwrench-mode", "{mode_name}", modeName);
-        SoundUtils.play(player, Sound.BLOCK_LEVER_CLICK, 1.0f, newRapid ? 1.5f : 0.8f);
-        Messages.debug(player, "BLOODWRENCH: Switched to " + (newRapid ? "Rapid Fire" : "Supercharged") + " mode");
-    }
-
-    /**
-     * Check if BloodWrench is in Rapid Fire mode.
-     */
-    public boolean isBloodwrenchRapidMode(Player player) {
-        return bloodwrenchRapidMode.getOrDefault(player.getUniqueId(), true);
-    }
-
-    /**
-     * Whether the currently-selected mode (rapid or supercharged) is on its reload cooldown -
-     * both cooldowns are always set together by {@link #startBothModeCooldowns}, but which one
-     * is relevant to show/block depends on which mode the player is actually in.
-     */
-    public boolean isReloading(Player player) {
-        String key = isBloodwrenchRapidMode(player)
-                ? CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD
-                : CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN;
-        return cooldownManager.isOnCooldown(player.getUniqueId(), key);
-    }
-
-    public long getReloadSecondsRemaining(Player player) {
-        String key = isBloodwrenchRapidMode(player)
-                ? CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD
-                : CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN;
-        return cooldownManager.getRemainingCooldownSeconds(player.getUniqueId(), key);
-    }
-
-    /**
-     * Handle BloodWrench shot based on current mode.
-     */
-    public boolean handleBloodwrenchShot(Player player) {
-        boolean isRapid = isBloodwrenchRapidMode(player);
-
-        Messages.debug(player, "BLOODWRENCH: Shot triggered (" + (isRapid ? "Rapid" : "Supercharged") + " mode)");
-
-        if (isRapid) {
-            return handleBloodwrenchRapidShot(player);
-        } else {
-            return handleBloodwrenchSuperchargedShot(player);
-        }
-    }
-
-    /**
-     * Handle Rapid Fire mode shot.
-     * Player fires 3 blood shots. Once started, must complete all 3 before switching modes.
-     * After 3 shots, cooldown begins.
-     */
-    private boolean handleBloodwrenchRapidShot(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        // Check if on reload cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD);
-            Messages.send(player, "mythic.bloodwrench-reloading", "{remaining}", String.valueOf(remaining));
-            Messages.debug(player, "BLOODWRENCH: Rapid reloading - " + remaining + "s");
-            return false;
-        }
-
-        int shots = bloodwrenchRapidShotsRemaining.getOrDefault(uuid, cfg.getBloodwrenchRapidShots());
-
-        // First shot starts the burst
-        if (shots == cfg.getBloodwrenchRapidShots()) {
-            bloodwrenchRapidFiring.add(uuid);
-            Messages.debug(player, "BLOODWRENCH: Rapid fire burst started");
-        }
-
-        // Fire the shot
-        bloodwrenchRapidShotsRemaining.put(uuid, shots - 1);
-        Messages.debug(player, "BLOODWRENCH: Rapid shot fired! Remaining: " + (shots - 1));
-
-        // Check if burst complete
-        if (shots - 1 <= 0) {
-            bloodwrenchRapidFiring.remove(uuid);
-            bloodwrenchRapidShotsRemaining.remove(uuid);
-            startBothModeCooldowns(uuid);
-            Messages.send(player, "mythic.bloodwrench-reload-start");
-            Messages.debug(player, "BLOODWRENCH: Rapid burst complete, reloading for " + cfg.getBloodwrenchRapidReloadCooldown() + "s");
-        }
-
-        return true;
     }
 
     /** Light red, to read as blood against Soul Katana's blue mark. */
@@ -187,40 +80,10 @@ public class BloodwrenchHandler extends MythicItemHandler {
     }
 
     /**
-     * Puts both firing modes on their own cooldown at once. The two modes share one weapon, so
-     * spending either one has to lock out the other - otherwise a player just toggles modes and
-     * keeps firing straight through what should have been a reload.
+     * Blood bubble - a lingering blood sphere with a burst of damage on release, blocking the
+     * healing of enemies inside it.
      */
-    private void startBothModeCooldowns(UUID uuid) {
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_RAPID_RELOAD, cfg.getBloodwrenchRapidReloadCooldown());
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN, cfg.getBloodwrenchSuperchargeCooldown());
-    }
-
-    /**
-     * Handle Supercharged mode shot.
-     * Single powerful shot creating a blood vortex.
-     */
-    private boolean handleBloodwrenchSuperchargedShot(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        // Check cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLOODWRENCH_SUPERCHARGE_COOLDOWN);
-            Messages.send(player, "mythic.bloodwrench-supercharged-cooldown", "{remaining}", String.valueOf(remaining));
-            Messages.debug(player, "BLOODWRENCH: Supercharged on cooldown - " + remaining + "s");
-            return false;
-        }
-
-        Messages.debug(player, "BLOODWRENCH: Supercharged shot fired!");
-        startBothModeCooldowns(uuid);
-        return true;
-    }
-
-    /**
-     * Handle BloodWrench Rapid Fire hit - creates blood sphere.
-     * Blood sphere gives Slowness I when inside and burst damage (nerfed grenade).
-     */
-    public void handleBloodwrenchRapidHit(Player shooter, Location hitLocation) {
+    private void releaseBloodBubble(Player shooter, Location hitLocation) {
         World world = hitLocation.getWorld();
         if (world == null) return;
 
@@ -293,10 +156,10 @@ public class BloodwrenchHandler extends MythicItemHandler {
     }
 
     /**
-     * Handle BloodWrench Supercharged hit - creates blood vortex.
-     * Vortex has red particles, gives Levitation and deals damage to enemies inside.
+     * Blood tornado - a blood vortex that levitates and damages enemies inside, healing the
+     * wielder for part of the damage.
      */
-    public void handleBloodwrenchSuperchargedHit(Player shooter, Location hitLocation) {
+    private void releaseBloodTornado(Player shooter, Location hitLocation) {
         World world = hitLocation.getWorld();
         if (world == null) return;
 
@@ -367,25 +230,13 @@ public class BloodwrenchHandler extends MythicItemHandler {
         manager.trackTask(shooter.getUniqueId(), vortexTask);
     }
 
-    /**
-     * Check if player is currently in rapid fire burst (cannot switch modes).
-     */
-    public boolean isBloodwrenchRapidFiring(UUID playerId) {
-        return bloodwrenchRapidFiring.contains(playerId);
-    }
-
     @Override
     public void cleanup() {
-        bloodwrenchRapidMode.clear();
-        bloodwrenchRapidShotsRemaining.clear();
-        bloodwrenchRapidFiring.clear();
+        landedHits.clear();
     }
 
     @Override
     public void cleanupPlayer(Player player) {
-        UUID uuid = player.getUniqueId();
-        bloodwrenchRapidMode.remove(uuid);
-        bloodwrenchRapidShotsRemaining.remove(uuid);
-        bloodwrenchRapidFiring.remove(uuid);
+        landedHits.remove(player.getUniqueId());
     }
 }

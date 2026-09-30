@@ -321,9 +321,6 @@ public class CooldownManager implements Shutdownable {
         public static final String GOBLIN_SPEAR_THROW = "GOBLIN_SPEAR_THROW";
         public static final String GOBLIN_SPEAR_CHARGE = "GOBLIN_SPEAR_CHARGE";
         public static final String SANDSTORMER_RELOAD = "SANDSTORMER_RELOAD";
-        public static final String BLOODWRENCH_MODE_TOGGLE = "BLOODWRENCH_MODE_TOGGLE";
-        public static final String BLOODWRENCH_RAPID_RELOAD = "BLOODWRENCH_RAPID_RELOAD";
-        public static final String BLOODWRENCH_SUPERCHARGE_COOLDOWN = "BLOODWRENCH_SUPERCHARGE_COOLDOWN";
         public static final String WARDEN_SHOCKWAVE = "WARDEN_SHOCKWAVE";
         public static final String WARDEN_BOXING = "WARDEN_BOXING";
         public static final String WARDEN_RISING_FURY = "WARDEN_RISING_FURY";

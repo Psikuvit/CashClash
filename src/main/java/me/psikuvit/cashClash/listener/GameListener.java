@@ -711,7 +711,7 @@ public class GameListener implements Listener {
      */
     private void handleMythicBowShot(EntityShootBowEvent event, Player player, MythicItem mythic) {
         switch (mythic) {
-            case BLOODWRENCH_CROSSBOW -> handleBloodwrenchShot(event, player);
+            case BLOODWRENCH_CROSSBOW -> handleBloodwrenchShot(event);
             case BLAZEBITE_CROSSBOWS -> handleBlazebiteShot(event, player);
             case WIND_BOW -> handleWindBowShot(event, player);
             default -> { /* No special handling */ }
@@ -719,14 +719,12 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Handle BloodWrench crossbow shot
+     * Handle BloodWrench crossbow shot: tags the arrow so a hit counts toward the wielder's blood
+     * bubble / blood tornado cycle.
      */
-    private void handleBloodwrenchShot(EntityShootBowEvent event, Player player) {
-        if (!mythicManager.getHandler(BloodwrenchHandler.class).handleBloodwrenchShot(player)) {
-            event.setCancelled(true);
-        } else if (event.getProjectile() instanceof AbstractArrow arrow) {
-            String mode = mythicManager.getHandler(BloodwrenchHandler.class).isBloodwrenchRapidMode(player) ? "rapid" : "supercharged";
-            PDCSetter.of(arrow).set(Keys.BLOODWRENCH_MODE, PersistentDataType.STRING, mode).apply();
+    private void handleBloodwrenchShot(EntityShootBowEvent event) {
+        if (event.getProjectile() instanceof AbstractArrow arrow) {
+            PDCSetter.of(arrow).set(Keys.BLOODWRENCH_MODE, PersistentDataType.STRING, "active").apply();
         }
     }
 
@@ -853,18 +851,14 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Handle BloodWrench arrow hit
+     * Handle BloodWrench arrow hit - a hit on a player counts toward the wielder's blood bubble /
+     * blood tornado cycle; a miss counts for nothing.
      */
     private void handleBloodwrenchArrow(Player shooter, AbstractArrow arrow, ProjectileHitEvent event) {
-        String bloodwrenchMode = PDCDetection.getArrowBloodwrenchMode(arrow);
-        if (bloodwrenchMode == null) return;
+        if (PDCDetection.getArrowBloodwrenchMode(arrow) == null) return;
 
-        Location hitLoc = event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation();
-
-        if ("rapid".equals(bloodwrenchMode)) {
-            mythicManager.getHandler(BloodwrenchHandler.class).handleBloodwrenchRapidHit(shooter, hitLoc);
-        } else if ("supercharged".equals(bloodwrenchMode)) {
-            mythicManager.getHandler(BloodwrenchHandler.class).handleBloodwrenchSuperchargedHit(shooter, hitLoc);
+        if (event.getHitEntity() instanceof Player hitPlayer && !hitPlayer.equals(shooter)) {
+            mythicManager.getHandler(BloodwrenchHandler.class).onHitLanded(shooter, hitPlayer.getLocation());
         }
 
         // An arrow can fire ProjectileHitEvent twice (e.g. graze an entity, then embed in a

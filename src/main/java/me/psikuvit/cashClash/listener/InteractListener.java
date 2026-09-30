@@ -21,7 +21,6 @@ import me.psikuvit.cashClash.manager.items.custom.OverdriveHandler;
 import me.psikuvit.cashClash.manager.items.custom.RadiatingLotusHandler;
 import me.psikuvit.cashClash.manager.items.custom.TabletOfHackingHandler;
 import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
-import me.psikuvit.cashClash.manager.items.mythic.BloodwrenchHandler;
 import me.psikuvit.cashClash.manager.items.mythic.CarlsBattleaxeHandler;
 import me.psikuvit.cashClash.manager.items.mythic.ElectricEelHandler;
 import me.psikuvit.cashClash.manager.items.mythic.GoblinSpearHandler;
@@ -68,7 +67,6 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.CrossbowMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
@@ -339,7 +337,6 @@ public class InteractListener implements Listener {
         }
 
         if (item != null) {
-            if (blockBloodwrenchChargeWhileReloading(event, player, item, action)) return;
 
             // Check various item types and delegate
             if (handleEnderPearl(event, player, item)) return;
@@ -681,26 +678,6 @@ public class InteractListener implements Listener {
 
     // ==================== MYTHIC ITEMS ====================
 
-    /**
-     * Refuses to even start loading (charging) a BloodWrench Crossbow while its reload is active
-     * - otherwise the crossbow visually loads and only the eventual shot gets blocked, wasting the
-     * draw time. Sneak+right-click toggles BloodWrench's mode instead of firing, so only a plain
-     * right-click needs blocking here.
-     */
-    private boolean blockBloodwrenchChargeWhileReloading(PlayerInteractEvent event, Player player, ItemStack item, Action action) {
-        if (!action.isRightClick() || player.isSneaking()) return false;
-        if (PDCDetection.getMythic(item) != MythicItem.BLOODWRENCH_CROSSBOW) return false;
-        if (!(item.getItemMeta() instanceof CrossbowMeta meta) || meta.hasChargedProjectiles()) return false;
-
-        BloodwrenchHandler handler = mythicManager.getHandler(BloodwrenchHandler.class);
-        if (!handler.isReloading(player)) return false;
-
-        event.setCancelled(true);
-        Messages.send(player, "mythic.bloodwrench-reloading", "remaining",
-                String.valueOf(handler.getReloadSecondsRemaining(player)));
-        return true;
-    }
-
     private boolean handleMythicItem(PlayerInteractEvent event, Player player, ItemStack item, Action action) {
         MythicItem mythic = PDCDetection.getMythic(item);
         if (mythic == null) return false;
@@ -796,15 +773,6 @@ public class InteractListener implements Listener {
                     mythicManager.getHandler(AlchemistWandHandler.class).useAlchemistBlinkSwap(player);
                 }
                 return true;
-            }
-            case BLOODWRENCH_CROSSBOW -> {
-                // Shift + Right-click to toggle mode
-                if (player.isSneaking()) {
-                    event.setCancelled(true);
-                    armorManager.lockMythicShift(player);
-                    mythicManager.getHandler(BloodwrenchHandler.class).toggleBloodwrenchMode(player);
-                    return true;
-                }
             }
         }
         return false;

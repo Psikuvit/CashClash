@@ -269,20 +269,16 @@ public class ItemsConfig {
         return config.getInt("mythic-items.goblin-spear.charge.poison-level", 1) - 1; // 0-indexed
     }
 
-    // BloodWrench Crossbow - Mode Toggle
-    public int getBloodwrenchModeToggleCooldown() {
-        return config.getInt("mythic-items.bloodwrench.mode-toggle-cooldown-seconds", 1);
+    // BloodWrench Crossbow - landed-hit cycle
+    public int getBloodwrenchBubbleOnHit() {
+        return config.getInt("mythic-items.bloodwrench.bubble-on-hit", 3);
     }
 
-    // BloodWrench Crossbow - Rapid Fire Mode
-    public int getBloodwrenchRapidShots() {
-        return config.getInt("mythic-items.bloodwrench.rapid.shots", 3);
+    public int getBloodwrenchTornadoOnHit() {
+        return config.getInt("mythic-items.bloodwrench.tornado-on-hit", 7);
     }
 
-    public int getBloodwrenchRapidReloadCooldown() {
-        return config.getInt("mythic-items.bloodwrench.rapid.reload-cooldown-seconds", 14);
-    }
-
+    // BloodWrench Crossbow - Blood Bubble
     public double getBloodwrenchSphereRadius() {
         return config.getDouble("mythic-items.bloodwrench.rapid.sphere-radius", 2.0);
     }
@@ -295,11 +291,7 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.bloodwrench.rapid.sphere-burst-damage", 4.0);
     }
 
-    // BloodWrench Crossbow - Supercharged Mode
-    public int getBloodwrenchSuperchargeCooldown() {
-        return config.getInt("mythic-items.bloodwrench.supercharge.cooldown-seconds", 25);
-    }
-
+    // BloodWrench Crossbow - Blood Tornado
     public double getBloodwrenchVortexRadius() {
         return config.getDouble("mythic-items.bloodwrench.supercharge.vortex-radius", 4.0);
     }
