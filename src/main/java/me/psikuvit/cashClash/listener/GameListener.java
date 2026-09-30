@@ -754,11 +754,12 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Handle Wind Bow shot
+     * Wind Bow shot: rolls whether this arrow releases a wind gust where it lands, and tags it.
      */
     private void handleWindBowShot(EntityShootBowEvent event, Player player) {
-        if (!mythicManager.getHandler(WindBowHandler.class).handleWindBowShot(player)) {
-            event.setCancelled(true);
+        if (event.getProjectile() instanceof AbstractArrow arrow
+                && mythicManager.getHandler(WindBowHandler.class).rollGust(player)) {
+            PDCSetter.of(arrow).set(Keys.WIND_BOW_GUST_ARROW, PersistentDataType.BYTE, (byte) 1).apply();
         }
     }
 
@@ -841,15 +842,16 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Handle Wind Bow arrow hit
+     * Wind Bow arrow impact: a gust-tagged arrow releases its wind gust wherever it lands - on a
+     * player or on the ground.
      */
     private void handleWindBowArrow(Player shooter, AbstractArrow arrow, ProjectileHitEvent event) {
-        ItemStack bow = shooter.getInventory().getItemInMainHand();
-        MythicItem mythic = PDCDetection.getMythic(bow);
+        if (!arrow.getPersistentDataContainer().has(Keys.WIND_BOW_GUST_ARROW, PersistentDataType.BYTE)) return;
 
-        if (mythic == MythicItem.WIND_BOW && event.getHitEntity() instanceof Player hitPlayer) {
-            mythicManager.getHandler(WindBowHandler.class).handleWindBowHit(shooter, hitPlayer);
+        Location impact = event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation();
+        mythicManager.getHandler(WindBowHandler.class).releaseGust(shooter, impact);
 
+        if (event.getHitEntity() instanceof Player) {
             arrow.remove();
         }
     }

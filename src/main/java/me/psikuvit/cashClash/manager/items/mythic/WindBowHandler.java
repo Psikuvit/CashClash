@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
+import me.psikuvit.cashClash.util.ChanceBag;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -10,88 +11,36 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Wind Bow - magazine shot system, right-click boost, and wind-gust arrow hits.
+ * Wind Bow - left-click Soaring Heights boost, and a wind gust wherever a fixed-luck share of its
+ * arrows land.
  */
 public class WindBowHandler extends MythicItemHandler {
 
-    private final Map<UUID, Integer> windBowShotsRemaining;
+    private final ChanceBag gustChance;
 
     public WindBowHandler(MythicItemManager manager) {
         super(manager);
-        this.windBowShotsRemaining = new ConcurrentHashMap<>();
-    }
-
-    public boolean isReloading(UUID uuid) {
-        return cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_RELOAD);
-    }
-
-    public long getReloadSecondsRemaining(UUID uuid) {
-        return cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD);
+        this.gustChance = new ChanceBag();
     }
 
     /**
-     * Handle Wind Bow shot.
-     * 10 shots per magazine, then 30 second reload cooldown.
-     * @return true if shot is allowed, false if on cooldown
+     * Rolls whether this shot's impact releases a wind gust - exactly the configured share of the
+     * player's shots.
      */
-    public boolean handleWindBowShot(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        // Check if on reload cooldown
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_RELOAD)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD);
-            Messages.send(player, "mythic.wind-bow-reloading",
-                    "remaining", String.valueOf(remaining));
-            return false;
-        }
-
-        // Get or initialize shots remaining
-        int shots = windBowShotsRemaining.getOrDefault(uuid, cfg.getWindBowShotsPerMagazine());
-
-        if (shots <= 0) {
-            // Start reload cooldown
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD, cfg.getWindBowReloadCooldown());
-            windBowShotsRemaining.put(uuid, cfg.getWindBowShotsPerMagazine());
-            Messages.send(player, "mythic.wind-bow-out-of-shots");
-            SoundUtils.play(player, Sound.ITEM_CROSSBOW_LOADING_END, 1.0f, 0.5f);
-            return false;
-        }
-
-        // Consume a shot
-        shots--;
-        windBowShotsRemaining.put(uuid, shots);
-
-        if (shots == 0) {
-            // Start reload cooldown
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_RELOAD, cfg.getWindBowReloadCooldown());
-            windBowShotsRemaining.put(uuid, cfg.getWindBowShotsPerMagazine());
-            Messages.send(player, "mythic.wind-bow-magazine-empty");
-            SoundUtils.play(player, Sound.ITEM_CROSSBOW_LOADING_END, 1.0f, 0.5f);
-        } else if (shots <= 3) {
-            Messages.send(player, "mythic.wind-bow-shots-remaining", "{shots}", String.valueOf(shots));
-        }
-
-        Messages.debug(player, "WIND_BOW: Shot fired, " + shots + " remaining");
-        return true;
+    public boolean rollGust(Player player) {
+        return gustChance.roll(player.getUniqueId(), cfg.getWindBowGustChancePercent());
     }
 
     /**
-     * Wind Bow right-click boost (while sneaking).
-     * Boosts player up and forward.
-     * 30 second cooldown.
+     * Soaring Heights (left-click): boosts the player up and forward, then goes on cooldown.
      */
     public void useWindBowBoost(Player player) {
         UUID uuid = player.getUniqueId();
 
-        Messages.debug(player, "WIND_BOW: Boost ability triggered");
-
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_BOOST)) {
-            Messages.debug(player, "WIND_BOW: Boost on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST) + "s");
             Messages.send(player, "mythic.wind-bow-boost-cooldown", "{cooldown_seconds}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST)));
             return;
         }
@@ -112,17 +61,17 @@ public class WindBowHandler extends MythicItemHandler {
     }
 
     /**
-     * Wind Bow arrow hit - propel target and nearby players backwards.
-     * Acts as a wind gust in 3 block radius. Passive ability.
+     * Wind gust at an arrow's impact - pushes every player around it (except the shooter) away
+     * from the shooter.
      */
-    public void handleWindBowHit(Player shooter, Player target) {
-        Location hitLoc = target.getLocation();
-        Vector pushDirection = hitLoc.toVector().subtract(shooter.getLocation().toVector()).normalize();
-        pushDirection.setY(0.3);
+    public void releaseGust(Player shooter, Location impact) {
+        Vector pushDirection = impact.toVector().subtract(shooter.getLocation().toVector());
+        if (pushDirection.lengthSquared() < 1.0E-4) pushDirection = shooter.getLocation().getDirection();
+        pushDirection.normalize().setY(0.3);
 
+        double radius = cfg.getWindBowPushRadius();
         int hitCount = 0;
-        // Push target and all nearby players
-        for (Entity entity : target.getWorld().getNearbyEntities(hitLoc, cfg.getWindBowPushRadius(), cfg.getWindBowPushRadius(), cfg.getWindBowPushRadius())) {
+        for (Entity entity : impact.getWorld().getNearbyEntities(impact, radius, radius, radius)) {
             if (!(entity instanceof Player p)) continue;
             if (p.equals(shooter)) continue;
 
@@ -130,18 +79,18 @@ public class WindBowHandler extends MythicItemHandler {
             hitCount++;
         }
 
-        Messages.debug(shooter, "WIND_BOW: Wind gust pushed " + hitCount + " players, radius: " + cfg.getWindBowPushRadius() + ", power: " + cfg.getWindBowPushPower());
-        SoundUtils.playAt(hitLoc, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.0f, 0.8f);
-        ParticleUtils.cloud(hitLoc, 30, 1);
+        Messages.debug(shooter, "WIND_BOW: Wind gust pushed " + hitCount + " players, radius: " + radius + ", power: " + cfg.getWindBowPushPower());
+        SoundUtils.playAt(impact, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.0f, 0.8f);
+        ParticleUtils.cloud(impact, 30, 1);
     }
 
     @Override
     public void cleanup() {
-        windBowShotsRemaining.clear();
+        gustChance.clear();
     }
 
     @Override
     public void cleanupPlayer(Player player) {
-        windBowShotsRemaining.remove(player.getUniqueId());
+        gustChance.reset(player.getUniqueId());
     }
 }

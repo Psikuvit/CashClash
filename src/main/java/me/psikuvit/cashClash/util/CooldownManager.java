@@ -315,7 +315,6 @@ public class CooldownManager implements Shutdownable {
         public static final String CARLS_BATTLEAXE_CRIT = "CARLS_BATTLEAXE_CRIT";
         public static final String CARLS_BATTLEAXE_THROW = "CARLS_BATTLEAXE_THROW";
         public static final String WIND_BOW_BOOST = "WIND_BOW_BOOST";
-        public static final String WIND_BOW_RELOAD = "WIND_BOW_RELOAD";
         public static final String BOBBY_DOG = "BOBBY_DOG";
         public static final String ELECTRIC_EEL_LIGHTNING = "ELECTRIC_EEL_LIGHTNING";
         public static final String ELECTRIC_EEL_CHAIN = "ELECTRIC_EEL_CHAIN";

@@ -347,7 +347,6 @@ public class InteractListener implements Listener {
         if (item != null) {
             if (blockBlazebiteChargeWhileReloading(event, player, item, action)) return;
             if (blockBloodwrenchChargeWhileReloading(event, player, item, action)) return;
-            if (blockWindBowChargeWhileReloading(event, player, item, action)) return;
 
             // Check various item types and delegate
             if (handleEnderPearl(event, player, item)) return;
@@ -728,35 +727,28 @@ public class InteractListener implements Listener {
         return true;
     }
 
-    /**
-     * Wind Bow's magazine reload blocks the shot itself (EntityShootBowEvent), but nothing
-     * stopped a player from still drawing the bow back during the reload - this catches that
-     * at the draw itself, mirroring the Blazebite/BloodWrench guards above. Sneak+right-click
-     * is the boost ability, not a shot, so it's left alone here.
-     */
-    private boolean blockWindBowChargeWhileReloading(PlayerInteractEvent event, Player player, ItemStack item, Action action) {
-        if (!action.isRightClick() || player.isSneaking()) return false;
-        if (PDCDetection.getMythic(item) != MythicItem.WIND_BOW) return false;
-
-        WindBowHandler handler = mythicManager.getHandler(WindBowHandler.class);
-        if (!handler.isReloading(player.getUniqueId())) return false;
-
-        event.setCancelled(true);
-        Messages.send(player, "mythic.wind-bow-reloading", "remaining",
-                String.valueOf(handler.getReloadSecondsRemaining(player.getUniqueId())));
-        return true;
-    }
-
     private boolean handleMythicItem(PlayerInteractEvent event, Player player, ItemStack item, Action action) {
         MythicItem mythic = PDCDetection.getMythic(item);
         if (mythic == null) return false;
 
-        if (!action.isRightClick()) return false;
+        boolean windBowBoost = mythic == MythicItem.WIND_BOW
+                && (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK);
+        if (!action.isRightClick() && !windBowBoost) return false;
 
         GameSession mythicSession = gameManager.getPlayerSession(player);
         if (mythicSession != null && (mythicSession.getState() == GameState.SHOPPING || mythicSession.isActionsRestricted())) {
             event.setCancelled(true);
             Messages.sendPhaseRestriction(player, mythicSession, "gamestate.cannot-use-abilities-shopping");
+            return true;
+        }
+
+        if (windBowBoost) {
+            event.setCancelled(true);
+            if (isSilenced(player)) {
+                Messages.send(player, "listener.cannot-use-abilities-while-silenced");
+                return true;
+            }
+            mythicManager.getHandler(WindBowHandler.class).useWindBowBoost(player);
             return true;
         }
 
@@ -777,19 +769,6 @@ public class InteractListener implements Listener {
                 armorManager.lockMythicShift(player);
                 mythicManager.getHandler(CarlsBattleaxeHandler.class).activateCarlsSpinAttack(player);
                 return true;
-            }
-            case WIND_BOW -> {
-                if (player.isSneaking()) {
-                    if (isSilenced(player)) {
-                        event.setCancelled(true);
-                        Messages.send(player, "listener.cannot-use-abilities-while-silenced");
-                        return true;
-                    }
-                    event.setCancelled(true);
-                    armorManager.lockMythicShift(player);
-                    mythicManager.getHandler(WindBowHandler.class).useWindBowBoost(player);
-                    return true;
-                }
             }
             case ELECTRIC_EEL_SWORD -> {
                 if (isSilenced(player)) {

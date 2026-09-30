@@ -49,8 +49,9 @@ mythic-items:
 
   # Wind Bow
   wind-bow:
-    shots-per-magazine: 10
-    reload-cooldown-seconds: 30
+    # Fixed-luck share of shots that release a wind gust where they land (100 = every shot)
+    gust-chance-percent: 100
+    # Soaring Heights - left-click to launch up and forward
     boost:
       cooldown-seconds: 30
       power: 2.0
@@ -930,8 +931,8 @@ item-lore:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>A bow of the winds</dark_purple>"
-        - "<yellow>Push enemies with arrows</yellow>"
-        - "<yellow>Speed boost ability</yellow>"
+        - "<yellow>Arrows release a wind gust where they land</yellow>"
+        - "<yellow>Left-click: Soaring Heights</yellow>"
     electric-eel:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"

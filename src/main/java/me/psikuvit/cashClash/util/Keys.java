@@ -80,6 +80,11 @@ public class Keys {
     public static final NamespacedKey BULLSEYE_STORM_ARROW;
 
     /**
+     * Byte marker on Wind Bow arrows that release a wind gust where they land (rolled at shot time).
+     */
+    public static final NamespacedKey WIND_BOW_GUST_ARROW;
+
+    /**
      * Byte marker on Cash Blaster Profit Vortex arrows (1 = this arrow spawns a vortex on impact).
      */
     public static final NamespacedKey PROFIT_VORTEX_ARROW;
@@ -168,6 +173,7 @@ public class Keys {
         BUFF_SELECTION_POTION = new NamespacedKey(CashClashPlugin.getInstance(), "buff_selection_potion");
         FULLY_CHARGED_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "fully_charged_arrow");
         BULLSEYE_STORM_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "bullseye_storm_arrow");
+        WIND_BOW_GUST_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "wind_bow_gust_arrow");
         PROFIT_VORTEX_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "profit_vortex_arrow");
         PROFIT_VORTEX_GLOW_SECONDS = new NamespacedKey(CashClashPlugin.getInstance(), "profit_vortex_glow_seconds");
         MYTHIC_CARLS_BATTLEAXE_DAMAGE = new NamespacedKey(CashClashPlugin.getInstance(), "carls_battleaxe_damage");
