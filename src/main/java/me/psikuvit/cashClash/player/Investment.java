@@ -90,12 +90,5 @@ public class Investment {
     public int getDeaths() {
         return deaths;
     }
-
-    /**
-     * Force set deaths (used for forfeit penalty).
-     */
-    public void setDeathsToMax() {
-        this.deaths = 3;
-    }
 }
 

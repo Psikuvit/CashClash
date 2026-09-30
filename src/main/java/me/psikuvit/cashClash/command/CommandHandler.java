@@ -9,7 +9,6 @@ import me.psikuvit.cashClash.command.subcommands.CoinsCommand;
 import me.psikuvit.cashClash.command.subcommands.DebugCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceNextRoundCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceStartCommand;
-import me.psikuvit.cashClash.command.subcommands.ForfeitCommand;
 import me.psikuvit.cashClash.command.subcommands.JoinCommand;
 import me.psikuvit.cashClash.command.subcommands.KCCommand;
 import me.psikuvit.cashClash.command.subcommands.LayoutCommand;
@@ -61,7 +60,6 @@ public class CommandHandler extends Command {
         registerSubcommand(new LeaveCommand());
         registerSubcommand(new ShopCommand());
         registerSubcommand(new StatsCommand());
-        registerSubcommand(new ForfeitCommand());
         registerSubcommand(new LayoutCommand());
         registerSubcommand(new LeaderboardCommand());
 
@@ -154,7 +152,6 @@ public class CommandHandler extends Command {
         Messages.send(sender, "command.help-join");
         Messages.send(sender, "command.help-leave");
         Messages.send(sender, "command.help-stats");
-        Messages.send(sender, "command.help-forfeit");
         Messages.send(sender, "command.help-transfer");
         Messages.send(sender, "command.help-layout");
         Messages.send(sender, "command.help-leaderboard");

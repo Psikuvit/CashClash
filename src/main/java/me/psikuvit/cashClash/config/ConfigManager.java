@@ -127,10 +127,6 @@ public class ConfigManager {
         return config.getInt("game.respawn-protection", 15);
     }
 
-    public int getForfeitCombatGrace() {
-        return config.getInt("game.forfeit-combat-grace", 5);
-    }
-
     public double getDeathSpectatorRiseHeight() {
         return config.getDouble("game.death-spectator-rise-height", 4.0);
     }
@@ -147,10 +143,6 @@ public class ConfigManager {
 
     public int getLateRoundLives() {
         return config.getInt("rounds.late-round-lives", 1);
-    }
-
-    public long getForfeitBonus() {
-        return config.getLong("rounds.forfeit-bonus", 10000);
     }
 
     public long getKillTeamSplitBonus() {

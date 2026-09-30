@@ -801,9 +801,6 @@ public class DamageListener implements Listener {
             return;
         }
 
-        // Update last damage time (combat-grace-period checks read this)
-        currentRound.setLastDamageTime(player.getUniqueId(), System.currentTimeMillis());
-
         if (event.getDamage() <= 0) {
             return;
         }

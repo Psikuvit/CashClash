@@ -39,11 +39,6 @@ game:
   death-spectator-rise-height: 4.0
   death-spectator-rise-ticks: 16
 
-  # Forfeit settings
-  forfeit-enabled: true
-  forfeit-delay: 10
-  forfeit-combat-grace: 5
-
 # ============================================
 # ROUND SETTINGS
 # ============================================
@@ -51,9 +46,6 @@ rounds:
   # Lives per round
   early-round-lives: 3
   late-round-lives: 1
-
-  # Forfeit bonus
-  forfeit-bonus: 10000
 
   # Kill team split bonus
   # Amount awarded to killer's team, split evenly among all team members

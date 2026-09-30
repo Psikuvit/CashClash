@@ -11,7 +11,6 @@ import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.listener.BlockListener;
-import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinData;
@@ -36,7 +35,6 @@ import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.enums.RewardType;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -579,8 +577,6 @@ public class GameSession {
      * Reset all round state
      */
     private void resetRoundState() {
-        teamRed.resetForfeitVotes();
-        teamBlue.resetForfeitVotes();
         customArmorManager.resetRoundTracking();
         BlockListener.cleanupRound(sessionId);
     }
@@ -696,8 +692,6 @@ public class GameSession {
     private void removeAllPlayersFromTeams() {
         for (UUID u : teamRed.getPlayers()) teamRed.removePlayer(u);
         for (UUID u : teamBlue.getPlayers()) teamBlue.removePlayer(u);
-        teamRed.resetForfeitVotes();
-        teamBlue.resetForfeitVotes();
         players.clear();
     }
 
@@ -800,125 +794,6 @@ public class GameSession {
 
     public Team getOpposingTeam(Team team) {
         return team == teamRed ? teamBlue : teamRed;
-    }
-
-    public void requestForfeit(Player requester) {
-        Team team = getPlayerTeam(requester);
-        if (team == null) return;
-
-        if (!validateForfeitRequest(team, requester)) return;
-
-        initiateForfeitVote(team, requester);
-    }
-
-    /**
-     * Validate if forfeit request is allowed
-     */
-    private boolean validateForfeitRequest(Team team, Player requester) {
-        int aliveCount = countAliveTeammates(team);
-        if (aliveCount > 2) {
-            Messages.send(requester, "round.forfeit-min-deaths");
-            return false;
-        }
-
-        if (!checkRecentDamageGrace(team, aliveCount)) {
-            return false;
-        }
-
-        long deadCount = team.getPlayers().stream().filter(uuid -> !currentRoundData.isAlive(uuid)).count();
-        if (deadCount < 2) {
-            Messages.send(requester, "round.forfeit-two-dead");
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Count alive teammates on a team
-     */
-    private int countAliveTeammates(Team team) {
-        return (int) team.getPlayers().stream().filter(uuid -> currentRoundData.isAlive(uuid)).count();
-    }
-
-    /**
-     * Check if team has recent damage within grace period
-     */
-    private boolean checkRecentDamageGrace(Team team, int aliveCount) {
-        long now = System.currentTimeMillis();
-        int combatGrace = configManager.getForfeitCombatGrace();
-        boolean anyRecentDamage = team.getPlayers().stream()
-                .anyMatch(uuid -> currentRoundData.getLastDamageTime(uuid) + (combatGrace * 1000L) > now);
-
-        if (aliveCount > 1 && anyRecentDamage) {
-            Player requester = Bukkit.getPlayer(team.getPlayers().iterator().next());
-            if (requester != null) {
-                Messages.send(requester, "round.forfeit-recent-damage",
-                        "grace_seconds", String.valueOf(combatGrace));
-            }
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Initiate forfeit vote
-     */
-    private void initiateForfeitVote(Team team, Player requester) {
-        long now = System.currentTimeMillis();
-        if (team.getForfeitStartTime() == 0L) team.setForfeitStartTime(now);
-        team.addForfeitVote(requester.getUniqueId());
-
-        Messages.broadcastToTeam(team, "round.forfeit-vote-started",
-                "player_name", requester.getName());
-        if (team.hasAllForfeitVotes()) executeForfeit(team);
-    }
-
-    public void castForfeitVote(Player voter) {
-        Team team = getPlayerTeam(voter);
-        if (team == null) return;
-        if (team.getForfeitVotes().isEmpty()) {
-            requestForfeit(voter);
-            return;
-        }
-
-        team.addForfeitVote(voter.getUniqueId());
-        Messages.broadcastToTeam(team, "round.forfeit-vote-cast",
-                "player_name", voter.getName(),
-                "votes", String.valueOf(team.getForfeitVotes().size()),
-                "total", String.valueOf(team.getSize()));
-        if (team.hasAllForfeitVotes()) executeForfeit(team);
-    }
-
-    private void executeForfeit(Team forfeitingTeam) {
-        Team other = getOpposingTeam(forfeitingTeam);
-        long bonus = configManager.getForfeitBonus();
-
-        applyForfeitPenalty(forfeitingTeam);
-        applyForfeitBonus(other, bonus);
-
-        Messages.broadcast(players.keySet(), "round.forfeit-executed",
-                "team_color", forfeitingTeam.getColoredName(),
-                "other_team_color", other.getColoredName(),
-                "bonus", String.valueOf(bonus));
-        if (roundManager != null) roundManager.endCombatPhase(other.getTeamNumber());
-    }
-
-    /**
-     * Apply forfeit penalty to forfeiting team
-     */
-    private void applyForfeitPenalty(Team forfeitingTeam) {
-        forfeitingTeam.getPlayers().forEach(uuid -> {
-            var p = players.get(uuid);
-            if (p != null) EconomyManager.applyForfeitPenalty(this, p);
-        });
-    }
-
-    /**
-     * Apply forfeit bonus to winning team
-     */
-    private void applyForfeitBonus(Team winningTeam, long bonus) {
-        winningTeam.getPlayers().forEach(uuid -> rewardManager.grant(uuid, RewardType.FORFEIT_BONUS, bonus));
     }
 
     private Kit getRandomKit() {

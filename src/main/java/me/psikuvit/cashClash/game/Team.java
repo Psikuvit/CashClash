@@ -16,20 +16,15 @@ public class Team {
     private final int teamNumber;
     private final TeamColor color;
     private final Set<UUID> players;
-    private final Set<UUID> forfeitVotes;
     private final Map<UUID, Boolean> readyStatus;
     private final boolean enderPearlsDisabled;
-    // Forfeit timing: when the 2nd teammate died (ms), used to enforce delay before allowing forfeit
-    private long forfeitStartTime;
 
     public Team(int teamNumber) {
         this.teamNumber = teamNumber;
         this.color = teamNumber == 1 ? TeamColor.RED : TeamColor.BLUE;
         this.players = new HashSet<>();
-        this.forfeitVotes = new HashSet<>();
         this.readyStatus = new ConcurrentHashMap<>();
         this.enderPearlsDisabled = false;
-        this.forfeitStartTime = 0L;
     }
 
     public void addPlayer(UUID uuid) {
@@ -41,24 +36,11 @@ public class Team {
 
     public void removePlayer(UUID uuid) {
         players.remove(uuid);
-        forfeitVotes.remove(uuid);
         readyStatus.remove(uuid);
     }
 
     public boolean hasPlayer(UUID uuid) {
         return players.contains(uuid);
-    }
-
-    public void addForfeitVote(UUID uuid) {
-        forfeitVotes.add(uuid);
-    }
-
-    public boolean hasAllForfeitVotes() {
-        return forfeitVotes.size() == players.size() && !players.isEmpty();
-    }
-
-    public void resetForfeitVotes() {
-        forfeitVotes.clear();
     }
 
     public void toggleReadyStatus(UUID uuid) {
@@ -102,20 +84,8 @@ public class Team {
         return players.size();
     }
 
-    public Set<UUID> getForfeitVotes() {
-        return forfeitVotes;
-    }
-
     public boolean isEnderPearlsDisabled() {
         return enderPearlsDisabled;
-    }
-
-    public void setForfeitStartTime(long time) {
-        this.forfeitStartTime = time;
-    }
-
-    public long getForfeitStartTime() {
-        return this.forfeitStartTime;
     }
 
     public boolean isTeamReady() {

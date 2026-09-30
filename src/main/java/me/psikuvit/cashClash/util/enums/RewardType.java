@@ -17,9 +17,6 @@ public enum RewardType {
     // "economy.round-money-distributed" is sent once as a session-wide broadcast (it needs
     // both a "pool" and a per-player "amount" placeholder), not per grant - see EconomyManager.
     ROUND_DISTRIBUTION(null, false),
-    // "round.forfeit-executed" is a single session-wide broadcast (see GameSession), not a
-    // per-grant message.
-    FORFEIT_BONUS(null, false),
     SUPPLY_DROP("cashquake.supply-drop-reward", false),
     CASH_BLASTER_VORTEX(null, false);
 

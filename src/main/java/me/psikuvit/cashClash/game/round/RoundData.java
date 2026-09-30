@@ -56,13 +56,6 @@ public class RoundData {
         }
     }
 
-    public void setLastDamageTime(UUID player, long time) {
-        PlayerRoundStats s = getStats(player);
-        if (s != null) {
-            s.setLastDamageTime(time);
-        }
-    }
-
     public int getKills(UUID player) {
         PlayerRoundStats s = getStats(player);
         return s == null ? 0 : s.getKills();
@@ -76,11 +69,6 @@ public class RoundData {
     public boolean isAlive(UUID player) {
         PlayerRoundStats s = getStats(player);
         return s != null && s.getDeaths() == 0;
-    }
-
-    public long getLastDamageTime(UUID player) {
-        PlayerRoundStats s = getStats(player);
-        return s == null ? 0L : s.getLastDamageTime();
     }
 
     public void setFirstBloodPlayer(UUID player) {
