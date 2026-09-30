@@ -914,6 +914,14 @@ public class ItemsConfig {
         return config.getDouble("custom-armor.investors.melee-damage-bonus-per-piece", 0.05);
     }
 
+    public long getInvestorKillObjectiveRewardPerPiece() {
+        return config.getLong("custom-armor.investors.kill-objective-reward-per-piece", 400);
+    }
+
+    public long getInvestorAssistRewardPerPiece() {
+        return config.getLong("custom-armor.investors.assist-reward-per-piece", 200);
+    }
+
     // Guardian's Vest
     public double getGuardianVestRingHeight() {
         return config.getDouble("custom-armor.guardians-vest.ring-height", 1.5);

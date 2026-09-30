@@ -837,6 +837,7 @@ messages:
     dragon-outrage-activated: "<light_purple>🐉 Dragon Outrage activated! Slamming down...</light_purple>"
     dragon-kill-buff: "<light_purple>🐉 Dragon power surges! Strength I (4s)</light_purple>"
     investor-reward: "<green>Investor's Set: your team earned +${reward}!</green>"
+    investor-assist-reward: "<green>Investor's Set assist: your team earned +${reward}!</green>"
     bunny-shoes-cooldown: "<red>Bunny Shoes on cooldown: {remaining}s</red>"
     bunny-shoes-activated: "<green>Bunny Shoes activated! Speed II for {duration} seconds.</green>"
     guardian-vest-activated: "<gold>Guardian's Vest activated! Resistance II for 15 seconds. ({uses}/3 uses)</gold>"

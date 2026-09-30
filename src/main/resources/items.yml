@@ -283,6 +283,9 @@ custom-armor:
 
   # Investor's Set
   investors:
+    # Paid to every player on the wearer's team, per Investor's piece the wearer has on
+    kill-objective-reward-per-piece: 400    # when the wearer gets a kill or completes an objective
+    assist-reward-per-piece: 200            # when the wearer assists a kill
     money-bonus-per-piece: 0.125
     melee-damage-bonus-per-piece: 0.05
     melee-damage-min-round: 4

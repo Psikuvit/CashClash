@@ -84,11 +84,18 @@ public class RewardManager {
     }
 
     /**
-     * Kill assist: grants the assister's share of a kill transfer (if positive).
+     * Kill assist: grants the assister's share of a kill transfer (if positive) and always runs
+     * the Investor's Set assist bonus check.
      */
     public void grantAssist(UUID playerUuid, long amount, String... placeholders) {
         if (amount > 0) {
             grant(playerUuid, RewardType.KILL_ASSIST, amount, placeholders);
+        }
+
+        Player player = Bukkit.getPlayer(playerUuid);
+        if (player != null) {
+            CashClashPlugin.getInstance().getCustomArmorManager().getHandler(InvestorSetHandler.class)
+                    .onInvestorAssist(player, session);
         }
     }
 

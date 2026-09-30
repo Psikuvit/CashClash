@@ -59,16 +59,31 @@ public class InvestorSetHandler extends ArmorSetHandler {
      * rather than called directly by gamemode code.
      */
     public void onInvestorReward(Player player, GameSession session) {
+        rewardTeam(player, session, cfg.getInvestorKillObjectiveRewardPerPiece(), "armor.investor-reward");
+    }
+
+    /**
+     * Investor's Set: reward the wearer's team coins when the wearer assists a kill. Routed
+     * through {@link me.psikuvit.cashClash.manager.player.RewardManager#grantAssist}.
+     */
+    public void onInvestorAssist(Player player, GameSession session) {
+        rewardTeam(player, session, cfg.getInvestorAssistRewardPerPiece(), "armor.investor-assist-reward");
+    }
+
+    /**
+     * Pays every player on the wearer's team {@code rewardPerPiece} for each Investor's piece
+     * the wearer has on.
+     */
+    private void rewardTeam(Player player, GameSession session, long rewardPerPiece, String messageKey) {
         if (player == null || session == null) return;
         int pieces = countInvestorsPieces(player);
-        Messages.debug(player, "ECONOMY", "InvestorSet: onInvestorReward called, pieces=" + pieces);
         if (pieces <= 0) return;
 
         Team team = session.getPlayerTeam(player);
-        Messages.debug(player, "ECONOMY", "InvestorSet: team=" + (team == null ? "null" : team.getTeamNumber()));
         if (team == null) return;
 
-        int reward = 200 * pieces;
+        long reward = rewardPerPiece * pieces;
+        Messages.debug(player, "ECONOMY", "InvestorSet: " + messageKey + " pieces=" + pieces + " reward=" + reward);
         for (UUID uuid : team.getPlayers()) {
             CashClashPlayer ccp = session.getCashClashPlayer(uuid);
             if (ccp != null) {
@@ -76,7 +91,7 @@ public class InvestorSetHandler extends ArmorSetHandler {
             }
             Player teammate = Bukkit.getPlayer(uuid);
             if (teammate != null && teammate.isOnline()) {
-                playInvestorRewardEffect(teammate, reward);
+                playInvestorRewardEffect(teammate, reward, messageKey);
             }
         }
     }
@@ -84,9 +99,9 @@ public class InvestorSetHandler extends ArmorSetHandler {
     /**
      * Play the coin reward particle/sound effect for an investor reward recipient.
      */
-    private void playInvestorRewardEffect(Player player, int reward) {
+    private void playInvestorRewardEffect(Player player, long reward, String messageKey) {
         SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
-        Messages.send(player, "armor.investor-reward", "reward", String.valueOf(reward));
+        Messages.send(player, messageKey, "reward", String.format("%,d", reward));
         ParticleUtils.emeraldRing(player);
     }
 
