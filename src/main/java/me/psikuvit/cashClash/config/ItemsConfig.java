@@ -757,6 +757,14 @@ public class ItemsConfig {
         return config.getDouble("custom-items.ice-fan.range", 3.5);
     }
 
+    public double getIceFanParticleHeight() {
+        return config.getDouble("custom-items.ice-fan.particle-height", 1.0);
+    }
+
+    public double getIceFanParticleStartDistance() {
+        return config.getDouble("custom-items.ice-fan.particle-start-distance", 1.0);
+    }
+
     // Overdrive Potion
     public int getOverdriveInvincibilitySeconds() {
         return config.getInt("custom-items.overdrive-potion.invincibility-seconds", 4);

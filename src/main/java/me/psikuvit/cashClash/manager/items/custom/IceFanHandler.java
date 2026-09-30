@@ -41,6 +41,7 @@ public class IceFanHandler extends CustomItemHandler {
     // 180 semicircle swept out in front of the player.
     private static final double HALF_CIRCLE_HALF_ANGLE_DEGREES = 90;
     private static final double ARC_STEP_DEGREES = 15;
+    private static final double PARTICLE_RING_SPACING = 0.7;
 
     // A transient flag suppressing DamageListener's vanilla-melee cancellation for the burst's
     // own hits
@@ -99,7 +100,7 @@ public class IceFanHandler extends CustomItemHandler {
             target.setVelocity(target.getVelocity().add(knockback));
         }
 
-        spawnBurstShootParticles(player, origin, direction);
+        spawnBurstShootParticles(player, direction);
         SoundUtils.play(player, Sound.ENTITY_GLOW_SQUID_SQUIRT, 1.0f, 0.6f);
 
         if (newUses <= 0) breakIceFan(player);
@@ -153,17 +154,22 @@ public class IceFanHandler extends CustomItemHandler {
     }
 
     /**
-     * Half-circle sweep of burst particles shooting outward from the player - same per-step
-     * distance, stagger, color and density as before, just swept across a 180 arc in front of
-     * the player at each step instead of a single point along a straight line.
+     * Half-circle sweep of burst particles shooting outward from the player, one ring per tick.
+     * Drawn at the configured height above the player's feet, starting at the configured start
+     * distance and ending exactly at the burst's damage range, so what players see is what it hits.
      */
-    private void spawnBurstShootParticles(Player player, Location origin, Vector direction) {
+    private void spawnBurstShootParticles(Player player, Vector direction) {
         Vector flatDirection = direction.clone().setY(0);
         if (flatDirection.lengthSquared() < 1.0E-4) flatDirection = new Vector(0, 0, 1);
         Vector arcDirection = flatDirection.normalize();
 
-        for (int i = 0; i < 5; i++) {
-            double distance = 0.6 + (i * 0.7);
+        Location origin = player.getLocation().add(0, cfg.getIceFanParticleHeight(), 0);
+        double range = cfg.getIceFanRange();
+        double start = Math.min(cfg.getIceFanParticleStartDistance(), range);
+        int steps = Math.max(1, (int) Math.ceil((range - start) / PARTICLE_RING_SPACING));
+
+        for (int i = 0; i <= steps; i++) {
+            double distance = start + (range - start) * i / steps;
             SchedulerUtils.runTaskLater(() -> {
                 if (!player.isOnline()) return;
                 for (double angle = -HALF_CIRCLE_HALF_ANGLE_DEGREES; angle <= HALF_CIRCLE_HALF_ANGLE_DEGREES; angle += ARC_STEP_DEGREES) {

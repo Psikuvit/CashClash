@@ -449,7 +449,9 @@ custom-items:
     max-freeze-ms: 6000               # Maximum total freeze duration
     freeze-pump-interval-ticks: 1     # How often to update freeze ticks
     cooldown-seconds: 1               # Cooldown between activations
-    range: 3.5                        # Range to find targets in the half-circle sweep
+    range: 3.5                        # Reach of the half-circle sweep - both what it hits and how far its particles travel
+    particle-height: 1.0              # Height (blocks above the player's feet) the particles are drawn at - eye level is ~1.6
+    particle-start-distance: 1.0      # How far out (blocks) the particles start; bigger = further from the player
 
   # Overdrive Potion
   overdrive-potion:
