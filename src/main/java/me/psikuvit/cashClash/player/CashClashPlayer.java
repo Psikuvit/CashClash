@@ -7,7 +7,6 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
-import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.BonusType;
 import org.bukkit.attribute.Attribute;
@@ -52,10 +51,7 @@ public class CashClashPlayer {
     // Special items
     private int revivalStarsUsed;
     private final Deque<PurchaseRecord> purchaseHistory;
-    private final Deque<RunePurchaseRecord> runePurchaseHistory;
     private long respawnProtectionUntil;
-
-    private final Map<EnchantEntry, Integer> ownedEnchants;
 
     // Health management
     private double healthModifier = 0.0; // Tracks additional health from buffs (e.g. +2 for +1 heart)
@@ -78,9 +74,7 @@ public class CashClashPlayer {
         this.lives = 3;
         this.bonusesEarned = new HashMap<>();
         this.purchaseHistory = new ArrayDeque<>();
-        this.runePurchaseHistory = new ArrayDeque<>();
         this.respawnProtectionUntil = 0L;
-        this.ownedEnchants = new HashMap<>();
     }
 
     public void initializeRound1() {
@@ -95,9 +89,6 @@ public class CashClashPlayer {
         this.deathsThisRound = 0;
         this.killStreak = 0;
         this.hasFirstBlood = false;
-
-        // Clear enchants to prevent carryover
-        this.ownedEnchants.clear();
 
         // Reset health modifier
         resetHealthModifier();
@@ -145,16 +136,6 @@ public class CashClashPlayer {
         killStreak++;
     }
 
-    public void setOwnedEnchantLevel(EnchantEntry enchant, int level) {
-        ownedEnchants.put(enchant, level);
-    }
-
-    public int getOwnedEnchantLevel(EnchantEntry enchant) {
-        return ownedEnchants.getOrDefault(enchant, 0);
-    }
-
-    public Map<EnchantEntry, Integer> getOwnedEnchants() { return Map.copyOf(ownedEnchants); }
-
     public void addPurchase(PurchaseRecord record) {
         if (record == null) return;
         purchaseHistory.addLast(record);
@@ -170,19 +151,6 @@ public class CashClashPlayer {
 
     public Queue<PurchaseRecord> getPurchaseHistory() {
         return purchaseHistory;
-    }
-
-    public void addRunePurchase(RunePurchaseRecord record) {
-        if (record == null) return;
-        runePurchaseHistory.addLast(record);
-    }
-
-    public void popLastRunePurchase() {
-        runePurchaseHistory.pollLast();
-    }
-
-    public RunePurchaseRecord peekLastRunePurchase() {
-        return runePurchaseHistory.peekLast();
     }
 
     public void earnBonus(BonusType type) {

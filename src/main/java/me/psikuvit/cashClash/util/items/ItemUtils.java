@@ -1,14 +1,10 @@
 package me.psikuvit.cashClash.util.items;
 
-import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.player.PurchaseRecord;
-import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
-import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
-import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -17,10 +13,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -47,18 +41,6 @@ public final class ItemUtils {
         }
     }
 
-    public static void transferEnchants(ItemStack from, ItemStack to) {
-        if (from == null || to == null) return;
-        ItemMeta fromMeta = from.getItemMeta();
-        ItemMeta toMeta = to.getItemMeta();
-        if (fromMeta != null && toMeta != null) {
-            for (var e : fromMeta.getEnchants().entrySet()) {
-                toMeta.addEnchant(e.getKey(), e.getValue(), true);
-            }
-            to.setItemMeta(toMeta);
-        }
-    }
-
     /**
      * Equip armor or replace existing armor piece.
      * If there was an old armor piece that was purchased (has ITEM_ID), it will be returned.
@@ -69,25 +51,16 @@ public final class ItemUtils {
         PlayerInventory inv = player.getInventory();
         Material m = newArmor.getType();
 
-        ItemStack old = null;
         if (m.name().endsWith("HELMET")) {
-            old = inv.getHelmet();
             inv.setHelmet(newArmor);
         } else if (m.name().endsWith("CHESTPLATE")) {
-            old = inv.getChestplate();
             inv.setChestplate(newArmor);
         } else if (m.name().endsWith("LEGGINGS")) {
-            old = inv.getLeggings();
             inv.setLeggings(newArmor);
         } else if (m.name().endsWith("BOOTS")) {
-            old = inv.getBoots();
             inv.setBoots(newArmor);
         } else {
             inv.addItem(newArmor);
-        }
-
-        if (old != null) {
-            transferEnchants(old, newArmor);
         }
     }
 
@@ -107,126 +80,10 @@ public final class ItemUtils {
             ItemStack best = inv.getItem(bestSlot);
             if (best == null) return;
 
-            ShopService.transferEnchants(newItem, inv, bestSlot, best);
+            inv.setItem(bestSlot, newItem);
         } else {
             inv.addItem(newItem);
         }
-    }
-
-    /**
-     * Gets the enchant level that would be applied to a specific item.
-     * Useful for showing in UI what level you'd get for the currently held item.
-     *
-     * @param item The target item to check
-     * @param ee The enchant entry
-     * @param nextLevel The next level being purchased
-     * @return The exact level that would be applied to this item
-     */
-    public static int getEffectiveEnchantLevel(ItemStack item, EnchantEntry ee, int nextLevel) {
-        if (item == null || !ee.getApplicableMaterials().contains(item.getType())) {
-            return 0;
-        }
-        return nextLevel;
-    }
-
-    public static boolean applyEnchant(Player player, EnchantEntry ee, int lvl) {
-        if (player == null || ee == null) return false;
-        if (ee == EnchantEntry.PROTECTION || ee == EnchantEntry.PROJECTILE_PROTECTION) {
-            boolean appliedAny = false;
-
-            PlayerInventory inv = player.getInventory();
-            ItemStack[] armor = inv.getArmorContents();
-
-            for (ItemStack is : armor) {
-                if (is == null) continue;
-                if (!ee.getApplicableMaterials().contains(is.getType())) continue;
-
-                ItemMeta meta = is.getItemMeta();
-                if (meta == null) continue;
-
-                meta.addEnchant(ee.getEnchantment(), lvl, true);
-                is.setItemMeta(meta);
-                appliedAny = true;
-            }
-            if (appliedAny) {
-                player.getInventory().setArmorContents(armor);
-                Messages.send(player, "enchant.protection-applied",
-                    "level", String.valueOf(lvl));
-            } else {
-                Messages.send(player, "enchant.protection-no-eligible");
-            }
-            return true;
-        }
-
-        ItemStack held = player.getInventory().getItemInMainHand();
-
-        // Try to apply to held item first
-        if (ee.getApplicableMaterials().contains(held.getType())) {
-            ItemMeta meta = held.getItemMeta();
-            if (meta != null) {
-                meta.addEnchant(ee.getEnchantment(), lvl, true);
-                held.setItemMeta(meta);
-            }
-            return true;
-        }
-
-        // If held item doesn't apply, try to find another applicable item in inventory
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (item == null || item.getType().isAir()) continue;
-            if (!ee.getApplicableMaterials().contains(item.getType())) continue;
-
-            ItemMeta meta = item.getItemMeta();
-            if (meta != null) {
-                meta.addEnchant(ee.getEnchantment(), lvl, true);
-                item.setItemMeta(meta);
-            }
-            return true;
-        }
-
-        Messages.send(player, "enchant.ineligible-item");
-        return false;
-    }
-
-    public static void removeRune(Player player, EnchantEntry ee) {
-        if (player == null || ee == null) return;
-
-        ItemStack[] contents = player.getInventory().getContents();
-
-        for (int i = 0; i < contents.length; i++) {
-            ItemStack item = contents[i];
-
-            if (item == null || item.getType().isAir()) continue;
-
-            EnchantEntry rune = PDCDetection.getRune(item);
-
-            if (rune == ee) {
-                contents[i] = null;
-                player.getInventory().setContents(contents);
-                return;
-            }
-        }
-    }
-
-    public static ItemStack createRune(EnchantEntry ee, int level) {
-        ItemStack rune = new ItemStack(ee.getRuneMaterial(), 1);
-
-        PDCSetter tags = PDCSetter.of(rune);
-
-        tags.set(Keys.ITEM_ID, PersistentDataType.STRING, ee.name());
-        tags.set(Keys.RUNE_LEVEL, PersistentDataType.INTEGER, level);
-
-        tags.meta().displayName(Messages.parse("<yellow>" + ee.getDisplayName() + " Rune " + level + "</yellow>"));
-        tags.meta().lore(List.of(
-                Messages.parse("<gray>Enhances: " + ee.getDisplayName() + "</gray>"),
-                Messages.parse("<gray>Level: " + level + "</gray>")
-        ));
-
-        tags.apply();
-
-        RuneManager.initializeRuneDurability(rune, ee);
-        CustomModelDataMapper.applyCustomModel(rune, ee);
-
-        return rune;
     }
 
     public static boolean removeItemFromPlayer(Player player, String itemTag, int quantity) {

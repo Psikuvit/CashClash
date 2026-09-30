@@ -931,61 +931,6 @@ item-lore:
         - "<yellow>Left-click: Tidy Up, see effects and cleanse/strip on hit</yellow>"
         - "<yellow>Shift + right-click: Taunt, chain and tank for your team</yellow>"
 
-  # ==================== ENCHANTS ====================
-  enchants:
-    sharpness:
-      lore:
-        - "<gray>Increase sword damage</gray>"
-    protection:
-      lore:
-        - "<gray>Reduce incoming damage</gray>"
-    knockback:
-      lore:
-        - "<gray>Push enemies farther away</gray>"
-    fire-aspect:
-      lore:
-        - "<gray>Ignite targets on hit</gray>"
-    power:
-      lore:
-        - "<gray>Increase bow damage</gray>"
-    flame:
-      lore:
-        - "<gray>Arrows set targets on fire</gray>"
-    punch:
-      lore:
-        - "<gray>Increase bow knockback</gray>"
-    projectile-protection:
-      lore:
-        - "<gray>Reduce projectile damage</gray>"
-    piercing:
-      lore:
-        - "<gray>Crossbow bolts pierce targets</gray>"
-
-  # ==================== RUNES ====================
-  runes:
-    # Maximum number of runes a player can have active at once
-    max-active-runes: 2
-    # Cooldown in seconds between toggling a rune on/off
-    toggle-cooldown-seconds: 5
-    # Durability per second regenerated when a rune is not broken
-    recharge-per-second: 1.5
-    # How long a rune stays broken (unusable) after hitting 0 durability (milliseconds)
-    broken-duration-ms: 10000
-    # Delay after a rune is toggled off before it starts recharging (milliseconds)
-    recharge-delay-ms: 3000
-    # Per-enchant maximum durability (determines how many hits/ticks before the rune breaks)
-    max-durability:
-      sharpness: 30
-      protection: 30
-      quick-charge: 30
-      fire-aspect: 15
-      knockback: 15
-      flame: 15
-      power: 18
-      projectile-protection: 18
-      punch: 10
-      piercing: 24
-
   # ==================== INVESTMENTS ====================
   investments:
     wallet:
@@ -1015,10 +960,6 @@ item-lore:
       name: "<yellow>Food</yellow>"
       lore:
         - "<gray>Click to browse food</gray>"
-    enchants:
-      name: "<yellow>Enchants</yellow>"
-      lore:
-        - "<gray>Click to browse enchants</gray>"
     utility:
       name: "<yellow>Utility</yellow>"
       lore:

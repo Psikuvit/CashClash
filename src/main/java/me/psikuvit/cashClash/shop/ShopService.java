@@ -182,11 +182,6 @@ public class ShopService {
         }
     }
 
-    public static void transferEnchants(ItemStack newWeapon, PlayerInventory inv, int bestSlot, ItemStack existing) {
-        ItemUtils.transferEnchants(existing, newWeapon);
-        inv.setItem(bestSlot, newWeapon);
-    }
-
     public void processRefund(Player player, PurchaseRecord record) {
         CashClashPlayer ccp = CashClashPlayer.from(player);
         if (ccp == null) return;
@@ -407,10 +402,6 @@ public class ShopService {
                     long setPrice = customArmor.getArmorSet().getTotalPrice();
                     ccp.addPurchase(new PurchaseRecord(setPieces.getFirst(), setPrice, round, replacedSetItems, setPieces));
 
-                    // Note: runes are NOT auto-reapplied to the newly equipped pieces here -
-                    // a rune only ever affects its manually linked, currently active target
-                    // (see RuneManager), same as every other purchase path.
-
                     SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.5f);
                 } else {
                     // Individual custom armor piece (Bunny Shoes, Bullseye Pants, Guardian's Vest)
@@ -492,8 +483,6 @@ public class ShopService {
 
     private void cachePurchase(Player player, CashClashPlayer ccp, Purchasable item, int round, ItemStack replacedItem) {
         ccp.addPurchase(new PurchaseRecord(item, 1, item.getPrice(), replacedItem, round));
-        // Note: runes are NOT auto-reapplied here - a rune only ever affects its manually
-        // linked, currently active target (see RuneManager), regardless of what else is bought.
 
         Messages.send(player, "shop.purchased",
             "item_name", item.getDisplayName(),
@@ -527,9 +516,7 @@ public class ShopService {
             ItemStack existing = inv.getItem(bestSlot);
             if (existing != null) {
                 ItemStack oldItem = existing.clone();
-
-                // Transfer enchantments from old to new
-                transferEnchants(newWeapon, inv, bestSlot, existing);
+                inv.setItem(bestSlot, newWeapon);
                 return oldItem;
             }
         }

@@ -78,10 +78,6 @@ public class ShopConfig {
         return config.getLong("mythic-items." + mythicKey, 0);
     }
 
-    public long getEnchantPrice(String enchantKey, int tier) {
-        return config.getLong("enchants." + enchantKey + ".tier-" + tier, 0);
-    }
-
     public long getInvestmentCost(String investmentKey) {
         return config.getLong("investments." + investmentKey + ".cost", 0);
     }

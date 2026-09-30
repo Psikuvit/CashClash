@@ -28,7 +28,6 @@ import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.WindBowHandler;
 import me.psikuvit.cashClash.manager.items.weapon.CashBlasterHandler;
 import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
-import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.shop.ShopManager;
@@ -47,7 +46,6 @@ import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
-import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
@@ -938,7 +936,6 @@ public class GameListener implements Listener {
     }
 
     // ==================== INVENTORY CLICK (Supply Drop / Cobweb Limit) ====================
-    // Rune-linking clicks are handled by RuneListener#onRuneLinkClick instead - that's its domain.
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
@@ -985,20 +982,6 @@ public class GameListener implements Listener {
             event.setCancelled(true);
             Messages.send(p, "listener.max-webs-reached");
         }
-    }
-
-    /**
-     * Keeps active Protection/Projectile Protection runes tied to whatever is currently worn:
-     * fires on every armor slot change regardless of cause (manual swap, shift-click, hotbar
-     * equip, dispenser, plugin call) so unequipping a piece strips the rune's enchant from it
-     * and equipping a new one into that slot picks it up, live.
-     */
-    @EventHandler
-    public void onArmorChange(PlayerArmorChangeEvent event) {
-        Player p = event.getPlayer();
-        if (gameManager.getPlayerSession(p) == null) return;
-
-        RuneManager.syncArmorRuneOnEquipChange(p, event.getOldItem(), event.getNewItem());
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

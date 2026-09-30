@@ -140,17 +140,6 @@ public class ShopItemBuilder {
     }
 
     /**
-     * Adds a "max level" line to the lore.
-     *
-     * @param maxLevel The maximum enchant level
-     * @return This builder for chaining
-     */
-    public ShopItemBuilder maxLevel(int maxLevel) {
-        lore.add(Messages.parse("<gray>Max Level: <white>" + maxLevel + "</white></gray>"));
-        return this;
-    }
-
-    /**
      * Adds an upgrade path indicator.
      *
      * @param nextTier The next tier name

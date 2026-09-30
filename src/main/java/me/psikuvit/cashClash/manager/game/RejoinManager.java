@@ -9,7 +9,6 @@ import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.player.PurchaseRecord;
-import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
@@ -118,9 +117,6 @@ public class RejoinManager implements Shutdownable {
         // Clone purchase history
         Queue<PurchaseRecord> purchaseHistory = new ArrayDeque<>(ccp.getPurchaseHistory());
 
-        // Copy owned enchants
-        Map<EnchantEntry, Integer> ownedEnchants = new HashMap<>(ccp.getOwnedEnchants());
-
         RejoinData data = new RejoinData(
                 player.getUniqueId(),
                 session.getSessionId(),
@@ -134,7 +130,6 @@ public class RejoinManager implements Shutdownable {
                 armorContents,
                 offhandItem,
                 purchaseHistory,
-                ownedEnchants,
                 System.currentTimeMillis()
         );
 
@@ -291,13 +286,6 @@ public class RejoinManager implements Shutdownable {
         if (data.purchaseHistory() != null) {
             for (PurchaseRecord record : data.purchaseHistory()) {
                 ccp.addPurchase(record);
-            }
-        }
-
-        // Restore owned enchants
-        if (data.ownedEnchants() != null) {
-            for (Map.Entry<EnchantEntry, Integer> entry : data.ownedEnchants().entrySet()) {
-                ccp.setOwnedEnchantLevel(entry.getKey(), entry.getValue());
             }
         }
 

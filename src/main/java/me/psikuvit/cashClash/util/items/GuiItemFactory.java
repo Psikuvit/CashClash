@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.util.items;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.config.ConfigManager;
-import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
@@ -19,7 +18,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 import java.util.UUID;
@@ -134,7 +132,6 @@ public final class GuiItemFactory {
                     case ARMOR -> "armor";
                     case FOOD -> "food";
                     case UTILITY -> "utility";
-                    case ENCHANTS -> "enchants";
                     case INVESTMENTS -> "investments";
                     case CUSTOM_ITEMS -> "custom-items";
                     case LEGENDARIES -> "mythic-items";
@@ -207,99 +204,6 @@ public final class GuiItemFactory {
                 .build();
         applyDisplayTexture(lockedItem, item);
         return lockedItem;
-    }
-    
-    /**
-     * Creates an enchant book item display.
-     * 
-     * @param enchant The enchantment entry
-     * @param level The next level to purchase
-     * @param price The price for this level
-     * @return The configured ItemStack for display
-     */
-    public ItemStack createEnchantItem(EnchantEntry enchant, int level, long price) {
-        ItemStack item = runeBuilder(enchant, level, price).purchasePrompt()
-                .itemId(enchant.name())
-                .build();
-        CustomModelDataMapper.applyCustomModel(item, enchant);
-        return item;
-    }
-    
-    /**
-     * Creates an enchant book item display with player-specific information.
-     * Shows what level the currently held item would receive.
-     *
-     * @param player The player viewing the shop
-     * @param enchant The enchantment entry
-     * @param level The next level to purchase
-     * @param price The price for this level
-     * @return The configured ItemStack for display
-     */
-    public ItemStack createEnchantItem(Player player, EnchantEntry enchant, int level, long price) {
-        ItemStack heldItem = player.getInventory().getItemInMainHand();
-        int effectiveLevel = ItemUtils.getEffectiveEnchantLevel(heldItem, enchant, level);
-
-        ShopItemBuilder builder = runeBuilder(enchant, level, price);
-
-        // Show what level this would apply to the held item
-        if (effectiveLevel > 0) {
-            String heldItemName = heldItem.getType().name().toLowerCase().replace("_", " ");
-            builder.lore("<gray>Applies to held <aqua>" + heldItemName + "</aqua>: <gold>Level " + effectiveLevel + "</gold></gray>");
-        } else {
-            // Show what items this enchant applies to
-            StringBuilder applicableItems = getStringBuilder(enchant);
-            builder.lore(applicableItems.toString());
-        }
-
-        ItemStack item = builder.purchasePrompt()
-                .itemId(enchant.name())
-                .build();
-        CustomModelDataMapper.applyCustomModel(item, enchant);
-        return item;
-    }
-
-    private ShopItemBuilder runeBuilder(EnchantEntry enchant, int level, long price) {
-        ShopItemBuilder builder = ShopItemBuilder.of(enchant.getRuneMaterial())
-                .name("<yellow>" + enchant.getDisplayName() + " " + level + "</yellow>")
-                .price(price)
-                .maxLevel(enchant.getMaxLevel());
-
-        List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore("enchants", enchant.getConfigKey());
-        if (!loreLinesFromConfig.isEmpty()) {
-            builder.configLore(loreLinesFromConfig);
-        }
-        return builder;
-    }
-
-    private static @NonNull StringBuilder getStringBuilder(EnchantEntry enchant) {
-        StringBuilder applicableItems = new StringBuilder("<gray>Applies to: <aqua>");
-        List<Material> materials = enchant.getApplicableMaterials();
-        for (int i = 0; i < Math.min(materials.size(), 3); i++) {
-            if (i > 0) applicableItems.append(", ");
-            applicableItems.append(materials.get(i).name().toLowerCase().replace("_", " "));
-        }
-        if (materials.size() > 3) {
-            applicableItems.append(", ...");
-        }
-        applicableItems.append("</aqua></gray>");
-        return applicableItems;
-    }
-
-    /**
-     * Creates a maxed enchant book display.
-     * 
-     * @param enchant The enchantment entry
-     * @return The configured ItemStack for display
-     */
-    public ItemStack createMaxedEnchant(EnchantEntry enchant) {
-        ItemStack item = ShopItemBuilder.of(enchant.getRuneMaterial())
-                .enchant(enchant.getEnchantment(), enchant.getMaxLevel())
-                .name("<green>" + enchant.getDisplayName() + " <gray>(Max)</gray></green>")
-                .maxed("<gray>Maximum level reached!</gray>")
-                .itemId(enchant.name())
-                .build();
-        CustomModelDataMapper.applyCustomModel(item, enchant);
-        return item;
     }
     
     /**

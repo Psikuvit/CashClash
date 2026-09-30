@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.util.items;
 
-import me.psikuvit.cashClash.shop.EnchantEntry;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.FoodItem;
@@ -100,22 +99,6 @@ public final class PDCDetection {
         if (stack == null || !stack.hasItemMeta()) return null;
         return stack.getItemMeta().getPersistentDataContainer()
                 .get(Keys.ITEM_MAXED, PersistentDataType.BYTE);
-    }
-
-    public static EnchantEntry getEnchantEntry(ItemStack stack) {
-        String tag = readTag(stack, Keys.ITEM_ID);
-        return tag != null ? EnchantEntry.valueOf(tag) : null;
-    }
-
-    public static EnchantEntry getRune(ItemStack stack) {
-        String tag = readTag(stack, Keys.ITEM_ID);
-        if (tag == null) return null;
-
-        try {
-            return EnchantEntry.valueOf(tag);
-        } catch (IllegalArgumentException ignored) {
-            return null;
-        }
     }
 
     // ==================== ITEM TAG CHECKS ====================

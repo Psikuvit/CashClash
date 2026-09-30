@@ -2,10 +2,8 @@ package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.player.PurchaseRecord;
-import me.psikuvit.cashClash.shop.EnchantEntry;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 
@@ -24,7 +22,6 @@ import java.util.UUID;
  * @param armorContents   Their armor contents (cloned)
  * @param offhandItem     Their offhand item (cloned)
  * @param purchaseHistory Their purchase history
- * @param ownedEnchants   Their owned enchant levels
  * @param disconnectTime  When they disconnected (System.currentTimeMillis())
  */
 public record RejoinData(
@@ -40,7 +37,6 @@ public record RejoinData(
         ItemStack[] armorContents,
         ItemStack offhandItem,
         Queue<PurchaseRecord> purchaseHistory,
-        Map<EnchantEntry, Integer> ownedEnchants,
         long disconnectTime
 ) {
 

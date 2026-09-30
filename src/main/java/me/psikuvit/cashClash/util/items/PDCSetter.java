@@ -12,7 +12,7 @@ import org.bukkit.persistence.PersistentDataType;
  * are queued and applied in a single getItemMeta/setItemMeta round-trip:
  *
  * <pre>{@code
- * PDCSetter.of(item).set(Keys.RUNE_LEVEL, PersistentDataType.INTEGER, 3).apply();
+ * PDCSetter.of(item).set(Keys.ITEM_USES, PersistentDataType.INTEGER, 3).apply();
  * }</pre>
  *
  * An entity's PersistentDataContainer is already live (no meta round-trip needed), so

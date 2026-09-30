@@ -7,7 +7,6 @@ import me.psikuvit.cashClash.command.HubCommand;
 import me.psikuvit.cashClash.command.PartyCommandHandler;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
-import me.psikuvit.cashClash.manager.items.RuneManager;
 import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.config.SequencesConfig;
 import me.psikuvit.cashClash.config.ShopConfig;
@@ -20,7 +19,6 @@ import me.psikuvit.cashClash.listener.HungerListener;
 import me.psikuvit.cashClash.listener.InteractListener;
 import me.psikuvit.cashClash.listener.MoveListener;
 import me.psikuvit.cashClash.listener.PlayerConnectionListener;
-import me.psikuvit.cashClash.listener.RuneListener;
 import me.psikuvit.cashClash.listener.TransferInputListener;
 import me.psikuvit.cashClash.listener.lobby.ArenaNPCListener;
 import me.psikuvit.cashClash.listener.lobby.AfkListener;
@@ -103,7 +101,6 @@ public final class CashClashPlugin extends JavaPlugin {
             sequencesConfig = new SequencesConfig();
             itemsConfig = new ItemsConfig();
             shopConfig = new ShopConfig();
-            RuneManager.initialize(itemsConfig);
             getLogger().info("Configuration files loaded successfully");
 
             playerDataManager = PlayerDataManager.create(this);
@@ -277,7 +274,6 @@ public final class CashClashPlugin extends JavaPlugin {
                 new AfkListener(),
                 new ArenaNPCListener(),
                 new ChatListener(),
-                new RuneListener(gameManager, cooldownManager, customArmorManager, customItemManager),
                 transferInputListener
         };
 

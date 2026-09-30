@@ -86,52 +86,6 @@ public class Keys {
     public static final NamespacedKey PROFIT_VORTEX_GLOW_SECONDS;
 
     /**
-     * Stores the upgrade level on rune items.
-     * Used to determine the strength of the rune effect.
-     */
-    public static final NamespacedKey RUNE_LEVEL;
-
-    /**
-     * Stores the UUID of the item this rune is linked to.
-     */
-    public static final NamespacedKey RUNE_LINK;
-
-    /**
-     * Unique identifier for an individual item.
-     * Used by the rune system to remember which exact item a rune is linked to.
-     */
-    public static final NamespacedKey ITEM_UUID;
-
-    /**
-     * Stores whether a rune is currently active.
-     * 1 = active, 0 = inactive
-     */
-    public static final NamespacedKey RUNE_ACTIVE;
-
-    /**
-     * Stores the current durability percentage of a rune.
-     * Example: 30.0 = 30% durability remaining.
-     */
-    public static final NamespacedKey RUNE_DURABILITY;
-
-    /**
-     * Stores the time when a rune broke.
-     * Used for the 10s recharge delay.
-     */
-    public static final NamespacedKey RUNE_BROKEN_TIME;
-
-    /**
-     * Stores when a rune was turned off.
-     * Used for the 3s recharge delay.
-     */
-    public static final NamespacedKey RUNE_OFF_TIME;
-
-    /**
-     * Used to play the fully charged sound/message
-     */
-    public static final NamespacedKey RUNE_FULL_CHARGE_WARNING;
-
-    /**
      * Mythic melee weapons' ATTACK_DAMAGE/ATTACK_SPEED modifier keys, applied once at item
      * creation in {@code MythicItemManager#applyMythicAttributes}.
      */
@@ -210,14 +164,6 @@ public class Keys {
         FULLY_CHARGED_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "fully_charged_arrow");
         PROFIT_VORTEX_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "profit_vortex_arrow");
         PROFIT_VORTEX_GLOW_SECONDS = new NamespacedKey(CashClashPlugin.getInstance(), "profit_vortex_glow_seconds");
-        RUNE_LEVEL = new NamespacedKey(CashClashPlugin.getInstance(), "rune_level");
-        RUNE_LINK = new NamespacedKey(CashClashPlugin.getInstance(), "rune_link");
-        ITEM_UUID = new NamespacedKey(CashClashPlugin.getInstance(), "item_uuid");
-        RUNE_ACTIVE = new NamespacedKey(CashClashPlugin.getInstance(), "rune_active");
-        RUNE_DURABILITY = new NamespacedKey(CashClashPlugin.getInstance(), "rune_durability");
-        RUNE_BROKEN_TIME = new NamespacedKey(CashClashPlugin.getInstance(), "rune_broken_time");
-        RUNE_OFF_TIME = new NamespacedKey(CashClashPlugin.getInstance(), "rune_off_time");
-        RUNE_FULL_CHARGE_WARNING = new NamespacedKey(CashClashPlugin.getInstance(), "rune_full_charge_warning");
         MYTHIC_CARLS_BATTLEAXE_DAMAGE = new NamespacedKey(CashClashPlugin.getInstance(), "carls_battleaxe_damage");
         MYTHIC_CARLS_BATTLEAXE_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "carls_battleaxe_speed");
         MYTHIC_ELECTRIC_EEL_DAMAGE = new NamespacedKey(CashClashPlugin.getInstance(), "electric_eel_sword_damage");

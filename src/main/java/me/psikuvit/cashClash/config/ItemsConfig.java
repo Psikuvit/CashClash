@@ -742,43 +742,6 @@ public class ItemsConfig {
         return config.getDouble("custom-items.ice-fan.range", 3.5);
     }
 
-    // Runes
-    public int getRunesMaxActiveRunes() {
-        return config.getInt("custom-items.runes.max-active-runes", 2);
-    }
-
-    public int getRunesToggleCooldownSeconds() {
-        return config.getInt("custom-items.runes.toggle-cooldown-seconds", 5);
-    }
-
-    public double getRunesRechargePerSecond() {
-        return config.getDouble("custom-items.runes.recharge-per-second", 1.5);
-    }
-
-    public long getRunesBrokenDurationMs() {
-        return config.getLong("custom-items.runes.broken-duration-ms", 10000);
-    }
-
-    public long getRunesRechargeDelayMs() {
-        return config.getLong("custom-items.runes.recharge-delay-ms", 3000);
-    }
-
-    public int getRunesMaxDurability(String enchantName) {
-        String path = "custom-items.runes.max-durability." + enchantName.toLowerCase(Locale.ROOT);
-        return config.getInt(path, getDefaultRuneMaxDurability(enchantName));
-    }
-
-    private int getDefaultRuneMaxDurability(String enchantName) {
-        return switch (enchantName.toLowerCase(Locale.ROOT)) {
-            case "sharpness", "protection", "quick-charge" -> 30;
-            case "fire-aspect", "knockback", "flame" -> 15;
-            case "power", "projectile-protection" -> 18;
-            case "punch" -> 10;
-            case "piercing" -> 24;
-            default -> 20;
-        };
-    }
-
     // Overdrive Potion
     public int getOverdriveInvincibilitySeconds() {
         return config.getInt("custom-items.overdrive-potion.invincibility-seconds", 4);

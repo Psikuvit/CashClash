@@ -8,7 +8,6 @@ public enum ShopCategory {
     ARMOR,
     FOOD,
     UTILITY,
-    ENCHANTS,
     CUSTOM_ITEMS,
     LEGENDARIES,
     INVESTMENTS;

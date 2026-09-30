@@ -310,10 +310,6 @@ public class CooldownManager implements Shutdownable {
         public static final String CASH_BLASTER_TOGGLE = "CASH_BLASTER_TOGGLE";
         public static final String CASH_BLASTER_VORTEX = "CASH_BLASTER_VORTEX";
 
-        // Runes
-        public static final String RUNE_TOGGLE = "rune_toggle";
-        public static final String RUNE_LINK = "rune_link";
-
         // Mythic Items
         public static final String CARLS_BATTLEAXE_SLASH = "CARLS_BATTLEAXE_SLASH";
         public static final String CARLS_BATTLEAXE_CRIT = "CARLS_BATTLEAXE_CRIT";

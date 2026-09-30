@@ -225,11 +225,6 @@ messages:
     investment-details: "<gray>Bonus: <green>${bonus}</green> | Negative: <red>${negative}</red></gray>"
     investment-rules: "<gray>1 death = Bonus | 2 deaths = Break even | 3+ deaths = Loss</gray>"
     investment-cancelled: "<green>Investment cancelled. Refunded ${price}</green>"
-    max-enchant-level: "<yellow>You already have the maximum level of this enchant!</yellow>"
-    deathmauler-has-projectile: "<red>Deathmauler set restriction: You already have Projectile Protection!</red>"
-    deathmauler-has-protection: "<red>Deathmauler set restriction: You already have Protection!</red>"
-    deathmauler-protection-choice: "<red>You must choose either Protection OR Projectile Protection.</red>"
-    enchant-purchased: "<green>Purchased {enchant_name} {level} for ${price}</green>"
     mythic-unavailable: "<red>This mythic is not available in this game!</red>"
     mythic-already-purchased: "<red>This mythic has already been purchased by {owner_name}!</red>"
     mythic-already-owned: "<red>You already own a mythic ({mythic_name})!</red>"
@@ -244,31 +239,6 @@ messages:
     announce-spacer: "<dark_gray> </dark_gray>"
     bonus-earned: "<dark_purple><bold>⭐ BONUS!</bold></dark_purple> <light_purple>{bonus_name}</light_purple>"
     bonus-coins: "<gray>+${amount} coins</gray>"
-
-  # ============================================
-  # ENCHANTMENT MESSAGES
-  # ============================================
-  enchant:
-    protection-applied: "<green>Protection {level} applied to all armor pieces.</green>"
-    protection-no-eligible: "<red>No eligible armor pieces found to apply Protection. It will be saved for future purchases.</red>"
-    ineligible-item: "<red>The item in your main hand is not eligible for this enchantment. It will be saved for future purchases.</red>"
-
-  # ============================================
-  # RUNE MESSAGES
-  # ============================================
-  rune:
-    broken-cannot-use: "<red>This rune is broken and cannot be used yet!</red>"
-    toggle-cooldown: "<red>You cannot toggle this rune for {seconds}s!</red>"
-    max-active: "<red>You can only have 2 runes active!</red>"
-    active-cannot-switch: "<red>Active runes cannot switch links!</red>"
-    no-valid-item: "<red>No valid item found for this rune!</red>"
-    broken: "<red>Your {rune} rune has broken!</red>"
-    recharged: "<green>Your {rune} rune is fully recharged!</green>"
-    unlinked: "<yellow>Rune unlinked!</yellow>"
-    linked: "<green>Rune linked to {target}!</green>"
-    auto-linked: "<red>These items are automatically linked!</red>"
-    ineligible-target: "<red>This item can't be enchanted with {enchant}!</red>"
-    max-level: "<yellow>You've already upgraded this rune to the max level</yellow>"
 
   # ============================================
   # ECONOMY MESSAGES
@@ -761,7 +731,6 @@ messages:
     cannot-use-abilities-shopping: "<red>You cannot use mythic abilities during the shopping phase!</red>"
     cannot-use-custom-armor-shopping: "<red>You cannot use custom armor during the shopping phase!</red>"
     cannot-use-custom-weapons-shopping: "<red>You cannot use custom weapons during the shopping phase!</red>"
-    cannot-use-runes-shopping: "<red>You cannot use runes during the shopping phase!</red>"
     round-is-over: "<red>The round is over!</red>"
     must-be-in-game: "<red>You must be in a game!</red>"
     must-be-on-team: "<red>You must be on a team to transfer money!</red>"

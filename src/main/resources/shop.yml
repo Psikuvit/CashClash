@@ -132,65 +132,6 @@ mythic-items:
   alchemist-wand: 150000
 
 # ============================================
-# ENCHANTMENT PRICES
-# ============================================
-enchants:
-  protection:
-    tier-1: 10000
-    tier-2: 25000
-    tier-3: 50000
-
-  sharpness:
-    tier-1: 5000
-    tier-2: 10000
-    tier-3: 15000
-    tier-4: 20000
-    tier-5: 25000
-
-  power:
-    tier-1: 5000
-    tier-2: 10000
-    tier-3: 15000
-    tier-4: 20000
-    tier-5: 25000
-
-  knockback:
-    tier-1: 3000
-    tier-2: 6000
-
-  punch:
-    tier-1: 3000
-    tier-2: 6000
-
-  fire-aspect:
-    tier-1: 8000
-    tier-2: 15000
-
-  flame:
-    tier-1: 10000
-
-  projectile_protection:
-    tier-1: 8000
-    tier-2: 10000
-    tier-3: 12000
-    tier-4: 14000
-
-  soul-speed:
-    tier-1: 5000
-    tier-2: 8000
-    tier-3: 12000
-
-  piercing:
-    tier-1: 3000
-    tier-2: 5000
-    tier-3: 7000
-    tier-4: 10000
-
-  quick-charge:
-    tier-1: 4000
-    tier-2: 6000
-
-# ============================================
 # INVESTMENT PRICES
 # ============================================
 investments:

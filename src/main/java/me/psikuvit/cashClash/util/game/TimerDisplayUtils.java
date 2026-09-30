@@ -23,7 +23,7 @@ import java.util.function.Function;
  * {@code Player#sendActionBar} on its own, so there's exactly one place that actually writes to
  * a player's actionbar.
  *
- * All-static with static mutable state, same pattern as {@code RuneManager} - a single shared
+ * All-static with static mutable state - a single shared
  * engine rather than a per-caller instance, since a player can only ever be shown one timer at a
  * time regardless of which system started it (see the priority handling in
  * {@link #startCountdownTimer(Player, long, int, Function, String)}).
