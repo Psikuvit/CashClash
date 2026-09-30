@@ -224,6 +224,7 @@ public final class GameplayItemFactory {
 
         Consumable.Builder consumable = Consumable.consumable()
                 .animation(ItemUseAnimation.EAT)
+                .consumeSeconds(itemsCfg.getFoodConsumeTicks(foodItem.getConfigKey()) / 20f)
                 .addEffect(ConsumeEffect.applyStatusEffects(List.of(potionEffect), 1));
 
         // Sunscreen: play the drinking noise on a loop for the whole animation, not just on completion

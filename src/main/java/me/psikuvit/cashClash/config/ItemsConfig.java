@@ -628,6 +628,13 @@ public class ItemsConfig {
         return config.getInt("custom-items.can-of-spinach.amplifier", 0);
     }
 
+    /**
+     * How long a custom food takes to eat, in ticks (vanilla food takes 32).
+     */
+    public int getFoodConsumeTicks(String foodKey) {
+        return config.getInt("custom-items." + foodKey + ".consume-ticks", 32);
+    }
+
     public int getCanOfSpinachDurationSeconds() {
         return config.getInt("custom-items.can-of-spinach.duration-seconds", 11);
     }

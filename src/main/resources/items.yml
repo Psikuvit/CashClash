@@ -363,32 +363,39 @@ custom-items:
     durability: 3
     heal-per-hit: 2.0
 
+  # Custom foods: consume-ticks is how long each takes to eat (20 ticks = 1s, vanilla food = 32)
+
   # Speed Carrot
   speed-carrot:
     burst-amplifier: 2       # Speed III
     burst-duration-seconds: 3
     followup-amplifier: 0    # Speed I
     followup-duration-seconds: 9
+    consume-ticks: 32
 
   # Golden Chicken
   golden-chicken:
     amplifier: 1              # Absorption II
     duration-seconds: 11
+    consume-ticks: 32
 
   # Cookie of Life
   cookie-of-life:
     amplifier: 0              # Regeneration I
     duration-seconds: 11
+    consume-ticks: 32
 
   # Sunscreen
   sunscreen:
     amplifier: 0              # Fire Resistance I
     duration-seconds: 11
+    consume-ticks: 32
 
   # Can of Spinach
   can-of-spinach:
     amplifier: 0              # Strength I
     duration-seconds: 11
+    consume-ticks: 32
 
   # Enchanted Golden Apple - stretched absorption/resistance/fire-resistance duration
   # (regeneration is deliberately left at vanilla's duration, see GameListener)
