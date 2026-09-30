@@ -23,7 +23,6 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -40,7 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Warden Gloves - boxing punch ability with Speed I, a right-click shockwave cone, and a
+ * Warden Gloves - hits like a diamond sword, with a right-click shockwave cone and a
  * shift+right-click Rising Fury ability. Melee damage/speed is diamond-sword-equivalent at all
  * times (see {@link MythicItemManager#createMythicItem}); Rising Fury adds stacking reach on
  * landed hits on top of that baseline. Holding the gloves
@@ -56,11 +55,6 @@ public class WardenGlovesHandler extends MythicItemHandler {
     };
     private static final int PRIORITY_RISING_FURY_TIMER = 4;
 
-    // Warden Gloves boxing punch counter (UUID -> punch count)
-    private final Map<UUID, Integer> wardenPunchCount;
-    // Warden Gloves boxing ability active (UUID -> true if ability is active)
-    private final Set<UUID> wardenBoxingActive;
-
     // Both-hands: off-hand item stashed while Warden Gloves is held in the main hand
     private final Map<UUID, ItemStack> wardenStashedOffhand;
     private final Set<UUID> wardenBothHandsActive;
@@ -74,8 +68,6 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
     public WardenGlovesHandler(MythicItemManager manager) {
         super(manager);
-        this.wardenPunchCount = new ConcurrentHashMap<>();
-        this.wardenBoxingActive = ConcurrentHashMap.newKeySet();
         this.wardenStashedOffhand = new ConcurrentHashMap<>();
         this.wardenBothHandsActive = ConcurrentHashMap.newKeySet();
         this.risingFuryActive = ConcurrentHashMap.newKeySet();
@@ -85,116 +77,14 @@ public class WardenGlovesHandler extends MythicItemHandler {
     }
 
     /**
-     * Warden Gloves boxing ability - Left click to punch.
-     * Ability lasts for 20 seconds, 35 second cooldown. Also feeds Rising Fury's landed-hit
-     * tracking (no-op if Rising Fury isn't active).
-     * <p>
-     * The item carries real attack damage so vanilla actually resolves the swing into a damage
-     * event - a weapon at 0 attack damage is skipped outright by vanilla's attack path, so
-     * nothing here would run at all. Outside Rising Fury the hit is therefore cancelled and
-     * dropped entirely: no damage, no knockback, no boxing ability, no speed. Rising Fury is the
-     * only state in which the gloves do anything on hit.
+     * Called on every landed melee hit with the gloves. The hit itself is left to vanilla - the
+     * item carries diamond-sword damage and speed - so this only feeds Rising Fury's landed-hit
+     * tracking (no-op if Rising Fury isn't active). The shockwave's own {@code target.damage}
+     * calls come through here too and are skipped, so they don't count as landed hits.
      */
-    public void useWardenPunch(EntityDamageByEntityEvent event, Player player, Player victim) {
-        UUID uuid = player.getUniqueId();
-
-        if (shockwaveDamageActive.contains(uuid)) return;
-
-        if (!risingFuryActive.contains(uuid)) {
-            event.setCancelled(true);
-            return;
-        }
-
-        Messages.debug(player, "WARDEN_GLOVES: Punch attack on " + victim.getName());
-
+    public void onMeleeHit(Player player) {
+        if (shockwaveDamageActive.contains(player.getUniqueId())) return;
         onRisingFuryHit(player);
-
-        // Check if boxing ability is on cooldown (ability hasn't been started yet)
-        if (!wardenBoxingActive.contains(uuid) && cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_BOXING)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING);
-            Messages.send(player, "mythic.genericitem-cooldown", "{item_name}", "Boxing gloves", "{cooldown_seconds}", String.valueOf(remaining));
-            return;
-        }
-
-        // Start boxing ability if not already active
-        if (!wardenBoxingActive.contains(uuid)) {
-            startWardenBoxingAbility(player);
-        }
-
-        // Increment punch count (kept for analytics/debug)
-        int punchCount = wardenPunchCount.getOrDefault(uuid, 0) + 1;
-        wardenPunchCount.put(uuid, punchCount);
-
-        // Apply punch knockback
-        Vector knockback = victim.getLocation().toVector()
-                .subtract(player.getLocation().toVector())
-                .normalize()
-                .multiply(1.2)
-                .setY(0.4);
-        victim.setVelocity(knockback);
-
-        // Maintain Speed I every punch to avoid ramping
-        int durationTicks = cfg.getWardenBoxingDuration() * 20;
-        CashClashPlayer.applyEffect(player, PotionEffectType.SPEED, durationTicks, 0, false, true);
-
-        // Punch sound effect
-        SoundUtils.play(victim, Sound.ENTITY_WARDEN_ATTACK_IMPACT, 1.0f, 1.0f);
-        ParticleUtils.sweep(victim.getLocation().add(0, 1, 0));
-
-        Messages.debug(player, "WARDEN_GLOVES: Punch hit! Count: " + punchCount);
-    }
-
-    /**
-     * Start the Warden boxing ability (20 second duration).
-     */
-    private void startWardenBoxingAbility(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        wardenBoxingActive.add(uuid);
-        wardenPunchCount.put(uuid, 0);
-
-        // Start with Speed I immediately and keep it at Speed I
-        int durationTicks = cfg.getWardenBoxingDuration() * 20;
-        CashClashPlayer.applyEffect(player, PotionEffectType.SPEED, durationTicks, 0, false, true);
-
-        SoundUtils.play(player, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.5f, 1.5f);
-
-        // End the ability after duration
-        BukkitTask endTask = SchedulerUtils.runTaskLater(() -> endWardenBoxingAbility(player), durationTicks);
-
-        manager.trackTask(uuid, endTask);
-
-        Messages.debug(player, "WARDEN_GLOVES: Boxing ability started with Speed I - " + cfg.getWardenBoxingDuration() + "s duration");
-    }
-
-    /**
-     * End the Warden boxing ability and start cooldown.
-     */
-    private void endWardenBoxingAbility(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        if (!wardenBoxingActive.contains(uuid)) return;
-
-        wardenBoxingActive.remove(uuid);
-        wardenPunchCount.remove(uuid);
-
-        // Rising Fury owns its own infinite Speed - don't strip it out from under a still-active
-        // ability just because the shorter boxing window happened to lapse first.
-        if (!risingFuryActive.contains(uuid)) {
-            CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
-        }
-
-        // Start cooldown
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_BOXING, cfg.getWardenBoxingCooldown());
-        Messages.send(player, "mythic.boxing-gloves-cooldown", "seconds", String.valueOf(cfg.getWardenBoxingCooldown()));
-        Messages.debug(player, "WARDEN_GLOVES: Boxing ability ended - cooldown " + cfg.getWardenBoxingCooldown() + "s");
-    }
-
-    /**
-     * Check if player has boxing ability active.
-     */
-    public boolean isWardenBoxingActive(UUID playerId) {
-        return wardenBoxingActive.contains(playerId);
     }
 
     /**
@@ -318,7 +208,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
      * F-key hand swap, which would otherwise silently move the real, PDC-tagged item into the
      * off-hand and leave the untagged cosmetic in the main hand - melee hits with the cosmetic
      * item don't carry the {@code WARDEN_GLOVES} tag, so they'd deal plain vanilla damage with
-     * none of this class's punch/Rising Fury logic running, and no debug output either.
+     * none of this class's Rising Fury logic running, and no debug output either.
      */
     public boolean isBothHandsActive(UUID uuid) {
         return wardenBothHandsActive.contains(uuid);
@@ -339,8 +229,8 @@ public class WardenGlovesHandler extends MythicItemHandler {
     // ==================== RISING FURY ====================
 
     /**
-     * Rising Fury (shift+right-click): temporarily swaps Warden Gloves' baseline-0 damage for
-     * diamond-sword-equivalent, stacking reach every 3rd landed hit (max 3 stacks/9 hits).
+     * Rising Fury (shift+right-click): Speed I plus stacking reach every 3rd landed hit (max 3
+     * stacks/9 hits). It adds no damage - the gloves hit like a diamond sword with or without it.
      * Cancels on weapon swap or after {@code no-hit-timeout-seconds} without landing a hit.
      */
     public void useRisingFury(Player player) {
@@ -393,7 +283,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
     }
 
     /**
-     * Called from {@link #useWardenPunch} on every landed hit - no-op if Rising Fury isn't
+     * Called from {@link #onMeleeHit} on every landed hit - no-op if Rising Fury isn't
      * active. Resets the no-hit timeout and advances the reach-stacking counter.
      */
     private void onRisingFuryHit(Player player) {
@@ -496,9 +386,6 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
     @Override
     public void cleanup() {
-        wardenPunchCount.clear();
-        wardenBoxingActive.clear();
-
         risingFuryActive.clear();
         risingFuryHitCount.clear();
         risingFuryTimeoutTasks.values().forEach(task -> {
@@ -514,9 +401,6 @@ public class WardenGlovesHandler extends MythicItemHandler {
     @Override
     public void cleanupPlayer(Player player) {
         UUID uuid = player.getUniqueId();
-        wardenPunchCount.remove(uuid);
-        wardenBoxingActive.remove(uuid);
-
         risingFuryActive.remove(uuid);
         risingFuryHitCount.remove(uuid);
         BukkitTask task = risingFuryTimeoutTasks.remove(uuid);

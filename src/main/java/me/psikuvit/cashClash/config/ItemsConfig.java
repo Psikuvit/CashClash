@@ -350,15 +350,6 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.warden-gloves.shockwave.knockback-power", 2.5);
     }
 
-    // Warden Boxing ability
-    public int getWardenBoxingDuration() {
-        return config.getInt("mythic-items.warden-gloves.boxing.duration-seconds", 20);
-    }
-
-    public int getWardenBoxingCooldown() {
-        return config.getInt("mythic-items.warden-gloves.boxing.cooldown-seconds", 35);
-    }
-
     // Warden Gloves - Rising Fury
     public int getWardenRisingFuryCooldown() {
         return config.getInt("mythic-items.warden-gloves.rising-fury.cooldown-seconds", 30);

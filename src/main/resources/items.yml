@@ -127,14 +127,9 @@ mythic-items:
       damage: 12.0
       range: 8
       knockback-power: 2.5
-    # Boxing Gloves ability - Left click to punch, holds Speed I for the ability's duration
-    boxing:
-      duration-seconds: 20        # Ability lasts 20 seconds
-      cooldown-seconds: 35        # 35 second cooldown after ability ends
-    # Rising Fury - Shift + right-click. Base Warden Gloves damage is 0 (see the melee-mythic
-    # baseline in MythicItemManager); this ability temporarily grants diamond-sword-equivalent
-    # damage/speed and stacks reach every 3rd landed hit, up to max-stacks. Cancels on weapon
-    # swap or after no-hit-timeout-seconds without landing a hit.
+    # Rising Fury - Shift + right-click. The gloves always hit like a diamond sword; this adds
+    # Speed I and stacks reach every 3rd landed hit, up to max-stacks, without adding damage.
+    # Cancels on weapon swap or after no-hit-timeout-seconds without landing a hit.
     rising-fury:
       cooldown-seconds: 30
       no-hit-timeout-seconds: 3
@@ -968,8 +963,9 @@ item-lore:
       lore:
         - "<light_purple>✦ MYTHIC ARMOR ✦</light_purple>"
         - "<dark_purple>Powerful protective gloves</dark_purple>"
-        - "<yellow>Shockwave ability</yellow>"
-        - "<yellow>Boxing: Speed I while active</yellow>"
+        - "<yellow>Hits like a diamond sword</yellow>"
+        - "<yellow>Right-click: Shockwave</yellow>"
+        - "<yellow>Shift + right-click: Rising Fury, stacking reach</yellow>"
     blazebite-crossbows:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"

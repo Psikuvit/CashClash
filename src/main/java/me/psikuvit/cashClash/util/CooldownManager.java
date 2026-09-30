@@ -322,7 +322,6 @@ public class CooldownManager implements Shutdownable {
         public static final String GOBLIN_SPEAR_CHARGE = "GOBLIN_SPEAR_CHARGE";
         public static final String SANDSTORMER_RELOAD = "SANDSTORMER_RELOAD";
         public static final String WARDEN_SHOCKWAVE = "WARDEN_SHOCKWAVE";
-        public static final String WARDEN_BOXING = "WARDEN_BOXING";
         public static final String WARDEN_RISING_FURY = "WARDEN_RISING_FURY";
         public static final String BLAZEBITE_FREEZE_LOCKOUT = "BLAZEBITE_FREEZE_LOCKOUT";
         public static final String ALCHEMIST_BLINK_SWAP = "ALCHEMIST_BLINK_SWAP";
