@@ -845,7 +845,7 @@ messages:
     soul-burst: "<dark_red>Soul Burst unleashed!</dark_red>"
     soul-burst-enemy: "<dark_red>Life taken from {count} enemy!</dark_red>"
     soul-burst-enemies: "<dark_red>Life taken from {count} enemies!</dark_red>"
-    flamebringer-speed: "<gold>Flamebringer: Speed I from lava ({remaining} left)!</gold>"
+    flamebringer-lava-speed: "<gold>Flamebringer: Speed I from lava! <gray>(ready again in {cooldown}s)</gray></gold>"
     flamebringer-pull-activated: "<gold>🔥 Flamebringer Pull Activated!</gold>"
     flamebringer-pull-ended: "<gray>Flamebringer pull ended.</gray>"
   # Bullseye Pants

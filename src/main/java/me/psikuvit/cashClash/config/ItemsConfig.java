@@ -982,6 +982,10 @@ public class ItemsConfig {
         return config.getInt("custom-armor.flamebringer.kills-for-pull", 2);
     }
 
+    public int getFlamebringerAbilityCooldownSeconds() {
+        return config.getInt("custom-armor.flamebringer.ability-cooldown-seconds", 15);
+    }
+
     // ==================== CONSUMABLES ====================
 
     /**

@@ -35,7 +35,6 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
 
     private final Map<UUID, Integer> flamebringerKills; // Player -> kill count this round
     private final Map<UUID, BukkitTask> flamebringerFireTask; // Player -> fire effect task
-    private final Map<UUID, Integer> flamebringerLavaUses; // Player -> lava speed procs this game
     private final Map<UUID, Long> flamebringerSpeedEndTime; // Player -> time when speed effect should end
     private final Map<UUID, BukkitTask> flamebringerTrailTasks; // Player -> fire trail task
     private final Map<UUID, Long> flamebringerTrailEndTime; // Player -> time when fire trail should end
@@ -45,7 +44,6 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
         super(manager);
         this.flamebringerKills = new ConcurrentHashMap<>();
         this.flamebringerFireTask = new ConcurrentHashMap<>();
-        this.flamebringerLavaUses = new ConcurrentHashMap<>();
         this.flamebringerSpeedEndTime = new ConcurrentHashMap<>();
         this.flamebringerTrailTasks = new ConcurrentHashMap<>();
         this.flamebringerTrailEndTime = new ConcurrentHashMap<>();
@@ -94,14 +92,12 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
     }
 
     /**
-     * Triggered when lava damages the player: grant Speed for 12s, max 3 per game, 2s cooldown between procs.
+     * Triggered when lava damages the player: grants Speed and a fire trail, then goes on the
+     * configured cooldown. No limit on how many times per round.
      */
     public void onFlamebringerLavaDamage(Player p) {
         if (!hasFlamebringerSet(p)) return;
         UUID id = p.getUniqueId();
-
-        int used = flamebringerLavaUses.getOrDefault(id, 0);
-        if (used >= 3) return;
 
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN)) {
             return;
@@ -111,9 +107,9 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
         SoundUtils.play(p, Sound.ITEM_FIRECHARGE_USE, 1.5f, 1.0f);
         flamebringerTrailEndTime.put(id, System.currentTimeMillis() + (cfg.getFlamebringerSpeedDuration() * 1000L));
         startFlamebringerTrail(p);
-        flamebringerLavaUses.put(id, used + 1);
-        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, 2);
-        Messages.send(p, "armor.flamebringer-speed", "remaining", String.valueOf(3 - (used + 1)));
+        int cooldownSeconds = cfg.getFlamebringerAbilityCooldownSeconds();
+        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, cooldownSeconds);
+        Messages.send(p, "armor.flamebringer-lava-speed", "cooldown", String.valueOf(cooldownSeconds));
     }
 
     /**
@@ -245,7 +241,6 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
         flamebringerFireTask.values().forEach(BukkitTask::cancel);
         flamebringerFireTask.clear();
         flamebringerKills.clear();
-        flamebringerLavaUses.clear();
         flamebringerSpeedEndTime.clear();
         flamebringerTrailTasks.values().forEach(BukkitTask::cancel);
         flamebringerTrailTasks.clear();
