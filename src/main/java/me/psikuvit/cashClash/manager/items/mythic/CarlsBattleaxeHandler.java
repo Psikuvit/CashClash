@@ -41,8 +41,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Carl's Battleaxe - spinning melee attack, a shift+right-click throw that catches and drags
- * enemies, and a visual Item Display axe used for both.
+ * Carl's Battleaxe - a right-click throw (Demolition) that catches and drags enemies, a
+ * shift+right-click spinning melee attack (Orbit Cleaver), and a visual Item Display axe used
+ * for both.
  */
 public class CarlsBattleaxeHandler extends MythicItemHandler {
 
@@ -64,7 +65,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
     }
 
     /**
-     * Activate Carl's Battleaxe spinning attack.
+     * Activate Carl's Battleaxe spinning attack, Orbit Cleaver (shift+right-click).
      * Player spins the axe around their body, slowed down, dealing high damage to nearby enemies.
      * Includes a spinning Item Display visual effect.
      */
@@ -246,7 +247,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
     }
 
     /**
-     * Carl's Battleaxe Throw (shift+right-click). The axe leaves the player's hand and flies
+     * Carl's Battleaxe Throw, Demolition (right-click). The axe leaves the player's hand and flies
      * out up to {@code distance} blocks (or until it hits a wall), catching enemies along the
      * way; it then reverses and drags any caught players back, releasing + damaging them once
      * within {@code release-distance} of the thrower, and the axe reappears in their hand.

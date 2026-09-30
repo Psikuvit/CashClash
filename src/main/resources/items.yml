@@ -26,7 +26,8 @@ mythic-items:
 
   # Carl's Battleaxe
   carls-battleaxe:
-    # Spin Attack - Right-click to spin the axe around you, dealing damage to nearby enemies
+    # Spin Attack (Orbit Cleaver) - Shift + right-click to spin the axe around you, dealing
+    # damage to nearby enemies
     spin-attack:
       cooldown-seconds: 30
       duration-ticks: 80        # 4 seconds (80 ticks)
@@ -37,8 +38,8 @@ mythic-items:
     critical-hit:
       cooldown-milliseconds: 10000
       launch-power: 1.8
-    # Throw - Shift + right-click. The axe leaves your hand, flies out, catches enemies in its
-    # path, drags them back, and releases + damages them once close to you again.
+    # Throw (Demolition) - Right-click. The axe leaves your hand, flies out, catches enemies in
+    # its path, drags them back, and releases + damages them once close to you again.
     throw:
       cooldown-seconds: 25
       distance: 6.0
@@ -921,7 +922,8 @@ item-lore:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>A legendary battleaxe</dark_purple>"
-        - "<yellow>Spin Attack ability</yellow>"
+        - "<yellow>Right-click: Demolition, throw the axe</yellow>"
+        - "<yellow>Shift + right-click: Orbit Cleaver, spin attack</yellow>"
         - "<yellow>Critical Hit launches enemies</yellow>"
     wind-bow:
       lore:
