@@ -594,9 +594,10 @@ item-lore:
       lore:
         - "<gray>Shoots coins</gray>"
         - "<yellow>Deals damage</yellow>"
+        - "<gray>Left-click: toggle supercharge</gray>"
     soul-katana:
       lore:
-        - "<gray>Shift + right-click: Phantom Slice</gray>"
+        - "<gray>Right-click: Phantom Slice</gray>"
         - "<gray>Leap forward and strike all nearby</gray>"
         - "<gray>Damage ignores armor and effects</gray>"
         - "<gray>Struck enemies heal 30% less for 3s</gray>"

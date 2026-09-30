@@ -623,19 +623,18 @@ public class InteractListener implements Listener {
 
         switch (weapon) {
             case CASH_BLASTER -> {
-                if (player.isSneaking() && action.isRightClick()) {
+                if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
                     event.setCancelled(true);
                     if (blockCustomWeaponInShoppingPhase(player)) return true;
-                    armorManager.lockMythicShift(player);
                     weaponItemManager.getHandler(CashBlasterHandler.class).onCashBlasterToggle(player);
                     return true;
                 }
 
-                // Not the toggle - about to draw the bow. Supercharged mode needs enough arrows
-                // to actually land the vortex shot (see hasEnoughArrowsToCharge); block the draw
-                // itself instead of letting the player nock an arrow that gets wasted when the
-                // shot is refused on release.
-                if (!player.isSneaking() && action.isRightClick()) {
+                // About to draw the bow. Supercharged mode needs enough arrows to actually land
+                // the vortex shot (see hasEnoughArrowsToCharge); block the draw itself instead of
+                // letting the player nock an arrow that gets wasted when the shot is refused on
+                // release.
+                if (action.isRightClick()) {
                     CashBlasterHandler handler = weaponItemManager.getHandler(CashBlasterHandler.class);
                     if (handler.isSupercharged(player) && !handler.hasEnoughArrowsToCharge(player)) {
                         event.setCancelled(true);
@@ -645,14 +644,13 @@ public class InteractListener implements Listener {
                 }
             }
             case SOUL_KATANA -> {
-                if (action.isRightClick() && player.isSneaking()) {
+                if (action.isRightClick()) {
                     event.setCancelled(true);
                     if (blockCustomWeaponInShoppingPhase(player)) return true;
                     if (isSilenced(player)) {
                         Messages.send(player, "listener.cannot-use-abilities-while-silenced");
                         return true;
                     }
-                    armorManager.lockMythicShift(player);
                     weaponItemManager.getHandler(SoulKatanaHandler.class).usePhantomSlice(player);
                     return true;
                 }
