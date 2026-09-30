@@ -627,11 +627,22 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Records a block the fluid is about to overwrite, unless it was only air.
+     * Records a block the fluid is about to overwrite, unless it was only air. A player-placed
+     * web is washed away for good instead of remembered: its despawn task gives up once the web
+     * is gone, so putting it back when the fluid drains would leave it there permanently.
      */
     private static void rememberReplacedBlock(Block block) {
-        if (block.getType() == Material.AIR) return;
-        fluidReplacedBlocks.putIfAbsent(block.getLocation().toBlockLocation(), block.getBlockData());
+        Material type = block.getType();
+        if (type == Material.AIR) return;
+
+        Location loc = block.getLocation().toBlockLocation();
+        if (type == Material.COBWEB && webDespawnTasks.containsKey(loc)) {
+            cancelWebDespawnTask(loc);
+            removeDespawnTimer(loc);
+            Messages.debug("FLUID", "washed away placed web at " + at(loc));
+            return;
+        }
+        fluidReplacedBlocks.putIfAbsent(loc, block.getBlockData());
     }
 
     /**

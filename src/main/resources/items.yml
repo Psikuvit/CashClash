@@ -294,7 +294,8 @@ custom-armor:
 utilities:
   # Placed water/lava ignore vanilla flow entirely: they fall straight down through open space,
   # and only a block sitting on solid ground steps outward - in all four directions,
-  # flow-distance times in total, regardless of the surrounding terrain.
+  # flow-distance times in total, regardless of the surrounding terrain. A placed fluid washes
+  # away any player-placed web it runs into.
   fluids:
     flow-distance: 3
     despawn-seconds: 10
