@@ -223,24 +223,20 @@ public class ItemsConfig {
     }
 
     // Goblin Spear
-    public int getGoblinShotsPerMag() {
-        return config.getInt("mythic-items.goblin-spear.throw.shots-per-magazine", 8);
-    }
-
-    public int getGoblinReloadCooldown() {
-        return config.getInt("mythic-items.goblin-spear.throw.reload-cooldown-seconds", 15);
-    }
-
     public double getGoblinSpearDamage() {
         return config.getDouble("mythic-items.goblin-spear.throw.damage", 9.0);
     }
 
+    public double getGoblinVenomChancePercent() {
+        return config.getDouble("mythic-items.goblin-spear.poison.chance-percent", 30);
+    }
+
     public int getGoblinPoisonDuration() {
-        return config.getInt("mythic-items.goblin-spear.poison.duration-seconds", 3) * 20;
+        return config.getInt("mythic-items.goblin-spear.poison.duration-seconds", 4) * 20;
     }
 
     public int getGoblinPoisonLevel() {
-        return config.getInt("mythic-items.goblin-spear.poison.level", 1) - 1; // 0-indexed
+        return config.getInt("mythic-items.goblin-spear.poison.level", 2) - 1; // 0-indexed
     }
 
     public int getGoblinChargeCooldown() {

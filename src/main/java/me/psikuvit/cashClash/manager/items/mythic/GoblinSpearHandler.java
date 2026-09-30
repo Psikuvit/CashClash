@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.util.ChanceBag;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -39,58 +40,24 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Goblin Spear - throwable trident with a magazine/reload system and a dash
+ * Goblin Spear - throwable trident whose thrown hits can poison (Venom Javelin), and a dash
  * charge ability that catches and drags enemies.
  */
 public class GoblinSpearHandler extends MythicItemHandler {
 
-    private final Map<UUID, Integer> goblinSpearShotsRemaining;
     private final Map<UUID, List<Player>> goblinSpearCharging;
+    private final ChanceBag venomJavelinChance;
 
     public GoblinSpearHandler(MythicItemManager manager) {
         super(manager);
-        this.goblinSpearShotsRemaining = new ConcurrentHashMap<>();
         this.goblinSpearCharging = new ConcurrentHashMap<>();
+        this.venomJavelinChance = new ChanceBag();
     }
 
     /**
-     * Handle Goblin Spear throw.
-     * 8 shots per magazine, 15 second reload.
-     * @return true if shot was successful, false if on reload cooldown
-     */
-    public boolean handleGoblinSpearThrow(Player player) {
-        UUID uuid = player.getUniqueId();
-
-        Messages.debug(player, "GOBLIN_SPEAR: Throw triggered");
-
-        int shots = goblinSpearShotsRemaining.getOrDefault(uuid, cfg.getGoblinShotsPerMag());
-        if (shots <= 0) {
-            if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD)) {
-                Messages.debug(player, "GOBLIN_SPEAR: Reloading - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD) + "s");
-                Messages.send(player, "mythic.goblin-spear-reloading", "{cooldown_seconds}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD)));
-                return false;
-            }
-            goblinSpearShotsRemaining.put(uuid, cfg.getGoblinShotsPerMag());
-            shots = cfg.getGoblinShotsPerMag();
-            Messages.debug(player, "GOBLIN_SPEAR: Magazine reloaded to " + shots);
-        }
-
-        goblinSpearShotsRemaining.put(uuid, shots - 1);
-        Messages.debug(player, "GOBLIN_SPEAR: Shot fired! Remaining: " + (shots - 1));
-
-        if (shots - 1 <= 0) {
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_RELOAD, cfg.getGoblinReloadCooldown());
-            Messages.debug(player, "GOBLIN_SPEAR: Out of shots, reloading for " + cfg.getGoblinReloadCooldown() + "s");
-            Messages.send(player, "mythic.goblin-spear-reload-start");
-        }
-
-        return true;
-    }
-
-    /**
-     * Handle Goblin Spear hit. Ranged (thrown) hits deal damage + Poison; melee hits only deal
-     * vanilla melee damage - no poison, so meleeing with the spear doesn't get the throw-only
-     * debuff for free.
+     * Handle Goblin Spear hit. Ranged (thrown) hits deal damage, and a fixed-luck share of them
+     * also poison (Venom Javelin); melee hits only deal vanilla melee damage - no poison, so
+     * meleeing with the spear doesn't get the throw-only debuff for free.
      * @param shooter The attacker
      * @param victim The victim
      * @param isMelee Whether this is a melee hit (skips the redundant damage call and the poison)
@@ -101,13 +68,14 @@ public class GoblinSpearHandler extends MythicItemHandler {
         if (!isMelee) {
             victim.damage(cfg.getGoblinSpearDamage(), shooter);
 
-            if (victim instanceof Player victimPlayer) {
-                CashClashPlayer.applyEffect(victimPlayer, PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true);
-            } else {
-                victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true));
+            if (venomJavelinChance.roll(shooter.getUniqueId(), cfg.getGoblinVenomChancePercent())) {
+                if (victim instanceof Player victimPlayer) {
+                    CashClashPlayer.applyEffect(victimPlayer, PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true);
+                } else {
+                    victim.addPotionEffect(new PotionEffect(PotionEffectType.POISON, cfg.getGoblinPoisonDuration(), cfg.getGoblinPoisonLevel(), false, true));
+                }
+                Messages.debug(shooter, "GOBLIN_SPEAR: Venom Javelin - Poison " + (cfg.getGoblinPoisonLevel() + 1));
             }
-
-            Messages.debug(shooter, "GOBLIN_SPEAR: Dealt " + cfg.getGoblinSpearDamage() + " damage + Poison " + (cfg.getGoblinPoisonLevel() + 1));
         } else {
             Messages.debug(shooter, "GOBLIN_SPEAR: Melee hit - no poison");
         }
@@ -336,14 +304,14 @@ public class GoblinSpearHandler extends MythicItemHandler {
 
     @Override
     public void cleanup() {
-        goblinSpearShotsRemaining.clear();
         goblinSpearCharging.clear();
+        venomJavelinChance.clear();
     }
 
     @Override
     public void cleanupPlayer(Player player) {
         UUID uuid = player.getUniqueId();
-        goblinSpearShotsRemaining.remove(uuid);
+        venomJavelinChance.reset(uuid);
 
         // Remove from caught lists
         for (Map.Entry<UUID, List<Player>> entry : goblinSpearCharging.entrySet()) {

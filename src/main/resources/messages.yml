@@ -427,8 +427,6 @@ messages:
      wind-bow-boost-activated: "<aqua>Wind boost!</aqua>"
      electric-eel-dash-cooldown: "<red>All dash charges on cooldown! ({cooldown_seconds}s)</red>"
      electric-eel-zap: "<aqua>Zap!</aqua>"
-     goblin-spear-reloading: "<red>Goblin Spear reloading! ({cooldown_seconds}s)</red>"
-     goblin-spear-reload-start: "<yellow>Goblin Spear reloading...</yellow>"
      genericitem-cooldown: "<red>{item_name} on cooldown! ({cooldown_seconds}s)</red>"
      genericitem-punch: "<gray>Punch enemies to brawl! Speed locked at I.</gray>"
      bloodwrench-mode: "<gold>BloodWrench mode: {mode_name}</gold>"

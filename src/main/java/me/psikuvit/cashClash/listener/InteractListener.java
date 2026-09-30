@@ -145,11 +145,6 @@ public class InteractListener implements Listener {
                         return;
                     }
 
-                    if (!mythicManager.getHandler(GoblinSpearHandler.class).handleGoblinSpearThrow(player)) {
-                        event.setCancelled(true);
-                        return;
-                    }
-
                     PDCSetter.of(trident).set(Keys.ITEM_ID, PersistentDataType.STRING, mythic.getConfigKey()).apply();
                     mythicManager.getHandler(GoblinSpearHandler.class).attachThrownSpearDisplay(trident);
                 }

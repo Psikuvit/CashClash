@@ -78,15 +78,14 @@ mythic-items:
 
   # Goblin Spear
   goblin-spear:
-    # Throw attack - 8 shots then 15 second reload
+    # Throw attack - no limit on throws
     throw:
-      shots-per-magazine: 8
-      reload-cooldown-seconds: 15
       damage: 9.0
-    # Poison applied on hit
+    # Venom Javelin - a fixed-luck share of thrown hits also poison the target
     poison:
-      duration-seconds: 3
-      level: 1
+      chance-percent: 30            # 30 = exactly 3 in every 10 thrown hits
+      duration-seconds: 4
+      level: 2                      # Poison II
     # Charge ability - Right click to charge forward, catching enemies
     charge:
       cooldown-seconds: 30
