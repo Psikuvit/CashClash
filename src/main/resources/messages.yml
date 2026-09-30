@@ -849,7 +849,7 @@ messages:
     flamebringer-pull-activated: "<gold>🔥 Flamebringer Pull Activated!</gold>"
     flamebringer-pull-ended: "<gray>Flamebringer pull ended.</gray>"
   # Bullseye Pants
-  bullseye-storm-triggered: "<gold><bold>STORMING ARROW!</bold> +30% damage and arrow burst!</gold>"
+  bullseye-storm-triggered: "<gold><bold>STORMING ARROW!</bold> +{boost}% damage and arrow burst!</gold>"
 
   # ============================================
   # CUSTOM ITEM MESSAGES

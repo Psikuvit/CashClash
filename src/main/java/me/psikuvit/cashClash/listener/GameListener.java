@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.armor.BullseyePantsHandler;
 import me.psikuvit.cashClash.manager.items.armor.BunnyShoesHandler;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
@@ -690,6 +691,19 @@ public class GameListener implements Listener {
         if (mythic == null) return;
 
         handleMythicBowShot(event, player, mythic);
+    }
+
+    /**
+     * Bullseye Pants: rolls whether this shot is a storming arrow and tags it. Runs at MONITOR so
+     * a shot another handler cancelled doesn't use up a roll.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBullseyeShot(EntityShootBowEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (!(event.getProjectile() instanceof AbstractArrow arrow)) return;
+        if (!armorManager.getHandler(BullseyePantsHandler.class).rollStormArrow(player)) return;
+
+        PDCSetter.of(arrow).set(Keys.BULLSEYE_STORM_ARROW, PersistentDataType.BYTE, (byte) 1).apply();
     }
 
     /**

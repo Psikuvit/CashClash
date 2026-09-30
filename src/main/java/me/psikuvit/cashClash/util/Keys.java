@@ -75,6 +75,11 @@ public class Keys {
     public static final NamespacedKey FULLY_CHARGED_ARROW;
 
     /**
+     * Byte marker on arrows a Bullseye Pants wearer shot as a storming arrow (rolled at shot time).
+     */
+    public static final NamespacedKey BULLSEYE_STORM_ARROW;
+
+    /**
      * Byte marker on Cash Blaster Profit Vortex arrows (1 = this arrow spawns a vortex on impact).
      */
     public static final NamespacedKey PROFIT_VORTEX_ARROW;
@@ -162,6 +167,7 @@ public class Keys {
         COMING_SOON_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "coming_soon_npc");
         BUFF_SELECTION_POTION = new NamespacedKey(CashClashPlugin.getInstance(), "buff_selection_potion");
         FULLY_CHARGED_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "fully_charged_arrow");
+        BULLSEYE_STORM_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "bullseye_storm_arrow");
         PROFIT_VORTEX_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "profit_vortex_arrow");
         PROFIT_VORTEX_GLOW_SECONDS = new NamespacedKey(CashClashPlugin.getInstance(), "profit_vortex_glow_seconds");
         MYTHIC_CARLS_BATTLEAXE_DAMAGE = new NamespacedKey(CashClashPlugin.getInstance(), "carls_battleaxe_damage");

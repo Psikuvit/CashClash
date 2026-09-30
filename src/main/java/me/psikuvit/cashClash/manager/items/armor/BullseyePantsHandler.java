@@ -1,22 +1,19 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.util.ChanceBag;
 import org.bukkit.entity.Player;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
- * Bullseye Pants - every 4th melee hit triggers a bonus effect.
+ * Bullseye Pants - a fixed-luck share of the wearer's shots become storming arrows.
  */
 public class BullseyePantsHandler extends ArmorSetHandler {
 
-    private final Map<UUID, Integer> bullseyeHitCount; // Attacker -> current hit count
+    private final ChanceBag stormArrowChance;
 
     public BullseyePantsHandler(CustomArmorManager manager) {
         super(manager);
-        this.bullseyeHitCount = new ConcurrentHashMap<>();
+        this.stormArrowChance = new ChanceBag();
     }
 
     public boolean hasBullseyePants(Player player) {
@@ -27,27 +24,21 @@ public class BullseyePantsHandler extends ArmorSetHandler {
     }
 
     /**
-     * Increments the hit count for Bullseye Pants.
-     * @return true if it was the 4th hit (triggering the effect)
+     * Rolls whether the wearer's shot is a storming arrow - exactly the configured share of their
+     * shots, e.g. 1 in every 4 at 25%. Always false without Bullseye Pants on.
      */
-    public boolean incrementBullseyeHit(Player p) {
-        UUID id = p.getUniqueId();
-        int hits = bullseyeHitCount.getOrDefault(id, 0) + 1;
-        if (hits >= 4) {
-            bullseyeHitCount.put(id, 0);
-            return true;
-        }
-        bullseyeHitCount.put(id, hits);
-        return false;
+    public boolean rollStormArrow(Player player) {
+        if (!hasBullseyePants(player)) return false;
+        return stormArrowChance.roll(player.getUniqueId(), cfg.getBullseyeStormChancePercent());
     }
 
     @Override
     public void cleanup() {
-        bullseyeHitCount.clear();
+        stormArrowChance.clear();
     }
 
     @Override
     public void resetRoundTracking() {
-        bullseyeHitCount.clear();
+        stormArrowChance.clear();
     }
 }

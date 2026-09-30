@@ -36,6 +36,7 @@ import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -56,6 +57,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -750,11 +752,11 @@ public class DamageListener implements Listener {
 
     /**
      * Handle Bullseye Pants "Storming arrow" passive.
-     * Headshots trigger a storm arrow immediately (no counter increment).
-     * Every 4th non-headshot landed arrow does 30% more damage and deals AOE damage.
+     * Headshots always trigger a storm. Otherwise only arrows tagged as storming arrows when they
+     * were shot (see {@code GameListener#onBullseyeShot}) deal the damage boost and the AOE burst.
      */
     private void handleBullseyePantsEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
-        if (!(event.getDamager() instanceof Arrow arrow)) {
+        if (!(event.getDamager() instanceof AbstractArrow arrow)) {
             return;
         }
 
@@ -762,27 +764,27 @@ public class DamageListener implements Listener {
             return;
         }
 
-        org.bukkit.Location hitLoc = arrow.getLocation();
-        double arrowY = hitLoc.getY();
+        double damageMultiplier = 1.0 + itemsConfig.getBullseyeDamageBoost();
         double headY = victim.getLocation().getY() + victim.getEyeHeight();
-        boolean isHeadshot = Math.abs(arrowY - headY) <= 0.25;
+        boolean isHeadshot = Math.abs(arrow.getLocation().getY() - headY) <= itemsConfig.getBullseyeHeadshotTolerance();
 
         if (isHeadshot) {
             SoundUtils.playAt(victim.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.4f);
-            triggerStorm(attacker, victim, event.getDamage() * 1.3);
+            triggerStorm(attacker, victim, event.getDamage() * damageMultiplier);
             return;
         }
 
-        if (armorManager.getHandler(BullseyePantsHandler.class).incrementBullseyeHit(attacker)) {
+        if (arrow.getPersistentDataContainer().has(Keys.BULLSEYE_STORM_ARROW, PersistentDataType.BYTE)) {
             double originalDamage = event.getDamage();
-            event.setDamage(originalDamage * 1.3);
+            event.setDamage(originalDamage * damageMultiplier);
             triggerStorm(attacker, victim, originalDamage);
-            Messages.send(attacker, "armor.bullseye-storm-triggered");
+            Messages.send(attacker, "armor.bullseye-storm-triggered",
+                    "boost", String.valueOf(Math.round(itemsConfig.getBullseyeDamageBoost() * 100)));
         }
     }
 
     /**
-     * Spawn the storm arrow burst: impact particles, wind burst sound, and 6 AOE arrows
+     * Spawn the storm arrow burst: impact particles, wind burst sound, and a ring of AOE arrows
      * firing outward (uncolored so they read as normal arrows).
      */
     private void triggerStorm(Player attacker, Player victim, double aoeBaseDamage) {
@@ -790,9 +792,10 @@ public class DamageListener implements Listener {
         ParticleUtils.bullseyeStorm(impact);
         SoundUtils.playAt(impact, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.1f, 1.2f);
 
-        double aoeDamage = aoeBaseDamage * 0.35;
-        for (int i = 0; i < 6; i++) {
-            double angle = 2 * Math.PI * i / 6;
+        double aoeDamage = aoeBaseDamage * itemsConfig.getBullseyeAoeDamageMultiplier();
+        int arrowCount = itemsConfig.getBullseyeAoeArrowsCount();
+        for (int i = 0; i < arrowCount; i++) {
+            double angle = 2 * Math.PI * i / arrowCount;
             Vector direction = new Vector(Math.cos(angle), 0.2, Math.sin(angle)).normalize();
 
             Arrow aoeArrow = attacker.getWorld().spawn(impact, Arrow.class);

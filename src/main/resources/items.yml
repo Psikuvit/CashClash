@@ -271,9 +271,13 @@ custom-armor:
 
   # Bullseye Pants
   bullseye-pants:
-    damage-boost: 0.3
-    aoe-damage-multiplier: 0.35
+    # Fixed-luck share of the wearer's shots that become storming arrows (25 = exactly 1 in
+    # every 4 shots, at a random point in each cycle of 4). A headshot always storms.
+    storm-chance-percent: 25
+    damage-boost: 0.3               # Extra damage a storming arrow deals (0.3 = +30%)
+    aoe-damage-multiplier: 0.35     # Each storm arrow deals this fraction of the hit's damage
     aoe-arrows-count: 6
+    headshot-tolerance: 0.25        # How close (blocks) to eye height an arrow must land for a headshot
 
   # Investor's Set
   investors:

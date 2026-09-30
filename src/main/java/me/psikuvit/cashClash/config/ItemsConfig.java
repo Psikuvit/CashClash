@@ -888,6 +888,27 @@ public class ItemsConfig {
         return config.getInt("custom-armor.tectonic-cap.slow-amplifier", 1);
     }
 
+    // Bullseye Pants
+    public double getBullseyeStormChancePercent() {
+        return config.getDouble("custom-armor.bullseye-pants.storm-chance-percent", 25);
+    }
+
+    public double getBullseyeDamageBoost() {
+        return config.getDouble("custom-armor.bullseye-pants.damage-boost", 0.3);
+    }
+
+    public double getBullseyeAoeDamageMultiplier() {
+        return config.getDouble("custom-armor.bullseye-pants.aoe-damage-multiplier", 0.35);
+    }
+
+    public int getBullseyeAoeArrowsCount() {
+        return config.getInt("custom-armor.bullseye-pants.aoe-arrows-count", 6);
+    }
+
+    public double getBullseyeHeadshotTolerance() {
+        return config.getDouble("custom-armor.bullseye-pants.headshot-tolerance", 0.25);
+    }
+
     // Investor's Set
     public double getInvestorMeleeDamageBonusPerPiece() {
         return config.getDouble("custom-armor.investors.melee-damage-bonus-per-piece", 0.05);
