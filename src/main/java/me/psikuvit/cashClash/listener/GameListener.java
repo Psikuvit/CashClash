@@ -730,18 +730,9 @@ public class GameListener implements Listener {
 
     /**
      * Handle BlazeBite crossbow shot: tags the arrow with this shot's mode - Glacier and Volcano
-     * take turns - which {@link #handleBlazebiteArrow} plays wherever it lands, and enforces the
-     * post-freeze-solid shot lockout.
+     * take turns - which {@link #handleBlazebiteArrow} plays wherever it lands.
      */
     private void handleBlazebiteShot(EntityShootBowEvent event, Player player) {
-        UUID uuid = player.getUniqueId();
-        if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.BLAZEBITE_FREEZE_LOCKOUT)) {
-            event.setCancelled(true);
-            Messages.send(player, "mythic.blazebite-freeze-lockout", "cooldown_seconds",
-                    String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.BLAZEBITE_FREEZE_LOCKOUT)));
-            return;
-        }
-
         if (event.getProjectile() instanceof AbstractArrow arrow) {
             String mode = mythicManager.getHandler(BlazebiteHandler.class).nextShotMode(player);
             PDCSetter.of(arrow).set(Keys.BLAZEBITE_MODE, PersistentDataType.STRING, mode).apply();

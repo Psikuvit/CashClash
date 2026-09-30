@@ -142,11 +142,10 @@ mythic-items:
   # (frostbite/freeze) and a Volcano arrow (Magma Storm), whatever they hit.
   blazebite-crossbows:
     damage-bonus-percent: 20  # BlazeBite arrows deal this much more than a plain crossbow bolt
+    # Glacier's frostbite and freeze are cosmetic - particles and sounds only, no slowdown
     glacier:
-      slowness-level: 0
-      slowness-duration-seconds: 5  # First hit frostbite duration
-      max-slowness-duration-seconds: 3  # Duration of freeze in place when hit while frozen
-      freeze-lockout-seconds: 5  # Can't fire again for this long after freezing someone solid
+      frostbite-duration-seconds: 5  # First hit: frostbite particles last this long
+      freeze-duration-seconds: 3  # Hit again while frostbitten: freeze particles last this long
     volcano:
       direct-damage: 4.0
       splash-damage: 2.0
@@ -443,9 +442,9 @@ custom-items:
   ice-fan:
     max-uses: 3                       # Number of activations before it breaks
     burst-damage: 4.5
-    freeze-duration-ms: 1500          # Freeze applied to each target hit
+    freeze-duration-ms: 1500          # Freeze added to each target hit - cosmetic (freeze hearts), no slowdown
     max-freeze-ms: 6000               # Maximum total freeze duration
-    freeze-pump-interval-ticks: 1     # How often to update freeze ticks
+    freeze-pump-interval-ticks: 1     # How often the freeze display updates
     cooldown-seconds: 1               # Cooldown between activations
     range: 3.5                        # Reach of the half-circle sweep - both what it hits and how far its particles travel
     particle-height: 1.0              # Height (blocks above the player's feet) the particles are drawn at - eye level is ~1.6
@@ -812,7 +811,7 @@ item-lore:
     ice-fan:
       lore:
         - "<gray>Right-click: half-circle burst of cold wind</gray>"
-        - "<yellow>Freezes and knocks back everyone it hits</yellow>"
+        - "<yellow>Damages and knocks back everyone it hits</yellow>"
         - "<gray>3 uses before it breaks</gray>"
     overdrive-potion:
       lore:
@@ -972,8 +971,8 @@ item-lore:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>Shots alternate between ice and fire</dark_purple>"
-        - "<yellow>Glacier arrow: frostbites the player it hits</yellow>"
-        - "<yellow>Volcano arrow: fire/explosion AOE, cleanses freeze (Magma Storm)</yellow>"
+        - "<yellow>Glacier arrow: frosts over the player it hits</yellow>"
+        - "<yellow>Volcano arrow: fire/explosion AOE (Magma Storm)</yellow>"
     alchemist-wand:
       lore:
         - "<light_purple>✦ MYTHIC UTILITY ✦</light_purple>"

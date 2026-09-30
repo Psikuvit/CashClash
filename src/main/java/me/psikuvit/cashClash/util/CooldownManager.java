@@ -323,7 +323,6 @@ public class CooldownManager implements Shutdownable {
         public static final String SANDSTORMER_RELOAD = "SANDSTORMER_RELOAD";
         public static final String WARDEN_SHOCKWAVE = "WARDEN_SHOCKWAVE";
         public static final String WARDEN_RISING_FURY = "WARDEN_RISING_FURY";
-        public static final String BLAZEBITE_FREEZE_LOCKOUT = "BLAZEBITE_FREEZE_LOCKOUT";
         public static final String ALCHEMIST_BLINK_SWAP = "ALCHEMIST_BLINK_SWAP";
         public static final String ALCHEMIST_TAUNT = "ALCHEMIST_TAUNT";
         public static final String ALCHEMIST_TIDY_UP = "ALCHEMIST_TIDY_UP";

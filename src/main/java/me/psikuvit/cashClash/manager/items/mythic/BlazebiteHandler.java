@@ -4,8 +4,6 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -16,16 +14,16 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
- * BlazeBite Crossbows - each player's shots alternate between Glacier (frostbite/freeze) and
- * Volcano (Magma Storm fire explosion) arrows.
+ * BlazeBite Crossbows - each player's shots alternate between Glacier (cosmetic frostbite/freeze)
+ * and Volcano (Magma Storm fire explosion) arrows.
  */
 public class BlazebiteHandler extends MythicItemHandler {
 
@@ -35,17 +33,17 @@ public class BlazebiteHandler extends MythicItemHandler {
     // Whether each player's last shot was a Volcano arrow (absent = next shot is Glacier)
     private final Map<UUID, Boolean> lastShotVolcano;
 
-    // BlazeBite Glacier frozen players tracking (UUID -> expiration timestamp)
-    private final Map<UUID, Long> glacierFrozenPlayers;
+    // When each Glacier-hit player's frostbite wears off (UUID -> expiration timestamp)
+    private final Map<UUID, Long> glacierFrostbiteExpiry;
 
-    // Glacier frostbite particle tasks (UUID -> particle task)
-    private final Map<UUID, BukkitTask> glacierFrostbiteParticleTasks;
+    // The frostbite or freeze particle loop running on each Glacier-hit player
+    private final Map<UUID, BukkitTask> glacierParticleTasks;
 
     public BlazebiteHandler(MythicItemManager manager) {
         super(manager);
         this.lastShotVolcano = new ConcurrentHashMap<>();
-        this.glacierFrozenPlayers = new ConcurrentHashMap<>();
-        this.glacierFrostbiteParticleTasks = new ConcurrentHashMap<>();
+        this.glacierFrostbiteExpiry = new ConcurrentHashMap<>();
+        this.glacierParticleTasks = new ConcurrentHashMap<>();
     }
 
     /**
@@ -59,9 +57,8 @@ public class BlazebiteHandler extends MythicItemHandler {
 
     /**
      * Handle BlazeBite hit effects for the mode the arrow was shot with, wherever it lands. A
-     * Glacier arrow frostbites/freezes the player it hits. A Volcano arrow sets off a Magma Storm
-     * - a fire/explosion AOE that also cleanses the freezing effect off any frozen players caught
-     * in the blast, rather than applying freeze itself.
+     * Glacier arrow frosts over the player it hits (cosmetic only). A Volcano arrow sets off a
+     * Magma Storm - a fire/explosion AOE that also thaws any frosted players caught in the blast.
      */
     public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc, String mode) {
         World world = hitLoc.getWorld();
@@ -77,105 +74,69 @@ public class BlazebiteHandler extends MythicItemHandler {
     }
 
     /**
-     * Glacier mode: first hit applies frostbite for 5 seconds. Second hit while frostbitten
-     * freezes the player in place for 3 seconds and locks the shooter out of firing again for
-     * a few seconds.
+     * Glacier mode, purely cosmetic: the first hit frostbites the player it hits, and a second
+     * hit while they're still frostbitten freezes them. Both are particles and sounds only -
+     * neither slows the player down.
      */
     private void handleGlacier(Player shooter, Entity hitEntity) {
-        {
-            if (hitEntity instanceof Player victim) {
-                UUID victimId = victim.getUniqueId();
-                long currentTime = System.currentTimeMillis();
+        if (!(hitEntity instanceof Player victim)) return;
 
-                // Check if player is already frozen (hit while frozen)
-                boolean alreadyFrozen = glacierFrozenPlayers.containsKey(victimId)
-                        && glacierFrozenPlayers.get(victimId) > currentTime;
+        UUID victimId = victim.getUniqueId();
+        long now = System.currentTimeMillis();
+        Long frostbiteExpiry = glacierFrostbiteExpiry.get(victimId);
 
-                if (alreadyFrozen) {
-                    // FREEZE IN PLACE - Apply max slowness (level 255 = completely frozen) for 3 seconds
-                    int freezeInPlaceDuration = cfg.getBlazebiteMaxSlownessDuration();
-                    CashClashPlayer.applyEffect(victim, PotionEffectType.SLOWNESS, freezeInPlaceDuration, 255, false, true);
-                    CashClashPlayer.applyEffect(victim, PotionEffectType.JUMP_BOOST, freezeInPlaceDuration, 128, false, true);
+        if (frostbiteExpiry != null && frostbiteExpiry > now) {
+            int freezeTicks = cfg.getBlazebiteFreezeDurationTicks();
+            glacierFrostbiteExpiry.remove(victimId);
+            startGlacierParticles(victimId, ParticleUtils::freezeParticles, freezeTicks);
 
-                    Messages.debug(shooter, "BLAZEBITE: Glacier DOUBLE HIT on " + victim.getName() + " - FROZEN IN PLACE for " + (freezeInPlaceDuration / 20) + "s");
-                    Messages.send(victim, "mythic.you-are-frozen");
-
-                    SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
-                    SoundUtils.play(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);
-
-                    // Continuous freeze particles above head
-                    final UUID victimUUID = victimId;
-                    BukkitTask particleTask = SchedulerUtils.runTaskTimer(() -> {
-                        Player frozenPlayer = Bukkit.getPlayer(victimUUID);
-                        if (frozenPlayer == null || !frozenPlayer.isOnline()) return;
-                        ParticleUtils.freezeParticles(frozenPlayer.getLocation());
-                    }, 0L, 5L);
-
-                    // Cancel particle task after freeze duration
-                    final BukkitTask taskToCancel = particleTask;
-                    SchedulerUtils.runTaskLater(() -> {
-                        if (taskToCancel != null && !taskToCancel.isCancelled()) {
-                            taskToCancel.cancel();
-                        }
-                    }, freezeInPlaceDuration);
-
-                    manager.trackTask(victimId, particleTask);
-                    glacierFrozenPlayers.remove(victimId);
-
-                    // Lock the shooter out of firing again for a few seconds after freezing someone solid
-                    UUID shooterId = shooter.getUniqueId();
-                    cooldownManager.setCooldownSeconds(shooterId, CooldownManager.Keys.BLAZEBITE_FREEZE_LOCKOUT, cfg.getBlazebiteFreezeLockoutSeconds());
-                    Messages.send(shooter, "mythic.blazebite-froze-target", "cooldown_seconds",
-                            String.valueOf(cfg.getBlazebiteFreezeLockoutSeconds()));
-                } else {
-                    // FIRST HIT - Apply frostbite for 5 seconds
-                    int frostbiteDuration = cfg.getBlazebiteFreezeDuration();
-                    CashClashPlayer.applyEffect(victim, PotionEffectType.SLOWNESS, frostbiteDuration, 0, false, true);
-
-                    Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - Frostbite for " + (frostbiteDuration / 20) + "s");
-                    ParticleUtils.glacierFrost(victim.getLocation());
-                    SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
-
-                    int freezeTicks = 140 + frostbiteDuration;
-                    victim.setFreezeTicks(freezeTicks);
-
-                    // Cancel any existing frostbite particle task
-                    BukkitTask existingTask = glacierFrostbiteParticleTasks.remove(victimId);
-                    if (existingTask != null && !existingTask.isCancelled()) {
-                        existingTask.cancel();
-                    }
-
-                    // Frostbite particles during initial freeze
-                    final UUID victimUUID = victimId;
-                    BukkitTask frostbiteParticleTask = SchedulerUtils.runTaskTimer(() -> {
-                        Player frostbittenPlayer = Bukkit.getPlayer(victimUUID);
-                        if (frostbittenPlayer == null || !frostbittenPlayer.isOnline()) return;
-                        ParticleUtils.frostbiteParticles(frostbittenPlayer.getLocation());
-                    }, 0L, 5L);
-
-                    glacierFrostbiteParticleTasks.put(victimId, frostbiteParticleTask);
-
-                    final BukkitTask taskToCancel = frostbiteParticleTask;
-                    SchedulerUtils.runTaskLater(() -> {
-                        if (taskToCancel != null && !taskToCancel.isCancelled()) {
-                            taskToCancel.cancel();
-                        }
-                        glacierFrostbiteParticleTasks.remove(victimUUID);
-                    }, frostbiteDuration);
-
-                    manager.trackTask(victimId, frostbiteParticleTask);
-
-                    long expirationTime = currentTime + (frostbiteDuration / 20 * 1000L);
-                    glacierFrozenPlayers.put(victimId, expirationTime);
-                }
-            }
+            Messages.debug(shooter, "BLAZEBITE: Glacier double hit on " + victim.getName() + " - frozen for " + (freezeTicks / 20) + "s");
+            SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
+            SoundUtils.play(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);
+            return;
         }
 
+        int frostbiteTicks = cfg.getBlazebiteFrostbiteDurationTicks();
+        glacierFrostbiteExpiry.put(victimId, now + frostbiteTicks * 50L);
+        startGlacierParticles(victimId, ParticleUtils::frostbiteParticles, frostbiteTicks);
+
+        Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - frostbite for " + (frostbiteTicks / 20) + "s");
+        ParticleUtils.glacierFrost(victim.getLocation());
+        SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
     }
 
     /**
-     * Magma Storm mode: fire/explosion AOE damage, and cleanses the freezing effect off any
-     * frozen/frostbitten players it hits instead of applying freeze itself.
+     * Replaces whatever Glacier particle loop is running on the player with a new one that
+     * lasts {@code durationTicks}.
+     */
+    private void startGlacierParticles(UUID victimId, Consumer<Location> effect, int durationTicks) {
+        stopGlacierParticles(victimId);
+
+        BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
+            Player target = Bukkit.getPlayer(victimId);
+            if (target != null && target.isOnline()) effect.accept(target.getLocation());
+        }, 0L, 5L);
+        glacierParticleTasks.put(victimId, task);
+        manager.trackTask(victimId, task);
+
+        SchedulerUtils.runTaskLater(() -> {
+            if (glacierParticleTasks.remove(victimId, task)) task.cancel();
+        }, durationTicks);
+    }
+
+    /**
+     * @return true if a Glacier particle loop was running on the player
+     */
+    private boolean stopGlacierParticles(UUID victimId) {
+        BukkitTask task = glacierParticleTasks.remove(victimId);
+        if (task == null) return false;
+        task.cancel();
+        return true;
+    }
+
+    /**
+     * Magma Storm mode: fire/explosion AOE damage, and thaws any frostbitten/frozen players it
+     * hits instead of applying freeze itself.
      */
     private void handleMagmaStorm(Player shooter, Entity hitEntity, Location hitLoc, World world) {
         ParticleUtils.volcanoExplosion(hitLoc);
@@ -208,27 +169,15 @@ public class BlazebiteHandler extends MythicItemHandler {
     }
 
     /**
-     * Removes the Glacier freeze/frostbite state from a player - clears the tracked slowness
-     * levels applied by {@link #handleGlacier}, stops any running frostbite/freeze particle
-     * task, and forgets the frozen-tracking entry so a later shot starts fresh at "first hit".
+     * Thaws a Glacier-hit player - stops their frostbite/freeze particles and forgets the
+     * frostbite, so a later Glacier shot starts fresh at "first hit". Only touches Glacier's own
+     * state, never potion effects, so slowness from other sources (flag carrier, Tectonic Cap,
+     * Orb of Gravitation) survives the blast.
      */
     private void cleanseFreeze(Player target) {
         UUID targetId = target.getUniqueId();
-        if (!glacierFrozenPlayers.containsKey(targetId)
-                && !glacierFrostbiteParticleTasks.containsKey(targetId)
-                && !CashClashPlayer.hasEffect(target, PotionEffectType.SLOWNESS)) {
-            return;
-        }
-
-        glacierFrozenPlayers.remove(targetId);
-        CashClashPlayer.removeEffect(target, PotionEffectType.SLOWNESS);
-        CashClashPlayer.removeEffect(target, PotionEffectType.JUMP_BOOST);
-        target.setFreezeTicks(0);
-
-        BukkitTask task = glacierFrostbiteParticleTasks.remove(targetId);
-        if (task != null && !task.isCancelled()) {
-            task.cancel();
-        }
+        glacierFrostbiteExpiry.remove(targetId);
+        if (!stopGlacierParticles(targetId)) return;
 
         Messages.send(target, "mythic.blazebite-freeze-cleansed");
         SoundUtils.play(target, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 1.2f);
@@ -237,22 +186,19 @@ public class BlazebiteHandler extends MythicItemHandler {
     @Override
     public void cleanup() {
         lastShotVolcano.clear();
-        glacierFrozenPlayers.clear();
+        glacierFrostbiteExpiry.clear();
 
-        // Cancel and clear frostbite particle tasks
-        glacierFrostbiteParticleTasks.values().forEach(task -> {
+        glacierParticleTasks.values().forEach(task -> {
             if (task != null && !task.isCancelled()) task.cancel();
         });
-        glacierFrostbiteParticleTasks.clear();
+        glacierParticleTasks.clear();
     }
 
     @Override
     public void cleanupPlayer(Player player) {
         UUID uuid = player.getUniqueId();
         lastShotVolcano.remove(uuid);
-        glacierFrozenPlayers.remove(uuid);
-
-        BukkitTask task = glacierFrostbiteParticleTasks.remove(uuid);
-        if (task != null && !task.isCancelled()) task.cancel();
+        glacierFrostbiteExpiry.remove(uuid);
+        stopGlacierParticles(uuid);
     }
 }

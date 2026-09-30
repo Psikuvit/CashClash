@@ -32,7 +32,7 @@ import java.util.UUID;
 
 /**
  * Ice Fan: a single right-click ability - a half-circle burst of cold wind swept out in front
- * of the player, damaging, freezing and knocking back everyone it hits. Has a fixed number of
+ * of the player, damaging and knocking back everyone it hits, with a cosmetic freeze. Has a fixed number of
  * uses (a plain PDC counter, no vanilla/visual durability bar) before it breaks.
  */
 public class IceFanHandler extends CustomItemHandler {
@@ -46,7 +46,7 @@ public class IceFanHandler extends CustomItemHandler {
     // A transient flag suppressing DamageListener's vanilla-melee cancellation for the burst's
     // own hits
     private final Set<UUID> iceFanAbilityDamageActive;
-    // Independent freeze-stack timer per target, and the task pumping it into freezeTicks
+    // Independent (cosmetic) freeze-stack timer per target, and the task showing it
     private final Map<UUID, Long> iceFanFreezeExpiresAt;
     private final Map<UUID, BukkitTask> iceFanFreezePumpTasks;
 
@@ -68,7 +68,7 @@ public class IceFanHandler extends CustomItemHandler {
 
     /**
      * Right-click: sweeps a half-circle burst of cold wind out in front of the player, damaging,
-     * freezing and knocking back every enemy caught in it. Consumes one of the item's fixed
+     * (cosmetically) freezing and knocking back every enemy caught in it. Consumes one of the item's fixed
      * number of uses, breaking it once they run out.
      */
     public void handleIceFanRightClick(Player player, ItemStack item) {
@@ -108,9 +108,7 @@ public class IceFanHandler extends CustomItemHandler {
 
     /**
      * Stacks freeze duration onto the target's remaining Ice Fan freeze time, capped at a
-     * configured max, and starts the pump task (if not already running) that keeps freezeTicks
-     * synced to it every tick - directly setting freezeTicks here would just get overwritten by
-     * the next pump.
+     * configured max, and starts the pump task (if not already running) that shows it.
      */
     private void stackIceFanFreeze(Player target) {
         UUID uuid = target.getUniqueId();
@@ -128,10 +126,10 @@ public class IceFanHandler extends CustomItemHandler {
     }
 
     /**
-     * Keeps the target's freezeTicks matching the remaining time on our own timer every tick,
-     * overriding Bukkit's natural decay, until the stack expires. Also pulses the blue freeze
-     * heart indicator every 5 ticks (matching BlazeBite Glacier's frostbite particle cadence)
-     * for the whole freeze duration, not just a one-off burst on the hit that caused it.
+     * Pulses the blue freeze heart indicator every 5 ticks (matching BlazeBite Glacier's
+     * frostbite particle cadence) for the whole freeze duration, not just a one-off burst on the
+     * hit that caused it. The freeze is purely visual: it never sets vanilla freeze ticks, which
+     * slow the target down.
      */
     private void pumpIceFanFreeze(Player target) {
         UUID uuid = target.getUniqueId();
@@ -146,8 +144,6 @@ public class IceFanHandler extends CustomItemHandler {
         }
 
         int ticksLeft = (int) ((expiresAt - now) / 50L);
-        target.setFreezeTicks(140 + ticksLeft);
-
         if (ticksLeft % 5 == 0) {
             ParticleUtils.blueFreezeHeart(target.getEyeLocation().add(0, 0.5, 0));
         }

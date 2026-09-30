@@ -376,12 +376,12 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.blazebite-crossbows.damage-bonus-percent", 20);
     }
 
-    public int getBlazebiteFreezeDuration() {
-        return config.getInt("mythic-items.blazebite-crossbows.glacier.slowness-duration-seconds", 3) * 20;
+    public int getBlazebiteFrostbiteDurationTicks() {
+        return config.getInt("mythic-items.blazebite-crossbows.glacier.frostbite-duration-seconds", 5) * 20;
     }
 
-    public int getBlazebiteMaxSlownessDuration() {
-        return config.getInt("mythic-items.blazebite-crossbows.glacier.max-slowness-duration-seconds", 5) * 20;
+    public int getBlazebiteFreezeDurationTicks() {
+        return config.getInt("mythic-items.blazebite-crossbows.glacier.freeze-duration-seconds", 3) * 20;
     }
 
     public double getBlazebiteVolcanoDirectDamage() {
@@ -398,10 +398,6 @@ public class ItemsConfig {
 
     public int getBlazebiteFireDuration() {
         return config.getInt("mythic-items.blazebite-crossbows.volcano.fire-duration-seconds", 5) * 20;
-    }
-
-    public int getBlazebiteFreezeLockoutSeconds() {
-        return config.getInt("mythic-items.blazebite-crossbows.glacier.freeze-lockout-seconds", 5);
     }
 
     // Alchemist Wand Blink Swap
