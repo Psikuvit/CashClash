@@ -4,14 +4,19 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
@@ -22,8 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
- * BlazeBite Crossbows - each player's shots alternate between Glacier (cosmetic frostbite/freeze)
- * and Volcano (Magma Storm fire explosion) arrows.
+ * BlazeBite Crossbows - each player's shots alternate between Glacier (frostbite, then frozen
+ * solid on a second hit) and Volcano (Magma Storm fire explosion) arrows.
  */
 public class BlazebiteHandler extends MythicItemHandler {
 
@@ -39,11 +44,15 @@ public class BlazebiteHandler extends MythicItemHandler {
     // The frostbite or freeze particle loop running on each Glacier-hit player
     private final Map<UUID, BukkitTask> glacierParticleTasks;
 
+    // Players frozen solid, and the task that thaws them
+    private final Map<UUID, BukkitTask> frozenSolidThawTasks;
+
     public BlazebiteHandler(MythicItemManager manager) {
         super(manager);
         this.lastShotVolcano = new ConcurrentHashMap<>();
         this.glacierFrostbiteExpiry = new ConcurrentHashMap<>();
         this.glacierParticleTasks = new ConcurrentHashMap<>();
+        this.frozenSolidThawTasks = new ConcurrentHashMap<>();
     }
 
     /**
@@ -57,8 +66,9 @@ public class BlazebiteHandler extends MythicItemHandler {
 
     /**
      * Handle BlazeBite hit effects for the mode the arrow was shot with, wherever it lands. A
-     * Glacier arrow frosts over the player it hits (cosmetic only). A Volcano arrow sets off a
-     * Magma Storm - a fire/explosion AOE that also thaws any frosted players caught in the blast.
+     * Glacier arrow frostbites the player it hits, or freezes them solid if they're already
+     * frostbitten. A Volcano arrow sets off a Magma Storm - a fire/explosion AOE - and leaves any
+     * frostbite in place, so Glacier, Volcano, Glacier on one target still freezes them solid.
      */
     public void handleBlazebiteHit(Player shooter, Entity hitEntity, Location hitLoc, String mode) {
         World world = hitLoc.getWorld();
@@ -74,14 +84,17 @@ public class BlazebiteHandler extends MythicItemHandler {
     }
 
     /**
-     * Glacier mode, purely cosmetic: the first hit frostbites the player it hits, and a second
-     * hit while they're still frostbitten freezes them. Both are particles and sounds only -
-     * neither slows the player down.
+     * Glacier mode: the first hit frostbites the player it hits - particles and sounds only, no
+     * slowdown. A second hit while they're still frostbitten freezes them solid: no moving or
+     * jumping for {@code freeze-duration-seconds}. A hit on someone already frozen solid does
+     * nothing more.
      */
     private void handleGlacier(Player shooter, Entity hitEntity) {
         if (!(hitEntity instanceof Player victim)) return;
 
         UUID victimId = victim.getUniqueId();
+        if (frozenSolidThawTasks.containsKey(victimId)) return;
+
         long now = System.currentTimeMillis();
         Long frostbiteExpiry = glacierFrostbiteExpiry.get(victimId);
 
@@ -89,8 +102,10 @@ public class BlazebiteHandler extends MythicItemHandler {
             int freezeTicks = cfg.getBlazebiteFreezeDurationTicks();
             glacierFrostbiteExpiry.remove(victimId);
             startGlacierParticles(victimId, ParticleUtils::freezeParticles, freezeTicks);
+            freezeSolid(victim, freezeTicks);
 
-            Messages.debug(shooter, "BLAZEBITE: Glacier double hit on " + victim.getName() + " - frozen for " + (freezeTicks / 20) + "s");
+            Messages.debug(shooter, "BLAZEBITE: Glacier double hit on " + victim.getName() + " - frozen solid for " + (freezeTicks / 20) + "s");
+            Messages.send(victim, "mythic.you-are-frozen");
             SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
             SoundUtils.play(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);
             return;
@@ -103,6 +118,45 @@ public class BlazebiteHandler extends MythicItemHandler {
         Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - frostbite for " + (frostbiteTicks / 20) + "s");
         ParticleUtils.glacierFrost(victim.getLocation());
         SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
+    }
+
+    /**
+     * Pins the victim in place by zeroing their movement speed and jump strength, then thaws them
+     * after {@code durationTicks}. Attribute modifiers rather than Slowness 255 + Jump Boost 128:
+     * since 1.20.5 effect amplifiers no longer wrap around, so Jump Boost 128 launches the player
+     * instead of grounding them. Transient, so a crash mid-freeze can't save a frozen player.
+     */
+    private void freezeSolid(Player victim, int durationTicks) {
+        UUID victimId = victim.getUniqueId();
+        zeroAttribute(victim, Attribute.MOVEMENT_SPEED, Keys.BLAZEBITE_FREEZE_SPEED);
+        zeroAttribute(victim, Attribute.JUMP_STRENGTH, Keys.BLAZEBITE_FREEZE_JUMP);
+
+        BukkitTask thawTask = SchedulerUtils.runTaskLater(() -> thaw(victimId), durationTicks);
+        frozenSolidThawTasks.put(victimId, thawTask);
+        manager.trackTask(victimId, thawTask);
+    }
+
+    private void zeroAttribute(Player player, Attribute attribute, NamespacedKey key) {
+        AttributeInstance instance = player.getAttribute(attribute);
+        if (instance == null) return;
+        instance.removeModifier(key);
+        instance.addTransientModifier(new AttributeModifier(key, -1.0, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
+    }
+
+    /**
+     * Lifts a freeze solid, if the player is frozen. Safe to call for a player who's offline.
+     */
+    private void thaw(UUID playerId) {
+        BukkitTask task = frozenSolidThawTasks.remove(playerId);
+        if (task != null && !task.isCancelled()) task.cancel();
+
+        Player player = Bukkit.getPlayer(playerId);
+        if (player == null) return;
+
+        AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (speed != null) speed.removeModifier(Keys.BLAZEBITE_FREEZE_SPEED);
+        AttributeInstance jump = player.getAttribute(Attribute.JUMP_STRENGTH);
+        if (jump != null) jump.removeModifier(Keys.BLAZEBITE_FREEZE_JUMP);
     }
 
     /**
@@ -124,19 +178,13 @@ public class BlazebiteHandler extends MythicItemHandler {
         }, durationTicks);
     }
 
-    /**
-     * @return true if a Glacier particle loop was running on the player
-     */
-    private boolean stopGlacierParticles(UUID victimId) {
+    private void stopGlacierParticles(UUID victimId) {
         BukkitTask task = glacierParticleTasks.remove(victimId);
-        if (task == null) return false;
-        task.cancel();
-        return true;
+        if (task != null) task.cancel();
     }
 
     /**
-     * Magma Storm mode: fire/explosion AOE damage, and thaws any frostbitten/frozen players it
-     * hits instead of applying freeze itself.
+     * Magma Storm mode: fire/explosion AOE damage to every enemy in the blast.
      */
     private void handleMagmaStorm(Player shooter, Entity hitEntity, Location hitLoc, World world) {
         ParticleUtils.volcanoExplosion(hitLoc);
@@ -162,25 +210,9 @@ public class BlazebiteHandler extends MythicItemHandler {
             double damage = entity.equals(hitEntity) ? cfg.getBlazebiteVolcanoDirectDamage() : cfg.getBlazebiteVolcanoSplashDamage();
             target.damage(damage, shooter);
             target.setFireTicks(fireTicks);
-            cleanseFreeze(target);
             hitCount++;
         }
         Messages.debug(shooter, "BLAZEBITE: Magma Storm explosion hit " + hitCount + " enemies, radius: " + radius);
-    }
-
-    /**
-     * Thaws a Glacier-hit player - stops their frostbite/freeze particles and forgets the
-     * frostbite, so a later Glacier shot starts fresh at "first hit". Only touches Glacier's own
-     * state, never potion effects, so slowness from other sources (flag carrier, Tectonic Cap,
-     * Orb of Gravitation) survives the blast.
-     */
-    private void cleanseFreeze(Player target) {
-        UUID targetId = target.getUniqueId();
-        glacierFrostbiteExpiry.remove(targetId);
-        if (!stopGlacierParticles(targetId)) return;
-
-        Messages.send(target, "mythic.blazebite-freeze-cleansed");
-        SoundUtils.play(target, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 1.2f);
     }
 
     @Override
@@ -192,6 +224,8 @@ public class BlazebiteHandler extends MythicItemHandler {
             if (task != null && !task.isCancelled()) task.cancel();
         });
         glacierParticleTasks.clear();
+
+        frozenSolidThawTasks.keySet().forEach(this::thaw);
     }
 
     @Override
@@ -200,5 +234,6 @@ public class BlazebiteHandler extends MythicItemHandler {
         lastShotVolcano.remove(uuid);
         glacierFrostbiteExpiry.remove(uuid);
         stopGlacierParticles(uuid);
+        thaw(uuid);
     }
 }

@@ -142,10 +142,11 @@ mythic-items:
   # (frostbite/freeze) and a Volcano arrow (Magma Storm), whatever they hit.
   blazebite-crossbows:
     damage-bonus-percent: 20  # BlazeBite arrows deal this much more than a plain crossbow bolt
-    # Glacier's frostbite and freeze are cosmetic - particles and sounds only, no slowdown
+    # Glacier's first hit (frostbite) is cosmetic - particles and sounds only, no slowdown. A
+    # second Glacier hit while frostbitten freezes the player solid. Volcano hits don't thaw.
     glacier:
       frostbite-duration-seconds: 5  # First hit: frostbite particles last this long
-      freeze-duration-seconds: 3  # Hit again while frostbitten: freeze particles last this long
+      freeze-duration-seconds: 3  # Hit again while frostbitten: frozen solid (can't move or jump) this long
     volcano:
       direct-damage: 4.0
       splash-damage: 2.0
@@ -973,7 +974,7 @@ item-lore:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>Shots alternate between ice and fire</dark_purple>"
-        - "<yellow>Glacier arrow: frosts over the player it hits</yellow>"
+        - "<yellow>Glacier arrow: frostbite; hit again to freeze solid</yellow>"
         - "<yellow>Volcano arrow: fire/explosion AOE (Magma Storm)</yellow>"
     alchemist-wand:
       lore:

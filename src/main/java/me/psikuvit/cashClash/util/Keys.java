@@ -147,6 +147,12 @@ public class Keys {
     public static final NamespacedKey OVERDRIVE_SPEED;
 
     /**
+     * BlazeBite's freeze-solid AttributeModifier keys (movement speed and jump strength to zero).
+     */
+    public static final NamespacedKey BLAZEBITE_FREEZE_SPEED;
+    public static final NamespacedKey BLAZEBITE_FREEZE_JUMP;
+
+    /**
      * Flag marking an item as a kit item (round-start gear), so it can be identified and
      * cleared on kit reset independent of custom/shop item tags.
      */
@@ -192,6 +198,8 @@ public class Keys {
         EEL_SLOW = new NamespacedKey(CashClashPlugin.getInstance(), "electric_eel_dash_slow");
         LOTUS_SLOW = new NamespacedKey(CashClashPlugin.getInstance(), "radiating_lotus_slow");
         OVERDRIVE_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "overdrive_speed");
+        BLAZEBITE_FREEZE_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "blazebite_freeze_speed");
+        BLAZEBITE_FREEZE_JUMP = new NamespacedKey(CashClashPlugin.getInstance(), "blazebite_freeze_jump");
         KIT_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "kit_item");
         LOBBY_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "lobby_item");
     }
