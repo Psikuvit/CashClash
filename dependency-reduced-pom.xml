@@ -31,6 +31,18 @@
             <goals>
               <goal>shade</goal>
             </goals>
+            <configuration>
+              <relocations>
+                <relocation>
+                  <pattern>com.github.retrooper.packetevents</pattern>
+                  <shadedPattern>me.psikuvit.cashClash.libs.packetevents.api</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>io.github.retrooper.packetevents</pattern>
+                  <shadedPattern>me.psikuvit.cashClash.libs.packetevents.impl</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -40,6 +52,10 @@
     <repository>
       <id>papermc-repo</id>
       <url>https://repo.papermc.io/repository/maven-public/</url>
+    </repository>
+    <repository>
+      <id>codemc-releases</id>
+      <url>https://repo.codemc.io/repository/maven-releases/</url>
     </repository>
   </repositories>
   <dependencies>

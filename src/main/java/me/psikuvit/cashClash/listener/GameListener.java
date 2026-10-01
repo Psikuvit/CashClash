@@ -44,7 +44,6 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
@@ -78,10 +77,8 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.Vector;
 
 import java.util.Map;
@@ -1074,10 +1071,6 @@ public class GameListener implements Listener {
         GameSession session = gameManager.getPlayerSession(player);
         if (session != null) {
             session.getGamemode().onPlayerSpawn(player);
-            // Apply team outlines when player respawns (Feature #7-8)
-            if (session.getGamemode().showsTeammateOutlines()) {
-                applyTeamOutlines(player, session);
-            }
         }
     }
 
@@ -1087,47 +1080,6 @@ public class GameListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerItemDamage(PlayerItemDamageEvent event) {
         event.setCancelled(true);
-    }
-
-    /**
-     * Apply team outlines to show teammates with GREEN glowing effect (Feature #7-8).
-     * Glowing effect is visible through walls.
-     * Enemies have NO outline.
-     */
-    private void applyTeamOutlines(Player player, GameSession session) {
-        Team playerTeam = session.getPlayerTeam(player.getUniqueId());
-        if (playerTeam == null) return;
-
-        Scoreboard scoreboard = player.getScoreboard();
-
-        // Clear previous glow state first so enemies never keep a visible outline.
-        for (UUID sessionPlayerId : session.getPlayers()) {
-            Player sessionPlayer = Bukkit.getPlayer(sessionPlayerId);
-            if (sessionPlayer == null || !sessionPlayer.isOnline()) continue;
-
-            TeamColorUtils.removeFromGreenGlowTeam(scoreboard, sessionPlayer);
-            CashClashPlayer.removeEffect(sessionPlayer, PotionEffectType.GLOWING);
-        }
-
-        // Apply glowing effect to all teammates (visible through walls)
-        for (UUID teamMateUUID : playerTeam.getPlayers()) {
-            if (teamMateUUID.equals(player.getUniqueId())) continue;
-            
-            Player teamMate = Bukkit.getPlayer(teamMateUUID);
-            if (teamMate != null && teamMate.isOnline()) {
-                // Add teammate to green glow team (scoreboard team controls outline color)
-                TeamColorUtils.addToGreenGlowTeam(scoreboard, teamMate);
-
-                PotionEffect glowing = new PotionEffect(
-                    PotionEffectType.GLOWING,
-                    PotionEffect.INFINITE_DURATION,
-                    0,
-                    false,
-                    false
-                );
-                CashClashPlayer.applyEffect(teamMate, glowing);
-            }
-        }
     }
 }
 

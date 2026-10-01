@@ -290,16 +290,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         suddenDeathManager.onPlayerSpawn(player);
     }
 
-    /**
-     * Off in PTP so only the presidents glow. A teammate outline is seen by both teams, so with
-     * full teams every player ends up glowing, and the outline pass (which clears everyone's
-     * glowing first) also strips the presidents' glow on every respawn.
-     */
-    @Override
-    public boolean showsTeammateOutlines() {
-        return false;
-    }
-
     @Override
     public boolean checkGameWinner() {
         int deaths1 = getPresidentDeaths(1);
@@ -659,6 +649,15 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     public boolean isNotPresident(UUID uuid) {
         return findPresidentTeam(uuid) == 0;
+    }
+
+    /**
+     * Presidents glow in their team's colour for everyone, their own team included, so they stand
+     * out from the green teammate outlines.
+     */
+    @Override
+    public boolean keepsTeamColorOutline(UUID playerId) {
+        return !isNotPresident(playerId);
     }
 
     /**

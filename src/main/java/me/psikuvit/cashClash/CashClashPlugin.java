@@ -27,6 +27,7 @@ import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
+import me.psikuvit.cashClash.manager.game.TeamOutlineManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
@@ -46,6 +47,8 @@ import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.ItemFactory;
+import com.github.retrooper.packetevents.PacketEvents;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -89,12 +92,26 @@ public final class CashClashPlugin extends JavaPlugin {
     private MythicItemManager mythicItemManager;
     private CustomItemManager customItemManager;
     private WeaponItemManager weaponItemManager;
+    private TeamOutlineManager teamOutlineManager;
+
+    /**
+     * PacketEvents (shaded, for per-viewer teammate outlines) has to be loaded before the server
+     * finishes starting, so it can hook player connections as they're made.
+     */
+    @Override
+    public void onLoad() {
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+        PacketEvents.getAPI().getSettings().checkForUpdates(false).bStats(false);
+        PacketEvents.getAPI().load();
+    }
 
     @Override
     public void onEnable() {
         instance = this;
 
         try {
+            PacketEvents.getAPI().init();
+
             // Tier 0: no dependencies on any other manager.
             configManager = new ConfigManager();
             messagesConfig = new MessagesConfig();
@@ -125,6 +142,7 @@ public final class CashClashPlugin extends JavaPlugin {
             scoreboardManager = new ScoreboardManager(gameManager, tabListManager);
             shopService = new ShopService(gameManager, itemFactory);
             transferInputListener = new TransferInputListener(gameManager);
+            teamOutlineManager = new TeamOutlineManager(gameManager);
 
             // Tier 2: depend on tier 1 managers.
             shopManager = new ShopManager(arenaManager, gameManager);
@@ -177,6 +195,7 @@ public final class CashClashPlugin extends JavaPlugin {
     public void onDisable() {
         if (!initialized) {
             getLogger().warning("Plugin was not fully initialized, skipping shutdown procedures.");
+            shutdownStep("terminating PacketEvents", null, this::terminatePacketEvents);
             return;
         }
 
@@ -206,7 +225,15 @@ public final class CashClashPlugin extends JavaPlugin {
             shutdownStep("shutting down " + name, name + " shut down", manager::shutdown);
         }
 
+        shutdownStep("terminating PacketEvents", "PacketEvents terminated", this::terminatePacketEvents);
+
         getLogger().info("Cash Clash has been disabled!");
+    }
+
+    private void terminatePacketEvents() {
+        if (PacketEvents.getAPI().isInitialized()) {
+            PacketEvents.getAPI().terminate();
+        }
     }
 
     /**
@@ -259,6 +286,7 @@ public final class CashClashPlugin extends JavaPlugin {
     public MythicItemManager getMythicItemManager() { return mythicItemManager; }
     public CustomItemManager getCustomItemManager() { return customItemManager; }
     public WeaponItemManager getWeaponItemManager() { return weaponItemManager; }
+    public TeamOutlineManager getTeamOutlineManager() { return teamOutlineManager; }
 
     private void registerEvents() {
         Listener[] listeners = {
@@ -274,7 +302,8 @@ public final class CashClashPlugin extends JavaPlugin {
                 new AfkListener(),
                 new ArenaNPCListener(),
                 new ChatListener(),
-                transferInputListener
+                transferInputListener,
+                teamOutlineManager
         };
 
         for (Listener listener : listeners) {

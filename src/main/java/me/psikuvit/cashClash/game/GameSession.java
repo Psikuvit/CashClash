@@ -16,6 +16,7 @@ import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinData;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
 import me.psikuvit.cashClash.manager.game.RoundManager;
+import me.psikuvit.cashClash.manager.game.TeamOutlineManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
@@ -99,6 +100,7 @@ public class GameSession {
     private final WeaponItemManager weaponItemManager;
     private final LobbyManager lobbyManager;
     private final GameManager gameManager;
+    private final TeamOutlineManager teamOutlineManager;
 
     // Track round wins for each team (incremented when team wins a round)
     private final Map<Integer, Integer> roundWins; // 1 = Red, 2 = Blue
@@ -120,6 +122,7 @@ public class GameSession {
         this.weaponItemManager = plugin.getWeaponItemManager();
         this.lobbyManager = plugin.getLobbyManager();
         this.gameManager = plugin.getGameManager();
+        this.teamOutlineManager = plugin.getTeamOutlineManager();
         this.stateMachine = new GameStateMachine(GameState.WAITING);
         this.currentRound = 1;
         this.teamRed = new Team(1);
@@ -592,6 +595,7 @@ public class GameSession {
      */
     private void transitionToShoppingPhase() {
         stateMachine.transitionTo(GameState.SHOPPING);
+        teamOutlineManager.clearOutlines(this);
         gamemode.onRoundEnd();
 
         SchedulerUtils.runTask(() -> {
@@ -628,6 +632,7 @@ public class GameSession {
      */
     private void cleanupManagers() {
         cancelStartCountdown();
+        teamOutlineManager.clearOutlines(this);
         if (roundManager != null) roundManager.cleanup();
         if (bonusManager != null) bonusManager.cleanup();
         customArmorManager.cleanup();

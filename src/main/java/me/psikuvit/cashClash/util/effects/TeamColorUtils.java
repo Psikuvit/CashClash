@@ -115,13 +115,18 @@ public final class TeamColorUtils {
     }
 
     /**
-     * Remove a player from the green glow team.
+     * Put a player back in their own team's colour on a scoreboard, taking them out of the green
+     * glow team if they were in it (an entry belongs to one team per scoreboard).
      */
-    public static void removeFromGreenGlowTeam(Scoreboard board, Player player) {
-        if (board == null || player == null) return;
-        Team greenTeam = board.getTeam(TEAM_GLOW_GREEN_NAME);
-        if (greenTeam != null) {
-            greenTeam.removeEntry(player.getName());
+    public static void assignTeamColor(Scoreboard board, Player player, GameSession session) {
+        if (board == null || player == null || session == null) return;
+
+        UUID uuid = player.getUniqueId();
+        String teamName = session.getTeamRed().hasPlayer(uuid) ? TEAM_RED_NAME
+                : session.getTeamBlue().hasPlayer(uuid) ? TEAM_BLUE_NAME : null;
+        Team team = teamName != null ? board.getTeam(teamName) : null;
+        if (team != null) {
+            team.addEntry(player.getName());
         }
     }
 }

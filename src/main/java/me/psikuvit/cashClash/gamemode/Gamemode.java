@@ -3,6 +3,8 @@ package me.psikuvit.cashClash.gamemode;
 import me.psikuvit.cashClash.game.GameSession;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
+
 /**
  * Abstract base class for all gamemodes.
  * Each gamemode implements its own win conditions, mechanics, and special features.
@@ -58,12 +60,11 @@ public abstract class Gamemode {
     }
 
     /**
-     * Whether teammates get the green outline at combat start and on respawn. Vanilla glowing is
-     * one flag per player that every viewer sees - only its colour is per viewer - so a gamemode
-     * that needs glowing to single out specific players turns the outline off.
+     * Whether a player's outline stays their team colour for their own teammates too, instead of
+     * the green teammate outline - PTP's presidents, so a team can pick its president out.
      */
-    public boolean showsTeammateOutlines() {
-        return true;
+    public boolean keepsTeamColorOutline(UUID playerId) {
+        return false;
     }
 
     /**
