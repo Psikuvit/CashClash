@@ -50,6 +50,7 @@ import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Trident;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -775,7 +776,7 @@ public class DamageListener implements Listener {
      * were shot (see {@code GameListener#onBullseyeShot}) deal the damage boost and the AOE burst.
      */
     private void handleBullseyePantsEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
-        if (!(event.getDamager() instanceof AbstractArrow arrow)) {
+        if (!(event.getDamager() instanceof AbstractArrow arrow) || arrow instanceof Trident) {
             return;
         }
 

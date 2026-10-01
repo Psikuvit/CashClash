@@ -757,7 +757,10 @@ public class GameListener implements Listener {
 
         if (passThroughTeammate(event)) return;
 
-        if (event.getEntity() instanceof AbstractArrow arrow) {
+        // Trident first: it is itself an AbstractArrow, so it would otherwise never get here.
+        if (event.getEntity() instanceof Trident trident) {
+            handleTridentHit(trident, event);
+        } else if (event.getEntity() instanceof AbstractArrow arrow) {
             // Profit Vortex: a tagged Cash Blaster arrow spawns its vortex on any impact
             // (world or entity), so handle it before the orb/charged-arrow branch.
             weaponItemManager.getHandler(CashBlasterHandler.class).onProfitVortexArrowHit(arrow);
@@ -768,8 +771,6 @@ public class GameListener implements Listener {
                 customItemManager.getHandler(OrbOfGravitationHandler.class).handleOrbHitByChargedArrow(arrow, orb);
             }
             handleArrowHit(arrow, event);
-        } else         if (event.getEntity() instanceof Trident trident) {
-            handleTridentHit(trident, event);
         } else if (event.getEntity() instanceof Snowball snowball && customItemManager.getHandler(OrbOfGravitationHandler.class).isOrbEntity(snowball)) {
             customItemManager.getHandler(OrbOfGravitationHandler.class).activateOrb(snowball);
         }
