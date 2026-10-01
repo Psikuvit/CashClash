@@ -3,10 +3,12 @@ package me.psikuvit.cashClash.manager.game;
 import me.psikuvit.cashClash.event.PlayerBackToGameEvent;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListener;
+import com.github.retrooper.packetevents.event.PacketListenerCommon;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
@@ -40,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * Outlines are on from combat start until the round's combat ends.
  */
-public class TeamOutlineManager implements PacketListener, Listener {
+public class TeamOutlineManager implements PacketListener, Listener, Shutdownable {
 
     private static final int ENTITY_FLAGS_INDEX = 0;
     private static final byte ON_FIRE = 0x01;
@@ -55,12 +57,24 @@ public class TeamOutlineManager implements PacketListener, Listener {
     private final Set<UUID> activeSessions;
     // viewer -> (outlined teammate -> that teammate's entity id); read on the netty threads
     private final Map<UUID, Map<UUID, Integer>> outlines;
+    private final PacketListenerCommon packetListener;
 
     public TeamOutlineManager(GameManager gameManager) {
         this.gameManager = gameManager;
         this.activeSessions = ConcurrentHashMap.newKeySet();
         this.outlines = new ConcurrentHashMap<>();
-        PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.NORMAL);
+        this.packetListener = PacketEvents.getAPI().getEventManager().registerListener(this, PacketListenerPriority.NORMAL);
+    }
+
+    /**
+     * PacketEvents is its own plugin and outlives this one on a disable or reload, so the packet
+     * listener has to be taken off it explicitly.
+     */
+    @Override
+    public void shutdown() {
+        PacketEvents.getAPI().getEventManager().unregisterListener(packetListener);
+        activeSessions.clear();
+        outlines.clear();
     }
 
     /**

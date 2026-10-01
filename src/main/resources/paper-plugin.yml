@@ -6,6 +6,13 @@ description: A 4v4 PvP strategy minigame with economy mechanics
 author: psikuvit
 website: https://github.com/psikuvit/CashClash
 
+dependencies:
+  server:
+    packetevents:
+      load: BEFORE
+      required: true
+      join-classpath: true
+
 commands:
   cashclash:
     description: Main Cash Clash command

@@ -47,8 +47,6 @@ import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.ItemFactory;
-import com.github.retrooper.packetevents.PacketEvents;
-import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -94,24 +92,11 @@ public final class CashClashPlugin extends JavaPlugin {
     private WeaponItemManager weaponItemManager;
     private TeamOutlineManager teamOutlineManager;
 
-    /**
-     * PacketEvents (shaded, for per-viewer teammate outlines) has to be loaded before the server
-     * finishes starting, so it can hook player connections as they're made.
-     */
-    @Override
-    public void onLoad() {
-        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
-        PacketEvents.getAPI().getSettings().checkForUpdates(false).bStats(false);
-        PacketEvents.getAPI().load();
-    }
-
     @Override
     public void onEnable() {
         instance = this;
 
         try {
-            PacketEvents.getAPI().init();
-
             // Tier 0: no dependencies on any other manager.
             configManager = new ConfigManager();
             messagesConfig = new MessagesConfig();
@@ -195,7 +180,6 @@ public final class CashClashPlugin extends JavaPlugin {
     public void onDisable() {
         if (!initialized) {
             getLogger().warning("Plugin was not fully initialized, skipping shutdown procedures.");
-            shutdownStep("terminating PacketEvents", null, this::terminatePacketEvents);
             return;
         }
 
@@ -218,6 +202,7 @@ public final class CashClashPlugin extends JavaPlugin {
         managers.add(mannequinManager);
         managers.add(partyManager);
         managers.add(chatManager);
+        managers.add(teamOutlineManager);
         managers.add(playerDataManager);
 
         for (Shutdownable manager : managers) {
@@ -225,15 +210,7 @@ public final class CashClashPlugin extends JavaPlugin {
             shutdownStep("shutting down " + name, name + " shut down", manager::shutdown);
         }
 
-        shutdownStep("terminating PacketEvents", "PacketEvents terminated", this::terminatePacketEvents);
-
         getLogger().info("Cash Clash has been disabled!");
-    }
-
-    private void terminatePacketEvents() {
-        if (PacketEvents.getAPI().isInitialized()) {
-            PacketEvents.getAPI().terminate();
-        }
     }
 
     /**
