@@ -414,7 +414,6 @@ custom-items:
   invis-cloak:
     cost-per-second: 100
     cooldown-seconds: 15
-    uses-per-round: 1
 
   # Respawn Anchor
   respawn-anchor:

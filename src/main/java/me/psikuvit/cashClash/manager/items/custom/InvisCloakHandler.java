@@ -27,18 +27,16 @@ import java.util.UUID;
  * Invis Cloak: toggled invisibility that drains coins per second while active.
  * The player's armor and off-hand item are stashed via CashClashPlayer#hideInventory while
  * invisible so nothing gives them away, and restored on deactivate or death (the main hand
- * stays as-is - it holds the cloak itself, needed to right-click deactivate). Each activation
- * consumes one of the 5 uses. Handles the shopping-phase force-off on its own.
+ * stays as-is - it holds the cloak itself, needed to right-click deactivate). No use limit -
+ * only the cooldown after each deactivation. Handles the shopping-phase force-off on its own.
  */
 public class InvisCloakHandler extends CustomItemHandler {
 
-    private final Map<UUID, Integer> invisCloakUsesRemaining;
     private final Set<UUID> invisCloakActive;
     private final Map<UUID, BukkitTask> invisCloakTasks;
 
     public InvisCloakHandler(CustomItemManager manager) {
         super(manager);
-        this.invisCloakUsesRemaining = new HashMap<>();
         this.invisCloakActive = new HashSet<>();
         this.invisCloakTasks = new HashMap<>();
     }
@@ -53,14 +51,7 @@ public class InvisCloakHandler extends CustomItemHandler {
                 return;
             }
 
-            int uses = invisCloakUsesRemaining.getOrDefault(uuid, 5);
-            if (uses <= 0) {
-                Messages.send(player, "customitem.no-uses-remaining");
-                return;
-            }
-
             invisCloakActive.add(uuid);
-            invisCloakUsesRemaining.put(uuid, uses - 1);
 
             CashClashPlayer ccp = CashClashPlayer.from(player);
 

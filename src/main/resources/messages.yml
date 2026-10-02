@@ -849,7 +849,6 @@ messages:
     tablet-insufficient-coins: "<red>Not enough coins to use Tablet of Hacking! Cost: $2,000</red>"
     tablet-viewing-inventory: "<gray>Viewing {player_name}'s inventory.</gray>"
     invis-cooldown: "<red>Invisibility Cloak on cooldown! ({remaining}s)</red>"
-    no-uses-remaining: "<red>No uses remaining this round!</red>"
     invis-activated: "<green>Invisibility activated! Right-click to deactivate.</green>"
     invis-cost-per-second: "<yellow>Losing {cost} coins per second...</yellow>"
     invis-out-of-coins: "<red>Out of coins! Invisibility ended.</red>"
