@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.listener;
 
-import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.RejoinData;
@@ -12,9 +11,7 @@ import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.manager.player.TabListManager;
 import me.psikuvit.cashClash.manager.player.WorldVisibilityManager;
-import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
-import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -28,7 +25,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
  */
 public class PlayerConnectionListener implements Listener {
 
-    private final ArenaManager arenaManager;
     private final ConfigManager configManager;
     private final GameManager gameManager;
     private final LayoutManager layoutManager;
@@ -40,12 +36,11 @@ public class PlayerConnectionListener implements Listener {
     private final TabListManager tabListManager;
     private final WorldVisibilityManager worldVisibilityManager;
 
-    public PlayerConnectionListener(ArenaManager arenaManager, ConfigManager configManager, GameManager gameManager,
+    public PlayerConnectionListener(ConfigManager configManager, GameManager gameManager,
                                    LayoutManager layoutManager, LobbyManager lobbyManager, MythicItemManager mythicItemManager,
                                    PlayerDataManager playerDataManager, RejoinManager rejoinManager,
                                    ScoreboardManager scoreboardManager, TabListManager tabListManager,
                                    WorldVisibilityManager worldVisibilityManager) {
-        this.arenaManager = arenaManager;
         this.configManager = configManager;
         this.gameManager = gameManager;
         this.layoutManager = layoutManager;
@@ -99,29 +94,7 @@ public class PlayerConnectionListener implements Listener {
      * Set up the player for the lobby state.
      */
     private void setupLobbyState(Player player) {
-        player.setGameMode(GameMode.SURVIVAL);
-        player.getInventory().clear();
-        CashClashPlayer.resetToDefaultHealth(player);
-        player.setFoodLevel(20);
-        player.setSaturation(20.0f);
-
-        CashClashPlayer.clearAllEffects(player);
-
-        // Teleport to configured server lobby spawn if present
-        var lobbyLoc = arenaManager.getServerLobbySpawn();
-        if (lobbyLoc != null) {
-            player.teleport(lobbyLoc);
-            Messages.debug(player, "SYSTEM", "Teleported to lobby spawn");
-        }
-
-        // Give lobby items
-        lobbyManager.giveLobbyItems(player);
-
-        // Set lobby scoreboard
-        scoreboardManager.setScoreboard(player);
-
-        // Set lobby tab appearance
-        tabListManager.setPlayerToLobby(player);
+        lobbyManager.sendToLobby(player);
 
         Messages.send(player, "lobby-messages.welcome-title");
         Messages.send(player, "lobby-messages.welcome-arenas");

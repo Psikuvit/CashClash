@@ -123,7 +123,6 @@ public final class CashClashPlugin extends JavaPlugin {
             leaderboardManager = new LeaderboardManager(configManager, playerDataManager);
             afkManager = new AfkManager(configManager, gameManager, messagesConfig);
             mannequinManager = new MannequinManager(this); // Legitimate: needs getDataFolder() + getLogger()
-            lobbyManager = new LobbyManager(itemsConfig);
             scoreboardManager = new ScoreboardManager(gameManager, tabListManager);
             shopService = new ShopService(gameManager, itemFactory);
             transferInputListener = new TransferInputListener(gameManager);
@@ -131,11 +130,12 @@ public final class CashClashPlugin extends JavaPlugin {
 
             // Tier 2: depend on tier 1 managers.
             shopManager = new ShopManager(arenaManager, gameManager);
-            layoutManager = new LayoutManager(playerDataManager, lobbyManager);
+            lobbyManager = new LobbyManager(itemsConfig, arenaManager, scoreboardManager, tabListManager);
             customArmorManager = new CustomArmorManager(cooldownManager, itemsConfig);
             mythicItemManager = new MythicItemManager(itemsConfig, cooldownManager, itemFactory);
 
             // Tier 3: depend on tier 2 managers.
+            layoutManager = new LayoutManager(playerDataManager, lobbyManager);
             customItemManager = new CustomItemManager(cooldownManager, itemsConfig, customArmorManager);
             weaponItemManager = new WeaponItemManager(cooldownManager, itemsConfig, customArmorManager);
 
@@ -274,7 +274,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new MoveListener(gameManager, customItemManager, customArmorManager, weaponItemManager),
                 new GameListener(configManager, cooldownManager, customArmorManager, customItemManager, gameManager, itemsConfig, mythicItemManager, playerDataManager, shopManager, weaponItemManager),
                 new HungerListener(),
-                new PlayerConnectionListener(arenaManager, configManager, gameManager, layoutManager, lobbyManager, mythicItemManager, playerDataManager, rejoinManager, scoreboardManager, tabListManager, worldVisibilityManager),
+                new PlayerConnectionListener(configManager, gameManager, layoutManager, lobbyManager, mythicItemManager, playerDataManager, rejoinManager, scoreboardManager, tabListManager, worldVisibilityManager),
                 new LobbyListener(gameManager, lobbyManager, layoutManager),
                 new AfkListener(),
                 new ArenaNPCListener(),

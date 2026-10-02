@@ -1,9 +1,16 @@
 package me.psikuvit.cashClash.manager.lobby;
 
+import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
+import me.psikuvit.cashClash.manager.player.ScoreboardManager;
+import me.psikuvit.cashClash.manager.player.TabListManager;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Keys;
+import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.PDCSetter;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -42,9 +49,39 @@ public class LobbyManager {
     }
 
     private final ItemsConfig itemsConfig;
+    private final ArenaManager arenaManager;
+    private final ScoreboardManager scoreboardManager;
+    private final TabListManager tabListManager;
 
-    public LobbyManager(ItemsConfig itemsConfig) {
+    public LobbyManager(ItemsConfig itemsConfig, ArenaManager arenaManager, ScoreboardManager scoreboardManager, TabListManager tabListManager) {
         this.itemsConfig = itemsConfig;
+        this.arenaManager = arenaManager;
+        this.scoreboardManager = scoreboardManager;
+        this.tabListManager = tabListManager;
+    }
+
+    /**
+     * Puts a player in the plain lobby state - survival, empty inventory, full health and food,
+     * no effects, at the lobby spawn with the lobby items, lobby scoreboard and lobby tab list.
+     * Used on join and by /hub and /cc leave; call it only after the player is out of any game
+     * session, or the scoreboard and tab list resolve to that game instead.
+     */
+    public void sendToLobby(Player player) {
+        player.setGameMode(GameMode.SURVIVAL);
+        player.getInventory().clear();
+        CashClashPlayer.resetToDefaultHealth(player);
+        player.setFoodLevel(20);
+        player.setSaturation(20.0f);
+        CashClashPlayer.clearAllEffects(player);
+
+        Location lobbySpawn = arenaManager.getServerLobbySpawn();
+        if (lobbySpawn != null) {
+            player.teleport(LocationUtils.clone(lobbySpawn));
+        }
+
+        giveLobbyItems(player);
+        scoreboardManager.setScoreboard(player);
+        tabListManager.setPlayerToLobby(player);
     }
 
     /**

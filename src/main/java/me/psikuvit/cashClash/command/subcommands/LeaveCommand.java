@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.command.subcommands;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -28,8 +27,7 @@ public class LeaveCommand extends AbstractArgCommand {
             session.removePlayer(player);
             CashClashPlugin.getInstance().getGameManager().removePlayerFromSession(player);
 
-            var lobbyLoc = CashClashPlugin.getInstance().getArenaManager().getServerLobbySpawn();
-            if (lobbyLoc != null) player.teleport(LocationUtils.clone(lobbyLoc));
+            CashClashPlugin.getInstance().getLobbyManager().sendToLobby(player);
             Messages.send(player, "gamestate.left-game");
             return true;
         }

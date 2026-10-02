@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.command;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -14,8 +13,8 @@ import org.jspecify.annotations.NonNull;
 import java.util.List;
 
 /**
- * Standalone /hub command - leaves the player's current game (if any) and teleports them to
- * the server lobby spawn, same destination /cc leave uses.
+ * Standalone /hub command - leaves the player's current game (if any) and puts them back in the
+ * lobby with their lobby items, the same reset /cc leave and joining the server do.
  */
 public class HubCommand extends Command {
 
@@ -40,9 +39,7 @@ public class HubCommand extends Command {
             CashClashPlugin.getInstance().getGameManager().removePlayerFromSession(player);
         }
 
-        var lobbyLoc = CashClashPlugin.getInstance().getArenaManager().getServerLobbySpawn();
-        if (lobbyLoc != null) player.teleport(LocationUtils.clone(lobbyLoc));
-
+        CashClashPlugin.getInstance().getLobbyManager().sendToLobby(player);
         Messages.send(player, "lobby.teleported-to-hub");
         return true;
     }
