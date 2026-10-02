@@ -61,7 +61,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
     }
 
     /**
-     * Cash Blaster supercharge toggle: sneak + right-click while holding the Cash Blaster.
+     * Cash Blaster supercharge toggle: left-click while holding the Cash Blaster.
      * Toggles the supercharged state with a short cooldown and feedback sound.
      */
     public void onCashBlasterToggle(Player player) {
@@ -75,6 +75,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
         boolean enabled = !cashBlasterSupercharged.getOrDefault(uuid, false);
         cashBlasterSupercharged.put(uuid, enabled);
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.CASH_BLASTER_TOGGLE, 1);
+        syncVortexCooldownOverlay(player);
 
         if (enabled) {
             Messages.send(player, "customitem.cash-blaster-supercharged");
@@ -153,6 +154,22 @@ public class CashBlasterHandler extends WeaponItemHandler {
 
         startCashBlasterTrail(vortexArrow, true, spectralArrowsConsumed > 0);
         cooldownManager.setCooldownSeconds(player.getUniqueId(), CooldownManager.Keys.CASH_BLASTER_VORTEX, cfg.getCashBlasterVortexCooldown());
+        // Next tick: vanilla applies the bow's own one-tick use cooldown after this event and would overwrite it.
+        SchedulerUtils.runTask(() -> syncVortexCooldownOverlay(player));
+    }
+
+    /**
+     * Shows the Profit Vortex cooldown as the vanilla gray overlay on the Cash Blaster, only while
+     * it's supercharged. A bow whose cooldown group is on cooldown can't be drawn at all, and in
+     * normal mode the vortex cooldown doesn't stop it shooting, so the overlay is cleared there.
+     */
+    private void syncVortexCooldownOverlay(Player player) {
+        if (!player.isOnline()) return;
+
+        long remainingMs = isSupercharged(player)
+                ? cooldownManager.getRemainingCooldownMs(player.getUniqueId(), CooldownManager.Keys.CASH_BLASTER_VORTEX)
+                : 0;
+        player.setCooldown(Keys.CASH_BLASTER_COOLDOWN_GROUP, (int) (remainingMs / 50L));
     }
 
     /**
@@ -369,6 +386,10 @@ public class CashBlasterHandler extends WeaponItemHandler {
 
     @Override
     public void cleanup() {
+        cashBlasterSupercharged.keySet().forEach(uuid -> {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) player.setCooldown(Keys.CASH_BLASTER_COOLDOWN_GROUP, 0);
+        });
         cashBlasterSupercharged.clear();
         profitVortexOwners.clear();
         playersKilledInProfitVortex.clear();

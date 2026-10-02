@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.HealingMarkUtils;
@@ -53,7 +54,7 @@ public class SoulKatanaHandler extends WeaponItemHandler {
     }
 
     /**
-     * Shift + right-click Phantom Slice: launches the player into a dash. The strike does not
+     * Right-click Phantom Slice: launches the player into a dash. The strike does not
      * resolve on a timer - it lands once the player leaves the ground and touches back down
      * (see {@link #handleSoulKatanaLand(Player)}).
      */
@@ -66,6 +67,7 @@ public class SoulKatanaHandler extends WeaponItemHandler {
         }
 
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.SOUL_KATANA_PHANTOM_SLICE, cfg.getSoulKatanaCooldownSeconds());
+        player.setCooldown(Keys.SOUL_KATANA_COOLDOWN_GROUP, cfg.getSoulKatanaCooldownSeconds() * 20);
 
         double leap = cfg.getSoulKatanaLeapDistance();
         Vector dir = player.getLocation().getDirection().normalize();

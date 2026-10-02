@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -92,7 +93,7 @@ public class InvisCloakHandler extends CustomItemHandler {
             BukkitTask task = invisCloakTasks.remove(uuid);
             if (task != null) task.cancel();
 
-            cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK, cfg.getInvisCloakCooldown());
+            startCooldown(player);
 
             Messages.send(player, "customitem.invis-deactivated");
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.0f, 0.8f);
@@ -146,7 +147,15 @@ public class InvisCloakHandler extends CustomItemHandler {
         if (task != null) task.cancel();
 
         // Reset cooldown
-        cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK, cfg.getInvisCloakCooldown());
+        startCooldown(player);
+    }
+
+    /**
+     * Starts the cloak's cooldown, shown on the cloak itself as the vanilla gray cooldown overlay.
+     */
+    private void startCooldown(Player player) {
+        cooldownManager.setCooldownSeconds(player.getUniqueId(), CooldownManager.Keys.INVIS_CLOAK, cfg.getInvisCloakCooldown());
+        player.setCooldown(Keys.INVIS_CLOAK_COOLDOWN_GROUP, cfg.getInvisCloakCooldown() * 20);
     }
 
     /**

@@ -265,6 +265,7 @@ public final class GameplayItemFactory {
                     damageable.setDamage(item.getType().getMaxDurability() - 3);
                 }
             }
+            case INVIS_CLOAK -> ItemUtils.setCooldownGroup(tags.meta(), Keys.INVIS_CLOAK_COOLDOWN_GROUP);
             case ICE_FAN -> {
                 tags.meta().setMaxStackSize(1);
                 tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, CashClashPlugin.getInstance().getItemsConfig().getIceFanMaxUses());
@@ -278,7 +279,12 @@ public final class GameplayItemFactory {
      * Applies special properties to weapons based on their type.
      */
     private void applyWeaponProperties(PDCSetter tags, WeaponItem weaponItem) {
-        // No special properties
+        switch (weaponItem) {
+            case SOUL_KATANA -> ItemUtils.setCooldownGroup(tags.meta(), Keys.SOUL_KATANA_COOLDOWN_GROUP);
+            case CASH_BLASTER -> ItemUtils.setCooldownGroup(tags.meta(), Keys.CASH_BLASTER_COOLDOWN_GROUP);
+            default -> {
+            }
+        }
     }
 
     /**

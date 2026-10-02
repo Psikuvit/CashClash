@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.UseCooldownComponent;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -24,6 +25,8 @@ import java.util.stream.Stream;
  * Utility methods that centralize ItemStack creation/modification logic.
  */
 public final class ItemUtils {
+
+    private static final float ONE_TICK_SECONDS = 0.05f;
 
     private ItemUtils() {
         throw new AssertionError("Nope.");
@@ -51,6 +54,19 @@ public final class ItemUtils {
         CashClashPlugin.getInstance().getItemsConfig().getPermanentEnchants(itemKey)
                 .forEach((enchantment, level) -> meta.addEnchant(enchantment, level, true));
         meta.setEnchantmentGlintOverride(false);
+    }
+
+    /**
+     * Puts an item in its own vanilla cooldown group, so {@code player.setCooldown(group, ticks)}
+     * grays out just this item with the ender-pearl cooldown overlay. The component's own
+     * duration is one tick: vanilla applies it whenever the item is "used" (a bow's release), and
+     * anything longer would put the item on cooldown after every use.
+     */
+    public static void setCooldownGroup(ItemMeta meta, NamespacedKey group) {
+        UseCooldownComponent cooldown = meta.getUseCooldown();
+        cooldown.setCooldownSeconds(ONE_TICK_SECONDS);
+        cooldown.setCooldownGroup(group);
+        meta.setUseCooldown(cooldown);
     }
 
     /**

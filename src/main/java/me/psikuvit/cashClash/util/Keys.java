@@ -153,6 +153,15 @@ public class Keys {
     public static final NamespacedKey BLAZEBITE_FREEZE_JUMP;
 
     /**
+     * Vanilla item cooldown groups (the use_cooldown component), one per item with an ability
+     * cooldown, so the gray cooldown overlay lands on that item only and not on every item of
+     * the same material.
+     */
+    public static final NamespacedKey SOUL_KATANA_COOLDOWN_GROUP;
+    public static final NamespacedKey CASH_BLASTER_COOLDOWN_GROUP;
+    public static final NamespacedKey INVIS_CLOAK_COOLDOWN_GROUP;
+
+    /**
      * Flag marking an item as a kit item (round-start gear), so it can be identified and
      * cleared on kit reset independent of custom/shop item tags.
      */
@@ -200,6 +209,9 @@ public class Keys {
         OVERDRIVE_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "overdrive_speed");
         BLAZEBITE_FREEZE_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "blazebite_freeze_speed");
         BLAZEBITE_FREEZE_JUMP = new NamespacedKey(CashClashPlugin.getInstance(), "blazebite_freeze_jump");
+        SOUL_KATANA_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "soul_katana");
+        CASH_BLASTER_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "cash_blaster");
+        INVIS_CLOAK_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "invis_cloak");
         KIT_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "kit_item");
         LOBBY_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "lobby_item");
     }
