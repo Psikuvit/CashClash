@@ -37,17 +37,15 @@ public class ShopGUI extends AbstractGui {
         super(GUI_ID, viewer);
         setTitle("<gold><bold>Shop</bold></gold>");
         setRows(6);
-        setFillMaterial(Material.GRAY_STAINED_GLASS_PANE);
     }
 
     @Override
     protected void build() {
-        setButton(12, createCategoryButton(ShopCategory.WEAPONS, Material.IRON_AXE));
+        setButton(11, createCategoryButton(ShopCategory.WEAPONS, Material.IRON_AXE));
+        setButton(12, createCategoryButton(ShopCategory.UTILITY, Material.WATER_BUCKET));
         setButton(13, createCategoryButton(ShopCategory.ARMOR, Material.DIAMOND_CHESTPLATE));
         setButton(14, createCategoryButton(ShopCategory.FOOD, Material.GOLDEN_APPLE));
-
-        setButton(22, createCategoryButton(ShopCategory.UTILITY, Material.WATER_BUCKET));
-        setButton(23, createCategoryButton(ShopCategory.CUSTOM_ITEMS, Material.NAME_TAG));
+        setButton(15, createCategoryButton(ShopCategory.CUSTOM_ITEMS, Material.NAME_TAG));
 
         // Investments system removed
         // setButton(31, createInvestmentCategoryButton());
@@ -76,20 +74,12 @@ public class ShopGUI extends AbstractGui {
         return GuiButton.of(icon).onClick(p -> openCategory(ShopCategory.INVESTMENTS));
     }
 
-    private static final int MIDDLE_MYTHIC_SLOT = 40;
-    private static final int[] MYTHIC_SLOTS = {38, 39, 41, 42};
-    private static final int FILLER_ROW_OFFSET = 9;
-    private static final Material[] MYTHIC_PANE_COLORS = {
-            Material.BLUE_STAINED_GLASS_PANE,
-            Material.YELLOW_STAINED_GLASS_PANE,
-            Material.ORANGE_STAINED_GLASS_PANE,
-            Material.LIME_STAINED_GLASS_PANE
-    };
+    private static final int[] MYTHIC_SLOTS = {30, 32, 39, 41};
+    private static final int[] MYTHIC_SEPARATOR_SLOTS = {31, 40};
 
     /**
-     * Round 1 keeps the locked-mythics look (black glass under every slot, no items). Rounds 2-7
-     * show a distinct colored pane under each of the 4 purchasable mythic slots, separated by the
-     * always-black, always-empty middle slot - which mythic lands in which slot is still random.
+     * The session's random mythics in a 2x2 grid, split down the middle by two black panes.
+     * Round 1 has no mythics yet, so the grid stays empty apart from the panes.
      */
     private void addMythicItems() {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
@@ -97,40 +87,27 @@ public class ShopGUI extends AbstractGui {
             return;
         }
 
-        if (session.getCurrentRound() > 1) {
-            List<MythicItem> availableMythics = CashClashPlugin.getInstance().getMythicItemManager().getAvailableMythics(session);
-            UUID playerUuid = viewer.getUniqueId();
-            boolean playerHasMythic = CashClashPlugin.getInstance().getMythicItemManager().hasPlayerPurchasedMythic(session, playerUuid);
-            MythicItem ownedMythic = CashClashPlugin.getInstance().getMythicItemManager().getPlayerMythic(session, playerUuid);
-
-            for (int i = 0; i < availableMythics.size() && i < MYTHIC_SLOTS.length; i++) {
-                MythicItem mythic = availableMythics.get(i);
-                boolean mythicTaken = CashClashPlugin.getInstance().getMythicItemManager().isMythicPurchased(session, mythic);
-                UUID ownerUuid = CashClashPlugin.getInstance().getMythicItemManager().getMythicOwner(session, mythic);
-
-                ItemStack mythicItem = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createMythicShopItem(viewer, mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
-                setButton(MYTHIC_SLOTS[i], GuiButton.of(mythicItem)
-                        .onClick(p -> MythicCategoryGui.handleMythicPurchase(p, mythic, this)));
-            }
+        for (int slot : MYTHIC_SEPARATOR_SLOTS) {
+            setItem(slot, createPane(Material.BLACK_STAINED_GLASS_PANE));
+        }
+        if (session.getCurrentRound() == 1) {
+            return;
         }
 
-        // Round 1: every candidate slot stays empty/locked with black filler, including the
-        // middle separator's top slot (left as empty rather than a pane). Round 2+: each
-        // candidate slot gets its own colored filler and the middle separator is black on top too.
-        // Set unconditionally/last so nothing above can leave a slot uncovered.
-        for (int i = 0; i < MYTHIC_SLOTS.length; i++) {
-            int slot = MYTHIC_SLOTS[i];
-            if (session.getCurrentRound() == 1) {
-                setItem(slot, ItemStack.empty());
-                setItem(slot + FILLER_ROW_OFFSET, createPane(Material.BLACK_STAINED_GLASS_PANE));
-            } else {
-                setItem(slot + FILLER_ROW_OFFSET, createPane(MYTHIC_PANE_COLORS[i]));
-            }
+        List<MythicItem> availableMythics = CashClashPlugin.getInstance().getMythicItemManager().getAvailableMythics(session);
+        UUID playerUuid = viewer.getUniqueId();
+        boolean playerHasMythic = CashClashPlugin.getInstance().getMythicItemManager().hasPlayerPurchasedMythic(session, playerUuid);
+        MythicItem ownedMythic = CashClashPlugin.getInstance().getMythicItemManager().getPlayerMythic(session, playerUuid);
+
+        for (int i = 0; i < availableMythics.size() && i < MYTHIC_SLOTS.length; i++) {
+            MythicItem mythic = availableMythics.get(i);
+            boolean mythicTaken = CashClashPlugin.getInstance().getMythicItemManager().isMythicPurchased(session, mythic);
+            UUID ownerUuid = CashClashPlugin.getInstance().getMythicItemManager().getMythicOwner(session, mythic);
+
+            ItemStack mythicItem = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createMythicShopItem(viewer, mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
+            setButton(MYTHIC_SLOTS[i], GuiButton.of(mythicItem)
+                    .onClick(p -> MythicCategoryGui.handleMythicPurchase(p, mythic, this)));
         }
-        setItem(MIDDLE_MYTHIC_SLOT, session.getCurrentRound() == 1
-                ? ItemStack.empty()
-                : createPane(Material.BLACK_STAINED_GLASS_PANE));
-        setItem(MIDDLE_MYTHIC_SLOT + FILLER_ROW_OFFSET, createPane(Material.BLACK_STAINED_GLASS_PANE));
     }
 
     /**
