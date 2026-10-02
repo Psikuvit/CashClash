@@ -41,7 +41,6 @@ public class TimerDisplayUtils {
 
     // Priorities for actionbar display (lower = higher priority)
     private static final int PRIORITY_FLAG_RETURN = 2;     // Shows when flag is dropping
-    private static final int PRIORITY_BONUS_TIMER = 5;     // Shows when flag is held
 
     // ==================== TIMER ENGINE (moved from ActionBarQueue) ====================
 
@@ -233,62 +232,6 @@ public class TimerDisplayUtils {
     }
 
     // ========= BONUS TIMER METHODS =========
-
-    /**
-     * Start a bonus timer display for a player holding a flag.
-     * The timer automatically manages itself and updates only when seconds change.
-     *
-     * @param player The player holding the flag
-     * @param flag The flag state containing the capture time
-     */
-    public static void startBonusTimer(Player player, FlagState flag) {
-        startBonusTimer(player, flag,
-            seconds -> seconds > 0
-                    ? "<green>⏰ Bonus expires in: <gold>" + seconds + "s</gold></green>"
-                    : "<red>❌ No bonus - score won't grant extra money</red>",
-            "<green>✓ You will receive money bonus!</green>");
-    }
-
-    /**
-     * Same 45s pickup-to-capture bonus window as {@link #startBonusTimer(Player, FlagState)},
-     * but worded for sudden death's heart reward instead of coins.
-     */
-    public static void startHeartBonusTimer(Player player, FlagState flag) {
-        startBonusTimer(player, flag,
-            seconds -> seconds > 0
-                    ? "<green>❤ Heart Timer: <gold>" + seconds + "s</gold></green>"
-                    : "<red>❌ No bonus - score won't grant an extra heart</red>",
-            "<green>✓ You will receive an extra heart!</green>");
-    }
-
-    private static void startBonusTimer(Player player, FlagState flag, Function<Long, String> messageFormatter, String completionMessage) {
-        if (player == null || !player.isOnline() || flag == null || !flag.isHeld()) {
-            return;
-        }
-
-        long captureTime = flag.captureTime();
-        long now = System.currentTimeMillis();
-        long elapsed = now - captureTime;
-        long remaining = Math.max(0, captureBonusDurationMs() - elapsed);
-
-        if (remaining <= 0) {
-            return; // Bonus window already expired
-        }
-
-        startCountdownTimer(player, remaining, PRIORITY_BONUS_TIMER, messageFormatter, completionMessage);
-    }
-
-    /**
-     * Stop a bonus timer for a player - covers both {@link #startBonusTimer(Player, FlagState)}
-     * and {@link #startHeartBonusTimer(Player, FlagState)}, which share a priority.
-     *
-     * @param player The player to stop the timer for
-     */
-    public static void stopBonusTimer(Player player) {
-        if (player != null) {
-            stopCountdownTimerIfPriority(player.getUniqueId(), PRIORITY_BONUS_TIMER);
-        }
-    }
 
     /**
      * Get bonus time remaining for a flag in milliseconds

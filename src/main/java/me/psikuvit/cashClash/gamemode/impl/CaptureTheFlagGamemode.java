@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
@@ -334,16 +335,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
          moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
 
-         if (pickedUpFromBase) {
-             if (suddenDeathManager.isInSuddenDeath()) {
-                 TimerDisplayUtils.startHeartBonusTimer(player, updatedFlag);
-             } else {
-                 TimerDisplayUtils.startBonusTimer(player, updatedFlag);
-             }
-         } else {
-             TimerDisplayUtils.stopBonusTimer(player);
-         }
-
          SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, 1.5f);
      }
 
@@ -374,8 +365,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         long now = System.currentTimeMillis();
         int enemyTeamNumber = (teamNumber == 1) ? 2 : 1;
         FlagState enemyFlag = flagStates.get(TeamColor.fromTeamNumber(enemyTeamNumber));
-        stopFlagActionBar(enemyFlag);
-        TimerDisplayUtils.stopBonusTimer(player);
 
         boolean bonusEarned = (enemyFlag != null && enemyFlag.captureTime() > 0 &&
                 (now - enemyFlag.captureTime()) <= CAPTURE_TIMER_MS);
@@ -754,7 +743,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
          cancelFlagReturnTask(teamNumber);
          TeamColor color = TeamColor.fromTeamNumber(teamNumber);
          FlagState flag = flagStates.get(color);
-         stopFlagActionBar(flag);
 
          if (flag != null && flag.carryingTask() != null) {
              flag.carryingTask().cancel();
@@ -837,15 +825,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
          }
          return flagLoc.distanceSquared(base) <= 0.25;
      }
-
-      private void stopFlagActionBar(FlagState flag) {
-          if (flag != null && flag.holder() != null) {
-              Player holder = Bukkit.getPlayer(flag.holder());
-              if (holder != null) {
-                  TimerDisplayUtils.stopBonusTimer(holder);
-              }
-          }
-      }
 
     /**
      * Check flag pickup progress for all online players
@@ -1012,15 +991,19 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
      /**
-      * Get bonus time remaining for a player
+      * Time left on a capture-bonus window, for a player's scoreboard: the flag they're carrying
+      * if they carry one, otherwise their own team's flag while an enemy is carrying it.
       */
       public long getBonusTimeRemainingMs(UUID playerUuid) {
-          int teamNum = session.getPlayerTeam(playerUuid).getTeamNumber();
-          FlagState flagState = flagStates.get(TeamColor.fromTeamNumber(teamNum));
-          if (flagState == null) {
-              return 0;
+          for (FlagState flag : flagStates.values()) {
+              if (playerUuid.equals(flag.holder())) {
+                  return TimerDisplayUtils.getBonusTimeRemaining(flag);
+              }
           }
-          return TimerDisplayUtils.getBonusTimeRemaining(flagState);
+
+          Team team = session.getPlayerTeam(playerUuid);
+          FlagState ownFlag = team != null ? flagStates.get(TeamColor.fromTeamNumber(team.getTeamNumber())) : null;
+          return ownFlag != null && ownFlag.isHeld() ? TimerDisplayUtils.getBonusTimeRemaining(ownFlag) : 0;
       }
 
     /**

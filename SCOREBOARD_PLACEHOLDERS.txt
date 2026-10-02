@@ -204,11 +204,14 @@ Example: "Time Remaining: {time} seconds"
   - Use Case: CTF gamemode only
 
 {money_bonus_timer}
-  - Shows the remaining time on a player's active Money Bonus extra heart (from
-    confirming a triple-kill Money Tag in Kill Confirm's sudden death)
-  - Returns: "Money Bonus: 0:45" etc., or "" (empty) when no bonus is active
+  - Shows the time left to capture a flag for the capture bonus (the window starts when a
+    flag is taken from its base). The flag carrier sees it for the flag they carry; the team
+    whose flag was taken sees it for their flag while an enemy carries it. This replaces the
+    old bonus-timer action bar.
+  - Returns: "Money Bonus: 0:45" ("Heart Bonus: 0:45" in sudden death), or "" (empty) when
+    no window is running
   - Default: ""
-  - Use Case: Kill Confirm gamemode, sudden death only
+  - Use Case: Capture the Flag gamemode (both the normal and sudden-death boards)
 
 {player_heart_timer}
   - Shows the remaining time for extra heart bonuses in sudden death
