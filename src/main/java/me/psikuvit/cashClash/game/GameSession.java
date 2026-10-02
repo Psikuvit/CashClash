@@ -787,6 +787,7 @@ public class GameSession {
         players.remove(player.getUniqueId());
         teamRed.removePlayer(player.getUniqueId());
         teamBlue.removePlayer(player.getUniqueId());
+        teamOutlineManager.forgetPlayer(player.getUniqueId());
         arenaManager.decrementPlayerCount(arenaNumber);
     }
 

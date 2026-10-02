@@ -144,7 +144,14 @@ public class TeamOutlineManager implements PacketListener, Listener, Shutdownabl
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
-        UUID playerId = event.getPlayer().getUniqueId();
+        forgetPlayer(event.getPlayer().getUniqueId());
+    }
+
+    /**
+     * Drops a player from every outline, as viewer and as target - when they quit, or leave their
+     * game mid-combat.
+     */
+    public void forgetPlayer(UUID playerId) {
         outlines.remove(playerId);
         outlines.values().forEach(targets -> targets.remove(playerId));
     }
