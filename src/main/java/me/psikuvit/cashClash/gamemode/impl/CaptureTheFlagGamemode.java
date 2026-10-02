@@ -317,6 +317,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
              Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-stolen-blue",
                      "player_name", player.getName());
          }
+         Messages.sendTitle(player, "gamemode-ctf.flag-picked-up-title", "gamemode-ctf.flag-picked-up-subtitle");
          Messages.send(player, "gamemode-ctf.silenced-activated");
          Messages.debug("[CTF] Applied silenced ability to flag carrier: " + player.getName());
          SchedulerUtils.runTaskLater(() -> updateSilencedItemDisplay(player), 1);
