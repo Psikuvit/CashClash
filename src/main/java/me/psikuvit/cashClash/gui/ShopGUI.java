@@ -37,6 +37,7 @@ public class ShopGUI extends AbstractGui {
         super(GUI_ID, viewer);
         setTitle("<gold><bold>Shop</bold></gold>");
         setRows(6);
+        setFillMaterial(Material.LIGHT_GRAY_STAINED_GLASS_PANE);
     }
 
     @Override
@@ -79,7 +80,7 @@ public class ShopGUI extends AbstractGui {
 
     /**
      * The session's random mythics in a 2x2 grid, split down the middle by two black panes.
-     * Round 1 has no mythics yet, so the grid stays empty apart from the panes.
+     * Round 1 has no mythics yet: the four mythic slots stay blank, clear of the background glass.
      */
     private void addMythicItems() {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
@@ -91,6 +92,9 @@ public class ShopGUI extends AbstractGui {
             setItem(slot, createPane(Material.BLACK_STAINED_GLASS_PANE));
         }
         if (session.getCurrentRound() == 1) {
+            for (int slot : MYTHIC_SLOTS) {
+                setItem(slot, ItemStack.empty());
+            }
             return;
         }
 
