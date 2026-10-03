@@ -20,7 +20,7 @@ public enum CustomItem implements Purchasable {
     SMOKE_CLOUD_GRENADE(Material.GRAY_DYE, "smoke-grenade", 1, 0, "Smoke Cloud Grenade"),
     // Renamed "Speedbox" in the pack/lore - configKey/enum identifier kept as-is.
     BOOMBOX(Material.JUKEBOX, "boombox", 1, 0, "Speedbox"),
-    INVIS_CLOAK(Material.PHANTOM_MEMBRANE, "invis-cloak", 1, 5, "Invisibility Cloak"),
+    INVIS_CLOAK(Material.PHANTOM_MEMBRANE, "invis-cloak", 1, 0, "Invisibility Cloak"),
     RESPAWN_ANCHOR(Material.RESPAWN_ANCHOR, "respawn-anchor", 1, 2, "Respawn Anchor"),
     // FEATHER now, not NETHER_STAR - the pack's "totem_of_haunting" override lives on feather.json
     // (shared with UtilityItem.TOTEM's "mini_totem", disambiguated by PDC identity, not material).
