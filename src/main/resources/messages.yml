@@ -861,6 +861,8 @@ messages:
     invis-out-of-coins: "<red>Out of coins! Invisibility ended.</red>"
     invis-deactivated: "<yellow>Invisibility deactivated.</yellow>"
     invis-disabled-shopping: "<red>Invisibility disabled at start of shopping phase!</red>"
+    invis-lost-capture-area: "<red>Invisibility lost - you walked into a capture area!</red>"
+    invis-blocked-capture-area: "<red>You can't go invisible in a capture area!</red>"
     max-one-cloak: "<red>You can only carry one Invisibility Cloak at a time!</red>"
     max-one-armor-piece: "<red>You already own this armor piece!</red>"
     max-one-armor-set: "<red>You already own this armor set!</red>"

@@ -328,6 +328,15 @@ public class KillConfirmGamemode extends Gamemode {
         return finalStandManager;
     }
 
+    @Override
+    public boolean isInCaptureArea(Player player) {
+        long now = System.currentTimeMillis();
+        for (KCZone zone : activeZones) {
+            if (!zone.isPendingActivation(now) && KCZoneValidator.isPlayerInZone(player, zone.getCenter())) return true;
+        }
+        return false;
+    }
+
     // ========= PUBLIC ACCESSORS (for scoreboard placeholders) =========
 
     public int getTeamScore(int team) {

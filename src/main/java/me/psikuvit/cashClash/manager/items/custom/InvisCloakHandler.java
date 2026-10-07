@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.manager.items.custom;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 
+import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
@@ -15,6 +16,7 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Collection;
@@ -29,9 +31,14 @@ import java.util.UUID;
  * The player's armor and off-hand item are stashed via CashClashPlayer#hideInventory while
  * invisible so nothing gives them away, and restored on deactivate or death (the main hand
  * stays as-is - it holds the cloak itself, needed to right-click deactivate). No use limit -
- * only the cooldown after each deactivation. Handles the shopping-phase force-off on its own.
+ * only the cooldown after each deactivation. Walking into a capture area (CTF flag circles and
+ * scoring zones, KC tag zones) breaks it like taking damage does, and it can't be switched on
+ * inside one. Handles the shopping-phase force-off on its own.
  */
 public class InvisCloakHandler extends CustomItemHandler {
+
+    // How often an active cloak checks for a capture area; the coin drain stays once a second.
+    private static final long ZONE_CHECK_TICKS = 5L;
 
     private final Set<UUID> invisCloakActive;
     private final Map<UUID, BukkitTask> invisCloakTasks;
@@ -49,6 +56,10 @@ public class InvisCloakHandler extends CustomItemHandler {
             if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.INVIS_CLOAK)) {
                 long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK);
                 Messages.send(player, "customitem.invis-cooldown", "remaining", String.valueOf(remaining));
+                return;
+            }
+            if (isInCaptureArea(player)) {
+                Messages.send(player, "customitem.invis-blocked-capture-area");
                 return;
             }
 
@@ -72,16 +83,31 @@ public class InvisCloakHandler extends CustomItemHandler {
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0f, 1.0f);
             playInvisToggleEffect(player);
 
-            BukkitTask drainTask = SchedulerUtils.runTaskTimer(() -> {
-                if (!invisCloakActive.contains(uuid)) return;
+            BukkitTask drainTask = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+                private long ticks;
 
-                if (ccp != null && ccp.getCoins() >= costPerSecond) {
-                    ccp.deductCoins(costPerSecond);
-                } else {
-                    toggleInvisCloak(player, false);
-                    Messages.send(player, "customitem.invis-out-of-coins");
+                @Override
+                public void run() {
+                    if (!invisCloakActive.contains(uuid)) return;
+
+                    if (isInCaptureArea(player)) {
+                        toggleInvisCloak(player, false);
+                        Messages.send(player, "customitem.invis-lost-capture-area");
+                        return;
+                    }
+
+                    ticks += ZONE_CHECK_TICKS;
+                    if (ticks < 20L) return;
+                    ticks = 0L;
+
+                    if (ccp != null && ccp.getCoins() >= costPerSecond) {
+                        ccp.deductCoins(costPerSecond);
+                    } else {
+                        toggleInvisCloak(player, false);
+                        Messages.send(player, "customitem.invis-out-of-coins");
+                    }
                 }
-            }, 20L, 20L);
+            }, ZONE_CHECK_TICKS, ZONE_CHECK_TICKS);
 
             invisCloakTasks.put(uuid, drainTask);
 
@@ -99,6 +125,11 @@ public class InvisCloakHandler extends CustomItemHandler {
             SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.0f, 0.8f);
             playInvisToggleEffect(player);
         }
+    }
+
+    private boolean isInCaptureArea(Player player) {
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
+        return session != null && session.getGamemode() != null && session.getGamemode().isInCaptureArea(player);
     }
 
     /**

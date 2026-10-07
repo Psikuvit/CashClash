@@ -434,6 +434,17 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return flagCaptures.get(TeamColor.fromTeamNumber(teamNumber));
     }
 
+    @Override
+    public boolean isInCaptureArea(Player player) {
+        for (TeamColor color : TeamColor.values()) {
+            FlagState flag = flagStates.get(color);
+            if (flag != null && !flag.isHeld() && isPlayerNearFlag(player, flag)) return true;
+            Location base = flagBaseLocations.get(color);
+            if (base != null && isPlayerInScoringZone(player, base)) return true;
+        }
+        return false;
+    }
+
     public boolean isSilenced(UUID playerUuid) {
         FlagState redFlag = flagStates.get(TeamColor.RED);
         FlagState blueFlag = flagStates.get(TeamColor.BLUE);

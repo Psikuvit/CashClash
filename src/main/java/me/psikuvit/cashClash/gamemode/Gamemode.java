@@ -68,6 +68,14 @@ public abstract class Gamemode {
     }
 
     /**
+     * Whether a player is standing in one of this gamemode's capture areas (CTF flag circles and
+     * scoring zones, KC tag zones). The Invisibility Cloak can't be used in one.
+     */
+    public boolean isInCaptureArea(Player player) {
+        return false;
+    }
+
+    /**
      * Whether a player's outline stays their team colour for their own teammates too, instead of
      * the green teammate outline - PTP's presidents, so a team can pick its president out.
      */
