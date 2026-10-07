@@ -53,6 +53,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      private final long CAPTURE_BONUS;
      private final long CAPTURE_TIMER_MS;
      private final long FLAG_PICKUP_DURATION_MS;
+     private final long FLAG_RETURN_MS;
 
     private final Map<TeamColor, Integer> flagCaptures;
     private final Map<TeamColor, Integer> suddenDeathCycleCaptures;
@@ -82,6 +83,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.CAPTURE_BONUS = cfg.getCTFCaptureBonusCoins();
         this.CAPTURE_TIMER_MS = cfg.getCTFCaptureBonusTimerMs();
         this.FLAG_PICKUP_DURATION_MS = cfg.getCTFPlateActivationTimeMs();
+        this.FLAG_RETURN_MS = cfg.getCTFFlagReturnTimeMs();
 
         this.flagCaptures = new EnumMap<>(TeamColor.class);
         this.suddenDeathCycleCaptures = new EnumMap<>(TeamColor.class);
@@ -797,34 +799,15 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (flagReturnTasks.containsKey(color)) {
             return;
         }
-        long now = System.currentTimeMillis();
-        Long existingExpiry = flagReturnExpiry.get(color);
-        long expiryMs = (existingExpiry != null && existingExpiry > now) ? existingExpiry : now + 5_000L;
-        flagReturnExpiry.put(color, expiryMs);
-
-        long remainingMs = Math.max(0L, expiryMs - now);
-        long remainingTicks = Math.max(1L, (remainingMs + 49L) / 50L);
+        flagReturnExpiry.put(color, System.currentTimeMillis() + FLAG_RETURN_MS);
 
         BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> {
             flagReturnTasks.remove(color);
             returnFlagToBase(teamNumber);
-        }, remainingTicks);
+        }, Math.max(1L, FLAG_RETURN_MS / 50L));
         flagReturnTasks.put(color, returnTask);
         scheduleFlagReturnDisplayTimer(teamNumber);
-        Messages.debug("[CTF] Scheduled return timer for Team " + teamNumber + " flag to " + (remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0)) + "s");
-    }
-
-    private void pauseFlagReturnTimer(int teamNumber) {
-        TeamColor color = TeamColor.fromTeamNumber(teamNumber);
-        if (!flagReturnTasks.containsKey(color)) {
-            return;
-        }
-        BukkitTask task = flagReturnTasks.remove(color);
-        if (task != null) {
-            cancelTask(task);
-        }
-        cancelFlagReturnDisplayTask();
-        Messages.debug("[CTF] Paused return timer for Team " + teamNumber + " flag because a player entered the circle");
+        Messages.debug("[CTF] Scheduled return timer for Team " + teamNumber + " flag to " + FLAG_RETURN_MS + "ms");
     }
 
      private void scheduleFlagReturnDisplayTimer(int teamNumber) {
@@ -901,17 +884,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     String colorTag = nearestTeam == 1 ? "red" : "blue";
                     Messages.send(player, "gamemode-ctf.flag-capturing",
                             "team_name", teamName, "color", colorTag);
-                    TeamColor nearestColor = TeamColor.fromTeamNumber(nearestTeam);
-                    if (flagReturnTasks.containsKey(nearestColor)) {
-                        Long expiry = flagReturnExpiry.get(nearestColor);
-                        if (expiry != null) {
-                            String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
-                            long remainingMs = Math.max(0, expiry - now);
-                            TimerDisplayUtils.startCountdownTimer(player, remainingMs, 2,
-                                    secondsRemaining -> flagColor + "Flag returns in " + secondsRemaining + "s");
-                        }
-                        pauseFlagReturnTimer(nearestTeam);
-                    }
                 } else if (prevTime != null) {
                     long elapsedMs = now - prevTime;
 
@@ -934,9 +906,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     String teamName = previousTeam == 1 ? "Red" : "Blue";
                     Messages.send(player, "gamemode-ctf.flag-capture-cancelled",
                             "team_name", teamName);
-                    if (isDroppedFlagWaitingForReturn(previousTeam)) {
-                        scheduleFlagReturnTimer(previousTeam);
-                    }
                     TimerDisplayUtils.stopCountdownTimer(player);
                     playerCircleTimestamps.remove(playerUuid);
                 }

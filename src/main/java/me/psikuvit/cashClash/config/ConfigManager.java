@@ -346,6 +346,10 @@ public class ConfigManager {
         return config.getLong("gamemodes.capture-the-flag.plate-activation-time-ms", 3000);
     }
 
+    public long getCTFFlagReturnTimeMs() {
+        return config.getLong("gamemodes.capture-the-flag.flag-return-time-ms", 5000);
+    }
+
     // Kill Confirm
     public int getKCScoreToWin() {
         return config.getInt("gamemodes.kill-confirm.score-to-win", 16);
