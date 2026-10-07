@@ -35,8 +35,9 @@ import java.util.UUID;
 
 /**
  * Kill Confirm Gamemode.
- * Every kill scores a point immediately. Every death also spawns a capture zone at the death
- * location - the killer's team can confirm it for a bonus, the victim's team can deny it. A
+ * Kills don't score on their own: every death spawns a capture zone at the death location, and
+ * only a confirmed nametag scores a point - the killer's team confirms it, the victim's team can
+ * deny it. A
  * player's 3rd kill in an uninterrupted streak spawns a Money Tag (or, in sudden death, a Heart
  * Tag) instead of a plain nametag. Win condition and all bonuses/timers are config-driven
  * (config.yml: gamemodes.kill-confirm).
@@ -137,13 +138,6 @@ public class KillConfirmGamemode extends Gamemode {
         if (killerTeamObj == null) return;
         int killerTeam = killerTeamObj.getTeamNumber();
 
-        awardKillPoint(killerTeam);
-
-        // The point that just won the round doesn't spawn a confirm zone.
-        if (checkGameWinner()) {
-            return;
-        }
-
         // Fires on every multiple of the streak (3, 6, 9, ...) - each kill only ever reports
         // one streak value here, so no extra dedup guard is needed to avoid double-firing.
         CashClashPlayer killerCcp = session.getCashClashPlayer(killer.getUniqueId());
@@ -160,10 +154,8 @@ public class KillConfirmGamemode extends Gamemode {
     }
 
     /**
-     * A death with no killer (fall, fire, drowning, void, ...) still drops a confirmable tag -
-     * it just doesn't award an immediate kill point the way a real kill does, since nobody on
-     * either team actually landed it. The victim's enemy team can still confirm the tag for the
-     * usual NAMETAG bonus, and the victim's own team can still deny it, same as any other tag.
+     * A death with no killer (fall, fire, drowning, void, ...) still drops a confirmable tag for
+     * the victim's enemy team, which the victim's own team can deny, same as any other tag.
      */
     private void onNaturalDeath(Player victim) {
         Team victimTeamObj = session.getPlayerTeam(victim);
@@ -247,7 +239,7 @@ public class KillConfirmGamemode extends Gamemode {
 
     @Override
     public String getObjectiveShort() {
-        return "Reach " + WIN_CONDITION + " Kills/Captures";
+        return "Confirm " + WIN_CONDITION + " Tags";
     }
 
     @Override
@@ -352,21 +344,6 @@ public class KillConfirmGamemode extends Gamemode {
         if (task != null) {
             task.cancel();
         }
-    }
-
-    private void awardKillPoint(int team) {
-        TeamColor color = TeamColor.fromTeamNumber(team);
-        teamScore.merge(color, 1, Integer::sum);
-        if (suddenDeathManager.isInSuddenDeath()) {
-            suddenDeathCycleScore.merge(color, 1, Integer::sum);
-            checkSuddenDeathCycleTie();
-        }
-
-        Messages.broadcast(session.getPlayers(), "gamemode-kc.kill-point",
-                "team_name", color.getDisplayName(),
-                "score", String.valueOf(teamScore.get(color)),
-                "win_condition", String.valueOf(WIN_CONDITION));
-        SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.6f, 1.0f);
     }
 
     private void spawnConfirmZone(Location deathLoc, int killerTeam, String victimName, KCZone.ZoneKind kind) {
