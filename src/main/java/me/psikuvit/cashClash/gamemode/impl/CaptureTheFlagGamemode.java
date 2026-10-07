@@ -445,6 +445,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return false;
     }
 
+    @Override
+    public boolean isLockedOutOfSpawnRoom(UUID playerId) {
+        return isSilenced(playerId);
+    }
+
     public boolean isSilenced(UUID playerUuid) {
         FlagState redFlag = flagStates.get(TeamColor.RED);
         FlagState blueFlag = flagStates.get(TeamColor.BLUE);

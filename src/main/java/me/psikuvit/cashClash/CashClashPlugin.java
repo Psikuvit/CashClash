@@ -168,7 +168,7 @@ public final class CashClashPlugin extends JavaPlugin {
             // Step 4.8: Start the armor ability ready icons
             armorIconManager.start();
 
-            // Step 4.9: Start spawn room healing
+            // Step 4.9: Start spawn room healing and doors
             spawnRoomManager.start();
 
             // Step 5: Spawn persistent mannequins
@@ -304,7 +304,8 @@ public final class CashClashPlugin extends JavaPlugin {
                 new ArenaNPCListener(),
                 new ChatListener(),
                 transferInputListener,
-                teamOutlineManager
+                teamOutlineManager,
+                spawnRoomManager
         };
 
         for (Listener listener : listeners) {
