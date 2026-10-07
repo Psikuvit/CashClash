@@ -21,7 +21,7 @@ messages:
     help-transfer: "<yellow>/cc transfer <gray>- Transfer money to a teammate</gray>"
     help-layout: "<yellow>/cc layout <gray>- Customize your kit item layout</gray>"
     help-leaderboard: "<yellow>/cc leaderboard [wins|playtime|coins] <gray>- View top players</gray>"
-    help-shop: "<yellow>/cc shop <gray>- Open the in-game shop</gray>"
+    help-shop: "<yellow>/cc shop <gray>- Open the main shop in any phase of your game</gray>"
     help-admin-section: "<gray>--- Admin Commands ---</gray>"
     help-arena: "<yellow>/cc arena <gray>- Arena admin actions (tp,assign)</gray>"
     help-template: "<yellow>/cc template <gray>- Template world management</gray>"

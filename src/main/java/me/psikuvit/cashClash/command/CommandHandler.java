@@ -171,7 +171,7 @@ public class CommandHandler extends Command {
             Messages.send(sender, "command.help-clearbanners");
             Messages.send(sender, "command.help-reload");
             Messages.send(sender, "command.help-debug");
+            Messages.send(sender, "command.help-shop");
         }
-        Messages.send(sender, "command.help-shop");
     }
 }

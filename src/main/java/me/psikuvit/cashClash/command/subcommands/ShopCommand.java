@@ -11,9 +11,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 
+/**
+ * /cc shop - admin access to the main shop at any point of a game, skipping the rules that keep
+ * players to the villager (buy phase only, locked during PTP buff selection).
+ */
 public class ShopCommand extends AbstractArgCommand {
     public ShopCommand() {
-        super("shop", Collections.emptyList(), null);
+        super("shop", Collections.emptyList(), "cashclash.admin");
     }
 
     @Override
@@ -30,7 +34,7 @@ public class ShopCommand extends AbstractArgCommand {
             return true;
         }
 
-        ShopGUI.openMain(player);
+        new ShopGUI(player).open();
         return true;
     }
 }
