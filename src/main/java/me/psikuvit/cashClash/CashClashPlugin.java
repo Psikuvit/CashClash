@@ -136,7 +136,7 @@ public final class CashClashPlugin extends JavaPlugin {
             spawnRoomManager = new SpawnRoomManager(gameManager, configManager);
 
             // Tier 2: depend on tier 1 managers.
-            shopManager = new ShopManager(arenaManager, gameManager);
+            shopManager = new ShopManager(arenaManager, gameManager, spawnRoomManager);
             lobbyManager = new LobbyManager(itemsConfig, arenaManager, scoreboardManager, tabListManager);
             customArmorManager = new CustomArmorManager(cooldownManager, itemsConfig);
             mythicItemManager = new MythicItemManager(itemsConfig, cooldownManager, itemFactory);

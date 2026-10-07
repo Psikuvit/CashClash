@@ -215,6 +215,8 @@ messages:
     purchase-successful: "<green>Purchase successful! Deducted ${cost}</green>"
     not-in-game: "<red>You are not part of this game session.</red>"
     must-be-in-game: "<red>You must be in a game to shop.</red>"
+    closed-in-combat: "<red>The shop is closed during combat - the villager in your spawn room sells supplies.</red>"
+    mini-shop-enemy: "<red>This villager only serves the other team.</red>"
     not-enough-coins: "<red>Not enough coins! (Cost: ${cost})</red>"
     no-purchase-undo: "<red>No purchase to undo.</red>"
     no-purchase-undo-category: "<red>No purchase to undo in this category.</red>"

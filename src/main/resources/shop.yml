@@ -132,6 +132,14 @@ mythic-items:
   alchemist-wand: 150000
 
 # ============================================
+# MINI SHOP
+# ============================================
+# The spawn room villager's shop during combat (leaves, water bucket, arrows, steak, bread, in
+# their main-shop amounts). Each costs this many percent more than in the main shop.
+mini-shop:
+  markup-percent: 10
+
+# ============================================
 # INVESTMENT PRICES
 # ============================================
 investments:

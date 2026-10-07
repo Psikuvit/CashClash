@@ -78,6 +78,10 @@ public class ShopConfig {
         return config.getLong("mythic-items." + mythicKey, 0);
     }
 
+    public int getMiniShopMarkupPercent() {
+        return config.getInt("mini-shop.markup-percent", 10);
+    }
+
     public long getInvestmentCost(String investmentKey) {
         return config.getLong("investments." + investmentKey + ".cost", 0);
     }
