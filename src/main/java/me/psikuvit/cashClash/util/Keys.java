@@ -173,6 +173,10 @@ public class Keys {
      */
     public static final NamespacedKey LOBBY_ITEM;
 
+    /**
+     * Marks a CTF flag banner entity, so a banner left behind anywhere can be found and removed.
+     */
+    public static final NamespacedKey CTF_FLAG_BANNER;
 
     static {
         ITEM_ID = new NamespacedKey(CashClashPlugin.getInstance(), "item_id");
@@ -214,6 +218,7 @@ public class Keys {
         INVIS_CLOAK_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "invis_cloak");
         KIT_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "kit_item");
         LOBBY_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "lobby_item");
+        CTF_FLAG_BANNER = new NamespacedKey(CashClashPlugin.getInstance(), "ctf_flag_banner");
     }
 
     private Keys() {

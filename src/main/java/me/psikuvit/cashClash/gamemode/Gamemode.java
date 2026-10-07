@@ -60,6 +60,14 @@ public abstract class Gamemode {
     }
 
     /**
+     * Called when the game ends, before the victory sequence sends everyone to the lobby.
+     * {@link #cleanup()} only runs after that sequence, so anything attached to a player (e.g. a
+     * carried CTF flag) has to come off here.
+     */
+    public void onGameEnd() {
+    }
+
+    /**
      * Whether a player's outline stays their team colour for their own teammates too, instead of
      * the green teammate outline - PTP's presidents, so a team can pick its president out.
      */

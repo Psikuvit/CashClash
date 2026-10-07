@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.util.game.ctf;
 
 import me.psikuvit.cashClash.gamemode.impl.FlagState;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -9,8 +10,12 @@ import me.psikuvit.cashClash.util.enums.TeamColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Tag;
+import org.bukkit.World;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.EnumMap;
@@ -50,7 +55,28 @@ public class FlagBannerUtils {
         return location.getWorld().spawn(bannerLoc, BlockDisplay.class, banner -> {
             Material bannerMaterial = color == Color.RED ? Material.RED_BANNER : Material.BLUE_BANNER;
             banner.setBlock(bannerMaterial.createBlockData());
+            banner.setPersistent(false);
+            banner.getPersistentDataContainer().set(Keys.CTF_FLAG_BANNER, PersistentDataType.BOOLEAN, true);
         });
+    }
+
+    /**
+     * Removes every flag banner entity in a world: ones tagged as flag banners, plus any untagged
+     * banner {@link BlockDisplay} left behind before banners were tagged. Placed banner blocks are
+     * blocks, not entities, so decorative banners are never touched.
+     *
+     * @return how many banners were removed
+     */
+    public static int removeBannerEntities(World world) {
+        int removed = 0;
+        for (BlockDisplay display : world.getEntitiesByClass(BlockDisplay.class)) {
+            boolean tagged = display.getPersistentDataContainer().has(Keys.CTF_FLAG_BANNER, PersistentDataType.BOOLEAN);
+            if (tagged || Tag.BANNERS.isTagged(display.getBlock().getMaterial())) {
+                display.remove();
+                removed++;
+            }
+        }
+        return removed;
     }
 
     /**
@@ -130,21 +156,26 @@ public class FlagBannerUtils {
      * @return The BukkitTask for banner carrying
      */
     public static BukkitTask createCarryingTask(BlockDisplay banner, Player player, Runnable onTaskComplete) {
-        return SchedulerUtils.runTaskTimer(() -> {
-            if (!player.isOnline() || banner.isDead() || player.isDead()) {
-                if (onTaskComplete != null) {
-                    onTaskComplete.run();
+        return SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            @Override
+            public void run() {
+                // A carrier who left the game world (sent to the lobby) must not drag the banner along.
+                if (!player.isOnline() || banner.isDead() || player.isDead() || player.getWorld() != banner.getWorld()) {
+                    cancel();
+                    if (onTaskComplete != null) {
+                        onTaskComplete.run();
+                    }
+                    return;
                 }
-                return;
+
+                // Position banner behind the carrying player's head and rotate with player
+                Location playerLoc = player.getLocation();
+                Location bannerLoc = LocationUtils.getPlayerHeadLoc(playerLoc, CARRIED_BANNER_HEIGHT, CARRIED_BANNER_BEHIND_DISTANCE);
+
+                // Directly teleport banner to match player position and rotation
+                banner.teleport(bannerLoc);
+                banner.setRotation(playerLoc.getYaw(), playerLoc.getPitch());
             }
-
-            // Position banner behind the carrying player's head and rotate with player
-            Location playerLoc = player.getLocation();
-            Location bannerLoc = LocationUtils.getPlayerHeadLoc(playerLoc, CARRIED_BANNER_HEIGHT, CARRIED_BANNER_BEHIND_DISTANCE);
-
-            // Directly teleport banner to match player position and rotation
-            banner.teleport(bannerLoc);
-            banner.setRotation(playerLoc.getYaw(), playerLoc.getPitch());
         }, 0, 1); // Run every tick for instant synchronization
     }
 

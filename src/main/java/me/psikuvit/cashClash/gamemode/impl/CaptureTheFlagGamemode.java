@@ -171,10 +171,31 @@ public class CaptureTheFlagGamemode extends Gamemode {
         playerNearestFlagTeam.clear();
         finalStandPenalized.clear();
 
-         // Recreated in the next combat phase.
+         // Recreated in the next combat phase. The banner rotation keeps running through the
+         // buy phase, so the banners never stand still.
+         cancelTask(carrierGlowTask);
+         cancelTask(flagPickupTask);
          this.carrierGlowTask = null;
-         this.bannerRotationTask = null;
          this.flagPickupTask = null;
+    }
+
+    /**
+     * Takes every flag off its carrier before the victory sequence sends players to the lobby -
+     * {@link #cleanup()} only runs once the sequence is over.
+     */
+    @Override
+    public void onGameEnd() {
+        cancelTask(carrierGlowTask);
+        cancelTask(flagPickupTask);
+        for (TeamColor color : TeamColor.values()) {
+            FlagState flag = flagStates.get(color);
+            if (flag == null) continue;
+            if (flag.isHeld()) {
+                Player holder = Bukkit.getPlayer(flag.holder());
+                if (holder != null) clearCarrierPenalties(holder);
+            }
+            returnFlagToBase(color.getTeamNumber());
+        }
     }
 
     @Override
@@ -420,6 +441,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
       * Banners are BlockDisplay entities that rotate around the flag plates
       */
      private void initializeBanners() {
+         FlagBannerUtils.cleanupAllBanners(flagStates);
+
          Location redFlagLoc = getRedFlagLocation();
          Location blueFlagLoc = getBlueFlagLocation();
 
@@ -1096,6 +1119,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
       * Start task to rotate banners
       */
      private void startBannerRotationTask() {
+         if (bannerRotationTask != null) return;
          bannerRotationTask = SchedulerUtils.runTaskTimer(this::updateBannerRotations, 0, 1);
      }
 

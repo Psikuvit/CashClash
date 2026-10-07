@@ -613,6 +613,7 @@ public class GameSession {
         rejoinManager.clearSessionRejoins(sessionId);
 
         cleanupManagers();
+        if (gamemode != null) gamemode.onGameEnd();
 
         Team winner = calculateWinner();
         Location finalSpawn = determineFinalSpawn();
