@@ -259,6 +259,19 @@ public class ConfigManager {
         return config.getInt("combat.max-power-level-regular-bow", 2);
     }
 
+    // Spawn rooms
+    public double getSpawnRoomHealPerSecond() {
+        return config.getDouble("spawn-rooms.heal-per-second", 2.0);
+    }
+
+    public int getSpawnRoomDoorFlashSeconds() {
+        return config.getInt("spawn-rooms.door-flash-seconds", 3);
+    }
+
+    public int getSpawnRoomDoorViewDistance() {
+        return config.getInt("spawn-rooms.door-view-distance", 48);
+    }
+
     // ==================== CASH QUAKE EVENTS ====================
 
     public int getMinGuaranteedEvents() {

@@ -132,6 +132,20 @@ combat:
   max-power-level-regular-bow: 2
 
 # ============================================
+# SPAWN ROOMS
+# ============================================
+# Each team's spawn room and its doors are marked per map with /cc template (pos1, pos2,
+# set <id> spawnroom <red|blue>, set <id> door <red|blue>). Nobody takes or deals damage inside
+# a spawn room.
+spawn-rooms:
+  # Health restored every second while in your own team's spawn room during combat (2.0 = 1 heart)
+  heal-per-second: 2.0
+  # How long a door shows as red glass to the player who walked into it (seconds)
+  door-flash-seconds: 3
+  # Doors are only drawn for players within this many blocks of them
+  door-view-distance: 48
+
+# ============================================
 # CASH QUAKE EVENTS
 # ============================================
 cash-quake:

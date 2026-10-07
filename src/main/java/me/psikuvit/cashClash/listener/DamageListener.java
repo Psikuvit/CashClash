@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.game.SpawnRoomManager;
 import me.psikuvit.cashClash.manager.items.armor.BullseyePantsHandler;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
@@ -85,10 +86,12 @@ public class DamageListener implements Listener {
     private final CooldownManager cooldownManager;
     private final ItemsConfig itemsConfig;
     private final ConfigManager configManager;
+    private final SpawnRoomManager spawnRoomManager;
 
     public DamageListener(GameManager gameManager, CustomArmorManager armorManager, CustomItemManager customItemManager,
                          MythicItemManager mythicManager, WeaponItemManager weaponItemManager,
-                         CooldownManager cooldownManager, ItemsConfig itemsConfig, ConfigManager configManager) {
+                         CooldownManager cooldownManager, ItemsConfig itemsConfig, ConfigManager configManager,
+                         SpawnRoomManager spawnRoomManager) {
         this.gameManager = gameManager;
         this.armorManager = armorManager;
         this.customItemManager = customItemManager;
@@ -97,6 +100,7 @@ public class DamageListener implements Listener {
         this.cooldownManager = cooldownManager;
         this.itemsConfig = itemsConfig;
         this.configManager = configManager;
+        this.spawnRoomManager = spawnRoomManager;
     }
 
     // ==================== MAIN DAMAGE HANDLER (EntityDamageEvent) ====================
@@ -136,6 +140,11 @@ public class DamageListener implements Listener {
             }
 
             if (handleGamePhaseProtection(event, player)) {
+                return;
+            }
+
+            if (spawnRoomManager.isInSpawnRoom(player)) {
+                event.setCancelled(true);
                 return;
             }
 
@@ -246,6 +255,10 @@ public class DamageListener implements Listener {
      * Apply all protection checks (lobby, respawn, team damage)
      */
     private boolean applyProtectionChecks(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        if (handleSpawnRoomProtection(event, attacker, victim)) {
+            return true;
+        }
+
         if (attacker != null && victim != null) {
             UUID attackerId = attacker.getUniqueId();
             UUID victimId = victim.getUniqueId();
@@ -278,6 +291,20 @@ public class DamageListener implements Listener {
             return true;
         }
         return handleRespawnProtection(event, attacker, victim);
+    }
+
+    /**
+     * Nobody takes damage in a spawn room, and nobody standing in one deals any - otherwise a
+     * room would be a safe spot to fight from.
+     * @return true if damage was cancelled
+     */
+    private boolean handleSpawnRoomProtection(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+        if ((victim != null && spawnRoomManager.isInSpawnRoom(victim))
+                || (attacker != null && spawnRoomManager.isInSpawnRoom(attacker))) {
+            event.setCancelled(true);
+            return true;
+        }
+        return false;
     }
 
     /**
