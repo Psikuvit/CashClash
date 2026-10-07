@@ -10,6 +10,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.potion.PotionEffectType;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -1002,6 +1003,35 @@ public class ItemsConfig {
 
     public int getFlamebringerAbilityCooldownSeconds() {
         return config.getInt("custom-armor.flamebringer.ability-cooldown-seconds", 15);
+    }
+
+    /**
+     * The potion effect whose icon stands for an armor ability being ready
+     * ({@code custom-armor.ready-icons.<piece>}), or null when unset or unknown.
+     */
+    public PotionEffectType getArmorReadyIcon(String piece) {
+        String id = config.getString("custom-armor.ready-icons." + piece);
+        if (id == null || id.isBlank()) return null;
+
+        PotionEffectType type = RegistryAccess.registryAccess().getRegistry(RegistryKey.MOB_EFFECT)
+                .get(NamespacedKey.minecraft(id.toLowerCase(Locale.ROOT)));
+        if (type == null) {
+            Messages.debug("CONFIG", "Unknown ready icon effect '" + id + "' for " + piece);
+        }
+        return type;
+    }
+
+    /**
+     * Whether an effect is one of the armor ready icons - a stand-in for an icon, not a real
+     * effect, so effect-reading abilities (Alchemist Tidy Up) leave it alone.
+     */
+    public boolean isArmorReadyIcon(PotionEffectType type) {
+        ConfigurationSection section = config.getConfigurationSection("custom-armor.ready-icons");
+        if (section == null) return false;
+        for (String piece : section.getKeys(false)) {
+            if (type.equals(getArmorReadyIcon(piece))) return true;
+        }
+        return false;
     }
 
     // ==================== PERMANENT ENCHANTS ====================

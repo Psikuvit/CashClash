@@ -60,6 +60,13 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
     }
 
     /**
+     * Set worn and the lava ability off cooldown - drives the ready icon.
+     */
+    public boolean isAbilityReady(Player player) {
+        return hasFlamebringerSet(player) && !cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN);
+    }
+
+    /**
      * Flamebringer Furnace Blood: If player is on fire, take no fire tick KB and gain Speed I for 12s.
      */
     public void onFlamebringerFireTick(Player p) {

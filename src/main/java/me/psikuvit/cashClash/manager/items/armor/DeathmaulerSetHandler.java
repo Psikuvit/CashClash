@@ -39,6 +39,13 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
         return hasChest && hasLegs;
     }
 
+    /**
+     * Set worn and Soul Burst off cooldown - drives the ready icon.
+     */
+    public boolean isAbilityReady(Player player) {
+        return hasDeathmaulerSet(player) && !cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.DEATHMAULER_SOUL_BURST);
+    }
+
     public void onPlayerKill(Player killer, GameSession session) {
         if (!hasDeathmaulerSet(killer)) return;
 

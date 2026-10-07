@@ -33,6 +33,15 @@ public class GuardianVestHandler extends ArmorSetHandler {
         return false;
     }
 
+    /**
+     * Worn, a use left this round and off cooldown - drives the ready icon.
+     */
+    public boolean isAbilityReady(Player player) {
+        UUID id = player.getUniqueId();
+        return hasGuardianVest(player) && guardianUsesThisRound.getOrDefault(id, 0) < 3
+                && !cooldownManager.isOnCooldown(id, CooldownManager.Keys.GUARDIAN_VEST);
+    }
+
     public void onPlayerDamaged(Player p, double healthAfter) {
         if (!hasGuardianVest(p)) return;
         UUID id = p.getUniqueId();

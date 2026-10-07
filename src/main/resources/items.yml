@@ -209,6 +209,15 @@ weapons:
 # CUSTOM ARMOR SETS
 # ============================================
 custom-armor:
+  # Effect icon shown in the top-right corner (like a potion effect) while each armor ability is
+  # ready, gone while it recharges. These effects do nothing in a match; the resource pack draws
+  # their icons as the armor pieces. Minecraft effect ids; blank one out to turn its icon off.
+  ready-icons:
+    bunny-shoes: luck
+    guardians-vest: unluck
+    flamebringer: hero_of_the_village
+    deathmauler: trial_omen
+
   # Bunny Shoes
   bunny-shoes:
     speed-level: 1

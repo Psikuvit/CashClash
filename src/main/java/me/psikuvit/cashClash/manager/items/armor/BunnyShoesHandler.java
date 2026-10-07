@@ -38,6 +38,13 @@ public class BunnyShoesHandler extends ArmorSetHandler {
         return false;
     }
 
+    /**
+     * Worn and off cooldown - drives the ready icon.
+     */
+    public boolean isAbilityReady(Player player) {
+        return hasBunnyShoes(player) && !cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.BUNNY_SHOES);
+    }
+
     public void onPlayerToggleSneak(Player p, boolean sneaking) {
         if (!hasBunnyShoes(p)) return;
         if (!p.isOnline()) return;
