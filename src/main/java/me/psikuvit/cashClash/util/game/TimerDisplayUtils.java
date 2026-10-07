@@ -158,6 +158,17 @@ public class TimerDisplayUtils {
     }
 
     /**
+     * Stops a player's countdown only if it's the one with the given priority, so a system
+     * stopping its own countdown can't wipe another one that took the action bar since.
+     */
+    public static synchronized void stopCountdownTimer(UUID playerUuid, int priority) {
+        TimerDisplay display = timerDisplays.get(playerUuid);
+        if (display != null && display.priority() == priority) {
+            stopCountdownTimer(playerUuid);
+        }
+    }
+
+    /**
      * Internal: Start the timer task for a specific player
      */
     private static void startTimerTask(UUID playerUuid) {

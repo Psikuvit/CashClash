@@ -136,7 +136,7 @@ combat:
 # ============================================
 # Each team's spawn room and its doors are marked per map with /cc template (pos1, pos2,
 # set <id> spawnroom <red|blue>, set <id> door <red|blue>). Nobody takes or deals damage inside
-# a spawn room.
+# a spawn room, and during combat nobody gets back into one once they've left.
 spawn-rooms:
   # Health restored every second while in your own team's spawn room during combat (2.0 = 1 heart)
   heal-per-second: 2.0
@@ -144,6 +144,9 @@ spawn-rooms:
   door-flash-seconds: 3
   # Doors are only drawn for players within this many blocks of them
   door-view-distance: 48
+  # During combat, anyone in a spawn room is put outside its nearest door after this many seconds
+  # (counted down on the action bar). 0 turns it off.
+  max-stay-seconds: 10
 
 # ============================================
 # CASH QUAKE EVENTS

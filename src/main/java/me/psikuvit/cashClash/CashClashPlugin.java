@@ -133,7 +133,7 @@ public final class CashClashPlugin extends JavaPlugin {
             shopService = new ShopService(gameManager, itemFactory);
             transferInputListener = new TransferInputListener(gameManager);
             teamOutlineManager = new TeamOutlineManager(gameManager);
-            spawnRoomManager = new SpawnRoomManager(gameManager, configManager);
+            spawnRoomManager = new SpawnRoomManager(gameManager, configManager, messagesConfig);
 
             // Tier 2: depend on tier 1 managers.
             shopManager = new ShopManager(arenaManager, gameManager, spawnRoomManager);

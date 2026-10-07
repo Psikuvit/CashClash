@@ -272,6 +272,10 @@ public class ConfigManager {
         return config.getInt("spawn-rooms.door-view-distance", 48);
     }
 
+    public int getSpawnRoomMaxStaySeconds() {
+        return config.getInt("spawn-rooms.max-stay-seconds", 10);
+    }
+
     // ==================== CASH QUAKE EVENTS ====================
 
     public int getMinGuaranteedEvents() {
