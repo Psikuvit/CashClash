@@ -496,11 +496,7 @@ permanent-enchants:
     fire_protection: 2
   flamebringer-boots:
     fire_protection: 2
-  dragon-head:
-    protection: 1
-  dragon-chestplate:
-    protection: 1
-  dragon-boots:
+  guardians-vest:
     protection: 1
   electric-eel-sword:
     sharpness: 1
