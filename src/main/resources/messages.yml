@@ -293,7 +293,7 @@ messages:
     rejoin-success: "<green>You have successfully rejoined the game!</green>"
     rejoin-status: "<yellow>Round: <gold>{round}</gold> | Lives: <gold>{lives}</gold></yellow>"
     game-force-end: "<yellow>Game ending - one team has no remaining players.</yellow>"
-    shopping-area-missing: "<red>Your team's shopping area is not set. Teleporting to spectator area.</red>"
+    shopping-area-missing: "<red>Your team's spawns aren't set on this map - tell an admin.</red>"
     shopping-area-teleported: "<yellow>Teleported to your team's shopping area.</yellow>"
     water-refilled-shopping: "<aqua>Water buckets refilled for shopping phase!</aqua>"
 
@@ -553,12 +553,10 @@ messages:
     register-success: "<green>Registered template '{template_id}' to world '{world_name}'</green>"
     register-failed: "<red>Failed to register template. Check world name and server logs.</red>"
     already-exists: "<red>Template with ID '{template_id}' already exists.</red>"
-    set-usage: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager|ctf|spawnroom|door> [index/team]</red>"
+    set-usage: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|villager|ctf|spawnroom|door> [index/team]</red>"
     set-team-usage: "<red>Usage: /cc template set <templateId> {type} <1|2|3></red>"
-    set-shop-usage: "<red>Usage: /cc template set <templateId> shop <teamRed|teamBlue></red>"
     set-lobby-usage: "<red>Usage: /cc template set <templateId> lobby</red>"
     set-success: "<green>Set {spawn_type} spawn #{index} for template '{template_id}'</green>"
-    set-shop-success: "<green>Set shop spawn for team {team} on template '{template_id}'</green>"
     set-spectator-success: "<green>Spectator spawn set for template '{template_id}'</green>"
     set-villager-success: "<green>Added villager/shop spawn for template '{template_id}'</green>"
     setspawn-usage: "<red>Usage: /cc template setspawn <templateId></red>"
@@ -574,8 +572,6 @@ messages:
     show-spectator: "<yellow>Spectator:</yellow> {location}"
     show-team-red-spawn: "<yellow>teamRed spawn #{index}:</yellow> {location}"
     show-team-blue-spawn: "<yellow>teamBlue spawn #{index}:</yellow> {location}"
-    show-shop-red: "<yellow>Shop teamRed:</yellow> {location}"
-    show-shop-blue: "<yellow>Shop teamBlue:</yellow> {location}"
     show-red-flag: "<yellow>Red Flag: {location}</yellow>"
     show-blue-flag: "<yellow>Blue Flag: {location}</yellow>"
     show-shops: "<yellow>Shops:</yellow> <gray>{shop_info}</gray>"
@@ -597,7 +593,6 @@ messages:
     world-not-loaded: "<red>Template world is not loaded: {template_id}</red>"
     invalid-action: "<red>Unknown template action. Use register, set, setspawn, list, tp or show.</red>"
     invalid-spawn-type: "<red>Unknown spawn type: {spawn_type}</red>"
-    invalid-shop-team: "<red>Invalid shop team. Use teamRed or teamBlue.</red>"
     invalid-set-args: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager> [index/team]</red>"
     player-not-in-template: "<red>Please teleport to the template world first.</red>"
     player-not-in-template-with-id: "<red>Please teleport to the template world first: /cc template tp {template_id}</red>"
@@ -606,8 +601,6 @@ messages:
     set-ctf-blue-success: "<green>Set CTF Blue flag location for template '{template_id}'</green>"
     invalid-ctf-team: "<red>Invalid CTF team. Use red or blue.</red>"
     set-spawn-index-usage: "<gold>Usage: /cc template set <templateId> {spawn_type} <1|2|3|4></gold>"
-    set-shop-red-success: "<green>Set shop spawn for team Red on template '{template_id}'</green>"
-    set-shop-blue-success: "<green>Set shop spawn for team Blue on template '{template_id}'</green>"
 
   # ============================================
   # SPAWN NPC MESSAGES

@@ -147,14 +147,6 @@ public class ArenaManager {
                 }
             }
 
-            // Load shop spawns
-            if (cfg.contains("shop.team1")) {
-                tpl.setTeamRedShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("shop.team1")));
-            }
-            if (cfg.contains("shop.team2")) {
-                tpl.setTeamBlueShopSpawn(LocationUtils.deserializeLocation(cfg.getConfigurationSection("shop.team2")));
-            }
-
             // Load villager spawn points
             if (cfg.contains("villagers")) {
                 var villagersSection = cfg.getConfigurationSection("villagers");
@@ -228,14 +220,6 @@ public class ArenaManager {
             if (t2 != null) {
                 LocationUtils.serializeLocation(cfg, "team2." + i, t2);
             }
-        }
-
-        if (tpl.getTeamRedShopSpawn() != null) {
-            LocationUtils.serializeLocation(cfg, "shop.team1", tpl.getTeamRedShopSpawn());
-        }
-
-        if (tpl.getTeamBlueShopSpawn() != null) {
-            LocationUtils.serializeLocation(cfg, "shop.team2", tpl.getTeamBlueShopSpawn());
         }
 
         // Save villager spawn points

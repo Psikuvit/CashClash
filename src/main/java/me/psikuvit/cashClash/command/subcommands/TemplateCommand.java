@@ -89,7 +89,7 @@ public class TemplateCommand extends AbstractArgCommand {
             if (action.equals("register")) {
                 out.addAll(Bukkit.getWorlds().stream().map(World::getName).filter(n -> n.toLowerCase(Locale.ROOT).startsWith(last)).toList());
             } else if (action.equals("set")) {
-                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "ctf", "spawnroom", "door")) if (t.startsWith(last)) out.add(t);
+                for (String t : List.of("spectator", "teamred", "teamblue", "villager", "ctf", "spawnroom", "door")) if (t.startsWith(last)) out.add(t);
             } else if (action.equals("cleardoors")) {
                 for (String t : List.of("red", "blue")) if (t.startsWith(last)) out.add(t);
             }
@@ -101,9 +101,6 @@ public class TemplateCommand extends AbstractArgCommand {
             switch (type) {
                 case "teamred", "teamblue" -> {
                     for (String idx : List.of("1", "2", "3", "4")) if (idx.startsWith(last)) out.add(idx);
-                }
-                case "shop" -> {
-                    for (String t : List.of("teamred", "teamblue")) if (t.startsWith(last)) out.add(t);
                 }
                 case "ctf", "spawnroom", "door" -> {
                     for (String t : List.of("red", "blue")) if (t.startsWith(last)) out.add(t);
@@ -243,9 +240,6 @@ public class TemplateCommand extends AbstractArgCommand {
             Messages.send(player, "template.show-team-blue-spawn", "index", idx, "location", formatLoc(tpl.getTeamBlueSpawn(i)));
         }
 
-        Messages.send(player, "template.show-shop-red", "location", formatLoc(tpl.getTeamRedShopSpawn()));
-        Messages.send(player, "template.show-shop-blue", "location", formatLoc(tpl.getTeamBlueShopSpawn()));
-
         Messages.send(player, "template.show-red-flag", "location", formatLoc(tpl.getRedFlagLoc()));
         Messages.send(player, "template.show-blue-flag", "location", formatLoc(tpl.getBlueFlagLoc()));
 
@@ -352,24 +346,6 @@ public class TemplateCommand extends AbstractArgCommand {
             case "spectator" -> {
                 tpl.setSpectatorSpawn(stored);
                 Messages.send(player, "template.set-spectator-success", "template_id", templateId);
-            }
-            case "shop" -> {
-                if (args.length < 4) {
-                    Messages.send(player, "template.set-shop-usage");
-                    return;
-                }
-                String team = args[3].toLowerCase(Locale.ROOT);
-
-                if ("teamred".equals(team)) {
-                    tpl.setTeamRedShopSpawn(stored);
-                    Messages.send(player, "template.set-shop-red-success", "template_id", templateId);
-                } else if ("teamblue".equals(team)) {
-                    tpl.setTeamBlueShopSpawn(stored);
-                    Messages.send(player, "template.set-shop-blue-success", "template_id", templateId);
-                } else {
-                    Messages.send(player, "template.invalid-shop-team");
-                    return;
-                }
             }
             case "ctf" -> {
                 if (args.length < 4) {

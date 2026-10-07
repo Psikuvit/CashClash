@@ -2,8 +2,6 @@ package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 
-import me.psikuvit.cashClash.arena.Arena;
-import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -17,7 +15,6 @@ import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.sequence.Sequences;
-import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
@@ -25,7 +22,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -58,48 +54,27 @@ public class RoundManager {
     }
 
     /**
-     * Physically teleport all players to their team's shop area. Safe to call multiple
-     * times per round (e.g. once up front before any freeze/reveal sequence, then again
-     * once the actual shopping/buff-selection phase begins) - re-teleporting a player who's
-     * already there is a no-op in practice.
+     * Physically teleport all players to their team's spawns, which sit in the team's spawn
+     * room, for the buy phase. Safe to call multiple times per round (e.g. once up front before
+     * any freeze/reveal sequence, then again once the actual shopping/buff-selection phase
+     * begins).
      */
     public void teleportToBuyPhase() {
-        Team teamRed = session.getTeamRed();
-        Team teamBlue = session.getTeamBlue();
-
-        Arena arena = CashClashPlugin.getInstance().getArenaManager().getArena(session.getArenaNumber());
-        if (arena == null || session.getGameWorld() == null) return;
-
-        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(arena.getTemplateId());
-        World copiedWorld = session.getGameWorld();
-
-        Location teamRedShopTpl = tpl.getTeamRedShopSpawn();
-        Location teamBlueShopTpl = tpl.getTeamBlueShopSpawn();
+        if (session.getGameWorld() == null) return;
 
         for (UUID uuid : session.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
             if (p == null || !p.isOnline()) continue;
 
-            int teamNum = teamRed.hasPlayer(uuid) ? 1 : (teamBlue.hasPlayer(uuid) ? 2 : 0);
-            Location destTemplate = null;
-
-            if (teamNum == 1 && teamRedShopTpl != null) {
-                destTemplate = teamRedShopTpl;
-            } else if (teamNum == 2 && teamBlueShopTpl != null) {
-                destTemplate = teamBlueShopTpl;
-            }
-
-            if (destTemplate == null) {
+            Location dest = session.getSpawnForPlayer(uuid);
+            if (dest == null) {
                 Messages.send(p, "round.shopping-area-missing");
-                destTemplate = tpl.getSpectatorSpawn();
+                continue;
             }
 
-            if (destTemplate != null) {
-                Location dest = LocationUtils.copyToWorld(destTemplate, copiedWorld);
-                p.setGameMode(GameMode.SURVIVAL);
-                p.teleport(dest);
-                p.closeInventory();
-            }
+            p.setGameMode(GameMode.SURVIVAL);
+            p.teleport(dest);
+            p.closeInventory();
         }
     }
 
@@ -166,7 +141,7 @@ public class RoundManager {
             EconomyManager.payRoundShare(session);
         }
 
-        // Players are already teleported to their team's shop area by teleportToBuyPhase()
+        // Players are already teleported to their team's spawn room by teleportToBuyPhase()
         // (called before any freeze/reveal sequence up in startShoppingPhase()). Re-teleport
         // here too in case a player wasn't online for that earlier call, then heal/refill for
         // the shopping phase specifically.
