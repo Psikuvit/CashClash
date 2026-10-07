@@ -6,7 +6,6 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -39,12 +38,12 @@ import java.util.UUID;
  * one, and during combat a team heals in its own room.
  *
  * <p>A room's doors are invisible walls only for the players they stop: during the buy phase
- * they keep each team in its own room, and during combat they keep out the enemy team plus
- * anyone the gamemode locks out of their own room (a PTP president, a CTF flag carrier). Those
- * players are sent fake barrier blocks in the doorway - nobody else's client has them, so
- * teammates walk straight through - and a move across the room's edge is refused server-side
- * too, so a client ignoring the barriers gets nowhere. Walking into a door shows it as red glass
- * to that player for a moment.</p>
+ * they keep each team in its own room, and during combat nobody gets back in once they're out
+ * (either room). Those players are sent fake barrier blocks in the doorway - nobody else's client
+ * has them, so a player still inside walks straight out - and a move across the room's edge is
+ * refused server-side too, so a client ignoring the barriers gets nowhere. Walking into a door
+ * from outside shows it as red glass to that player for a moment; a player inside never sees
+ * it.</p>
  */
 public class SpawnRoomManager implements Listener, Shutdownable {
 
@@ -193,7 +192,7 @@ public class SpawnRoomManager implements Listener, Shutdownable {
                     continue;
                 }
 
-                if (isTouching(player, door)) flash(view, door, now);
+                if (!isInside(room, loc) && isTouching(player, door)) flash(view, door, now);
                 boolean flashing = view.flashUntil.getOrDefault(door, 0L) > now;
                 Boolean shown = view.shownFlashing.get(door);
                 if (shown == null || shown != flashing || now - view.sentAt.getOrDefault(door, 0L) >= DOOR_RESEND_MS) {
@@ -207,26 +206,20 @@ public class SpawnRoomManager implements Listener, Shutdownable {
 
     /**
      * Whether a room's doors stop this player right now: in the buy phase they keep a team in
-     * its own room; in combat they keep out the enemy team and anyone the gamemode locks out of
-     * their own room. They never trap someone already inside during combat.
+     * its own room; in combat they stop anyone outside from coming in. They never trap someone
+     * already inside during combat.
      */
     private boolean isBarred(GameSession session, SpawnRoom room, Player player) {
         if (CashClashPlayer.isPlayerDead(player) || player.getGameMode() == GameMode.SPECTATOR) return false;
         Team team = session.getPlayerTeam(player);
         if (team == null) return false;
 
-        boolean ownRoom = team.getTeamNumber() == room.team().getTeamNumber();
         boolean inside = isInside(room, player.getLocation());
         return switch (session.getState()) {
-            case SHOPPING, BUFF_SELECTION -> ownRoom && inside;
-            case COMBAT -> !inside && (!ownRoom || isLockedOut(session, player));
+            case SHOPPING, BUFF_SELECTION -> inside && team.getTeamNumber() == room.team().getTeamNumber();
+            case COMBAT -> !inside;
             default -> false;
         };
-    }
-
-    private static boolean isLockedOut(GameSession session, Player player) {
-        Gamemode gamemode = session.getGamemode();
-        return gamemode != null && gamemode.isLockedOutOfSpawnRoom(player.getUniqueId());
     }
 
     /**
@@ -301,7 +294,7 @@ public class SpawnRoomManager implements Listener, Shutdownable {
 
             event.setCancelled(true);
             DoorView view = doorViews.get(player.getUniqueId());
-            if (view != null) {
+            if (view != null && !isInside(room, from)) {
                 long now = System.currentTimeMillis();
                 for (BlockRegion door : room.doors()) {
                     if (isTouching(player, door)) flash(view, door, now);

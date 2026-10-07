@@ -76,14 +76,6 @@ public abstract class Gamemode {
     }
 
     /**
-     * Whether a player can't go back into their own spawn room (its doors stop them like they
-     * stop the enemy) - PTP presidents and CTF flag carriers, who would otherwise hide in it.
-     */
-    public boolean isLockedOutOfSpawnRoom(UUID playerId) {
-        return false;
-    }
-
-    /**
      * Whether a player's outline stays their team colour for their own teammates too, instead of
      * the green teammate outline - PTP's presidents, so a team can pick its president out.
      */

@@ -660,11 +660,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         return !isNotPresident(playerId);
     }
 
-    @Override
-    public boolean isLockedOutOfSpawnRoom(UUID playerId) {
-        return !isNotPresident(playerId);
-    }
-
     /**
      * Find which team a player is president of
      * @return team number (1 or 2) or null if not a president
