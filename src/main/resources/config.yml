@@ -32,6 +32,8 @@ game:
 
   # Respawn settings
   respawn-delay: 5
+  # Seconds added to respawn-delay for each earlier death in the same round (resets every round)
+  respawn-delay-per-death: 1
   respawn-protection: 5
 
   # Death spectator rise animation: an upward boost (eases out, not a steady lift) from the

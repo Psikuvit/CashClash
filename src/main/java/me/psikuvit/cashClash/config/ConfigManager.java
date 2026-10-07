@@ -126,6 +126,10 @@ public class ConfigManager {
         return config.getInt("game.respawn-delay", 5);
     }
 
+    public int getRespawnDelayPerDeath() {
+        return config.getInt("game.respawn-delay-per-death", 1);
+    }
+
     public int getRespawnProtection() {
         return config.getInt("game.respawn-protection", 15);
     }

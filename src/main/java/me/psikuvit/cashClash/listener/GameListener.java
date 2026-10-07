@@ -193,7 +193,7 @@ public class GameListener implements Listener {
         if (victim.getLives() <= 0) {
             handlePermanentSpectator(player, deathLocation);
         } else {
-            handleTemporarySpectatorAndRespawn(player, deathLocation);
+            handleTemporarySpectatorAndRespawn(player, victim, deathLocation);
         }
     }
 
@@ -223,8 +223,13 @@ public class GameListener implements Listener {
         queueSpectatorTransition(player, spectatorLocation);
     }
 
-    private void handleTemporarySpectatorAndRespawn(Player player, Location spectatorLocation) {
-        int respawnDelaySec = configManager.getRespawnDelay();
+    /**
+     * Every earlier death this round adds {@code respawn-delay-per-death} to the base delay; the
+     * count starts over each round.
+     */
+    private void handleTemporarySpectatorAndRespawn(Player player, CashClashPlayer victim, Location spectatorLocation) {
+        int earlierDeaths = Math.max(0, victim.getDeathsThisRound() - 1);
+        int respawnDelaySec = configManager.getRespawnDelay() + earlierDeaths * configManager.getRespawnDelayPerDeath();
         int respawnProtectionSec = configManager.getRespawnProtection();
 
         Messages.send(player, "listener.respawn-delay", "seconds", String.valueOf(respawnDelaySec));
