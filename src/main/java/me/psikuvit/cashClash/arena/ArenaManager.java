@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -18,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -174,6 +176,15 @@ public class ArenaManager {
                 tpl.setBlueFlagLoc(LocationUtils.deserializeLocation(cfg.getConfigurationSection("ctf.blue_flag")));
             }
 
+            for (TeamColor team : TeamColor.values()) {
+                String path = "spawn-rooms.team" + team.getTeamNumber();
+                tpl.setSpawnRoom(team, BlockRegion.deserialize(cfg.getString(path + ".room")));
+                for (String door : cfg.getStringList(path + ".doors")) {
+                    BlockRegion region = BlockRegion.deserialize(door);
+                    if (region != null) tpl.addSpawnRoomDoor(team, region);
+                }
+            }
+
             templates.put(id, tpl);
             Messages.debug("ARENA", "Loaded template: " + id + " -> " + w.getName());
         }
@@ -242,6 +253,14 @@ public class ArenaManager {
         }
         if (tpl.getBlueFlagLoc() != null) {
             LocationUtils.serializeLocation(cfg, "ctf.blue_flag", tpl.getBlueFlagLoc());
+        }
+
+        for (TeamColor team : TeamColor.values()) {
+            String path = "spawn-rooms.team" + team.getTeamNumber();
+            BlockRegion room = tpl.getSpawnRoom(team);
+            if (room != null) cfg.set(path + ".room", room.serialize());
+            List<BlockRegion> doors = tpl.getSpawnRoomDoors(team);
+            if (!doors.isEmpty()) cfg.set(path + ".doors", doors.stream().map(BlockRegion::serialize).toList());
         }
 
         try {

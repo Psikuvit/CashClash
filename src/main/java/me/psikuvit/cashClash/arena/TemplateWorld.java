@@ -1,12 +1,15 @@
 package me.psikuvit.cashClash.arena;
 
 import me.psikuvit.cashClash.util.LocationUtils;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -35,12 +38,18 @@ public class TemplateWorld {
     private Location redFlagLoc;
     private Location blueFlagLoc;
 
+    // Each team's spawn room and the doorways into it
+    private final Map<TeamColor, BlockRegion> spawnRooms;
+    private final Map<TeamColor, List<BlockRegion>> spawnRoomDoors;
+
     public TemplateWorld(String id, World world) {
         this.id = id;
         this.worldName = world != null ? world.getName() : null;
         this.teamRedSpawns = new ArrayList<>();
         this.teamBlueSpawns = new ArrayList<>();
         this.villagersSpawnPoint = new ArrayList<>();
+        this.spawnRooms = new EnumMap<>(TeamColor.class);
+        this.spawnRoomDoors = new EnumMap<>(TeamColor.class);
     }
 
     public String getId() {
@@ -150,6 +159,30 @@ public class TemplateWorld {
      */
     public void setBlueFlagLoc(Location loc) {
         this.blueFlagLoc = loc;
+    }
+
+    /**
+     * @return the team's spawn room, or null if none is set
+     */
+    public BlockRegion getSpawnRoom(TeamColor team) {
+        return spawnRooms.get(team);
+    }
+
+    public void setSpawnRoom(TeamColor team, BlockRegion room) {
+        if (room == null) spawnRooms.remove(team);
+        else spawnRooms.put(team, room);
+    }
+
+    public List<BlockRegion> getSpawnRoomDoors(TeamColor team) {
+        return List.copyOf(spawnRoomDoors.getOrDefault(team, List.of()));
+    }
+
+    public void addSpawnRoomDoor(TeamColor team, BlockRegion door) {
+        spawnRoomDoors.computeIfAbsent(team, t -> new ArrayList<>()).add(door);
+    }
+
+    public void clearSpawnRoomDoors(TeamColor team) {
+        spawnRoomDoors.remove(team);
     }
 
     public boolean isConfigured() {
