@@ -551,8 +551,6 @@ public class GameListener implements Listener {
      */
     private boolean checkConsumableCooldown(Player p) {
         if (cooldownManager.isOnCooldown(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(p.getUniqueId(), CooldownManager.Keys.CONSUMABLE);
-            Messages.send(p, "listener.consumable-cooldown", "remaining", String.valueOf(remaining));
             return false;
         }
         int cooldownSeconds = itemsConfig.getConsumableCooldown();

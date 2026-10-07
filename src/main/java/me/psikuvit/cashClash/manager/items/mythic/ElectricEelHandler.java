@@ -115,7 +115,6 @@ public class ElectricEelHandler extends MythicItemHandler {
             long readyAt = eelNextChargeReadyAt.getOrDefault(uuid, now);
             long remaining = Math.max(0, (readyAt - now) / 1000L);
             Messages.debug(player, "ELECTRIC_EEL: No dash charges left - next in " + remaining + "s");
-            Messages.send(player, "mythic.electric-eel-dash-cooldown", "{cooldown_seconds}", String.valueOf(remaining));
             return;
         }
 

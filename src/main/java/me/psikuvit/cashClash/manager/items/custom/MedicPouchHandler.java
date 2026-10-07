@@ -29,8 +29,6 @@ public class MedicPouchHandler extends CustomItemHandler {
         UUID uuid = player.getUniqueId();
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.MEDIC_POUCH)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH);
-            Messages.send(player, "customitem.medic-pouch-cooldown", "remaining", String.valueOf(remaining));
             return;
         }
 
@@ -62,8 +60,6 @@ public class MedicPouchHandler extends CustomItemHandler {
         UUID uuid = player.getUniqueId();
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.MEDIC_POUCH)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.MEDIC_POUCH);
-            Messages.send(player, "customitem.medic-pouch-cooldown", "remaining", String.valueOf(remaining));
             return;
         }
 

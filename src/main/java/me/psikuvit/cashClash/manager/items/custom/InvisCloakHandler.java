@@ -54,8 +54,6 @@ public class InvisCloakHandler extends CustomItemHandler {
 
         if (turnOn && !invisCloakActive.contains(uuid)) {
             if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.INVIS_CLOAK)) {
-                long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.INVIS_CLOAK);
-                Messages.send(player, "customitem.invis-cooldown", "remaining", String.valueOf(remaining));
                 return;
             }
             if (isInCaptureArea(player)) {

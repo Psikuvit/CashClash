@@ -61,8 +61,6 @@ public class SoulKatanaHandler extends WeaponItemHandler {
     public void usePhantomSlice(Player player) {
         UUID uuid = player.getUniqueId();
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.SOUL_KATANA_PHANTOM_SLICE)) {
-            double remaining = cooldownManager.getRemainingCooldownMs(uuid, CooldownManager.Keys.SOUL_KATANA_PHANTOM_SLICE) / 1000.0;
-            Messages.send(player, "customitem.soul-katana-cooldown", "remaining", String.valueOf((int) Math.ceil(remaining)));
             return;
         }
 

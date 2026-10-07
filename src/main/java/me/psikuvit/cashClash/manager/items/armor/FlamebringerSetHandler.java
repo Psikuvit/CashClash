@@ -107,9 +107,8 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
         SoundUtils.play(p, Sound.ITEM_FIRECHARGE_USE, 1.5f, 1.0f);
         flamebringerTrailEndTime.put(id, System.currentTimeMillis() + (cfg.getFlamebringerSpeedDuration() * 1000L));
         startFlamebringerTrail(p);
-        int cooldownSeconds = cfg.getFlamebringerAbilityCooldownSeconds();
-        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, cooldownSeconds);
-        Messages.send(p, "armor.flamebringer-lava-speed", "cooldown", String.valueOf(cooldownSeconds));
+        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, cfg.getFlamebringerAbilityCooldownSeconds());
+        Messages.send(p, "armor.flamebringer-lava-activated");
     }
 
     /**

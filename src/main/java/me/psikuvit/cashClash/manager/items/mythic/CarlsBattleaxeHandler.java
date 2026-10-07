@@ -76,7 +76,6 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH)) {
             Messages.debug(attacker, "CARLS_BATTLEAXE: Spin attack on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH) + "s");
-            Messages.send(attacker, "mythic.carls-battleaxe-cooldown", "cooldown_seconds", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH)));
             return;
         }
 
@@ -258,8 +257,6 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
         if (carlsThrowing.contains(uuid)) return;
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_THROW)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_THROW);
-            Messages.send(player, "mythic.carls-battleaxe-throw-cooldown", "cooldown_seconds", String.valueOf(remaining));
             return;
         }
 

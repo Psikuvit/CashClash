@@ -98,8 +98,6 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE)) {
             Messages.debug(player, "WARDEN_GLOVES: Shockwave on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE) + "s");
-            Messages.send(player, "mythic.shockwave-cooldown", "cooldown_seconds",
-                    String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE)));
             return;
         }
 
@@ -239,8 +237,6 @@ public class WardenGlovesHandler extends MythicItemHandler {
         if (risingFuryActive.contains(uuid)) return;
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_RISING_FURY)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_RISING_FURY);
-            Messages.send(player, "mythic.genericitem-cooldown", "{item_name}", "Rising Fury", "{cooldown_seconds}", String.valueOf(remaining));
             return;
         }
 

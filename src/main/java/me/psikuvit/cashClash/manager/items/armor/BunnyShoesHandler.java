@@ -88,8 +88,6 @@ public class BunnyShoesHandler extends ArmorSetHandler {
         }
 
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.BUNNY_SHOES)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(id, CooldownManager.Keys.BUNNY_SHOES);
-            Messages.send(p, "armor.bunny-shoes-cooldown", "remaining", String.valueOf(remaining));
             return;
         }
 

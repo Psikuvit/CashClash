@@ -130,8 +130,6 @@ public class CashBlasterHandler extends WeaponItemHandler {
         }
 
         if (cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.CASH_BLASTER_VORTEX)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(player.getUniqueId(), CooldownManager.Keys.CASH_BLASTER_VORTEX);
-            Messages.send(player, "customitem.cash-blaster-vortex-cooldown", "remaining", String.valueOf(remaining));
             return;
         }
 

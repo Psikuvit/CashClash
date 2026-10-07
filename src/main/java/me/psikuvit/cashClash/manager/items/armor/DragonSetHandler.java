@@ -129,8 +129,6 @@ public class DragonSetHandler extends ArmorSetHandler {
         UUID id = player.getUniqueId();
 
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.DRAGON_DASH)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(id, CooldownManager.Keys.DRAGON_DASH);
-            Messages.send(player, "armor.dragon-rush-cooldown", "remaining", String.valueOf(remaining));
             return;
         }
 

@@ -101,8 +101,6 @@ public class GoblinSpearHandler extends MythicItemHandler {
 
         // Check cooldown
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE)) {
-            long remaining = cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE);
-            Messages.send(player, "mythic.charge-cooldown", "{remaining}", String.valueOf(remaining));
             return;
         }
 

@@ -41,7 +41,6 @@ public class WindBowHandler extends MythicItemHandler {
         UUID uuid = player.getUniqueId();
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_BOOST)) {
-            Messages.send(player, "mythic.wind-bow-boost-cooldown", "{cooldown_seconds}", String.valueOf(cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WIND_BOW_BOOST)));
             return;
         }
 
