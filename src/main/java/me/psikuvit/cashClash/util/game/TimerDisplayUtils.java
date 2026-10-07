@@ -8,7 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -16,9 +15,9 @@ import java.util.function.Function;
 
 /**
  * Owns every actionbar countdown timer in the plugin: the generic engine (state tracking, the
- * per-tick task, second-change-only updates, optional completion message) plus the named timer
- * types built on it (bonus, heart, flag return, and any gamemode-specific countdown that calls
- * {@link #startCountdownTimer}/{@link #stopCountdownTimer} directly). Rendering itself is always
+ * per-tick task, second-change-only updates, optional completion message), used by any
+ * countdown that calls {@link #startCountdownTimer}/{@link #stopCountdownTimer} directly, plus
+ * the CTF capture-bonus window helpers. Rendering itself is always
  * routed through {@link ActionBarQueue#sendRaw} - this class never touches
  * {@code Player#sendActionBar} on its own, so there's exactly one place that actually writes to
  * a player's actionbar.
@@ -38,9 +37,6 @@ public class TimerDisplayUtils {
     private static long captureBonusDurationMs() {
         return CashClashPlugin.getInstance().getConfigManager().getCTFCaptureBonusTimerMs();
     }
-
-    // Priorities for actionbar display (lower = higher priority)
-    private static final int PRIORITY_FLAG_RETURN = 2;     // Shows when flag is dropping
 
     // ==================== TIMER ENGINE (moved from ActionBarQueue) ====================
 
@@ -158,19 +154,6 @@ public class TimerDisplayUtils {
     }
 
     /**
-     * Stop a player's countdown timer only if it's currently showing the given priority - so a
-     * broadcast stop (e.g. every session player, when a flag return pauses) can't wipe an
-     * unrelated timer (e.g. that player's own bonus timer) it never started.
-     */
-    private static synchronized void stopCountdownTimerIfPriority(UUID playerUuid, int priority) {
-        if (playerUuid == null) return;
-        TimerDisplay display = timerDisplays.get(playerUuid);
-        if (display != null && display.priority() == priority) {
-            stopCountdownTimer(playerUuid);
-        }
-    }
-
-    /**
      * Internal: Start the timer task for a specific player
      */
     private static void startTimerTask(UUID playerUuid) {
@@ -256,59 +239,5 @@ public class TimerDisplayUtils {
      */
     public static boolean isWithinBonusWindow(FlagState flag) {
         return flag != null && flag.isHeld() && getBonusTimeRemaining(flag) > 0;
-    }
-
-    // ========= FLAG RETURN TIMER METHODS =========
-
-    /**
-     * Start a flag return timer for all players.
-     * The timer automatically manages itself and updates only when seconds change.
-     *
-     * @param teamNumber The team number (1=Red, 2=Blue)
-     * @param expiryMs The expiry time in milliseconds
-     * @param playerUuids Collection of player UUIDs to display to
-     */
-    public static void startFlagReturnTimer(int teamNumber, long expiryMs, Collection<UUID> playerUuids) {
-        if (playerUuids == null || playerUuids.isEmpty()) {
-            return;
-        }
-
-        long now = System.currentTimeMillis();
-        long remaining = Math.max(0, expiryMs - now);
-
-        if (remaining <= 0) {
-            return; // Timer already expired
-        }
-
-        String flagColor = teamNumber == 1 ? "<red>" : "<blue>";
-
-        // Start countdown timer for each player
-        for (UUID playerUuid : playerUuids) {
-            Player player = Bukkit.getPlayer(playerUuid);
-            if (player != null && player.isOnline()) {
-                // Each player gets their own timer instance
-                startCountdownTimer(
-                    player,
-                    remaining,
-                    PRIORITY_FLAG_RETURN,
-                    seconds -> flagColor + "🚩 Flag returns in " + seconds + "s"
-                );
-            }
-        }
-    }
-
-    /**
-     * Stop a flag return timer for all players.
-     *
-     * @param playerUuids Collection of player UUIDs
-     */
-    public static void stopFlagReturnTimer(Collection<UUID> playerUuids) {
-        if (playerUuids == null) {
-            return;
-        }
-
-        for (UUID playerUuid : playerUuids) {
-            stopCountdownTimerIfPriority(playerUuid, PRIORITY_FLAG_RETURN);
-        }
     }
 }

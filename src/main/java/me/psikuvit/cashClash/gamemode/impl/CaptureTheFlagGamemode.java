@@ -19,6 +19,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.TimerDisplayUtils;
 import me.psikuvit.cashClash.util.game.ctf.FlagBannerUtils;
 import me.psikuvit.cashClash.util.game.ctf.FlagBaseMechanicsUtils;
+import me.psikuvit.cashClash.util.game.ctf.FlagBossBars;
 import me.psikuvit.cashClash.util.game.ctf.FlagEffectsUtils;
 import me.psikuvit.cashClash.util.game.ctf.FlagPickupValidator;
 import me.psikuvit.cashClash.util.enums.RewardType;
@@ -70,9 +71,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
       private final SuddenDeathManager suddenDeathManager;
       private final FinalStandManager finalStandManager;
+      private final FlagBossBars flagBars;
       private BukkitTask carrierGlowTask;
       private BukkitTask bannerRotationTask;
       private BukkitTask flagPickupTask;
+      private BukkitTask flagBarTask;
       private int suddenDeathWinningTeam;
 
     public CaptureTheFlagGamemode(GameSession session) {
@@ -99,6 +102,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.finalStandPenalized = new HashSet<>();
          this.suddenDeathManager = new SuddenDeathManager(session, this);
          this.finalStandManager = new FinalStandManager(session, this);
+         this.flagBars = new FlagBossBars();
          this.carrierGlowTask = null;
          this.bannerRotationTask = null;
          this.flagPickupTask = null;
@@ -145,6 +149,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          startCarrierGlowEffect();
          startBannerRotationTask();
          startFlagPickupTask();
+         flagBarTask = SchedulerUtils.runTaskTimer(this::updateFlagBars, 0, 2);
      }
 
     @Override
@@ -177,8 +182,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
          // buy phase, so the banners never stand still.
          cancelTask(carrierGlowTask);
          cancelTask(flagPickupTask);
+         cancelTask(flagBarTask);
          this.carrierGlowTask = null;
          this.flagPickupTask = null;
+         this.flagBarTask = null;
+         flagBars.hideAll();
     }
 
     /**
@@ -189,6 +197,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void onGameEnd() {
         cancelTask(carrierGlowTask);
         cancelTask(flagPickupTask);
+        cancelTask(flagBarTask);
         for (TeamColor color : TeamColor.values()) {
             FlagState flag = flagStates.get(color);
             if (flag == null) continue;
@@ -198,6 +207,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
             }
             returnFlagToBase(color.getTeamNumber());
         }
+        flagBars.hideAll();
     }
 
     @Override
@@ -219,6 +229,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         removeFlagIfCarriedByPlayer(1, playerUuid, player);
         removeFlagIfCarriedByPlayer(2, playerUuid, player);
+        flagBars.hideFor(player);
     }
 
     @Override
@@ -264,6 +275,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
          cancelTask(carrierGlowTask);
          cancelTask(bannerRotationTask);
          cancelTask(flagPickupTask);
+         cancelTask(flagBarTask);
+         flagBars.hideAll();
          flagReturnTasks.values().forEach(this::cancelTask);
          flagReturnTasks.clear();
          flagReturnDisplayTasks.values().forEach(this::cancelTask);
@@ -786,13 +799,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (task != null) {
             cancelTask(task);
         }
-        cancelFlagReturnDisplayTask();
         flagReturnExpiry.remove(color);
     }
-
-     private void cancelFlagReturnDisplayTask() {
-         TimerDisplayUtils.stopFlagReturnTimer(session.getPlayers());
-     }
 
     private void scheduleFlagReturnTimer(int teamNumber) {
         TeamColor color = TeamColor.fromTeamNumber(teamNumber);
@@ -806,18 +814,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
             returnFlagToBase(teamNumber);
         }, Math.max(1L, FLAG_RETURN_MS / 50L));
         flagReturnTasks.put(color, returnTask);
-        scheduleFlagReturnDisplayTimer(teamNumber);
         Messages.debug("[CTF] Scheduled return timer for Team " + teamNumber + " flag to " + FLAG_RETURN_MS + "ms");
     }
-
-     private void scheduleFlagReturnDisplayTimer(int teamNumber) {
-         cancelFlagReturnDisplayTask();
-
-         Long expiry = flagReturnExpiry.get(TeamColor.fromTeamNumber(teamNumber));
-         if (expiry != null) {
-             TimerDisplayUtils.startFlagReturnTimer(teamNumber, expiry, session.getPlayers());
-         }
-     }
 
      private boolean isDroppedFlagWaitingForReturn(int teamNumber) {
          return FlagBaseMechanicsUtils.isDroppedFlagWaitingForReturn(teamNumber, flagStates, flagBaseLocations, flagReturnExpiry);
@@ -888,16 +886,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     long elapsedMs = now - prevTime;
 
                     if (elapsedMs >= FLAG_PICKUP_DURATION_MS) {
-                        TimerDisplayUtils.stopCountdownTimer(player);
                         flagPickup(player, nearestTeam);
                         playerCircleTimestamps.remove(playerUuid);
                         playerNearestFlagTeam.remove(playerUuid);
-                    } else {
-                        long remainingMs = FLAG_PICKUP_DURATION_MS - elapsedMs;
-
-                        String flagColor = nearestTeam == 1 ? "<red>" : "<blue>";
-                        TimerDisplayUtils.startCountdownTimer(player, remainingMs, 0,
-                                secondsRemaining -> flagColor + "📍 " + secondsRemaining + " second" + (secondsRemaining == 1 ? "" : "s"));
                     }
                 }
             } else {
@@ -906,12 +897,47 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     String teamName = previousTeam == 1 ? "Red" : "Blue";
                     Messages.send(player, "gamemode-ctf.flag-capture-cancelled",
                             "team_name", teamName);
-                    TimerDisplayUtils.stopCountdownTimer(player);
                     playerCircleTimestamps.remove(playerUuid);
                 }
                 playerNearestFlagTeam.remove(playerUuid);
             }
         }
+    }
+
+    /**
+     * Re-applies the boss bars: a dropped flag's return countdown for everyone in the game, except
+     * players picking that flag up, who see their own pickup progress instead and drop back to the
+     * return countdown, wherever it has got to, the moment they stop.
+     */
+    private void updateFlagBars() {
+        long now = System.currentTimeMillis();
+        for (TeamColor color : TeamColor.values()) {
+            Long expiry = flagReturnExpiry.get(color);
+            if (expiry == null) {
+                flagBars.hideReturn(color);
+            } else {
+                flagBars.showReturn(color, expiry - now, FLAG_RETURN_MS, session.getPlayers(),
+                        uuid -> isPickingUp(uuid, color));
+            }
+        }
+
+        for (UUID uuid : session.getPlayers()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) continue;
+            Integer flagTeam = playerNearestFlagTeam.get(uuid);
+            Long startedAt = playerCircleTimestamps.get(uuid);
+            if (flagTeam == null || startedAt == null) {
+                flagBars.hidePickup(player);
+            } else {
+                flagBars.showPickup(player, TeamColor.fromTeamNumber(flagTeam),
+                        FLAG_PICKUP_DURATION_MS - (now - startedAt), FLAG_PICKUP_DURATION_MS);
+            }
+        }
+    }
+
+    private boolean isPickingUp(UUID playerUuid, TeamColor flag) {
+        Integer flagTeam = playerNearestFlagTeam.get(playerUuid);
+        return flagTeam != null && flagTeam == flag.getTeamNumber() && playerCircleTimestamps.containsKey(playerUuid);
     }
 
     /**
