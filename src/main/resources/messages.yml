@@ -31,6 +31,7 @@ messages:
     help-forcenextround: "<yellow>/cc forcenextround <gray>- Force the next round to start</gray>"
     help-selectkit: "<yellow>/cc selectkit <gray>- Select a kit for all players</gray>"
     help-setlobby: "<yellow>/cc setlobby <gray>- Set the lobby spawn point</gray>"
+    help-clearbanners: "<yellow>/cc clearbanners <gray>- Remove leftover flag banners from your world</gray>"
     help-reload: "<yellow>/cc reload [config|shop|items|all] <gray>- Reload configs</gray>"
     help-debug: "<yellow>/cc debug <gray>- Toggle debug mode</gray>"
     join-select-arena: "<yellow>Select an arena from the menu to join a game.</yellow>"
@@ -414,6 +415,9 @@ messages:
     layout-currently-editing: "<yellow>You are currently editing a layout.</yellow>"
     layout-currently-editing-help: "<gray>Use <yellow>/cc layout confirm</yellow> to save or <yellow>/cc layout cancel</yellow> to cancel.</gray>"
     teleported-to-hub: "<green>Teleported to the hub.</green>"
+    clear-banners-done: "<green>Removed {count} flag banner(s) from {world}.</green> <gray>Banners in unloaded chunks are not touched - stand near them and run it again.</gray>"
+    clear-banners-in-game: "<red>That world is a running game - its banners are the live flags.</red>"
+    clear-banners-no-world: "<red>No lobby is set - run this in-game from the world to clean.</red>"
 
   # ============================================
   # MYTHIC ITEM MESSAGES
