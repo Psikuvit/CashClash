@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.gui;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
 import me.psikuvit.cashClash.gui.builder.GuiButton;
 import me.psikuvit.cashClash.gui.categories.AbstractShopCategoryGui;
@@ -167,10 +166,11 @@ public class ShopGUI extends AbstractGui {
     public static void openMain(Player player) {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
 
-        if (session != null && session.getState() == GameState.COMBAT) {
-            Messages.send(player, "shop.closed-in-combat");
-            return;
-        }
+        // Spawn rooms are paused: with the mini shop, the main shop was buy-phase only.
+        //if (session != null && session.getState() == GameState.COMBAT) {
+        //    Messages.send(player, "shop.closed-in-combat");
+        //    return;
+        //}
 
         // Check if player is in buff selection phase (PTP gamemode)
         if (session != null && session.getGamemode() instanceof me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode ptp) {

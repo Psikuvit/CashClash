@@ -52,9 +52,10 @@ public class TemplateCommand extends AbstractArgCommand {
             case "show" -> templateShow(sender, args);
             case "list" -> templateList(sender);
             case "tp" -> templateTeleport(sender, args);
-            case "pos1" -> templateSelect(sender, 0);
-            case "pos2" -> templateSelect(sender, 1);
-            case "cleardoors" -> templateClearDoors(sender, args);
+            // Spawn room setup is paused along with the spawn rooms
+            //case "pos1" -> templateSelect(sender, 0);
+            //case "pos2" -> templateSelect(sender, 1);
+            //case "cleardoors" -> templateClearDoors(sender, args);
             default -> Messages.send(sender, "template.invalid-action");
         }
 
@@ -68,13 +69,13 @@ public class TemplateCommand extends AbstractArgCommand {
         List<String> out = new ArrayList<>();
 
         if (args.length == 1) {
-            for (String a : List.of("register", "setspawn", "set", "list", "tp", "show", "pos1", "pos2", "cleardoors")) if (a.startsWith(last)) out.add(a);
+            for (String a : List.of("register", "setspawn", "set", "list", "tp", "show")) if (a.startsWith(last)) out.add(a);
             return out;
         }
 
         String action = args[0].toLowerCase(Locale.ROOT);
         if (args.length == 2) {
-            if (action.equals("setspawn") || action.equals("tp") || action.equals("show") || action.equals("cleardoors")) {
+            if (action.equals("setspawn") || action.equals("tp") || action.equals("show")) {
                 out.addAll(CashClashPlugin.getInstance().getArenaManager().getAllTemplates().keySet().stream()
                         .filter(id -> id.toLowerCase(Locale.ROOT).startsWith(last))
                         .toList());
@@ -89,9 +90,7 @@ public class TemplateCommand extends AbstractArgCommand {
             if (action.equals("register")) {
                 out.addAll(Bukkit.getWorlds().stream().map(World::getName).filter(n -> n.toLowerCase(Locale.ROOT).startsWith(last)).toList());
             } else if (action.equals("set")) {
-                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "ctf", "spawnroom", "door")) if (t.startsWith(last)) out.add(t);
-            } else if (action.equals("cleardoors")) {
-                for (String t : List.of("red", "blue")) if (t.startsWith(last)) out.add(t);
+                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "ctf")) if (t.startsWith(last)) out.add(t);
             }
             return out;
         }
@@ -105,7 +104,7 @@ public class TemplateCommand extends AbstractArgCommand {
                 case "shop" -> {
                     for (String t : List.of("teamred", "teamblue")) if (t.startsWith(last)) out.add(t);
                 }
-                case "ctf", "spawnroom", "door" -> {
+                case "ctf" -> {
                     for (String t : List.of("red", "blue")) if (t.startsWith(last)) out.add(t);
                 }
             }
@@ -249,13 +248,16 @@ public class TemplateCommand extends AbstractArgCommand {
         Messages.send(player, "template.show-red-flag", "location", formatLoc(tpl.getRedFlagLoc()));
         Messages.send(player, "template.show-blue-flag", "location", formatLoc(tpl.getBlueFlagLoc()));
 
-        for (TeamColor team : TeamColor.values()) {
-            BlockRegion room = tpl.getSpawnRoom(team);
-            Messages.send(player, "template.show-spawn-room", "team", team.getDisplayName(),
-                    "region", room != null ? room.toString() : "unset",
-                    "doors", String.valueOf(tpl.getSpawnRoomDoors(team).size()));
-        }
+        // Spawn rooms are paused
+        //for (TeamColor team : TeamColor.values()) {
+        //    BlockRegion room = tpl.getSpawnRoom(team);
+        //    Messages.send(player, "template.show-spawn-room", "team", team.getDisplayName(),
+        //            "region", room != null ? room.toString() : "unset",
+        //            "doors", String.valueOf(tpl.getSpawnRoomDoors(team).size()));
+        //}
     }
+
+    // ==================== SPAWN ROOM SETUP (paused - the commands are commented out above) ====================
 
     /**
      * pos1/pos2: marks a corner of a spawn room or door at the block the player stands in.
@@ -415,26 +417,27 @@ public class TemplateCommand extends AbstractArgCommand {
                 tpl.addVillagerSpawnPoint(stored);
                 Messages.send(player, "template.set-villager-success", "template_id", templateId);
             }
-            case "spawnroom", "door" -> {
-                TeamColor team = args.length < 4 ? null : parseRoomTeam(args[3]);
-                if (team == null) {
-                    Messages.send(player, type.equals("door") ? "template.set-door-usage" : "template.set-room-usage");
-                    return;
-                }
-                BlockRegion region = selectedRegion(player, tplWorld, templateId);
-                if (region == null) return;
-
-                if (type.equals("spawnroom")) {
-                    tpl.setSpawnRoom(team, region);
-                    Messages.send(player, "template.set-room-success", "team", team.getDisplayName(),
-                            "template_id", templateId, "region", region.toString());
-                } else {
-                    tpl.addSpawnRoomDoor(team, region);
-                    Messages.send(player, "template.set-door-success", "team", team.getDisplayName(),
-                            "template_id", templateId, "region", region.toString(),
-                            "count", String.valueOf(tpl.getSpawnRoomDoors(team).size()));
-                }
-            }
+            // Spawn rooms are paused
+            //case "spawnroom", "door" -> {
+            //    TeamColor team = args.length < 4 ? null : parseRoomTeam(args[3]);
+            //    if (team == null) {
+            //        Messages.send(player, type.equals("door") ? "template.set-door-usage" : "template.set-room-usage");
+            //        return;
+            //    }
+            //    BlockRegion region = selectedRegion(player, tplWorld, templateId);
+            //    if (region == null) return;
+            //
+            //    if (type.equals("spawnroom")) {
+            //        tpl.setSpawnRoom(team, region);
+            //        Messages.send(player, "template.set-room-success", "team", team.getDisplayName(),
+            //                "template_id", templateId, "region", region.toString());
+            //    } else {
+            //        tpl.addSpawnRoomDoor(team, region);
+            //        Messages.send(player, "template.set-door-success", "team", team.getDisplayName(),
+            //                "template_id", templateId, "region", region.toString(),
+            //                "count", String.valueOf(tpl.getSpawnRoomDoors(team).size()));
+            //    }
+            //}
             default -> Messages.send(player, "template.invalid-spawn-type", "spawn_type", type);
         }
 

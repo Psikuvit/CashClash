@@ -134,6 +134,7 @@ combat:
 # ============================================
 # SPAWN ROOMS
 # ============================================
+# PAUSED - spawn rooms are switched off for now, so these settings do nothing.
 # Each team's spawn room and its doors are marked per map with /cc template (pos1, pos2,
 # set <id> spawnroom <red|blue>, set <id> door <red|blue>). Nobody takes or deals damage inside
 # a spawn room, and during combat nobody gets back into one once they've left.

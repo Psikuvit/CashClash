@@ -556,12 +556,12 @@ messages:
   # TEMPLATE WORLD MESSAGES
   # ============================================
   template:
-    main-usage: "<red>Usage: /cc template <register|set|setspawn|list|tp|show|pos1|pos2|cleardoors> ...</red>"
+    main-usage: "<red>Usage: /cc template <register|set|setspawn|list|tp|show> ...</red>"
     register-usage: "<red>Usage: /cc template register <templateId> <worldName></red>"
     register-success: "<green>Registered template '{template_id}' to world '{world_name}'</green>"
     register-failed: "<red>Failed to register template. Check world name and server logs.</red>"
     already-exists: "<red>Template with ID '{template_id}' already exists.</red>"
-    set-usage: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager|ctf|spawnroom|door> [index/team]</red>"
+    set-usage: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager|ctf> [index/team]</red>"
     set-team-usage: "<red>Usage: /cc template set <templateId> {type} <1|2|3></red>"
     set-shop-usage: "<red>Usage: /cc template set <templateId> shop <teamRed|teamBlue></red>"
     set-lobby-usage: "<red>Usage: /cc template set <templateId> lobby</red>"

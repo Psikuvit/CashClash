@@ -27,7 +27,7 @@ import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
-import me.psikuvit.cashClash.manager.game.SpawnRoomManager;
+//import me.psikuvit.cashClash.manager.game.SpawnRoomManager;
 import me.psikuvit.cashClash.manager.game.TeamOutlineManager;
 import me.psikuvit.cashClash.manager.items.armor.ArmorIconManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
@@ -96,7 +96,8 @@ public final class CashClashPlugin extends JavaPlugin {
     private TeamOutlineManager teamOutlineManager;
     private MythicHudManager mythicHudManager;
     private ArmorIconManager armorIconManager;
-    private SpawnRoomManager spawnRoomManager;
+    // Spawn rooms are paused (full version on the spawn-rooms-wip branch)
+    //private SpawnRoomManager spawnRoomManager;
 
     @Override
     public void onEnable() {
@@ -133,10 +134,10 @@ public final class CashClashPlugin extends JavaPlugin {
             shopService = new ShopService(gameManager, itemFactory);
             transferInputListener = new TransferInputListener(gameManager);
             teamOutlineManager = new TeamOutlineManager(gameManager);
-            spawnRoomManager = new SpawnRoomManager(gameManager, configManager, messagesConfig);
+            //spawnRoomManager = new SpawnRoomManager(gameManager, configManager, messagesConfig);
 
             // Tier 2: depend on tier 1 managers.
-            shopManager = new ShopManager(arenaManager, gameManager, spawnRoomManager);
+            shopManager = new ShopManager(arenaManager, gameManager);
             lobbyManager = new LobbyManager(itemsConfig, arenaManager, scoreboardManager, tabListManager);
             customArmorManager = new CustomArmorManager(cooldownManager, itemsConfig);
             mythicItemManager = new MythicItemManager(itemsConfig, cooldownManager, itemFactory);
@@ -168,8 +169,8 @@ public final class CashClashPlugin extends JavaPlugin {
             // Step 4.8: Start the armor ability ready icons
             armorIconManager.start();
 
-            // Step 4.9: Start spawn room healing and doors
-            spawnRoomManager.start();
+            // Step 4.9: Start spawn room healing and doors (paused)
+            //spawnRoomManager.start();
 
             // Step 5: Spawn persistent mannequins
             mannequinManager.spawnAll();
@@ -223,7 +224,7 @@ public final class CashClashPlugin extends JavaPlugin {
         managers.add(teamOutlineManager);
         managers.add(mythicHudManager);
         managers.add(armorIconManager);
-        managers.add(spawnRoomManager);
+        //managers.add(spawnRoomManager);
         managers.add(playerDataManager);
 
         for (Shutdownable manager : managers) {
@@ -287,13 +288,13 @@ public final class CashClashPlugin extends JavaPlugin {
     public TeamOutlineManager getTeamOutlineManager() { return teamOutlineManager; }
     public MythicHudManager getMythicHudManager() { return mythicHudManager; }
     public ArmorIconManager getArmorIconManager() { return armorIconManager; }
-    public SpawnRoomManager getSpawnRoomManager() { return spawnRoomManager; }
+    //public SpawnRoomManager getSpawnRoomManager() { return spawnRoomManager; }
 
     private void registerEvents() {
         Listener[] listeners = {
                 new GuiListener(),
                 new BlockListener(gameManager, itemsConfig),
-                new DamageListener(gameManager, customArmorManager, customItemManager, mythicItemManager, weaponItemManager, cooldownManager, itemsConfig, configManager, spawnRoomManager),
+                new DamageListener(gameManager, customArmorManager, customItemManager, mythicItemManager, weaponItemManager, cooldownManager, itemsConfig, configManager),
                 new InteractListener(gameManager, customItemManager, mythicItemManager, customArmorManager, weaponItemManager),
                 new MoveListener(gameManager, customItemManager, customArmorManager, weaponItemManager),
                 new GameListener(configManager, cooldownManager, customArmorManager, customItemManager, gameManager, itemsConfig, mythicItemManager, playerDataManager, shopManager, weaponItemManager),
@@ -304,8 +305,8 @@ public final class CashClashPlugin extends JavaPlugin {
                 new ArenaNPCListener(),
                 new ChatListener(),
                 transferInputListener,
-                teamOutlineManager,
-                spawnRoomManager
+                teamOutlineManager
+                //spawnRoomManager
         };
 
         for (Listener listener : listeners) {

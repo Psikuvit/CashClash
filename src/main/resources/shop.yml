@@ -134,6 +134,7 @@ mythic-items:
 # ============================================
 # MINI SHOP
 # ============================================
+# PAUSED - switched off along with the spawn rooms, so this does nothing for now.
 # The spawn room villager's shop during combat (leaves, water bucket, arrows, steak, bread, in
 # their main-shop amounts). Each costs this many percent more than in the main shop.
 mini-shop:
