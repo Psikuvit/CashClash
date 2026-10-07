@@ -270,6 +270,14 @@ public class ItemsConfig {
     }
 
     // BloodWrench Crossbow - landed-hit cycle
+    public long getMythicHudCooldownFlashMs() {
+        return config.getLong("mythic-items.hud.cooldown-flash-ms", 1000);
+    }
+
+    public long getMythicHudFullCountDisplayMs() {
+        return config.getLong("mythic-items.hud.full-count-display-ms", 1500);
+    }
+
     public int getBloodwrenchBubbleOnHit() {
         return config.getInt("mythic-items.bloodwrench.bubble-on-hit", 3);
     }

@@ -30,6 +30,7 @@ import me.psikuvit.cashClash.manager.game.RejoinManager;
 import me.psikuvit.cashClash.manager.game.TeamOutlineManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.mythic.MythicHudManager;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import me.psikuvit.cashClash.manager.lobby.LayoutManager;
@@ -91,6 +92,7 @@ public final class CashClashPlugin extends JavaPlugin {
     private CustomItemManager customItemManager;
     private WeaponItemManager weaponItemManager;
     private TeamOutlineManager teamOutlineManager;
+    private MythicHudManager mythicHudManager;
 
     @Override
     public void onEnable() {
@@ -138,6 +140,7 @@ public final class CashClashPlugin extends JavaPlugin {
             layoutManager = new LayoutManager(playerDataManager, lobbyManager);
             customItemManager = new CustomItemManager(cooldownManager, itemsConfig, customArmorManager);
             weaponItemManager = new WeaponItemManager(cooldownManager, itemsConfig, customArmorManager);
+            mythicHudManager = new MythicHudManager(gameManager, mythicItemManager);
 
             // Step 3: Initialize arena system
             arenaManager.initializeArenas();
@@ -152,6 +155,9 @@ public final class CashClashPlugin extends JavaPlugin {
 
             // Step 4.6: Start the async leaderboard worker
             leaderboardManager.start();
+
+            // Step 4.7: Start the held-mythic action bar
+            mythicHudManager.start();
 
             // Step 5: Spawn persistent mannequins
             mannequinManager.spawnAll();
@@ -203,6 +209,7 @@ public final class CashClashPlugin extends JavaPlugin {
         managers.add(partyManager);
         managers.add(chatManager);
         managers.add(teamOutlineManager);
+        managers.add(mythicHudManager);
         managers.add(playerDataManager);
 
         for (Shutdownable manager : managers) {
@@ -264,6 +271,7 @@ public final class CashClashPlugin extends JavaPlugin {
     public CustomItemManager getCustomItemManager() { return customItemManager; }
     public WeaponItemManager getWeaponItemManager() { return weaponItemManager; }
     public TeamOutlineManager getTeamOutlineManager() { return teamOutlineManager; }
+    public MythicHudManager getMythicHudManager() { return mythicHudManager; }
 
     private void registerEvents() {
         Listener[] listeners = {

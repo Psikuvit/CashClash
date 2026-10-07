@@ -11,6 +11,8 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -41,6 +43,7 @@ public class WindBowHandler extends MythicItemHandler {
         UUID uuid = player.getUniqueId();
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WIND_BOW_BOOST)) {
+            manager.flashCooldown(player);
             return;
         }
 
@@ -81,6 +84,14 @@ public class WindBowHandler extends MythicItemHandler {
         Messages.debug(shooter, "WIND_BOW: Wind gust pushed " + hitCount + " players, radius: " + radius + ", power: " + cfg.getWindBowPushPower());
         SoundUtils.playAt(impact, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.0f, 0.8f);
         ParticleUtils.cloud(impact, 30, 1);
+    }
+
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        List<HudSegment> segments = new ArrayList<>();
+        UUID uuid = player.getUniqueId();
+        addCooldownSegment(segments, uuid, CooldownManager.Keys.WIND_BOW_BOOST, "boost");
+        return segments;
     }
 
     @Override

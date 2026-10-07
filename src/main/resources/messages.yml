@@ -421,6 +421,31 @@ messages:
     clear-banners-no-world: "<red>No lobby is set - run this in-game from the world to clean.</red>"
 
   # ============================================
+  # MYTHIC HUD (action bar while a mythic is held)
+  # ============================================
+  # Pieces are coloured by the plugin: white, or red while flashing/silenced (and for
+  # BloodWrench's bubble and full counts).
+  mythic-hud:
+    separator: "<dark_gray>  |  </dark_gray>"
+    cooldown: "{ability}: {seconds}s"
+    silenced: "Silenced"
+    eel-charges: "{charges}/{max}"
+    eel-recharge: "{seconds}s"
+    blazebite-flame: "Mode: Flame"
+    blazebite-frost: "Mode: Frost"
+    bloodwrench-hits: "{hits}/{max}"
+    ability:
+      shockwave: "Shockwave"
+      rising-fury: "Rising Fury"
+      spin: "Spin"
+      throw: "Throw"
+      boost: "Boost"
+      charge: "Charge"
+      blink-swap: "Blink Swap"
+      tidy-up: "Tidy Up"
+      taunt: "Taunt"
+
+  # ============================================
   # MYTHIC ITEM MESSAGES
   # ============================================
   mythic:

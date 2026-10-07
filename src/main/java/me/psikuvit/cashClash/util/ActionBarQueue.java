@@ -66,6 +66,10 @@ public class ActionBarQueue {
         }
     }
 
+    public synchronized boolean hasDisplay(UUID playerUuid) {
+        return persistentDisplays.containsKey(playerUuid);
+    }
+
     /**
      * Stop a persistent action-bar display for a player.
      */

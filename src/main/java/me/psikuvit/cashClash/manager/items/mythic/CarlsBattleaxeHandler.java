@@ -76,6 +76,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH)) {
             Messages.debug(attacker, "CARLS_BATTLEAXE: Spin attack on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH) + "s");
+            manager.flashCooldown(attacker);
             return;
         }
 
@@ -257,6 +258,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
         if (carlsThrowing.contains(uuid)) return;
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_THROW)) {
+            manager.flashCooldown(player);
             return;
         }
 
@@ -457,6 +459,15 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
 
         SoundUtils.play(attacker, Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.8f);
         ParticleUtils.crit(victim.getLocation().add(0, 1, 0), 20, 0.5);
+    }
+
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        List<HudSegment> segments = new ArrayList<>();
+        UUID uuid = player.getUniqueId();
+        addCooldownSegment(segments, uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH, "spin");
+        addCooldownSegment(segments, uuid, CooldownManager.Keys.CARLS_BATTLEAXE_THROW, "throw");
+        return segments;
     }
 
     @Override

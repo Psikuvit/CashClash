@@ -101,6 +101,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
 
         // Check cooldown
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE)) {
+            manager.flashCooldown(player);
             return;
         }
 
@@ -298,6 +299,14 @@ public class GoblinSpearHandler extends MythicItemHandler {
             }
         }
         return null;
+    }
+
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        List<HudSegment> segments = new ArrayList<>();
+        UUID uuid = player.getUniqueId();
+        addCooldownSegment(segments, uuid, CooldownManager.Keys.GOBLIN_SPEAR_CHARGE, "charge");
+        return segments;
     }
 
     @Override

@@ -23,6 +23,12 @@ combat:
 mythic-items:
   # Number of legendaries available per game
   legendaries-per-game: 4
+  # Action bar shown while a mythic is held (text lives under mythic-hud in messages.yml)
+  hud:
+    # How long the line flashes red after trying an ability that's on cooldown
+    cooldown-flash-ms: 1000
+    # How long BloodWrench's counter shows the full count (7/7) after a blood tornado
+    full-count-display-ms: 1500
 
   # Carl's Battleaxe
   carls-battleaxe:

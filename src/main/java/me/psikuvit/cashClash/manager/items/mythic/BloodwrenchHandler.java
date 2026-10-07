@@ -21,6 +21,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -36,9 +37,13 @@ public class BloodwrenchHandler extends MythicItemHandler {
     // Hits each wielder has landed so far in the current bubble/tornado cycle
     private final Map<UUID, Integer> landedHits;
 
+    // When each wielder's last blood tornado went off, so the HUD can hold the full count briefly
+    private final Map<UUID, Long> lastTornadoAt;
+
     public BloodwrenchHandler(MythicItemManager manager) {
         super(manager);
         this.landedHits = new ConcurrentHashMap<>();
+        this.lastTornadoAt = new ConcurrentHashMap<>();
     }
 
     /**
@@ -52,6 +57,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
 
         if (hits >= cfg.getBloodwrenchTornadoOnHit()) {
             landedHits.remove(uuid);
+            lastTornadoAt.put(uuid, System.currentTimeMillis());
             releaseBloodTornado(shooter, hitLocation);
         } else if (hits == cfg.getBloodwrenchBubbleOnHit()) {
             releaseBloodBubble(shooter, hitLocation);
@@ -230,13 +236,30 @@ public class BloodwrenchHandler extends MythicItemHandler {
         manager.trackTask(shooter.getUniqueId(), vortexTask);
     }
 
+    /**
+     * The hit counter, e.g. {@code 2/7}: red on the bubble hit, and held at the full count in red
+     * for a moment after the tornado before it starts over.
+     */
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        UUID uuid = player.getUniqueId();
+        int max = cfg.getBloodwrenchTornadoOnHit();
+        Long tornadoAt = lastTornadoAt.get(uuid);
+        boolean showingFull = tornadoAt != null && System.currentTimeMillis() - tornadoAt < cfg.getMythicHudFullCountDisplayMs();
+        int hits = showingFull ? max : landedHits.getOrDefault(uuid, 0);
+        boolean alert = showingFull || hits == cfg.getBloodwrenchBubbleOnHit();
+        return List.of(new HudSegment(hudText("bloodwrench-hits", "hits", String.valueOf(hits), "max", String.valueOf(max)), alert));
+    }
+
     @Override
     public void cleanup() {
         landedHits.clear();
+        lastTornadoAt.clear();
     }
 
     @Override
     public void cleanupPlayer(Player player) {
         landedHits.remove(player.getUniqueId());
+        lastTornadoAt.remove(player.getUniqueId());
     }
 }

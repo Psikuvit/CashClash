@@ -21,6 +21,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -213,6 +214,12 @@ public class BlazebiteHandler extends MythicItemHandler {
             hitCount++;
         }
         Messages.debug(shooter, "BLAZEBITE: Magma Storm explosion hit " + hitCount + " enemies, radius: " + radius);
+    }
+
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        boolean nextIsVolcano = Boolean.FALSE.equals(lastShotVolcano.get(player.getUniqueId()));
+        return List.of(new HudSegment(hudText(nextIsVolcano ? "blazebite-flame" : "blazebite-frost"), false));
     }
 
     @Override

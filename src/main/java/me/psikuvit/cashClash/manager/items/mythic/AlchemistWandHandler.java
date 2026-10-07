@@ -107,6 +107,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ALCHEMIST_BLINK_SWAP)) {
             Messages.debug(player, "ALCHEMIST_WAND: Blink Swap on cooldown - "
                     + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ALCHEMIST_BLINK_SWAP) + "s");
+            manager.flashCooldown(player);
             return;
         }
 
@@ -307,6 +308,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ALCHEMIST_TIDY_UP)) {
             Messages.debug(wielder, "ALCHEMIST_WAND: Tidy Up on cooldown - "
                     + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ALCHEMIST_TIDY_UP) + "s");
+            manager.flashCooldown(wielder);
             return;
         }
 
@@ -570,6 +572,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.ALCHEMIST_TAUNT)) {
             Messages.debug(wielder, "ALCHEMIST_WAND: Taunt on cooldown - "
                     + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.ALCHEMIST_TAUNT) + "s");
+            manager.flashCooldown(wielder);
             return;
         }
 
@@ -829,6 +832,16 @@ public class AlchemistWandHandler extends MythicItemHandler {
     }
 
     // ==================== LIFECYCLE ====================
+
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        List<HudSegment> segments = new ArrayList<>();
+        UUID uuid = player.getUniqueId();
+        addCooldownSegment(segments, uuid, CooldownManager.Keys.ALCHEMIST_BLINK_SWAP, "blink-swap");
+        addCooldownSegment(segments, uuid, CooldownManager.Keys.ALCHEMIST_TIDY_UP, "tidy-up");
+        addCooldownSegment(segments, uuid, CooldownManager.Keys.ALCHEMIST_TAUNT, "taunt");
+        return segments;
+    }
 
     @Override
     public void cleanup() {

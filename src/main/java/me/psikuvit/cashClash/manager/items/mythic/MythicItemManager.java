@@ -56,6 +56,9 @@ public class MythicItemManager {
     // Active tasks across all handlers, cancelled on per-player and global cleanup
     private final Map<UUID, List<BukkitTask>> activeTasks;
 
+    // Until when each player's mythic HUD flashes red after using an ability on cooldown
+    private final Map<UUID, Long> cooldownFlashUntil;
+
     // Handler registry - one handler per mythic item
     private final Map<MythicItem, MythicItemHandler> handlers;
     private final List<MythicItemHandler> allHandlers;
@@ -71,6 +74,7 @@ public class MythicItemManager {
         sessionPurchasedMythics = new ConcurrentHashMap<>();
         sessionAvailableMythics = new ConcurrentHashMap<>();
         activeTasks = new ConcurrentHashMap<>();
+        cooldownFlashUntil = new ConcurrentHashMap<>();
 
         handlers = new EnumMap<>(MythicItem.class);
         allHandlers = new ArrayList<>();
@@ -133,6 +137,21 @@ public class MythicItemManager {
 
     CooldownManager getCooldownManager() {
         return cooldownManager;
+    }
+
+    /**
+     * Flashes the player's mythic HUD red - called when they try an ability that's on cooldown.
+     */
+    void flashCooldown(Player player) {
+        cooldownFlashUntil.put(player.getUniqueId(), System.currentTimeMillis() + cfg.getMythicHudCooldownFlashMs());
+    }
+
+    public boolean isCooldownFlashing(UUID uuid) {
+        Long until = cooldownFlashUntil.get(uuid);
+        if (until == null) return false;
+        if (System.currentTimeMillis() < until) return true;
+        cooldownFlashUntil.remove(uuid);
+        return false;
     }
 
     /**
@@ -355,6 +374,7 @@ public class MythicItemManager {
         for (MythicItemHandler handler : allHandlers) {
             handler.cleanupPlayer(player);
         }
+        cooldownFlashUntil.remove(uuid);
 
         // Cancel player tasks
         List<BukkitTask> tasks = activeTasks.remove(uuid);
@@ -386,6 +406,7 @@ public class MythicItemManager {
             if (task != null && !task.isCancelled()) task.cancel();
         }));
         activeTasks.clear();
+        cooldownFlashUntil.clear();
 
         CashClashPlugin.getInstance().getLogger().info("[MythicItemManager] Cleanup complete");
     }

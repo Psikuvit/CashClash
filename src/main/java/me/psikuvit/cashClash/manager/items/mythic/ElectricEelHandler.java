@@ -25,6 +25,7 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -115,6 +116,7 @@ public class ElectricEelHandler extends MythicItemHandler {
             long readyAt = eelNextChargeReadyAt.getOrDefault(uuid, now);
             long remaining = Math.max(0, (readyAt - now) / 1000L);
             Messages.debug(player, "ELECTRIC_EEL: No dash charges left - next in " + remaining + "s");
+            manager.flashCooldown(player);
             return;
         }
 
@@ -230,6 +232,22 @@ public class ElectricEelHandler extends MythicItemHandler {
         }, durationTicks);
         eelSlowRemovalTasks.put(id, removalTask);
         manager.trackTask(id, removalTask);
+    }
+
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        UUID uuid = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        settleDashCharges(uuid, now);
+
+        int maxCharges = cfg.getEelDashMaxCharges();
+        int charges = eelDashCharges.getOrDefault(uuid, maxCharges);
+        Long readyAt = eelNextChargeReadyAt.get(uuid);
+        if (charges >= maxCharges || readyAt == null) return List.of();
+
+        return List.of(
+                new HudSegment(hudText("eel-charges", "charges", String.valueOf(charges), "max", String.valueOf(maxCharges)), false),
+                new HudSegment(hudText("eel-recharge", "seconds", String.valueOf(ceilSeconds(readyAt - now))), false));
     }
 
     @Override

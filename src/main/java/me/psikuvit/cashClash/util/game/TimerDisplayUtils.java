@@ -127,6 +127,10 @@ public class TimerDisplayUtils {
         }
     }
 
+    public static synchronized boolean hasTimer(UUID playerUuid) {
+        return timerDisplays.containsKey(playerUuid);
+    }
+
     /**
      * Stop a countdown timer for a player
      */

@@ -33,6 +33,8 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -98,6 +100,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE)) {
             Messages.debug(player, "WARDEN_GLOVES: Shockwave on cooldown - " + cooldownManager.getRemainingCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE) + "s");
+            manager.flashCooldown(player);
             return;
         }
 
@@ -237,6 +240,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         if (risingFuryActive.contains(uuid)) return;
 
         if (cooldownManager.isOnCooldown(uuid, CooldownManager.Keys.WARDEN_RISING_FURY)) {
+            manager.flashCooldown(player);
             return;
         }
 
@@ -378,6 +382,15 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
         item.setItemMeta(meta);
         player.getInventory().setItemInMainHand(item);
+    }
+
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        List<HudSegment> segments = new ArrayList<>();
+        UUID uuid = player.getUniqueId();
+        addCooldownSegment(segments, uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE, "shockwave");
+        addCooldownSegment(segments, uuid, CooldownManager.Keys.WARDEN_RISING_FURY, "rising-fury");
+        return segments;
     }
 
     @Override
