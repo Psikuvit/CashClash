@@ -29,6 +29,9 @@ public class TemplateWorld {
     private final List<Location> teamRedSpawns;
     private final List<Location> teamBlueSpawns;
 
+    // Shop spawn points for each team (template-space)
+    private Location teamRedShopSpawn;
+    private Location teamBlueShopSpawn;
     private final List<Location> villagersSpawnPoint;
 
     // CTF Flag locations
@@ -106,6 +109,19 @@ public class TemplateWorld {
         return LocationUtils.clone(teamBlueSpawns.get(idx));
     }
 
+    public Location getTeamRedShopSpawn() {
+        return LocationUtils.clone(teamRedShopSpawn);
+    }
+    public void setTeamRedShopSpawn(Location teamRedShopSpawn) {
+        this.teamRedShopSpawn = teamRedShopSpawn;
+    }
+    public Location getTeamBlueShopSpawn() {
+        return LocationUtils.clone(teamBlueShopSpawn);
+    }
+    public void setTeamBlueShopSpawn(Location teamBlueShopSpawn) {
+        this.teamBlueShopSpawn = teamBlueShopSpawn;
+    }
+
     /**
      * @return a defensive copy - both the list and each Location in it are safe for the caller
      *         to mutate without affecting this template.
@@ -177,6 +193,7 @@ public class TemplateWorld {
         if (teamRedSpawns.stream().anyMatch(Objects::isNull)) return false;
         if (teamBlueSpawns.stream().anyMatch(Objects::isNull)) return false;
         if (villagersSpawnPoint.isEmpty()) return false;
-        return redFlagLoc != null && blueFlagLoc != null;
+        if (redFlagLoc == null || blueFlagLoc == null) return false;
+        return teamRedShopSpawn != null && teamBlueShopSpawn != null;
     }
 }
