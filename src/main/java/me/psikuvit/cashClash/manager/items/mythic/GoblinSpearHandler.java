@@ -341,7 +341,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
         ItemStack spear = new ItemStack(Material.TRIDENT);
         CustomModelDataMapper.applyCustomModel(spear, MythicItem.GOBLIN_SPEAR);
 
-        ItemDisplay display = trident.getWorld().spawn(trident.getLocation(), ItemDisplay.class, d -> {
+        ItemDisplay display = trident.getWorld().spawn(unrotated(trident.getLocation()), ItemDisplay.class, d -> {
             d.setItemStack(spear);
             d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE); // raw model space: spear axis is +Y, tip up
             d.setBillboard(Display.Billboard.FIXED);
@@ -361,21 +361,13 @@ public class GoblinSpearHandler extends MythicItemHandler {
                     return;
                 }
 
-                display.teleport(trident.getLocation());
+                display.teleport(unrotated(trident.getLocation()));
 
-                // Display entities are oriented entirely through the Transformation - the
-                // entity's own yaw/pitch (setRotation) is not part of how they're rendered, so
-                // that never actually reoriented this as the trident's flight direction changed.
-                // Rebuild the facing quaternion from the live velocity every tick instead.
+                // The spear model's +Y axis turned straight onto the flight direction, tip first
                 Vector velocity = trident.getVelocity();
                 if (velocity.lengthSquared() > 1.0E-6) {
-                    Location facing = trident.getLocation().clone();
-                    facing.setDirection(velocity);
-                    Quaternionf rotation = new Quaternionf()
-                            .rotationYXZ((float) Math.toRadians(facing.getYaw()), (float) Math.toRadians(facing.getPitch()), 0f)
-                            // Model space has the spear's tip along +Y (point up) - rotate that
-                            // into the facing quaternion's forward axis so the tip leads flight.
-                            .rotateX((float) Math.toRadians(-90));
+                    Vector3f heading = velocity.toVector3f().normalize();
+                    Quaternionf rotation = new Quaternionf().rotationTo(new Vector3f(0f, 1f, 0f), heading);
 
                     Transformation t = display.getTransformation();
                     display.setTransformation(new Transformation(t.getTranslation(), rotation,
@@ -383,5 +375,16 @@ public class GoblinSpearHandler extends MythicItemHandler {
                 }
             }
         }, 0L, 1L);
+    }
+
+    /**
+     * A FIXED display renders its own yaw/pitch on top of its transformation, so the display is
+     * kept unrotated and the transformation alone points it.
+     */
+    private static Location unrotated(Location location) {
+        Location copy = location.clone();
+        copy.setYaw(0f);
+        copy.setPitch(0f);
+        return copy;
     }
 }
