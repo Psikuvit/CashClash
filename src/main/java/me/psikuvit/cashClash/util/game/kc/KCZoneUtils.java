@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -36,6 +37,7 @@ public final class KCZoneUtils {
     private static final Color GOLD_GLOW = Color.fromRGB(255, 215, 0);
     private static final Color GREEN_GLOW = Color.fromRGB(0, 220, 90);
     private static final Color RED_GLOW = Color.fromRGB(220, 40, 40);
+    private static final Color BLUE_GLOW = Color.fromRGB(60, 90, 255);
 
     // Dim/uncolored look used for the first ZONE_ACTIVATION_DELAY_MS while a zone is still
     // "pending" (spawned but not yet capturable), swapped for ACTIVE_BRIGHTNESS + the kind's
@@ -123,7 +125,6 @@ public final class KCZoneUtils {
      */
     public static void activateZoneEntities(KCZone zone) {
         Color glowColor = glowColorFor(zone.getKind());
-        String colorTag = colorTagFor(zone.getKind());
 
         BlockDisplay platform = zone.getPlatformDisplay();
         if (platform != null && !platform.isDead()) {
@@ -138,10 +139,12 @@ public final class KCZoneUtils {
         // the platform gets.
         Entity icon = zone.getIconDisplay();
         if (icon instanceof TextDisplay nametag && !nametag.isDead()) {
-            nametag.text(Messages.parse("<" + colorTag + "><bold>" + zone.getVictimName() + "'s Tag</bold></" + colorTag + ">"));
+            TeamColor victimTeam = TeamColor.fromTeamNumber(zone.getKillerTeam()).opposite();
+            String victimTag = victimTeam.getDisplayName().toLowerCase();
+            nametag.text(Messages.parse("<" + victimTag + "><bold>" + zone.getVictimName() + "'s Tag</bold></" + victimTag + ">"));
             nametag.setBrightness(ACTIVE_BRIGHTNESS);
             nametag.setGlowing(true);
-            nametag.setGlowColorOverride(glowColor);
+            nametag.setGlowColorOverride(victimTeam == TeamColor.RED ? RED_GLOW : BLUE_GLOW);
         } else if (icon instanceof Display displayIcon && !icon.isDead()) {
             displayIcon.setBrightness(ACTIVE_BRIGHTNESS);
             displayIcon.setGlowing(true);
