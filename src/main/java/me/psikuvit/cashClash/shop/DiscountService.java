@@ -48,6 +48,7 @@ public final class DiscountService {
             case CustomArmorItem armor -> customArmorDiscount(player, armor);
             case MythicItem mythic -> mythicDiscount(player, mythic);
             case WeaponItem weapon when weapon == WeaponItem.CASH_BLASTER -> bowTradeInValue(player);
+            case WeaponItem weapon when weapon == WeaponItem.SOUL_KATANA -> ironSwordTradeInValue(player);
             default -> 0;
         };
     }
@@ -116,6 +117,17 @@ public final class DiscountService {
         WeaponItem best = bestOwnedWeapon(player, iron, diamond);
         if (best == diamond) return iron.getPrice() + diamond.getPrice();
         if (best == iron) return iron.getPrice();
+        return 0;
+    }
+
+    /**
+     * The Soul Katana is an iron-tier blade, so buying it takes a shop-bought iron sword (and
+     * leaves a diamond one alone) - only the iron sword is a trade-in.
+     */
+    private static long ironSwordTradeInValue(Player player) {
+        for (ItemStack is : player.getInventory().getContents()) {
+            if (PDCDetection.getWeapon(is) == WeaponItem.IRON_SWORD) return WeaponItem.IRON_SWORD.getPrice();
+        }
         return 0;
     }
 
