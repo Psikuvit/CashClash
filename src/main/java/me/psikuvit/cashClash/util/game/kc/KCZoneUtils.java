@@ -38,6 +38,7 @@ public final class KCZoneUtils {
     private static final Color GREEN_GLOW = Color.fromRGB(0, 220, 90);
     private static final Color RED_GLOW = Color.fromRGB(220, 40, 40);
     private static final Color BLUE_GLOW = Color.fromRGB(60, 90, 255);
+    private static final Color TOTEM_YELLOW = Color.fromRGB(255, 225, 50);
 
     // Dim/uncolored look used for the first ZONE_ACTIVATION_DELAY_MS while a zone is still
     // "pending" (spawned but not yet capturable), swapped for ACTIVE_BRIGHTNESS + the kind's
@@ -144,7 +145,7 @@ public final class KCZoneUtils {
             nametag.text(Messages.parse("<" + victimTag + "><bold>" + zone.getVictimName() + "'s Tag</bold></" + victimTag + ">"));
             nametag.setBrightness(ACTIVE_BRIGHTNESS);
             nametag.setGlowing(true);
-            nametag.setGlowColorOverride(victimTeam == TeamColor.RED ? RED_GLOW : BLUE_GLOW);
+            nametag.setGlowColorOverride(tagColor(zone));
         } else if (icon instanceof Display displayIcon && !icon.isDead()) {
             displayIcon.setBrightness(ACTIVE_BRIGHTNESS);
             displayIcon.setGlowing(true);
@@ -201,15 +202,25 @@ public final class KCZoneUtils {
         return switch (kind) {
             case NAMETAG -> GOLD_GLOW;
             case MONEY -> GREEN_GLOW;
-            case HEART -> RED_GLOW;
+            case HEART -> TOTEM_YELLOW;
         };
+    }
+
+    /**
+     * The colour a zone's tag shows as, which its beam matches: a nametag in the dead player's
+     * team colour, a Money Tag green, a Heart Tag totem yellow.
+     */
+    private static Color tagColor(KCZone zone) {
+        if (zone.getKind() != KCZone.ZoneKind.NAMETAG) return glowColorFor(zone.getKind());
+        TeamColor victimTeam = TeamColor.fromTeamNumber(zone.getKillerTeam()).opposite();
+        return victimTeam == TeamColor.RED ? RED_GLOW : BLUE_GLOW;
     }
 
     private static String colorTagFor(KCZone.ZoneKind kind) {
         return switch (kind) {
             case NAMETAG -> "gold";
             case MONEY -> "green";
-            case HEART -> "red";
+            case HEART -> "yellow";
         };
     }
 
@@ -270,7 +281,7 @@ public final class KCZoneUtils {
     }
 
     /**
-     * A beam pulsing straight up from a zone, colored to match its kind, shown once when it
+     * A beam pulsing straight up from a zone, in the colour of its tag, shown once when it
      * activates and again when its countdown timer reaches the halfway point. Redrawn every
      * {@value #BEAM_REFRESH_INTERVAL_TICKS} ticks for
      * {@code gamemodes.kill-confirm.beam-duration-ticks} ticks so the pulse reads as a lasting
@@ -281,7 +292,7 @@ public final class KCZoneUtils {
         if (center == null || center.getWorld() == null) return;
 
         var cfg = CashClashPlugin.getInstance().getConfigManager();
-        Color color = glowColorFor(zone.getKind());
+        Color color = tagColor(zone);
         Location base = center.clone().add(0, cfg.getKCBeamYOffset(), 0);
         double beamHeight = cfg.getKCBeamHeight();
         int beamDurationTicks = cfg.getKCBeamDurationTicks();
