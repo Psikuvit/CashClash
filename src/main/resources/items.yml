@@ -519,6 +519,8 @@ permanent-enchants:
     power: 1
   blazebite-crossbows:
     quick_charge: 1
+  bloodwrench-crossbow:
+    quick_charge: 1
   goblin-spear:
     loyalty: 3
   bag-of-potatoes:
