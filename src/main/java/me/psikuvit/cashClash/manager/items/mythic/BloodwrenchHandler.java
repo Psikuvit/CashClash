@@ -257,9 +257,12 @@ public class BloodwrenchHandler extends MythicItemHandler {
         lastTornadoAt.clear();
     }
 
+    /**
+     * The hit count is kept through a death (this runs on death as well as on quit), so a
+     * respawned wielder picks up where they left off; it only resets with the game.
+     */
     @Override
     public void cleanupPlayer(Player player) {
-        landedHits.remove(player.getUniqueId());
         lastTornadoAt.remove(player.getUniqueId());
     }
 }
