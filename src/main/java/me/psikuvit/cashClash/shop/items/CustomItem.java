@@ -11,9 +11,7 @@ import org.bukkit.Material;
  */
 public enum CustomItem implements Purchasable {
     GRENADE(Material.FIRE_CHARGE, "grenade", 1, 0, "Throwable Grenade"),
-    // BLACK_CONCRETE just for the pack texture - the placed pad is always a real SLIME_BLOCK
-    // (hardcoded in BouncePadHandler#placeBouncePad) so vanilla bounce physics are unaffected.
-    BOUNCE_PAD(Material.BLACK_CONCRETE, "bounce-pad", 1, 8, "Placeable Bounce Pad", true),
+    BOUNCE_PAD(Material.SLIME_BLOCK, "bounce-pad", 1, 8, "Placeable Bounce Pad", true),
     MEDIC_POUCH(Material.RED_DYE, "medic-pouch", 1, 0, "Medic Pouch"),
     TABLET_OF_HACKING(Material.FILLED_MAP, "tablet-of-hacking", 1, 0, "Tablet of Hacking"),
     BAG_OF_POTATOES(Material.WOODEN_SWORD, "bag-of-potatoes", 1, 3, "Bag of Potatoes"),

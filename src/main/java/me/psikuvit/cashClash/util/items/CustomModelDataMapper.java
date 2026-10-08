@@ -71,10 +71,10 @@ public final class CustomModelDataMapper {
         // assets/minecraft/items/iron_sword.json         when: "soulkatana"
         WEAPON_KEYS.put(WeaponItem.SOUL_KATANA,           "soulkatana");
 
-        // Blooming Rose and Boombox used to key off assets/minecraft/items/cherry_sapling.json
-        // and jukebox.json respectively, but the pack now ships their real 3D block-style item
-        // models instead (see CUSTOM_ITEM_MODELS below) - those two vanilla-item override files
-        // are gone from the pack, so the old CUSTOM_MODEL_DATA string entries would no-op.
+        // Blooming Rose used to key off assets/minecraft/items/cherry_sapling.json, but the pack
+        // now ships its real 3D block-style item model instead (see CUSTOM_ITEM_MODELS below) -
+        // that vanilla-item override file is gone from the pack, so a CUSTOM_MODEL_DATA string
+        // entry would no-op.
 
         // assets/minecraft/items/diamond_sword.json     when: "electriceelsword"
         MYTHIC_KEYS.put(MythicItem.ELECTRIC_EEL_SWORD, "electriceelsword");
@@ -156,11 +156,10 @@ public final class CustomModelDataMapper {
 
         // Placeable-style custom items whose held/inventory icon is a 3D block-cube model
         // instead of a flat 2D CUSTOM_MODEL_DATA icon swap - the physical block each of these
-        // places in the world (slime block, cherry log/leaves, jukebox) has its own separate,
-        // untouched vanilla appearance; this only changes how the item looks in hand/inventory.
-        CUSTOM_ITEM_MODELS.put(CustomItem.BOUNCE_PAD,     new NamespacedKey("cc", "bounce_pad"));
+        // places in the world has its own separate, untouched vanilla appearance; this only
+        // changes how the item looks in hand/inventory. Bounce Pad and Speedbox use their plain
+        // vanilla slime block and jukebox look.
         CUSTOM_ITEM_MODELS.put(CustomItem.BLOOMING_ROSE,  new NamespacedKey("cc", "blooming_rose"));
-        CUSTOM_ITEM_MODELS.put(CustomItem.BOOMBOX,        new NamespacedKey("cc", "speed_box"));
     }
 
     public static String getItemKey(CustomItem item) {
