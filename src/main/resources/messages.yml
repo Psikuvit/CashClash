@@ -370,6 +370,7 @@ messages:
     flag-picked-up-subtitle: "<yellow>Go score!</yellow>"
     flag-return-bar: "<{color}>{team_name} flag returns in {seconds}s</{color}>"
     flag-pickup-bar: "<{color}>Picking up the {team_name} flag... {seconds}s</{color}>"
+    flag-capture-bar: "<{color}>Scoring the {team_name} flag... {seconds}s</{color}>"
     flag-drop-timer-reset: "<gold>{team_name} team has reset the dropped flag return timer!</gold>"
     cannot-use-while-carrying-flag: "<red>You cannot use this while carrying the flag!</red>"
     cannot-use-invis-with-flag: "<red>You cannot use Invisibility Cloak while carrying the flag!</red>"

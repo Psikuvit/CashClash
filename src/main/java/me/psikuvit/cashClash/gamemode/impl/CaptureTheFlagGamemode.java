@@ -55,6 +55,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
      private final long CAPTURE_TIMER_MS;
      private final long FLAG_PICKUP_DURATION_MS;
      private final long FLAG_RETURN_MS;
+     private final long FLAG_CAPTURE_DURATION_MS;
 
     private final Map<TeamColor, Integer> flagCaptures;
     private final Map<TeamColor, Integer> suddenDeathCycleCaptures;
@@ -64,6 +65,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<TeamColor, BukkitTask> flagReturnDisplayTasks;
     private final Map<TeamColor, Long> flagReturnExpiry; // scheduled return time (ms) for dropped flags
     private final Map<UUID, Long> playerCircleTimestamps; // when the player entered a pickup circle
+    private final Map<UUID, Long> captureStartedAt; // when a carrier started standing in their scoring circle
     private final Map<UUID, Integer> playerNearestFlagTeam;
     private final Set<UUID> stalemateMsgShown; // told about the both-flags-held block in the current state
     private final Set<UUID> blockedCarrierWarned; // carriers shown "Kill {name}" on their current visit to their capture area
@@ -87,6 +89,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.CAPTURE_TIMER_MS = cfg.getCTFCaptureBonusTimerMs();
         this.FLAG_PICKUP_DURATION_MS = cfg.getCTFPlateActivationTimeMs();
         this.FLAG_RETURN_MS = cfg.getCTFFlagReturnTimeMs();
+        this.FLAG_CAPTURE_DURATION_MS = cfg.getCTFCaptureTimeMs();
 
         this.flagCaptures = new EnumMap<>(TeamColor.class);
         this.suddenDeathCycleCaptures = new EnumMap<>(TeamColor.class);
@@ -96,6 +99,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.flagReturnDisplayTasks = new EnumMap<>(TeamColor.class);
         this.flagReturnExpiry = new EnumMap<>(TeamColor.class);
         this.playerCircleTimestamps = new HashMap<>();
+        this.captureStartedAt = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
         this.stalemateMsgShown = new HashSet<>();
         this.blockedCarrierWarned = new HashSet<>();
@@ -143,6 +147,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         playerCircleTimestamps.clear();
         playerNearestFlagTeam.clear();
+        captureStartedAt.clear();
         stalemateMsgShown.clear();
         blockedCarrierWarned.clear();
 
@@ -176,6 +181,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         playerCircleTimestamps.clear();
         playerNearestFlagTeam.clear();
+        captureStartedAt.clear();
         finalStandPenalized.clear();
 
          // Recreated in the next combat phase. The banner rotation keeps running through the
@@ -304,6 +310,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          flagCaptures.clear();
          playerCircleTimestamps.clear();
          playerNearestFlagTeam.clear();
+         captureStartedAt.clear();
          finalStandPenalized.clear();
      }
 
@@ -694,7 +701,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     /**
-     * Check if a player carrying enemy flag reached their own scoring area.
+     * Check if a player carrying enemy flag is in their own scoring area, where they score after
+     * standing for the capture time - which only counts while their own flag is at base.
+     *
+     * @return true while the player is scoring there (or just scored)
      */
     private boolean tryHandleFlagCapture(Player player, int playerTeam, FlagState redFlag, FlagState blueFlag) {
         UUID playerUuid = player.getUniqueId();
@@ -741,8 +751,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 && blueFlag.isHeld()
                 && playerUuid.equals(blueFlag.holder())
                 && isPlayerInScoringZone(player, redBase)) {
-            flagCapture(player, 1);
-            return true;
+            return progressCapture(player, 1);
         }
 
         // Team 2 carries Team 1's (Red) flag and scores at Team 2's (Blue) plate.
@@ -752,11 +761,24 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (playerTeam == 2 && redFlag.isHeld() &&
                 playerUuid.equals(redFlag.holder()) &&
                 isPlayerInScoringZone(player, blueBase)) {
-            flagCapture(player, 2);
-            return true;
+            return progressCapture(player, 2);
         }
 
         return false;
+    }
+
+    /**
+     * One step of a carrier standing in their scoring circle: starts their timer on the first,
+     * scores once it has run the capture time.
+     */
+    private boolean progressCapture(Player player, int teamNumber) {
+        long now = System.currentTimeMillis();
+        long startedAt = captureStartedAt.computeIfAbsent(player.getUniqueId(), k -> now);
+        if (now - startedAt >= FLAG_CAPTURE_DURATION_MS) {
+            captureStartedAt.remove(player.getUniqueId());
+            flagCapture(player, teamNumber);
+        }
+        return true;
     }
 
     /**
@@ -852,6 +874,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
             if (player == null || !player.isOnline() || player.getGameMode() == GameMode.SPECTATOR || usingOverdrive) {
                 playerCircleTimestamps.remove(playerUuid);
                 playerNearestFlagTeam.remove(playerUuid);
+                captureStartedAt.remove(playerUuid);
                 continue;
             }
 
@@ -865,6 +888,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 playerNearestFlagTeam.remove(playerUuid);
                 continue;
             }
+            captureStartedAt.remove(playerUuid);
 
             // Only the enemy team can pick a flag up, so the team check decides eligibility.
             Integer nearestTeam = null;
@@ -918,7 +942,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
     /**
      * Re-applies the boss bars: a dropped flag's return countdown for everyone in the game, except
      * players picking that flag up, who see their own pickup progress instead and drop back to the
-     * return countdown, wherever it has got to, the moment they stop.
+     * return countdown, wherever it has got to, the moment they stop. A carrier standing in their
+     * scoring circle sees their scoring progress, in the colour of the flag they carry.
      */
     private void updateFlagBars() {
         long now = System.currentTimeMillis();
@@ -935,12 +960,21 @@ public class CaptureTheFlagGamemode extends Gamemode {
         for (UUID uuid : session.getPlayers()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) continue;
+            Long scoringSince = captureStartedAt.get(uuid);
+            Team team = session.getPlayerTeam(uuid);
+            if (scoringSince != null && team != null) {
+                TeamColor carriedFlag = TeamColor.fromTeamNumber(team.getTeamNumber()).opposite();
+                flagBars.showProgress(player, carriedFlag, "gamemode-ctf.flag-capture-bar",
+                        FLAG_CAPTURE_DURATION_MS - (now - scoringSince), FLAG_CAPTURE_DURATION_MS);
+                continue;
+            }
+
             Integer flagTeam = playerNearestFlagTeam.get(uuid);
             Long startedAt = playerCircleTimestamps.get(uuid);
             if (flagTeam == null || startedAt == null) {
-                flagBars.hidePickup(player);
+                flagBars.hideProgress(player);
             } else {
-                flagBars.showPickup(player, TeamColor.fromTeamNumber(flagTeam),
+                flagBars.showProgress(player, TeamColor.fromTeamNumber(flagTeam), "gamemode-ctf.flag-pickup-bar",
                         FLAG_PICKUP_DURATION_MS - (now - startedAt), FLAG_PICKUP_DURATION_MS);
             }
         }

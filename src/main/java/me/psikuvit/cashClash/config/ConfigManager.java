@@ -371,6 +371,10 @@ public class ConfigManager {
         return config.getLong("gamemodes.capture-the-flag.flag-return-time-ms", 5000);
     }
 
+    public long getCTFCaptureTimeMs() {
+        return config.getLong("gamemodes.capture-the-flag.capture-time-ms", 3000);
+    }
+
     // Kill Confirm
     public int getKCScoreToWin() {
         return config.getInt("gamemodes.kill-confirm.score-to-win", 16);

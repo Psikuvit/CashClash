@@ -19,18 +19,18 @@ import java.util.function.Predicate;
 
 /**
  * One CTF game's boss bars, both draining towards empty in the colour of the flag they're about:
- * a dropped flag's return countdown (everyone in the game) and a player's own pickup progress
- * (only them). Showing and hiding a boss bar is idempotent, so callers just re-apply the state
- * they want on every update.
+ * a dropped flag's return countdown (everyone in the game) and a player's own pickup or scoring
+ * progress (only them). Showing and hiding a boss bar is idempotent, so callers just re-apply the
+ * state they want on every update.
  */
 public class FlagBossBars {
 
     private final Map<TeamColor, BossBar> returnBars;
-    private final Map<UUID, BossBar> pickupBars;
+    private final Map<UUID, BossBar> progressBars;
 
     public FlagBossBars() {
         this.returnBars = new EnumMap<>(TeamColor.class);
-        this.pickupBars = new HashMap<>();
+        this.progressBars = new HashMap<>();
     }
 
     /**
@@ -57,22 +57,26 @@ public class FlagBossBars {
         if (bar != null) hideFromEveryone(bar);
     }
 
-    public void showPickup(Player player, TeamColor flag, long remainingMs, long totalMs) {
-        BossBar bar = pickupBars.get(player.getUniqueId());
+    /**
+     * Shows a player their own progress bar - picking a flag up, or scoring one - titled from
+     * {@code nameKey}.
+     */
+    public void showProgress(Player player, TeamColor flag, String nameKey, long remainingMs, long totalMs) {
+        BossBar bar = progressBars.get(player.getUniqueId());
         if (bar != null && bar.color() != barColor(flag)) {
             player.hideBossBar(bar);
             bar = null;
         }
         if (bar == null) {
             bar = createBar(flag);
-            pickupBars.put(player.getUniqueId(), bar);
+            progressBars.put(player.getUniqueId(), bar);
         }
-        update(bar, "gamemode-ctf.flag-pickup-bar", flag, remainingMs, totalMs);
+        update(bar, nameKey, flag, remainingMs, totalMs);
         player.showBossBar(bar);
     }
 
-    public void hidePickup(Player player) {
-        BossBar bar = pickupBars.remove(player.getUniqueId());
+    public void hideProgress(Player player) {
+        BossBar bar = progressBars.remove(player.getUniqueId());
         if (bar != null) player.hideBossBar(bar);
     }
 
@@ -80,15 +84,15 @@ public class FlagBossBars {
      * Takes every bar off one player - for a player leaving the game.
      */
     public void hideFor(Player player) {
-        hidePickup(player);
+        hideProgress(player);
         returnBars.values().forEach(player::hideBossBar);
     }
 
     public void hideAll() {
         List<BossBar> bars = new ArrayList<>(returnBars.values());
-        bars.addAll(pickupBars.values());
+        bars.addAll(progressBars.values());
         returnBars.clear();
-        pickupBars.clear();
+        progressBars.clear();
         bars.forEach(FlagBossBars::hideFromEveryone);
     }
 
