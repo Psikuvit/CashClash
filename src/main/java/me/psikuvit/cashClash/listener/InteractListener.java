@@ -55,6 +55,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
@@ -238,6 +239,27 @@ public class InteractListener implements Listener {
     public void onWardenGlovesSwapHands(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
         if (mythicManager.getHandler(WardenGlovesHandler.class).isBothHandsActive(player.getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * The paired off-hand glove can't be moved at all. Taking it out of the off-hand left the
+     * gloves held with nothing paired, so the reconcile put a fresh one back - and the one taken
+     * was a working netherite sword. Blocks clicking it, clicking with it, number-key swapping
+     * it, and the F-key swap onto the off-hand while it's there.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onWardenCosmeticClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        WardenGlovesHandler handler = mythicManager.getHandler(WardenGlovesHandler.class);
+
+        boolean touchesCosmetic = handler.isCosmeticGlove(event.getCurrentItem())
+                || handler.isCosmeticGlove(event.getCursor())
+                || (event.getClick() == ClickType.NUMBER_KEY
+                    && handler.isCosmeticGlove(player.getInventory().getItem(event.getHotbarButton())))
+                || (event.getClick() == ClickType.SWAP_OFFHAND && handler.isBothHandsActive(player.getUniqueId()));
+        if (touchesCosmetic) {
             event.setCancelled(true);
         }
     }

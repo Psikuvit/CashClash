@@ -198,7 +198,10 @@ public class WardenGlovesHandler extends MythicItemHandler {
         }
     }
 
-    private boolean isCosmeticGlove(ItemStack item) {
+    /**
+     * Whether an item is the paired glove shown in the off-hand while the gloves are held.
+     */
+    public boolean isCosmeticGlove(ItemStack item) {
         if (item == null || item.getType() == Material.AIR || !item.hasItemMeta()) return false;
         return item.getItemMeta().getPersistentDataContainer().has(Keys.WARDEN_GLOVES_COSMETIC, PersistentDataType.BYTE);
     }
