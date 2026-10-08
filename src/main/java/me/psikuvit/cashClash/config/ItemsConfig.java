@@ -304,6 +304,10 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.bloodwrench.rapid.sphere-burst-damage", 4.0);
     }
 
+    public double getBloodwrenchSphereDamagePerSecond() {
+        return config.getDouble("mythic-items.bloodwrench.rapid.sphere-damage-per-second", 2.0);
+    }
+
     // BloodWrench Crossbow - Blood Tornado
     public double getBloodwrenchVortexRadius() {
         return config.getDouble("mythic-items.bloodwrench.supercharge.vortex-radius", 4.0);

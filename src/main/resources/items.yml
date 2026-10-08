@@ -117,6 +117,7 @@ mythic-items:
       sphere-particle-density: 14  # points per block of ring radius on the sphere shell
       sphere-duration-ticks: 60  # 3 seconds
       sphere-burst-damage: 4.0  # 2 hearts
+      sphere-damage-per-second: 2.0  # enemies inside lose 1 heart every second
     # Blood tornado
     supercharge:
       vortex-radius: 4.0

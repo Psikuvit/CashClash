@@ -87,7 +87,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
 
     /**
      * Blood bubble - a lingering blood sphere with a burst of damage on release, blocking the
-     * healing of enemies inside it.
+     * healing of enemies inside it and costing them {@code sphere-damage-per-second} each second.
      */
     private void releaseBloodBubble(Player shooter, Location hitLocation) {
         World world = hitLocation.getWorld();
@@ -126,12 +126,15 @@ public class BloodwrenchHandler extends MythicItemHandler {
         final double sphereRadius = radius;
         int healNegationDuration = cfg.getBloodwrenchHealNegationDuration();
         double sphereDensity = cfg.getBloodwrenchSphereParticleDensity();
+        double damagePerSecond = cfg.getBloodwrenchSphereDamagePerSecond();
         BukkitTask sphereTask = SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             private int tick;
 
             @Override
             public void run() {
                 tick++;
+                // This runs every half second, so every other run is a full second
+                boolean damageTick = tick % 2 == 0;
 
                 ParticleUtils.bloodSphereShell(hitLocation, sphereRadius, tick, sphereDensity);
 
@@ -148,6 +151,9 @@ public class BloodwrenchHandler extends MythicItemHandler {
                     }
 
                     applyHealNegation(target, healNegationDuration);
+                    if (damageTick && damagePerSecond > 0) {
+                        target.damage(damagePerSecond, shooter);
+                    }
                 }
             }
         }, 0L, 10L);
