@@ -15,8 +15,8 @@ public enum RewardType {
     CTF_HOLD_BONUS("gamemode-ctf.flag-captured-bonus", false),
     KC_CONFIRM_BONUS("gamemode-kc.money-tag-bonus-coins", false),
     PTP_KILL_STREAK_BONUS("gamemode-ptp.kill-bonus", false),
-    // "economy.round-money-distributed" is sent once as a session-wide broadcast (it needs
-    // both a "pool" and a per-player "amount" placeholder), not per grant - see EconomyManager.
+    // "economy.round-money-earned" is sent by EconomyManager itself, since it needs the pool
+    // as well as the amount actually granted.
     ROUND_DISTRIBUTION(null, false),
     SUPPLY_DROP("cashquake.supply-drop-reward", false),
     CASH_BLASTER_VORTEX(null, false);

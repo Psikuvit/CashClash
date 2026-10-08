@@ -49,20 +49,23 @@ public class RewardManager {
      * Same as {@link #grant(Player, RewardType, long, String...)}, but works from a UUID so
      * a disconnected-but-still-in-session player still gets credited (e.g. the buy-phase round
      * share) - the message is simply skipped if they're not online to see it.
+     *
+     * @return the coins actually added, after the multiplier (0 if the player isn't in the game)
      */
-    public void grant(UUID playerUuid, RewardType type, long amount, String... placeholders) {
+    public long grant(UUID playerUuid, RewardType type, long amount, String... placeholders) {
         CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
-        if (ccp == null) return;
+        if (ccp == null) return 0;
 
         long finalAmount = applyMultiplier(type, amount);
         ccp.addCoins(finalAmount);
 
-        if (type.getMessageKey() == null) return;
+        if (type.getMessageKey() == null) return finalAmount;
 
         Player player = Bukkit.getPlayer(playerUuid);
         if (player != null && player.isOnline()) {
             Messages.send(player, type.getMessageKey(), placeholders);
         }
+        return finalAmount;
     }
 
     /**

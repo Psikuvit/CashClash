@@ -40,12 +40,15 @@ public class EconomyManager {
 
         long share = pool / Math.max(1, CashClashPlugin.getInstance().getConfigManager().getRoundPoolSplit());
         for (UUID uuid : session.getPlayers()) {
-            session.getRewardManager().grant(uuid, RewardType.ROUND_DISTRIBUTION, share);
+            long earned = session.getRewardManager().grant(uuid, RewardType.ROUND_DISTRIBUTION, share);
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) {
+                Messages.send(player, "economy.round-money-earned",
+                        "pool", String.format("%,d", pool),
+                        "amount", String.format("%,d", earned));
+            }
         }
 
-        Messages.broadcast(session.getPlayers(), "economy.round-money-distributed",
-                "pool", String.format("%,d", pool),
-                "amount", String.format("%,d", share));
         Messages.debug("ECONOMY", "Round " + session.getCurrentRound() + " pool " + pool + " - paid " + share + " to each player");
     }
 
