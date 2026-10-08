@@ -38,10 +38,10 @@ import java.util.UUID;
 /**
  * Kill Confirm Gamemode.
  * Kills don't score on their own: every death spawns a capture zone at the death location, and
- * only a confirmed nametag scores a point - the killer's team confirms it, the victim's team can
+ * only a confirmed tag scores a point - the killer's team confirms it, the victim's team can
  * deny it. A
  * player's 3rd kill in an uninterrupted streak spawns a Money Tag (or, in sudden death, a Heart
- * Tag) instead of a plain nametag. Win condition and all bonuses/timers are config-driven
+ * Tag) instead of a plain nametag, which pays its bonus on top of the point. Win condition and all bonuses/timers are config-driven
  * (config.yml: gamemodes.kill-confirm).
  */
 public class KillConfirmGamemode extends Gamemode {
@@ -552,23 +552,25 @@ public class KillConfirmGamemode extends Gamemode {
         // Investor's Set: reward the confirming player's team on objective completion
         session.getRewardManager().grantKillOrObjective(capturer, RewardType.OBJECTIVE_KC_CONFIRM, 0);
 
-        if (zone.getKind() == KCZone.ZoneKind.NAMETAG) {
-            teamScore.merge(color, 1, Integer::sum);
-            if (suddenDeathManager.isInSuddenDeath()) {
-                suddenDeathCycleScore.merge(color, 1, Integer::sum);
-                checkSuddenDeathCycleTie();
-            }
-            Messages.broadcast(session.getPlayers(), "gamemode-kc.tag-confirmed",
-                    "player_name", capturer.getName(),
-                    "team_name", color.getDisplayName(),
-                    "score", String.valueOf(teamScore.get(color)),
-                    "win_condition", String.valueOf(WIN_CONDITION));
-        } else {
-            awardConfirmBonus(capturingTeam, zone.getKind() == KCZone.ZoneKind.HEART);
-            Messages.broadcast(session.getPlayers(), "gamemode-kc.money-tag-confirmed",
-                    "player_name", capturer.getName(),
-                    "team_name", color.getDisplayName());
+        teamScore.merge(color, 1, Integer::sum);
+        if (suddenDeathManager.isInSuddenDeath()) {
+            suddenDeathCycleScore.merge(color, 1, Integer::sum);
+            checkSuddenDeathCycleTie();
         }
+
+        String messageKey = switch (zone.getKind()) {
+            case NAMETAG -> "gamemode-kc.tag-confirmed";
+            case MONEY -> "gamemode-kc.money-tag-scored";
+            case HEART -> "gamemode-kc.heart-tag-scored";
+        };
+        if (zone.getKind() != KCZone.ZoneKind.NAMETAG) {
+            awardConfirmBonus(capturingTeam, zone.getKind() == KCZone.ZoneKind.HEART);
+        }
+        Messages.broadcast(session.getPlayers(), messageKey,
+                "player_name", capturer.getName(),
+                "team_name", color.getDisplayName(),
+                "score", String.valueOf(teamScore.get(color)),
+                "win_condition", String.valueOf(WIN_CONDITION));
     }
 
     private void resolveZoneDenied(KCZone zone, Player denier, int denyingTeam) {
