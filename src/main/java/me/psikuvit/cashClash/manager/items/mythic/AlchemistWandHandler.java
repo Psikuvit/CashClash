@@ -819,13 +819,19 @@ public class AlchemistWandHandler extends MythicItemHandler {
     /**
      * Deals redirected damage to the wielder under a transient re-entrancy guard, so the
      * EntityDamageEvent this triggers for the wielder isn't itself mistaken for another
-     * redirect target while it's being processed.
+     * redirect target while it's being processed. The wielder has no invincibility frames
+     * while taunting, so every redirected hit lands, and only the damage moves - the hit's
+     * knockback stays with the teammate it was aimed at.
      */
     public void redirectTauntDamage(Player wielder, double amount, Entity damager) {
         UUID uuid = wielder.getUniqueId();
+        Vector velocity = wielder.getVelocity();
         try {
             alchemistTauntRedirecting.add(uuid);
+            wielder.setNoDamageTicks(0);
             wielder.damage(amount, damager);
+            wielder.setNoDamageTicks(0);
+            wielder.setVelocity(velocity);
         } finally {
             alchemistTauntRedirecting.remove(uuid);
         }

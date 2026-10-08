@@ -360,9 +360,10 @@ public class DamageListener implements Listener {
     }
 
     /**
-     * Alchemist Wand Taunt: if the victim is currently chained to a Taunt wielder, cancel their
-     * damage entirely and deal the equivalent (raw, unamplified) amount to the wielder instead -
-     * see AlchemistWandHandler#redirectTauntDamage for the re-entrancy guard around that call,
+     * Alchemist Wand Taunt: if the victim is currently chained to a Taunt wielder, only the
+     * damage moves - the hit still lands on the victim with no damage, so they take its
+     * knockback, and the equivalent (raw, unamplified) amount goes to the wielder instead.
+     * See AlchemistWandHandler#redirectTauntDamage for the re-entrancy guard around that call,
      * and the "1b2" check in onEntityDamage for where the wielder's own damage increase applies.
      */
     private boolean redirectAlchemistTauntDamage(EntityDamageByEntityEvent event, Player victim) {
@@ -373,8 +374,9 @@ public class DamageListener implements Listener {
         Player wielder = Bukkit.getPlayer(wielderUuid);
         if (wielder == null || !wielder.isOnline() || handler.isRedirecting(wielderUuid)) return false;
 
-        event.setCancelled(true);
-        handler.redirectTauntDamage(wielder, event.getFinalDamage(), event.getDamager());
+        double redirected = event.getFinalDamage();
+        event.setDamage(0);
+        handler.redirectTauntDamage(wielder, redirected, event.getDamager());
         return true;
     }
 
