@@ -42,9 +42,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Alchemist Wand - teammate Blink Swap with short damage protection, a "Tidy Up" window that
- * reveals every player's potion effects and cleanses/strips them on your next melee hit, and a
- * Taunt that chains nearby teammates and redirects their damage to the wielder.
+ * Alchemist Wand - teammate Blink Swap with short damage protection for the wielder, a "Tidy Up"
+ * window that reveals every player's potion effects and cleanses/strips them on your next melee
+ * hit, and a Taunt that chains nearby teammates and redirects their damage to the wielder.
  */
 public class AlchemistWandHandler extends MythicItemHandler {
 
@@ -156,7 +156,6 @@ public class AlchemistWandHandler extends MythicItemHandler {
         target.teleport(playerLocation);
 
         grantBlinkProtection(player);
-        grantBlinkProtection(target);
 
         SoundUtils.play(player, Sound.ENTITY_EVOKER_CAST_SPELL, 1.0f, 1.0f);
 

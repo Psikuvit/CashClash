@@ -161,8 +161,8 @@ mythic-items:
 
   # Alchemist Wand
   alchemist-wand:
-    # Blink Swap - Right click a teammate to swap places. Both players absorb the configured
-    # number of hits, for at most protection-seconds.
+    # Blink Swap - Right click a teammate to swap places. The wielder (not the teammate) absorbs
+    # the configured number of hits, for at most protection-seconds.
     blink-swap:
       cooldown-seconds: 11
       protection-hits: 2
