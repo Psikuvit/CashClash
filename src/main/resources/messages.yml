@@ -797,6 +797,8 @@ messages:
     you-died-title: "<red><bold>YOU DIED!</bold></red>"
     out-of-lives: "<red>You are out of lives for this round!</red>"
     respawn-delay: "<yellow>You will respawn in {seconds} seconds...</yellow>"
+    respawn-countdown-title: "<yellow>Respawning in <white>{seconds}</white> seconds</yellow>"
+    respawn-countdown-title-one: "<yellow>Respawning in <white>1</white> second</yellow>"
     round-ended-no-respawn: "<red>The round ended. You cannot respawn.</red>"
     respawned: "<green>You have respawned.</green>"
     item-cannot-drop: "<red>You cannot drop shop items.</red>"

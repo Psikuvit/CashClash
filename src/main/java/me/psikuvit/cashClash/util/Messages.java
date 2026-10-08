@@ -206,13 +206,21 @@ public final class Messages {
      * subtitleKey for title-only.
      */
     public static void sendTitle(@Nullable Player player, @Nullable String titleKey, @Nullable String subtitleKey, @NotNull String... args) {
-        if (player == null || !player.isOnline()) return;
-
         var cfg = CashClashPlugin.getInstance().getConfigManager();
         Title.Times times = Title.Times.times(
                 Duration.ofMillis(cfg.getDefaultTitleFadeInMs()),
                 Duration.ofMillis(cfg.getDefaultTitleStayMs()),
                 Duration.ofMillis(cfg.getDefaultTitleFadeOutMs()));
+        sendTitle(player, titleKey, subtitleKey, times, args);
+    }
+
+    /**
+     * {@link #sendTitle(Player, String, String, String...)} with its own timing - e.g. a
+     * countdown re-sent every second, which shouldn't fade in again each time.
+     */
+    public static void sendTitle(@Nullable Player player, @Nullable String titleKey, @Nullable String subtitleKey,
+                                 @NotNull Title.Times times, @NotNull String... args) {
+        if (player == null || !player.isOnline()) return;
 
         Component subtitle = subtitleKey == null ? Component.empty() : parse(config.getMessage(subtitleKey, args));
         player.showTitle(Title.title(parse(config.getMessage(titleKey, args)), subtitle, times));

@@ -47,6 +47,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
@@ -81,6 +82,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -90,6 +92,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Handles: death, food, drops, sneak, flight, bow shoot, projectile hit, entity interactions, inventory clicks.
  */
 public class GameListener implements Listener {
+
+    // A respawn countdown title outlives its one-second tick slightly, so the next number lands first
+    private static final long RESPAWN_TITLE_STAY_MS = 1200L;
 
     private final Map<UUID, Location> pendingSpectatorTransition = new ConcurrentHashMap<>();
 
@@ -139,10 +144,6 @@ public class GameListener implements Listener {
 
         CashClashPlayer victim = session.getCashClashPlayer(player.getUniqueId());
         if (victim == null) return;
-
-        // doImmediateRespawn skips vanilla's own death screen/title entirely - this is a plain
-        // title overlay, unrelated to that screen, so it can't reintroduce the stuck-screen bug.
-        Messages.sendTitle(player, "listener.you-died-title", null);
 
         Location deathLocation = player.getLocation().clone();
 
@@ -219,6 +220,9 @@ public class GameListener implements Listener {
     }
 
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {
+        // doImmediateRespawn skips vanilla's own death screen/title entirely - this is a plain
+        // title overlay, unrelated to that screen, so it can't reintroduce the stuck-screen bug.
+        Messages.sendTitle(player, "listener.you-died-title", null);
         Messages.send(player, "listener.out-of-lives");
         queueSpectatorTransition(player, spectatorLocation);
     }
@@ -235,8 +239,35 @@ public class GameListener implements Listener {
         Messages.send(player, "listener.respawn-delay", "seconds", String.valueOf(respawnDelaySec));
 
         queueSpectatorTransition(player, spectatorLocation);
+        startRespawnCountdown(player, respawnDelaySec);
 
         SchedulerUtils.runTaskLater(() -> respawnPlayer(player, respawnProtectionSec), respawnDelaySec * 20L);
+    }
+
+    /**
+     * "Respawning in N seconds" as a title, counting down once a second until the respawn. Each
+     * title stays a little past the next tick and never fades in, so the count reads as one
+     * steady title; it stops if the round's combat ends first.
+     */
+    private void startRespawnCountdown(Player player, int seconds) {
+        Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofMillis(RESPAWN_TITLE_STAY_MS),
+                Duration.ofMillis(configManager.getDefaultTitleFadeOutMs()));
+
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private int remaining = seconds;
+
+            @Override
+            public void run() {
+                GameSession session = gameManager.getPlayerSession(player);
+                if (remaining <= 0 || !player.isOnline() || session == null || !isGameInCombat(session)) {
+                    cancel();
+                    return;
+                }
+                String titleKey = remaining == 1 ? "listener.respawn-countdown-title-one" : "listener.respawn-countdown-title";
+                Messages.sendTitle(player, titleKey, null, times, "seconds", String.valueOf(remaining));
+                remaining--;
+            }
+        }, 0L, 20L);
     }
 
     /**
@@ -304,6 +335,7 @@ public class GameListener implements Listener {
         teleportToSpawn(player, session);
         restorePlayerHealth(player, session);
         preparePlayerForCombat(player, session, respawnProtectionSec);
+        player.clearTitle();
         Messages.send(player, "listener.respawned");
 
         // Fire custom event when player is back in game
