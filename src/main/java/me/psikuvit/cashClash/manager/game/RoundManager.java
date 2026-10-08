@@ -306,6 +306,7 @@ public class RoundManager {
 
         // Teammate outlines, visible only to each player's own team (Feature #7-8)
         CashClashPlugin.getInstance().getTeamOutlineManager().showOutlines(session);
+        session.getSequenceManager().playUntracked(Sequences.combatStart(session.getCurrentRound()));
 
         // Start countdown
         phaseTask = SchedulerUtils.runTaskTimer(() -> {

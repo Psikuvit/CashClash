@@ -122,6 +122,16 @@ public final class Sequences {
     }
 
     /**
+     * Combat start, every round: "ROUND N" with "Fight!" under it.
+     */
+    public static Sequence combatStart(int round) {
+        return Sequence.create()
+                .run(s -> SequenceEffects.showTitle(s.getPlayers(),
+                        component(MSG.getMessage("combat-start.title", "round", round)),
+                        component(MSG.getRaw("combat-start.subtitle"))));
+    }
+
+    /**
      * Round end: freeze input (no blindness), hold the win/loss result on screen for the
      * remainder of the 5-second window, then clear.
      */

@@ -24,6 +24,10 @@ president:
   selected-title: "<gold><bold>{player_name}</bold></gold>"
   selected-subtitle: "<light_green>Has been selected as your president.</light_green>"
 
+combat-start:
+  title: "<gold><bold>ROUND {round}</bold></gold>"
+  subtitle: "<red>Fight!</red>"
+
 round-end:
   round-won-title: "<green><bold>ROUND WON</bold></green>"
   round-lost-title: "<red><bold>ROUND LOSS</bold></red>"
