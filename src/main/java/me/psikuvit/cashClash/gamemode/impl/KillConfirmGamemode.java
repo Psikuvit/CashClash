@@ -23,10 +23,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +58,8 @@ public class KillConfirmGamemode extends Gamemode {
     private final Map<TeamColor, Integer> teamScore;
     private final Map<TeamColor, Integer> suddenDeathCycleScore;
     private final List<KCZone> activeZones;
+    // Where each player last stood on solid ground, for a fall into the void
+    private final Map<UUID, Location> lastGroundLocations;
 
     private final SuddenDeathManager suddenDeathManager;
     private final FinalStandManager finalStandManager;
@@ -78,6 +82,7 @@ public class KillConfirmGamemode extends Gamemode {
         this.teamScore = new EnumMap<>(TeamColor.class);
         this.suddenDeathCycleScore = new EnumMap<>(TeamColor.class);
         this.activeZones = new ArrayList<>();
+        this.lastGroundLocations = new HashMap<>();
         this.suddenDeathManager = new SuddenDeathManager(session, this);
         this.finalStandManager = new FinalStandManager(session, this);
         this.zoneTickTask = null;
@@ -117,6 +122,7 @@ public class KillConfirmGamemode extends Gamemode {
         cancelTask(zoneTickTask);
         zoneTickTask = null;
         clearAllZones();
+        lastGroundLocations.clear();
 
         suddenDeathManager.resetForNewRound();
         finalStandManager.cancel();
@@ -150,7 +156,7 @@ public class KillConfirmGamemode extends Gamemode {
             kind = KCZone.ZoneKind.NAMETAG;
         }
 
-        spawnConfirmZone(victim.getLocation(), killerTeam, victim.getName(), kind);
+        spawnConfirmZone(tagLocationFor(victim), killerTeam, victim.getName(), kind);
     }
 
     /**
@@ -162,7 +168,29 @@ public class KillConfirmGamemode extends Gamemode {
         if (victimTeamObj == null) return;
 
         int enemyTeam = victimTeamObj.getTeamNumber() == 1 ? 2 : 1;
-        spawnConfirmZone(victim.getLocation(), enemyTeam, victim.getName(), KCZone.ZoneKind.NAMETAG);
+        spawnConfirmZone(tagLocationFor(victim), enemyTeam, victim.getName(), KCZone.ZoneKind.NAMETAG);
+    }
+
+    /**
+     * Where a death drops its tag: where the player died, or - for a fall into the void, where
+     * there's no ground to put it on - the last spot they stood on, i.e. the ledge they fell from.
+     */
+    private Location tagLocationFor(Player victim) {
+        EntityDamageEvent lastDamage = victim.getLastDamageCause();
+        Location lastGround = lastGroundLocations.get(victim.getUniqueId());
+        if (lastDamage != null && lastDamage.getCause() == EntityDamageEvent.DamageCause.VOID && lastGround != null) {
+            return lastGround.clone();
+        }
+        return victim.getLocation();
+    }
+
+    private void recordGroundLocations() {
+        for (UUID uuid : session.getPlayers()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null || CashClashPlayer.isPlayerDead(player) || !player.isOnGround()) continue;
+            if (!player.getLocation().subtract(0, 0.1, 0).getBlock().getType().isSolid()) continue;
+            lastGroundLocations.put(uuid, player.getLocation());
+        }
     }
 
     @Override
@@ -176,6 +204,7 @@ public class KillConfirmGamemode extends Gamemode {
         for (KCZone zone : activeZones) {
             zone.getOccupantEntryTimestamps().remove(uuid);
         }
+        lastGroundLocations.remove(uuid);
         TimerDisplayUtils.stopCountdownTimer(player);
     }
 
@@ -218,6 +247,7 @@ public class KillConfirmGamemode extends Gamemode {
         cancelTask(zoneTickTask);
         zoneTickTask = null;
         clearAllZones();
+        lastGroundLocations.clear();
 
         finalStandManager.cancel();
         suddenDeathManager.cleanup();
@@ -392,6 +422,7 @@ public class KillConfirmGamemode extends Gamemode {
      * until it's captured or the killer's team steps off it.
      */
     private void tickCaptureZones() {
+        recordGroundLocations();
         if (activeZones.isEmpty()) return;
         if (session.isSequenceLocked() || session.isActionsRestricted()) return;
 
