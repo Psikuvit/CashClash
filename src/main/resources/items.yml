@@ -170,7 +170,7 @@ mythic-items:
       range: 10.0
     # Tidy Up - Left click to see everyone's potion effects; your next melee hit cleanses
     # your team's debuffs (if you hit a teammate) or strips the enemy team's buffs (if you
-    # hit an enemy)
+    # hit an enemy). Effects from a god apple are never stripped.
     tidy-up:
       duration-seconds: 10
       cooldown-seconds: 24

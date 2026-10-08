@@ -58,6 +58,13 @@ public class CashClashPlayer {
 
     // Potion effect tracking
     private final Map<PotionEffectType, PotionEffect> trackedEffects = new HashMap<>();
+    private final Map<PotionEffectType, GodAppleEffect> godAppleEffects = new HashMap<>();
+
+    /**
+     * A god apple effect as it was given: its level and when it runs out.
+     */
+    private record GodAppleEffect(int amplifier, long expiresAtMs) {
+    }
 
     private ItemStack[] hiddenArmorContents;
     private ItemStack hiddenMainHand;
@@ -467,6 +474,26 @@ public class CashClashPlayer {
     }
 
     /**
+     * Records an effect a god apple (enchanted golden apple) gave, so abilities that strip
+     * effects can leave it alone.
+     */
+    public void markGodAppleEffect(PotionEffect effect) {
+        godAppleEffects.put(effect.getType(),
+                new GodAppleEffect(effect.getAmplifier(), System.currentTimeMillis() + effect.getDuration() * 50L));
+    }
+
+    /**
+     * Whether the player's current effect of this type is the one a god apple gave - not one
+     * from another source that has since replaced it, or one given after it ran out.
+     */
+    public boolean isGodAppleEffect(PotionEffectType type) {
+        GodAppleEffect given = godAppleEffects.get(type);
+        PotionEffect active = getEffect(type);
+        return given != null && active != null && active.getAmplifier() == given.amplifier()
+                && System.currentTimeMillis() < given.expiresAtMs();
+    }
+
+    /**
      * Clear only the effects the plugin has applied (tracked), leaving
      * vanilla/other effects untouched. Used on death/round reset.
      */
@@ -476,6 +503,7 @@ public class CashClashPlayer {
             player.removePotionEffect(type);
         }
         trackedEffects.clear();
+        godAppleEffects.clear();
     }
 
     /**
@@ -487,6 +515,7 @@ public class CashClashPlayer {
                 .map(PotionEffect::getType)
                 .forEach(player::removePotionEffect);
         trackedEffects.clear();
+        godAppleEffects.clear();
     }
 
     /**
@@ -694,6 +723,22 @@ public class CashClashPlayer {
         CashClashPlayer ccp = from(player);
         if (ccp != null) return ccp.hasEffect(type);
         return player != null && player.hasPotionEffect(type);
+    }
+
+    /**
+     * Records a god apple effect for a player in a session - see {@link #markGodAppleEffect(PotionEffect)}.
+     */
+    public static void markGodAppleEffect(Player player, PotionEffect effect) {
+        CashClashPlayer ccp = from(player);
+        if (ccp != null) ccp.markGodAppleEffect(effect);
+    }
+
+    /**
+     * Whether a player's current effect of this type came from a god apple; false outside a session.
+     */
+    public static boolean isGodAppleEffect(Player player, PotionEffectType type) {
+        CashClashPlayer ccp = from(player);
+        return ccp != null && ccp.isGodAppleEffect(type);
     }
 
     /**

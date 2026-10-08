@@ -489,7 +489,8 @@ public class AlchemistWandHandler extends MythicItemHandler {
 
             boolean removedAny = false;
             for (PotionEffectType type : effectsToRemove) {
-                if (CashClashPlayer.hasEffect(member, type) && !cfg.isArmorReadyIcon(type)) {
+                if (CashClashPlayer.hasEffect(member, type) && !cfg.isArmorReadyIcon(type)
+                        && !CashClashPlayer.isGodAppleEffect(member, type)) {
                     CashClashPlayer.removeEffect(member, type);
                     removedAny = true;
                 }

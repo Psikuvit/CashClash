@@ -78,6 +78,7 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
@@ -434,6 +435,9 @@ public class GameListener implements Listener {
                         CashClashPlayer.removeEffect(player, type);
                         CashClashPlayer.applyEffect(player, type, effectTicks,
                                 effect.getAmplifier(), effect.isAmbient(), effect.hasParticles(), effect.hasIcon());
+                        CashClashPlayer.markGodAppleEffect(player, new PotionEffect(type, effectTicks, effect.getAmplifier()));
+                    } else if (type == PotionEffectType.REGENERATION) {
+                        CashClashPlayer.markGodAppleEffect(player, effect);
                     }
                 });
             }, 1L);
