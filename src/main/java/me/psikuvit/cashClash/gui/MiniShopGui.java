@@ -18,9 +18,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * The spawn room villager's shop during combat - the main shop is buy-phase only. It sells a
- * few supplies in their main-shop bundles, each for the main-shop price plus the mini-shop
- * markup ({@code mini-shop.markup-percent} in shop.yml).
+ * A team's mini shop villager's shop, open during combat. It sells a few supplies in their
+ * main-shop bundles, each for the main-shop price plus the mini-shop markup
+ * ({@code mini-shop.markup-percent} in shop.yml).
  */
 public class MiniShopGui extends AbstractGui {
 

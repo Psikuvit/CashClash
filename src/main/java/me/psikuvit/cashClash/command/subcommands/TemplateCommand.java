@@ -90,7 +90,7 @@ public class TemplateCommand extends AbstractArgCommand {
             if (action.equals("register")) {
                 out.addAll(Bukkit.getWorlds().stream().map(World::getName).filter(n -> n.toLowerCase(Locale.ROOT).startsWith(last)).toList());
             } else if (action.equals("set")) {
-                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "ctf")) if (t.startsWith(last)) out.add(t);
+                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "minishop", "ctf")) if (t.startsWith(last)) out.add(t);
             }
             return out;
         }
@@ -104,7 +104,7 @@ public class TemplateCommand extends AbstractArgCommand {
                 case "shop" -> {
                     for (String t : List.of("teamred", "teamblue")) if (t.startsWith(last)) out.add(t);
                 }
-                case "ctf" -> {
+                case "ctf", "minishop" -> {
                     for (String t : List.of("red", "blue")) if (t.startsWith(last)) out.add(t);
                 }
             }
@@ -244,6 +244,10 @@ public class TemplateCommand extends AbstractArgCommand {
 
         Messages.send(player, "template.show-shop-red", "location", formatLoc(tpl.getTeamRedShopSpawn()));
         Messages.send(player, "template.show-shop-blue", "location", formatLoc(tpl.getTeamBlueShopSpawn()));
+        for (TeamColor team : TeamColor.values()) {
+            Messages.send(player, "template.show-minishop", "team", team.getDisplayName(),
+                    "location", formatLoc(tpl.getMiniShopVillager(team)));
+        }
 
         Messages.send(player, "template.show-red-flag", "location", formatLoc(tpl.getRedFlagLoc()));
         Messages.send(player, "template.show-blue-flag", "location", formatLoc(tpl.getBlueFlagLoc()));
@@ -255,6 +259,14 @@ public class TemplateCommand extends AbstractArgCommand {
         //            "region", room != null ? room.toString() : "unset",
         //            "doors", String.valueOf(tpl.getSpawnRoomDoors(team).size()));
         //}
+    }
+
+    private static TeamColor parseTeam(String arg) {
+        return switch (arg.toLowerCase(Locale.ROOT)) {
+            case "red", "teamred" -> TeamColor.RED;
+            case "blue", "teamblue" -> TeamColor.BLUE;
+            default -> null;
+        };
     }
 
     // ==================== SPAWN ROOM SETUP (paused - the commands are commented out above) ====================
@@ -291,14 +303,6 @@ public class TemplateCommand extends AbstractArgCommand {
         return BlockRegion.of(corners[0], corners[1]);
     }
 
-    private static TeamColor parseRoomTeam(String arg) {
-        return switch (arg.toLowerCase(Locale.ROOT)) {
-            case "red", "teamred" -> TeamColor.RED;
-            case "blue", "teamblue" -> TeamColor.BLUE;
-            default -> null;
-        };
-    }
-
     private void templateClearDoors(CommandSender sender, String[] args) {
         if (args.length < 3) {
             Messages.send(sender, "template.cleardoors-usage");
@@ -311,7 +315,7 @@ public class TemplateCommand extends AbstractArgCommand {
             Messages.send(sender, "template.not-found", "template_id", templateId);
             return;
         }
-        TeamColor team = parseRoomTeam(args[2]);
+        TeamColor team = parseTeam(args[2]);
         if (team == null) {
             Messages.send(sender, "template.invalid-room-team");
             return;
@@ -417,9 +421,18 @@ public class TemplateCommand extends AbstractArgCommand {
                 tpl.addVillagerSpawnPoint(stored);
                 Messages.send(player, "template.set-villager-success", "template_id", templateId);
             }
+            case "minishop" -> {
+                TeamColor team = args.length < 4 ? null : parseTeam(args[3]);
+                if (team == null) {
+                    Messages.send(player, "template.set-minishop-usage");
+                    return;
+                }
+                tpl.setMiniShopVillager(team, stored);
+                Messages.send(player, "template.set-minishop-success", "team", team.getDisplayName(), "template_id", templateId);
+            }
             // Spawn rooms are paused
             //case "spawnroom", "door" -> {
-            //    TeamColor team = args.length < 4 ? null : parseRoomTeam(args[3]);
+            //    TeamColor team = args.length < 4 ? null : parseTeam(args[3]);
             //    if (team == null) {
             //        Messages.send(player, type.equals("door") ? "template.set-door-usage" : "template.set-room-usage");
             //        return;

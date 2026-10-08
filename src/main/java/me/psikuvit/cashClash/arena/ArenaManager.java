@@ -177,6 +177,11 @@ public class ArenaManager {
             }
 
             for (TeamColor team : TeamColor.values()) {
+                String miniShopPath = "minishop.team" + team.getTeamNumber();
+                if (cfg.contains(miniShopPath)) {
+                    tpl.setMiniShopVillager(team, LocationUtils.deserializeLocation(cfg.getConfigurationSection(miniShopPath)));
+                }
+
                 String path = "spawn-rooms.team" + team.getTeamNumber();
                 tpl.setSpawnRoom(team, BlockRegion.deserialize(cfg.getString(path + ".room")));
                 for (String door : cfg.getStringList(path + ".doors")) {
@@ -256,6 +261,11 @@ public class ArenaManager {
         }
 
         for (TeamColor team : TeamColor.values()) {
+            Location miniShop = tpl.getMiniShopVillager(team);
+            if (miniShop != null) {
+                LocationUtils.serializeLocation(cfg, "minishop.team" + team.getTeamNumber(), miniShop);
+            }
+
             String path = "spawn-rooms.team" + team.getTeamNumber();
             BlockRegion room = tpl.getSpawnRoom(team);
             if (room != null) cfg.set(path + ".room", room.serialize());

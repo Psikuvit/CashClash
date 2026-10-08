@@ -1,15 +1,20 @@
 package me.psikuvit.cashClash.manager.shop;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
+import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.gui.MiniShopGui;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -39,13 +44,13 @@ public class ShopManager {
     private final Map<UUID, List<UUID>> sessionShops;
     private final Map<UUID, UUID> entityToSession;
     private final Map<UUID, Integer> entityTeam;
+    // Mini shop villagers, and the one team each serves
+    private final Map<UUID, TeamColor> miniShopTeams;
 
     private BukkitTask lookAtPlayerTask;
 
     private final ArenaManager arenaManager;
     private final GameManager gameManager;
-    // Spawn rooms are paused: pass a SpawnRoomManager in again for the mini shop's team check
-    //private final SpawnRoomManager spawnRoomManager;
 
     public ShopManager(ArenaManager arenaManager, GameManager gameManager) {
         this.arenaManager = arenaManager;
@@ -53,6 +58,7 @@ public class ShopManager {
         this.sessionShops = new HashMap<>();
         this.entityToSession = new HashMap<>();
         this.entityTeam = new HashMap<>();
+        this.miniShopTeams = new HashMap<>();
         startLookAtPlayerTask();
     }
 
@@ -82,36 +88,47 @@ public class ShopManager {
         List<Location> villagerSpawns = tpl.getVillagersSpawnPoint();
         if (villagerSpawns.isEmpty()) {
             Messages.debug("SHOP", "No villager spawn points configured for template " + tpl.getId());
-            return;
         }
 
         List<UUID> spawned = new ArrayList<>();
 
         for (Location templateLoc : villagerSpawns) {
-            // Adjust location to the copied world
-            Location spawnLoc = LocationUtils.copyToWorld(templateLoc, world);
-
-            Villager villager = world.spawn(spawnLoc, Villager.class);
-
-            villager.setInvulnerable(true);
-            villager.setAI(false);
-            villager.setSilent(true);
-            villager.setPersistent(true);
-            // set a Component name and disable italics using Messages.parse
-            Component comp = Messages.parse("<green>Shop</green>");
-            villager.customName(comp);
-            villager.setCustomNameVisible(true);
-
-            PDCSetter.of(villager).set(Keys.SHOP_NPC_KEY, PersistentDataType.BYTE, (byte) 1).apply();
+            Villager villager = spawnShopVillager(session, LocationUtils.copyToWorld(templateLoc, world), Messages.parse("<green>Shop</green>"));
             spawned.add(villager.getUniqueId());
-            entityToSession.put(villager.getUniqueId(), session.getSessionId());
             entityTeam.put(villager.getUniqueId(), 1);
-
-            if (!spawned.isEmpty()) {
-                sessionShops.put(session.getSessionId(), spawned);
-                Messages.debug("SHOP", "Spawned " + spawned.size() + " shop villagers for session " + session.getSessionId());
-            }
         }
+
+        for (TeamColor team : TeamColor.values()) {
+            Location templateLoc = tpl.getMiniShopVillager(team);
+            if (templateLoc == null) continue;
+
+            Component name = Messages.parse(CashClashPlugin.getInstance().getMessagesConfig().getMessage("shop.mini-shop-villager-name",
+                    "color", team.getDisplayName().toLowerCase(), "team", team.getDisplayName()));
+            Villager villager = spawnShopVillager(session, LocationUtils.copyToWorld(templateLoc, world), name);
+            spawned.add(villager.getUniqueId());
+            entityTeam.put(villager.getUniqueId(), team.getTeamNumber());
+            miniShopTeams.put(villager.getUniqueId(), team);
+        }
+
+        if (!spawned.isEmpty()) {
+            sessionShops.put(session.getSessionId(), spawned);
+            Messages.debug("SHOP", "Spawned " + spawned.size() + " shop villagers for session " + session.getSessionId());
+        }
+    }
+
+    private Villager spawnShopVillager(GameSession session, Location spawnLoc, Component name) {
+        Villager villager = spawnLoc.getWorld().spawn(spawnLoc, Villager.class);
+
+        villager.setInvulnerable(true);
+        villager.setAI(false);
+        villager.setSilent(true);
+        villager.setPersistent(true);
+        villager.customName(name);
+        villager.setCustomNameVisible(true);
+
+        PDCSetter.of(villager).set(Keys.SHOP_NPC_KEY, PersistentDataType.BYTE, (byte) 1).apply();
+        entityToSession.put(villager.getUniqueId(), session.getSessionId());
+        return villager;
     }
 
     /**
@@ -127,6 +144,7 @@ public class ShopManager {
 
             entityToSession.remove(id);
             entityTeam.remove(id);
+            miniShopTeams.remove(id);
         }
     }
 
@@ -139,7 +157,8 @@ public class ShopManager {
     }
 
     /**
-     * Handle player clicking a shop entity. Opens GUI if in same session.
+     * Handle player clicking a shop entity in their session: the main shop, or - for a team's
+     * mini shop villager - the mini shop, which serves only that team and only during combat.
      */
     public void onPlayerInteractShop(Player player, Entity entity) {
         if (entity == null) return;
@@ -157,22 +176,22 @@ public class ShopManager {
             return;
         }
 
-        ShopGUI.openMain(player);
+        TeamColor miniShopTeam = miniShopTeams.get(id);
+        if (miniShopTeam == null) {
+            ShopGUI.openMain(player);
+            return;
+        }
 
-        // Spawn rooms are paused: during combat the villager opened the mini shop instead, and
-        // one standing in a team's spawn room only served that team.
-        //if (sess.getState() != GameState.COMBAT) {
-        //    ShopGUI.openMain(player);
-        //    return;
-        //}
-        //
-        //TeamColor roomTeam = spawnRoomManager.roomTeamAt(sess, entity.getLocation());
-        //Team playerTeam = sess.getPlayerTeam(player);
-        //if (roomTeam != null && (playerTeam == null || playerTeam.getTeamNumber() != roomTeam.getTeamNumber())) {
-        //    Messages.send(player, "shop.mini-shop-enemy");
-        //    return;
-        //}
-        //new MiniShopGui(player).open();
+        Team playerTeam = sess.getPlayerTeam(player);
+        if (playerTeam == null || playerTeam.getTeamNumber() != miniShopTeam.getTeamNumber()) {
+            Messages.send(player, "shop.mini-shop-enemy");
+            return;
+        }
+        if (sess.getState() != GameState.COMBAT) {
+            Messages.send(player, "shop.mini-shop-combat-only");
+            return;
+        }
+        new MiniShopGui(player).open();
     }
 
     /**

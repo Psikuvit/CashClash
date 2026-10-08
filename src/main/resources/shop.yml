@@ -134,9 +134,9 @@ mythic-items:
 # ============================================
 # MINI SHOP
 # ============================================
-# PAUSED - switched off along with the spawn rooms, so this does nothing for now.
-# The spawn room villager's shop during combat (leaves, water bucket, arrows, steak, bread, in
-# their main-shop amounts). Each costs this many percent more than in the main shop.
+# Each team's mini shop villager (/cc template set <id> minishop <red|blue>), open during combat
+# to its own team only: leaves, water bucket, arrows, steak, bread, in their main-shop amounts.
+# Each costs this many percent more than in the main shop.
 mini-shop:
   markup-percent: 10
 

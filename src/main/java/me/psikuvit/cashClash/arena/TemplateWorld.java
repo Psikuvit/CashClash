@@ -38,6 +38,9 @@ public class TemplateWorld {
     private Location redFlagLoc;
     private Location blueFlagLoc;
 
+    // Each team's own mini shop villager
+    private final Map<TeamColor, Location> miniShopVillagers;
+
     // Each team's spawn room and the doorways into it
     private final Map<TeamColor, BlockRegion> spawnRooms;
     private final Map<TeamColor, List<BlockRegion>> spawnRoomDoors;
@@ -48,6 +51,7 @@ public class TemplateWorld {
         this.teamRedSpawns = new ArrayList<>();
         this.teamBlueSpawns = new ArrayList<>();
         this.villagersSpawnPoint = new ArrayList<>();
+        this.miniShopVillagers = new EnumMap<>(TeamColor.class);
         this.spawnRooms = new EnumMap<>(TeamColor.class);
         this.spawnRoomDoors = new EnumMap<>(TeamColor.class);
     }
@@ -159,6 +163,18 @@ public class TemplateWorld {
      */
     public void setBlueFlagLoc(Location loc) {
         this.blueFlagLoc = loc;
+    }
+
+    /**
+     * @return where the team's mini shop villager stands, or null if it has none
+     */
+    public Location getMiniShopVillager(TeamColor team) {
+        return LocationUtils.clone(miniShopVillagers.get(team));
+    }
+
+    public void setMiniShopVillager(TeamColor team, Location loc) {
+        if (loc == null) miniShopVillagers.remove(team);
+        else miniShopVillagers.put(team, loc);
     }
 
     /**
