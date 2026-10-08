@@ -139,9 +139,9 @@ public final class Sequences {
                     Team winner = winningTeam == 1 ? s.getTeamRed() : s.getTeamBlue();
                     Team loser = s.getOpposingTeam(winner);
                     SequenceEffects.showTitle(winner.getPlayers(),
-                            component(MSG.getRaw("round-end.win-title")), Component.empty());
+                            component(MSG.getRaw("round-end.round-won-title")), Component.empty());
                     SequenceEffects.showTitle(loser.getPlayers(),
-                            component(MSG.getRaw("round-end.lose-title")), Component.empty());
+                            component(MSG.getRaw("round-end.round-lost-title")), Component.empty());
                     SoundUtils.playTo(s.getPlayers(), Sound.BLOCK_END_PORTAL_SPAWN, 1.0f, 1.0f);
                 })
                 .waitSeconds(CashClashPlugin.getInstance().getConfigManager().getRoundEndResultHoldSeconds())

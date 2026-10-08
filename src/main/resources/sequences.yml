@@ -25,8 +25,8 @@ president:
   selected-subtitle: "<light_green>Has been selected as your president.</light_green>"
 
 round-end:
-  win-title: "<green><bold>YOU WIN!</bold></green>"
-  lose-title: "<red><bold>YOU LOSE</bold></red>"
+  round-won-title: "<green><bold>ROUND WON</bold></green>"
+  round-lost-title: "<red><bold>ROUND LOSS</bold></red>"
   no-winner-title: "<gray><bold>Round Over</bold></gray>"
 
 sudden-death:
