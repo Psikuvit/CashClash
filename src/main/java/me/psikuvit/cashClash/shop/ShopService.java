@@ -421,8 +421,13 @@ public class ShopService {
                             replacedItem = currentArmor;
                             ItemUtils.returnItemToInventoryOrDrop(player, currentArmor.clone());
                         } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
-                            // Purchased vanilla armor - track but don't return (disappears)
-                            replacedItem = currentArmor;
+                            if (ItemSelectionUtils.rankMaterial(currentArmor.getType()) > ItemSelectionUtils.rankMaterial(customArmor.getMaterial())) {
+                                // A better piece than the one bought is kept, not traded in
+                                ItemUtils.returnItemToInventoryOrDrop(player, currentArmor.clone());
+                            } else {
+                                // Purchased vanilla armor - track but don't return (disappears)
+                                replacedItem = currentArmor;
+                            }
                         }
                     }
 
