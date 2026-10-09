@@ -38,7 +38,6 @@ public final class KCZoneUtils {
     private static final Color GREEN_GLOW = Color.fromRGB(0, 220, 90);
     private static final Color RED_GLOW = Color.fromRGB(220, 40, 40);
     private static final Color BLUE_GLOW = Color.fromRGB(60, 90, 255);
-    private static final Color TOTEM_YELLOW = Color.fromRGB(255, 225, 50);
 
     // Dim/uncolored look used for the first ZONE_ACTIVATION_DELAY_MS while a zone is still
     // "pending" (spawned but not yet capturable), swapped for ACTIVE_BRIGHTNESS + the kind's
@@ -202,13 +201,13 @@ public final class KCZoneUtils {
         return switch (kind) {
             case NAMETAG -> GOLD_GLOW;
             case MONEY -> GREEN_GLOW;
-            case HEART -> TOTEM_YELLOW;
+            case HEART -> RED_GLOW;
         };
     }
 
     /**
      * The colour a zone's tag shows as, which its beam matches: a nametag in the dead player's
-     * team colour, a Money Tag green, a Heart Tag totem yellow.
+     * team colour, a Money Tag green, a Heart Tag red.
      */
     private static Color tagColor(KCZone zone) {
         if (zone.getKind() != KCZone.ZoneKind.NAMETAG) return glowColorFor(zone.getKind());
@@ -220,7 +219,7 @@ public final class KCZoneUtils {
         return switch (kind) {
             case NAMETAG -> "gold";
             case MONEY -> "green";
-            case HEART -> "yellow";
+            case HEART -> "red";
         };
     }
 
