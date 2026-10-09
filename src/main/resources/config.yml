@@ -324,6 +324,7 @@ sequences:
 # ============================================
 # Available placeholders for all scoreboards:
 # - {round} = Current round number
+# - {round_progress} = Current round out of the total (e.g. 3/7)
 # - {state} / {phase} = Current game phase (Shopping, Combat, Waiting, Ending)
 # - {phase_number} = Phase number
 # - {time} = Time remaining (MM:SS format)
@@ -433,6 +434,7 @@ scoreboard:
       - "Coins: {teamBlue_coins}"
       - ""
       - "{money_bonus_timer}"
+      - "<yellow>Round</yellow>: {round_progress}"
       - "<yellow>Phase</yellow>: {phase}"
       - "Time: {time}"
       - ""
@@ -457,6 +459,7 @@ scoreboard:
       - "Progress: {blue_assassination_circles}"
       - "Coins: {teamBlue_coins}"
       - ""
+      - "<yellow>Round</yellow>: {round_progress}"
       - "<yellow>Phase</yellow>: {phase}"
       - "Time: {time}"
       - ""
@@ -523,6 +526,7 @@ scoreboard:
       - "Coins: {teamBlue_coins}"
       - ""
       - "{player_heart_timer}"
+      - "<yellow>Round</yellow>: {round_progress}"
       - "<yellow>Phase</yellow>: {phase}"
       - "Time: {time}"
       - ""

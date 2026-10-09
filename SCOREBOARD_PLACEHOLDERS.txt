@@ -20,6 +20,11 @@ Example: "Time Remaining: {time} seconds"
   - Returns: Numeric value (e.g., "1", "2", "3")
   - Default: "0"
 
+{round_progress}
+  - Shows the current round out of the match's total rounds (game.total-rounds in config.yml)
+  - Returns: "3/7", etc.
+  - Default: "0/7"
+
 {time}
   - Shows remaining time in MM:SS format
   - Returns: "5:30", "0:45", etc.

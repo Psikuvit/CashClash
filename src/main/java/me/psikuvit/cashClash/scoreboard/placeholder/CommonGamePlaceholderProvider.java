@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.scoreboard.placeholder;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -55,6 +56,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         SUPPORTED_PLACEHOLDERS.add("your_team_alive");
         SUPPORTED_PLACEHOLDERS.add("enemy_team_alive");
         SUPPORTED_PLACEHOLDERS.add("round");
+        SUPPORTED_PLACEHOLDERS.add("round_progress");
         SUPPORTED_PLACEHOLDERS.add("players");
 
         // Round wins (objectives completed)
@@ -89,6 +91,7 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             // Time placeholders
             case "phase", "state" -> getPhase(session.getState());
             case "phase_number", "round" -> String.valueOf(session.getCurrentRound());
+            case "round_progress" -> session.getCurrentRound() + "/" + totalRounds();
             case "time" -> FormatUtils.formatTime(session.getTimeRemaining());
             case "time_seconds" -> String.valueOf(session.getTimeRemaining());
 
@@ -285,8 +288,13 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
                  "your_team_coins", "enemy_team_coins", "player_coins", "your_team_wins", "enemy_team_wins" -> "0";
             case "phase", "state" -> "Unknown";
             case "round_won" -> "0 - 0";
+            case "round_progress" -> "0/" + totalRounds();
             default -> null;
         };
+    }
+
+    private static int totalRounds() {
+        return CashClashPlugin.getInstance().getConfigManager().getTotalRounds();
     }
 }
 
