@@ -200,8 +200,8 @@ public class BlockListener implements Listener {
 
         Messages.debug(player, "FLUID", "bucket " + fluid + " at " + at(origin)
                 + " | target was " + describe(target)
-                + " | flow-distance=" + itemsConfig.getFluidFlowDistance()
-                + " despawn=" + itemsConfig.getFluidDespawnSeconds() + "s");
+                + " | flow-distance=" + itemsConfig.getFluidFlowDistance(fluid)
+                + " despawn=" + itemsConfig.getFluidDespawnSeconds(fluid) + "s");
 
         // Bucket-empty fires before the block actually updates, so wait a tick to confirm the
         // source really landed before putting a countdown label over it.
@@ -211,7 +211,7 @@ public class BlockListener implements Listener {
                         + "  <-- SOURCE NEVER PLACED / ALREADY GONE");
                 return;
             }
-            showDespawnTimer(target, fluid, itemsConfig.getFluidDespawnSeconds() * 20L, water ? "aqua" : "gold");
+            showDespawnTimer(target, fluid, itemsConfig.getFluidDespawnSeconds(fluid) * 20L, water ? "aqua" : "gold");
         });
     }
 
@@ -255,8 +255,8 @@ public class BlockListener implements Listener {
      * spreading (or before it started at all) yields no further flow, matching how vanilla
      * behaves when a source is scooped the instant it's placed. Already-revealed rings stay
      * tracked (still protected from vanilla reprocessing) right up until the tick they're
-     * actually restored: removal is staggered source-first, then outward ring by ring, at the
-     * same pace the fluid originally spread out - matching how vanilla recession actually
+     * actually restored: removal is staggered source-first, then outward ring by ring, one ring
+     * per {@code drain-ticks} of that fluid - matching how vanilla recession actually
      * cascades (the ring touching the now-missing source is the first to lose its supply and
      * recede, which is what leaves the next ring out unsupplied a tick later, and so on outward)
      * rather than the whole body vanishing in one instant frame.
@@ -268,7 +268,7 @@ public class BlockListener implements Listener {
 
         Messages.debug("FLUID", "draining placement at " + at(placement.origin) + " (" + reason + ")");
 
-        long tickInterval = flowTicksFor(placement.fluid);
+        long tickInterval = itemsConfig.getFluidDrainTicks(placement.fluid);
         long delay = 0;
         SchedulerUtils.runTaskLater(() -> removeFluidRing(List.of(placement.origin), true), delay);
         delay += tickInterval;
@@ -465,7 +465,7 @@ public class BlockListener implements Listener {
 
         Location origin = event.getBlock().getLocation().toBlockLocation();
         placeQuickFluid(event.getBlock(), origin, blockType, sessionId);
-        showDespawnTimer(event.getBlock(), blockType, itemsConfig.getFluidDespawnSeconds() * 20L,
+        showDespawnTimer(event.getBlock(), blockType, itemsConfig.getFluidDespawnSeconds(blockType) * 20L,
                 blockType == Material.WATER ? "aqua" : "gold");
 
         // Schedule water bucket refill (only for water, not lava)
@@ -687,13 +687,6 @@ public class BlockListener implements Listener {
         block.setBlockData(levelled, false);
     }
 
-    /** Vanilla overworld flow rates by default, tunable per fluid in items.yml. */
-    private long flowTicksFor(Material fluid) {
-        return fluid == Material.LAVA
-                ? itemsConfig.getLavaFlowTicks()
-                : itemsConfig.getWaterFlowTicks();
-    }
-
     /**
      * Computes and starts revealing a "quick fluid" placement: the whole reachable extent is
      * planned once, synchronously, up front (see {@link #planQuickFluid}) - there's no live
@@ -704,13 +697,13 @@ public class BlockListener implements Listener {
      * as the source's own countdown label.
      */
     private void placeQuickFluid(Block source, Location origin, Material fluid, UUID sessionId) {
-        PlacedFluid placement = new PlacedFluid(origin, fluid, sessionId, planQuickFluid(source));
+        PlacedFluid placement = new PlacedFluid(origin, fluid, sessionId, planQuickFluid(source, fluid));
         fluidCells.put(origin, placement);
 
-        SchedulerUtils.runTaskLater(() -> revealRing(placement, 0), flowTicksFor(fluid));
+        SchedulerUtils.runTaskLater(() -> revealRing(placement, 0), itemsConfig.getFluidFlowTicks(fluid));
 
         SchedulerUtils.runTaskLater(() -> drainPlacement(placement, "despawn timer"),
-                itemsConfig.getFluidDespawnSeconds() * 20L);
+                itemsConfig.getFluidDespawnSeconds(fluid) * 20L);
     }
 
     /**
@@ -725,11 +718,11 @@ public class BlockListener implements Listener {
      * surrounding terrain, and a fixed reach replaces that so a placed bucket always produces the
      * same shape whatever it's placed against.
      */
-    private List<List<FluidStep>> planQuickFluid(Block source) {
+    private List<List<FluidStep>> planQuickFluid(Block source, Material fluid) {
         record Front(Location location, int hops, int fallLeft) {}
 
-        int flowDistance = itemsConfig.getFluidFlowDistance();
-        int fallMaxDepth = itemsConfig.getFluidFallMaxDepth();
+        int flowDistance = itemsConfig.getFluidFlowDistance(fluid);
+        int fallMaxDepth = itemsConfig.getFluidFallMaxDepth(fluid);
 
         Location origin = source.getLocation().toBlockLocation();
         Set<Location> seen = new HashSet<>();
@@ -796,7 +789,7 @@ public class BlockListener implements Listener {
             Messages.debug("FLUID", "  ring " + ringNumber + " placed " + describe(block) + " at " + at(loc));
         }
 
-        SchedulerUtils.runTaskLater(() -> revealRing(placement, index + 1), flowTicksFor(placement.fluid));
+        SchedulerUtils.runTaskLater(() -> revealRing(placement, index + 1), itemsConfig.getFluidFlowTicks(placement.fluid));
     }
 
     /**

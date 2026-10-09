@@ -4,6 +4,7 @@ import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.util.Messages;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.configuration.ConfigurationSection;
@@ -77,27 +78,32 @@ public class ItemsConfig {
 
     // ==================== UTILITIES ====================
 
-    /** How many times a placed fluid steps outward from its source. */
-    public int getFluidFlowDistance() {
-        return config.getInt("utilities.fluids.flow-distance", 3);
-    }
-
-    public int getFluidDespawnSeconds() {
-        return config.getInt("utilities.fluids.despawn-seconds", 10);
+    /** How many times a placed water or lava source steps outward. */
+    public int getFluidFlowDistance(Material fluid) {
+        return config.getInt(fluidPath(fluid) + "flow-distance", 3);
     }
 
     /** Ticks between each outward step; vanilla overworld rates by default. */
-    public int getWaterFlowTicks() {
-        return config.getInt("utilities.fluids.water-flow-ticks", 5);
+    public int getFluidFlowTicks(Material fluid) {
+        return config.getInt(fluidPath(fluid) + "flow-ticks", fluid == Material.LAVA ? 30 : 5);
     }
 
-    public int getLavaFlowTicks() {
-        return config.getInt("utilities.fluids.lava-flow-ticks", 30);
+    /** Ticks between each ring disappearing once the fluid drains, source first. */
+    public int getFluidDrainTicks(Material fluid) {
+        return config.getInt(fluidPath(fluid) + "drain-ticks", fluid == Material.LAVA ? 30 : 5);
+    }
+
+    public int getFluidDespawnSeconds(Material fluid) {
+        return config.getInt(fluidPath(fluid) + "despawn-seconds", 10);
     }
 
     /** How far a placed fluid falls straight down to find solid ground before spreading outward. */
-    public int getFluidFallMaxDepth() {
-        return config.getInt("utilities.fluids.fall-max-depth", 16);
+    public int getFluidFallMaxDepth(Material fluid) {
+        return config.getInt(fluidPath(fluid) + "fall-max-depth", 16);
+    }
+
+    private static String fluidPath(Material fluid) {
+        return "utilities.fluids." + (fluid == Material.LAVA ? "lava." : "water.");
     }
 
     // ==================== MYTHIC ITEMS ====================

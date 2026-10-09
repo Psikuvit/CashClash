@@ -312,18 +312,28 @@ utilities:
   # Placed water/lava ignore vanilla flow entirely: they fall straight down through open space,
   # and only a block sitting on solid ground steps outward - in all four directions,
   # flow-distance times in total, regardless of the surrounding terrain. A placed fluid washes
-  # away any player-placed web it runs into.
+  # away any player-placed web it runs into. Water and lava are tuned separately:
+  #   flow-distance   - how many blocks it spreads out from where it was placed
+  #   flow-ticks      - ticks between each step outward (vanilla: 5 for water, 30 for lava);
+  #                     raise it to make it spread more slowly
+  #   drain-ticks     - ticks between each step disappearing when it drains, source first
+  #   despawn-seconds - how long it stays before it drains on its own
+  #   fall-max-depth  - how far it falls straight down (blocks) to find solid ground before it
+  #                     spreads, so a bucket emptied over a ledge settles on the floor below
+  #                     instead of spreading from mid-air; a fall that hasn't landed by then stops
   fluids:
-    flow-distance: 3
-    despawn-seconds: 10
-    # Ticks between each step outward. Vanilla overworld rates are 5 for water, 30 for lava -
-    # raise these to make a placement spread more slowly.
-    water-flow-ticks: 5
-    lava-flow-ticks: 30
-    # How far a placed fluid falls straight down (blocks) to find solid ground before it starts
-    # spreading outward, so a bucket emptied against a wall or over a ledge settles on the floor
-    # below instead of spreading from mid-air. A fall that hasn't landed by then just stops.
-    fall-max-depth: 16
+    water:
+      flow-distance: 3
+      flow-ticks: 5
+      drain-ticks: 5
+      despawn-seconds: 10
+      fall-max-depth: 16
+    lava:
+      flow-distance: 3
+      flow-ticks: 30
+      drain-ticks: 30
+      despawn-seconds: 10
+      fall-max-depth: 16
 
 # ============================================
 # CUSTOM ITEMS
