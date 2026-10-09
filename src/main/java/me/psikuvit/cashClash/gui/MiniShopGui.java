@@ -36,10 +36,9 @@ public class MiniShopGui extends AbstractGui {
     @Override
     protected void build() {
         setButton(11, supplyButton(UtilityItem.LEAVES));
-        setButton(12, supplyButton(UtilityItem.WATER_BUCKET));
-        setButton(13, supplyButton(UtilityItem.ARROWS));
-        setButton(14, supplyButton(FoodItem.STEAK));
-        setButton(15, supplyButton(FoodItem.BREAD));
+        setButton(12, supplyButton(UtilityItem.ARROWS));
+        setButton(14, supplyButton(FoodItem.BREAD));
+        setButton(15, supplyButton(FoodItem.STEAK));
     }
 
     /**

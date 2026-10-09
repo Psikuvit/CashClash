@@ -135,7 +135,7 @@ mythic-items:
 # MINI SHOP
 # ============================================
 # Each team's mini shop villager (/cc template set <id> minishop <red|blue>), open during combat
-# to its own team only: leaves, water bucket, arrows, steak, bread, in their main-shop amounts.
+# to its own team only: leaves, arrows, bread, steak, in their main-shop amounts.
 # Each costs this many percent more than in the main shop.
 mini-shop:
   markup-percent: 10
