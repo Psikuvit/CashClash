@@ -361,6 +361,7 @@ public class RoundManager {
             bonusManager.awardEndRoundBonuses();
         }
 
+        EconomyManager.announceRoundEarnings(session);
         EconomyManager.resolveRoundInvestments(session);
 
         // Hold the win/loss result on screen (shopping-phase-parity restrictions + damage

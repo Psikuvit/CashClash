@@ -248,7 +248,9 @@ messages:
   # ECONOMY MESSAGES
   # ============================================
   economy:
+    # Sent when the round's combat ends; amount = share + kill/assist transfers received - transfers lost
     round-money-earned: "<gold>The money pool of <yellow>${pool}</yellow> was distributed based on performance. You earned <yellow>${amount}</yellow></gold>"
+    round-share-paid: "<gold>+${amount}</gold> <gray>your share of this round's <white>${pool}</white> money pool</gray>"
     kill-transfer-received: "<gold>+${amount}</gold> <gray>for killing <white>{victim}</white></gray>"
     kill-transfer-lost: "<red>-${amount}</red> <gray>taken by <white>{killer}</white></gray>"
     kill-transfer-assist: "<gold>+${amount}</gold> <gray>for assisting on <white>{victim}</white></gray>"

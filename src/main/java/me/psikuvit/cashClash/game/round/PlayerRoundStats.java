@@ -5,6 +5,7 @@ public class PlayerRoundStats {
     private int kills;
     private double damageDealt;
     private int deaths;
+    private long poolEarnings;
 
     public PlayerRoundStats() {
         this.kills = 0;
@@ -33,5 +34,13 @@ public class PlayerRoundStats {
 
     public void incrementDeaths() {
         deaths++;
+    }
+
+    public long getPoolEarnings() {
+        return poolEarnings;
+    }
+
+    public void addPoolEarnings(long amount) {
+        poolEarnings += amount;
     }
 }

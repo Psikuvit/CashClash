@@ -62,6 +62,22 @@ public class RoundData {
         return s == null ? 0.0 : s.getDamageDealt();
     }
 
+    /**
+     * Records money a player gained (or, negative, lost) from this round's pool: their share,
+     * and kill transfers in and out.
+     */
+    public void addPoolEarnings(UUID player, long amount) {
+        PlayerRoundStats s = getStats(player);
+        if (s != null) {
+            s.addPoolEarnings(amount);
+        }
+    }
+
+    public long getPoolEarnings(UUID player) {
+        PlayerRoundStats s = getStats(player);
+        return s == null ? 0 : s.getPoolEarnings();
+    }
+
     public boolean isAlive(UUID player) {
         PlayerRoundStats s = getStats(player);
         return s != null && s.getDeaths() == 0;
