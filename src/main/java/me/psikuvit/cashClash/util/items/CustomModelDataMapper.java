@@ -39,9 +39,6 @@ public final class CustomModelDataMapper {
     private static final Map<MythicItem, NamespacedKey> MYTHIC_ITEM_MODELS = new HashMap<>();
     // Cash Blaster uses setItemModel() too (pull-frame states), same reason as Wind Bow/BloodWrench.
     private static final Map<WeaponItem, NamespacedKey> WEAPON_ITEM_MODELS = new HashMap<>();
-    // Placeable-style custom items with a 3D "block" item model (assets/cc/items/<name>.json ->
-    // assets/cc/models/block/<name>.json) instead of a flat CUSTOM_MODEL_DATA icon swap.
-    private static final Map<CustomItem, NamespacedKey> CUSTOM_ITEM_MODELS = new HashMap<>();
 
     static {
         // assets/minecraft/items/fire_charge.json      when: "dynamite"
@@ -70,11 +67,6 @@ public final class CustomModelDataMapper {
         CUSTOM_ITEM_KEYS.put(CustomItem.ORB_OF_GRAVITATION,  "orbofgravitation");
         // assets/minecraft/items/iron_sword.json         when: "soulkatana"
         WEAPON_KEYS.put(WeaponItem.SOUL_KATANA,           "soulkatana");
-
-        // Blooming Rose used to key off assets/minecraft/items/cherry_sapling.json, but the pack
-        // now ships its real 3D block-style item model instead (see CUSTOM_ITEM_MODELS below) -
-        // that vanilla-item override file is gone from the pack, so a CUSTOM_MODEL_DATA string
-        // entry would no-op.
 
         // assets/minecraft/items/diamond_sword.json     when: "electriceelsword"
         MYTHIC_KEYS.put(MythicItem.ELECTRIC_EEL_SWORD, "electriceelsword");
@@ -153,13 +145,6 @@ public final class CustomModelDataMapper {
         MYTHIC_ITEM_MODELS.put(MythicItem.BLAZEBITE_CROSSBOWS,  new NamespacedKey("cc", "blazebite_standby"));
 
         WEAPON_ITEM_MODELS.put(WeaponItem.CASH_BLASTER, new NamespacedKey("cc", "cashblaster"));
-
-        // Placeable-style custom items whose held/inventory icon is a 3D block-cube model
-        // instead of a flat 2D CUSTOM_MODEL_DATA icon swap - the physical block each of these
-        // places in the world has its own separate, untouched vanilla appearance; this only
-        // changes how the item looks in hand/inventory. Bounce Pad and Speedbox use their plain
-        // vanilla slime block and jukebox look.
-        CUSTOM_ITEM_MODELS.put(CustomItem.BLOOMING_ROSE,  new NamespacedKey("cc", "blooming_rose"));
     }
 
     public static String getItemKey(CustomItem item) {
@@ -193,12 +178,7 @@ public final class CustomModelDataMapper {
 
     public static void applyCustomModel(ItemStack item, CustomItem customItem) {
         String key = getItemKey(customItem);
-        if (key != null) {
-            applyStringModelData(item, key);
-            return;
-        }
-        NamespacedKey modelKey = CUSTOM_ITEM_MODELS.get(customItem);
-        if (modelKey != null) applyItemModel(item, modelKey);
+        if (key != null) applyStringModelData(item, key);
     }
 
     public static void applyCustomModel(ItemStack item, MythicItem mythic) {

@@ -27,7 +27,6 @@ public enum CustomItem implements Purchasable {
     ICE_FAN(Material.GUNPOWDER, "ice-fan", 1, 0, "Ice Fan"),
     OVERDRIVE_POTION(Material.GUNPOWDER, "overdrive-potion", 1, 0, "Overdrive Potion"),
     HUNTERS_MARK(Material.GUNPOWDER, "hunters-mark", 1, 0, "Hunter's Mark"),
-    // Back to CHERRY_SAPLING - the pack's "blooming_rose" override moved to cherry_sapling.json.
     BLOOMING_ROSE(Material.CHERRY_SAPLING, "blooming-rose", 1, 0, "Blooming Rose"),
     ORB_OF_GRAVITATION(Material.GUNPOWDER, "orb-of-gravitation", 1, 0, "Orb of Gravitation");
 
