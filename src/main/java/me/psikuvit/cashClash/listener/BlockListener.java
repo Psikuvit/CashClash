@@ -190,7 +190,12 @@ public class BlockListener implements Listener {
         boolean water = bucket == Material.WATER_BUCKET;
         Material fluid = water ? Material.WATER : Material.LAVA;
 
-        rememberReplacedBlock(target);
+        PlacedFluid placedHere = fluidCells.get(origin);
+        if (water && placedHere != null && placedHere.fluid == Material.LAVA && origin.equals(placedHere.origin)) {
+            washAwayLava(placedHere);
+        } else {
+            rememberReplacedBlock(target);
+        }
         trackPlacedBlock(session.getSessionId(), target);
         placeQuickFluid(target, origin, fluid, session.getSessionId());
 
@@ -278,6 +283,29 @@ public class BlockListener implements Listener {
             SchedulerUtils.runTaskLater(() -> removeFluidRing(cells, false), delay);
             delay += tickInterval;
         }
+    }
+
+    /**
+     * Water emptied onto a placed lava source removes the whole lava placement on the spot, so the
+     * water spreads into its cells. The lava source is never remembered as the water's replaced
+     * block: restoring it when the water drained left untracked lava on the map for good.
+     */
+    private void washAwayLava(PlacedFluid lava) {
+        lava.active = false;
+        fluidCells.remove(lava.origin);
+
+        for (List<FluidStep> ring : lava.rings) {
+            for (FluidStep step : ring) {
+                Location loc = step.location();
+                if (fluidCells.get(loc) != lava) continue;
+
+                fluidCells.remove(loc);
+                Block block = loc.getBlock();
+                if (block.getType() == Material.LAVA) restoreAfterFluid(block);
+            }
+        }
+
+        Messages.debug("FLUID", "lava placement at " + at(lava.origin) + " washed away by water on its source");
     }
 
     /** Restores (or untracks) every block in one ring. Only the source ring gets a sound cue. */
