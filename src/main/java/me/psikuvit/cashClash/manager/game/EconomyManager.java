@@ -33,18 +33,20 @@ public class EconomyManager {
 
     /**
      * Pays every player an equal share of the current round's pool at the start of its buy
-     * phase, on top of whatever they have left over.
+     * phase, on top of whatever they have left over. Only the first buy phase announces the
+     * share; later ones show the previous round's earnings instead (see {@link #sendRoundEarnings}).
      */
     public static void payRoundShare(GameSession session) {
         long pool = getRoundPool(session);
         if (pool <= 0) return;
 
         long share = pool / Math.max(1, CashClashPlugin.getInstance().getConfigManager().getRoundPoolSplit());
+        boolean announceShare = session.getPreviousRoundData() == null;
         for (UUID uuid : session.getPlayers()) {
             long paid = session.getRewardManager().grant(uuid, RewardType.ROUND_DISTRIBUTION, share);
             session.getCurrentRoundData().addPoolEarnings(uuid, paid);
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
+            if (announceShare && player != null) {
                 Messages.send(player, "economy.round-share-paid",
                         "pool", String.format("%,d", pool),
                         "amount", String.format("%,d", paid));
@@ -55,21 +57,19 @@ public class EconomyManager {
     }
 
     /**
-     * Tells every player, once the round's combat is over, what they ended up with from its
+     * Tells a player entering a buy phase what they ended up with from the previous round's
      * pool: their share plus kill and assist transfers received, minus transfers lost on death.
      */
-    public static void announceRoundEarnings(GameSession session) {
-        long pool = getRoundPool(session);
+    public static void sendRoundEarnings(GameSession session, Player player) {
+        RoundData previousRound = session.getPreviousRoundData();
+        if (previousRound == null) return;
+
+        long pool = CashClashPlugin.getInstance().getConfigManager().getRoundPool(session.getCurrentRound() - 1);
         if (pool <= 0) return;
 
-        for (UUID uuid : session.getPlayers()) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player == null) continue;
-
-            Messages.send(player, "economy.round-money-earned",
-                    "pool", String.format("%,d", pool),
-                    "amount", String.format("%,d", session.getCurrentRoundData().getPoolEarnings(uuid)));
-        }
+        Messages.send(player, "economy.round-money-earned",
+                "pool", String.format("%,d", pool),
+                "amount", String.format("%,d", previousRound.getPoolEarnings(player.getUniqueId())));
     }
 
     /**

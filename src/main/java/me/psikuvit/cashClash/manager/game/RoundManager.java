@@ -186,6 +186,7 @@ public class RoundManager {
                 KitService.restoreStarterArmor(p);
                 refillWaterBuckets(p);
                 Messages.send(p, "round.shopping-area-teleported");
+                EconomyManager.sendRoundEarnings(session, p);
             }
         }
 
@@ -361,7 +362,6 @@ public class RoundManager {
             bonusManager.awardEndRoundBonuses();
         }
 
-        EconomyManager.announceRoundEarnings(session);
         EconomyManager.resolveRoundInvestments(session);
 
         // Hold the win/loss result on screen (shopping-phase-parity restrictions + damage

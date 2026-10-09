@@ -70,6 +70,7 @@ public class GameSession {
     private final Map<UUID, CashClashPlayer> players;
 
     private RoundData currentRoundData;
+    private RoundData previousRoundData;
 
     private RoundManager roundManager;
     //private CashQuakeManager cashQuakeManager;
@@ -196,6 +197,13 @@ public class GameSession {
 
     public RoundData getCurrentRoundData() {
         return currentRoundData;
+    }
+
+    /**
+     * The round that was played before the current one, or null during the first round.
+     */
+    public RoundData getPreviousRoundData() {
+        return previousRoundData;
     }
 
     public BonusManager getBonusManager() {
@@ -578,6 +586,7 @@ public class GameSession {
      * Initialize round data
      */
     private void initializeRoundData() {
+        previousRoundData = currentRoundData;
         currentRoundData = new RoundData(players.keySet());
         players.values().forEach(p -> p.initializeRound(currentRound));
     }
