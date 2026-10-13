@@ -851,13 +851,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
             return true;
         }
 
-        // Check if we can select another buff
         if (buffs.size() >= maxBuffs) {
-            Messages.send(player, "gamemode-ptp.buff-selection-limit", "max_buffs", String.valueOf(maxBuffs));
-            return false;
+            buffs.removeFirst();
         }
 
-        // Select new buff
         buffs.add(buff);
         President updatedPres = pres.withBuff(buff);
         presidents.put(presColor, updatedPres);

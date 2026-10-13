@@ -320,7 +320,6 @@ messages:
     buff-selected: "<gold>Presidents have selected their buffs! Shop is now unlocked!</gold>"
     buff-activated: "<gold>Buff Activated: {buff_name}!</gold>"
     buff-deselected: "<red>Buff deselected!</red>"
-    buff-selection-limit: "<red>You have already selected {max_buffs} buff(s)!</red>"
     buff-selected-player: "<green>Buff selected: {buff_name}!</green>"
     president-died: "<{color}><bold>Team {team_name}'s president has been assassinated!</bold> <yellow>{win_condition} total wins the match</yellow>"
     buy-phase-message: "<yellow>Best of 7 series - First to 2 assassinations wins each round! Every 2 kills the president's team gets a split 15k bonus!</yellow>"
