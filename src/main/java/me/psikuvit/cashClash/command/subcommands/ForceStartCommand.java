@@ -3,17 +3,15 @@ package me.psikuvit.cashClash.command.subcommands;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 /**
- * Admin command to force start a game immediately, bypassing minimum player requirements.
+ * Admin command to start a game with everyone in the queue immediately, skipping the countdown and
+ * the minimum player count.
  */
 public class ForceStartCommand extends AbstractArgCommand {
 
@@ -23,34 +21,11 @@ public class ForceStartCommand extends AbstractArgCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, String @NotNull [] args) {
-        if (!(sender instanceof Player p)) {
-            Messages.send(sender, "command.only-players");
-            return true;
+        if (CashClashPlugin.getInstance().getQueueManager().forceStart()) {
+            Messages.send(sender, "queue.force-started");
+        } else {
+            Messages.send(sender, "queue.force-start-empty");
         }
-
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(p);
-        if (session == null) {
-            Messages.send(sender, "generic.not-in-game");
-            return true;
-        }
-
-        if (session.getState() != GameState.WAITING) {
-            Messages.send(sender, "generic.game-started");
-            return true;
-        }
-
-        if (session.getPlayers().isEmpty()) {
-            Messages.send(sender, "admin.forcestart-no-players");
-            return true;
-        }
-
-        session.cancelStartCountdown();
-
-        session.start();
-        Messages.broadcast(session.getPlayers(), "admin.game-force-started");
-        Messages.send(sender, "admin.forcestart-sender-success");
-
         return true;
     }
 }
-

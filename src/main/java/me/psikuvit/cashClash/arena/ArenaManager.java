@@ -12,6 +12,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -40,6 +41,8 @@ public class ArenaManager {
 
     // Server-wide lobby spawn (optional)
     private Location serverLobbySpawn;
+    // Shared waiting room for queued players (optional)
+    private Location waitingLobbySpawn;
 
     public ArenaManager(ConfigManager configManager, GameManager gameManager) {
         this.gameManager = gameManager;
@@ -52,6 +55,7 @@ public class ArenaManager {
         loadTemplates();
         loadArenas();
         loadServerLobby();
+        loadWaitingLobby();
     }
 
     /**
@@ -498,5 +502,30 @@ public class ArenaManager {
     public void setServerLobbySpawn(Location loc) {
         this.serverLobbySpawn = loc;
         saveServerLobby();
+    }
+
+    // --- Waiting room spawn handling (where queued players wait for their game) ---
+    private void loadWaitingLobby() {
+        ConfigurationSection section = config().getConfigurationSection("waiting-lobby");
+        if (section == null) return;
+
+        Location loc = LocationUtils.deserializeLocation(section);
+        if (loc != null && loc.getWorld() != null) {
+            this.waitingLobbySpawn = loc;
+            Messages.debug("ARENA", "Loaded waiting lobby spawn: " + loc.getWorld().getName());
+        }
+    }
+
+    /**
+     * @return a clone, or null if no waiting room has been set
+     */
+    public Location getWaitingLobbySpawn() {
+        return LocationUtils.clone(waitingLobbySpawn);
+    }
+
+    public void setWaitingLobbySpawn(Location loc) {
+        this.waitingLobbySpawn = loc;
+        LocationUtils.serializeLocation(config(), "waiting-lobby", loc);
+        CashClashPlugin.getInstance().saveConfig();
     }
 }

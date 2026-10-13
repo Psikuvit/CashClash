@@ -39,6 +39,7 @@ public class HubCommand extends Command {
             CashClashPlugin.getInstance().getGameManager().removePlayerFromSession(player);
         }
 
+        CashClashPlugin.getInstance().getQueueManager().remove(player);
         CashClashPlugin.getInstance().getLobbyManager().sendToLobby(player);
         Messages.send(player, "lobby.teleported-to-hub");
         return true;

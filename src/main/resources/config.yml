@@ -603,6 +603,34 @@ leaderboard:
   refresh-minutes: 5
 
 # ============================================
+# QUEUE SETTINGS
+# ============================================
+# Players join the queue from the arena villager or /cc join and wait in the shared waiting room
+# (/cc setwaitinglobby). Once game.min-players are queued a countdown starts; when it ends a
+# random free map is picked and up to game.max-players start a game, party members on the same
+# team.
+queue:
+  # Countdown before the game starts once enough players are queued (seconds)
+  countdown-seconds: 10
+  # How many games can run at the same time
+  max-concurrent-games: 3
+  # Tips shown in the waiting room's action bar: a new one every interval-seconds, for
+  # duration-seconds. Every tip is shown once before any repeats. Add as many as you like.
+  tips:
+    interval-seconds: 15
+    duration-seconds: 5
+    list:
+      - "Use overdrive potion to retreat from a bad spot!"
+      - "Electric eel sword is really strong for aggressive plays!"
+      - "Use the blooming rose to save you from death!"
+      - "Orb of gravitation stops enemies in their tracks!"
+      - "Custom food items give you potion effects!"
+      - "Deathmaulers set gives you a lot of healing!"
+      - "Goblin spear doesn't really know how he ended up in cash clash..."
+      - "Overdrive potion can never seem to contain himself"
+      - "Always play safe if you're the president!"
+
+# ============================================
 # HUB SETTINGS
 # ============================================
 hub:

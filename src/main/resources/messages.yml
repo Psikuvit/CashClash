@@ -34,7 +34,6 @@ messages:
     help-clearbanners: "<yellow>/cc clearbanners <gray>- Remove leftover flag banners from your world</gray>"
     help-reload: "<yellow>/cc reload [config|shop|items|all] <gray>- Reload configs</gray>"
     help-debug: "<yellow>/cc debug <gray>- Toggle debug mode</gray>"
-    join-select-arena: "<yellow>Select an arena from the menu to join a game.</yellow>"
     layout-unknown-action: "<red>Unknown layout action: <gray>{action}</gray></red>"
     layout-usage: "<gray>Usage: <yellow>/cc layout</yellow> (open editor), <yellow>/cc layout confirm</yellow>, <yellow>/cc layout cancel</yellow></gray>"
 
@@ -422,6 +421,7 @@ messages:
     layout-saved: "<green>Layout for <yellow>{kit_name}</yellow> saved!</green>"
     layout-cancelled: "<yellow>Layout editing cancelled for {kit_name}.</yellow>"
     server-lobby-set: "<green>Server lobby spawn set to your current location.</green>"
+    waiting-lobby-set: "<green>Waiting room spawn set to your current location.</green>"
     layout-currently-editing: "<yellow>You are currently editing a layout.</yellow>"
     layout-currently-editing-help: "<gray>Use <yellow>/cc layout confirm</yellow> to save or <yellow>/cc layout cancel</yellow> to cancel.</gray>"
     teleported-to-hub: "<green>Teleported to the hub.</green>"
@@ -547,11 +547,8 @@ messages:
   admin:
     game-ended: "<gold><bold>Game ended by an admin!</bold></gold>"
     round-skipped: "<gold><bold>Round skipped by an admin! Moving to Round {next_round}!</bold></gold>"
-    game-force-started: "<gold><bold>Game force started by an admin!</bold></gold>"
     stop-success: "<green>Game ended.</green>"
     stop-sender-success: "<green>Game stopped successfully.</green>"
-    forcestart-no-players: "<red>No players are in the game.</red>"
-    forcestart-sender-success: "<green>Game force started successfully.</green>"
     forcenextround-not-started: "<red>The game hasn't started yet.</red>"
     forcenextround-already-ending: "<yellow>Game is already ending.</yellow>"
     forcenextround-final-round: "<yellow>Already at final round, ending game instead.</yellow>"
@@ -850,21 +847,31 @@ messages:
   arena:
     party-member-in-game: "<red>Party member {player_name} is already in a game!</red>"
     party-member-editing-layout: "<red>Party member {player_name} is editing a layout!</red>"
-    not-enough-space-party: "<red>Not enough space in this arena for your party!</red>"
-    party-size-vs-slots: "<gray>Party size: <white>{party_size}</white>, Available slots: <white>{available_slots}</white></gray>"
-    joined-with-party: "<green>Joined {arena_name} with your party!</green>"
-    team-assigned: "<yellow>Team: {team_color}</yellow>"
     party-split: "<yellow>Party was split due to team size limits!</yellow>"
-    team-assigned-overflow: "<yellow>Team: {team_color} <gray>(overflow)</gray></yellow>"
-    waiting-for-players: "<gray>Waiting for players... ({current}/{max})</gray>"
     cannot-join-while-editing: "<red>You cannot join a game while editing a layout!</red>"
     layout-finish-help: "<gray>Use <yellow>/cc layout confirm</yellow> or <yellow>/cc layout cancel</yellow> first.</gray>"
     already-in-game: "<red>You're already in a game!</red>"
-    not-joinable: "<red>This arena cannot be joined right now!</red>"
-    not-found: "<red>Arena not found!</red>"
     only-party-owner-can-join: "<red>Only the party owner can join games for the party!</red>"
     ask-owner-to-join: "<gray>Ask <yellow>{owner_name}</yellow> to join a game.</gray>"
-    joined: "<green>Joined {arena_name}!</green>"
+
+  # ============================================
+  # QUEUE MESSAGES
+  # ============================================
+  queue:
+    selector-title: "<gold><bold>Cash Clash</bold></gold>"
+    join-button-name: "<green><bold>Join the Queue</bold></green>"
+    join-button-lore: "<gray>{queued} player(s) waiting. A random map is picked when the game starts.</gray>"
+    joined: "<green>You joined the queue!</green> <gray>Use <yellow>/cc leave</yellow> or the bed to leave.</gray>"
+    joined-with-party: "<green>{owner_name} queued your party!</green>"
+    already-queued: "<red>You're already in the queue.</red>"
+    left: "<yellow>You left the queue.</yellow>"
+    not-queued: "<red>You're not in the queue.</red>"
+    waiting-action-bar: "<yellow>{current}/{max} players are waiting...</yellow>"
+    tip: "<gold><bold>Tip:</bold></gold> <yellow>{tip}</yellow>"
+    waiting-for-arena: "<yellow>Every arena is busy - your game starts as soon as one frees up.</yellow>"
+    no-arena: "<red>No arena is ready to host a game. Ask an admin to set one up.</red>"
+    force-started: "<green>Starting a game with everyone in the queue.</green>"
+    force-start-empty: "<red>Nobody is in the queue.</red>"
 
   # ============================================
   # CUSTOM ARMOR MESSAGES

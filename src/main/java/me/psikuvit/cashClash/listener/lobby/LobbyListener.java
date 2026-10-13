@@ -2,13 +2,13 @@ package me.psikuvit.cashClash.listener.lobby;
 
 
 import me.psikuvit.cashClash.config.ConfigManager;
-import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
 import me.psikuvit.cashClash.gui.LayoutKitSelectorGUI;
 import me.psikuvit.cashClash.gui.StatsGUI;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.lobby.LayoutManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager.LobbyItemType;
+import me.psikuvit.cashClash.manager.lobby.QueueManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
@@ -26,7 +26,7 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Listener for handling lobby item interactions.
- * Handles Stats, Arena Selector, and Layout Configurator items.
+ * Handles the Stats, Layout Configurator and Leave Queue items.
  */
 public class LobbyListener implements Listener {
 
@@ -34,12 +34,15 @@ public class LobbyListener implements Listener {
     private final LobbyManager lobbyManager;
     private final LayoutManager layoutManager;
     private final ConfigManager configManager;
+    private final QueueManager queueManager;
 
-    public LobbyListener(GameManager gameManager, LobbyManager lobbyManager, LayoutManager layoutManager, ConfigManager configManager) {
+    public LobbyListener(GameManager gameManager, LobbyManager lobbyManager, LayoutManager layoutManager,
+                         ConfigManager configManager, QueueManager queueManager) {
         this.gameManager = gameManager;
         this.lobbyManager = lobbyManager;
         this.layoutManager = layoutManager;
         this.configManager = configManager;
+        this.queueManager = queueManager;
     }
 
     /**
@@ -79,8 +82,10 @@ public class LobbyListener implements Listener {
 
         switch (type) {
             case STATS -> handleStatsItem(player);
-            case ARENA_SELECTOR -> handleArenaSelectorItem(player);
             case LAYOUT_CONFIGURATOR -> handleLayoutConfiguratorItem(player);
+            case LEAVE_QUEUE -> {
+                if (queueManager.leave(player)) Messages.send(player, "queue.left");
+            }
         }
     }
 
@@ -89,13 +94,6 @@ public class LobbyListener implements Listener {
      */
     private void handleStatsItem(Player player) {
         StatsGUI.openStatsGUI(player);
-    }
-
-    /**
-     * Handle the arena selector item - Opens the arena selection GUI.
-     */
-    private void handleArenaSelectorItem(Player player) {
-        ArenaSelectionGUI.openArenaGUI(player);
     }
 
     /**

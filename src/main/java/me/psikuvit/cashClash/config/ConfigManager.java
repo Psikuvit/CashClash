@@ -654,6 +654,28 @@ public class ConfigManager {
         return config.getInt("afk.warning-seconds", 15);
     }
 
+    // ==================== QUEUE SETTINGS ====================
+
+    public int getQueueCountdownSeconds() {
+        return config.getInt("queue.countdown-seconds", 10);
+    }
+
+    public int getQueueMaxConcurrentGames() {
+        return config.getInt("queue.max-concurrent-games", 3);
+    }
+
+    public int getQueueTipIntervalSeconds() {
+        return config.getInt("queue.tips.interval-seconds", 15);
+    }
+
+    public int getQueueTipDurationSeconds() {
+        return config.getInt("queue.tips.duration-seconds", 5);
+    }
+
+    public List<String> getQueueTips() {
+        return config.getStringList("queue.tips.list");
+    }
+
     // ==================== HUB SETTINGS ====================
 
     public String getDiscordLink() {

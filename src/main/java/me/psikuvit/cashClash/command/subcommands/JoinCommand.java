@@ -1,7 +1,7 @@
 package me.psikuvit.cashClash.command.subcommands;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -9,6 +9,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 
+/**
+ * /cc join - joins the queue, same as the arena villager's compass.
+ */
 public class JoinCommand extends AbstractArgCommand {
     public JoinCommand() {
         super("join", Collections.emptyList(), null);
@@ -20,9 +23,7 @@ public class JoinCommand extends AbstractArgCommand {
             Messages.send(sender, "command.only-players");
             return true;
         }
-        ArenaSelectionGUI.openArenaGUI(player);
-        Messages.send(player, "command.join-select-arena");
+        CashClashPlugin.getInstance().getQueueManager().join(player);
         return true;
     }
 }
-

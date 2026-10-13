@@ -43,14 +43,12 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 
@@ -82,10 +80,6 @@ public class GameSession {
     private boolean actionsRestricted;
     private boolean damageDisabled;
 
-    // Countdown/start preparation
-    private BukkitTask startCountdownTask;
-    private boolean startingCountdown;
-    private int countdownSecondsRemaining;
     private Gamemode gamemode;
     private final GamemodeManager gamemodeManager;
     private final RejoinManager rejoinManager;
@@ -133,7 +127,6 @@ public class GameSession {
         this.roundWins.put(1, 0);
         this.roundWins.put(2, 0);
 
-        this.startingCountdown = false;
         this.sequenceManager = new SequenceManager(this);
         this.rewardManager = new RewardManager(this);
         this.assistTracker = new AssistTracker();
@@ -358,76 +351,10 @@ public class GameSession {
     }
 
     /**
-     * Start a countdown (in seconds) that will begin the game when it reaches zero.
-     * If players drop below minPlayers the countdown is canceled.
-     */
-    public synchronized void startCountdown(int seconds) {
-        if (startingCountdown) return;
-        startingCountdown = true;
-        countdownSecondsRemaining = seconds;
-
-        int minPlayers = configManager.getMinPlayers();
-
-        Messages.broadcast(players.keySet(), "round.game-countdown-start",
-                "seconds", String.valueOf(seconds));
-
-        startCountdownTask = SchedulerUtils.runTaskTimer(() -> {
-            if (getState() != GameState.WAITING) {
-                cancelStartCountdown();
-                return;
-            }
-
-            int count = players.size();
-            if (count < minPlayers) {
-                Messages.broadcast(players.keySet(), "round.game-countdown-cancelled");
-                cancelStartCountdown();
-                return;
-            }
-
-            if (countdownSecondsRemaining % 30 == 0 || countdownSecondsRemaining <= 5)
-                Messages.broadcast(players.keySet(), "round.game-countdown-tick",
-                        "seconds", String.valueOf(countdownSecondsRemaining));
-            if (countdownSecondsRemaining <= 5 && countdownSecondsRemaining > 0)
-                SoundUtils.playTo(players.keySet(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
-
-            if (countdownSecondsRemaining <= 0) {
-                Messages.broadcast(players.keySet(), "round.game-starting");
-
-                players.keySet()
-                        .stream()
-                        .map(Bukkit::getPlayer)
-                        .filter(Objects::nonNull)
-                        .forEach(player -> {
-                            Team team = teamRed.hasPlayer(player.getUniqueId()) ? teamRed : teamBlue;
-                            Messages.send(player, "round.team-assignment",
-                                    "team_color", team.getColoredName());
-                        });
-                cancelStartCountdown();
-                start();
-                return;
-            }
-            countdownSecondsRemaining--;
-        }, 0L, 20L);
-    }
-
-    /**
      * Expose remaining time from the active RoundManager for scoreboard {time} placeholder.
      */
     public int getTimeRemaining() {
         return roundManager.getTimeRemaining();
-    }
-
-    public synchronized void cancelStartCountdown() {
-        if (!startingCountdown) return;
-        startingCountdown = false;
-        if (startCountdownTask != null) {
-            startCountdownTask.cancel();
-            startCountdownTask = null;
-        }
-    }
-
-    public boolean isStartingCountdown() {
-        return startingCountdown;
     }
 
     public void startCombatPhase() {
@@ -615,6 +542,15 @@ public class GameSession {
         if (roundManager != null) roundManager.startShoppingPhase(currentRound);
     }
 
+    /**
+     * Throws away a session nobody ever joined: deletes its map copy and unregisters it. Used for a
+     * map the queue loaded ahead of a countdown that was then cancelled.
+     */
+    public void discard() {
+        if (getState() != GameState.WAITING || !players.isEmpty()) return;
+        cleanupArena();
+    }
+
     public void end() {
         stateMachine.transitionTo(GameState.ENDING);
 
@@ -641,7 +577,6 @@ public class GameSession {
      * Clean up all game managers
      */
     private void cleanupManagers() {
-        cancelStartCountdown();
         teamOutlineManager.clearOutlines(this);
         if (roundManager != null) roundManager.cleanup();
         if (bonusManager != null) bonusManager.cleanup();

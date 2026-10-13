@@ -564,18 +564,6 @@ lobby-items:
       - "<yellow>Right-click to view!</yellow>"
     slot: 0
 
-  # Arena Selector - Opens arena selection GUI
-  arena-selector:
-    material: COMPASS
-    name: "<green><bold>Arena Selector</bold></green>"
-    lore:
-      - ""
-      - "<gray>Browse available arenas</gray>"
-      - "<gray>and join a game!</gray>"
-      - ""
-      - "<yellow>Right-click to select!</yellow>"
-    slot: 4
-
   # Layout Configurator - Configure kit layout (future feature)
   layout-configurator:
     material: ANVIL
@@ -586,6 +574,18 @@ lobby-items:
       - "<gray>for each kit.</gray>"
       - ""
       - "<yellow>Right-click to configure!</yellow>"
+    slot: 8
+
+  # Leave Queue - the only item while waiting in the waiting room
+  leave-queue:
+    material: RED_BED
+    name: "<red><bold>Leave Queue</bold></red>"
+    lore:
+      - ""
+      - "<gray>Leave the queue and</gray>"
+      - "<gray>go back to the hub.</gray>"
+      - ""
+      - "<yellow>Right-click to leave!</yellow>"
     slot: 8
 
 

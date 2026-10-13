@@ -25,8 +25,8 @@ public class LobbyManager {
     // Lobby item types
     public enum LobbyItemType {
         STATS("stats"),
-        ARENA_SELECTOR("arena_selector"),
-        LAYOUT_CONFIGURATOR("layout_configurator");
+        LAYOUT_CONFIGURATOR("layout_configurator"),
+        LEAVE_QUEUE("leave_queue");
 
         private final String id;
 
@@ -97,11 +97,17 @@ public class LobbyManager {
         // Stats item (slot from config, default 0)
         setLobbyItemSafely(player, config.getLobbyStatsSlot(), createStatsItem(), "stats");
 
-        // Arena selector item (slot from config, default 4)
-        setLobbyItemSafely(player, config.getLobbyArenaSelectorSlot(), createArenaSelectorItem(), "arena-selector");
-
         // Layout configurator item (slot from config, default 8)
         setLobbyItemSafely(player, config.getLobbyLayoutConfiguratorSlot(), createLayoutConfiguratorItem(), "layout-configurator");
+    }
+
+    /**
+     * Swaps a queued player's lobby items for the waiting room's single Leave Queue item.
+     */
+    public void giveQueueItems(Player player) {
+        clearLobbyItems(player);
+        setLobbyItemSafely(player, itemsConfig.getLobbyItemSlot("leave-queue"),
+                createConfiguredItem("leave-queue", Material.RED_BED, LobbyItemType.LEAVE_QUEUE), "leave-queue");
     }
 
     /**
@@ -181,23 +187,21 @@ public class LobbyManager {
     }
 
     /**
-     * Create the arena selector item.
+     * A lobby item configured under {@code lobby-items.<configId>} in items.yml.
      */
-    private ItemStack createArenaSelectorItem() {
-        ItemsConfig config = itemsConfig;
-
-        Material material = Material.matchMaterial(config.getLobbyArenaSelectorMaterial());
-        if (material == null) material = Material.COMPASS;
+    private ItemStack createConfiguredItem(String configId, Material fallback, LobbyItemType type) {
+        Material material = Material.matchMaterial(itemsConfig.getLobbyItemMaterial(configId));
+        if (material == null) material = fallback;
 
         ItemStack item = new ItemStack(material);
         PDCSetter tags = PDCSetter.of(item);
 
-        tags.meta().displayName(Messages.parse(config.getLobbyArenaSelectorName()));
-        tags.meta().lore(config.getLobbyArenaSelectorLore().stream()
+        tags.meta().displayName(Messages.parse(itemsConfig.getLobbyItemName(configId)));
+        tags.meta().lore(itemsConfig.getLobbyItemLore(configId).stream()
                 .map(Messages::parse)
                 .toList());
 
-        tags.set(Keys.LOBBY_ITEM, PersistentDataType.STRING, LobbyItemType.ARENA_SELECTOR.getId());
+        tags.set(Keys.LOBBY_ITEM, PersistentDataType.STRING, type.getId());
 
         tags.apply();
         return item;

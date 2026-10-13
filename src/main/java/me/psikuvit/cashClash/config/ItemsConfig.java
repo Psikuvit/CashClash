@@ -1099,21 +1099,21 @@ public class ItemsConfig {
         return config.getInt("lobby-items.stats.slot", 0);
     }
 
-    // Arena Selector Item
-    public String getLobbyArenaSelectorMaterial() {
-        return config.getString("lobby-items.arena-selector.material", "COMPASS");
+    // Any other lobby item, by its key under lobby-items (leave-queue, practice-range, ...)
+    public String getLobbyItemMaterial(String id) {
+        return config.getString("lobby-items." + id + ".material", "BARRIER");
     }
 
-    public String getLobbyArenaSelectorName() {
-        return config.getString("lobby-items.arena-selector.name", "<green><bold>Arena Selector</bold></green>");
+    public String getLobbyItemName(String id) {
+        return config.getString("lobby-items." + id + ".name", id);
     }
 
-    public java.util.List<String> getLobbyArenaSelectorLore() {
-        return config.getStringList("lobby-items.arena-selector.lore");
+    public java.util.List<String> getLobbyItemLore(String id) {
+        return config.getStringList("lobby-items." + id + ".lore");
     }
 
-    public int getLobbyArenaSelectorSlot() {
-        return config.getInt("lobby-items.arena-selector.slot", 4);
+    public int getLobbyItemSlot(String id) {
+        return config.getInt("lobby-items." + id + ".slot", 4);
     }
 
     // Layout Configurator Item
