@@ -656,8 +656,9 @@ public class BlockListener implements Listener {
 
     /**
      * Records a block the fluid is about to overwrite, unless it was only air. A player-placed
-     * web is washed away for good instead of remembered: its despawn task gives up once the web
-     * is gone, so putting it back when the fluid drains would leave it there permanently.
+     * web or leaf block (the latter only ever reached by lava) is destroyed for good instead of
+     * remembered: its despawn task gives up once it is gone, so putting it back when the fluid
+     * drains would leave it there permanently.
      */
     private static void rememberReplacedBlock(Block block) {
         Material type = block.getType();
@@ -670,7 +671,20 @@ public class BlockListener implements Listener {
             Messages.debug("FLUID", "washed away placed web at " + at(loc));
             return;
         }
+        if (isPlacedLeaves(block)) {
+            cancelLeafDecayTask(loc);
+            removeDespawnTimer(loc);
+            Location center = loc.clone().add(0.5, 0.5, 0.5);
+            ParticleUtils.spawn(Particle.LARGE_SMOKE, center, 6, 0.3, 0.3, 0.3, 0.02);
+            SoundUtils.playAt(center, Sound.BLOCK_FIRE_EXTINGUISH, 0.6f, 1.2f);
+            Messages.debug("FLUID", "burned placed leaves at " + at(loc));
+            return;
+        }
         fluidReplacedBlocks.putIfAbsent(loc, block.getBlockData());
+    }
+
+    private static boolean isPlacedLeaves(Block block) {
+        return isLeafBlock(block.getType()) && leafDecayTasks.containsKey(block.getLocation().toBlockLocation());
     }
 
     /**
@@ -690,11 +704,13 @@ public class BlockListener implements Listener {
      * Whether the spread may step into a block. Anything without a collision box gives way -
      * plants, buttons, levers, torches - so a direction is never skipped just because something
      * is standing in it, which is the vanilla behaviour being replaced. Only real map geometry
-     * stops the flow, and waterlogging stays refused.
+     * stops the flow, and waterlogging stays refused. Lava also burns through player-placed
+     * leaves, falling or spreading into them like open space.
      */
-    private boolean canFlowInto(Block block) {
+    private boolean canFlowInto(Block block, Material fluid) {
         Material type = block.getType();
         if (type == Material.WATER || type == Material.LAVA) return false;
+        if (fluid == Material.LAVA && isPlacedLeaves(block)) return true;
         if (block.getBlockData() instanceof Waterlogged) return false;
         return !type.isSolid();
     }
@@ -765,7 +781,7 @@ public class BlockListener implements Listener {
             for (Front cell : frontier) {
                 Location below = cell.location().clone().add(0, -1, 0);
                 Block belowBlock = below.getBlock();
-                if (canFlowInto(belowBlock)) {
+                if (canFlowInto(belowBlock, fluid)) {
                     if (cell.fallLeft() > 0 && seen.add(below)) {
                         ring.add(new FluidStep(below, FALLING_FLUID_LEVEL));
                         nextFrontier.add(new Front(below, cell.hops(), cell.fallLeft() - 1));
@@ -777,7 +793,7 @@ public class BlockListener implements Listener {
                 int hops = cell.hops() + 1;
                 for (BlockFace face : HORIZONTAL_FACES) {
                     Location side = cell.location().clone().add(face.getModX(), 0, face.getModZ());
-                    if (!seen.add(side) || !canFlowInto(side.getBlock())) continue;
+                    if (!seen.add(side) || !canFlowInto(side.getBlock(), fluid)) continue;
                     ring.add(new FluidStep(side, Math.min(hops, MAX_FLOWING_FLUID_LEVEL)));
                     nextFrontier.add(new Front(side, hops, fallMaxDepth));
                 }
@@ -806,7 +822,7 @@ public class BlockListener implements Listener {
         for (FluidStep step : placement.rings.get(index)) {
             Location loc = step.location();
             Block block = loc.getBlock();
-            if (!canFlowInto(block)) {
+            if (!canFlowInto(block, placement.fluid)) {
                 Messages.debug("FLUID", "  ring " + ringNumber + " skip " + at(loc) + ": " + flowBlockedReason(block));
                 continue;
             }
@@ -997,7 +1013,7 @@ public class BlockListener implements Listener {
     /**
      * Check if a material is a leaf block.
      */
-    private boolean isLeafBlock(Material material) {
+    private static boolean isLeafBlock(Material material) {
         return material == Material.OAK_LEAVES || material == Material.SPRUCE_LEAVES ||
                material == Material.BIRCH_LEAVES || material == Material.JUNGLE_LEAVES ||
                material == Material.ACACIA_LEAVES || material == Material.DARK_OAK_LEAVES ||
