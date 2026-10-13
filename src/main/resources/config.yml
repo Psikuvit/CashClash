@@ -608,4 +608,7 @@ leaderboard:
 hub:
   # The invite link /discord sends players
   discord-link: "https://discord.gg/your-invite"
+  # Whether players outside a game can break hub blocks (toggle in game with /cc hubbreak).
+  # Players in creative mode can always break blocks.
+  block-breaking: false
 

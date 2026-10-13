@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.command.subcommands.CoinsCommand;
 import me.psikuvit.cashClash.command.subcommands.DebugCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceNextRoundCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceStartCommand;
+import me.psikuvit.cashClash.command.subcommands.HubBreakCommand;
 import me.psikuvit.cashClash.command.subcommands.JoinCommand;
 import me.psikuvit.cashClash.command.subcommands.KCCommand;
 import me.psikuvit.cashClash.command.subcommands.LayoutCommand;
@@ -81,6 +82,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new KCCommand());
         registerSubcommand(new SelectKitCommand());
         registerSubcommand(new SetLobbyCommand());
+        registerSubcommand(new HubBreakCommand());
         registerSubcommand(new ClearBannersCommand());
         registerSubcommand(new ReloadCommand());
         registerSubcommand(new DebugCommand());

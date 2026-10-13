@@ -301,7 +301,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new GameListener(configManager, cooldownManager, customArmorManager, customItemManager, gameManager, itemsConfig, mythicItemManager, playerDataManager, shopManager, weaponItemManager),
                 new HungerListener(),
                 new PlayerConnectionListener(configManager, gameManager, layoutManager, lobbyManager, mythicItemManager, playerDataManager, rejoinManager, scoreboardManager, tabListManager, worldVisibilityManager),
-                new LobbyListener(gameManager, lobbyManager, layoutManager),
+                new LobbyListener(gameManager, lobbyManager, layoutManager, configManager),
                 new AfkListener(),
                 new ArenaNPCListener(),
                 new ChatListener(),

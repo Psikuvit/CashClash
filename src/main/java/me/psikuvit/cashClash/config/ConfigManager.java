@@ -660,6 +660,22 @@ public class ConfigManager {
         return config.getString("hub.discord-link", "https://discord.gg/your-invite");
     }
 
+    public boolean isHubBlockBreaking() {
+        return config.getBoolean("hub.block-breaking", false);
+    }
+
+    /**
+     * Turns hub block breaking on or off and saves it to config.yml, so it survives a restart.
+     * Saved through the plugin's own copy of config.yml, the one ArenaManager saves the lobby
+     * spawns through - saving this copy instead would overwrite a spawn set since startup.
+     */
+    public void setHubBlockBreaking(boolean enabled) {
+        config.set("hub.block-breaking", enabled);
+        CashClashPlugin plugin = CashClashPlugin.getInstance();
+        plugin.getConfig().set("hub.block-breaking", enabled);
+        plugin.saveConfig();
+    }
+
     // ==================== REJOIN SETTINGS ====================
 
     /**

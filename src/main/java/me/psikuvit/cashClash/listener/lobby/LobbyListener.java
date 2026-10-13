@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.listener.lobby;
 
 
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.gui.ArenaSelectionGUI;
 import me.psikuvit.cashClash.gui.LayoutKitSelectorGUI;
 import me.psikuvit.cashClash.gui.StatsGUI;
@@ -9,11 +10,13 @@ import me.psikuvit.cashClash.manager.lobby.LayoutManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager.LobbyItemType;
 import me.psikuvit.cashClash.util.Messages;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -30,11 +33,26 @@ public class LobbyListener implements Listener {
     private final GameManager gameManager;
     private final LobbyManager lobbyManager;
     private final LayoutManager layoutManager;
+    private final ConfigManager configManager;
 
-    public LobbyListener(GameManager gameManager, LobbyManager lobbyManager, LayoutManager layoutManager) {
+    public LobbyListener(GameManager gameManager, LobbyManager lobbyManager, LayoutManager layoutManager, ConfigManager configManager) {
         this.gameManager = gameManager;
         this.lobbyManager = lobbyManager;
         this.layoutManager = layoutManager;
+        this.configManager = configManager;
+    }
+
+    /**
+     * Hub blocks can only be broken while {@code hub.block-breaking} is on (/cc hubbreak), or by
+     * a player in creative mode. Blocks inside a game are left to {@code BlockListener}.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onHubBlockBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        if (gameManager.getPlayerSession(player) != null) return;
+        if (player.getGameMode() == GameMode.CREATIVE || configManager.isHubBlockBreaking()) return;
+
+        event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
