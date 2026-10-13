@@ -7,7 +7,6 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -41,9 +40,9 @@ public class HuntersMarkHandler extends CustomItemHandler {
 
     /**
      * Active mark on a target: the tracking/rotation task plus its two display entities
-     * (a rotating coal block on the head and a floating vulnerability % above it).
+     * (a rotating black concrete block on the head and a floating vulnerability % above it).
      */
-    private record HunterMarkInfo(BukkitTask task, UUID targetUuid, ItemDisplay coalDisplay, TextDisplay textDisplay, long expiresAt) {
+    private record HunterMarkInfo(BukkitTask task, UUID targetUuid, ItemDisplay markDisplay, TextDisplay textDisplay, long expiresAt) {
     }
 
     public HuntersMarkHandler(CustomItemManager manager) {
@@ -88,7 +87,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
         HunterMarkInfo info = hunterMarks.remove(targetUuid);
         if (info != null) {
             info.task().cancel();
-            if (!info.coalDisplay().isDead()) info.coalDisplay().remove();
+            if (!info.markDisplay().isDead()) info.markDisplay().remove();
             if (!info.textDisplay().isDead()) info.textDisplay().remove();
         }
         markedUntil.remove(targetUuid);
@@ -111,10 +110,9 @@ public class HuntersMarkHandler extends CustomItemHandler {
         long expiresAt = System.currentTimeMillis() + durationMillis;
         World world = target.getWorld();
 
-        ItemStack markIcon = new ItemStack(Material.COAL_BLOCK);
-        CustomModelDataMapper.applyHuntersMarkDisplayModel(markIcon);
+        ItemStack markIcon = new ItemStack(Material.BLACK_CONCRETE);
 
-        ItemDisplay coalDisplay = world.spawn(target.getEyeLocation(), ItemDisplay.class, display -> {
+        ItemDisplay markDisplay = world.spawn(target.getEyeLocation(), ItemDisplay.class, display -> {
             display.setItemStack(markIcon);
             display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
             display.setBillboard(Display.Billboard.FIXED);
@@ -137,12 +135,12 @@ public class HuntersMarkHandler extends CustomItemHandler {
                 return;
             }
             Location eye = target.getEyeLocation();
-            coalDisplay.teleport(eye.clone().add(0, 0.25, 0));
-            coalDisplay.setRotation(coalDisplay.getYaw() + 12f, 0f);
+            markDisplay.teleport(eye.clone().add(0, 0.25, 0));
+            markDisplay.setRotation(markDisplay.getYaw() + 12f, 0f);
             textDisplay.teleport(eye.clone().add(0, 0.7, 0));
         }, 0L, 1L);
 
-        hunterMarks.put(targetUuid, new HunterMarkInfo(task, targetUuid, coalDisplay, textDisplay, expiresAt));
+        hunterMarks.put(targetUuid, new HunterMarkInfo(task, targetUuid, markDisplay, textDisplay, expiresAt));
     }
 
     private int hunterMarkPercent() {
