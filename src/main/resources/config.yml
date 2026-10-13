@@ -602,3 +602,10 @@ leaderboard:
   # How often (minutes) the leaderboards are recomputed (async worker)
   refresh-minutes: 5
 
+# ============================================
+# HUB SETTINGS
+# ============================================
+hub:
+  # The invite link /discord sends players
+  discord-link: "https://discord.gg/your-invite"
+

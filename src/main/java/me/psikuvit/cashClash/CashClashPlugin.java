@@ -3,6 +3,7 @@ package me.psikuvit.cashClash;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.chat.ChatManager;
 import me.psikuvit.cashClash.command.CommandHandler;
+import me.psikuvit.cashClash.command.DiscordCommand;
 import me.psikuvit.cashClash.command.HubCommand;
 import me.psikuvit.cashClash.command.PartyCommandHandler;
 import me.psikuvit.cashClash.config.ConfigManager;
@@ -319,6 +320,7 @@ public final class CashClashPlugin extends JavaPlugin {
         getServer().getCommandMap().register("cashclash", new CommandHandler());
         getServer().getCommandMap().register("cashclash", new PartyCommandHandler());
         getServer().getCommandMap().register("cashclash", new HubCommand());
+        getServer().getCommandMap().register("cashclash", new DiscordCommand());
         getLogger().info("Commands registered");
     }
 }

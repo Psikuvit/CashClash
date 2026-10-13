@@ -654,6 +654,12 @@ public class ConfigManager {
         return config.getInt("afk.warning-seconds", 15);
     }
 
+    // ==================== HUB SETTINGS ====================
+
+    public String getDiscordLink() {
+        return config.getString("hub.discord-link", "https://discord.gg/your-invite");
+    }
+
     // ==================== REJOIN SETTINGS ====================
 
     /**
