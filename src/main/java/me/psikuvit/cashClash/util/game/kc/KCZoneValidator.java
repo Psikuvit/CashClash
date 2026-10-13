@@ -1,9 +1,9 @@
 package me.psikuvit.cashClash.util.game.kc;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.config.ConfigManager;
+import me.psikuvit.cashClash.util.game.DropSpotUtils;
 import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 /**
@@ -34,95 +34,12 @@ public final class KCZoneValidator {
     }
 
     /**
-     * If a death location's 3x3 footprint is embedded in solid blocks (e.g. the player died
-     * pressed against a wall), search outward ring by ring on the same Y level for the nearest
-     * spot with a clear 3x3 footprint and return that instead. Returns the original location
-     * unchanged if it's already clear, or if no open spot is found within the configured
-     * {@code gamemodes.kill-confirm.zone-safe-spawn-search-radius}.
-     * <p>
-     * Before any of that, a death location that's airborne (e.g. mid-fall over open ground) is
-     * first dropped straight down to the nearest solid ground via {@link #resolveGroundedY} -
-     * without this, a death location with an already-clear footprint would spawn the zone
-     * floating in mid-air, since {@link #isFootprintClear} only checks for solid *walls*, not
-     * missing ground underneath.
+     * Where a zone spawns for a death location: dropped to the ground and moved out of any wall,
+     * within {@code zone-ground-search-max-depth} and {@code zone-safe-spawn-search-radius}
+     * (see {@link DropSpotUtils#findSafeSpot}).
      */
     public static Location findSafeCenter(Location deathLoc) {
-        if (deathLoc == null || deathLoc.getWorld() == null) return deathLoc;
-
-        World world = deathLoc.getWorld();
-        int baseX = deathLoc.getBlockX();
-        int baseZ = deathLoc.getBlockZ();
-
-        int maxGroundDepth = CashClashPlugin.getInstance().getConfigManager().getKCZoneGroundSearchMaxDepth();
-        int groundedY = resolveGroundedY(world, baseX, deathLoc.getBlockY(), baseZ, maxGroundDepth);
-
-        Location startingPoint = deathLoc;
-        if (groundedY != deathLoc.getBlockY()) {
-            startingPoint = new Location(world, baseX + 0.5, groundedY, baseZ + 0.5,
-                    deathLoc.getYaw(), deathLoc.getPitch());
-        }
-
-        if (isFootprintClear(startingPoint)) return startingPoint;
-
-        int baseY = startingPoint.getBlockY();
-        int maxSearchRadius = CashClashPlugin.getInstance().getConfigManager().getKCZoneSafeSpawnSearchRadius();
-        for (int radius = 1; radius <= maxSearchRadius; radius++) {
-            for (int dx = -radius; dx <= radius; dx++) {
-                for (int dz = -radius; dz <= radius; dz++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
-
-                    Location candidate = new Location(world, baseX + dx + 0.5, baseY, baseZ + dz + 0.5,
-                            deathLoc.getYaw(), deathLoc.getPitch());
-                    if (isFootprintClear(candidate)) {
-                        return candidate;
-                    }
-                }
-            }
-        }
-
-        return startingPoint;
-    }
-
-    /**
-     * Scans straight down from {@code startY} for the first Y with solid ground directly beneath
-     * it (i.e. where a falling entity would land), up to {@code maxDepth} blocks. Returns
-     * {@code startY} unchanged if it's already grounded (the common case - no scan needed beyond
-     * the first check) or if no ground is found within range (e.g. a death over the void), so
-     * callers never get sent further down than intended.
-     */
-    private static int resolveGroundedY(World world, int x, int startY, int z, int maxDepth) {
-        int minY = world.getMinHeight();
-        int y = startY;
-        int scanned = 0;
-        while (y > minY && scanned < maxDepth) {
-            if (world.getBlockAt(x, y - 1, z).getType().isSolid()) {
-                return y;
-            }
-            y--;
-            scanned++;
-        }
-        return startY;
-    }
-
-    /**
-     * Whether every block in the 3x3 footprint (at both feet and head height) around a
-     * candidate center is non-solid, i.e. the zone wouldn't be spawned inside a wall.
-     */
-    private static boolean isFootprintClear(Location center) {
-        World world = center.getWorld();
-        int cx = center.getBlockX();
-        int cy = center.getBlockY();
-        int cz = center.getBlockZ();
-
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                Block feet = world.getBlockAt(cx + dx, cy, cz + dz);
-                Block head = world.getBlockAt(cx + dx, cy + 1, cz + dz);
-                if (feet.getType().isSolid() || head.getType().isSolid()) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
+        return DropSpotUtils.findSafeSpot(deathLoc, cfg.getKCZoneGroundSearchMaxDepth(), cfg.getKCZoneSafeSpawnSearchRadius());
     }
 }

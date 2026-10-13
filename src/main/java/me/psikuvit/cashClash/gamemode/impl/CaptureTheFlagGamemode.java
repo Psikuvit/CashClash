@@ -16,6 +16,7 @@ import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.DropSpotUtils;
 import me.psikuvit.cashClash.util.game.TimerDisplayUtils;
 import me.psikuvit.cashClash.util.game.ctf.FlagBannerUtils;
 import me.psikuvit.cashClash.util.game.ctf.FlagBaseMechanicsUtils;
@@ -31,6 +32,7 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -70,6 +72,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Set<UUID> stalemateMsgShown; // told about the both-flags-held block in the current state
     private final Set<UUID> blockedCarrierWarned; // carriers shown "Kill {name}" on their current visit to their capture area
     private final Set<UUID> finalStandPenalized; // carriers currently docked the Final Stand health penalty
+    private final Map<UUID, Location> carrierLastGround; // where each carrier last stood, for a void death's drop
 
       private final SuddenDeathManager suddenDeathManager;
       private final FinalStandManager finalStandManager;
@@ -104,6 +107,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.stalemateMsgShown = new HashSet<>();
         this.blockedCarrierWarned = new HashSet<>();
         this.finalStandPenalized = new HashSet<>();
+        this.carrierLastGround = new HashMap<>();
          this.suddenDeathManager = new SuddenDeathManager(session, this);
          this.finalStandManager = new FinalStandManager(session, this);
          this.flagBars = new FlagBossBars();
@@ -183,6 +187,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         playerNearestFlagTeam.clear();
         captureStartedAt.clear();
         finalStandPenalized.clear();
+        carrierLastGround.clear();
 
          // Recreated in the next combat phase. The banner rotation keeps running through the
          // buy phase, so the banners never stand still.
@@ -236,6 +241,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         removeFlagIfCarriedByPlayer(1, playerUuid, player);
         removeFlagIfCarriedByPlayer(2, playerUuid, player);
         flagBars.hideFor(player);
+        carrierLastGround.remove(playerUuid);
     }
 
     @Override
@@ -519,7 +525,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 "color", colorTag,
                 "team_name", teamName);
 
-        dropFlagAtLocation(teamNumber, behindPlayer(victim));
+        dropFlagAtLocation(teamNumber, flagDropSpot(victim));
+        carrierLastGround.remove(victimUuid);
         SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
 
         clearCarrierPenalties(victim);
@@ -554,6 +561,40 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private Location behindPlayer(Player player) {
         Location loc = player.getLocation();
         return loc.clone().subtract(loc.getDirection().setY(0).normalize().multiply(1.5));
+    }
+
+    /**
+     * Where a killed carrier's flag lands, placed like a Kill Confirm tag: on the ground and out
+     * of any wall. It starts behind the carrier; a carrier who fell into the void drops it on the
+     * ledge they last stood on, and one whose spot behind has no ground under it drops it where
+     * they are.
+     */
+    private Location flagDropSpot(Player victim) {
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
+        int maxDepth = cfg.getCTFDropGroundSearchMaxDepth();
+        Location lastGround = carrierLastGround.get(victim.getUniqueId());
+        EntityDamageEvent lastDamage = victim.getLastDamageCause();
+        boolean fellIntoVoid = lastDamage != null && lastDamage.getCause() == EntityDamageEvent.DamageCause.VOID;
+
+        Location behind = behindPlayer(victim);
+        Location start;
+        if (fellIntoVoid && lastGround != null) {
+            start = lastGround;
+        } else if (DropSpotUtils.hasGroundBelow(behind, maxDepth)) {
+            start = behind;
+        } else if (DropSpotUtils.hasGroundBelow(victim.getLocation(), maxDepth) || lastGround == null) {
+            start = victim.getLocation();
+        } else {
+            start = lastGround;
+        }
+        return DropSpotUtils.findSafeSpot(start, maxDepth, cfg.getCTFDropSafeSpotSearchRadius());
+    }
+
+    private void recordCarrierGround(UUID holder) {
+        Player player = Bukkit.getPlayer(holder);
+        if (player == null || !player.isOnGround()) return;
+        if (!player.getLocation().subtract(0, 0.1, 0).getBlock().getType().isSolid()) return;
+        carrierLastGround.put(holder, player.getLocation());
     }
 
     /** Removes the flag-carrier slowness/weakness/glowing and, if applied, the Final Stand health penalty. */
@@ -1170,6 +1211,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
               if (flag != null) {
                   if (flag.isHeld() && flag.holder() != null) {
+                      recordCarrierGround(flag.holder());
                       Location basePlate = flagBaseLocations.get(color);
                       if (basePlate != null) {
                           FlagBannerUtils.spawnBannerParticles(basePlate, 0);

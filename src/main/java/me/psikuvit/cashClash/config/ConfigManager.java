@@ -375,6 +375,14 @@ public class ConfigManager {
         return config.getLong("gamemodes.capture-the-flag.capture-time-ms", 3000);
     }
 
+    public int getCTFDropSafeSpotSearchRadius() {
+        return config.getInt("gamemodes.capture-the-flag.drop-safe-spot-search-radius", 8);
+    }
+
+    public int getCTFDropGroundSearchMaxDepth() {
+        return config.getInt("gamemodes.capture-the-flag.drop-ground-search-max-depth", 64);
+    }
+
     // Kill Confirm
     public int getKCScoreToWin() {
         return config.getInt("gamemodes.kill-confirm.score-to-win", 16);
