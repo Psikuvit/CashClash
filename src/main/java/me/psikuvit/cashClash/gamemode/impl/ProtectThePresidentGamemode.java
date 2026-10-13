@@ -113,7 +113,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
             Messages.debug("[PTP] Sudden death cycle started - kill counters reset");
         }
 
-        // Apply glow and buffs to presidents now that combat has started
+        // Apply buffs to presidents now that combat has started
         for (int team = 1; team <= 2; team++) {
             President pres = presidents.get(TeamColor.fromTeamNumber(team));
             if (pres != null && pres.hasSelectedBuff()) {
@@ -567,7 +567,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
             Player presPlayer = Bukkit.getPlayer(pres.uuid());
             if (presPlayer != null && presPlayer.isOnline()) {
                 clearPresidentEffects(presPlayer);
-                PresidentialEffectsUtils.applyGlowEffect(presPlayer);
                 if (applyBuff) {
                     applyPresidentialBuff(presPlayer);
                 }
