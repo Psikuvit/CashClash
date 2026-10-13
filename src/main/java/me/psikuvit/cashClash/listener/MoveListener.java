@@ -44,7 +44,10 @@ public class MoveListener implements Listener {
         Player player = event.getPlayer();
 
         GameSession session = gameManager.getPlayerSession(player);
-        if (session == null) return;
+        if (session == null) {
+            checkBouncePads(player);
+            return;
+        }
 
         // A Sequence is locking players (title/reveal moments) - cancel positional
         // movement but let players keep looking around.
@@ -67,7 +70,13 @@ public class MoveListener implements Listener {
         // Tectonic Cap: falling warning aura when a slam charge is ready
         armorManager.getHandler(TectonicCapHandler.class).handleFallWarning(player);
 
-        // Check block player is standing on for floor-mounted bounce pads
+        checkBouncePads(player);
+    }
+
+    /**
+     * Launches a player standing on a floor bounce pad or touching a wall-mounted one.
+     */
+    private void checkBouncePads(Player player) {
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
         if (blockBelow.getType() == Material.SLIME_BLOCK) {
             if (customItemManager.getHandler(BouncePadHandler.class).isBouncePad(blockBelow)) {

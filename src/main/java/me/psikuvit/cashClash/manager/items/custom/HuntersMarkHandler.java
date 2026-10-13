@@ -14,6 +14,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
@@ -55,7 +56,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
      * Right-click within range of an enemy instantly applies Hunter's Mark - no charge-up.
      */
     public void useHuntersMark(Player player, ItemStack item) {
-        Player target = findNearestMarkTarget(player, cfg.getHuntersMarkRange());
+        LivingEntity target = findNearestMarkTarget(player, cfg.getHuntersMarkRange());
         if (target == null) {
             Messages.send(player, "customitem.hunters-mark-no-target");
             return;
@@ -63,7 +64,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
         applyHunterMark(player, target, item);
     }
 
-    private void applyHunterMark(Player hunter, Player target, ItemStack item) {
+    private void applyHunterMark(Player hunter, LivingEntity target, ItemStack item) {
         consumeItem(hunter, item);
 
         clearHunterMark(target.getUniqueId());
@@ -72,9 +73,11 @@ public class HuntersMarkHandler extends CustomItemHandler {
         markedUntil.put(target.getUniqueId(), System.currentTimeMillis() + durationMillis);
 
         Messages.send(hunter, "customitem.hunters-mark-applied", "player_name", target.getName());
-        Messages.send(target, "customitem.hunters-mark-target");
         SoundUtils.play(hunter, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0f, 1.2f);
-        SoundUtils.play(target, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 1.4f);
+        if (target instanceof Player targetPlayer) {
+            Messages.send(targetPlayer, "customitem.hunters-mark-target");
+            SoundUtils.play(targetPlayer, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.8f, 1.4f);
+        }
 
         spawnHunterMarkDisplay(target, durationMillis);
     }
@@ -106,7 +109,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
         return 1.0 + hunterMarkPercent() / 100.0;
     }
 
-    private void spawnHunterMarkDisplay(Player target, long durationMillis) {
+    private void spawnHunterMarkDisplay(LivingEntity target, long durationMillis) {
         long expiresAt = System.currentTimeMillis() + durationMillis;
         World world = target.getWorld();
 
@@ -130,7 +133,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
 
         UUID targetUuid = target.getUniqueId();
         BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
-            if (!target.isOnline() || target.isDead() || System.currentTimeMillis() >= expiresAt) {
+            if (!target.isValid() || target.isDead() || System.currentTimeMillis() >= expiresAt) {
                 clearHunterMark(targetUuid);
                 return;
             }
@@ -147,16 +150,17 @@ public class HuntersMarkHandler extends CustomItemHandler {
         return cfg.getHuntersMarkBaseVulnerabilityPercent();
     }
 
-    private Player findNearestMarkTarget(Player player, double range) {
+    private LivingEntity findNearestMarkTarget(Player player, double range) {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         Team team = session != null ? session.getPlayerTeam(player) : null;
 
-        Player nearest = null;
+        LivingEntity nearest = null;
         double best = range;
         for (Entity entity : player.getWorld().getNearbyEntities(player.getLocation(), range, range, range)) {
-            if (!(entity instanceof Player target) || target.equals(player)) continue;
+            if (!(entity instanceof LivingEntity target) || target.equals(player)) continue;
+            if (!canHit(session != null, target)) continue;
             if (team != null) {
-                Team targetTeam = session.getPlayerTeam(target);
+                Team targetTeam = session.getPlayerTeam((Player) target);
                 if (targetTeam == null || targetTeam.getTeamNumber() == team.getTeamNumber()) continue;
             }
             double distance = target.getLocation().distance(player.getLocation());

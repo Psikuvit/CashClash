@@ -53,8 +53,10 @@ public class BloomingRoseHandler extends CustomItemHandler {
     private final Set<UUID> activeRoseActionBarPlayers;
 
     /**
-     * @param session       the game session the rose was placed in (used for team lookups on expiry)
+     * @param session       the game session the rose was placed in (used for team lookups on expiry),
+     *                      or null outside a game, where only the placer is protected
      * @param teamNumber    the team the placer belongs to - only same-team players get protection/regen
+     * @param owner         the placer
      * @param center        the trunk location (zone centre)
      * @param expiresAt     epoch millis the zone naturally expires
      * @param originalBlocks every block the structure occupies (log + leaves), mapped to what was
@@ -63,7 +65,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
      * @param ringTask      the infinite boundary-ring redraw task - has no expiry check of its
      *                      own, so it must be cancelled here rather than left to stop itself
      */
-    private record BloomingRoseZone(GameSession session, int teamNumber, Location center, long expiresAt,
+    private record BloomingRoseZone(GameSession session, int teamNumber, UUID owner, Location center, long expiresAt,
                                     Map<Block, BlockData> originalBlocks, BukkitTask task, BukkitTask ringTask) {}
 
     public BloomingRoseHandler(CustomItemManager manager) {
@@ -75,7 +77,9 @@ public class BloomingRoseHandler extends CustomItemHandler {
     public void placeBloomingRose(Player player, ItemStack item, Location loc) {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         Team team = session != null ? session.getPlayerTeam(player) : null;
-        if (session == null || team == null) return;
+        if (session != null && team == null) return;
+        int teamNumber = team != null ? team.getTeamNumber() : 0;
+        UUID owner = player.getUniqueId();
 
         consumeItem(player, item);
 
@@ -85,9 +89,9 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
         Location center = origin.getLocation();
         long expiresAt = System.currentTimeMillis() + cfg.getBloomingRoseZoneDurationSeconds() * 1000L;
-        BukkitTask upkeepTask = startRoseZoneTask(center, originalBlocks, expiresAt, session, team.getTeamNumber());
+        BukkitTask upkeepTask = startRoseZoneTask(center, originalBlocks, expiresAt, session, teamNumber, owner);
         BukkitTask ringTask = spawnRoseFormationVisual(center);
-        bloomingRoseZones.put(center, new BloomingRoseZone(session, team.getTeamNumber(), center, expiresAt, originalBlocks, upkeepTask, ringTask));
+        bloomingRoseZones.put(center, new BloomingRoseZone(session, teamNumber, owner, center, expiresAt, originalBlocks, upkeepTask, ringTask));
 
         Messages.send(player, "customitem.blooming-rose-placed");
         SoundUtils.playAt(center, Sound.BLOCK_CHERRY_WOOD_PLACE, 1.0f, 1.0f);
@@ -140,7 +144,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
      * and tears the structure down once it expires.
      */
     private BukkitTask startRoseZoneTask(Location center, Map<Block, BlockData> originalBlocks, long expiresAt,
-                                         GameSession session, int teamNumber) {
+                                         GameSession session, int teamNumber, UUID owner) {
         return SchedulerUtils.runTaskTimer(new BukkitRunnable() {
 
             private int tick;
@@ -167,7 +171,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
                                     red, 0.6f, 1, 0.15);
                         }
                     }
-                    healRoseMembersToFloor(center, session, teamNumber);
+                    healRoseMembersToFloor(center, session, teamNumber, owner);
                 }
             }
         }, 20L, 5L);
@@ -191,13 +195,13 @@ public class BloomingRoseHandler extends CustomItemHandler {
      * Heals any same-team player inside the zone whose health has fallen below the 2-heart floor
      * back up to it (scaled through the shared healing-reduction hook).
      */
-    private void healRoseMembersToFloor(Location center, GameSession session, int teamNumber) {
+    private void healRoseMembersToFloor(Location center, GameSession session, int teamNumber, UUID owner) {
         double floor = cfg.getBloomingRoseMinHealthFloor();
         double radius = cfg.getBloomingRoseZoneRadius();
 
         for (Entity entity : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
             if (!(entity instanceof Player target)) continue;
-            if (!isSameTeam(session, teamNumber, target)) continue;
+            if (!isRoseAlly(session, teamNumber, owner, target)) continue;
             if (target.getHealth() >= floor) continue;
 
             // CashClashPlayer.heal already applies the shared healing-reduction multiplier.
@@ -244,7 +248,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
         for (Entity entity : zone.center().getWorld().getNearbyEntities(zone.center(), radius, radius, radius)) {
             if (!(entity instanceof Player target)) continue;
-            if (!isSameTeam(zone.session(), zone.teamNumber(), target)) continue;
+            if (!isRoseAlly(zone.session(), zone.teamNumber(), zone.owner(), target)) continue;
             CashClashPlayer.applyEffect(target, PotionEffectType.REGENERATION, durationTicks, 0);
             Messages.send(target, "customitem.blooming-rose-teammates-regen");
         }
@@ -274,11 +278,18 @@ public class BloomingRoseHandler extends CustomItemHandler {
             if (zone.originalBlocks().isEmpty()) continue;
             if (zone.center().getWorld().equals(player.getWorld())
                     && zone.center().distance(player.getLocation()) <= radius
-                    && isSameTeam(zone.session(), zone.teamNumber(), player)) {
+                    && isRoseAlly(zone.session(), zone.teamNumber(), zone.owner(), player)) {
                 return zone;
             }
         }
         return null;
+    }
+
+    /**
+     * Whether a rose protects a player: the placer's teammates in a game, only the placer outside one.
+     */
+    private boolean isRoseAlly(GameSession session, int teamNumber, UUID owner, Player target) {
+        return session != null ? isSameTeam(session, teamNumber, target) : target.getUniqueId().equals(owner);
     }
 
     /**

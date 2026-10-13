@@ -360,6 +360,14 @@ public final class PDCDetection {
     }
 
     /**
+     * Check if an entity is one of the practice range's target mobs.
+     */
+    public static boolean isPracticeMob(Entity entity) {
+        if (entity == null) return false;
+        return entity.getPersistentDataContainer().has(Keys.PRACTICE_MOB_KEY, PersistentDataType.BYTE);
+    }
+
+    /**
      * Get the BlazeBite mode from an arrow entity.
      * @return "glacier", "volcano", or null if not set
      */

@@ -45,7 +45,7 @@ public class BoomboxHandler extends CustomItemHandler {
         Block placeBlock = placeLoc.getBlock();
 
         GameSession boomboxSession = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (boomboxSession.getState() == GameState.SHOPPING || boomboxSession.isActionsRestricted()) {
+        if (boomboxSession != null && (boomboxSession.getState() == GameState.SHOPPING || boomboxSession.isActionsRestricted())) {
             Messages.sendPhaseRestriction(player, boomboxSession, "customitem.cannot-place-during-shopping");
             return;
         }
@@ -106,15 +106,22 @@ public class BoomboxHandler extends CustomItemHandler {
 
     /**
      * Grants allies within radius (including the placer, excluding the flag carrier) a
-     * temporary speed boost.
+     * temporary speed boost. Outside a game the placer is the only ally.
      */
     private void applyBoomboxSpeedBoost(Player placer, Location center, World world, double radius) {
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(placer);
-        Team placerTeam = session != null ? session.getPlayerTeam(placer) : null;
-        if (placerTeam == null) return;
-
         int durationTicks = cfg.getBoomboxSpeedBoostDuration() * 20;
         int amplifier = cfg.getBoomboxSpeedAmplifier();
+
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(placer);
+        if (session == null) {
+            if (placer.isOnline() && placer.getWorld().equals(world) && placer.getLocation().distance(center) <= radius) {
+                CashClashPlayer.applyEffect(placer, PotionEffectType.SPEED, durationTicks, amplifier, false, true);
+            }
+            return;
+        }
+
+        Team placerTeam = session.getPlayerTeam(placer);
+        if (placerTeam == null) return;
 
         for (Entity entity : world.getNearbyEntities(center, radius, radius, radius)) {
             if (!(entity instanceof Player target)) continue;

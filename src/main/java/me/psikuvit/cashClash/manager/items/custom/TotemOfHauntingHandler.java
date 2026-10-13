@@ -13,6 +13,7 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
@@ -113,15 +114,18 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
                 World world = origin.getWorld();
                 if (world != null) {
                     for (Entity entity : world.getNearbyEntities(origin, maxRadius, maxRadius, maxRadius)) {
-                        if (!(entity instanceof Player target) || target.equals(player)) continue;
+                        if (!(entity instanceof LivingEntity target) || target.equals(player)) continue;
+                        if (!canHit(session != null, target)) continue;
                         if (alreadyDebuffed.contains(target.getUniqueId())) continue;
-                        if (playerTeam != null && session.getPlayerTeam(target) == playerTeam) continue;
+                        if (playerTeam != null && session.getPlayerTeam((Player) target) == playerTeam) continue;
                         if (target.getLocation().distance(origin) > currentRadius + 1.0) continue;
 
                         alreadyDebuffed.add(target.getUniqueId());
                         applyStackedEffect(target, PotionEffectType.SLOWNESS, debuffDurationTicks);
                         applyStackedEffect(target, PotionEffectType.WEAKNESS, debuffDurationTicks);
-                        Messages.send(target, "customitem.totem-haunting-witness", "player_name", player.getName());
+                        if (target instanceof Player witness) {
+                            Messages.send(witness, "customitem.totem-haunting-witness", "player_name", player.getName());
+                        }
                     }
                 }
 
@@ -136,10 +140,10 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
      * Applies Slowness/Weakness, bumping the amplifier one level above whatever the target
      * already has instead of overwriting it - so a second/third totem pop in range stacks.
      */
-    private void applyStackedEffect(Player target, PotionEffectType type, int durationTicks) {
-        PotionEffect existing = CashClashPlayer.getEffect(target, type);
+    private void applyStackedEffect(LivingEntity target, PotionEffectType type, int durationTicks) {
+        PotionEffect existing = target instanceof Player player ? CashClashPlayer.getEffect(player, type) : target.getPotionEffect(type);
         int amplifier = existing != null ? existing.getAmplifier() + 1 : 0;
-        CashClashPlayer.applyEffect(target, type, durationTicks, amplifier, false, true);
+        applyEffect(target, type, durationTicks, amplifier, false, true);
     }
 
     @Override

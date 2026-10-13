@@ -27,6 +27,9 @@ import java.util.Map;
  */
 public class BouncePadHandler extends CustomItemHandler {
 
+    /** The "team" of a pad placed outside a game - anyone else outside a game can use it. */
+    private static final int OUTSIDE_GAME_TEAM = 0;
+
     // Bounce pad tracking - stores location -> owner team + the face it's attached to
     private final Map<Location, BouncePadInfo> bouncePadTeams;
 
@@ -44,14 +47,16 @@ public class BouncePadHandler extends CustomItemHandler {
 
     public void placeBouncePad(Player player, ItemStack item, Block clickedBlock, BlockFace face) {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (session == null) return;
+        int teamNumber = OUTSIDE_GAME_TEAM;
+        if (session != null) {
+            Team team = session.getPlayerTeam(player);
+            if (team == null) return;
+            teamNumber = team.getTeamNumber();
 
-        Team team = session.getPlayerTeam(player);
-        if (team == null) return;
-
-        if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) {
-            Messages.sendPhaseRestriction(player, session, "customitem.cannot-place-during-shopping");
-            return;
+            if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) {
+                Messages.sendPhaseRestriction(player, session, "customitem.cannot-place-during-shopping");
+                return;
+            }
         }
 
         Block placeBlock = clickedBlock.getRelative(face);
@@ -64,7 +69,7 @@ public class BouncePadHandler extends CustomItemHandler {
         // Use a full block so players can reliably trigger it
         placeBlock.setType(Material.SLIME_BLOCK);
         Location blockLoc = placeBlock.getLocation();
-        bouncePadTeams.put(blockLoc, new BouncePadInfo(team.getTeamNumber(), face));
+        bouncePadTeams.put(blockLoc, new BouncePadInfo(teamNumber, face));
 
         consumeItem(player, item);
         Messages.send(player, "customitem.bounce-pad-placed");
@@ -84,12 +89,14 @@ public class BouncePadHandler extends CustomItemHandler {
         if (pad == null) return;
 
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (session == null) return;
+        int playerTeamNumber = OUTSIDE_GAME_TEAM;
+        if (session != null) {
+            Team playerTeam = session.getPlayerTeam(player);
+            if (playerTeam == null) return;
+            playerTeamNumber = playerTeam.getTeamNumber();
+        }
 
-        Team playerTeam = session.getPlayerTeam(player);
-        if (playerTeam == null) return;
-
-        if (playerTeam.getTeamNumber() != pad.teamNumber()) {
+        if (playerTeamNumber != pad.teamNumber()) {
             Messages.send(player, "customitem.bounce-pad-enemy-team");
             return;
         }

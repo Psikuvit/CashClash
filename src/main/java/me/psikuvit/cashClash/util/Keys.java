@@ -62,6 +62,11 @@ public class Keys {
     public static final NamespacedKey COMING_SOON_NPC_KEY;
 
     /**
+     * Key for the practice range's target mobs - the only things items hit outside a game.
+     */
+    public static final NamespacedKey PRACTICE_MOB_KEY;
+
+    /**
      * Flag to mark a potion as a buff selection item (undrinkable).
      * Used in Protect the President gamemode.
      */
@@ -189,6 +194,7 @@ public class Keys {
         BLOODWRENCH_MODE = new NamespacedKey(CashClashPlugin.getInstance(), "bloodwrench_mode");
         ARENA_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "arena_npc");
         COMING_SOON_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "coming_soon_npc");
+        PRACTICE_MOB_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "practice_mob");
         BUFF_SELECTION_POTION = new NamespacedKey(CashClashPlugin.getInstance(), "buff_selection_potion");
         FULLY_CHARGED_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "fully_charged_arrow");
         BULLSEYE_STORM_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "bullseye_storm_arrow");

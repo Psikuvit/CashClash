@@ -16,6 +16,7 @@ import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -88,7 +89,7 @@ public class IceFanHandler extends CustomItemHandler {
 
         Location origin = player.getEyeLocation();
         Vector direction = origin.getDirection();
-        for (Player target : findIceFanTargets(player, origin, direction, cfg.getIceFanRange())) {
+        for (LivingEntity target : findIceFanTargets(player, origin, direction, cfg.getIceFanRange())) {
             dealIceFanDamage(player, target, cfg.getIceFanBurstDamage());
             stackIceFanFreeze(target);
 
@@ -110,7 +111,7 @@ public class IceFanHandler extends CustomItemHandler {
      * Stacks freeze duration onto the target's remaining Ice Fan freeze time, capped at a
      * configured max, and starts the pump task (if not already running) that shows it.
      */
-    private void stackIceFanFreeze(Player target) {
+    private void stackIceFanFreeze(LivingEntity target) {
         UUID uuid = target.getUniqueId();
         long now = System.currentTimeMillis();
 
@@ -131,12 +132,12 @@ public class IceFanHandler extends CustomItemHandler {
      * hit that caused it. The freeze is purely visual: it never sets vanilla freeze ticks, which
      * slow the target down.
      */
-    private void pumpIceFanFreeze(Player target) {
+    private void pumpIceFanFreeze(LivingEntity target) {
         UUID uuid = target.getUniqueId();
         Long expiresAt = iceFanFreezeExpiresAt.get(uuid);
         long now = System.currentTimeMillis();
 
-        if (expiresAt == null || now >= expiresAt || !target.isOnline()) {
+        if (expiresAt == null || now >= expiresAt || !target.isValid()) {
             iceFanFreezeExpiresAt.remove(uuid);
             BukkitTask task = iceFanFreezePumpTasks.remove(uuid);
             if (task != null) task.cancel();
@@ -189,15 +190,16 @@ public class IceFanHandler extends CustomItemHandler {
      * Finds enemy players within range and within the half-circle arc swept in front of the
      * player, matching the burst's visual.
      */
-    private List<Player> findIceFanTargets(Player player, Location origin, Vector direction, double range) {
+    private List<LivingEntity> findIceFanTargets(Player player, Location origin, Vector direction, double range) {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
 
-        List<Player> targets = new ArrayList<>();
+        List<LivingEntity> targets = new ArrayList<>();
         for (Entity entity : player.getWorld().getNearbyEntities(origin, range, range, range)) {
-            if (!(entity instanceof Player target) || target.equals(player)) continue;
+            if (!(entity instanceof LivingEntity target) || target.equals(player)) continue;
+            if (!canHit(session != null, target)) continue;
             if (playerTeam != null) {
-                Team targetTeam = session.getPlayerTeam(target);
+                Team targetTeam = session.getPlayerTeam((Player) target);
                 if (targetTeam == null || targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) continue;
             }
             if (!isInCone(origin, direction, target.getEyeLocation(), HALF_CIRCLE_HALF_ANGLE_DEGREES)) continue;
@@ -217,7 +219,7 @@ public class IceFanHandler extends CustomItemHandler {
      * Deals Ice Fan ability damage while flagged so DamageListener.onIceFanMeleeSuppression
      * doesn't also cancel this explicit hit.
      */
-    private void dealIceFanDamage(Player attacker, Player target, double damage) {
+    private void dealIceFanDamage(Player attacker, LivingEntity target, double damage) {
         iceFanAbilityDamageActive.add(attacker.getUniqueId());
         try {
             target.damage(damage, attacker);

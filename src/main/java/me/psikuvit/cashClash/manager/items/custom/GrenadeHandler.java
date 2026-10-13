@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
-import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
@@ -10,6 +9,7 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
@@ -46,6 +46,7 @@ public class GrenadeHandler extends CustomItemHandler {
 
         SoundUtils.play(player, Sound.ENTITY_SNOWBALL_THROW, 1.0f, 0.8f);
 
+        boolean inGame = inGame(player);
         int fuseSeconds = isSmoke ? cfg.getSmokeGrenadeFuseSeconds() : cfg.getGrenadeFuseSeconds();
         SchedulerUtils.runTaskLater(() -> {
             if (!thrownItem.isValid()) return;
@@ -55,14 +56,14 @@ public class GrenadeHandler extends CustomItemHandler {
             thrownItem.remove();
 
             if (isSmoke) {
-                explodeSmokeGrenade(loc);
+                explodeSmokeGrenade(loc, inGame);
             } else {
-                explodeGrenade(loc);
+                explodeGrenade(loc, inGame);
             }
         }, fuseSeconds * 20L);
     }
 
-    private void explodeGrenade(Location loc) {
+    private void explodeGrenade(Location loc, boolean inGame) {
         World world = loc.getWorld();
         if (world == null) return;
 
@@ -73,7 +74,7 @@ public class GrenadeHandler extends CustomItemHandler {
         double outerRadius = cfg.getGrenadeOuterRadius();
 
         for (Entity entity : world.getNearbyEntities(loc, outerRadius, outerRadius, outerRadius)) {
-            if (!(entity instanceof Player target)) continue;
+            if (!(entity instanceof LivingEntity target) || !canHit(inGame, target)) continue;
 
             double distance = target.getLocation().distance(loc);
             double damage;
@@ -87,11 +88,11 @@ public class GrenadeHandler extends CustomItemHandler {
             }
 
             target.damage(damage);
-            SoundUtils.play(target, Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
+            if (target instanceof Player player) SoundUtils.play(player, Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
         }
     }
 
-    private void explodeSmokeGrenade(Location loc) {
+    private void explodeSmokeGrenade(Location loc, boolean inGame) {
         World world = loc.getWorld();
         if (world == null) return;
 
@@ -106,10 +107,10 @@ public class GrenadeHandler extends CustomItemHandler {
             ParticleUtils.campfireSmoke(loc, 20, 2.5, 1, 2.5);
 
             for (Entity entity : world.getNearbyEntities(loc, radius, radius, radius)) {
-                if (!(entity instanceof Player target)) continue;
+                if (!(entity instanceof LivingEntity target) || !canHit(inGame, target)) continue;
 
-                CashClashPlayer.applyEffect(target, PotionEffectType.POISON, poisonDurationTicks, poisonLevel, false, true);
-                CashClashPlayer.applyEffect(target, PotionEffectType.BLINDNESS, blindnessDurationTicks, 0, false, true);
+                applyEffect(target, PotionEffectType.POISON, poisonDurationTicks, poisonLevel, false, true);
+                applyEffect(target, PotionEffectType.BLINDNESS, blindnessDurationTicks, 0, false, true);
             }
         }, 0L, 20L);
 

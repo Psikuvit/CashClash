@@ -1,13 +1,20 @@
 package me.psikuvit.cashClash.manager.items.custom;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 /**
  * Base class for every custom item's behaviour. Each item gets its own handler
@@ -65,5 +72,44 @@ public abstract class CustomItemHandler {
         if (session == null) return false;
         Team targetTeam = session.getPlayerTeam(target);
         return targetTeam != null && targetTeam.getTeamNumber() == teamNumber;
+    }
+
+    /**
+     * Whether a player is in a match. Outside one - the hub, the practice range - there are no
+     * teams: an item only helps its own user and only hits practice-range mobs, never another
+     * player, so nobody can grief the hub with it.
+     */
+    protected static boolean inGame(Player player) {
+        return player != null && CashClashPlugin.getInstance().getGameManager().getPlayerSession(player) != null;
+    }
+
+    /**
+     * Whether a world belongs to a running match - for effects that can go off after their user
+     * has left.
+     */
+    protected static boolean isGameWorld(World world) {
+        return world != null && CashClashPlugin.getInstance().getGameManager().getActiveSessions().stream()
+                .anyMatch(session -> world.equals(session.getGameWorld()));
+    }
+
+    /**
+     * Whether an ability can hit an entity: in a game any player (each item narrows that down by
+     * team itself), outside one only a practice-range mob.
+     */
+    protected static boolean canHit(boolean inGame, Entity entity) {
+        return inGame ? entity instanceof Player : PDCDetection.isPracticeMob(entity);
+    }
+
+    /**
+     * A potion effect on an ability's target: through {@link CashClashPlayer} for a player, so it's
+     * tracked, and directly for a practice mob.
+     */
+    protected static void applyEffect(LivingEntity target, PotionEffectType type, int durationTicks, int amplifier,
+                                      boolean ambient, boolean particles) {
+        if (target instanceof Player player) {
+            CashClashPlayer.applyEffect(player, type, durationTicks, amplifier, ambient, particles);
+        } else {
+            target.addPotionEffect(new PotionEffect(type, durationTicks, amplifier, ambient, particles));
+        }
     }
 }

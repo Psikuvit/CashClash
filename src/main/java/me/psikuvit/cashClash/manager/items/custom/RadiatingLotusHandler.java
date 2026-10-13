@@ -120,7 +120,11 @@ public class RadiatingLotusHandler extends CustomItemHandler {
 
         World world = loc.getWorld();
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        Team team = session != null ? session.getPlayerTeam(player) : null;
+        if (session == null) {
+            CashClashPlayer.heal(player, healAmount);
+            return;
+        }
+        Team team = session.getPlayerTeam(player);
         if (team == null || world == null) return;
 
         for (Entity entity : world.getNearbyEntities(loc, healRadius, healRadius, healRadius)) {

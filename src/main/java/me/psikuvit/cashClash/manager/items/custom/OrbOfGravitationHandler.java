@@ -4,7 +4,6 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.Keys;
@@ -23,6 +22,7 @@ import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
 import org.bukkit.inventory.ItemStack;
@@ -185,15 +185,17 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         Team team = session != null ? session.getPlayerTeam(owner) : null;
 
         // Slowness I once + a colour progress marker for the beam lerp
-        List<Player> pulled = new ArrayList<>();
+        boolean inGame = isGameWorld(center.getWorld());
+        List<LivingEntity> pulled = new ArrayList<>();
         for (Entity entity : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
-            if (!(entity instanceof Player target) || target.equals(owner)) continue;
+            if (!(entity instanceof LivingEntity target) || target.equals(owner)) continue;
+            if (!canHit(inGame, target)) continue;
             if (!target.hasLineOfSight(center)) continue;
             if (team != null) {
-                Team targetTeam = session.getPlayerTeam(target);
+                Team targetTeam = session.getPlayerTeam((Player) target);
                 if (targetTeam != null && targetTeam.getTeamNumber() == team.getTeamNumber()) continue;
             }
-            Messages.send(target, "customitem.orb-pulled");
+            if (target instanceof Player pulledPlayer) Messages.send(pulledPlayer, "customitem.orb-pulled");
             pulled.add(target);
         }
 
@@ -206,8 +208,8 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
                 tick++;
                 boolean pullingAnyone = false;
 
-                for (Player target : new ArrayList<>(pulled)) {
-                    if (!target.isOnline() || target.isDead()) continue;
+                for (LivingEntity target : new ArrayList<>(pulled)) {
+                    if (!target.isValid() || target.isDead()) continue;
                     Vector toCenter = center.toVector().subtract(target.getLocation().toVector());
 
                     if (toCenter.lengthSquared() < 0.25) {
@@ -246,10 +248,10 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
      * walk out of it, so escaping still costs them tempo. Re-applied rather than just leaning
      * on the Slowness from detonation, which has usually run out by the time the pull ends.
      */
-    private void releasePulledPlayers(List<Player> pulled, int slownessTicks) {
-        for (Player target : pulled) {
-            if (!target.isOnline() || target.isDead()) continue;
-            CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, slownessTicks, 0);
+    private void releasePulledPlayers(List<LivingEntity> pulled, int slownessTicks) {
+        for (LivingEntity target : pulled) {
+            if (!target.isValid() || target.isDead()) continue;
+            applyEffect(target, PotionEffectType.SLOWNESS, slownessTicks, 0, false, false);
         }
     }
 

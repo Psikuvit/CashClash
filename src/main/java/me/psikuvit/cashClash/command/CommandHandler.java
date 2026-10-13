@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.command.subcommands.CTFCommand;
 import me.psikuvit.cashClash.command.subcommands.ChatCommand;
 import me.psikuvit.cashClash.command.subcommands.ClearBannersCommand;
 import me.psikuvit.cashClash.command.subcommands.CoinsCommand;
+import me.psikuvit.cashClash.command.subcommands.CustomItemCommand;
 import me.psikuvit.cashClash.command.subcommands.DebugCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceNextRoundCommand;
 import me.psikuvit.cashClash.command.subcommands.ForceStartCommand;
@@ -95,6 +96,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new StatsCommand());
         registerSubcommand(new CoinsCommand());
         registerSubcommand(new MythicsCommand());
+        registerSubcommand(new CustomItemCommand());
         registerSubcommand(new BlockDisplayCommand());
     }
 
