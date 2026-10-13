@@ -40,8 +40,12 @@ public final class MythicCategoryGui {
     public static void handleMythicPurchase(Player player, MythicItem mythic, AbstractGui parentGui) {
         GameSession sess = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (sess == null) {
-            Messages.send(player, "shop.must-be-in-game");
-            player.closeInventory();
+            if (CashClashPlugin.getInstance().getPracticeRangeManager().isPracticing(player)) {
+                buyMythic(player, mythic, parentGui, null);
+            } else {
+                Messages.send(player, "shop.must-be-in-game");
+                player.closeInventory();
+            }
             return;
         }
 
@@ -71,6 +75,15 @@ public final class MythicCategoryGui {
             return;
         }
 
+        buyMythic(player, mythic, parentGui, sess);
+    }
+
+    /**
+     * Charges for and hands over a mythic. In a game the purchase is registered against the
+     * session, which is what limits each mythic to one owner and each player to one mythic; the
+     * practice range ({@code session} null) has no such limits.
+     */
+    private static void buyMythic(Player player, MythicItem mythic, AbstractGui parentGui, GameSession session) {
         long price = DiscountService.getFinalPrice(player, mythic, 1);
         if (!CashClashPlugin.getInstance().getShopService().canAfford(player, price)) {
             Messages.send(player, "shop.not-enough-coins", "cost", String.format("%,d", price));
@@ -79,7 +92,9 @@ public final class MythicCategoryGui {
         }
 
         CashClashPlugin.getInstance().getShopService().processPurchase(player, mythic, 1, price);
-        CashClashPlugin.getInstance().getMythicItemManager().registerMythicPurchase(sess, playerUuid, mythic);
+        if (session != null) {
+            CashClashPlugin.getInstance().getMythicItemManager().registerMythicPurchase(session, player.getUniqueId(), mythic);
+        }
 
         ItemStack mythicItem = CashClashPlugin.getInstance().getMythicItemManager().createMythicItem(mythic, player);
         if (mythic == MythicItem.WARDEN_GLOVES) {

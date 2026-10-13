@@ -108,15 +108,15 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Handle purchasing a standard purchasable item.
      */
     protected void handlePurchasableClick(Purchasable item, ClickType clickType) {
-        GameSession sess = getSession();
-        if (sess == null) {
+        if (!CashClashPlugin.getInstance().getShopService().canShop(viewer)) {
             Messages.send(viewer, "shop.must-be-in-game");
             viewer.closeInventory();
             return;
         }
 
         // Prevent purchases during buff selection phase
-        if (sess.getState() == GameState.BUFF_SELECTION) {
+        GameSession sess = getSession();
+        if (sess != null && sess.getState() == GameState.BUFF_SELECTION) {
             Messages.send(viewer, "gamestate.cannot-purchase-during-buff");
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
@@ -148,8 +148,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Handle undo purchase for this category.
      */
     protected void handleUndoPurchase() {
-        GameSession sess = getSession();
-        if (sess == null) {
+        if (!CashClashPlugin.getInstance().getShopService().canShop(viewer)) {
             Messages.send(viewer, "generic.player-not-in-game");
             viewer.closeInventory();
             return;
@@ -159,7 +158,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         if (ccp == null) return;
 
         PurchaseRecord rec = ccp.peekLastPurchase();
-        if (rec == null || rec.round() != sess.getCurrentRound()) {
+        if (rec == null || rec.round() != CashClashPlugin.getInstance().getShopService().getShopRound(viewer)) {
             Messages.send(viewer, "shop.no-purchase-undo");
             return;
         }
@@ -223,8 +222,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
      * Handle purchasing a custom item (owner-tracked, limit checks).
      */
     protected void handleCustomItemPurchase(CustomItem type) {
-        GameSession sess = getSession();
-        if (sess == null) {
+        if (!CashClashPlugin.getInstance().getShopService().canShop(viewer)) {
             Messages.send(viewer, "shop.must-be-in-game");
             viewer.closeInventory();
             return;
@@ -264,7 +262,7 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         }
 
         ItemStack customItem = CashClashPlugin.getInstance().getItemFactory().createCustomItem(type, viewer);
-        ccp.addPurchase(new PurchaseRecord(type, 1, price, sess.getCurrentRound()));
+        ccp.addPurchase(new PurchaseRecord(type, 1, price, CashClashPlugin.getInstance().getShopService().getShopRound(viewer)));
 
         CashClashPlugin.getInstance().getShopService().deductCoins(viewer, price);
         viewer.getInventory().addItem(customItem);

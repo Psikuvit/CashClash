@@ -77,6 +77,7 @@ public class ShopGUI extends AbstractGui {
 
     private static final int[] MYTHIC_SLOTS = {30, 32, 39, 41};
     private static final int[] MYTHIC_SEPARATOR_SLOTS = {31, 40};
+    private static final int[] PRACTICE_MYTHIC_SLOTS = {28, 29, 30, 32, 33, 34, 39, 41};
 
     /**
      * The session's random mythics in a 2x2 grid, split down the middle by two black panes.
@@ -85,6 +86,9 @@ public class ShopGUI extends AbstractGui {
     private void addMythicItems() {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(viewer);
         if (session == null) {
+            if (CashClashPlugin.getInstance().getPracticeRangeManager().isPracticing(viewer)) {
+                addPracticeMythics();
+            }
             return;
         }
 
@@ -110,6 +114,24 @@ public class ShopGUI extends AbstractGui {
 
             ItemStack mythicItem = CashClashPlugin.getInstance().getItemFactory().getGuiFactory().createMythicShopItem(viewer, mythic, playerHasMythic, ownedMythic, mythicTaken, ownerUuid);
             setButton(MYTHIC_SLOTS[i], GuiButton.of(mythicItem)
+                    .onClick(p -> MythicCategoryGui.handleMythicPurchase(p, mythic, this)));
+        }
+    }
+
+    /**
+     * The practice range's shop sells every mythic, without a game's one-per-player limit.
+     */
+    private void addPracticeMythics() {
+        for (int slot : MYTHIC_SEPARATOR_SLOTS) {
+            setItem(slot, createPane(Material.BLACK_STAINED_GLASS_PANE));
+        }
+
+        MythicItem[] mythics = MythicItem.values();
+        for (int i = 0; i < mythics.length && i < PRACTICE_MYTHIC_SLOTS.length; i++) {
+            MythicItem mythic = mythics[i];
+            ItemStack icon = CashClashPlugin.getInstance().getItemFactory().getGuiFactory()
+                    .createMythicShopItem(viewer, mythic, false, null, false, null);
+            setButton(PRACTICE_MYTHIC_SLOTS[i], GuiButton.of(icon)
                     .onClick(p -> MythicCategoryGui.handleMythicPurchase(p, mythic, this)));
         }
     }

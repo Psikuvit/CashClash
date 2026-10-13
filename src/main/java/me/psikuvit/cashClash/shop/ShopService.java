@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.shop;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -332,6 +333,24 @@ public class ShopService {
         return ccp != null && ccp.getCoins() >= cost;
     }
 
+    /**
+     * Whether a player can buy from the shop: in a game, or in the practice range.
+     */
+    public boolean canShop(Player player) {
+        return gameManager.getPlayerSession(player) != null
+                || CashClashPlugin.getInstance().getPracticeRangeManager().isPracticing(player);
+    }
+
+    /**
+     * The round a purchase counts toward: the game's current round, or in the practice range the
+     * final round, so nothing is still locked behind an earlier one.
+     */
+    public int getShopRound(Player player) {
+        GameSession session = gameManager.getPlayerSession(player);
+        if (session != null) return session.getCurrentRound();
+        return CashClashPlugin.getInstance().getConfigManager().getTotalRounds();
+    }
+
     private void restoreReplacedItem(Player player, PurchaseRecord record) {
         Purchasable item = record.item();
         ItemStack replacedItem = record.replacedItem();
@@ -357,8 +376,7 @@ public class ShopService {
     private void giveItemToPlayer(Player player, CashClashPlayer ccp, Purchasable item, int quantity, long totalPrice) {
         int giveQty = Math.max(1, quantity);
 
-        GameSession sess = gameManager.getPlayerSession(player);
-        int round = sess != null ? sess.getCurrentRound() : 1;
+        int round = getShopRound(player);
         Messages.debug("Bought item: " + item);
 
         switch (item) {

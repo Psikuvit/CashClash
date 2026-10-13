@@ -77,8 +77,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
 
     @Override
     protected void populateItems() {
-        GameSession session = getSession();
-        int currentRound = session != null ? session.getCurrentRound() : 1;
+        int currentRound = CashClashPlugin.getInstance().getShopService().getShopRound(viewer);
         int diamondPiecesOwned = countDiamondPieces();
         boolean canBuyDiamond = canBuyDiamondPiece(currentRound, diamondPiecesOwned);
 
@@ -337,8 +336,11 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         CashClashPlayer ccp = getCashClashPlayer();
         if (ccp == null) return;
 
-        GameSession session = ensureInGame(player);
-        if (session == null) return;
+        if (!CashClashPlugin.getInstance().getShopService().canShop(player)) {
+            Messages.send(player, "shop.must-be-in-game");
+            player.closeInventory();
+            return;
+        }
 
         if (CashClashPlugin.getInstance().getShopService()
                 .isCustomArmorAlreadyOwned(player, armorSet.getPieces().getFirst())) {
@@ -348,23 +350,7 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
         long totalPrice = DiscountService.getSetFinalPrice(player, armorSet);
         if (!ensureCanAffordSet(player, totalPrice)) return;
 
-        applySetPurchase(player, session, armorSet, totalPrice, ccp);
-    }
-
-    /**
-     * Ensures the player is in a game session.
-     * Sends error message and closes inventory if not in game.
-     *
-     * @param player The player to check
-     * @return The game session if valid, null otherwise
-     */
-    private GameSession ensureInGame(Player player) {
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (session == null) {
-            Messages.send(player, "shop.must-be-in-game");
-            player.closeInventory();
-        }
-        return session;
+        applySetPurchase(player, armorSet, totalPrice, ccp);
     }
 
     /**
@@ -388,15 +374,14 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
      * Applies the armor set purchase: deducts coins, replaces armor, creates purchase record, and sends success message.
      *
      * @param player     The player making the purchase
-     * @param session    The game session
      * @param armorSet   The armor set being purchased
      * @param totalPrice The total price of the set
      * @param ccp        The CashClashPlayer instance
      */
-    private void applySetPurchase(Player player, GameSession session, CustomArmorItem.ArmorSet armorSet,
+    private void applySetPurchase(Player player, CustomArmorItem.ArmorSet armorSet,
                                    long totalPrice, CashClashPlayer ccp) {
         CashClashPlugin.getInstance().getShopService().deductCoins(player, totalPrice);
-        int round = session.getCurrentRound();
+        int round = CashClashPlugin.getInstance().getShopService().getShopRound(player);
 
         List<CustomArmorItem> setPieces = armorSet.getPieces();
         Map<ArmorSlot, ItemStack> replacedSetItems = collectAndReplaceSetPieces(player, setPieces);
