@@ -726,8 +726,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
             } else {
                 warnBlockedCarrier(player, redFlag, blueFlag, blueBase);
             }
-            FlagBannerUtils.spawnBannerParticles(redFlag.flagLoc(), 0);
-            FlagBannerUtils.spawnBannerParticles(blueFlag.flagLoc(), 0);
             return false;
         } else {
             stalemateMsgShown.remove(playerUuid);
