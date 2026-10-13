@@ -676,6 +676,28 @@ public class ConfigManager {
         return config.getStringList("queue.tips.list");
     }
 
+    // ==================== PRACTICE RANGE ====================
+
+    public long getPracticeCoins() {
+        return config.getLong("practice-range.coins", 10_000_000L);
+    }
+
+    public double getPracticeSkeletonHealthMultiplier() {
+        return config.getDouble("practice-range.skeleton-health-multiplier", 2.0);
+    }
+
+    public double getPracticeZombieSpeed() {
+        return config.getDouble("practice-range.zombie-speed", 1.0);
+    }
+
+    public int getPracticeZombiePauseSeconds() {
+        return config.getInt("practice-range.zombie-pause-seconds", 3);
+    }
+
+    public int getPracticeMobRespawnSeconds() {
+        return config.getInt("practice-range.mob-respawn-seconds", 5);
+    }
+
     // ==================== HUB SETTINGS ====================
 
     public String getDiscordLink() {

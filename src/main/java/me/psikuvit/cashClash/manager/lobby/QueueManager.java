@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.lobby;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.config.ConfigManager;
@@ -130,6 +131,7 @@ public class QueueManager implements Shutdownable, Listener {
 
         for (Player member : joining) {
             if (isQueued(member)) continue;
+            CashClashPlugin.getInstance().getPracticeRangeManager().remove(member);
             queue.add(member.getUniqueId());
 
             Location waitingRoom = arenaManager.getWaitingLobbySpawn();

@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.kit.Kit;
+import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.BonusType;
@@ -662,13 +663,15 @@ public class CashClashPlayer {
     // ---------- Static convenience (resolve the session's CashClashPlayer) ----------
 
     /**
-     * Resolve the CashClashPlayer wrapper for a Bukkit player, or null if they are
-     * not currently inside a game session.
+     * Resolve the CashClashPlayer wrapper for a Bukkit player: their game session's, or the
+     * practice range's while they're practicing, or null if they are in neither.
      */
     public static CashClashPlayer from(Player player) {
         if (player == null) return null;
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        return session == null ? null : session.getCashClashPlayer(player.getUniqueId());
+        if (session != null) return session.getCashClashPlayer(player.getUniqueId());
+        PracticeRangeManager practiceRange = CashClashPlugin.getInstance().getPracticeRangeManager();
+        return practiceRange != null ? practiceRange.getPracticePlayer(player.getUniqueId()) : null;
     }
 
     /**

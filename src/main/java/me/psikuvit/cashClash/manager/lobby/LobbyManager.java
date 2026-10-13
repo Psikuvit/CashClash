@@ -25,8 +25,10 @@ public class LobbyManager {
     // Lobby item types
     public enum LobbyItemType {
         STATS("stats"),
+        PRACTICE_RANGE("practice_range"),
         LAYOUT_CONFIGURATOR("layout_configurator"),
-        LEAVE_QUEUE("leave_queue");
+        LEAVE_QUEUE("leave_queue"),
+        LEAVE_PRACTICE("leave_practice");
 
         private final String id;
 
@@ -97,6 +99,9 @@ public class LobbyManager {
         // Stats item (slot from config, default 0)
         setLobbyItemSafely(player, config.getLobbyStatsSlot(), createStatsItem(), "stats");
 
+        setLobbyItemSafely(player, config.getLobbyItemSlot("practice-range"),
+                createConfiguredItem("practice-range", Material.TARGET, LobbyItemType.PRACTICE_RANGE), "practice-range");
+
         // Layout configurator item (slot from config, default 8)
         setLobbyItemSafely(player, config.getLobbyLayoutConfiguratorSlot(), createLayoutConfiguratorItem(), "layout-configurator");
     }
@@ -108,6 +113,15 @@ public class LobbyManager {
         clearLobbyItems(player);
         setLobbyItemSafely(player, itemsConfig.getLobbyItemSlot("leave-queue"),
                 createConfiguredItem("leave-queue", Material.RED_BED, LobbyItemType.LEAVE_QUEUE), "leave-queue");
+    }
+
+    /**
+     * Swaps a player's lobby items for the practice range's single Back to Hub item.
+     */
+    public void givePracticeItems(Player player) {
+        clearLobbyItems(player);
+        setLobbyItemSafely(player, itemsConfig.getLobbyItemSlot("leave-practice"),
+                createConfiguredItem("leave-practice", Material.OAK_DOOR, LobbyItemType.LEAVE_PRACTICE), "leave-practice");
     }
 
     /**

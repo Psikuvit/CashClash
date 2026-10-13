@@ -874,6 +874,26 @@ messages:
     force-start-empty: "<red>Nobody is in the queue.</red>"
 
   # ============================================
+  # PRACTICE RANGE MESSAGES
+  # ============================================
+  practice:
+    title: "<aqua><bold>You are in the practice range!</bold></aqua>"
+    subtitle: "<yellow>Test out all the items!</yellow>"
+    villager-name: "<aqua><bold>Practice Shop</bold></aqua>"
+    already-in: "<red>You're already in the practice range.</red>"
+    not-in: "<red>You're not in the practice range.</red>"
+    not-set-up: "<red>The practice range hasn't been set up yet.</red>"
+    left: "<yellow>You left the practice range.</yellow>"
+    usage: "<red>Usage: /cc practice [setspawn|setvillager|addskeleton|zombiestart|zombieend|clear]</red>"
+    spawn-set: "<green>Practice range spawn set to your location.</green>"
+    villager-set: "<green>Practice shop villager set to your location.</green>"
+    skeleton-added: "<green>Added a skeleton at your location ({count} total).</green>"
+    zombie-start-set: "<green>Zombie path start set. Walk to where it should end and run /cc practice zombieend.</green>"
+    zombie-no-start: "<red>Set the path's start first with /cc practice zombiestart.</red>"
+    zombie-added: "<green>Added a zombie path ({count} total).</green>"
+    cleared: "<green>Removed every practice skeleton and zombie path.</green>"
+
+  # ============================================
   # CUSTOM ARMOR MESSAGES
   # ============================================
   armor:

@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.lobby.LayoutManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager.LobbyItemType;
+import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.manager.lobby.QueueManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.GameMode;
@@ -26,7 +27,7 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Listener for handling lobby item interactions.
- * Handles the Stats, Layout Configurator and Leave Queue items.
+ * Handles the Stats, Practice Range, Layout Configurator, Leave Queue and Back to Hub items.
  */
 public class LobbyListener implements Listener {
 
@@ -35,14 +36,16 @@ public class LobbyListener implements Listener {
     private final LayoutManager layoutManager;
     private final ConfigManager configManager;
     private final QueueManager queueManager;
+    private final PracticeRangeManager practiceRangeManager;
 
     public LobbyListener(GameManager gameManager, LobbyManager lobbyManager, LayoutManager layoutManager,
-                         ConfigManager configManager, QueueManager queueManager) {
+                         ConfigManager configManager, QueueManager queueManager, PracticeRangeManager practiceRangeManager) {
         this.gameManager = gameManager;
         this.lobbyManager = lobbyManager;
         this.layoutManager = layoutManager;
         this.configManager = configManager;
         this.queueManager = queueManager;
+        this.practiceRangeManager = practiceRangeManager;
     }
 
     /**
@@ -82,9 +85,13 @@ public class LobbyListener implements Listener {
 
         switch (type) {
             case STATS -> handleStatsItem(player);
+            case PRACTICE_RANGE -> practiceRangeManager.enter(player);
             case LAYOUT_CONFIGURATOR -> handleLayoutConfiguratorItem(player);
             case LEAVE_QUEUE -> {
                 if (queueManager.leave(player)) Messages.send(player, "queue.left");
+            }
+            case LEAVE_PRACTICE -> {
+                if (practiceRangeManager.leave(player)) Messages.send(player, "practice.left");
             }
         }
     }

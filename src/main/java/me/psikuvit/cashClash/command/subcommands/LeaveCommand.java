@@ -35,6 +35,10 @@ public class LeaveCommand extends AbstractArgCommand {
             Messages.send(player, "queue.left");
             return true;
         }
+        if (CashClashPlugin.getInstance().getPracticeRangeManager().leave(player)) {
+            Messages.send(player, "practice.left");
+            return true;
+        }
         Messages.send(player, "generic.player-not-in-game");
         return true;
     }

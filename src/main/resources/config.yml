@@ -631,6 +631,24 @@ queue:
       - "Always play safe if you're the president!"
 
 # ============================================
+# PRACTICE RANGE
+# ============================================
+# Set it up with /cc practice setspawn | setvillager | addskeleton | zombiestart + zombieend |
+# clear. Players enter with the practice range item in their hotbar. The mobs only exist while
+# someone is practicing.
+practice-range:
+  # Coins a player has in the practice range - topped back up every second
+  coins: 10000000
+  # Skeletons stand still, with this many times a skeleton's normal health
+  skeleton-health-multiplier: 2.0
+  # Zombie walking speed (1.0 = normal)
+  zombie-speed: 1.0
+  # How long a zombie waits at each end of its path before turning around (seconds)
+  zombie-pause-seconds: 3
+  # How long after dying a practice mob comes back (seconds)
+  mob-respawn-seconds: 5
+
+# ============================================
 # HUB SETTINGS
 # ============================================
 hub:

@@ -576,6 +576,29 @@ lobby-items:
       - "<yellow>Right-click to configure!</yellow>"
     slot: 8
 
+  # Practice Range - sends the player to the practice range
+  practice-range:
+    material: TARGET
+    name: "<aqua><bold>Practice Range</bold></aqua>"
+    lore:
+      - ""
+      - "<gray>Try out every item on</gray>"
+      - "<gray>practice dummies, for free.</gray>"
+      - ""
+      - "<yellow>Right-click to go!</yellow>"
+    slot: 4
+
+  # Leave Practice - takes the player from the practice range back to the hub
+  leave-practice:
+    material: OAK_DOOR
+    name: "<red><bold>Back to Hub</bold></red>"
+    lore:
+      - ""
+      - "<gray>Leave the practice range.</gray>"
+      - ""
+      - "<yellow>Right-click to leave!</yellow>"
+    slot: 8
+
   # Leave Queue - the only item while waiting in the waiting room
   leave-queue:
     material: RED_BED

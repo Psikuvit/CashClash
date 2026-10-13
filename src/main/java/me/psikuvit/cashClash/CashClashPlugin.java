@@ -39,6 +39,7 @@ import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import me.psikuvit.cashClash.manager.lobby.LayoutManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.lobby.MannequinManager;
+import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.manager.lobby.QueueManager;
 import me.psikuvit.cashClash.manager.player.AfkManager;
 import me.psikuvit.cashClash.manager.player.LeaderboardManager;
@@ -92,6 +93,7 @@ public final class CashClashPlugin extends JavaPlugin {
     private ShopManager shopManager;
     private LayoutManager layoutManager;
     private QueueManager queueManager;
+    private PracticeRangeManager practiceRangeManager;
     private CustomArmorManager customArmorManager;
     private MythicItemManager mythicItemManager;
     private CustomItemManager customItemManager;
@@ -155,6 +157,9 @@ public final class CashClashPlugin extends JavaPlugin {
             // Tier 4: depend on tier 3 managers.
             queueManager = new QueueManager(gameManager, arenaManager, configManager, partyManager, lobbyManager, layoutManager, messagesConfig);
 
+            // Tier 5: depend on tier 4 managers.
+            practiceRangeManager = new PracticeRangeManager(gameManager, configManager, lobbyManager, queueManager, messagesConfig);
+
             // Step 3: Initialize arena system
             arenaManager.initializeArenas();
             getLogger().info("Arena system initialized (5 arenas available)");
@@ -177,6 +182,9 @@ public final class CashClashPlugin extends JavaPlugin {
 
             // Step 4.85: Start the game queue (countdown, waiting room action bar and tips)
             queueManager.start();
+
+            // Step 4.86: Start the practice range (wallet top-ups, zombie patrols)
+            practiceRangeManager.start();
 
             // Step 4.9: Start spawn room healing and doors (paused)
             //spawnRoomManager.start();
@@ -223,6 +231,7 @@ public final class CashClashPlugin extends JavaPlugin {
         Set<Shutdownable> managers = new LinkedHashSet<>();
         managers.add(leaderboardManager);
         managers.add(queueManager);
+        managers.add(practiceRangeManager);
         managers.add(gameManager);
         managers.add(rejoinManager);
         managers.add(gamemodeManager);
@@ -292,6 +301,7 @@ public final class CashClashPlugin extends JavaPlugin {
     public ShopManager getShopManager() { return shopManager; }
     public LayoutManager getLayoutManager() { return layoutManager; }
     public QueueManager getQueueManager() { return queueManager; }
+    public PracticeRangeManager getPracticeRangeManager() { return practiceRangeManager; }
     public CustomArmorManager getCustomArmorManager() { return customArmorManager; }
     public MythicItemManager getMythicItemManager() { return mythicItemManager; }
     public CustomItemManager getCustomItemManager() { return customItemManager; }
@@ -311,13 +321,14 @@ public final class CashClashPlugin extends JavaPlugin {
                 new GameListener(configManager, cooldownManager, customArmorManager, customItemManager, gameManager, itemsConfig, mythicItemManager, playerDataManager, shopManager, weaponItemManager),
                 new HungerListener(),
                 new PlayerConnectionListener(configManager, gameManager, layoutManager, lobbyManager, mythicItemManager, playerDataManager, rejoinManager, scoreboardManager, tabListManager, worldVisibilityManager),
-                new LobbyListener(gameManager, lobbyManager, layoutManager, configManager, queueManager),
+                new LobbyListener(gameManager, lobbyManager, layoutManager, configManager, queueManager, practiceRangeManager),
                 new AfkListener(),
                 new ArenaNPCListener(),
                 new ChatListener(),
                 transferInputListener,
                 teamOutlineManager,
-                queueManager
+                queueManager,
+                practiceRangeManager
                 //spawnRoomManager
         };
 

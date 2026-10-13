@@ -666,6 +666,14 @@ public class DamageListener implements Listener {
             return false;
         }
 
+        // Outside a game the practice range's mobs are the only thing a player can hurt.
+        if (PDCDetection.isPracticeMob(event.getEntity())) {
+            double vulnerability = customItemManager.getHandler(HuntersMarkHandler.class)
+                    .getVulnerabilityMultiplier(event.getEntity().getUniqueId());
+            if (vulnerability > 1.0) event.setDamage(event.getDamage() * vulnerability);
+            return false;
+        }
+
         event.setCancelled(true);
         return true;
     }
