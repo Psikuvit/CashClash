@@ -380,6 +380,12 @@ public class InteractListener implements Listener {
             return;
         }
 
+        if (session.getState() == GameState.BUFF_SELECTION) {
+            event.setCancelled(true);
+            Messages.send(player, "listener.ready-during-buff-selection");
+            return;
+        }
+
         Team team = session.getPlayerTeam(player);
         if (team == null) return;
 

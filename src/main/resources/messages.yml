@@ -827,6 +827,7 @@ messages:
     enderpearls-disabled: "<red>Your team's Ender Pearls are currently disabled.</red>"
     no-throw-respawn-protection: "<red>You cannot throw weapons during respawn protection!</red>"
     ready-state: "<gold>You are now {state}<gold>!</gold>"
+    ready-during-buff-selection: "<red>You can't ready up until the presidents have picked their buffs.</red>"
     tablet-shopping-only: "<red>Tablet of Hacking can only be used during the shopping phase!</red>"
     cannot-use-items-dead: "<red>You cannot use items while dead!</red>"
     cannot-use-items-respawn-protection: "<red>You cannot use items during respawn protection!</red>"
