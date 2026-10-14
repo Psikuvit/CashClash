@@ -218,12 +218,10 @@ public class KitService {
         ItemFactory factory = CashClashPlugin.getInstance().getItemFactory();
         ItemStack steak = factory.createGameplayItem(FoodItem.STEAK);
         steak.setAmount(8);
-        markKitItem(steak);
         player.getInventory().addItem(steak);
 
         ItemStack bread = factory.createGameplayItem(FoodItem.BREAD);
         bread.setAmount(16);
-        markKitItem(bread);
         player.getInventory().addItem(bread);
 
         // === UTILITY ===
