@@ -17,6 +17,7 @@ import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
 import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
@@ -66,6 +67,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -233,6 +235,23 @@ public class GameListener implements Listener {
         armorManager.getHandler(DeathmaulerSetHandler.class).onPlayerKill(killer, session);
         armorManager.getHandler(DragonSetHandler.class).onPlayerKillDragon(killer);
         armorManager.getHandler(FlamebringerSetHandler.class).onFlamebringerKill(killer);
+    }
+
+    /**
+     * Killing one of the practice range's enemy mobs counts as a kill for the killer's armor,
+     * same as killing a player in a game: Deathmauler's heal, Dragon's Strength, Flamebringer's
+     * pull and the Investor's Set reward.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPracticeMobKill(EntityDeathEvent event) {
+        LivingEntity mob = event.getEntity();
+        Player killer = mob.getKiller();
+        if (killer == null || !PDCDetection.isPracticeMob(mob) || gameManager.getPlayerSession(killer) != null) return;
+
+        armorManager.getHandler(DeathmaulerSetHandler.class).onPlayerKill(killer, null);
+        armorManager.getHandler(DragonSetHandler.class).onPlayerKillDragon(killer);
+        armorManager.getHandler(FlamebringerSetHandler.class).onFlamebringerKill(killer);
+        armorManager.getHandler(InvestorSetHandler.class).onInvestorPracticeKill(killer);
     }
 
     private void handlePermanentSpectator(Player player, Location spectatorLocation) {

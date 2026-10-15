@@ -71,6 +71,21 @@ public class InvestorSetHandler extends ArmorSetHandler {
     }
 
     /**
+     * Investor's Set in the practice range: killing one of its enemy mobs pays the wearer what a
+     * kill in a game would - only them, since the range has no teams, and silently, so it never
+     * counts toward their lifetime coins earned.
+     */
+    public void onInvestorPracticeKill(Player player) {
+        int pieces = countInvestorsPieces(player);
+        if (pieces <= 0) return;
+
+        long reward = cfg.getInvestorKillObjectiveRewardPerPiece() * pieces;
+        CashClashPlayer wallet = CashClashPlayer.from(player);
+        if (wallet != null) wallet.addCoinsSilently(reward);
+        playInvestorRewardEffect(player, reward, "armor.investor-reward");
+    }
+
+    /**
      * Pays every player on the wearer's team {@code rewardPerPiece} for each Investor's piece
      * the wearer has on.
      */

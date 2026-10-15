@@ -1,10 +1,5 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -17,6 +12,7 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -195,10 +191,6 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
             double duration = cfg.getFlamebringerPullDuration();
             double pullStrength = cfg.getFlamebringerPullStrength();
 
-            GameManager gameManager = CashClashPlugin.getInstance().getGameManager();
-            GameSession session = gameManager.getPlayerSession(killer);
-            Team killerTeam = session != null ? session.getPlayerTeam(killer) : null;
-
             Location killerLoc = killer.getLocation();
 
             int durationTicks = (int) (duration * 20);
@@ -207,15 +199,7 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
 
                 ParticleUtils.flamebringerPull(killerLoc, radius);
 
-                for (Entity entity : killer.getWorld().getNearbyEntities(killerLoc, radius, radius, radius)) {
-                    if (!(entity instanceof Player target)) continue;
-                    if (target.equals(killer)) continue;
-
-                    if (session != null && killerTeam != null) {
-                        Team targetTeam = session.getPlayerTeam(target);
-                        if (targetTeam == killerTeam) continue;
-                    }
-
+                for (LivingEntity target : AbilityTargets.enemiesNear(killer, killerLoc, radius, radius, radius)) {
                     Vector direction = killerLoc.toVector().subtract(target.getLocation().toVector()).normalize();
                     target.setVelocity(direction.multiply(pullStrength));
                 }
