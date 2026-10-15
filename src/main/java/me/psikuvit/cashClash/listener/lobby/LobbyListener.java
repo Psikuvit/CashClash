@@ -4,6 +4,7 @@ package me.psikuvit.cashClash.listener.lobby;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.gui.LayoutKitSelectorGUI;
 import me.psikuvit.cashClash.gui.StatsGUI;
+import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.lobby.LayoutManager;
 import me.psikuvit.cashClash.manager.lobby.LobbyManager;
@@ -51,13 +52,15 @@ public class LobbyListener implements Listener {
 
     /**
      * Hub blocks can only be broken while {@code hub.block-breaking} is on (/cc hubbreak), or by
-     * a player in creative mode. Blocks inside a game are left to {@code BlockListener}.
+     * a player in creative mode - apart from the blocks practicing players placed, which they can
+     * always break. Blocks inside a game are left to {@code BlockListener}.
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onHubBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         if (gameManager.getPlayerSession(player) != null) return;
         if (player.getGameMode() == GameMode.CREATIVE || configManager.isHubBlockBreaking()) return;
+        if (practiceRangeManager.isPracticing(player) && BlockListener.isPracticePlacedBlock(event.getBlock())) return;
 
         event.setCancelled(true);
     }

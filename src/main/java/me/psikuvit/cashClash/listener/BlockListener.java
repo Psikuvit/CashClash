@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -55,12 +56,38 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BlockListener implements Listener {
 
+    /**
+     * What the practice range's placed blocks and fluids are tracked under, in place of a game
+     * session's id.
+     */
+    private static final UUID PRACTICE_ZONE = new UUID(0L, 0L);
+
     private final GameManager gameManager;
     private final ItemsConfig itemsConfig;
+    private final PracticeRangeManager practiceRangeManager;
 
-    public BlockListener(GameManager gameManager, ItemsConfig itemsConfig) {
+    public BlockListener(GameManager gameManager, ItemsConfig itemsConfig, PracticeRangeManager practiceRangeManager) {
         this.gameManager = gameManager;
         this.itemsConfig = itemsConfig;
+        this.practiceRangeManager = practiceRangeManager;
+    }
+
+    /**
+     * Where a player's placed blocks are tracked: their game's session, the practice range, or
+     * nowhere (the plain hub) when null.
+     */
+    private UUID zoneId(Player player) {
+        GameSession session = gameManager.getPlayerSession(player);
+        if (session != null) return session.getSessionId();
+        return practiceRangeManager.isPracticing(player) ? PRACTICE_ZONE : null;
+    }
+
+    /**
+     * Whether a block was placed by a practicing player and is still there - the only hub blocks
+     * practicing players may break.
+     */
+    public static boolean isPracticePlacedBlock(Block block) {
+        return practicePlacedBlocks.contains(block.getLocation().toBlockLocation());
     }
 
     /**
@@ -72,6 +99,7 @@ public class BlockListener implements Listener {
     private record DespawnTimer(TextDisplay display, Material material, long expiresAt, String colorTag) {}
 
     private static final Map<UUID, Set<Location>> placedBlocks = new ConcurrentHashMap<>();
+    private static final Set<Location> practicePlacedBlocks = ConcurrentHashMap.newKeySet();
     private static final Map<UUID, Map<Integer, Integer>> waterLavaSourceCount = new ConcurrentHashMap<>();
     private static final Map<Location, BukkitTask> webDespawnTasks = new ConcurrentHashMap<>();
     private static final Map<Location, BukkitTask> leafDecayTasks = new ConcurrentHashMap<>();
@@ -175,9 +203,9 @@ public class BlockListener implements Listener {
         if (bucket != Material.WATER_BUCKET && bucket != Material.LAVA_BUCKET) return;
 
         Player player = event.getPlayer();
-        GameSession session = gameManager.getPlayerSession(player);
-        if (session == null) {
-            Messages.debug(player, "FLUID", "bucket ignored: player not in a session");
+        UUID zoneId = zoneId(player);
+        if (zoneId == null) {
+            Messages.debug(player, "FLUID", "bucket ignored: player not in a session or the practice range");
             return;
         }
 
@@ -200,8 +228,8 @@ public class BlockListener implements Listener {
         } else {
             rememberReplacedBlock(target);
         }
-        trackPlacedBlock(session.getSessionId(), target);
-        placeQuickFluid(target, origin, fluid, session.getSessionId());
+        trackPlacedBlock(zoneId, target);
+        placeQuickFluid(target, origin, fluid, zoneId);
 
         if (water) {
             queueWaterBucketRefill(player);
@@ -410,22 +438,62 @@ public class BlockListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        GameSession session = gameManager.getPlayerSession(player);
+        UUID zoneId = zoneId(player);
+        if (zoneId == null) return;
 
-        if (!validateBlockPlaceContext(event, player, session)) {
+        GameSession session = gameManager.getPlayerSession(player);
+        if (session != null && !validateBlockPlaceContext(event, player, session)) {
             return;
         }
 
         Block block = event.getBlock();
         Material blockType = block.getType();
-        UUID sessionId = session.getSessionId();
         UUID playerId = player.getUniqueId();
+        if (session == null) practicePlacedBlocks.add(block.getLocation().toBlockLocation());
 
-        if (handleWebPlacement(event, blockType, sessionId, playerId, block)) return;
-        if (handleLeafPlacement(event, blockType, sessionId, playerId, block)) return;
-        if (handleWaterLavaPlacement(event, blockType, sessionId, playerId, player, session)) return;
+        if (handleWebPlacement(event, blockType, zoneId, playerId, block)) return;
+        if (handleLeafPlacement(event, blockType, zoneId, playerId, block)) return;
+        if (session == null) {
+            schedulePracticeBlockDespawn(block);
+            return;
+        }
+        if (handleWaterLavaPlacement(event, blockType, zoneId, playerId, player, session)) return;
 
-        trackPlacedBlock(sessionId, block);
+        trackPlacedBlock(zoneId, block);
+    }
+
+    /**
+     * Any other block a practicing player places goes after the same 8 seconds as leaves and
+     * webs, so the hub doesn't keep it.
+     */
+    private void schedulePracticeBlockDespawn(Block block) {
+        Location loc = block.getLocation().toBlockLocation();
+        Material type = block.getType();
+        showDespawnTimer(block, type, 160, "gray");
+        SchedulerUtils.runTaskLater(() -> {
+            practicePlacedBlocks.remove(loc);
+            if (block.getType() != type) return;
+
+            Location center = loc.clone().add(0.5, 0.5, 0.5);
+            ParticleUtils.spawn(Particle.FALLING_DUST, center, 10, 0.3, block.getBlockData());
+            SoundUtils.playAt(center, block.getBlockData().getSoundGroup().getBreakSound(), 1.0f, 1.0f);
+            block.setType(Material.AIR);
+        }, 160);
+    }
+
+    /**
+     * A practicing player's own placed blocks break without dropping anything - the hub's other
+     * blocks stay protected by {@code LobbyListener}.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPracticeBlockBreak(BlockBreakEvent event) {
+        if (isPracticePlacedBlock(event.getBlock())) event.setDropItems(false);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPracticeBlockBroken(BlockBreakEvent event) {
+        Location loc = event.getBlock().getLocation().toBlockLocation();
+        if (practicePlacedBlocks.remove(loc)) removeDespawnTimer(loc);
     }
 
     /**
@@ -693,12 +761,14 @@ public class BlockListener implements Listener {
         if (type == Material.COBWEB && webDespawnTasks.containsKey(loc)) {
             cancelWebDespawnTask(loc);
             removeDespawnTimer(loc);
+            practicePlacedBlocks.remove(loc);
             Messages.debug("FLUID", "washed away placed web at " + at(loc));
             return;
         }
         if (isPlacedLeaves(block)) {
             cancelLeafDecayTask(loc);
             removeDespawnTimer(loc);
+            practicePlacedBlocks.remove(loc);
             Location center = loc.clone().add(0.5, 0.5, 0.5);
             ParticleUtils.spawn(Particle.LARGE_SMOKE, center, 6, 0.3, 0.3, 0.3, 0.02);
             SoundUtils.playAt(center, Sound.BLOCK_FIRE_EXTINGUISH, 0.6f, 1.2f);
@@ -987,6 +1057,7 @@ public class BlockListener implements Listener {
                 block.setType(Material.AIR);
             }
             webDespawnTasks.remove(loc);
+            practicePlacedBlocks.remove(loc);
         }, 160);
         
         webDespawnTasks.put(loc, task);
@@ -1031,6 +1102,7 @@ public class BlockListener implements Listener {
                 block.setType(Material.AIR);
             }
             leafDecayTasks.remove(loc);
+            practicePlacedBlocks.remove(loc);
         }, 160);
         leafDecayTasks.put(loc, task);
     }
