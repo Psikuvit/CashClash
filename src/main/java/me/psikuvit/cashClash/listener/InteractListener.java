@@ -120,18 +120,18 @@ public class InteractListener implements Listener {
         if (event.getEntity() instanceof Trident trident) {
             if (trident.getShooter() instanceof Player player) {
                 GameSession session = gameManager.getPlayerSession(player);
-                if (session == null) return;
+                if (session != null) {
+                    if (CashClashPlayer.isPlayerDead(player)) {
+                        event.setCancelled(true);
+                        return;
+                    }
 
-                if (CashClashPlayer.isPlayerDead(player)) {
-                    event.setCancelled(true);
-                    return;
-                }
-
-                CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
-                if (ccp != null && ccp.isRespawnProtected()) {
-                    event.setCancelled(true);
-                    Messages.send(player, "listener.no-throw-respawn-protection");
-                    return;
+                    CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
+                    if (ccp != null && ccp.isRespawnProtected()) {
+                        event.setCancelled(true);
+                        Messages.send(player, "listener.no-throw-respawn-protection");
+                        return;
+                    }
                 }
 
                 ItemStack mainHand = player.getInventory().getItemInMainHand();
