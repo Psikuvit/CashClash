@@ -488,6 +488,7 @@ custom-items:
     range: 1
     duration-seconds: 8
     base-vulnerability-percent: 15
+    percent-text-height: 0.7          # Blocks above the marked target's eyes the "+15%" floats
 
   # Blooming Rose
   blooming-rose:

@@ -777,6 +777,13 @@ public class ItemsConfig {
         return config.getInt("custom-items.hunters-mark.base-vulnerability-percent", 15);
     }
 
+    /**
+     * How far above the marked target's eyes the floating vulnerability % sits, in blocks.
+     */
+    public double getHuntersMarkPercentTextHeight() {
+        return config.getDouble("custom-items.hunters-mark.percent-text-height", 0.7);
+    }
+
     // Blooming Rose
     public double getBloomingRoseZoneRadius() {
         return config.getDouble("custom-items.blooming-rose.zone-radius", 3);

@@ -140,7 +140,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
             Location eye = target.getEyeLocation();
             markDisplay.teleport(eye.clone().add(0, 0.25, 0));
             markDisplay.setRotation(markDisplay.getYaw() + 12f, 0f);
-            textDisplay.teleport(eye.clone().add(0, 0.7, 0));
+            textDisplay.teleport(eye.clone().add(0, cfg.getHuntersMarkPercentTextHeight(), 0));
         }, 0L, 1L);
 
         hunterMarks.put(targetUuid, new HunterMarkInfo(task, targetUuid, markDisplay, textDisplay, expiresAt));
