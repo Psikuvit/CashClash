@@ -48,6 +48,7 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -388,7 +389,8 @@ public class PracticeRangeManager implements Shutdownable, Listener {
     /**
      * Every 5 ticks: tops practice wallets back up, walks the zombies - on to the far end of
      * their path, then a pause, then back - puts skeletons knocked off their spot back on it,
-     * and points the boss at the nearest practicing player.
+     * points the boss at the nearest practicing player, and kills any range mob knocked below
+     * the void kill height so it respawns.
      */
     private void tick() {
         if (practicing.isEmpty()) return;
@@ -440,6 +442,14 @@ public class PracticeRangeManager implements Shutdownable, Listener {
                 boss.setTarget(nearestPracticingPlayer(boss.getLocation(), configManager.getPracticeBossTargetRange()));
             }
         }
+
+        double voidKillHeight = configManager.getPracticeVoidKillHeight();
+        List<LivingEntity> fallen = new ArrayList<>();
+        for (UUID uuid : mobs.keySet()) {
+            if (Bukkit.getEntity(uuid) instanceof LivingEntity mob && mob.getLocation().getY() < voidKillHeight) fallen.add(mob);
+        }
+        if (boss != null && boss.getLocation().getY() < voidKillHeight) fallen.add(boss);
+        fallen.forEach(mob -> mob.setHealth(0));
     }
 
     private Player nearestPracticingPlayer(Location from, double range) {
@@ -542,6 +552,18 @@ public class PracticeRangeManager implements Shutdownable, Listener {
 
         event.setCancelled(true);
         knockOut(player);
+    }
+
+    /**
+     * Falling below {@code practice-range.void-kill-height} knocks a practicing player out
+     * straight away rather than after a fall all the way into the void.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onPracticeVoidFall(PlayerMoveEvent event) {
+        if (event.getTo().getY() >= configManager.getPracticeVoidKillHeight()) return;
+        if (event.getFrom().getY() < configManager.getPracticeVoidKillHeight()) return;
+        Player player = event.getPlayer();
+        if (isPracticing(player)) SchedulerUtils.runTask(() -> knockOut(player));
     }
 
     /**

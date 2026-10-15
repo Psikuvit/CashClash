@@ -650,6 +650,9 @@ practice-range:
   mob-respawn-seconds: 5
   # How far the boss iron golem looks for a practicing player to attack (blocks)
   boss-target-range: 24
+  # Y level below which a practicing player is knocked out (back to the range's spawn) and a
+  # practice mob dies (and respawns) - so nobody has to fall all the way into the void
+  void-kill-height: -64
 
 # ============================================
 # HUB SETTINGS

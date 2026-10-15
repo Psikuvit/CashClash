@@ -702,6 +702,10 @@ public class ConfigManager {
         return config.getDouble("practice-range.boss-target-range", 24.0);
     }
 
+    public double getPracticeVoidKillHeight() {
+        return config.getDouble("practice-range.void-kill-height", -64.0);
+    }
+
     // ==================== HUB SETTINGS ====================
 
     public String getDiscordLink() {
