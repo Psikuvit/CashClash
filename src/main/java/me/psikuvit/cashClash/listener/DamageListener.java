@@ -560,8 +560,10 @@ public class DamageListener implements Listener {
     // ==================== KNOCKBACK IMMUNITY (Monitor Priority) ====================
 
     /**
-     * Checks fall damage for the Tectonic Cap and Dragon Outrage landings. Runs at NORMAL
-     * priority so the final damage reflects all modifiers while still being cancellable.
+     * Checks fall damage for the Tectonic Cap and Dragon Outrage landings in a game. Runs at
+     * NORMAL priority so the final damage reflects all modifiers while still being cancellable.
+     * Outside a game there's no fall damage to go by, so {@code MoveListener} detects those
+     * landings instead.
      */
     @EventHandler
     public void onFall(EntityDamageEvent event) {
@@ -575,6 +577,7 @@ public class DamageListener implements Listener {
             event.setCancelled(true);
             return;
         }
+        if (gameManager.getPlayerSession(player) == null) return;
 
         armorManager.getHandler(DragonSetHandler.class).onDragonOutrageLanding(event, player);
         armorManager.getHandler(TectonicCapHandler.class).onTectonicCapFall(event, player);

@@ -541,6 +541,18 @@ public class PracticeRangeManager implements Shutdownable, Listener {
     }
 
     /**
+     * There's no fall damage in the practice range. Tectonic Cap's slam and Dragon Outrage's
+     * landing go off the landing itself outside a game (see {@code MoveListener}).
+     */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onPracticeFall(EntityDamageEvent event) {
+        if (event.getCause() == EntityDamageEvent.DamageCause.FALL
+                && event.getEntity() instanceof Player player && isPracticing(player)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
      * Nobody dies in the practice range: a hit that would kill a practicing player sends them
      * back to the spawn on full health instead. MONITOR, so the Totem of Haunting and the mini
      * totem (HIGHEST) get to save them first - they cancel the hit, and this skips it.

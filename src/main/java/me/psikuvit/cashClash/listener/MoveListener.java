@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
+import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.TectonicCapHandler;
 import me.psikuvit.cashClash.manager.items.custom.BouncePadHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
@@ -12,13 +13,22 @@ import me.psikuvit.cashClash.manager.items.weapon.SoulKatanaHandler;
 import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Consolidated listener for all PlayerMoveEvent handling.
@@ -30,6 +40,7 @@ public class MoveListener implements Listener {
     private final CustomItemManager customItemManager;
     private final CustomArmorManager armorManager;
     private final WeaponItemManager weaponItemManager;
+    private final Map<UUID, Float> fallDistances = new HashMap<>();
 
     public MoveListener(GameManager gameManager, CustomItemManager customItemManager, CustomArmorManager armorManager,
                        WeaponItemManager weaponItemManager) {
@@ -47,6 +58,7 @@ public class MoveListener implements Listener {
         if (session == null) {
             weaponItemManager.getHandler(SoulKatanaHandler.class).handleSoulKatanaLand(player);
             armorManager.getHandler(TectonicCapHandler.class).handleFallWarning(player);
+            checkLandingOutsideGame(player);
             checkBouncePads(player);
             return;
         }
@@ -73,6 +85,34 @@ public class MoveListener implements Listener {
         armorManager.getHandler(TectonicCapHandler.class).handleFallWarning(player);
 
         checkBouncePads(player);
+    }
+
+    /**
+     * In a game Tectonic Cap's slam and Dragon Outrage's landing hang off the fall-damage event.
+     * Outside one there's no fall damage to hang them off - the practice range has none, and hubs
+     * often turn it off - so a landing is handed to them as the fall damage vanilla would have
+     * dealt.
+     */
+    private void checkLandingOutsideGame(Player player) {
+        UUID id = player.getUniqueId();
+        if (player.isInWater() || player.isFlying() || player.isGliding()) {
+            fallDistances.remove(id);
+            return;
+        }
+        if (!player.isOnGround()) {
+            fallDistances.put(id, player.getFallDistance());
+            return;
+        }
+
+        Float fell = fallDistances.remove(id);
+        AttributeInstance safeFall = player.getAttribute(Attribute.SAFE_FALL_DISTANCE);
+        double damage = fell == null ? 0 : fell - (safeFall != null ? safeFall.getValue() : 3.0);
+        if (damage <= 0) return;
+
+        EntityDamageEvent landing = new EntityDamageEvent(player, EntityDamageEvent.DamageCause.FALL,
+                DamageSource.builder(DamageType.FALL).build(), damage);
+        armorManager.getHandler(DragonSetHandler.class).onDragonOutrageLanding(landing, player);
+        armorManager.getHandler(TectonicCapHandler.class).onTectonicCapFall(landing, player);
     }
 
     /**
