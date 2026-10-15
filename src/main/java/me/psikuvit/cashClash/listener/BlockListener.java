@@ -254,6 +254,27 @@ public class BlockListener implements Listener {
     }
 
     /**
+     * A block placed into a placed fluid takes that cell over. Covering the source - with leaves,
+     * say - drains the whole pool the same way scooping it up does.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockPlacedInFluid(BlockPlaceEvent event) {
+        Block block = event.getBlock();
+        if (block.getType() == Material.WATER || block.getType() == Material.LAVA) return;
+
+        Location loc = block.getLocation().toBlockLocation();
+        PlacedFluid placement = fluidCells.get(loc);
+        if (placement == null) return;
+
+        fluidReplacedBlocks.remove(loc);
+        if (loc.equals(placement.origin)) {
+            drainPlacement(placement, "source covered by " + event.getPlayer().getName());
+        } else {
+            fluidCells.remove(loc);
+        }
+    }
+
+    /**
      * Drains an entire placement - source and every revealed/still-pending ring. Marking it
      * inactive and untracking the source immediately is what stops {@link #revealRing} from
      * placing any ring that hadn't gone out yet, so a placement drained before it even finished
