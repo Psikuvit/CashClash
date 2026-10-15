@@ -19,6 +19,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
@@ -132,9 +133,24 @@ public class LobbyListener implements Listener {
 
         ItemStack clicked = event.getCurrentItem();
         ItemStack cursor = event.getCursor();
+        ItemStack swapped = switch (event.getClick()) {
+            case NUMBER_KEY -> player.getInventory().getItem(event.getHotbarButton());
+            case SWAP_OFFHAND -> player.getInventory().getItemInOffHand();
+            default -> null;
+        };
 
-        // Prevent moving lobby items
-        if (lobbyManager.isLobbyItem(clicked) || lobbyManager.isLobbyItem(cursor)) {
+        // A number key or F moves the hotbar/offhand item without it ever being the clicked one
+        if (lobbyManager.isLobbyItem(clicked) || lobbyManager.isLobbyItem(cursor) || lobbyManager.isLobbyItem(swapped)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (gameManager.getPlayerSession(player) != null || layoutManager.isEditing(player)) return;
+
+        if (lobbyManager.isLobbyItem(event.getOldCursor())) {
             event.setCancelled(true);
         }
     }
