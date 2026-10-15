@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -65,8 +64,6 @@ public class QueueManager implements Shutdownable, Listener {
     private final MessagesConfig messagesConfig;
 
     private final List<UUID> queue = new ArrayList<>();
-    // Where each queued player joined from, to send them back there if they leave (null: the hub)
-    private final Map<UUID, Location> returnSpots = new HashMap<>();
     private final List<String> tipBag = new ArrayList<>();
     private BukkitTask tickTask;
     private GameSession reservedSession;
@@ -146,9 +143,10 @@ public class QueueManager implements Shutdownable, Listener {
 
         for (Player member : joining) {
             if (isQueued(member)) continue;
-            boolean practicing = CashClashPlugin.getInstance().getPracticeRangeManager().remove(member);
+            if (CashClashPlugin.getInstance().getPracticeRangeManager().remove(member)) {
+                lobbyManager.resetToLobby(member);
+            }
             queue.add(member.getUniqueId());
-            returnSpots.put(member.getUniqueId(), practicing ? null : member.getLocation());
 
             Location waitingRoom = arenaManager.getWaitingLobbySpawn();
             if (waitingRoom != null) member.teleport(waitingRoom);
@@ -163,14 +161,11 @@ public class QueueManager implements Shutdownable, Listener {
     }
 
     /**
-     * Takes a player out of the queue and back to where they joined it from. A party queues as
-     * one: its owner takes every queued member out with them, and any other member is refused
-     * until they leave the party.
-     *
-     * @param returnPlayer false when the caller sends the player somewhere itself (their party
-     *                     members still go back)
+     * Takes a player out of the queue where they stand - no teleport - and gives them their hub
+     * items back. A party queues as one: its owner takes every queued member out with them, and
+     * any other member is refused until they leave the party.
      */
-    public LeaveResult leave(Player player, boolean returnPlayer) {
+    public LeaveResult leave(Player player) {
         if (!isQueued(player)) return LeaveResult.NOT_QUEUED;
 
         Party party = partyManager.getPlayerParty(player);
@@ -182,20 +177,14 @@ public class QueueManager implements Shutdownable, Listener {
         List<Player> leaving = party != null ? groupOf(player.getUniqueId()) : List.of(player);
         for (Player member : leaving) {
             queue.remove(member.getUniqueId());
-            Location joinedFrom = returnSpots.remove(member.getUniqueId());
+            lobbyManager.giveLobbyItems(member);
             if (member.equals(player)) {
-                if (returnPlayer) lobbyManager.sendToLobby(member, joinedFrom);
                 Messages.send(member, "queue.left");
             } else {
-                lobbyManager.sendToLobby(member, joinedFrom);
                 Messages.send(member, "queue.party-left", "owner_name", player.getName());
             }
         }
         return LeaveResult.LEFT;
-    }
-
-    public LeaveResult leave(Player player) {
-        return leave(player, true);
     }
 
     /**
@@ -203,7 +192,6 @@ public class QueueManager implements Shutdownable, Listener {
      */
     private void remove(Player player) {
         queue.remove(player.getUniqueId());
-        returnSpots.remove(player.getUniqueId());
     }
 
     /**
@@ -235,7 +223,6 @@ public class QueueManager implements Shutdownable, Listener {
             Player player = Bukkit.getPlayer(uuid);
             return player == null || !player.isOnline() || gameManager.getPlayerSession(player) != null;
         });
-        returnSpots.keySet().retainAll(queue);
 
         if (queue.isEmpty()) {
             if (countdownRemaining >= 0) resetCountdown();
@@ -361,7 +348,6 @@ public class QueueManager implements Shutdownable, Listener {
         Map<Player, Integer> teams = assignTeams(groups);
         List<UUID> starting = teams.keySet().stream().map(Player::getUniqueId).toList();
         queue.removeAll(starting);
-        returnSpots.keySet().removeAll(starting);
 
         Messages.broadcast(starting, "round.game-starting");
         teams.forEach((player, teamNumber) -> {
@@ -485,6 +471,5 @@ public class QueueManager implements Shutdownable, Listener {
             reservedSession = null;
         }
         queue.clear();
-        returnSpots.clear();
     }
 }

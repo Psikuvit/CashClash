@@ -34,7 +34,7 @@ public class HubCommand extends Command {
             return true;
         }
 
-        if (CashClashPlugin.getInstance().getQueueManager().leave(player, false) == QueueManager.LeaveResult.PARTY_MEMBER) {
+        if (CashClashPlugin.getInstance().getQueueManager().leave(player) == QueueManager.LeaveResult.PARTY_MEMBER) {
             return true;
         }
 

@@ -71,25 +71,24 @@ public class LobbyManager {
      * session, or the scoreboard and tab list resolve to that game instead.
      */
     public void sendToLobby(Player player) {
-        sendToLobby(player, null);
+        Location lobbySpawn = arenaManager.getServerLobbySpawn();
+        if (lobbySpawn != null) {
+            player.teleport(LocationUtils.clone(lobbySpawn));
+        }
+        resetToLobby(player);
     }
 
     /**
-     * {@link #sendToLobby(Player)}, but at {@code destination} instead of the lobby spawn when
-     * it isn't null - e.g. back where a player joined the queue from.
+     * {@link #sendToLobby(Player)} without the teleport - the plain lobby state where the player
+     * already stands, e.g. someone going from the practice range into the queue.
      */
-    public void sendToLobby(Player player, Location destination) {
+    public void resetToLobby(Player player) {
         player.setGameMode(GameMode.SURVIVAL);
         player.getInventory().clear();
         CashClashPlayer.resetToDefaultHealth(player);
         player.setFoodLevel(20);
         player.setSaturation(20.0f);
         CashClashPlayer.clearAllEffects(player);
-
-        Location lobbySpawn = destination != null ? destination : arenaManager.getServerLobbySpawn();
-        if (lobbySpawn != null) {
-            player.teleport(LocationUtils.clone(lobbySpawn));
-        }
 
         giveLobbyItems(player);
         scoreboardManager.setScoreboard(player);
