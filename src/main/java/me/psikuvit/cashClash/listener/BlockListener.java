@@ -139,14 +139,18 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Clean up tracked blocks when a session ends.
+     * Clean up tracked blocks when a session ends. Only that session's fluids are dropped -
+     * other games (and the practice range) keep theirs.
      */
     public static void cleanupSession(UUID sessionId) {
         placedBlocks.remove(sessionId);
         waterLavaSourceCount.remove(sessionId);
         playerWaterBucketRefillCount.remove(sessionId);
-        fluidReplacedBlocks.clear();
-        fluidCells.clear();
+        fluidCells.entrySet().removeIf(entry -> {
+            if (!entry.getValue().sessionId.equals(sessionId)) return false;
+            fluidReplacedBlocks.remove(entry.getKey());
+            return true;
+        });
     }
 
     /**
