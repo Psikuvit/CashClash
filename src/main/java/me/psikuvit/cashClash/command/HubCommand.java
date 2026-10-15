@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.command;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.lobby.QueueManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -33,13 +34,16 @@ public class HubCommand extends Command {
             return true;
         }
 
+        if (CashClashPlugin.getInstance().getQueueManager().leave(player, false) == QueueManager.LeaveResult.PARTY_MEMBER) {
+            return true;
+        }
+
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session != null) {
             session.removePlayer(player);
             CashClashPlugin.getInstance().getGameManager().removePlayerFromSession(player);
         }
 
-        CashClashPlugin.getInstance().getQueueManager().remove(player);
         CashClashPlugin.getInstance().getPracticeRangeManager().remove(player);
         CashClashPlugin.getInstance().getLobbyManager().sendToLobby(player);
         Messages.send(player, "lobby.teleported-to-hub");

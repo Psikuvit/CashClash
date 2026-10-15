@@ -866,6 +866,8 @@ messages:
     joined-with-party: "<green>{owner_name} queued your party!</green>"
     already-queued: "<red>You're already in the queue.</red>"
     left: "<yellow>You left the queue.</yellow>"
+    party-left: "<yellow>{owner_name} took your party out of the queue.</yellow>"
+    leave-party-first: "<red>Leave your party first!</red>"
     not-queued: "<red>You're not in the queue.</red>"
     waiting-action-bar: "<yellow>{current}/{max} players are waiting...</yellow>"
     tip: "<gold><bold>Tip:</bold></gold> <yellow>{tip}</yellow>"

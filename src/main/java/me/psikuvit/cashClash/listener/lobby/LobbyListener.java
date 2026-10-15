@@ -89,9 +89,7 @@ public class LobbyListener implements Listener {
             case JOIN_QUEUE -> queueManager.join(player);
             case PRACTICE_RANGE -> practiceRangeManager.enter(player);
             case LAYOUT_CONFIGURATOR -> handleLayoutConfiguratorItem(player);
-            case LEAVE_QUEUE -> {
-                if (queueManager.leave(player)) Messages.send(player, "queue.left");
-            }
+            case LEAVE_QUEUE -> queueManager.leave(player);
             case LEAVE_PRACTICE -> {
                 if (practiceRangeManager.leave(player)) Messages.send(player, "practice.left");
             }

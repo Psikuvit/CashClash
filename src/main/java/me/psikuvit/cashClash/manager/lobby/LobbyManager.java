@@ -71,6 +71,14 @@ public class LobbyManager {
      * session, or the scoreboard and tab list resolve to that game instead.
      */
     public void sendToLobby(Player player) {
+        sendToLobby(player, null);
+    }
+
+    /**
+     * {@link #sendToLobby(Player)}, but at {@code destination} instead of the lobby spawn when
+     * it isn't null - e.g. back where a player joined the queue from.
+     */
+    public void sendToLobby(Player player, Location destination) {
         player.setGameMode(GameMode.SURVIVAL);
         player.getInventory().clear();
         CashClashPlayer.resetToDefaultHealth(player);
@@ -78,7 +86,7 @@ public class LobbyManager {
         player.setSaturation(20.0f);
         CashClashPlayer.clearAllEffects(player);
 
-        Location lobbySpawn = arenaManager.getServerLobbySpawn();
+        Location lobbySpawn = destination != null ? destination : arenaManager.getServerLobbySpawn();
         if (lobbySpawn != null) {
             player.teleport(LocationUtils.clone(lobbySpawn));
         }

@@ -140,7 +140,7 @@ public class PracticeRangeManager implements Shutdownable, Listener {
             return;
         }
 
-        queueManager.remove(player);
+        if (queueManager.leave(player, false) == QueueManager.LeaveResult.PARTY_MEMBER) return;
         boolean firstPlayer = practicing.isEmpty();
 
         CashClashPlayer wallet = new CashClashPlayer(player);
