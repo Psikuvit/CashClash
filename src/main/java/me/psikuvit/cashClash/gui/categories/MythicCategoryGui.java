@@ -13,6 +13,7 @@ import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.ItemUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -103,17 +104,14 @@ public final class MythicCategoryGui {
 
         ItemStack mythicItem = CashClashPlugin.getInstance().getMythicItemManager().createMythicItem(mythic, player);
         if (mythic == MythicItem.WARDEN_GLOVES) {
-            // Warden Gloves land in the off-hand, so nothing else takes the sword they were
-            // discounted by - it has to be removed here.
+            // The gloves take the slot of the sword they were discounted by, and never a sword they weren't
             WeaponItem tradedIn = DiscountService.bestOwnedWeapon(player, WeaponItem.IRON_SWORD, WeaponItem.DIAMOND_SWORD);
-            if (tradedIn != null) {
-                ItemUtils.removeItemFromPlayer(player, tradedIn.name(), 1);
+            int tradedInSlot = tradedIn != null ? findWeaponSlot(player, tradedIn) : -1;
+            if (tradedInSlot >= 0) {
+                player.getInventory().setItem(tradedInSlot, mythicItem);
+            } else {
+                ItemUtils.returnItemToInventoryOrDrop(player, mythicItem);
             }
-            ItemStack offHand = player.getInventory().getItemInOffHand();
-            if (offHand.getType() != Material.AIR) {
-                ItemUtils.returnItemToInventoryOrDrop(player, offHand);
-            }
-            player.getInventory().setItemInOffHand(mythicItem);
         } else {
             ItemUtils.replaceBestMatchingTool(player, mythicItem);
         }
@@ -135,6 +133,16 @@ public final class MythicCategoryGui {
         } else {
             ShopGUI.openMain(player);
         }
+    }
+
+    /**
+     * The inventory slot holding this shop weapon, or -1 if the player has none.
+     */
+    private static int findWeaponSlot(Player player, WeaponItem weapon) {
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
+            if (PDCDetection.getWeapon(player.getInventory().getItem(slot)) == weapon) return slot;
+        }
+        return -1;
     }
 }
 
