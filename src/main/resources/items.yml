@@ -577,7 +577,20 @@ lobby-items:
       - "<yellow>Right-click to configure!</yellow>"
     slot: 8
 
+  # Join Queue - the lodestone compass that puts the player in the queue, same as the arena villager
+  join-queue:
+    material: COMPASS
+    name: "<green><bold>Join the Queue</bold></green>"
+    lore:
+      - ""
+      - "<gray>Queue for a game on a</gray>"
+      - "<gray>random map.</gray>"
+      - ""
+      - "<yellow>Right-click to queue!</yellow>"
+    slot: 4
+
   # Practice Range - sends the player to the practice range
+  # (a lobby item whose slot is taken by another moves to the first free slot)
   practice-range:
     material: TARGET
     name: "<aqua><bold>Practice Range</bold></aqua>"
@@ -587,7 +600,7 @@ lobby-items:
       - "<gray>practice dummies, for free.</gray>"
       - ""
       - "<yellow>Right-click to go!</yellow>"
-    slot: 4
+    slot: 2
 
   # Leave Practice - takes the player from the practice range back to the hub
   leave-practice:

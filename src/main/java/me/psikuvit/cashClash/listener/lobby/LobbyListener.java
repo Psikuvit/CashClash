@@ -28,7 +28,7 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Listener for handling lobby item interactions.
- * Handles the Stats, Practice Range, Layout Configurator, Leave Queue and Back to Hub items.
+ * Handles the Stats, Join Queue, Practice Range, Layout Configurator, Leave Queue and Back to Hub items.
  */
 public class LobbyListener implements Listener {
 
@@ -86,6 +86,7 @@ public class LobbyListener implements Listener {
 
         switch (type) {
             case STATS -> handleStatsItem(player);
+            case JOIN_QUEUE -> queueManager.join(player);
             case PRACTICE_RANGE -> practiceRangeManager.enter(player);
             case LAYOUT_CONFIGURATOR -> handleLayoutConfiguratorItem(player);
             case LEAVE_QUEUE -> {

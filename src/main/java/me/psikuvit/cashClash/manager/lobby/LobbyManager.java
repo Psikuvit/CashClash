@@ -14,6 +14,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.CompassMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
@@ -25,6 +26,7 @@ public class LobbyManager {
     // Lobby item types
     public enum LobbyItemType {
         STATS("stats"),
+        JOIN_QUEUE("join_queue"),
         PRACTICE_RANGE("practice_range"),
         LAYOUT_CONFIGURATOR("layout_configurator"),
         LEAVE_QUEUE("leave_queue"),
@@ -99,6 +101,8 @@ public class LobbyManager {
         // Stats item (slot from config, default 0)
         setLobbyItemSafely(player, config.getLobbyStatsSlot(), createStatsItem(), "stats");
 
+        setLobbyItemSafely(player, config.getLobbyItemSlot("join-queue"), createJoinQueueItem(player), "join-queue");
+
         setLobbyItemSafely(player, config.getLobbyItemSlot("practice-range"),
                 createConfiguredItem("practice-range", Material.TARGET, LobbyItemType.PRACTICE_RANGE), "practice-range");
 
@@ -136,6 +140,13 @@ public class LobbyManager {
             Messages.debug("SYSTEM", "Lobby item '" + itemName + "' has an invalid configured slot ("
                     + slot + "), skipping - valid range is 0-" + (size - 1));
             return;
+        }
+        if (isLobbyItem(player.getInventory().getItem(slot))) {
+            int free = player.getInventory().firstEmpty();
+            Messages.debug("SYSTEM", "Lobby item '" + itemName + "' shares slot " + slot
+                    + " with another lobby item, moved to slot " + free);
+            if (free < 0) return;
+            slot = free;
         }
         player.getInventory().setItem(slot, item);
     }
@@ -218,6 +229,20 @@ public class LobbyManager {
         tags.set(Keys.LOBBY_ITEM, PersistentDataType.STRING, type.getId());
 
         tags.apply();
+        return item;
+    }
+
+    /**
+     * The hotbar compass that joins the queue, drawn as a lodestone compass like the arena
+     * villager's join button.
+     */
+    private ItemStack createJoinQueueItem(Player player) {
+        ItemStack item = createConfiguredItem("join-queue", Material.COMPASS, LobbyItemType.JOIN_QUEUE);
+        if (item.getItemMeta() instanceof CompassMeta compass) {
+            compass.setLodestone(player.getLocation());
+            compass.setLodestoneTracked(false);
+            item.setItemMeta(compass);
+        }
         return item;
     }
 
