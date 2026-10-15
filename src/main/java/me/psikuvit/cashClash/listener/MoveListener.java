@@ -45,6 +45,8 @@ public class MoveListener implements Listener {
 
         GameSession session = gameManager.getPlayerSession(player);
         if (session == null) {
+            weaponItemManager.getHandler(SoulKatanaHandler.class).handleSoulKatanaLand(player);
+            armorManager.getHandler(TectonicCapHandler.class).handleFallWarning(player);
             checkBouncePads(player);
             return;
         }
