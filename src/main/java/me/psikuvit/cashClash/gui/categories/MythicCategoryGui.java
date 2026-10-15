@@ -42,9 +42,8 @@ public final class MythicCategoryGui {
         GameSession sess = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (sess == null) {
             PracticeRangeManager practiceRange = CashClashPlugin.getInstance().getPracticeRangeManager();
-            MythicItem owned = practiceRange.getPracticeMythic(player);
-            if (owned != null) {
-                Messages.send(player, "shop.mythic-already-owned", "mythic_name", owned.getDisplayName());
+            if (practiceRange.getPracticeMythics(player).contains(mythic)) {
+                Messages.send(player, "shop.practice-mythic-owned", "mythic_name", mythic.getDisplayName());
                 SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             } else if (practiceRange.isPracticing(player)) {
                 buyMythic(player, mythic, parentGui, null);

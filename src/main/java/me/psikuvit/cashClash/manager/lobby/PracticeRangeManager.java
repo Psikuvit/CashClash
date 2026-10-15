@@ -57,9 +57,11 @@ import org.bukkit.scheduler.BukkitTask;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -147,16 +149,17 @@ public class PracticeRangeManager implements Shutdownable, Listener {
     }
 
     /**
-     * The mythic a practicing player has bought since entering - the range keeps a game's
-     * one-mythic limit. Null if none, or if they're not practicing.
+     * The mythics a practicing player has bought since entering - each can be bought once.
+     * Empty if none, or if they're not practicing.
      */
-    public MythicItem getPracticeMythic(Player player) {
+    public Set<MythicItem> getPracticeMythics(Player player) {
+        Set<MythicItem> owned = EnumSet.noneOf(MythicItem.class);
         CashClashPlayer wallet = practicing.get(player.getUniqueId());
-        if (wallet == null) return null;
+        if (wallet == null) return owned;
         for (PurchaseRecord record : wallet.getPurchaseHistory()) {
-            if (record.item() instanceof MythicItem mythic) return mythic;
+            if (record.item() instanceof MythicItem mythic) owned.add(mythic);
         }
-        return null;
+        return owned;
     }
 
     // ==================== ENTERING / LEAVING ====================

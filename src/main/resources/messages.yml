@@ -231,6 +231,7 @@ messages:
     mythic-unavailable: "<red>This mythic is not available in this game!</red>"
     mythic-already-purchased: "<red>This mythic has already been purchased by {owner_name}!</red>"
     mythic-already-owned: "<red>You already own a mythic ({mythic_name})!</red>"
+    practice-mythic-owned: "<red>You already have {mythic_name}.</red>"
     mythic-acquired-title: "<dark_purple><bold>✦ MYTHIC ACQUIRED ✦</bold></dark_purple>"
     mythic-acquired-name: "<light_purple>{mythic_name}</light_purple>"
     mythic-acquired-cost: "<dark_gray>-${price}</dark_gray>"
