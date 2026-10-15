@@ -698,6 +698,10 @@ public class ConfigManager {
         return config.getInt("practice-range.mob-respawn-seconds", 5);
     }
 
+    public double getPracticeBossTargetRange() {
+        return config.getDouble("practice-range.boss-target-range", 24.0);
+    }
+
     // ==================== HUB SETTINGS ====================
 
     public String getDiscordLink() {

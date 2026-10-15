@@ -639,7 +639,8 @@ queue:
 practice-range:
   # Coins a player has in the practice range - topped back up every second
   coins: 10000000
-  # Skeletons stand still, with this many times a skeleton's normal health
+  # Skeletons stay on their spot and shoot at practicing players, with this many times a
+  # skeleton's normal health
   skeleton-health-multiplier: 2.0
   # Zombie walking speed (1.0 = normal)
   zombie-speed: 1.0
@@ -647,6 +648,8 @@ practice-range:
   zombie-pause-seconds: 3
   # How long after dying a practice mob comes back (seconds)
   mob-respawn-seconds: 5
+  # How far the boss iron golem looks for a practicing player to attack (blocks)
+  boss-target-range: 24
 
 # ============================================
 # HUB SETTINGS

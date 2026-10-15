@@ -360,11 +360,20 @@ public final class PDCDetection {
     }
 
     /**
-     * Check if an entity is one of the practice range's target mobs.
+     * Check if an entity is one of the practice range's target mobs (its enemies: skeletons,
+     * zombie dummies and the boss).
      */
     public static boolean isPracticeMob(Entity entity) {
         if (entity == null) return false;
         return entity.getPersistentDataContainer().has(Keys.PRACTICE_MOB_KEY, PersistentDataType.BYTE);
+    }
+
+    /**
+     * Check if an entity is one of the practice range's piglin teammates.
+     */
+    public static boolean isPracticeTeammate(Entity entity) {
+        if (entity == null) return false;
+        return entity.getPersistentDataContainer().has(Keys.PRACTICE_TEAMMATE_KEY, PersistentDataType.BYTE);
     }
 
     /**

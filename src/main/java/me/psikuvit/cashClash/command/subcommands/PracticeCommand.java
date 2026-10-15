@@ -6,6 +6,8 @@ import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Location;
+import org.bukkit.Tag;
+import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -16,12 +18,14 @@ import java.util.Locale;
 
 /**
  * /cc practice - enters the practice range. Admins set it up with
- * /cc practice setspawn | setvillager | addskeleton | zombiestart | zombieend | clear,
- * each using where they're standing.
+ * /cc practice setspawn | setvillager | addskeleton | addpiglin | zombiestart | zombieend |
+ * setboss | clear, each using where they're standing, and setbossbutton, using the button
+ * they're looking at.
  */
 public class PracticeCommand extends AbstractArgCommand {
 
-    private static final List<String> SETUP = List.of("setspawn", "setvillager", "addskeleton", "zombiestart", "zombieend", "clear");
+    private static final List<String> SETUP = List.of("setspawn", "setvillager", "addskeleton", "addpiglin",
+            "zombiestart", "zombieend", "setboss", "setbossbutton", "clear");
 
     public PracticeCommand() {
         super("practice", Collections.emptyList(), null);
@@ -57,6 +61,21 @@ public class PracticeCommand extends AbstractArgCommand {
             }
             case "addskeleton" -> Messages.send(player, "practice.skeleton-added",
                     "count", String.valueOf(practice.addSkeleton(here)));
+            case "addpiglin" -> Messages.send(player, "practice.piglin-added",
+                    "count", String.valueOf(practice.addPiglin(here)));
+            case "setboss" -> {
+                practice.setBossSpawn(here);
+                Messages.send(player, "practice.boss-spawn-set");
+            }
+            case "setbossbutton" -> {
+                Block button = player.getTargetBlockExact(5);
+                if (button == null || !Tag.BUTTONS.isTagged(button.getType())) {
+                    Messages.send(player, "practice.boss-button-not-button");
+                } else {
+                    practice.setBossButton(button.getLocation());
+                    Messages.send(player, "practice.boss-button-set");
+                }
+            }
             case "zombiestart" -> {
                 practice.setPendingZombieStart(player, here);
                 Messages.send(player, "practice.zombie-start-set");

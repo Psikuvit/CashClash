@@ -67,6 +67,11 @@ public class Keys {
     public static final NamespacedKey PRACTICE_MOB_KEY;
 
     /**
+     * Key for the practice range's piglins, which item abilities treat as the user's teammates.
+     */
+    public static final NamespacedKey PRACTICE_TEAMMATE_KEY;
+
+    /**
      * Key for the practice range's shop villager.
      */
     public static final NamespacedKey PRACTICE_SHOP_KEY;
@@ -200,6 +205,7 @@ public class Keys {
         ARENA_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "arena_npc");
         COMING_SOON_NPC_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "coming_soon_npc");
         PRACTICE_MOB_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "practice_mob");
+        PRACTICE_TEAMMATE_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "practice_teammate");
         PRACTICE_SHOP_KEY = new NamespacedKey(CashClashPlugin.getInstance(), "practice_shop");
         BUFF_SELECTION_POTION = new NamespacedKey(CashClashPlugin.getInstance(), "buff_selection_potion");
         FULLY_CHARGED_ARROW = new NamespacedKey(CashClashPlugin.getInstance(), "fully_charged_arrow");
