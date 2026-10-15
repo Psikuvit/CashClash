@@ -881,7 +881,7 @@ messages:
   # PRACTICE RANGE MESSAGES
   # ============================================
   practice:
-    title: "<aqua><bold>You are in the practice range!</bold></aqua>"
+    range-title: "<aqua><bold>Practice Range</bold></aqua>"
     subtitle: "<yellow>Test out all the items!</yellow>"
     villager-name: "<aqua><bold>Practice Shop</bold></aqua>"
     # Text above each practice mob's head

@@ -196,7 +196,7 @@ public class PracticeRangeManager implements Shutdownable, Listener {
         lobbyManager.givePracticeItems(player);
 
         SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-        Messages.sendTitle(player, "practice.title", "practice.subtitle");
+        Messages.sendTitle(player, "practice.range-title", "practice.subtitle");
 
         if (firstPlayer) spawnRange();
     }
