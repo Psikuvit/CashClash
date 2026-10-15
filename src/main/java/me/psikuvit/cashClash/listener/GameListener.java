@@ -45,6 +45,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
@@ -645,9 +646,8 @@ public class GameListener implements Listener {
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player p = event.getPlayer();
         GameSession session = gameManager.getPlayerSession(p);
-        if (session == null) return;
 
-        if (session.getState() == GameState.SHOPPING || session.isActionsRestricted()) {
+        if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {
             boolean hasSneakAbility = armorManager.getHandler(BunnyShoesHandler.class).hasBunnyShoes(p)
                     || armorManager.getHandler(DragonSetHandler.class).hasDragonSet(p);
             if (event.isSneaking() && hasSneakAbility) {
@@ -836,17 +836,8 @@ public class GameListener implements Listener {
      * @return true if the projectile was waved through and the rest of the handler must skip
      */
     private boolean passThroughTeammate(ProjectileHitEvent event) {
-        if (!(event.getHitEntity() instanceof Player hitPlayer)) return false;
         if (!(event.getEntity().getShooter() instanceof Player shooter)) return false;
-        if (shooter.equals(hitPlayer)) return false;
-
-        GameSession session = gameManager.getPlayerSession(shooter);
-        if (session == null) return false;
-
-        Team shooterTeam = session.getPlayerTeam(shooter);
-        Team hitTeam = session.getPlayerTeam(hitPlayer);
-        if (shooterTeam == null || hitTeam == null) return false;
-        if (shooterTeam.getTeamNumber() != hitTeam.getTeamNumber()) return false;
+        if (!AbilityTargets.isAlly(shooter, event.getHitEntity())) return false;
 
         event.setCancelled(true);
         return true;
@@ -899,8 +890,8 @@ public class GameListener implements Listener {
     private void handleBloodwrenchArrow(Player shooter, AbstractArrow arrow, ProjectileHitEvent event) {
         if (PDCDetection.getArrowBloodwrenchMode(arrow) == null) return;
 
-        if (event.getHitEntity() instanceof Player hitPlayer && !hitPlayer.equals(shooter)) {
-            mythicManager.getHandler(BloodwrenchHandler.class).onHitLanded(shooter, hitPlayer.getLocation());
+        if (AbilityTargets.isEnemy(shooter, event.getHitEntity())) {
+            mythicManager.getHandler(BloodwrenchHandler.class).onHitLanded(shooter, event.getHitEntity().getLocation());
         }
 
         // An arrow can fire ProjectileHitEvent twice (e.g. graze an entity, then embed in a

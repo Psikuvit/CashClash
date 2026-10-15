@@ -1,19 +1,16 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.potion.PotionEffectType;
@@ -125,17 +122,7 @@ public class TectonicCapHandler extends ArmorSetHandler {
 
         SoundUtils.playAt(impact, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.9f);
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
-
-        for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(player)) continue;
-            if (playerTeam != null) {
-                Team targetTeam = session.getPlayerTeam(target);
-                if (targetTeam != null && targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) continue;
-            }
-
+        for (LivingEntity target : AbilityTargets.enemiesNear(player, player.getLocation(), radius, radius, radius)) {
             target.damage(cfg.getTectonicCapDamage() + fallDamage, player);
 
             Vector knockback = target.getLocation()
@@ -148,7 +135,7 @@ public class TectonicCapHandler extends ArmorSetHandler {
             target.setVelocity(knockback);
             if (target.getLocation().distance(impact) <= cfg.getTectonicCapSlowRadius()) {
                 int slowDurationTicks = cfg.getTectonicCapSlowDurationSeconds() * 20;
-                CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, slowDurationTicks, cfg.getTectonicCapSlowAmplifier(), false, true, true);
+                AbilityTargets.applyEffect(target, PotionEffectType.SLOWNESS, slowDurationTicks, cfg.getTectonicCapSlowAmplifier(), false, true);
             }
         }
 

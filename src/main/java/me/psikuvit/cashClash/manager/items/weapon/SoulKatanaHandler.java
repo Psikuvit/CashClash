@@ -1,9 +1,5 @@
 package me.psikuvit.cashClash.manager.items.weapon;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.items.armor.DeathmaulerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.DragonSetHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -14,10 +10,12 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.HealingMarkUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -95,19 +93,12 @@ public class SoulKatanaHandler extends WeaponItemHandler {
         }
         if (!soulKatanaLeftGround.getOrDefault(id, false)) return;
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         double reach = cfg.getSoulKatanaStrikeRadius();
         int debuffDuration = cfg.getSoulKatanaHealingReductionDurationSeconds();
         double healingMultiplier = 1.0 - cfg.getSoulKatanaHealingReductionPercent() / 100.0;
 
         Vector playerDirection = player.getLocation().getDirection().normalize();
-        for (Player target : player.getWorld().getPlayers()) {
-            if (target.equals(player)) continue;
-            if (session != null) {
-                Team attackerTeam = session.getPlayerTeam(player);
-                Team targetTeam = session.getPlayerTeam(target);
-                if (attackerTeam != null && attackerTeam.equals(targetTeam)) continue;
-            }
+        for (LivingEntity target : AbilityTargets.enemiesNear(player, player.getLocation(), reach, reach, reach)) {
             Vector delta = target.getLocation().toVector().subtract(player.getLocation().toVector());
             if (delta.lengthSquared() <= 0.0001) continue;
             Vector directionToTarget = delta.normalize();
@@ -115,12 +106,14 @@ public class SoulKatanaHandler extends WeaponItemHandler {
             if (player.getLocation().distance(target.getLocation()) > reach || dot <= 0.3) continue;
 
             dealPhantomSliceDamage(target, player);
-            if (session != null) armorManager.getHandler(DeathmaulerSetHandler.class).tryDeathmaulerSoulBurst(player, target, session);
+            armorManager.getHandler(DeathmaulerSetHandler.class).tryDeathmaulerSoulBurst(player, target);
             armorManager.getHandler(DragonSetHandler.class).handleDragonHit(player);
             SoundUtils.playAt(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.0f);
 
-            CashClashPlayer.reduceHealing(target, healingMultiplier, debuffDuration);
-            startSoulKatanaHealingMark(target);
+            if (target instanceof Player victim) {
+                CashClashPlayer.reduceHealing(victim, healingMultiplier, debuffDuration);
+                startSoulKatanaHealingMark(victim);
+            }
         }
 
         // Forward arc burst marking the end of the dash
@@ -141,7 +134,7 @@ public class SoulKatanaHandler extends WeaponItemHandler {
      * Direct damage call still fires a real EntityDamageByEntityEvent for kill attribution;
      * the transient flag lets DamageListener zero this hit's armor/effect modifiers.
      */
-    private void dealPhantomSliceDamage(Player target, Player attacker) {
+    private void dealPhantomSliceDamage(LivingEntity target, Player attacker) {
         double damage = cfg.getSoulKatanaStrikeDamage();
         phantomSliceDamageActive.add(attacker.getUniqueId());
         try {

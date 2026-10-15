@@ -1,9 +1,5 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -11,6 +7,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -21,6 +18,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Snowball;
 import org.bukkit.inventory.ItemStack;
@@ -153,18 +151,9 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                     recentlyHit.clear();
 
                     for (Entity entity : attacker.getNearbyEntities(radius, radius, radius)) {
-                        if (!(entity instanceof Player victim)) continue;
-                        if (victim.equals(attacker)) continue;
+                        if (!AbilityTargets.isEnemy(attacker, entity)) continue;
+                        LivingEntity victim = (LivingEntity) entity;
                         if (recentlyHit.contains(victim.getUniqueId())) continue;
-
-                        // Check if in same game and different team
-                        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(attacker);
-                        if (session == null) continue;
-
-                        Team attackerTeam = session.getPlayerTeam(attacker);
-                        Team victimTeam = session.getPlayerTeam(victim);
-                        if (attackerTeam == null || victimTeam == null) continue;
-                        if (attackerTeam.equals(victimTeam)) continue;
 
                         // Deal damage
                         victim.damage(damage, attacker);
@@ -293,14 +282,11 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
         double releaseDistance = cfg.getCarlsThrowReleaseDistance();
         double damage = cfg.getCarlsThrowDamage();
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
-
         BukkitRunnable throwRunnable = new BukkitRunnable() {
             final Vector direction = startLoc.getDirection().normalize();
             double traveled = 0;
             boolean returning = false;
-            final List<Player> caught = new ArrayList<>();
+            final List<LivingEntity> caught = new ArrayList<>();
 
             @Override
             public void run() {
@@ -318,14 +304,11 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                     moveTo(nextLoc, direction);
 
                     for (Entity entity : carrier.getNearbyEntities(catchRadius, catchRadius, catchRadius)) {
-                        if (!(entity instanceof Player target)) continue;
-                        if (target.equals(player) || caught.contains(target)) continue;
-                        if (session != null && playerTeam != null) {
-                            Team targetTeam = session.getPlayerTeam(target);
-                            if (targetTeam != null && targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) continue;
-                        }
+                        if (!AbilityTargets.isEnemy(player, entity)) continue;
+                        LivingEntity target = (LivingEntity) entity;
+                        if (caught.contains(target)) continue;
                         caught.add(target);
-                        SoundUtils.play(target, Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
+                        AbilityTargets.playSound(target, Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
                         Messages.debug(player, "CARLS_BATTLEAXE: Throw caught " + target.getName());
                     }
 
@@ -347,8 +330,8 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                 // Drag caught players along every tick once caught, centered on the axe rather
                 // than standing on top of it
                 Location dragLoc = carrier.getLocation();
-                for (Player c : caught) {
-                    if (c.isOnline()) c.teleport(dragLoc);
+                for (LivingEntity c : caught) {
+                    if (AbilityTargets.isPresent(c)) c.teleport(dragLoc);
                 }
 
                 ParticleUtils.spawnDust(carrier.getLocation(), Color.fromRGB(150, 150, 160), 1.0f, 4, 0.15);
@@ -376,18 +359,18 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                 if (display.isValid()) display.remove();
 
                 if (natural && !caught.isEmpty()) {
-                    for (Player c : caught) {
-                        if (!c.isOnline()) continue;
+                    for (LivingEntity c : caught) {
+                        if (!AbilityTargets.isPresent(c)) continue;
                         c.setNoDamageTicks(0);
                         c.setMaximumNoDamageTicks(0);
                         Vector preDamageVelocity = c.getVelocity();
                         c.damage(damage, player);
                         c.setVelocity(preDamageVelocity);
                         SchedulerUtils.runTaskLater(() -> {
-                            if (c.isOnline()) c.setMaximumNoDamageTicks(20);
+                            if (AbilityTargets.isPresent(c)) c.setMaximumNoDamageTicks(20);
                         }, 1L);
                         ParticleUtils.damageIndicator(c.getLocation().add(0, 1, 0), 20, 0.5);
-                        SoundUtils.play(c, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
+                        AbilityTargets.playSound(c, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
                     }
                     Messages.send(player, "mythic.carls-battleaxe-throw-hit", "{enemy_count}", String.valueOf(caught.size()));
                 }
@@ -453,7 +436,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
      * Critical hits (while falling) launch enemies into the air.
      * 10 second cooldown.
      */
-    public void handleCarlsCriticalHit(Player attacker, Player victim) {
+    public void handleCarlsCriticalHit(Player attacker, LivingEntity victim) {
         // Launch ability removed - now just deals normal critical damage
         Messages.debug(attacker, "CARLS_BATTLEAXE: Critical hit detected (launch disabled)");
 

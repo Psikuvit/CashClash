@@ -1,8 +1,5 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -11,6 +8,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.util.game.TimerDisplayUtils;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -18,10 +16,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
-import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
@@ -106,16 +103,8 @@ public class WardenGlovesHandler extends MythicItemHandler {
 
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.WARDEN_SHOCKWAVE, cfg.getWardenShockwaveCooldown());
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (session == null) {
-            Messages.debug(player, "WARDEN_GLOVES: No session");
-            return;
-        }
-
-        Team playerTeam = session.getPlayerTeam(player);
         Location loc = player.getLocation();
         Vector direction = loc.getDirection().setY(0).normalize();
-        World world = player.getWorld();
 
         // Sonic boom visual effect
         ParticleUtils.sonicBoom(loc.clone().add(direction.clone().multiply(2)).add(0, 1, 0));
@@ -125,14 +114,7 @@ public class WardenGlovesHandler extends MythicItemHandler {
         int hitCount = 0;
 
         // Damage and knockback enemies in cone
-        for (Entity entity : world.getNearbyEntities(loc, range, 4, range)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(player)) continue;
-
-            Team targetTeam = session.getPlayerTeam(target);
-            if (targetTeam != null && playerTeam != null &&
-                targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) continue;
-
+        for (LivingEntity target : AbilityTargets.enemiesNear(player, loc, range, 4, range)) {
             // Check if target is in front of player (cone check)
             Vector toTarget = target.getLocation().toVector().subtract(player.getLocation().toVector()).normalize();
             if (direction.dot(toTarget) < 0.3) continue; // Not in cone (about 70 degree cone)

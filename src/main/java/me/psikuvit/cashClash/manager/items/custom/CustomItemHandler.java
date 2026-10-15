@@ -7,13 +7,13 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 /**
@@ -80,7 +80,7 @@ public abstract class CustomItemHandler {
      * player, so nobody can grief the hub with it.
      */
     protected static boolean inGame(Player player) {
-        return player != null && CashClashPlugin.getInstance().getGameManager().getPlayerSession(player) != null;
+        return AbilityTargets.inGame(player);
     }
 
     /**
@@ -106,10 +106,6 @@ public abstract class CustomItemHandler {
      */
     protected static void applyEffect(LivingEntity target, PotionEffectType type, int durationTicks, int amplifier,
                                       boolean ambient, boolean particles) {
-        if (target instanceof Player player) {
-            CashClashPlayer.applyEffect(player, type, durationTicks, amplifier, ambient, particles);
-        } else {
-            target.addPotionEffect(new PotionEffect(type, durationTicks, amplifier, ambient, particles));
-        }
+        AbilityTargets.applyEffect(target, type, durationTicks, amplifier, ambient, particles);
     }
 }

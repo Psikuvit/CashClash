@@ -1,7 +1,6 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -9,9 +8,10 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Location;
 import org.bukkit.Sound;
-import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -80,7 +80,7 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
         }, delaySeconds * 20L);
     }
 
-    public void tryDeathmaulerSoulBurst(Player attacker, Player victim, GameSession session) {
+    public void tryDeathmaulerSoulBurst(Player attacker, LivingEntity victim) {
         if (!hasDeathmaulerSet(attacker) || victim == null) return;
         UUID id = attacker.getUniqueId();
 
@@ -120,20 +120,16 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
 
                 ParticleUtils.soulBurstRing(center, radius);
 
-                for (Entity entity : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
-                    if (!(entity instanceof Player target)) continue;
-                    if (target.equals(attacker)) continue;
+                for (LivingEntity target : AbilityTargets.enemiesNear(attacker, center, radius, radius, radius)) {
                     if (hitPlayers.contains(target.getUniqueId())) continue;
-
-                    if (session != null) {
-                        Team aTeam = session.getPlayerTeam(attacker);
-                        Team tTeam = session.getPlayerTeam(target);
-                        if (tTeam != null && aTeam == tTeam) continue;
-                    }
 
                     hitPlayers.add(target.getUniqueId());
 
-                    CashClashPlayer.setHealth(target, target.getHealth() - 3.0);
+                    if (target instanceof Player victimPlayer) {
+                        CashClashPlayer.setHealth(victimPlayer, victimPlayer.getHealth() - 3.0);
+                    } else {
+                        target.setHealth(Math.max(0.0, target.getHealth() - 3.0));
+                    }
                     CashClashPlayer.heal(attacker, 3.0);
 
                     ParticleUtils.hitFeedback(target.getLocation(), 10, 0.2);

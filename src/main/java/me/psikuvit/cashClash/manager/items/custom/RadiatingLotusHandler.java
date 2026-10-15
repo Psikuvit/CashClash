@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -20,6 +21,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -122,6 +124,9 @@ public class RadiatingLotusHandler extends CustomItemHandler {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) {
             CashClashPlayer.heal(player, healAmount);
+            for (LivingEntity teammate : AbilityTargets.alliesNear(player, loc, healRadius, healRadius, healRadius)) {
+                teammate.heal(Math.min(healAmount, AbilityTargets.getMaxHealth(teammate) - teammate.getHealth()));
+            }
             return;
         }
         Team team = session.getPlayerTeam(player);

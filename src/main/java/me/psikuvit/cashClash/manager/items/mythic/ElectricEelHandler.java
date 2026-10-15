@@ -1,14 +1,12 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Bukkit;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
@@ -66,25 +64,13 @@ public class ElectricEelHandler extends MythicItemHandler {
         }
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.ELECTRIC_EEL_CHAIN, cfg.getEelChainCooldown());
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(attacker);
-        if (session == null) {
-            Messages.debug(attacker, "ELECTRIC_EEL: No session");
-            return;
-        }
-
-        Team attackerTeam = session.getPlayerTeam(attacker);
         Location victimLoc = victim.getLocation();
         int radius = cfg.getEelChainRadius();
         int chainCount = 0;
 
         // Chain damage to nearby enemies
-        for (Entity entity : victim.getWorld().getNearbyEntities(victimLoc, radius, radius, radius)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(attacker) || target.equals(victim)) continue;
-
-            Team targetTeam = session.getPlayerTeam(target);
-            if (targetTeam != null && attackerTeam != null &&
-                targetTeam.getTeamNumber() == attackerTeam.getTeamNumber()) continue;
+        for (LivingEntity target : AbilityTargets.enemiesNear(attacker, victimLoc, radius, radius, radius)) {
+            if (target.equals(victim)) continue;
 
             target.damage(cfg.getEelChainDamage(), attacker);
             chainCount++;
@@ -144,8 +130,6 @@ public class ElectricEelHandler extends MythicItemHandler {
         Messages.send(player, "mythic.electric-eel-zap");
 
         // Scan for entities caught along the dash path while the push carries the player.
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
         double dashDamage = cfg.getEelDashDamage();
         double hitRadius = cfg.getEelDashHitRadius();
         Set<UUID> alreadyHit = ConcurrentHashMap.newKeySet();
@@ -161,19 +145,14 @@ public class ElectricEelHandler extends MythicItemHandler {
                 }
 
                 for (Entity entity : player.getNearbyEntities(hitRadius, hitRadius, hitRadius)) {
-                    if (!(entity instanceof Player target)) continue;
-                    if (target.equals(player) || alreadyHit.contains(target.getUniqueId())) continue;
-
-                    if (session != null) {
-                        Team targetTeam = session.getPlayerTeam(target);
-                        if (targetTeam != null && playerTeam != null &&
-                            targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) continue;
-                    }
+                    if (!AbilityTargets.isEnemy(player, entity)) continue;
+                    LivingEntity target = (LivingEntity) entity;
+                    if (alreadyHit.contains(target.getUniqueId())) continue;
 
                     alreadyHit.add(target.getUniqueId());
                     target.damage(dashDamage, player);
                     applyEelDashSlow(target);
-                    SoundUtils.play(target, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.0f, 1.2f);
+                    AbilityTargets.playSound(target, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.0f, 1.2f);
                     ParticleUtils.electricSpark(target.getLocation().add(0, 1, 0), 20, 0.4);
                 }
             }
@@ -212,7 +191,7 @@ public class ElectricEelHandler extends MythicItemHandler {
      * Slowness level) for a fixed duration, refreshing in place if they're hit again before
      * the previous slow expired.
      */
-    private void applyEelDashSlow(Player target) {
+    private void applyEelDashSlow(LivingEntity target) {
         UUID id = target.getUniqueId();
         AttributeInstance speed = target.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speed == null) return;
@@ -257,9 +236,8 @@ public class ElectricEelHandler extends MythicItemHandler {
 
         eelSlowRemovalTasks.forEach((id, task) -> {
             if (task != null && !task.isCancelled()) task.cancel();
-            Player p = Bukkit.getPlayer(id);
-            if (p != null) {
-                AttributeInstance speed = p.getAttribute(Attribute.MOVEMENT_SPEED);
+            if (Bukkit.getEntity(id) instanceof LivingEntity slowed) {
+                AttributeInstance speed = slowed.getAttribute(Attribute.MOVEMENT_SPEED);
                 if (speed != null) speed.removeModifier(Keys.EEL_SLOW);
             }
         });

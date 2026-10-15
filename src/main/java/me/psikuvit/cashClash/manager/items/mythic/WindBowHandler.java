@@ -5,6 +5,8 @@ import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
@@ -64,20 +66,23 @@ public class WindBowHandler extends MythicItemHandler {
 
     /**
      * Wind gust at an arrow's impact - pushes every player around it (except the shooter) away
-     * from the shooter.
+     * from the shooter. Outside a game it pushes the practice range's mobs instead.
      */
     public void releaseGust(Player shooter, Location impact) {
         Vector pushDirection = impact.toVector().subtract(shooter.getLocation().toVector());
         if (pushDirection.lengthSquared() < 1.0E-4) pushDirection = shooter.getLocation().getDirection();
         pushDirection.normalize().setY(0.3);
 
+        boolean inGame = AbilityTargets.inGame(shooter);
         double radius = cfg.getWindBowPushRadius();
         int hitCount = 0;
         for (Entity entity : impact.getWorld().getNearbyEntities(impact, radius, radius, radius)) {
-            if (!(entity instanceof Player p)) continue;
-            if (p.equals(shooter)) continue;
+            if (entity.equals(shooter)) continue;
+            boolean pushed = inGame ? entity instanceof Player
+                    : PDCDetection.isPracticeMob(entity) || PDCDetection.isPracticeTeammate(entity);
+            if (!pushed) continue;
 
-            p.setVelocity(pushDirection.clone().multiply(cfg.getWindBowPushPower()));
+            entity.setVelocity(pushDirection.clone().multiply(cfg.getWindBowPushPower()));
             hitCount++;
         }
 

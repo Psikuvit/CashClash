@@ -3,7 +3,6 @@ package me.psikuvit.cashClash.manager.items.mythic;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.ChanceBag;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -11,6 +10,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import org.bukkit.Color;
@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class GoblinSpearHandler extends MythicItemHandler {
 
-    private final Map<UUID, List<Player>> goblinSpearCharging;
+    private final Map<UUID, List<LivingEntity>> goblinSpearCharging;
     private final ChanceBag venomJavelinChance;
 
     public GoblinSpearHandler(MythicItemManager manager) {
@@ -117,9 +117,6 @@ public class GoblinSpearHandler extends MythicItemHandler {
         // Initialize caught players list
         goblinSpearCharging.put(uuid, new ArrayList<>());
 
-        // Get session for team checking
-        Team playerTeam = session != null ? session.getPlayerTeam(player) : null;
-
         // Get charge direction
         Vector chargeDirection = player.getLocation().getDirection().setY(0).normalize();
         double chargeSpeed = cfg.getGoblinChargeSpeed();
@@ -151,30 +148,22 @@ public class GoblinSpearHandler extends MythicItemHandler {
                 }
 
                 // Check for nearby enemies to catch
-                List<Player> caughtPlayers = goblinSpearCharging.get(uuid);
+                List<LivingEntity> caughtPlayers = goblinSpearCharging.get(uuid);
                 for (Entity entity : player.getNearbyEntities(1.5, 1.5, 1.5)) {
-                    if (!(entity instanceof Player target)) continue;
-                    if (target.equals(player)) continue;
+                    if (!AbilityTargets.isEnemy(player, entity)) continue;
+                    LivingEntity target = (LivingEntity) entity;
                     if (caughtPlayers.contains(target)) continue;
-
-                    // Team check
-                    if (session != null && playerTeam != null) {
-                        Team targetTeam = session.getPlayerTeam(target);
-                        if (targetTeam != null && targetTeam.getTeamNumber() == playerTeam.getTeamNumber()) {
-                            continue;
-                        }
-                    }
 
                     // Catch the player
                     caughtPlayers.add(target);
                     Messages.debug(player, "GOBLIN_SPEAR: Caught " + target.getName());
-                    SoundUtils.play(target, Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
+                    AbilityTargets.playSound(target, Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
                 }
 
                 // Drag caught players along
                 Location dragLoc = player.getLocation().add(0, 0.5, 0);
-                for (Player caught : caughtPlayers) {
-                    if (caught.isOnline()) {
+                for (LivingEntity caught : caughtPlayers) {
+                    if (AbilityTargets.isPresent(caught)) {
                         caught.teleport(dragLoc);
                     }
                 }
@@ -197,7 +186,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
      */
     private void endCharge(Player player, boolean hitWall, int ticksTraveled, Vector chargeDirection) {
         UUID uuid = player.getUniqueId();
-        List<Player> caughtPlayers = goblinSpearCharging.remove(uuid);
+        List<LivingEntity> caughtPlayers = goblinSpearCharging.remove(uuid);
 
         if (!hitWall) {
             Messages.debug(player, "GOBLIN_SPEAR: Charge ended without wall impact");
@@ -224,22 +213,22 @@ public class GoblinSpearHandler extends MythicItemHandler {
             if (caughtPlayers == null || caughtPlayers.isEmpty()) {
                 Messages.debug(player, "GOBLIN_SPEAR: Charge ended, no players caught, self recoil damage " + damage);
             } else {
-                for (Player caught : caughtPlayers) {
-                    if (!caught.isOnline()) continue;
+                for (LivingEntity caught : caughtPlayers) {
+                    if (!AbilityTargets.isPresent(caught)) continue;
 
                     caught.setNoDamageTicks(0);
                     caught.setMaximumNoDamageTicks(0); // Ensure they can be damaged immediately
                     caught.damage(enemyDamage, player);
-                    CashClashPlayer.applyEffect(caught, PotionEffectType.POISON, poisonDuration, poisonLevel, false, true);
+                    AbilityTargets.applyEffect(caught, PotionEffectType.POISON, poisonDuration, poisonLevel, false, true);
 
                     // Reset to default after damage is applied (vanilla is 20)
                     SchedulerUtils.runTaskLater(() -> {
-                        if (caught.isOnline()) caught.setMaximumNoDamageTicks(20);
+                        if (AbilityTargets.isPresent(caught)) caught.setMaximumNoDamageTicks(20);
                     }, 1L);
 
                     // Visual effects
                     ParticleUtils.damageIndicator(caught.getLocation().add(0, 1, 0), 20, 0.5);
-                    SoundUtils.play(caught, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
+                    AbilityTargets.playSound(caught, Sound.ENTITY_PLAYER_HURT, 1.0f, 0.8f);
 
                     Messages.debug(player, "GOBLIN_SPEAR: Wall impact dealt " + enemyDamage + " damage + Poison to " + caught.getName());
                 }
@@ -263,8 +252,8 @@ public class GoblinSpearHandler extends MythicItemHandler {
         if (goblinSpearCharging.containsKey(playerId)) {
             return true;
         }
-        for (List<Player> caught : goblinSpearCharging.values()) {
-            for (Player p : caught) {
+        for (List<LivingEntity> caught : goblinSpearCharging.values()) {
+            for (LivingEntity p : caught) {
                 if (p.getUniqueId().equals(playerId)) {
                     return true;
                 }
@@ -277,8 +266,8 @@ public class GoblinSpearHandler extends MythicItemHandler {
      * Check if a player is caught in another player's Goblin Spear charge.
      */
     public boolean isCaughtInGoblinCharge(UUID playerId) {
-        for (List<Player> caught : goblinSpearCharging.values()) {
-            for (Player p : caught) {
+        for (List<LivingEntity> caught : goblinSpearCharging.values()) {
+            for (LivingEntity p : caught) {
                 if (p.getUniqueId().equals(playerId)) {
                     return true;
                 }
@@ -291,8 +280,8 @@ public class GoblinSpearHandler extends MythicItemHandler {
      * Get the charger who caught the given victim.
      */
     public UUID getGoblinChargerOf(UUID victimId) {
-        for (Map.Entry<UUID, List<Player>> entry : goblinSpearCharging.entrySet()) {
-            for (Player p : entry.getValue()) {
+        for (Map.Entry<UUID, List<LivingEntity>> entry : goblinSpearCharging.entrySet()) {
+            for (LivingEntity p : entry.getValue()) {
                 if (p.getUniqueId().equals(victimId)) {
                     return entry.getKey();
                 }
@@ -321,7 +310,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
         venomJavelinChance.reset(uuid);
 
         // Remove from caught lists
-        for (Map.Entry<UUID, List<Player>> entry : goblinSpearCharging.entrySet()) {
+        for (Map.Entry<UUID, List<LivingEntity>> entry : goblinSpearCharging.entrySet()) {
             entry.getValue().removeIf(p -> p.getUniqueId().equals(uuid));
         }
 

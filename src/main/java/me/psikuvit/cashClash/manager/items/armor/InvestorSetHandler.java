@@ -39,7 +39,7 @@ public class InvestorSetHandler extends ArmorSetHandler {
     public double getMeleeDamageMultiplier(Player player) {
         int pieces = countInvestorsPieces(player);
         if (pieces <= 0) return 1.0;
-        return 1.0 - (cfg.getInvestorMeleeDamageBonusPerPiece() * pieces) * CashClashPlugin.getInstance().getGameManager().getPlayerSession(player).getCurrentRound();
+        return 1.0 - (cfg.getInvestorMeleeDamageBonusPerPiece() * pieces) * CashClashPlugin.getInstance().getShopService().getShopRound(player);
     }
 
     /**

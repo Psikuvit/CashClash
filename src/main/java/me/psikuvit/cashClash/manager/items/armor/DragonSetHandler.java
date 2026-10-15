@@ -2,8 +2,6 @@ package me.psikuvit.cashClash.manager.items.armor;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
 import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -13,11 +11,14 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -133,11 +134,13 @@ public class DragonSetHandler extends ArmorSetHandler {
         }
 
         Entity target = player.getTargetEntity(cfg.getDragonRushRange());
-        if (!(target instanceof Player targetPlayer)) {
+        boolean teammate = AbilityTargets.isAlly(player, target);
+        if (!teammate && !AbilityTargets.isEnemy(player, target)) {
             failDragonRush(player);
             return;
         }
-        if (!player.hasLineOfSight(targetPlayer)) {
+        LivingEntity rushTarget = (LivingEntity) target;
+        if (!player.hasLineOfSight(rushTarget)) {
             failDragonRush(player);
             return;
         }
@@ -151,20 +154,13 @@ public class DragonSetHandler extends ArmorSetHandler {
 
         Messages.send(player, "armor.dragon-scale-used", "scales", String.valueOf(getDragonScales(player)));
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (session == null) return;
-
-        Team playerTeam = session.getPlayerTeam(player);
-        Team targetTeam = session.getPlayerTeam(targetPlayer);
-        if (playerTeam == null || targetTeam == null) return;
-
-        Location destination = targetPlayer.getLocation();
+        Location destination = rushTarget.getLocation();
         Vector direction = destination.toVector().subtract(player.getLocation().toVector()).normalize();
 
         player.setFlying(false);
         player.setAllowFlight(false);
 
-        if (playerTeam.getTeamNumber() == targetTeam.getTeamNumber()) {
+        if (teammate) {
             // Teammate rush: land just short of the target, both players briefly invincible
             Location startLocation = player.getLocation().clone();
             destination.subtract(direction.multiply(1.5));
@@ -173,7 +169,7 @@ public class DragonSetHandler extends ArmorSetHandler {
             ParticleUtils.dragonRushCircle(destination, Color.fromRGB(200, 150, 255), 1.2f);
             SoundUtils.play(player, Sound.ENTITY_ENDERMAN_TELEPORT, 2.5f, 1.5f);
 
-            grantRushInvincibility(player, targetPlayer);
+            grantRushInvincibility(player, rushTarget);
         } else {
             // Enemy rush: teleport onto the target and empower the next melee hit
             ParticleUtils.dragonRushCircle(player.getLocation(), Color.fromRGB(140, 0, 255), 1.5f);
@@ -187,22 +183,31 @@ public class DragonSetHandler extends ArmorSetHandler {
     }
 
     /**
-     * Makes both ends of a teammate rush briefly untouchable, then tells them when it lapses.
+     * Makes both ends of a teammate rush briefly untouchable, then tells them when it lapses. A
+     * practice-range piglin teammate is made invulnerable directly - only players go through the
+     * damage listener's invincibility checks.
      */
-    private void grantRushInvincibility(Player player, Player teammate) {
+    private void grantRushInvincibility(Player player, LivingEntity teammate) {
         int seconds = cfg.getDragonRushTeammateInvincibilitySeconds();
 
         dragonRushInvincible.add(player.getUniqueId());
         dragonRushInvincible.add(teammate.getUniqueId());
+        if (!(teammate instanceof Player)) teammate.setInvulnerable(true);
 
         Messages.send(player, "armor.dragon-rush-invincibility", "seconds", String.valueOf(seconds));
-        Messages.send(teammate, "armor.dragon-rush-invincibility", "seconds", String.valueOf(seconds));
+        if (teammate instanceof Player teammatePlayer) {
+            Messages.send(teammatePlayer, "armor.dragon-rush-invincibility", "seconds", String.valueOf(seconds));
+        }
 
         SchedulerUtils.runTaskLater(() -> {
             dragonRushInvincible.remove(player.getUniqueId());
             dragonRushInvincible.remove(teammate.getUniqueId());
             Messages.send(player, "armor.dragon-rush-invincibility-ended");
-            Messages.send(teammate, "armor.dragon-rush-invincibility-ended");
+            if (teammate instanceof Player teammatePlayer) {
+                Messages.send(teammatePlayer, "armor.dragon-rush-invincibility-ended");
+            } else {
+                teammate.setInvulnerable(false);
+            }
         }, seconds * 20L);
     }
 
@@ -278,13 +283,13 @@ public class DragonSetHandler extends ArmorSetHandler {
                     return;
                 }
                 Entity target = player.getTargetEntity(cfg.getDragonRushRange());
-                if (!(target instanceof Player targetPlayer)) {
+                if (!AbilityTargets.isAlly(player, target) && !AbilityTargets.isEnemy(player, target)) {
                     return;
                 }
-                if (!player.hasLineOfSight(targetPlayer)) {
+                if (!player.hasLineOfSight(target)) {
                     return;
                 }
-                showDragonRushIndicator(player, targetPlayer);
+                showDragonRushIndicator(player, (LivingEntity) target);
             }, delay);
         }
 
@@ -294,7 +299,7 @@ public class DragonSetHandler extends ArmorSetHandler {
     /**
      * Draw a purple circle under the rush target and play a heartbeat sound.
      */
-    public void showDragonRushIndicator(Player player, Player target) {
+    public void showDragonRushIndicator(Player player, LivingEntity target) {
         Location center = target.getLocation().clone().add(0, 0.1, 0);
         for (int i = 0; i < 12; i++) {
             double angle = 2 * Math.PI * i / 12;
@@ -444,9 +449,10 @@ public class DragonSetHandler extends ArmorSetHandler {
             }
         }, 10L);
 
+        boolean inGame = AbilityTargets.inGame(player);
         for (Entity entity : world.getNearbyEntities(location, 5, 3, 5)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(player)) continue;
+            if (!(entity instanceof LivingEntity target) || target.equals(player)) continue;
+            if (inGame ? !(target instanceof Player) : !PDCDetection.isPracticeMob(target)) continue;
 
             target.damage(18, player);
 

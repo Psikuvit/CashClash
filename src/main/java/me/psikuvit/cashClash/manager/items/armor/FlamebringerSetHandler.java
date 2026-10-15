@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -148,18 +149,8 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
                 ParticleUtils.spawnDust(trailLoc.clone().add(0, 0.2, 0), Color.RED, 1.0f, 3, 0.15, 0.05, 0.15);
             }
 
-            GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(p);
-            Team playerTeam = session != null ? session.getPlayerTeam(p) : null;
-
             for (Entity entity : p.getNearbyEntities(1.2, 1.0, 1.2)) {
-                if (!(entity instanceof Player target)) continue;
-                if (target.equals(p)) continue;
-
-                if (session != null && playerTeam != null) {
-                    Team targetTeam = session.getPlayerTeam(target);
-                    if (targetTeam == playerTeam) continue;
-                }
-                target.setFireTicks(60);
+                if (AbilityTargets.isEnemy(p, entity)) entity.setFireTicks(60);
             }
         }, 0L, 2L);
 

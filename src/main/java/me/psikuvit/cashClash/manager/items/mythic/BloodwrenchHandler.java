@@ -1,20 +1,17 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.HealingMarkUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Location;
 import org.bukkit.Color;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -93,9 +90,6 @@ public class BloodwrenchHandler extends MythicItemHandler {
         World world = hitLocation.getWorld();
         if (world == null) return;
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(shooter);
-        Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
-
         Messages.debug(shooter, "BLOODWRENCH: Rapid hit - creating blood sphere at " + hitLocation);
 
         // Visual blood sphere
@@ -108,16 +102,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
         double damage = cfg.getBloodwrenchSphereDamage();
 
         // Initial burst damage (nerfed grenade - smaller radius, less damage)
-        for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius, radius)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(shooter)) continue;
-
-            if (session != null) {
-                Team targetTeam = session.getPlayerTeam(target);
-                if (targetTeam != null && shooterTeam != null &&
-                    targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
-            }
-
+        for (LivingEntity target : AbilityTargets.enemiesNear(shooter, hitLocation, radius, radius, radius)) {
             target.damage(damage, shooter);
             Messages.debug(shooter, "BLOODWRENCH: Blood sphere damaged " + target.getName() + " for " + damage);
         }
@@ -141,16 +126,8 @@ public class BloodwrenchHandler extends MythicItemHandler {
                 // Heal-negation zone: enemies only, refreshed every tick while inside - naturally
                 // decays `healNegationDuration` seconds after the target leaves the sphere since
                 // nothing refreshes it anymore.
-                for (Entity entity : world.getNearbyEntities(hitLocation, sphereRadius, sphereRadius, sphereRadius)) {
-                    if (!(entity instanceof Player target)) continue;
-                    if (target.equals(shooter)) continue;
-                    if (session != null) {
-                        Team targetTeam = session.getPlayerTeam(target);
-                        if (targetTeam != null && shooterTeam != null &&
-                            targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
-                    }
-
-                    applyHealNegation(target, healNegationDuration);
+                for (LivingEntity target : AbilityTargets.enemiesNear(shooter, hitLocation, sphereRadius, sphereRadius, sphereRadius)) {
+                    if (target instanceof Player victim) applyHealNegation(victim, healNegationDuration);
                     if (damageTick && damagePerSecond > 0) {
                         target.damage(damagePerSecond, shooter);
                     }
@@ -174,9 +151,6 @@ public class BloodwrenchHandler extends MythicItemHandler {
     private void releaseBloodTornado(Player shooter, Location hitLocation) {
         World world = hitLocation.getWorld();
         if (world == null) return;
-
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(shooter);
-        Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
 
         Messages.debug(shooter, "BLOODWRENCH: Supercharged hit - creating blood vortex at " + hitLocation);
         Messages.send(shooter, "mythic.blood-vortex-activated");
@@ -204,17 +178,8 @@ public class BloodwrenchHandler extends MythicItemHandler {
                 // Apply effects every 10 ticks (0.5 seconds)
                 if (tick % 10 == 0) {
                 double totalDamageDealt = 0.0;
-                for (Entity entity : world.getNearbyEntities(hitLocation, radius, radius + 2, radius)) {
-                    if (!(entity instanceof Player target)) continue;
-                    if (target.equals(shooter)) continue;
-
-                    if (session != null) {
-                        Team targetTeam = session.getPlayerTeam(target);
-                        if (targetTeam != null && shooterTeam != null &&
-                            targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
-                    }
-
-                   CashClashPlayer.applyEffect(target, PotionEffectType.LEVITATION, 30, cfg.getBloodwrenchVortexLevitationLevel() - 1);
+                for (LivingEntity target : AbilityTargets.enemiesNear(shooter, hitLocation, radius, radius + 2, radius)) {
+                    AbilityTargets.applyEffect(target, PotionEffectType.LEVITATION, 30, cfg.getBloodwrenchVortexLevitationLevel() - 1);
                     Vector preDamageVelocity = target.getVelocity();
                     target.damage(damagePerTick, shooter);
                     target.setVelocity(preDamageVelocity);

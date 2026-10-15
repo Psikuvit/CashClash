@@ -1,14 +1,11 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -18,6 +15,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -91,7 +89,8 @@ public class BlazebiteHandler extends MythicItemHandler {
      * nothing more.
      */
     private void handleGlacier(Player shooter, Entity hitEntity) {
-        if (!(hitEntity instanceof Player victim)) return;
+        if (!AbilityTargets.isEnemy(shooter, hitEntity)) return;
+        LivingEntity victim = (LivingEntity) hitEntity;
 
         UUID victimId = victim.getUniqueId();
         if (frozenSolidThawTasks.containsKey(victimId)) return;
@@ -106,9 +105,9 @@ public class BlazebiteHandler extends MythicItemHandler {
             freezeSolid(victim, freezeTicks);
 
             Messages.debug(shooter, "BLAZEBITE: Glacier double hit on " + victim.getName() + " - frozen solid for " + (freezeTicks / 20) + "s");
-            Messages.send(victim, "mythic.you-are-frozen");
-            SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
-            SoundUtils.play(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);
+            if (victim instanceof Player frozen) Messages.send(frozen, "mythic.you-are-frozen");
+            AbilityTargets.playSound(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
+            AbilityTargets.playSound(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);
             return;
         }
 
@@ -118,7 +117,7 @@ public class BlazebiteHandler extends MythicItemHandler {
 
         Messages.debug(shooter, "BLAZEBITE: Glacier hit " + victim.getName() + " - frostbite for " + (frostbiteTicks / 20) + "s");
         ParticleUtils.glacierFrost(victim.getLocation());
-        SoundUtils.play(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
+        AbilityTargets.playSound(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 1.5f);
     }
 
     /**
@@ -127,7 +126,7 @@ public class BlazebiteHandler extends MythicItemHandler {
      * since 1.20.5 effect amplifiers no longer wrap around, so Jump Boost 128 launches the player
      * instead of grounding them. Transient, so a crash mid-freeze can't save a frozen player.
      */
-    private void freezeSolid(Player victim, int durationTicks) {
+    private void freezeSolid(LivingEntity victim, int durationTicks) {
         UUID victimId = victim.getUniqueId();
         zeroAttribute(victim, Attribute.MOVEMENT_SPEED, Keys.BLAZEBITE_FREEZE_SPEED);
         zeroAttribute(victim, Attribute.JUMP_STRENGTH, Keys.BLAZEBITE_FREEZE_JUMP);
@@ -137,26 +136,26 @@ public class BlazebiteHandler extends MythicItemHandler {
         manager.trackTask(victimId, thawTask);
     }
 
-    private void zeroAttribute(Player player, Attribute attribute, NamespacedKey key) {
-        AttributeInstance instance = player.getAttribute(attribute);
+    private void zeroAttribute(LivingEntity entity, Attribute attribute, NamespacedKey key) {
+        AttributeInstance instance = entity.getAttribute(attribute);
         if (instance == null) return;
         instance.removeModifier(key);
         instance.addTransientModifier(new AttributeModifier(key, -1.0, AttributeModifier.Operation.MULTIPLY_SCALAR_1));
     }
 
     /**
-     * Lifts a freeze solid, if the player is frozen. Safe to call for a player who's offline.
+     * Lifts a freeze solid, if the player or practice mob is frozen. Safe to call for a player
+     * who's offline.
      */
-    private void thaw(UUID playerId) {
-        BukkitTask task = frozenSolidThawTasks.remove(playerId);
+    private void thaw(UUID entityId) {
+        BukkitTask task = frozenSolidThawTasks.remove(entityId);
         if (task != null && !task.isCancelled()) task.cancel();
 
-        Player player = Bukkit.getPlayer(playerId);
-        if (player == null) return;
+        if (!(Bukkit.getEntity(entityId) instanceof LivingEntity entity)) return;
 
-        AttributeInstance speed = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        AttributeInstance speed = entity.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speed != null) speed.removeModifier(Keys.BLAZEBITE_FREEZE_SPEED);
-        AttributeInstance jump = player.getAttribute(Attribute.JUMP_STRENGTH);
+        AttributeInstance jump = entity.getAttribute(Attribute.JUMP_STRENGTH);
         if (jump != null) jump.removeModifier(Keys.BLAZEBITE_FREEZE_JUMP);
     }
 
@@ -168,8 +167,9 @@ public class BlazebiteHandler extends MythicItemHandler {
         stopGlacierParticles(victimId);
 
         BukkitTask task = SchedulerUtils.runTaskTimer(() -> {
-            Player target = Bukkit.getPlayer(victimId);
-            if (target != null && target.isOnline()) effect.accept(target.getLocation());
+            if (Bukkit.getEntity(victimId) instanceof LivingEntity target && AbilityTargets.isPresent(target)) {
+                effect.accept(target.getLocation());
+            }
         }, 0L, 5L);
         glacierParticleTasks.put(victimId, task);
         manager.trackTask(victimId, task);
@@ -192,23 +192,12 @@ public class BlazebiteHandler extends MythicItemHandler {
         ParticleUtils.volcanoFlameBurst(hitLoc);
         SoundUtils.playAt(hitLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.2f);
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(shooter);
-        Team shooterTeam = session != null ? session.getPlayerTeam(shooter) : null;
         int radius = cfg.getBlazebiteVolcanoRadius();
         int fireTicks = cfg.getBlazebiteFireDuration();
         int hitCount = 0;
 
-        for (Entity entity : world.getNearbyEntities(hitLoc, radius, radius, radius)) {
-            if (!(entity instanceof Player target)) continue;
-            if (target.equals(shooter)) continue;
-
-            if (session != null) {
-                Team targetTeam = session.getPlayerTeam(target);
-                if (targetTeam != null && shooterTeam != null &&
-                    targetTeam.getTeamNumber() == shooterTeam.getTeamNumber()) continue;
-            }
-
-            double damage = entity.equals(hitEntity) ? cfg.getBlazebiteVolcanoDirectDamage() : cfg.getBlazebiteVolcanoSplashDamage();
+        for (LivingEntity target : AbilityTargets.enemiesNear(shooter, hitLoc, radius, radius, radius)) {
+            double damage = target.equals(hitEntity) ? cfg.getBlazebiteVolcanoDirectDamage() : cfg.getBlazebiteVolcanoSplashDamage();
             target.damage(damage, shooter);
             target.setFireTicks(fireTicks);
             hitCount++;

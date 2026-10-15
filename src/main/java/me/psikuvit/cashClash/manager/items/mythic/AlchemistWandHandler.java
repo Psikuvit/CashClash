@@ -9,6 +9,8 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -18,6 +20,7 @@ import org.bukkit.entity.Bat;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -111,18 +114,6 @@ public class AlchemistWandHandler extends MythicItemHandler {
             return;
         }
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (session == null) {
-            Messages.debug(player, "ALCHEMIST_WAND: No session");
-            return;
-        }
-
-        Team playerTeam = session.getPlayerTeam(player);
-        if (playerTeam == null) {
-            Messages.debug(player, "ALCHEMIST_WAND: Player has no team");
-            return;
-        }
-
         Location start = player.getEyeLocation();
         Vector direction = start.getDirection().normalize();
 
@@ -131,12 +122,10 @@ public class AlchemistWandHandler extends MythicItemHandler {
                 direction,
                 cfg.getAlchemistBlinkSwapRange(),
                 0.1,
-                entity -> entity instanceof Player target
-                        && !target.equals(player)
-                        && isSameTeam(session, playerTeam.getTeamNumber(), target)
+                entity -> AbilityTargets.isAlly(player, entity)
         );
 
-        if (result == null || !(result.getHitEntity() instanceof Player target)) {
+        if (result == null || !(result.getHitEntity() instanceof LivingEntity target)) {
             Messages.debug(player, "ALCHEMIST_WAND: No valid teammate target");
             return;
         }
@@ -311,17 +300,11 @@ public class AlchemistWandHandler extends MythicItemHandler {
             return;
         }
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(wielder);
-        if (session == null) {
-            Messages.debug(wielder, "ALCHEMIST_WAND: No session");
-            return;
-        }
-
         int durationTicks = cfg.getAlchemistTidyUpDuration() * 20;
         alchemistTidyUpExpiry.put(uuid, System.currentTimeMillis() + durationTicks * 50L);
         alchemistTidyUpBottles.put(uuid, new ConcurrentHashMap<>());
 
-        BukkitTask displayTask = startAlchemistTidyUpDisplayTask(wielder, session, uuid);
+        BukkitTask displayTask = startAlchemistTidyUpDisplayTask(wielder, uuid);
         alchemistTidyUpDisplayTasks.put(uuid, displayTask);
 
         BukkitTask timeoutTask = SchedulerUtils.runTaskLater(() -> endAlchemistTidyUp(wielder, true), durationTicks);
@@ -345,7 +328,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
      * active - throttled rather than every tick, matching the codebase's other redraw-throttle
      * conventions (e.g. Tectonic Cap's fall-warning ring).
      */
-    private BukkitTask startAlchemistTidyUpDisplayTask(Player wielder, GameSession session, UUID wielderId) {
+    private BukkitTask startAlchemistTidyUpDisplayTask(Player wielder, UUID wielderId) {
         return SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             @Override
             public void run() {
@@ -353,23 +336,59 @@ public class AlchemistWandHandler extends MythicItemHandler {
                     cancel();
                     return;
                 }
-                refreshAlchemistTidyUpBottles(wielder, session, wielderId);
+                refreshAlchemistTidyUpBottles(wielder, wielderId);
             }
         }, 0L, 4L);
     }
 
-    private void refreshAlchemistTidyUpBottles(Player wielder, GameSession session, UUID wielderId) {
+    /**
+     * Whose potion effects a Tidy Up window shows: every player in the wielder's game, or outside
+     * one the wielder and the practice range's mobs.
+     */
+    private List<LivingEntity> tidyUpTargets(Player wielder) {
+        List<LivingEntity> targets = new ArrayList<>();
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(wielder);
+        if (session != null) {
+            for (UUID uuid : session.getPlayers()) {
+                Player player = Bukkit.getPlayer(uuid);
+                if (player != null && player.isOnline()) targets.add(player);
+            }
+            return targets;
+        }
+
+        targets.add(wielder);
+        for (LivingEntity entity : wielder.getWorld().getLivingEntities()) {
+            if (PDCDetection.isPracticeMob(entity) || PDCDetection.isPracticeTeammate(entity)) targets.add(entity);
+        }
+        return targets;
+    }
+
+    /**
+     * The side of the practice range a Tidy Up hit lands on: the wielder and the piglin
+     * teammates, or the enemy mobs.
+     */
+    private List<LivingEntity> practiceSide(Player wielder, boolean teammates) {
+        List<LivingEntity> side = new ArrayList<>();
+        if (teammates) side.add(wielder);
+        for (LivingEntity entity : wielder.getWorld().getLivingEntities()) {
+            if (teammates ? PDCDetection.isPracticeTeammate(entity) : PDCDetection.isPracticeMob(entity)) side.add(entity);
+        }
+        return side;
+    }
+
+    private void refreshAlchemistTidyUpBottles(Player wielder, UUID wielderId) {
         Map<UUID, Map<PotionEffectType, ItemDisplay>> perTarget =
                 alchemistTidyUpBottles.computeIfAbsent(wielderId, k -> new ConcurrentHashMap<>());
 
-        for (UUID targetUuid : session.getPlayers()) {
-            Player target = Bukkit.getPlayer(targetUuid);
-            if (target == null || !target.isOnline()) {
-                removeAlchemistTidyUpBottlesFor(perTarget, targetUuid);
-                continue;
-            }
+        List<LivingEntity> targets = tidyUpTargets(wielder);
+        Set<UUID> targetIds = new HashSet<>();
+        targets.forEach(target -> targetIds.add(target.getUniqueId()));
+        for (UUID trackedId : new ArrayList<>(perTarget.keySet())) {
+            if (!targetIds.contains(trackedId)) removeAlchemistTidyUpBottlesFor(perTarget, trackedId);
+        }
 
-            Map<PotionEffectType, ItemDisplay> bottles = perTarget.computeIfAbsent(targetUuid, k -> new ConcurrentHashMap<>());
+        for (LivingEntity target : targets) {
+            Map<PotionEffectType, ItemDisplay> bottles = perTarget.computeIfAbsent(target.getUniqueId(), k -> new ConcurrentHashMap<>());
 
             Set<PotionEffectType> active = new HashSet<>();
             for (PotionEffect effect : target.getActivePotionEffects()) {
@@ -404,7 +423,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
      * match the effect and visible only to the Tidy Up wielder (nothing else in this codebase
      * does per-viewer visibility yet - setVisibleByDefault(false) + Player#showEntity is new).
      */
-    private ItemDisplay spawnAlchemistTidyUpBottle(Player wielder, Player target, PotionEffectType type) {
+    private ItemDisplay spawnAlchemistTidyUpBottle(Player wielder, LivingEntity target, PotionEffectType type) {
         ItemStack potion = new ItemStack(Material.POTION);
         ItemMeta meta = potion.getItemMeta();
         if (meta instanceof PotionMeta potionMeta) {
@@ -429,7 +448,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
      * CENTER always faces the viewer, so a flat world-space row (no facing-relative rotation
      * needed) reads correctly regardless of where the wielder is standing.
      */
-    private void layoutAlchemistTidyUpBottles(Player target, Map<PotionEffectType, ItemDisplay> bottles) {
+    private void layoutAlchemistTidyUpBottles(LivingEntity target, Map<PotionEffectType, ItemDisplay> bottles) {
         if (bottles.isEmpty()) return;
 
         Location base = target.getEyeLocation().add(0, 0.4, 0);
@@ -462,36 +481,51 @@ public class AlchemistWandHandler extends MythicItemHandler {
      * DamageListener.processMythicDamageEffects, which only fires while the wand is still the
      * item in the attacker's hand at hit time, matching every other mythic on-hit effect).
      * Hitting a teammate cleanses the whole team's debuffs; hitting an enemy strips the whole
-     * enemy team's buffs. Ends the window regardless of whether any effects were present.
+     * enemy team's buffs. Ends the window regardless of whether any effects were present. In the
+     * practice range the piglins are the wielder's team and the enemy mobs the other one.
      */
-    public void onAlchemistMeleeHit(Player attacker, Player victim) {
+    public void onAlchemistMeleeHit(Player attacker, LivingEntity victim) {
         UUID attackerId = attacker.getUniqueId();
         Long expiry = alchemistTidyUpExpiry.get(attackerId);
         if (expiry == null || System.currentTimeMillis() >= expiry) return;
 
+        boolean sameTeam;
+        List<LivingEntity> affected = new ArrayList<>();
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(attacker);
-        if (session == null) return;
+        if (session != null) {
+            if (!(victim instanceof Player victimPlayer)) return;
+            Team attackerTeam = session.getPlayerTeam(attacker);
+            Team victimTeam = session.getPlayerTeam(victimPlayer);
+            if (attackerTeam == null || victimTeam == null) return;
 
-        Team attackerTeam = session.getPlayerTeam(attacker);
-        Team victimTeam = session.getPlayerTeam(victim);
-        if (attackerTeam == null || victimTeam == null) return;
+            sameTeam = attackerTeam.getTeamNumber() == victimTeam.getTeamNumber();
+            for (UUID memberUuid : (sameTeam ? attackerTeam : victimTeam).getPlayers()) {
+                Player member = Bukkit.getPlayer(memberUuid);
+                if (member != null && member.isOnline()) affected.add(member);
+            }
+        } else if (PDCDetection.isPracticeTeammate(victim) || PDCDetection.isPracticeMob(victim)) {
+            sameTeam = PDCDetection.isPracticeTeammate(victim);
+            affected.addAll(practiceSide(attacker, sameTeam));
+        } else {
+            return;
+        }
 
-        boolean sameTeam = attackerTeam.getTeamNumber() == victimTeam.getTeamNumber();
-        Team affectedTeam = sameTeam ? attackerTeam : victimTeam;
         Set<PotionEffectType> effectsToRemove = sameTeam ? TIDY_UP_NEGATIVE_EFFECTS : TIDY_UP_POSITIVE_EFFECTS;
         Color beamColor = sameTeam ? Color.WHITE : Color.fromRGB(15, 15, 15);
         Sound sound = sameTeam ? Sound.BLOCK_BEACON_ACTIVATE : Sound.ENTITY_WITHER_HURT;
         String messageKey = sameTeam ? "mythic.alchemist-tidy-up-cleansed" : "mythic.alchemist-tidy-up-stripped";
 
-        for (UUID memberUuid : affectedTeam.getPlayers()) {
-            Player member = Bukkit.getPlayer(memberUuid);
-            if (member == null || !member.isOnline()) continue;
-
+        for (LivingEntity member : affected) {
             boolean removedAny = false;
             for (PotionEffectType type : effectsToRemove) {
-                if (CashClashPlayer.hasEffect(member, type) && !cfg.isArmorReadyIcon(type)
-                        && !CashClashPlayer.isGodAppleEffect(member, type)) {
-                    CashClashPlayer.removeEffect(member, type);
+                if (cfg.isArmorReadyIcon(type)) continue;
+                if (member instanceof Player player) {
+                    if (CashClashPlayer.hasEffect(player, type) && !CashClashPlayer.isGodAppleEffect(player, type)) {
+                        CashClashPlayer.removeEffect(player, type);
+                        removedAny = true;
+                    }
+                } else if (member.hasPotionEffect(type)) {
+                    member.removePotionEffect(type);
                     removedAny = true;
                 }
             }
@@ -499,7 +533,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
             if (removedAny) {
                 ParticleUtils.verticalBeam(member.getLocation(), beamColor, 5.0, 6, 0.5f, 6);
                 SoundUtils.playAt(member.getLocation(), sound, 1.0f, 1.2f);
-                Messages.send(member, messageKey);
+                if (member instanceof Player player) Messages.send(player, messageKey);
             }
         }
 
@@ -576,13 +610,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
             return;
         }
 
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(wielder);
-        if (session == null) {
-            Messages.debug(wielder, "ALCHEMIST_WAND: No session");
-            return;
-        }
-
-        List<Player> candidates = alchemistTauntCandidates(wielder, session);
+        List<LivingEntity> candidates = alchemistTauntCandidates(wielder);
         List<TauntEdge> edges = buildAlchemistTauntEdges(candidates);
 
         Set<UUID> reachable = alchemistTauntReachable(uuid, edges);
@@ -593,9 +621,8 @@ public class AlchemistWandHandler extends MythicItemHandler {
 
         List<TauntEdge> liveEdges = new ArrayList<>();
         for (TauntEdge edge : edges) {
-            Player a = Bukkit.getPlayer(edge.a());
-            Player b = Bukkit.getPlayer(edge.b());
-            if (a == null || b == null) continue;
+            if (!(Bukkit.getEntity(edge.a()) instanceof LivingEntity a)) continue;
+            if (!(Bukkit.getEntity(edge.b()) instanceof LivingEntity b)) continue;
             liveEdges.add(new TauntEdge(edge.a(), edge.b(), spawnAlchemistTauntAnchor(a, b)));
         }
 
@@ -615,8 +642,15 @@ public class AlchemistWandHandler extends MythicItemHandler {
         SoundUtils.play(wielder, Sound.ENTITY_IRON_GOLEM_ATTACK, 1.0f, 0.8f);
     }
 
-    private List<Player> alchemistTauntCandidates(Player wielder, GameSession session) {
-        List<Player> candidates = new ArrayList<>();
+    /**
+     * Who the Taunt can chain: the wielder's team, or outside a game the wielder and the practice
+     * range's piglin teammates.
+     */
+    private List<LivingEntity> alchemistTauntCandidates(Player wielder) {
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(wielder);
+        if (session == null) return practiceSide(wielder, true);
+
+        List<LivingEntity> candidates = new ArrayList<>();
 
         if (cfg.isAlchemistTauntTestModeAllPlayers()) {
             for (UUID uuid : session.getPlayers()) {
@@ -636,14 +670,14 @@ public class AlchemistWandHandler extends MythicItemHandler {
         return candidates;
     }
 
-    private List<TauntEdge> buildAlchemistTauntEdges(List<Player> candidates) {
+    private List<TauntEdge> buildAlchemistTauntEdges(List<LivingEntity> candidates) {
         List<TauntEdge> edges = new ArrayList<>();
         double radius = cfg.getAlchemistTauntChainRadius();
 
         for (int i = 0; i < candidates.size(); i++) {
-            Player first = candidates.get(i);
+            LivingEntity first = candidates.get(i);
             for (int j = i + 1; j < candidates.size(); j++) {
-                Player second = candidates.get(j);
+                LivingEntity second = candidates.get(j);
                 if (!first.getWorld().equals(second.getWorld())) continue;
                 if (first.getLocation().distance(second.getLocation()) <= radius) {
                     edges.add(new TauntEdge(first.getUniqueId(), second.getUniqueId(), null));
@@ -684,7 +718,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
      * position, leashed to {@code b} (Mob#setLeashHolder accepts any LivingEntity, including a
      * Player) so the vanilla rope renders between the two.
      */
-    private Bat spawnAlchemistTauntAnchor(Player a, Player b) {
+    private Bat spawnAlchemistTauntAnchor(LivingEntity a, LivingEntity b) {
         Bat anchor = a.getWorld().spawn(a.getLocation(), Bat.class, bat -> {
             bat.setInvisible(true);
             bat.setSilent(true);
@@ -733,11 +767,11 @@ public class AlchemistWandHandler extends MythicItemHandler {
 
         while (iterator.hasNext()) {
             TauntEdge edge = iterator.next();
-            Player a = Bukkit.getPlayer(edge.a());
-            Player b = Bukkit.getPlayer(edge.b());
+            LivingEntity a = Bukkit.getEntity(edge.a()) instanceof LivingEntity entity ? entity : null;
+            LivingEntity b = Bukkit.getEntity(edge.b()) instanceof LivingEntity entity ? entity : null;
 
-            boolean valid = a != null && a.isOnline() && !a.isDead()
-                    && b != null && b.isOnline() && !b.isDead()
+            boolean valid = a != null && AbilityTargets.isPresent(a) && !a.isDead()
+                    && b != null && AbilityTargets.isPresent(b) && !b.isDead()
                     && a.getWorld().equals(b.getWorld())
                     && a.getLocation().distance(b.getLocation()) <= radius;
 

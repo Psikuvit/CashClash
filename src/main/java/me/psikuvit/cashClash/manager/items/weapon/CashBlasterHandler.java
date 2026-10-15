@@ -4,7 +4,6 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
-import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
@@ -13,6 +12,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Bukkit;
@@ -22,6 +22,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.SpectralArrow;
 import org.bukkit.event.entity.EntityShootBowEvent;
@@ -211,23 +212,15 @@ public class CashBlasterHandler extends WeaponItemHandler {
                 ParticleUtils.spawnDust(particleLocation, Color.fromRGB(0, 120, 0), 1.2f, 2, 0.05);
             }
 
-            for (Player target : vortexLocation.getWorld().getPlayers()) {
+            for (LivingEntity target : AbilityTargets.enemiesNear(shooter, vortexLocation, radius, radius, radius)) {
                 if (target.getLocation().distanceSquared(vortexLocation) > radius * radius) continue;
-                if (target.getUniqueId().equals(profitVortexOwners.get(vortexLocation))) continue;
-
-                GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(shooter);
-                if (session != null) {
-                    Team ownerTeam = session.getPlayerTeam(shooter);
-                    Team targetTeam = session.getPlayerTeam(target);
-                    if (ownerTeam != null && ownerTeam.equals(targetTeam)) continue;
-                }
 
                 if (isSpectral && !spectralVortexMarkedPlayers.get(vortexLocation).contains(target.getUniqueId())) {
-                    CashClashPlayer.applyEffect(target, PotionEffectType.GLOWING, (glowSeconds + 1) * 20, 0, false, true);
+                    AbilityTargets.applyEffect(target, PotionEffectType.GLOWING, (glowSeconds + 1) * 20, 0, false, true);
                     spectralVortexMarkedPlayers.get(vortexLocation).add(target.getUniqueId());
                 }
-                CashClashPlayer.applyEffect(target, PotionEffectType.SLOWNESS, 20, 0);
-                playersKilledInProfitVortex.put(target.getUniqueId(), vortexLocation);
+                AbilityTargets.applyEffect(target, PotionEffectType.SLOWNESS, 20, 0);
+                if (target instanceof Player) playersKilledInProfitVortex.put(target.getUniqueId(), vortexLocation);
             }
         }, 0L, 5L);
 

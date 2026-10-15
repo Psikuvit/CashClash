@@ -49,6 +49,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Sound;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Trident;
@@ -218,6 +219,7 @@ public class DamageListener implements Listener {
         try {
             Player attacker = resolveAttacker(event);
             Player victim = event.getEntity() instanceof Player p ? p : null;
+            LivingEntity target = victim != null ? victim : practiceTarget(event, attacker);
 
             if (onIceFanMeleeSuppression(event, attacker)) {
                 return;
@@ -227,23 +229,23 @@ public class DamageListener implements Listener {
                 return;
             }
 
-            if (applyProtectionChecks(event, attacker, victim)) {
+            if (applyProtectionChecks(event, attacker, victim, target)) {
                 return;
             }
 
-            if (victim != null && redirectAlchemistTauntDamage(event, victim)) {
+            if (event.getEntity() instanceof LivingEntity hurt && redirectAlchemistTauntDamage(event, hurt)) {
                 return;
             }
 
-            if (attacker != null && victim != null && weaponItemManager.getHandler(SoulKatanaHandler.class).isPhantomSliceDamage(attacker.getUniqueId())) {
+            if (attacker != null && target != null && weaponItemManager.getHandler(SoulKatanaHandler.class).isPhantomSliceDamage(attacker.getUniqueId())) {
                 applyPhantomSliceDamageModifiers(event);
             }
 
-            if (attacker != null && victim != null) {
+            if (attacker != null && target != null) {
                 applyMythicCrossbowDamageBonus(event);
-                processVictimDamageEffects(attacker, victim);
-                handleAttackerEffects(event, attacker, victim);
-                handleAttackerArmorEffects(event, attacker, victim);
+                if (victim != null) processVictimDamageEffects(attacker, victim);
+                handleAttackerEffects(event, attacker, target);
+                handleAttackerArmorEffects(event, attacker, target);
             }
 
         } catch (Exception e) {
@@ -252,12 +254,29 @@ public class DamageListener implements Listener {
     }
 
     /**
+     * A mob a player outside any game hit in the practice range - an enemy, or a piglin teammate
+     * (only reachable through Tidy Up) - so the attacker's item effects apply to it like to a
+     * player. Null for anything else.
+     */
+    private LivingEntity practiceTarget(EntityDamageByEntityEvent event, Player attacker) {
+        if (attacker == null || gameManager.getPlayerSession(attacker) != null) return null;
+        if (!(event.getEntity() instanceof LivingEntity entity)) return null;
+        return PDCDetection.isPracticeMob(entity) || PDCDetection.isPracticeTeammate(entity) ? entity : null;
+    }
+
+    /**
      * Apply all protection checks (lobby, respawn, team damage)
      */
-    private boolean applyProtectionChecks(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+    private boolean applyProtectionChecks(EntityDamageByEntityEvent event, Player attacker, Player victim, LivingEntity target) {
         //if (handleSpawnRoomProtection(event, attacker, victim)) {
         //    return true;
         //}
+
+        if (attacker != null && target != null
+                && mythicManager.getHandler(AlchemistWandHandler.class).isTidyUpActive(attacker.getUniqueId())
+                && PDCDetection.getMythic(attacker.getInventory().getItemInMainHand()) == MythicItem.ALCHEMIST_WAND) {
+            return false;
+        }
 
         if (attacker != null && victim != null) {
             UUID attackerId = attacker.getUniqueId();
@@ -271,11 +290,6 @@ public class DamageListener implements Listener {
             }
 
             if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(victimId)) {
-                return false;
-            }
-
-            if (mythicManager.getHandler(AlchemistWandHandler.class).isTidyUpActive(attackerId)
-                    && PDCDetection.getMythic(attacker.getInventory().getItemInMainHand()) == MythicItem.ALCHEMIST_WAND) {
                 return false;
             }
 
@@ -366,7 +380,7 @@ public class DamageListener implements Listener {
      * See AlchemistWandHandler#redirectTauntDamage for the re-entrancy guard around that call,
      * and the "1b2" check in onEntityDamage for where the wielder's own damage increase applies.
      */
-    private boolean redirectAlchemistTauntDamage(EntityDamageByEntityEvent event, Player victim) {
+    private boolean redirectAlchemistTauntDamage(EntityDamageByEntityEvent event, LivingEntity victim) {
         AlchemistWandHandler handler = mythicManager.getHandler(AlchemistWandHandler.class);
         UUID wielderUuid = handler.getTauntRedirectTarget(victim.getUniqueId());
         if (wielderUuid == null) return false;
@@ -770,11 +784,10 @@ public class DamageListener implements Listener {
     // ==================== ARMOR EFFECTS ====================
 
     /**
-     * Handle custom armor defensive effects.
+     * Handle custom armor defensive effects - in a game, or in the practice range.
      */
     private void handleArmorDefenseEffects(EntityDamageEvent event, Player player) {
-        GameSession session = gameManager.getPlayerSession(player);
-        if (session == null) {
+        if (CashClashPlayer.from(player) == null) {
             return;
         }
 
@@ -792,16 +805,11 @@ public class DamageListener implements Listener {
     /**
      * Handle armor-based attack effects.
      */
-    private void handleAttackerArmorEffects(EntityDamageByEntityEvent event, Player attacker, Player victim) {
-        GameSession session = gameManager.getPlayerSession(attacker);
-        if (session == null) {
-            return;
-        }
-
+    private void handleAttackerArmorEffects(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim) {
         armorManager.getHandler(DragonSetHandler.class).handleDragonHit(attacker);
         armorManager.getHandler(DragonSetHandler.class).onDragonRushHit(event);
         handleBullseyePantsEffect(event, attacker, victim);
-        armorManager.getHandler(DeathmaulerSetHandler.class).tryDeathmaulerSoulBurst(attacker, victim, session);
+        armorManager.getHandler(DeathmaulerSetHandler.class).tryDeathmaulerSoulBurst(attacker, victim);
     }
 
     /**
@@ -809,7 +817,7 @@ public class DamageListener implements Listener {
      * Headshots always trigger a storm. Otherwise only arrows tagged as storming arrows when they
      * were shot (see {@code GameListener#onBullseyeShot}) deal the damage boost and the AOE burst.
      */
-    private void handleBullseyePantsEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+    private void handleBullseyePantsEffect(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim) {
         if (!(event.getDamager() instanceof AbstractArrow arrow) || arrow instanceof Trident) {
             return;
         }
@@ -841,7 +849,7 @@ public class DamageListener implements Listener {
      * Spawn the storm arrow burst: impact particles, wind burst sound, and a ring of AOE arrows
      * firing outward (uncolored so they read as normal arrows).
      */
-    private void triggerStorm(Player attacker, Player victim, double aoeBaseDamage) {
+    private void triggerStorm(Player attacker, LivingEntity victim, double aoeBaseDamage) {
         org.bukkit.Location impact = victim.getLocation().add(0, 1, 0);
         ParticleUtils.bullseyeStorm(impact);
         SoundUtils.playAt(impact, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.1f, 1.2f);
@@ -913,7 +921,7 @@ public class DamageListener implements Listener {
     /**
      * Handle attacker-side effects (mythic items, custom items, combat modifiers).
      */
-    private void handleAttackerEffects(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+    private void handleAttackerEffects(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim) {
         GameSession session = gameManager.getPlayerSession(attacker);
         ItemStack weapon = attacker.getInventory().getItemInMainHand();
 
@@ -943,7 +951,7 @@ public class DamageListener implements Listener {
     /**
      * Handle mythic item effects (legendary weapons and abilities).
      */
-    private void handleMythicItemEffects(EntityDamageByEntityEvent event, Player attacker, Player victim, ItemStack weapon) {
+    private void handleMythicItemEffects(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim, ItemStack weapon) {
         if (!isValidWeapon(weapon)) {
             return;
         }
@@ -959,7 +967,7 @@ public class DamageListener implements Listener {
     /**
      * Process damage effects for specific mythic items
      */
-    private void processMythicDamageEffects(EntityDamageByEntityEvent event, Player attacker, Player victim, MythicItem mythic) {
+    private void processMythicDamageEffects(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim, MythicItem mythic) {
         switch (mythic) {
             case CARLS_BATTLEAXE -> applyMythicCriticalEffect(event, attacker, victim, mythicManager.getHandler(CarlsBattleaxeHandler.class)::handleCarlsCriticalHit);
             case ELECTRIC_EEL_SWORD -> applyMythicCriticalEffect(event, attacker, victim, mythicManager.getHandler(ElectricEelHandler.class)::handleElectricEelChain);
@@ -973,7 +981,7 @@ public class DamageListener implements Listener {
     /**
      * Apply mythic critical hit effect
      */
-    private void applyMythicCriticalEffect(EntityDamageByEntityEvent event, Player attacker, Player victim, MythicEffectHandler handler) {
+    private void applyMythicCriticalEffect(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim, MythicEffectHandler handler) {
         if (event.isCritical()) {
             handler.apply(attacker, victim);
         }
@@ -986,7 +994,7 @@ public class DamageListener implements Listener {
      * active Tidy Up window the hit is therefore dropped entirely - Tidy Up remains the one
      * state in which a wand swing does anything.
      */
-    private void applyAlchemistWandMelee(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+    private void applyAlchemistWandMelee(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim) {
         AlchemistWandHandler handler = mythicManager.getHandler(AlchemistWandHandler.class);
         if (!handler.isTidyUpActive(attacker.getUniqueId())) {
             event.setCancelled(true);
@@ -998,7 +1006,7 @@ public class DamageListener implements Listener {
     /**
      * Apply Goblin Spear melee effect
      */
-    private void applyGoblinSpearEffect(EntityDamageByEntityEvent event, Player attacker, Player victim) {
+    private void applyGoblinSpearEffect(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim) {
         if (event.getDamager() instanceof Player) {
             mythicManager.getHandler(GoblinSpearHandler.class).handleGoblinSpearHit(attacker, victim, true);
         }
@@ -1010,7 +1018,7 @@ public class DamageListener implements Listener {
      */
     @FunctionalInterface
     private interface MythicEffectHandler {
-        void apply(Player attacker, Player victim);
+        void apply(Player attacker, LivingEntity victim);
     }
 
     /**
