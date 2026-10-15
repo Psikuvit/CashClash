@@ -155,7 +155,8 @@ public final class CashClashPlugin extends JavaPlugin {
             armorIconManager = new ArmorIconManager(gameManager, customArmorManager, itemsConfig);
 
             // Tier 4: depend on tier 3 managers.
-            queueManager = new QueueManager(gameManager, arenaManager, configManager, partyManager, lobbyManager, layoutManager, messagesConfig);
+            queueManager = new QueueManager(gameManager, gamemodeManager, arenaManager, configManager, partyManager,
+                    lobbyManager, layoutManager, messagesConfig);
 
             // Tier 5: depend on tier 4 managers.
             practiceRangeManager = new PracticeRangeManager(gameManager, configManager, lobbyManager, queueManager, messagesConfig);

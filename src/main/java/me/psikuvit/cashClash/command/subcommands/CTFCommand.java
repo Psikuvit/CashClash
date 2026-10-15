@@ -2,12 +2,9 @@ package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.util.Messages;
-import me.psikuvit.cashClash.util.command.CommandValidation;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -20,17 +17,8 @@ public class CTFCommand extends AbstractArgCommand {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args) {
-        Player player = CommandValidation.getPlayerOrNull(sender);
-        if (player == null) return true;
-
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (session == null) {
-            Messages.send(sender, "generic.not-in-game");
-            return true;
-        }
-
-        CashClashPlugin.getInstance().getGamemodeManager().setNextGamemode(session.getSessionId(), GamemodeType.CAPTURE_THE_FLAG);
-        sender.sendMessage(Messages.parse("<green>Next gamemode for this session set to Capture the Flag.</green>"));
+        CashClashPlugin.getInstance().getQueueManager().setNextGamemode(GamemodeType.CAPTURE_THE_FLAG);
+        Messages.send(sender, "admin.next-gamemode-set", "gamemode", GamemodeType.CAPTURE_THE_FLAG.getDisplayName());
         return true;
     }
 }

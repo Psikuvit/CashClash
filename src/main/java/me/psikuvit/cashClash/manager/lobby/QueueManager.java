@@ -7,8 +7,10 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.gamemode.GamemodeType;
 import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.party.Party;
 import me.psikuvit.cashClash.party.PartyManager;
 import me.psikuvit.cashClash.util.ActionBarQueue;
@@ -46,6 +48,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class QueueManager implements Shutdownable, Listener {
 
     private final GameManager gameManager;
+    private final GamemodeManager gamemodeManager;
     private final ArenaManager arenaManager;
     private final ConfigManager configManager;
     private final PartyManager partyManager;
@@ -57,6 +60,7 @@ public class QueueManager implements Shutdownable, Listener {
     private final List<String> tipBag = new ArrayList<>();
     private BukkitTask tickTask;
     private GameSession reservedSession;
+    private GamemodeType nextGamemode;
     private int countdownRemaining = -1;
     private boolean forceStart;
     private boolean waitingForArenaNotified;
@@ -64,10 +68,11 @@ public class QueueManager implements Shutdownable, Listener {
     private String currentTip;
     private String lastTip;
 
-    public QueueManager(GameManager gameManager, ArenaManager arenaManager, ConfigManager configManager,
-                        PartyManager partyManager, LobbyManager lobbyManager, LayoutManager layoutManager,
-                        MessagesConfig messagesConfig) {
+    public QueueManager(GameManager gameManager, GamemodeManager gamemodeManager, ArenaManager arenaManager,
+                        ConfigManager configManager, PartyManager partyManager, LobbyManager lobbyManager,
+                        LayoutManager layoutManager, MessagesConfig messagesConfig) {
         this.gameManager = gameManager;
+        this.gamemodeManager = gamemodeManager;
         this.arenaManager = arenaManager;
         this.configManager = configManager;
         this.partyManager = partyManager;
@@ -163,6 +168,13 @@ public class QueueManager implements Shutdownable, Listener {
      */
     public void remove(Player player) {
         queue.remove(player.getUniqueId());
+    }
+
+    /**
+     * Plays the queue's next game in this gamemode instead of a random one (admin override).
+     */
+    public void setNextGamemode(GamemodeType type) {
+        nextGamemode = type;
     }
 
     /**
@@ -322,6 +334,11 @@ public class QueueManager implements Shutdownable, Listener {
             Team team = session.getPlayerTeam(player);
             if (team != null) Messages.send(player, "round.team-assignment", "team_color", team.getColoredName());
         });
+
+        if (nextGamemode != null) {
+            gamemodeManager.setNextGamemode(session.getSessionId(), nextGamemode);
+            nextGamemode = null;
+        }
 
         Messages.debug("GAME", "Queue started a game in arena " + session.getArenaNumber() + " with " + starting.size() + " player(s)");
         session.start();
