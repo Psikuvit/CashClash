@@ -532,14 +532,22 @@ public class PracticeRangeManager implements Shutdownable, Listener {
 
     /**
      * Nobody dies in the practice range: a hit that would kill a practicing player sends them
-     * back to the spawn on full health instead.
+     * back to the spawn on full health instead. MONITOR, so the Totem of Haunting and the mini
+     * totem (HIGHEST) get to save them first - they cancel the hit, and this skips it.
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPracticePlayerLethalDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player) || !isPracticing(player)) return;
         if (event.getFinalDamage() < player.getHealth()) return;
 
         event.setCancelled(true);
+        knockOut(player);
+    }
+
+    /**
+     * Back to the range's spawn on full health - what a practicing player gets instead of dying.
+     */
+    private void knockOut(Player player) {
         CashClashPlayer.healToFull(player);
         player.setFireTicks(0);
         player.setFallDistance(0);

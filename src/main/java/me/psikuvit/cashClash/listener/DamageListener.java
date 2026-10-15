@@ -49,6 +49,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Sound;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -431,17 +432,19 @@ public class DamageListener implements Listener {
     // ==================== TOTEM OF HAUNTING ====================
 
     /**
-     * Cancels a would-be-lethal hit from another player when the victim holds a Totem of
-     * Haunting, triggering its death-save instead. Runs at HIGHEST (after the main HIGH-priority
-     * handlers have applied their damage modifiers) so the lethality check reflects final damage.
+     * Cancels a would-be-lethal hit from another player - or, in the practice range, one of its
+     * enemy mobs - when the victim holds a Totem of Haunting, triggering its death-save instead.
+     * Runs at HIGHEST (after the main HIGH-priority handlers have applied their damage
+     * modifiers) so the lethality check reflects final damage.
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onLethalDamageTotemCheck(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player victim)) {
             return;
         }
-        Player attacker = resolveAttacker(event);
-        if (attacker == null) {
+        Entity source = event.getDamager() instanceof Projectile projectile && projectile.getShooter() instanceof Entity shooter
+                ? shooter : event.getDamager();
+        if (!(source instanceof Player) && !PDCDetection.isPracticeMob(source)) {
             return;
         }
         if (victim.getHealth() - event.getFinalDamage() > 0) {
@@ -479,7 +482,7 @@ public class DamageListener implements Listener {
         if (!(event.getEntity() instanceof Player victim)) {
             return;
         }
-        if (gameManager.getPlayerSession(victim) == null) {
+        if (CashClashPlayer.from(victim) == null) {
             return;
         }
         if (victim.getHealth() - event.getFinalDamage() > 0) {
