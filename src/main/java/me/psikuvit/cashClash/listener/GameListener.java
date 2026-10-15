@@ -47,6 +47,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -127,6 +128,19 @@ public class GameListener implements Listener {
     }
 
     // ==================== PLAYER DEATH ====================
+
+    /**
+     * Vanilla sends a death message to the whole server. Each game and the hub are separate
+     * audiences, so it only goes to players in the same world.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onDeathMessage(PlayerDeathEvent event) {
+        Component message = event.deathMessage();
+        if (message == null) return;
+
+        event.deathMessage(null);
+        event.getPlayer().getWorld().getPlayers().forEach(viewer -> viewer.sendMessage(message));
+    }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerDeath(PlayerDeathEvent event) {
