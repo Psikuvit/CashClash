@@ -357,6 +357,13 @@ public class GameSession {
         return roundManager.getTimeRemaining();
     }
 
+    /**
+     * Whether the PTP presidents are picking their buffs this buy phase.
+     */
+    public boolean isBuffSelectionPhase() {
+        return roundManager != null && roundManager.isBuffSelectionPhase();
+    }
+
     public void startCombatPhase() {
         stateMachine.transitionTo(GameState.COMBAT);
 

@@ -379,7 +379,7 @@ public class InteractListener implements Listener {
             return;
         }
 
-        if (session.getState() == GameState.BUFF_SELECTION) {
+        if (session.isBuffSelectionPhase()) {
             event.setCancelled(true);
             Messages.send(player, "listener.ready-during-buff-selection");
             return;

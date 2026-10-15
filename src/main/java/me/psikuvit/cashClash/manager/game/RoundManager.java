@@ -39,9 +39,18 @@ public class RoundManager {
     private final GameSession session;
     private BukkitTask phaseTask;
     private int timeRemaining;
+    private boolean buffSelectionPhase;
 
     public RoundManager(GameSession session) {
         this.session = session;
+    }
+
+    /**
+     * Whether the presidents are picking their buffs. The session's state stays SHOPPING for
+     * this phase, so this is the only way to tell it apart.
+     */
+    public boolean isBuffSelectionPhase() {
+        return buffSelectionPhase;
     }
 
     public void startShoppingPhase(int roundNumber) {
@@ -143,6 +152,7 @@ public class RoundManager {
             phaseTask.cancel();
             phaseTask = null;
         }
+        buffSelectionPhase = phaseType == GameState.BUFF_SELECTION;
 
         // Set duration based on phase type
         ConfigManager config = CashClashPlugin.getInstance().getConfigManager();
