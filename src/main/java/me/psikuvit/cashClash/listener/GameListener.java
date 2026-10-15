@@ -240,7 +240,7 @@ public class GameListener implements Listener {
     /**
      * Killing one of the practice range's enemy mobs counts as a kill for the killer's armor,
      * same as killing a player in a game: Deathmauler's heal, Dragon's Strength, Flamebringer's
-     * pull and the Investor's Set reward.
+     * pull and the Investor's Set reward - and a kill inside a Profit Vortex pays out.
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPracticeMobKill(EntityDeathEvent event) {
@@ -248,6 +248,7 @@ public class GameListener implements Listener {
         Player killer = mob.getKiller();
         if (killer == null || !PDCDetection.isPracticeMob(mob) || gameManager.getPlayerSession(killer) != null) return;
 
+        weaponItemManager.getHandler(CashBlasterHandler.class).onProfitVortexMobDeath(mob, killer);
         armorManager.getHandler(DeathmaulerSetHandler.class).onPlayerKill(killer, null);
         armorManager.getHandler(DragonSetHandler.class).onPlayerKillDragon(killer);
         armorManager.getHandler(FlamebringerSetHandler.class).onFlamebringerKill(killer);

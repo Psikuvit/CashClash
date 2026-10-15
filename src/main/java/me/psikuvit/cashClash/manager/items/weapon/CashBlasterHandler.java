@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Keys;
@@ -50,14 +51,14 @@ public class CashBlasterHandler extends WeaponItemHandler {
     private final Map<UUID, Boolean> cashBlasterSupercharged;
 
     private final Map<Location, UUID> profitVortexOwners;
-    private final Map<UUID, Location> playersKilledInProfitVortex;
+    private final Map<UUID, Location> caughtInProfitVortex;
     private final Map<Location, Set<UUID>> spectralVortexMarkedPlayers;
 
     public CashBlasterHandler(WeaponItemManager manager) {
         super(manager);
         this.cashBlasterSupercharged = new HashMap<>();
         this.profitVortexOwners = new HashMap<>();
-        this.playersKilledInProfitVortex = new HashMap<>();
+        this.caughtInProfitVortex = new HashMap<>();
         this.spectralVortexMarkedPlayers = new HashMap<>();
     }
 
@@ -220,7 +221,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
                     spectralVortexMarkedPlayers.get(vortexLocation).add(target.getUniqueId());
                 }
                 AbilityTargets.applyEffect(target, PotionEffectType.SLOWNESS, 20, 0);
-                if (target instanceof Player) playersKilledInProfitVortex.put(target.getUniqueId(), vortexLocation);
+                caughtInProfitVortex.put(target.getUniqueId(), vortexLocation);
             }
         }, 0L, 5L);
 
@@ -230,7 +231,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
             }
             profitVortexOwners.remove(vortexLocation);
             spectralVortexMarkedPlayers.remove(vortexLocation);
-            playersKilledInProfitVortex.entrySet().removeIf(entry -> entry.getValue().equals(vortexLocation));
+            caughtInProfitVortex.entrySet().removeIf(entry -> entry.getValue().equals(vortexLocation));
             SoundUtils.playAt(vortexLocation, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 1.5f, 1.2f);
         }, durationTicks);
     }
@@ -240,12 +241,12 @@ public class CashBlasterHandler extends WeaponItemHandler {
      */
     public void onProfitVortexDeath(PlayerDeathEvent event) {
         Player victim = event.getEntity();
-        if (!playersKilledInProfitVortex.containsKey(victim.getUniqueId())) return;
+        if (!caughtInProfitVortex.containsKey(victim.getUniqueId())) return;
 
         Player killer = victim.getKiller();
         if (killer == null) return;
 
-        Location vortexLocation = playersKilledInProfitVortex.get(victim.getUniqueId());
+        Location vortexLocation = caughtInProfitVortex.get(victim.getUniqueId());
         if (vortexLocation.distance(victim.getLocation()) > 5) return;
 
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(killer);
@@ -260,13 +261,31 @@ public class CashBlasterHandler extends WeaponItemHandler {
 
             Player teammate = Bukkit.getPlayer(uuid);
             if (teammate == null || !teammate.isOnline()) continue;
-
-            SoundUtils.play(teammate, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
-            Messages.send(teammate, "customitem.cash-blaster-vortex-reward", "amount", String.valueOf(coins));
-            ParticleUtils.emeraldRing(teammate);
+            playVortexReward(teammate, coins);
         }
 
-        playersKilledInProfitVortex.remove(victim.getUniqueId());
+        caughtInProfitVortex.remove(victim.getUniqueId());
+    }
+
+    /**
+     * A practice-range mob killed inside a Profit Vortex pays the killer like a kill in a game
+     * pays their team - just them, since the range has no teams, and silently, so it never
+     * counts toward their lifetime coins earned.
+     */
+    public void onProfitVortexMobDeath(LivingEntity mob, Player killer) {
+        Location vortexLocation = caughtInProfitVortex.remove(mob.getUniqueId());
+        if (vortexLocation == null || vortexLocation.distance(mob.getLocation()) > 5) return;
+
+        int coins = cfg.getCashBlasterVortexKillReward();
+        CashClashPlayer wallet = CashClashPlayer.from(killer);
+        if (wallet != null) wallet.addCoinsSilently(coins);
+        playVortexReward(killer, coins);
+    }
+
+    private void playVortexReward(Player player, int coins) {
+        SoundUtils.play(player, Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
+        Messages.send(player, "customitem.cash-blaster-vortex-reward", "amount", String.valueOf(coins));
+        ParticleUtils.emeraldRing(player);
     }
 
     /**
@@ -383,7 +402,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
         });
         cashBlasterSupercharged.clear();
         profitVortexOwners.clear();
-        playersKilledInProfitVortex.clear();
+        caughtInProfitVortex.clear();
         spectralVortexMarkedPlayers.clear();
     }
 }
