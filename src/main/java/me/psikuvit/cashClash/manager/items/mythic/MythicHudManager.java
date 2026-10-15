@@ -51,18 +51,17 @@ public class MythicHudManager implements Shutdownable {
         task = SchedulerUtils.runTaskTimer(this::tick, UPDATE_TICKS, UPDATE_TICKS);
     }
 
+    /**
+     * Every online player, not just those in a game - mythics work in the practice range too.
+     */
     private void tick() {
-        Set<UUID> inGame = new HashSet<>();
-        for (GameSession session : gameManager.getActiveSessions()) {
-            for (UUID uuid : session.getPlayers()) {
-                Player player = Bukkit.getPlayer(uuid);
-                if (player == null) continue;
-                inGame.add(uuid);
-                update(session, player);
-            }
+        Set<UUID> online = new HashSet<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            online.add(player.getUniqueId());
+            update(gameManager.getPlayerSession(player), player);
         }
-        shownLine.keySet().retainAll(inGame);
-        shownAt.keySet().retainAll(inGame);
+        shownLine.keySet().retainAll(online);
+        shownAt.keySet().retainAll(online);
     }
 
     private void update(GameSession session, Player player) {
@@ -96,7 +95,8 @@ public class MythicHudManager implements Shutdownable {
         if (mythic == null) return null;
 
         List<HudSegment> segments = mythicItemManager.getHandler(mythic).hudSegments(player);
-        boolean silenced = session.getGamemode() instanceof CaptureTheFlagGamemode ctf && ctf.isSilenced(player.getUniqueId());
+        boolean silenced = session != null && session.getGamemode() instanceof CaptureTheFlagGamemode ctf
+                && ctf.isSilenced(player.getUniqueId());
         if (silenced && segments.isEmpty()) {
             segments = List.of(new HudSegment(MythicItemHandler.hudText("silenced"), true));
         }
