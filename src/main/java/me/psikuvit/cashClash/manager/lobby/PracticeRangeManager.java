@@ -7,6 +7,8 @@ import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.player.PurchaseRecord;
+import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
@@ -142,6 +144,19 @@ public class PracticeRangeManager implements Shutdownable, Listener {
 
     public CashClashPlayer getPracticePlayer(UUID uuid) {
         return practicing.get(uuid);
+    }
+
+    /**
+     * The mythic a practicing player has bought since entering - the range keeps a game's
+     * one-mythic limit. Null if none, or if they're not practicing.
+     */
+    public MythicItem getPracticeMythic(Player player) {
+        CashClashPlayer wallet = practicing.get(player.getUniqueId());
+        if (wallet == null) return null;
+        for (PurchaseRecord record : wallet.getPurchaseHistory()) {
+            if (record.item() instanceof MythicItem mythic) return mythic;
+        }
+        return null;
     }
 
     // ==================== ENTERING / LEAVING ====================

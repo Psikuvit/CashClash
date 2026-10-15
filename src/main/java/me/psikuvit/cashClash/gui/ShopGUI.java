@@ -119,18 +119,20 @@ public class ShopGUI extends AbstractGui {
     }
 
     /**
-     * The practice range's shop sells every mythic, without a game's one-per-player limit.
+     * The practice range's shop sells every mythic, with a game's one-per-player limit: once a
+     * player has bought one, its slot turns into a barrier for them and the rest are locked.
      */
     private void addPracticeMythics() {
         for (int slot : MYTHIC_SEPARATOR_SLOTS) {
             setItem(slot, createPane(Material.BLACK_STAINED_GLASS_PANE));
         }
 
+        MythicItem owned = CashClashPlugin.getInstance().getPracticeRangeManager().getPracticeMythic(viewer);
         MythicItem[] mythics = MythicItem.values();
         for (int i = 0; i < mythics.length && i < PRACTICE_MYTHIC_SLOTS.length; i++) {
             MythicItem mythic = mythics[i];
             ItemStack icon = CashClashPlugin.getInstance().getItemFactory().getGuiFactory()
-                    .createMythicShopItem(viewer, mythic, false, null, false, null);
+                    .createMythicShopItem(viewer, mythic, owned != null, owned, false, null);
             setButton(PRACTICE_MYTHIC_SLOTS[i], GuiButton.of(icon)
                     .onClick(p -> MythicCategoryGui.handleMythicPurchase(p, mythic, this)));
         }

@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
+import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.DiscountService;
 import me.psikuvit.cashClash.shop.items.MythicItem;
@@ -40,7 +41,12 @@ public final class MythicCategoryGui {
     public static void handleMythicPurchase(Player player, MythicItem mythic, AbstractGui parentGui) {
         GameSession sess = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (sess == null) {
-            if (CashClashPlugin.getInstance().getPracticeRangeManager().isPracticing(player)) {
+            PracticeRangeManager practiceRange = CashClashPlugin.getInstance().getPracticeRangeManager();
+            MythicItem owned = practiceRange.getPracticeMythic(player);
+            if (owned != null) {
+                Messages.send(player, "shop.mythic-already-owned", "mythic_name", owned.getDisplayName());
+                SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+            } else if (practiceRange.isPracticing(player)) {
                 buyMythic(player, mythic, parentGui, null);
             } else {
                 Messages.send(player, "shop.must-be-in-game");
