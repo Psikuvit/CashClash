@@ -120,6 +120,14 @@ public final class AbilityTargets {
         applyEffect(target, type, durationTicks, amplifier, false, false);
     }
 
+    public static void applyEffect(LivingEntity target, PotionEffect effect) {
+        if (target instanceof Player player) {
+            CashClashPlayer.applyEffect(player, effect);
+        } else {
+            target.addPotionEffect(effect);
+        }
+    }
+
     public static void removeEffect(LivingEntity target, PotionEffectType type) {
         if (target instanceof Player player) {
             CashClashPlayer.removeEffect(player, type);

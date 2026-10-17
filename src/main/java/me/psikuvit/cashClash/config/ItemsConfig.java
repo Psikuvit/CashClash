@@ -445,6 +445,14 @@ public class ItemsConfig {
         return config.getInt("mythic-items.alchemist-wand.tidy-up.cooldown-seconds", 24);
     }
 
+    /**
+     * Tidy Up removes an effect with at most this many seconds left, and halves the time left
+     * on a longer one.
+     */
+    public int getAlchemistTidyUpRemoveMaxSeconds() {
+        return config.getInt("mythic-items.alchemist-wand.tidy-up.remove-max-seconds", 10);
+    }
+
     // Alchemist Wand Taunt
     public int getAlchemistTauntDuration() {
         return config.getInt("mythic-items.alchemist-wand.taunt.duration-seconds", 7);

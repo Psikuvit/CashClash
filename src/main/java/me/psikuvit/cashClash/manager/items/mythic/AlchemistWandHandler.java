@@ -516,21 +516,12 @@ public class AlchemistWandHandler extends MythicItemHandler {
         String messageKey = sameTeam ? "mythic.alchemist-tidy-up-cleansed" : "mythic.alchemist-tidy-up-stripped";
 
         for (LivingEntity member : affected) {
-            boolean removedAny = false;
+            boolean tidiedAny = false;
             for (PotionEffectType type : effectsToRemove) {
-                if (cfg.isArmorReadyIcon(type)) continue;
-                if (member instanceof Player player) {
-                    if (CashClashPlayer.hasEffect(player, type) && !CashClashPlayer.isGodAppleEffect(player, type)) {
-                        CashClashPlayer.removeEffect(player, type);
-                        removedAny = true;
-                    }
-                } else if (member.hasPotionEffect(type)) {
-                    member.removePotionEffect(type);
-                    removedAny = true;
-                }
+                if (!cfg.isArmorReadyIcon(type) && tidyEffect(member, type)) tidiedAny = true;
             }
 
-            if (removedAny) {
+            if (tidiedAny) {
                 ParticleUtils.verticalBeam(member.getLocation(), beamColor, 5.0, 6, 0.5f, 6);
                 SoundUtils.playAt(member.getLocation(), sound, 1.0f, 1.2f);
                 if (member instanceof Player player) Messages.send(player, messageKey);
@@ -541,6 +532,24 @@ public class AlchemistWandHandler extends MythicItemHandler {
                 + " (" + (sameTeam ? "cleanse" : "strip") + ")");
 
         endAlchemistTidyUp(attacker, false);
+    }
+
+    /**
+     * Tidies one effect off a target: removed if it has at most {@code remove-max-seconds} left,
+     * otherwise its time left is halved. An infinite effect is removed - it has no time to halve.
+     *
+     * @return false if the target didn't have the effect
+     */
+    private boolean tidyEffect(LivingEntity target, PotionEffectType type) {
+        PotionEffect effect = target instanceof Player player ? CashClashPlayer.getEffect(player, type) : target.getPotionEffect(type);
+        if (effect == null) return false;
+
+        AbilityTargets.removeEffect(target, type);
+        int ticksLeft = effect.getDuration();
+        if (!effect.isInfinite() && ticksLeft > cfg.getAlchemistTidyUpRemoveMaxSeconds() * 20) {
+            AbilityTargets.applyEffect(target, effect.withDuration(ticksLeft / 2));
+        }
+        return true;
     }
 
     /**
