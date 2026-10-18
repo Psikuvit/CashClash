@@ -49,8 +49,7 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
     public void onPlayerKill(Player killer, GameSession session) {
         if (!hasDeathmaulerSet(killer)) return;
 
-        // Heal 4 hearts (8 HP) through the centralized health system
-        CashClashPlayer.heal(killer, 8.0);
+        CashClashPlayer.heal(killer, cfg.getDeathmaulerKillHealAmount());
 
         Messages.send(killer, "armor.deathmauler-heal");
 
@@ -75,7 +74,8 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
             if (!cooldownManager.hasTimePassedSeconds(id, CooldownManager.Keys.DEATHMAULER_DAMAGE, delaySeconds)) {
                 return;
             }
-            CashClashPlayer.applyEffect(p, PotionEffectType.ABSORPTION, 60 * 20, 0);
+            CashClashPlayer.applyEffect(p, PotionEffectType.ABSORPTION,
+                    cfg.getDeathmaulerAbsorptionDurationSeconds() * 20, cfg.getDeathmaulerAbsorptionLevel());
             Messages.send(p, "armor.deathmauler-absorption");
         }, delaySeconds * 20L);
     }

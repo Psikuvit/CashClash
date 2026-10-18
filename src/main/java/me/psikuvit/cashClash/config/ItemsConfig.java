@@ -874,6 +874,18 @@ public class ItemsConfig {
         return config.getInt("custom-armor.deathmauler.absorption.no-damage-delay-seconds", 8);
     }
 
+    public int getDeathmaulerAbsorptionLevel() {
+        return config.getInt("custom-armor.deathmauler.absorption.absorption-level", 0);
+    }
+
+    public int getDeathmaulerAbsorptionDurationSeconds() {
+        return config.getInt("custom-armor.deathmauler.absorption.absorption-duration-seconds", 60);
+    }
+
+    public double getDeathmaulerKillHealAmount() {
+        return config.getDouble("custom-armor.deathmauler.kill-heal-amount", 8.0);
+    }
+
     public int getDeathmaulerSoulBurstCooldown() {
         return config.getInt("custom-armor.deathmauler.soul-burst.cooldown-seconds", 35);
     }
