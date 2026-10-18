@@ -262,6 +262,14 @@ custom-armor:
       no-damage-delay-seconds: 8
       absorption-level: 0
       absorption-duration-seconds: 60
+    # Soul Burst - a fully charged melee hit while at or below low-health-percent of your max
+    # health sends out a ring that drains every enemy it reaches and heals you for each one
+    soul-burst:
+      cooldown-seconds: 35
+      low-health-percent: 50
+      radius: 5.5               # How far the ring reaches (blocks)
+      drain-per-enemy: 3.0      # Health taken from each enemy the ring reaches
+      heal-per-enemy: 3.0       # Health you get back for each of them
 
   # Dragon Set
   dragon:

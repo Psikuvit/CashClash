@@ -874,6 +874,29 @@ public class ItemsConfig {
         return config.getInt("custom-armor.deathmauler.absorption.no-damage-delay-seconds", 8);
     }
 
+    public int getDeathmaulerSoulBurstCooldown() {
+        return config.getInt("custom-armor.deathmauler.soul-burst.cooldown-seconds", 35);
+    }
+
+    /**
+     * Soul Burst only goes off while the wearer is at or below this percent of their max health.
+     */
+    public double getDeathmaulerSoulBurstLowHealthPercent() {
+        return config.getDouble("custom-armor.deathmauler.soul-burst.low-health-percent", 50.0);
+    }
+
+    public double getDeathmaulerSoulBurstRadius() {
+        return config.getDouble("custom-armor.deathmauler.soul-burst.radius", 5.5);
+    }
+
+    public double getDeathmaulerSoulBurstDrainPerEnemy() {
+        return config.getDouble("custom-armor.deathmauler.soul-burst.drain-per-enemy", 3.0);
+    }
+
+    public double getDeathmaulerSoulBurstHealPerEnemy() {
+        return config.getDouble("custom-armor.deathmauler.soul-burst.heal-per-enemy", 3.0);
+    }
+
     // Bunny Shoes
     public int getBunnyShoesDuration() {
         return config.getInt("custom-armor.bunny-shoes.duration-seconds", 15);

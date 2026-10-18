@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Deathmauler's Outfit - kill healing, absorption after avoiding damage,
- * and a Soul Burst ring when attacking below half health.
+ * and a Soul Burst ring when attacking at low health (custom-armor.deathmauler.soul-burst).
  */
 public class DeathmaulerSetHandler extends ArmorSetHandler {
 
@@ -86,18 +86,21 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
 
         // Use centralized health system for correct max health
         double max = CashClashPlayer.getMaxHealth(attacker);
-        if (attacker.getHealth() > max * 0.5) return;
+        if (attacker.getHealth() > max * cfg.getDeathmaulerSoulBurstLowHealthPercent() / 100.0) return;
 
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST)) return;
 
         if (!isFullyChargedMelee(attacker)) return;
 
-        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST, 35);
+        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.DEATHMAULER_SOUL_BURST, cfg.getDeathmaulerSoulBurstCooldown());
         Messages.send(attacker, "armor.soul-burst");
         SoundUtils.play(attacker, Sound.ENTITY_WITHER_SHOOT, 1.0f, 0.8f);
 
         Location center = attacker.getLocation();
         Set<UUID> hitPlayers = ConcurrentHashMap.newKeySet();
+        double maxRadius = cfg.getDeathmaulerSoulBurstRadius();
+        double drain = cfg.getDeathmaulerSoulBurstDrainPerEnemy();
+        double heal = cfg.getDeathmaulerSoulBurstHealPerEnemy();
 
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             private double radius = 0.5;
@@ -110,7 +113,7 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
                 }
 
                 radius += 0.5;
-                if (radius >= 6.0) {
+                if (radius > maxRadius) {
                     cancel();
                     int enemies = hitPlayers.size();
                     Messages.send(attacker, enemies == 1 ? "armor.soul-burst-enemy" : "armor.soul-burst-enemies",
@@ -126,11 +129,11 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
                     hitPlayers.add(target.getUniqueId());
 
                     if (target instanceof Player victimPlayer) {
-                        CashClashPlayer.setHealth(victimPlayer, victimPlayer.getHealth() - 3.0);
+                        CashClashPlayer.setHealth(victimPlayer, victimPlayer.getHealth() - drain);
                     } else {
-                        target.setHealth(Math.max(0.0, target.getHealth() - 3.0));
+                        target.setHealth(Math.max(0.0, target.getHealth() - drain));
                     }
-                    CashClashPlayer.heal(attacker, 3.0);
+                    CashClashPlayer.heal(attacker, heal);
 
                     ParticleUtils.hitFeedback(target.getLocation(), 10, 0.2);
                 }
