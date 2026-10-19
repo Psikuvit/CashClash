@@ -454,6 +454,21 @@ public class CashClashPlayer {
     }
 
     /**
+     * Lengthens the effect of this type already on the player by {@code extraTicks}, as long as
+     * it is still the one at {@code amplifier} and not infinite. Tracking is left as it was: a
+     * plugin-applied effect stays tracked, a vanilla one stays untracked.
+     */
+    public void extendEffect(PotionEffectType type, int amplifier, int extraTicks) {
+        if (type == null || player == null || extraTicks <= 0) return;
+        PotionEffect current = player.getPotionEffect(type);
+        if (current == null || current.isInfinite() || current.getAmplifier() != amplifier) return;
+
+        PotionEffect extended = current.withDuration(current.getDuration() + extraTicks);
+        player.addPotionEffect(extended);
+        trackedEffects.computeIfPresent(type, (t, old) -> extended);
+    }
+
+    /**
      * Whether the player currently has an active potion effect of this type.
      */
     public boolean hasEffect(PotionEffectType type) {

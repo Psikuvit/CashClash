@@ -314,6 +314,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public void cleanup() {
+        clearPresidentialBuffs();
         cancelTask(selectionTask);
         glowingTasks.values().forEach(this::cancelTask);
         glowingTasks.clear();
@@ -627,9 +628,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
         for (PresidentialBuff buff : buffs) {
             switch (buff) {
                 case OFFENSE -> PresidentialEffectsUtils.applyPotionEffect(presPlayer, PotionEffectType.STRENGTH);
-                case TANK -> PresidentialEffectsUtils.applyTankBuff(presPlayer);
-                case SPEED -> PresidentialEffectsUtils.applyPotionEffect(presPlayer, PotionEffectType.SPEED);
+                case ATTACK_SPEED -> PresidentialEffectsUtils.applyAttackSpeedBuff(presPlayer);
                 case HP -> PresidentialEffectsUtils.applyHpBuff(presPlayer);
+                case POTION_DURATION -> Messages.debug("[PTP] Potion Duration buff active for: " + presPlayer.getName());
             }
 
             Messages.send(presPlayer, "gamemode-ptp.buff-activated", "buff_name", buff.getName());
@@ -638,6 +639,13 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     public boolean isNotPresident(UUID uuid) {
         return findPresidentTeam(uuid) == 0;
+    }
+
+    /**
+     * Whether this player is a president this round and picked {@code buff}.
+     */
+    public boolean hasBuff(UUID uuid, PresidentialBuff buff) {
+        return !isNotPresident(uuid) && getSelectedBuffs(uuid).contains(buff);
     }
 
     /**
@@ -797,8 +805,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
         
         switch (slot) {
             case 1 -> buff = PresidentialBuff.OFFENSE;       // Strength
-            case 3 -> buff = PresidentialBuff.SPEED;         // Speed
-            case 5 -> buff = PresidentialBuff.TANK;          // Resistance
+            case 3 -> buff = PresidentialBuff.ATTACK_SPEED;
+            case 5 -> buff = PresidentialBuff.POTION_DURATION;
             case 7 -> buff = PresidentialBuff.HP;            // Health
             default -> {
                 Messages.debug("[PTP] Invalid slot clicked: " + slot);
@@ -902,8 +910,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
      */
     public enum PresidentialBuff {
         OFFENSE("Strength"),
-        TANK("Resistance"),
-        SPEED("Speed"),
+        POTION_DURATION("Potion Duration"),
+        ATTACK_SPEED("Attack Speed"),
         HP("Extra Hearts");
 
         private final String name;

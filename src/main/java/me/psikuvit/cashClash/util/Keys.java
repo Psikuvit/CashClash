@@ -168,6 +168,11 @@ public class Keys {
     public static final NamespacedKey OVERDRIVE_SPEED;
 
     /**
+     * The PTP Attack Speed buff's ATTACK_SPEED AttributeModifier key.
+     */
+    public static final NamespacedKey PTP_ATTACK_SPEED;
+
+    /**
      * BlazeBite's freeze-solid AttributeModifier keys (movement speed and jump strength to zero).
      */
     public static final NamespacedKey BLAZEBITE_FREEZE_SPEED;
@@ -236,6 +241,7 @@ public class Keys {
         EEL_SLOW = new NamespacedKey(CashClashPlugin.getInstance(), "electric_eel_dash_slow");
         LOTUS_SLOW = new NamespacedKey(CashClashPlugin.getInstance(), "radiating_lotus_slow");
         OVERDRIVE_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "overdrive_speed");
+        PTP_ATTACK_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "ptp_attack_speed");
         BLAZEBITE_FREEZE_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "blazebite_freeze_speed");
         BLAZEBITE_FREEZE_JUMP = new NamespacedKey(CashClashPlugin.getInstance(), "blazebite_freeze_jump");
         SOUL_KATANA_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "soul_katana");

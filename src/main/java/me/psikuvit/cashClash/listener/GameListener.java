@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
+import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.armor.BullseyePantsHandler;
@@ -72,6 +73,7 @@ import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
@@ -82,7 +84,9 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.potion.PotionEffectTypeCategory;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -101,6 +105,7 @@ public class GameListener implements Listener {
     private static final long RESPAWN_TITLE_STAY_MS = 1200L;
 
     private final Map<UUID, Location> pendingSpectatorTransition = new ConcurrentHashMap<>();
+    private boolean stretchingEffect;
 
     private final ConfigManager configManager;
     private final CooldownManager cooldownManager;
@@ -1147,6 +1152,42 @@ public class GameListener implements Listener {
         if (session != null) {
             session.getGamemode().onPlayerSpawn(player);
         }
+    }
+
+    /**
+     * The PTP Potion Duration buff: a positive effect landing on a president who picked it lasts
+     * {@code potion-duration-bonus-percent} longer. It is lengthened a tick later, once the
+     * effect is actually on them; that re-application is waved through by {@code stretchingEffect}
+     * so it isn't lengthened again.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPresidentPotionEffect(EntityPotionEffectEvent event) {
+        if (stretchingEffect || !(event.getEntity() instanceof Player player)) return;
+        if (event.getAction() != EntityPotionEffectEvent.Action.ADDED
+                && event.getAction() != EntityPotionEffectEvent.Action.CHANGED) return;
+
+        PotionEffect effect = event.getNewEffect();
+        if (effect == null || effect.isInfinite() || effect.getType().isInstant()) return;
+        if (effect.getType().getCategory() != PotionEffectTypeCategory.BENEFICIAL
+                || itemsConfig.isArmorReadyIcon(effect.getType())) return;
+
+        GameSession session = gameManager.getPlayerSession(player);
+        if (session == null || session.getState() != GameState.COMBAT) return;
+        if (!(session.getGamemode() instanceof ProtectThePresidentGamemode ptp)
+                || !ptp.hasBuff(player.getUniqueId(), ProtectThePresidentGamemode.PresidentialBuff.POTION_DURATION)) return;
+
+        int extraTicks = (int) Math.round(effect.getDuration() * configManager.getPTPPotionDurationBonusPercent() / 100.0);
+        SchedulerUtils.runTask(() -> {
+            CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
+            if (ccp == null || !player.isOnline()) return;
+
+            stretchingEffect = true;
+            try {
+                ccp.extendEffect(effect.getType(), effect.getAmplifier(), extraTicks);
+            } finally {
+                stretchingEffect = false;
+            }
+        });
     }
 
     /**

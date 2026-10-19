@@ -461,8 +461,12 @@ public class ConfigManager {
         return config.getInt("gamemodes.protect-the-president.captures-to-win", 2);
     }
 
-    public int getPTPTankResistanceAmplifier() {
-        return config.getInt("gamemodes.protect-the-president.tank-resistance-amplifier", 0);
+    public double getPTPAttackSpeedBonus() {
+        return config.getDouble("gamemodes.protect-the-president.attack-speed-bonus", 0.2);
+    }
+
+    public double getPTPPotionDurationBonusPercent() {
+        return config.getDouble("gamemodes.protect-the-president.potion-duration-bonus-percent", 40.0);
     }
 
     public double getPTPHpHealAmount() {

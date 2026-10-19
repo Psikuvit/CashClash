@@ -281,8 +281,10 @@ gamemodes:
     kill-bonus-threshold: 2
     kill-bonus-amount: 15000
     captures-to-win: 2
-    # Tank buff: Resistance amplifier level (0 = level I)
-    tank-resistance-amplifier: 0
+    # Attack Speed buff: added to the president's attack speed attribute (vanilla base 4.0)
+    attack-speed-bonus: 0.2
+    # Potion Duration buff: positive effects on the president last this much longer
+    potion-duration-bonus-percent: 40.0
     # HP buff: permanent max-health increase, applied via the health modifier system (4.0 = 2 hearts)
     hp-heal-amount: 4.0
 
