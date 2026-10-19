@@ -821,7 +821,7 @@ public class GameListener implements Listener {
     public void onProjectileHit(ProjectileHitEvent event) {
         if (event.isCancelled()) return;
 
-        if (passThroughTeammate(event)) return;
+        if (passThroughTeammate(event) || passThroughStormSource(event)) return;
 
         // Trident first: it is itself an AbstractArrow, so it would otherwise never get here.
         if (event.getEntity() instanceof Trident trident) {
@@ -851,6 +851,21 @@ public class GameListener implements Listener {
      *
      * @return true if the projectile was waved through and the rest of the handler must skip
      */
+    /**
+     * A Bullseye storm bursts out of the player whose hit set it off, so its arrows fly straight
+     * through them instead of all landing on them.
+     *
+     * @return true if the arrow was waved through
+     */
+    private boolean passThroughStormSource(ProjectileHitEvent event) {
+        if (event.getHitEntity() == null) return false;
+        String source = event.getEntity().getPersistentDataContainer().get(Keys.BULLSEYE_STORM_SOURCE, PersistentDataType.STRING);
+        if (!event.getHitEntity().getUniqueId().toString().equals(source)) return false;
+
+        event.setCancelled(true);
+        return true;
+    }
+
     private boolean passThroughTeammate(ProjectileHitEvent event) {
         if (!(event.getEntity().getShooter() instanceof Player shooter)) return false;
         if (!AbilityTargets.isAlly(shooter, event.getHitEntity())) return false;

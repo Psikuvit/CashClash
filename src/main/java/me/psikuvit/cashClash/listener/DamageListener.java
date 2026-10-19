@@ -867,6 +867,8 @@ public class DamageListener implements Listener {
             Vector direction = new Vector(Math.cos(angle), 0.2, Math.sin(angle)).normalize();
 
             Arrow aoeArrow = attacker.getWorld().spawn(impact, Arrow.class);
+            aoeArrow.getPersistentDataContainer().set(Keys.BULLSEYE_STORM_SOURCE, PersistentDataType.STRING,
+                    victim.getUniqueId().toString());
             aoeArrow.setShooter(attacker);
             aoeArrow.setVelocity(direction.multiply(1.5));
             aoeArrow.setCritical(true);
