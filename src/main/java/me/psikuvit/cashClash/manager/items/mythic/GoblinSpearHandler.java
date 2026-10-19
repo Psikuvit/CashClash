@@ -182,8 +182,9 @@ public class GoblinSpearHandler extends MythicItemHandler {
     }
 
     /**
-     * End Goblin Spear charge, applying recoil damage (scaled by how long the charge ran) to the
-     * charger if it ended on a wall, and a multiple of that same damage to any caught players.
+     * End Goblin Spear charge. If it ended on a wall, the charger takes recoil damage and each
+     * caught enemy takes its own damage - both scaled by how long the charge ran, each with its own
+     * per-second rate.
      */
     private void endCharge(Player player, boolean hitWall, int ticksTraveled, Vector chargeDirection) {
         UUID uuid = player.getUniqueId();
@@ -192,11 +193,9 @@ public class GoblinSpearHandler extends MythicItemHandler {
         if (!hitWall) {
             Messages.debug(player, "GOBLIN_SPEAR: Charge ended without wall impact");
         } else {
-            // 1 heart (2.0 hp) of recoil damage per second the charge ran before impact - caught
-            // players take a multiple of that, not the same amount the charger takes.
             double secondsTraveled = ticksTraveled / 20.0;
             double damage = secondsTraveled * cfg.getGoblinChargeRecoilDamagePerSecond();
-            double enemyDamage = damage * cfg.getGoblinChargeEnemyDamageMultiplier();
+            double enemyDamage = secondsTraveled * cfg.getGoblinChargeEnemyDamagePerSecond();
             int poisonDuration = cfg.getGoblinChargePoisonDuration();
             int poisonLevel = cfg.getGoblinChargePoisonLevel();
 

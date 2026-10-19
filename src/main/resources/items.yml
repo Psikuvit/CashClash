@@ -99,7 +99,7 @@ mythic-items:
       speed: 1.5                    # Charge speed multiplier
       max-duration-ticks: 60        # Max charge time (3 seconds)
       recoil-damage-per-second: 2.0 # 1 heart/second traveled - dealt to the charger themselves on wall impact
-      enemy-damage-multiplier: 2.0  # caught players take this many times the charger's own recoil damage
+      enemy-damage-per-second: 4.0  # dealt to each caught enemy on wall impact, per second traveled
       poison-duration-seconds: 3
       poison-level: 1
 

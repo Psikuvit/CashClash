@@ -263,9 +263,9 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.goblin-spear.charge.recoil-damage-per-second", 2.0);
     }
 
-    /** Caught players take this many times the charger's own recoil damage - not the same amount. */
-    public double getGoblinChargeEnemyDamageMultiplier() {
-        return config.getDouble("mythic-items.goblin-spear.charge.enemy-damage-multiplier", 2.0);
+    /** Damage per second the charge ran before hitting a wall - dealt to each caught enemy. */
+    public double getGoblinChargeEnemyDamagePerSecond() {
+        return config.getDouble("mythic-items.goblin-spear.charge.enemy-damage-per-second", 4.0);
     }
 
     public int getGoblinChargePoisonDuration() {
