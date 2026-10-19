@@ -229,8 +229,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
         handleFlagHolderDeath(2, victimUuid, victim);
     }
 
+    /**
+     * Nobody spawns holding a flag: one picked up on the tick its carrier died goes back to its
+     * base.
+     */
     @Override
     public void onPlayerSpawn(Player player) {
+        removeFlagIfCarriedByPlayer(1, player.getUniqueId(), player);
+        removeFlagIfCarriedByPlayer(2, player.getUniqueId(), player);
         suddenDeathManager.onPlayerSpawn(player);
     }
 
@@ -910,7 +916,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
             Player player = Bukkit.getPlayer(playerUuid);
             boolean usingOverdrive = CashClashPlugin.getInstance().getCustomItemManager()
                     .getHandler(OverdriveHandler.class).isOverdriveInvincible(playerUuid);
-            if (player == null || !player.isOnline() || player.getGameMode() == GameMode.SPECTATOR || usingOverdrive) {
+            if (player == null || !player.isOnline() || player.isDead() || player.getGameMode() == GameMode.SPECTATOR || usingOverdrive) {
                 playerCircleTimestamps.remove(playerUuid);
                 playerNearestFlagTeam.remove(playerUuid);
                 captureStartedAt.remove(playerUuid);
