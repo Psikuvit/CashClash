@@ -3,8 +3,6 @@ package me.psikuvit.cashClash.listener;
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.shop.items.CustomItem;
-import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -430,12 +428,6 @@ public class BlockListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockPlaceGame(BlockPlaceEvent event) {
         if (event.isCancelled()) return;
-
-        // Radiating Lotus is a GLOWSTONE block item under the hood (for the pack texture) - never placeable.
-        if (PDCDetection.getCustomItem(event.getItemInHand()) == CustomItem.RADIATING_LOTUS) {
-            event.setCancelled(true);
-            return;
-        }
 
         Player player = event.getPlayer();
         UUID zoneId = zoneId(player);

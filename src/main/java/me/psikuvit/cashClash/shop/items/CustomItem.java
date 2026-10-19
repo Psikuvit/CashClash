@@ -23,7 +23,8 @@ public enum CustomItem implements Purchasable {
     // FEATHER now, not NETHER_STAR - the pack's "totem_of_haunting" override lives on feather.json
     // (shared with UtilityItem.TOTEM's "mini_totem", disambiguated by PDC identity, not material).
     TOTEM_OF_HAUNTING(Material.FEATHER, "totem-of-haunting", 1, 2, "Totem of Haunting"),
-    RADIATING_LOTUS(Material.GLOWSTONE, "radiating-lotus", 1, 0, "Radiating Lotus"),
+    // The pack's "radiating_lotus" override has to live on glowstone_dust.json
+    RADIATING_LOTUS(Material.GLOWSTONE_DUST, "radiating-lotus", 1, 0, "Radiating Lotus"),
     ICE_FAN(Material.GUNPOWDER, "ice-fan", 1, 0, "Ice Fan"),
     OVERDRIVE_POTION(Material.GUNPOWDER, "overdrive-potion", 1, 0, "Overdrive Potion"),
     HUNTERS_MARK(Material.GUNPOWDER, "hunters-mark", 1, 0, "Hunter's Mark"),
