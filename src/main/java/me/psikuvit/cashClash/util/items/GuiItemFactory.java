@@ -66,9 +66,7 @@ public final class GuiItemFactory {
 
         // Display total price for stack items (quantity > 1)
         if (quantity > 1) {
-            long totalPrice = item.getPrice() * quantity;
-            builder.price(totalPrice);
-            builder.priceDetail("<gray>Price per item: $" + String.format("%,d", item.getPrice()) + "</gray>");
+            builder.price(item.getPrice() * quantity);
         } else {
             builder.price(item.getPrice(), DiscountService.getFinalPrice(player, item, 1));
         }
