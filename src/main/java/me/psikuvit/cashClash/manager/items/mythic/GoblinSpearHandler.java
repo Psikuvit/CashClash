@@ -13,6 +13,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
+import me.psikuvit.cashClash.util.items.ItemUtils;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -349,6 +350,12 @@ public class GoblinSpearHandler extends MythicItemHandler {
                     cancel();
                     return;
                 }
+                if (trident.getLocation().getY() < trident.getWorld().getMinHeight()) {
+                    returnFromVoid(trident);
+                    display.remove();
+                    cancel();
+                    return;
+                }
 
                 display.teleport(unrotated(trident.getLocation()));
 
@@ -364,6 +371,19 @@ public class GoblinSpearHandler extends MythicItemHandler {
                 }
             }
         }, 0L, 1L);
+    }
+
+    /**
+     * A spear thrown into the void comes straight back to its thrower - Loyalty only brings a
+     * trident back once it has hit something, so one that falls out of the world is lost.
+     */
+    private void returnFromVoid(Trident trident) {
+        ItemStack spear = trident.getItemStack();
+        trident.remove();
+        if (trident.getShooter() instanceof Player thrower && thrower.isOnline()) {
+            ItemUtils.returnItemToInventoryOrDrop(thrower, spear);
+            SoundUtils.play(thrower, Sound.ITEM_TRIDENT_RETURN, 1.0f, 1.0f);
+        }
     }
 
     /**
