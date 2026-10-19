@@ -237,6 +237,19 @@ messages:
     mythic-acquired-cost: "<dark_gray>-${price}</dark_gray>"
 
   # ============================================
+  # SHOP ITEM NAMES - how an item's name looks in the shop menus ({item_name} is the item)
+  # ============================================
+  shop-names:
+    item: "<yellow>{item_name}</yellow>"
+    owned: "<green>{item_name} <gray>(Owned)</gray></green>"
+    maxed: "<green>{item_name} <gray>(Max)</gray></green>"
+    locked: "<red>{item_name} <gray>(Locked)</gray></red>"
+    mythic: "<light_purple><bold>{item_name}</bold></light_purple>"
+    mythic-owned: "<green><bold>{item_name}</bold></green>"
+    mythic-taken: "<dark_red><bold>{item_name}</bold> <dark_gray>(Taken)</dark_gray></dark_red>"
+    mythic-locked: "<gray><bold>{item_name}</bold> <dark_gray>(Locked)</dark_gray></gray>"
+
+  # ============================================
   # BONUS & REWARD MESSAGES
   # ============================================
   bonus:

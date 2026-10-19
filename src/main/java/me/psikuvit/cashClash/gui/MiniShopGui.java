@@ -53,7 +53,7 @@ public class MiniShopGui extends AbstractGui {
     private GuiButton supplyButton(Purchasable item) {
         long price = price(item);
         ItemStack icon = ShopItemBuilder.of(item.getMaterial(), item.getInitialAmount())
-                .name("<yellow>" + item.getDisplayName() + "</yellow>")
+                .styledName("item", item.getDisplayName())
                 .price(price)
                 .purchasePrompt()
                 .itemId(item.name())

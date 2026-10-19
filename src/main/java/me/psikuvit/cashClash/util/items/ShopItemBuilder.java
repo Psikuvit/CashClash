@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.items;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
@@ -75,7 +76,7 @@ public class ShopItemBuilder {
      */
     public static ShopItemBuilder from(Purchasable purchasable) {
         return new ShopItemBuilder(purchasable.getMaterial(), purchasable.getInitialAmount())
-                .name("<yellow>" + purchasable.getDisplayName() + "</yellow>")
+                .styledName("item", purchasable.getDisplayName())
                 .price(purchasable.getPrice())
                 .itemId(purchasable.name());
     }
@@ -89,6 +90,15 @@ public class ShopItemBuilder {
     public ShopItemBuilder name(String miniMessage) {
         meta.displayName(Messages.parse(miniMessage));
         return this;
+    }
+
+    /**
+     * Sets the display name to an item's name in one of the shop's name styles, so server owners
+     * can recolour them - {@code shop-names.<style>} in messages.yml (item, owned, maxed, locked,
+     * mythic, mythic-owned, mythic-taken, mythic-locked).
+     */
+    public ShopItemBuilder styledName(String style, String itemName) {
+        return name(CashClashPlugin.getInstance().getMessagesConfig().getMessage("shop-names." + style, "item_name", itemName));
     }
 
     /**
