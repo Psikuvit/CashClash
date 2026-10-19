@@ -28,6 +28,7 @@ messages:
     help-blockdisplay: "<yellow>/cc blockdisplay <gray>- Edit block displays</gray>"
     help-stop: "<yellow>/cc stop <gray>- Stop an ongoing game</gray>"
     help-forcestart: "<yellow>/cc forcestart <gray>- Force start a game immediately</gray>"
+    help-pickmap: "<yellow>/cc pickmap <template> <gray>- Pick the map for the queue's next game</gray>"
     help-forcenextround: "<yellow>/cc forcenextround <gray>- Force the next round to start</gray>"
     help-selectkit: "<yellow>/cc selectkit <gray>- Select a kit for all players</gray>"
     help-setlobby: "<yellow>/cc setlobby <gray>- Set the lobby spawn point</gray>"
@@ -575,6 +576,9 @@ messages:
     hubbreak-on: "<green>Players can now break blocks in the hub.</green>"
     hubbreak-off: "<green>Hub blocks are protected again.</green> <gray>Players in creative mode can still break them.</gray>"
     next-gamemode-set: "<green>The queue's next game will be <yellow>{gamemode}</yellow>.</green>"
+    next-map-set: "<green>The queue's next game will be played on <yellow>{template}</yellow>.</green>"
+    pickmap-usage: "<red>Usage: /cc pickmap <template></red>"
+    pickmap-unknown: "<red>No ready arena uses the template <gray>{template}</gray>.</red>"
 
   # ============================================
   # TEMPLATE WORLD MESSAGES

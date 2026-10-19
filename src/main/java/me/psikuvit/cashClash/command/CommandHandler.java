@@ -19,6 +19,7 @@ import me.psikuvit.cashClash.command.subcommands.LeaderboardCommand;
 import me.psikuvit.cashClash.command.subcommands.LeaveCommand;
 import me.psikuvit.cashClash.command.subcommands.MythicsCommand;
 import me.psikuvit.cashClash.command.subcommands.PTPCommand;
+import me.psikuvit.cashClash.command.subcommands.PickMapCommand;
 import me.psikuvit.cashClash.command.subcommands.PracticeCommand;
 import me.psikuvit.cashClash.command.subcommands.ReloadCommand;
 import me.psikuvit.cashClash.command.subcommands.SelectKitCommand;
@@ -83,6 +84,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new CTFCommand());
         registerSubcommand(new PTPCommand());
         registerSubcommand(new KCCommand());
+        registerSubcommand(new PickMapCommand());
         registerSubcommand(new SelectKitCommand());
         registerSubcommand(new SetLobbyCommand());
         registerSubcommand(new HubBreakCommand());
@@ -172,6 +174,7 @@ public class CommandHandler extends Command {
             Messages.send(sender, "command.help-blockdisplay");
             Messages.send(sender, "command.help-stop");
             Messages.send(sender, "command.help-forcestart");
+            Messages.send(sender, "command.help-pickmap");
             Messages.send(sender, "command.help-forcenextround");
             sender.sendMessage(Messages.parse("<gray>/cc suddendeath</gray> <dark_gray>-</dark_gray> <yellow>Force sudden death for testing</yellow>"));
             Messages.send(sender, "command.help-selectkit");

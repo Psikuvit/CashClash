@@ -68,6 +68,7 @@ public class QueueManager implements Shutdownable, Listener {
     private BukkitTask tickTask;
     private GameSession reservedSession;
     private GamemodeType nextGamemode;
+    private String nextMapTemplate;
     private int countdownRemaining = -1;
     private boolean forceStart;
     private boolean waitingForArenaNotified;
@@ -199,6 +200,30 @@ public class QueueManager implements Shutdownable, Listener {
      */
     public void setNextGamemode(GamemodeType type) {
         nextGamemode = type;
+    }
+
+    /**
+     * Plays the queue's next game on an arena using this template instead of a random free one
+     * (admin override). A map already loaded for a running countdown is swapped out for it.
+     */
+    public void setNextMap(String templateId) {
+        nextMapTemplate = templateId;
+        if (reservedSession == null) return;
+
+        Arena reserved = arenaManager.getArena(reservedSession.getArenaNumber());
+        if (reserved != null && templateId.equals(reserved.getTemplateId())) return;
+
+        reservedSession.discard();
+        reservedSession = null;
+        reserveMap();
+    }
+
+    /**
+     * Whether any ready arena uses this template, i.e. whether the queue could ever play it.
+     */
+    public boolean hasReadyArena(String templateId) {
+        return arenaManager.getAllArenas().values().stream()
+                .anyMatch(arena -> arena.isReady() && templateId.equals(arena.getTemplateId()));
     }
 
     /**
@@ -363,14 +388,15 @@ public class QueueManager implements Shutdownable, Listener {
             gamemodeManager.setNextGamemode(session.getSessionId(), nextGamemode);
             nextGamemode = null;
         }
+        nextMapTemplate = null;
 
         Messages.debug("GAME", "Queue started a game in arena " + session.getArenaNumber() + " with " + starting.size() + " player(s)");
         session.start();
     }
 
     /**
-     * Loads a random free, ready map for the next game, unless one is loaded already or the
-     * concurrent-game limit is reached.
+     * Loads a random free, ready map for the next game - one on the {@code /cc pickmap} template
+     * if one was picked - unless one is loaded already or the concurrent-game limit is reached.
      */
     private void reserveMap() {
         if (reservedSession != null) return;
@@ -378,7 +404,9 @@ public class QueueManager implements Shutdownable, Listener {
 
         List<Integer> free = new ArrayList<>();
         for (Map.Entry<Integer, Arena> entry : arenaManager.getAllArenas().entrySet()) {
-            if (entry.getValue().isReady() && gameManager.getSessionForArena(entry.getKey()) == null) {
+            Arena arena = entry.getValue();
+            if (nextMapTemplate != null && !nextMapTemplate.equals(arena.getTemplateId())) continue;
+            if (arena.isReady() && gameManager.getSessionForArena(entry.getKey()) == null) {
                 free.add(entry.getKey());
             }
         }
