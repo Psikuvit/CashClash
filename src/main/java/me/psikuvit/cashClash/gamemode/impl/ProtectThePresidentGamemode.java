@@ -261,15 +261,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
             if (killerPresidentTeam != 0) {
                 addTeamKill(killerPresidentTeam);
             }
-
-            // Permanent deaths during Final Stand
-            if (finalStandManager.isActive()) {
-                var cashVictim = session.getCashClashPlayer(victimUuid);
-                if (cashVictim != null) {
-                    cashVictim.setLives(0);
-                    Messages.debug("[PTP] Permanent death during Final Stand for non-president: " + victim.getName());
-                }
-            }
         }
     }
 
@@ -394,11 +385,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public void onFinalStandActivated() {
-        Messages.broadcast(session.getPlayers(), "gamemode-ptp.final-stand-activated");
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.final-stand-last-lives");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.border-closing");
-        activateFinalStandElimination();
+        PTPFinalStandUtils.giveNonPresidentsLastLife(session, this::findPresidentTeam, this::getPresidentName);
         startFinalStandBorder();
-        Messages.debug("[PTP] Final Stand activated - non-Presidents will be eliminated");
     }
 
     /**
@@ -760,13 +750,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.sudden-death-timer-start");
-    }
-
-    /**
-     * Activate Final Stand: eliminate all non-Presidents for 1v1 duel
-     */
-    private void activateFinalStandElimination() {
-        PTPFinalStandUtils.eliminateNonPresidents(session, this::findPresidentTeam, this::getPresidentName);
     }
 
     private void startFinalStandBorder() {

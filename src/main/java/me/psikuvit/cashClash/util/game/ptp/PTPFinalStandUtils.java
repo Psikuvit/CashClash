@@ -19,7 +19,7 @@ import java.util.function.ToIntFunction;
 
 /**
  * Utility class for Protect the President final-stand handling.
- * Extracts border management and elimination logic from the gamemode.
+ * Extracts border management and the last-life rule from the gamemode.
  */
 public class PTPFinalStandUtils {
 
@@ -28,18 +28,19 @@ public class PTPFinalStandUtils {
     }
 
     /**
-     * Eliminate all non-presidents during final stand and notify the surviving presidents.
+     * Put every non-president on their last life for the final stand - their next death keeps
+     * them out for the rest of the round - and notify the presidents.
      *
      * @param session The current session
      * @param presidentTeamLookup Function mapping player UUID to president team number (0 if not president)
      * @param opponentNameLookup Function returning the opposing president's name for a given team
      */
-    public static void eliminateNonPresidents(
+    public static void giveNonPresidentsLastLife(
             GameSession session,
             ToIntFunction<UUID> presidentTeamLookup,
             Function<Integer, String> opponentNameLookup) {
 
-        Messages.debug("[PTP] Final Stand activated - eliminating all non-Presidents");
+        Messages.debug("[PTP] Final Stand activated - non-Presidents are on their last life");
 
         for (UUID playerUuid : new ArrayList<>(session.getPlayers())) {
             Player player = Bukkit.getPlayer(playerUuid);
@@ -49,12 +50,13 @@ public class PTPFinalStandUtils {
 
             int presTeam = presidentTeamLookup.applyAsInt(playerUuid);
             if (presTeam == 0) {
-                var ccp = session.getCashClashPlayer(playerUuid);
-                if (ccp != null) {
-                    ccp.setLives(0);
+                CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
+                if (ccp == null) continue;
+
+                ccp.setLives(Math.min(ccp.getLives(), 1));
+                if (ccp.getLives() > 0) {
+                    Messages.send(player, "gamemode-ptp.final-stand-last-life");
                 }
-                CashClashPlayer.setHealth(player, 0);
-                Messages.debug("[PTP] Eliminated non-president (lives set to 0): " + player.getName());
             } else {
                 Messages.send(player, "gamemode-ptp.final-stand-president-survived",
                         "opponent", opponentNameLookup.apply(presTeam == 1 ? 2 : 1));
