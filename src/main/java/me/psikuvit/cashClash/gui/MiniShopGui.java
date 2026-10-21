@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.GuiItemFactory;
 import me.psikuvit.cashClash.util.items.ShopItemBuilder;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -53,7 +54,7 @@ public class MiniShopGui extends AbstractGui {
     private GuiButton supplyButton(Purchasable item) {
         long price = price(item);
         ItemStack icon = ShopItemBuilder.of(item.getMaterial(), item.getInitialAmount())
-                .styledName("item", item.getDisplayName())
+                .styledName("item", GuiItemFactory.shopName(item))
                 .price(price)
                 .purchasePrompt()
                 .itemId(item.name())

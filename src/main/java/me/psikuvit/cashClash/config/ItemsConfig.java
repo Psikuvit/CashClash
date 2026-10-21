@@ -1219,6 +1219,28 @@ public class ItemsConfig {
     }
 
     /**
+     * The name a shop icon shows for an item: {@code item-lore.{category}.{item-key}.name}, with
+     * {@code {item_name}} replaced by the item's own name, or just its own name if none is set.
+     * Looked up the same way as {@link #getItemLore}, so a set-level entry covers its pieces.
+     */
+    public String getItemName(String category, String itemKey, String displayName) {
+        if (category == null || itemKey == null) {
+            return displayName;
+        }
+
+        for (String resolvedCategory : resolveLoreCategories(category)) {
+            for (String resolvedKey : resolveLoreKeys(itemKey)) {
+                String name = config.getString("item-lore." + resolvedCategory + "." + resolvedKey + ".name");
+                if (name != null && !name.isBlank()) {
+                    return name.replace("{item_name}", displayName);
+                }
+            }
+        }
+
+        return displayName;
+    }
+
+    /**
      * Get configurable hover lore for main shop category icons.
      */
     public List<String> getCategoryLore(String categoryKey) {

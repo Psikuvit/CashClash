@@ -53,7 +53,7 @@ public final class GuiItemFactory {
 
         if (owned) {
             ItemStack ownedItem = ShopItemBuilder.of(item.getMaterial(), quantity)
-                    .styledName("owned", item.getDisplayName())
+                    .styledName("owned", shopName(item))
                     .owned()
                     .itemId(item.name())
                     .build();
@@ -62,7 +62,7 @@ public final class GuiItemFactory {
         }
 
         ShopItemBuilder builder = ShopItemBuilder.of(item.getMaterial(), quantity)
-                .styledName("item", item.getDisplayName());
+                .styledName("item", shopName(item));
 
         // Display total price for stack items (quantity > 1)
         if (quantity > 1) {
@@ -106,13 +106,22 @@ public final class GuiItemFactory {
     }
     
     /**
+     * The item's name as the shop shows it: {@code item-lore.{category}.{item-key}.name} in
+     * items.yml if set, else its own name. The shop's name styles place it.
+     */
+    public static String shopName(Purchasable item) {
+        return CashClashPlugin.getInstance().getItemsConfig()
+                .getItemName(getCategoryForLore(item), item.getConfigKey(), item.getDisplayName());
+    }
+
+    /**
      * Gets the lore category key for an item based on its type.
      * This maps Purchasable types to configuration category names.
      *
      * @param item The purchasable item
      * @return The category key for lore configuration (e.g., "weapons", "armor")
      */
-    private String getCategoryForLore(Purchasable item) {
+    private static String getCategoryForLore(Purchasable item) {
         switch (item) {
             case CustomArmorItem ignored -> {
                 return "custom-armor";
@@ -149,7 +158,7 @@ public final class GuiItemFactory {
     public ItemStack createUpgradableItem(Purchasable item, boolean maxed) {
         if (maxed) {
             ItemStack maxedItem = ShopItemBuilder.of(item.getMaterial())
-                    .styledName("maxed", item.getDisplayName())
+                    .styledName("maxed", shopName(item))
                     .maxed("<gray>Maximum tier reached!</gray>")
                     .itemId(item.name())
                     .build();
@@ -158,7 +167,7 @@ public final class GuiItemFactory {
         }
 
         ShopItemBuilder builder = ShopItemBuilder.of(item.getMaterial())
-                .styledName("item", item.getDisplayName())
+                .styledName("item", shopName(item))
                 .price(item.getPrice());
 
         String category = getCategoryForLore(item);
@@ -192,7 +201,7 @@ public final class GuiItemFactory {
     public ItemStack createLockedDiamondItem(Purchasable item, int currentRound) {
         ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
         ItemStack lockedItem = ShopItemBuilder.of(item.getMaterial())
-                .styledName("locked", item.getDisplayName())
+                .styledName("locked", shopName(item))
                 .price(item.getPrice())
                 .emptyLine()
                 .lore("<red>Diamond limit reached!</red>")
@@ -217,7 +226,7 @@ public final class GuiItemFactory {
         List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore(category, configKey);
 
         ShopItemBuilder builder = ShopItemBuilder.of(type.getMaterial())
-                .styledName("item", type.getDisplayName())
+                .styledName("item", shopName(type))
                 .price(type.getPrice())
                 .emptyLine();
 
@@ -263,7 +272,7 @@ public final class GuiItemFactory {
 
             if (ownsSet) {
                 ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
-                        .styledName("owned", piece.getDisplayName())
+                        .styledName("owned", shopName(piece))
                         .lore("<dark_purple>" + set.getDisplayName() + "</dark_purple>")
                         .emptyLine();
 
@@ -279,7 +288,7 @@ public final class GuiItemFactory {
                 CustomModelDataMapper.applyArmorModel(items[i], piece);
             } else {
                 ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
-                        .styledName("item", piece.getDisplayName())
+                        .styledName("item", shopName(piece))
                         .lore("<dark_purple>" + set.getDisplayName() + "</dark_purple>")
                         .emptyLine();
 
@@ -317,7 +326,8 @@ public final class GuiItemFactory {
      */
     public ItemStack createInvestmentIcon(InvestmentType type) {
         ShopItemBuilder builder = ShopItemBuilder.of(type.getMaterial())
-                .name("<yellow>" + type.name().replace("_", " ") + "</yellow>")
+                .styledName("item", CashClashPlugin.getInstance().getItemsConfig()
+                        .getItemName("investments", type.getConfigKey(), type.name().replace("_", " ")))
                 .price(type.getCost());
 
         List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore("investments", type.getConfigKey());
@@ -394,7 +404,7 @@ public final class GuiItemFactory {
         
         if (isOwned) {
             // Player owns this mythic
-            builder.styledName("mythic-owned", mythic.getDisplayName())
+            builder.styledName("mythic-owned", shopName(mythic))
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
                     .emptyLine();
 
@@ -409,7 +419,7 @@ public final class GuiItemFactory {
         } else if (mythicTaken) {
             // Another player owns this mythic
             String ownerName = ownerUuid != null ? Bukkit.getOfflinePlayer(ownerUuid).getName() : "Someone";
-            builder.styledName("mythic-taken", mythic.getDisplayName())
+            builder.styledName("mythic-taken", shopName(mythic))
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
                     .emptyLine();
 
@@ -423,7 +433,7 @@ public final class GuiItemFactory {
                     .build();
         } else if (playerHasMythic) {
             // Player already has a different mythic
-            builder.styledName("mythic-locked", mythic.getDisplayName())
+            builder.styledName("mythic-locked", shopName(mythic))
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
                     .emptyLine();
 
@@ -441,7 +451,7 @@ public final class GuiItemFactory {
                     .hideAttributes()
                     .hideEnchants()
                     .itemId(mythic.name())
-                    .styledName("mythic", mythic.getDisplayName())
+                    .styledName("mythic", shopName(mythic))
                     .lore("<dark_purple>✦ MYTHIC WEAPON ✦</dark_purple>")
                     .emptyLine()
                     .configLore(loreLinesFromConfig)

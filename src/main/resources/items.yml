@@ -642,6 +642,10 @@ lobby-items:
 # Configure lore for all purchasable items
 # Format: item-lore.{category}.{item-key}.lore: [lore lines]
 # Optional: item-lore.{category}.{item-key}.description: "single line description"
+# Optional: item-lore.{category}.{item-key}.name: "<gold>{item_name}</gold>"
+#   The item's name in the shop - {item_name} is its normal name, so this one just recolours
+#   it. A set's entry (e.g. deathmauler) covers its pieces. messages.yml's shop-names adds the
+#   (Owned)/(Locked)/... markers around it.
 #
 # Categories: weapons, armor, food, utility, custom-items, custom-armor, mythic-items
 #
