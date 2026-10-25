@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
@@ -47,6 +48,8 @@ import org.bukkit.enchantments.Enchantment;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Sound;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
@@ -1005,6 +1008,23 @@ public class DamageListener implements Listener {
      * active Tidy Up window the hit is therefore dropped entirely - Tidy Up remains the one
      * state in which a wand swing does anything.
      */
+    /**
+     * A Tidy Up hit from a player whose attack does no damage at all - a flag carrier, whose
+     * Weakness takes the wand's small attack damage to nothing - never becomes a damage event,
+     * so it's resolved on the swing instead. Any other Tidy Up hit goes through
+     * {@link #applyAlchemistWandMelee} as usual.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onZeroDamageTidyUpHit(PrePlayerAttackEntityEvent event) {
+        Player attacker = event.getPlayer();
+        if (!event.willAttack() || !(event.getAttacked() instanceof LivingEntity victim)) return;
+        if (PDCDetection.getMythic(attacker.getInventory().getItemInMainHand()) != MythicItem.ALCHEMIST_WAND) return;
+
+        AttributeInstance attackDamage = attacker.getAttribute(Attribute.ATTACK_DAMAGE);
+        if (attackDamage == null || attackDamage.getValue() > 0) return;
+        mythicManager.getHandler(AlchemistWandHandler.class).onAlchemistMeleeHit(attacker, victim);
+    }
+
     private void applyAlchemistWandMelee(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim) {
         AlchemistWandHandler handler = mythicManager.getHandler(AlchemistWandHandler.class);
         if (!handler.isTidyUpActive(attacker.getUniqueId())) {
