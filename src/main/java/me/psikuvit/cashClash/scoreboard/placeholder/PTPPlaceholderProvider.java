@@ -67,6 +67,9 @@ public class PTPPlaceholderProvider implements PlaceholderProvider {
     }
 
     private String getPresidentName(UUID presidentUuid) {
+        if (!gamemode.isPresidentRevealed()) {
+            return "Unknown";
+        }
         if (presidentUuid == null) {
             return "None";
         }
@@ -75,6 +78,9 @@ public class PTPPlaceholderProvider implements PlaceholderProvider {
     }
 
     private String getPresidentStatus(UUID presidentUuid) {
+        if (!gamemode.isPresidentRevealed()) {
+            return "Unknown";
+        }
         if (presidentUuid == null) {
             return "<red>No President</red>";
         }

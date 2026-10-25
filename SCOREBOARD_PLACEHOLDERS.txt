@@ -230,13 +230,15 @@ Example: "Time Remaining: {time} seconds"
 
 {red_president} / {blue_president}
   - Shows the name of that team's current president
-  - Returns: Player name, "Unknown" if offline, or "None" if not yet selected
+  - Returns: Player name, "Unknown" if offline or until the round's president reveal has
+    played, or "None" if not yet selected
   - Default: "None"
   - Use Case: PTP gamemode only
 
 {red_president_status} / {blue_president_status}
   - Shows whether that team's president is alive and online
   - Returns: "<green>Active (<name>)</green>", "<red>Offline</red>", or "<red>No President</red>"
+    ("Unknown" until the round's president reveal has played)
   - Default: "<red>No President</red>"
   - Use Case: PTP gamemode only
 

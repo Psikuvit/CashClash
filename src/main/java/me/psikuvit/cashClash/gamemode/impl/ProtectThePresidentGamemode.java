@@ -52,6 +52,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private final SuddenDeathManager suddenDeathManager;
     private final FinalStandManager finalStandManager;
     private boolean selectionPhaseActive;
+    private boolean presidentRevealed;
     private boolean buffSelectionFinalized;
     private BukkitTask selectionTask;
     private int selectionTimeRemaining;
@@ -163,6 +164,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         Messages.debug("[PTP] Selecting presidents for round: " + session.getCurrentRound());
 
         selectedBuffs.clear();
+        presidentRevealed = false;
 
         // Select new presidents for this round (except round 1, presidents already selected)
         if (session.getCurrentRound() > 1) {
@@ -178,7 +180,16 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * finished showing each team their president.
      */
     public void beginBuffSelectionPhase() {
+        presidentRevealed = true;
         startPresidentSelectionPhase();
+    }
+
+    /**
+     * Whether this round's presidents have been shown yet - false from their selection until the
+     * reveal sequence finishes, so the scoreboard doesn't give the names away first.
+     */
+    public boolean isPresidentRevealed() {
+        return presidentRevealed;
     }
 
     /**
