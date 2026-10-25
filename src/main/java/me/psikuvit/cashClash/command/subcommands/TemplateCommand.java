@@ -55,6 +55,7 @@ public class TemplateCommand extends AbstractArgCommand {
             case "list" -> templateList(sender);
             case "tp" -> templateTeleport(sender, args);
             case "removevillager" -> templateRemoveVillager(sender, args);
+            case "resetborder" -> templateResetBorder(sender, args);
             // Spawn room setup is paused along with the spawn rooms
             //case "pos1" -> templateSelect(sender, 0);
             //case "pos2" -> templateSelect(sender, 1);
@@ -72,13 +73,13 @@ public class TemplateCommand extends AbstractArgCommand {
         List<String> out = new ArrayList<>();
 
         if (args.length == 1) {
-            for (String a : List.of("register", "setspawn", "set", "list", "tp", "show", "removevillager")) if (a.startsWith(last)) out.add(a);
+            for (String a : List.of("register", "setspawn", "set", "list", "tp", "show", "removevillager", "resetborder")) if (a.startsWith(last)) out.add(a);
             return out;
         }
 
         String action = args[0].toLowerCase(Locale.ROOT);
         if (args.length == 2) {
-            if (action.equals("setspawn") || action.equals("tp") || action.equals("show") || action.equals("removevillager")) {
+            if (List.of("setspawn", "tp", "show", "removevillager", "resetborder").contains(action)) {
                 out.addAll(CashClashPlugin.getInstance().getArenaManager().getAllTemplates().keySet().stream()
                         .filter(id -> id.toLowerCase(Locale.ROOT).startsWith(last))
                         .toList());
@@ -93,7 +94,7 @@ public class TemplateCommand extends AbstractArgCommand {
             if (action.equals("register")) {
                 out.addAll(Bukkit.getWorlds().stream().map(World::getName).filter(n -> n.toLowerCase(Locale.ROOT).startsWith(last)).toList());
             } else if (action.equals("set")) {
-                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "minishop", "ctf", "finalstandflag")) if (t.startsWith(last)) out.add(t);
+                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "minishop", "ctf", "finalstandflag", "border")) if (t.startsWith(last)) out.add(t);
             }
             return out;
         }
@@ -109,6 +110,9 @@ public class TemplateCommand extends AbstractArgCommand {
                 }
                 case "ctf", "minishop", "finalstandflag" -> {
                     for (String t : List.of("red", "blue")) if (t.startsWith(last)) out.add(t);
+                }
+                case "border" -> {
+                    for (String t : List.of("1", "2")) if (t.startsWith(last)) out.add(t);
                 }
             }
             return out;
@@ -202,6 +206,29 @@ public class TemplateCommand extends AbstractArgCommand {
         Messages.send(player, "template.remove-villager-success", "location", formatLoc(removed), "template_id", templateId);
     }
 
+    /**
+     * {@code /cc template resetborder <id>}: clears both Final Stand border corners, so the
+     * border goes back to starting around the middle of the team spawns.
+     */
+    private void templateResetBorder(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            Messages.send(sender, "template.reset-border-usage");
+            return;
+        }
+
+        String templateId = args[1];
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(templateId);
+        if (tpl == null) {
+            Messages.send(sender, "template.not-found", "template_id", templateId);
+            return;
+        }
+
+        tpl.setBorderCorner(1, null);
+        tpl.setBorderCorner(2, null);
+        CashClashPlugin.getInstance().getArenaManager().saveTemplate(templateId);
+        Messages.send(sender, "template.reset-border-success", "template_id", templateId);
+    }
+
     private void templateTeleport(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             Messages.send(sender, "command.only-players");
@@ -293,6 +320,10 @@ public class TemplateCommand extends AbstractArgCommand {
         for (TeamColor team : TeamColor.values()) {
             Messages.send(player, "template.show-final-stand-flag", "team", team.getDisplayName(),
                     "location", formatLoc(tpl.getFinalStandFlag(team)));
+        }
+        for (int corner = 1; corner <= 2; corner++) {
+            Messages.send(player, "template.show-border-corner", "corner", String.valueOf(corner),
+                    "location", formatLoc(tpl.getBorderCorner(corner)));
         }
 
         // Spawn rooms are paused
@@ -472,6 +503,19 @@ public class TemplateCommand extends AbstractArgCommand {
                 }
                 tpl.setMiniShopVillager(team, stored);
                 Messages.send(player, "template.set-minishop-success", "team", team.getDisplayName(), "template_id", templateId);
+            }
+            case "border" -> {
+                int corner = args.length < 4 ? 0 : switch (args[3]) {
+                    case "1" -> 1;
+                    case "2" -> 2;
+                    default -> 0;
+                };
+                if (corner == 0) {
+                    Messages.send(player, "template.set-border-usage");
+                    return;
+                }
+                tpl.setBorderCorner(corner, stored);
+                Messages.send(player, "template.set-border-success", "corner", String.valueOf(corner), "template_id", templateId);
             }
             case "finalstandflag" -> {
                 TeamColor team = args.length < 4 ? null : parseTeam(args[3]);

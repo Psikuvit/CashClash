@@ -51,7 +51,9 @@ public class PTPFinalStandUtils {
     }
 
     /**
-     * Configure and shrink the world border for final stand.
+     * Configure and shrink the world border for final stand. It starts as the square that takes in
+     * the map's two border corners ({@code /cc template set <id> border 1|2}), or 100 blocks around
+     * the middle of the team spawns when they aren't set, then closes in as usual.
      * Returns the previous border state so it can be restored later.
      *
      * @param session The current session
@@ -74,28 +76,40 @@ public class PTPFinalStandUtils {
             return null;
         }
 
-        Location redSpawn = template.getTeamRedSpawn(0);
-        Location blueSpawn = template.getTeamBlueSpawn(0);
-        if (redSpawn == null || blueSpawn == null) {
-            Messages.debug("[PTP] Cannot start border: team spawns not found");
+        Location corner1 = template.getBorderCorner(1);
+        Location corner2 = template.getBorderCorner(2);
+        Location from;
+        Location to;
+        double startSize;
+        if (corner1 != null && corner2 != null) {
+            from = corner1;
+            to = corner2;
+            startSize = Math.max(Math.abs(corner1.getX() - corner2.getX()), Math.abs(corner1.getZ() - corner2.getZ()));
+        } else {
+            from = template.getTeamRedSpawn(0);
+            to = template.getTeamBlueSpawn(0);
+            startSize = 100.0;
+        }
+        if (from == null || to == null) {
+            Messages.debug("[PTP] Cannot start border: no border corners or team spawns set");
             return null;
         }
 
         Location center = new Location(session.getGameWorld(),
-                (redSpawn.getX() + blueSpawn.getX()) / 2.0,
-                (redSpawn.getY() + blueSpawn.getY()) / 2.0,
-                (redSpawn.getZ() + blueSpawn.getZ()) / 2.0);
+                (from.getX() + to.getX()) / 2.0,
+                (from.getY() + to.getY()) / 2.0,
+                (from.getZ() + to.getZ()) / 2.0);
 
         WorldBorder border = session.getGameWorld().getWorldBorder();
         BorderSnapshot snapshot = new BorderSnapshot(border.getCenter().clone(), border.getSize(), border.getDamageAmount(), border.getDamageBuffer());
 
         border.setCenter(center);
-        border.setSize(100.0);
+        border.setSize(Math.max(startSize, 20.0));
         border.setDamageAmount(1.0);
         border.setDamageBuffer(0.0);
         border.setSize(20.0, 30L);
 
-        Messages.debug("[PTP] Final-stand border started: center=" + center + ", initial=100x100, final=20x20 in 30s");
+        Messages.debug("[PTP] Final-stand border started: center=" + center + ", initial=" + startSize + ", final=20x20 in 30s");
         return snapshot;
     }
 

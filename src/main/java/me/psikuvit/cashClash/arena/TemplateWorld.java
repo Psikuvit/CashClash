@@ -44,6 +44,9 @@ public class TemplateWorld {
     // Where each team's flag moves to for a CTF Final Stand, closer together than the usual spots
     private final Map<TeamColor, Location> finalStandFlags;
 
+    // Two opposite corners of the area the Final Stand border starts out around
+    private final Location[] borderCorners = new Location[2];
+
     // Each team's spawn room and the doorways into it
     private final Map<TeamColor, BlockRegion> spawnRooms;
     private final Map<TeamColor, List<BlockRegion>> spawnRoomDoors;
@@ -232,6 +235,18 @@ public class TemplateWorld {
     public void setFinalStandFlag(TeamColor team, Location loc) {
         if (loc == null) finalStandFlags.remove(team);
         else finalStandFlags.put(team, loc);
+    }
+
+    /**
+     * @param corner 1 or 2
+     * @return that corner of the Final Stand border's starting area, or null if not set
+     */
+    public Location getBorderCorner(int corner) {
+        return LocationUtils.clone(borderCorners[corner - 1]);
+    }
+
+    public void setBorderCorner(int corner, Location loc) {
+        borderCorners[corner - 1] = loc;
     }
 
     /**

@@ -180,6 +180,13 @@ public class ArenaManager {
                 tpl.setBlueFlagLoc(LocationUtils.deserializeLocation(cfg.getConfigurationSection("ctf.blue_flag")));
             }
 
+            for (int corner = 1; corner <= 2; corner++) {
+                String cornerPath = "final_stand_border.corner" + corner;
+                if (cfg.contains(cornerPath)) {
+                    tpl.setBorderCorner(corner, LocationUtils.deserializeLocation(cfg.getConfigurationSection(cornerPath)));
+                }
+            }
+
             for (TeamColor team : TeamColor.values()) {
                 String miniShopPath = "minishop.team" + team.getTeamNumber();
                 if (cfg.contains(miniShopPath)) {
@@ -266,6 +273,13 @@ public class ArenaManager {
         }
         if (tpl.getBlueFlagLoc() != null) {
             LocationUtils.serializeLocation(cfg, "ctf.blue_flag", tpl.getBlueFlagLoc());
+        }
+
+        for (int corner = 1; corner <= 2; corner++) {
+            Location borderCorner = tpl.getBorderCorner(corner);
+            if (borderCorner != null) {
+                LocationUtils.serializeLocation(cfg, "final_stand_border.corner" + corner, borderCorner);
+            }
         }
 
         for (TeamColor team : TeamColor.values()) {
