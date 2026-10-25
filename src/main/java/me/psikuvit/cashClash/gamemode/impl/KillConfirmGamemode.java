@@ -415,7 +415,7 @@ public class KillConfirmGamemode extends Gamemode {
      * Poll every active zone: track each occupant's own hold time, resolve the zone the moment
      * any single player finishes their hold (first of either team to do so wins the zone).
      * A zone that reaches its normal expiry while a killer-team member is still standing in it
-     * is "contested" instead of despawning - it stays alive (showing "Contested!" on its timer)
+     * goes into overtime instead of despawning - it stays alive (showing "Overtime!" on its timer)
      * until it's captured or the killer's team steps off it.
      */
     private void tickCaptureZones() {
@@ -449,7 +449,7 @@ public class KillConfirmGamemode extends Gamemode {
                 KCZoneUtils.showNoTimeLimit(zone);
             } else if (zone.isExpired(now)) {
                 if (isKillerTeamInZone(zone)) {
-                    KCZoneUtils.showContested(zone);
+                    KCZoneUtils.showOvertime(zone);
                 } else {
                     resolveZoneExpired(zone);
                     it.remove();

@@ -45,9 +45,9 @@ public final class KCZoneUtils {
     private static final Display.Brightness PENDING_BRIGHTNESS = new Display.Brightness(3, 3);
     private static final Display.Brightness ACTIVE_BRIGHTNESS = new Display.Brightness(15, 15);
 
-    // Sentinel stored in KCZone#lastDisplayedTimerSeconds while showing "Contested!" instead of
+    // Sentinel stored in KCZone#lastDisplayedTimerSeconds while showing "Overtime!" instead of
     // a countdown number - distinct from the -1 "not yet displayed" default and any real second count.
-    private static final int CONTESTED_SENTINEL = -2;
+    private static final int OVERTIME_SENTINEL = -2;
     private static final int NO_TIME_LIMIT_SENTINEL = -3;
 
     private static final int BEAM_POINTS_PER_BLOCK = 8;
@@ -177,17 +177,17 @@ public final class KCZoneUtils {
     }
 
     /**
-     * Swap a zone's timer text to "Contested!" once it's past its normal expiry but a
-     * killer-team member is still standing in it. No-ops for zones without a timer, or if
-     * "Contested!" is already showing.
+     * Swap a zone's timer text to "Overtime!" ({@code gamemode-kc.zone-overtime}) once it's past
+     * its normal expiry but a killer-team member is still standing in it. No-ops for zones
+     * without a timer, or if it's already showing.
      */
-    public static void showContested(KCZone zone) {
+    public static void showOvertime(KCZone zone) {
         TextDisplay timer = zone.getTimerDisplay();
         if (timer == null || timer.isDead()) return;
-        if (zone.getLastDisplayedTimerSeconds() == CONTESTED_SENTINEL) return;
-        zone.setLastDisplayedTimerSeconds(CONTESTED_SENTINEL);
+        if (zone.getLastDisplayedTimerSeconds() == OVERTIME_SENTINEL) return;
+        zone.setLastDisplayedTimerSeconds(OVERTIME_SENTINEL);
 
-        timer.text(Messages.parse("<red><bold>Contested!</bold></red>"));
+        timer.text(Messages.parse(CashClashPlugin.getInstance().getMessagesConfig().getRaw("gamemode-kc.zone-overtime")));
     }
 
     /**
