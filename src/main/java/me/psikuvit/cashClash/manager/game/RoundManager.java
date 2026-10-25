@@ -411,13 +411,8 @@ public class RoundManager {
         }
 
         // Check if one team is eliminated
-        int teamRedAlive = (int) session.getTeamRed().getPlayers().stream()
-            .filter(uuid -> session.getCurrentRoundData().isAlive(uuid))
-            .count();
-
-        int teamBlueAlive = (int) session.getTeamBlue().getPlayers().stream()
-            .filter(uuid -> session.getCurrentRoundData().isAlive(uuid))
-            .count();
+        int teamRedAlive = countWithLivesLeft(session.getTeamRed());
+        int teamBlueAlive = countWithLivesLeft(session.getTeamBlue());
 
         if (teamRedAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
@@ -442,6 +437,18 @@ public class RoundManager {
 
             endCombatPhase(1);
         }
+    }
+
+    /**
+     * Team members still in the round - out of lives means out until the next round.
+     */
+    private int countWithLivesLeft(Team team) {
+        int count = 0;
+        for (UUID uuid : team.getPlayers()) {
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+            if (ccp != null && ccp.getLives() > 0) count++;
+        }
+        return count;
     }
 
     /**

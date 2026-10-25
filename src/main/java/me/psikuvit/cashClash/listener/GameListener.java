@@ -198,7 +198,7 @@ public class GameListener implements Listener {
                 + " -> death consequences " + (deathConsequencesGated ? "SKIPPED" : "applied"));
         if (!deathConsequencesGated) {
             victim.handleDeath();
-            session.getCurrentRoundData().removeLife(player.getUniqueId());
+            session.getCurrentRoundData().recordDeath(player.getUniqueId());
 
             Player killer = player.getKiller();
             if (killer != null) {

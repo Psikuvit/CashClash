@@ -4,7 +4,6 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
-import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
@@ -173,15 +172,14 @@ public class CashClashPlayer {
 
     /**
      * Whether this player currently counts as "dead" for ability/action-gating purposes: the
-     * session is mid-combat and the current round's data has them marked not alive. Only
+     * session is mid-combat and they're out of lives, i.e. out for the rest of the round. Only
      * meaningful during {@link GameState#COMBAT} - a player is never treated as dead while
-     * waiting, shopping, or between rounds, even if stale round data says otherwise.
+     * waiting, shopping, or between rounds.
      */
     public boolean isDead() {
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null || session.getState() != GameState.COMBAT) return false;
-        RoundData roundData = session.getCurrentRoundData();
-        return roundData != null && !roundData.isAlive(uuid);
+        return lives <= 0;
     }
 
     /**

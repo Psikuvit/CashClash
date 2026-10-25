@@ -45,10 +45,10 @@ public class RoundData {
         }
     }
 
-    public void removeLife(UUID player) {
+    public void recordDeath(UUID player) {
         PlayerRoundStats s = getStats(player);
         if (s != null) {
-            s.incrementKills();
+            s.incrementDeaths();
         }
     }
 
@@ -76,11 +76,6 @@ public class RoundData {
     public long getPoolEarnings(UUID player) {
         PlayerRoundStats s = getStats(player);
         return s == null ? 0 : s.getPoolEarnings();
-    }
-
-    public boolean isAlive(UUID player) {
-        PlayerRoundStats s = getStats(player);
-        return s != null && s.getDeaths() == 0;
     }
 
     public void setFirstBloodPlayer(UUID player) {

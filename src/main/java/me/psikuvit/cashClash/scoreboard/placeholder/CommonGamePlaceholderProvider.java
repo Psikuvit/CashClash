@@ -246,29 +246,15 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
         return switch (placeholder) {
             case "money_pool" -> String.format("%,d", EconomyManager.getRoundPool(session));
             case "round_kills" -> String.valueOf(roundData.getKills(player.getUniqueId()));
-            case "teamRed_alive" -> {
-                Team teamRed = session.getTeamRed();
-                long alive = teamRed.getPlayers().stream().filter(roundData::isAlive).count();
-                yield String.valueOf(alive);
-            }
-            case "teamBlue_alive" -> {
-                Team teamBlue = session.getTeamBlue();
-                long alive = teamBlue.getPlayers().stream().filter(roundData::isAlive).count();
-                yield String.valueOf(alive);
-            }
+            case "teamRed_alive" -> String.valueOf(countInRound(session, session.getTeamRed()));
+            case "teamBlue_alive" -> String.valueOf(countInRound(session, session.getTeamBlue()));
             case "your_team_alive", "enemy_team_alive" -> {
                 Team playerTeam = session.getPlayerTeam(player);
                 if (playerTeam == null) {
                     yield "0";
                 }
-                if (placeholder.equals("your_team_alive")) {
-                    long alive = playerTeam.getPlayers().stream().filter(roundData::isAlive).count();
-                    yield String.valueOf(alive);
-                } else {
-                    Team enemyTeam = session.getOpposingTeam(playerTeam);
-                    long alive = enemyTeam.getPlayers().stream().filter(roundData::isAlive).count();
-                    yield String.valueOf(alive);
-                }
+                Team counted = placeholder.equals("your_team_alive") ? playerTeam : session.getOpposingTeam(playerTeam);
+                yield String.valueOf(countInRound(session, counted));
             }
             default -> null;
         };
@@ -291,6 +277,16 @@ public class CommonGamePlaceholderProvider implements PlaceholderProvider {
             case "round_progress" -> "0/" + totalRounds();
             default -> null;
         };
+    }
+
+    /**
+     * Team members still in the round - out of lives means out until the next round.
+     */
+    private static long countInRound(GameSession session, Team team) {
+        return team.getPlayers().stream()
+                .map(session::getCashClashPlayer)
+                .filter(ccp -> ccp != null && ccp.getLives() > 0)
+                .count();
     }
 
     private static int totalRounds() {
