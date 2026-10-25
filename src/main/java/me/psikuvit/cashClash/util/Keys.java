@@ -200,6 +200,12 @@ public class Keys {
     public static final NamespacedKey LOBBY_ITEM;
 
     /**
+     * Marks a gamemode guide book, so dropping it throws it away instead of leaving it on the
+     * ground.
+     */
+    public static final NamespacedKey GUIDE_BOOK;
+
+    /**
      * Marks a CTF flag banner entity, so a banner left behind anywhere can be found and removed.
      */
     public static final NamespacedKey CTF_FLAG_BANNER;
@@ -249,6 +255,7 @@ public class Keys {
         INVIS_CLOAK_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "invis_cloak");
         KIT_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "kit_item");
         LOBBY_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "lobby_item");
+        GUIDE_BOOK = new NamespacedKey(CashClashPlugin.getInstance(), "guide_book");
         CTF_FLAG_BANNER = new NamespacedKey(CashClashPlugin.getInstance(), "ctf_flag_banner");
     }
 

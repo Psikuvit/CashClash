@@ -1137,6 +1137,27 @@ public class ItemsConfig {
     }
 
     // Any other lobby item, by its key under lobby-items (leave-queue, practice-range, ...)
+    // ==================== GUIDE BOOKS ====================
+
+    public int getGuideBookSlot() {
+        return config.getInt("guide-books.slot", 8);
+    }
+
+    /**
+     * @param modeKey the gamemode's config key, e.g. {@code capture-the-flag}
+     */
+    public String getGuideBookName(String modeKey) {
+        return config.getString("guide-books." + modeKey + ".name", "<gold>Guide</gold>");
+    }
+
+    public String getGuideBookTitle(String modeKey) {
+        return config.getString("guide-books." + modeKey + ".title", "Guide");
+    }
+
+    public List<String> getGuideBookPages(String modeKey) {
+        return config.getStringList("guide-books." + modeKey + ".pages");
+    }
+
     public String getLobbyItemMaterial(String id) {
         return config.getString("lobby-items." + id + ".material", "BARRIER");
     }

@@ -48,6 +48,7 @@ import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
+import me.psikuvit.cashClash.util.items.GuideBooks;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
@@ -440,6 +441,17 @@ public class GameListener implements Listener {
             event.setCancelled(true);
             Messages.send(player, "listener.item-cannot-drop");
         }
+    }
+
+    /**
+     * A dropped guide book is thrown away, not left on the ground - anywhere, in a game or not.
+     * {@code /guidebook} gives it back.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onGuideBookDrop(PlayerDropItemEvent event) {
+        if (!GuideBooks.isGuideBook(event.getItemDrop().getItemStack())) return;
+        event.getItemDrop().remove();
+        Messages.send(event.getPlayer(), "guide-book.dropped");
     }
 
     // ==================== ITEM CONSUME ====================

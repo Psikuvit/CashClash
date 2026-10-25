@@ -36,6 +36,7 @@ import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.GuideBooks;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -355,6 +356,10 @@ public class GameSession {
             scoreboardManager.createBoardForSession(this);
             gamemode.onGameStart();
             players.keySet().forEach(this::applyKit);
+            players.keySet().forEach(uuid -> {
+                Player player = Bukkit.getPlayer(uuid);
+                if (player != null) GuideBooks.give(player, gamemode.getType());
+            });
             roundManager.startShoppingPhase(currentRound);
         });
 

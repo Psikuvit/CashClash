@@ -428,6 +428,14 @@ messages:
     not-in-party: "<red>You are not in a party!</red>"
 
   # ============================================
+  # GUIDE BOOKS
+  # ============================================
+  guide-book:
+    given: "<green>Here's the {gamemode} guide book.</green>"
+    dropped: "<gray>Guide book thrown away - <yellow>/guidebook</yellow> gets it back.</gray>"
+    usage: "<red>Usage: /guidebook <ctf|kc|ptp> (or just /guidebook during a game)</red>"
+
+  # ============================================
   # LOBBY & MANNEQUIN MESSAGES
   # ============================================
   lobby:

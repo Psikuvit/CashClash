@@ -558,6 +558,37 @@ consumables:
 
 
 # ============================================
+# GUIDE BOOKS
+# ============================================
+# A book (it looks like a book and quill) explaining the gamemode, handed to every player when a
+# game starts. Dropping it throws it away for good; /guidebook gives it back. Each entry under
+# pages is one page, in MiniMessage - <newline> starts a new line.
+guide-books:
+  # Hotbar slot it goes in (0-8); the first free slot if that one is taken
+  slot: 8
+  capture-the-flag:
+    name: "<gold><bold>Guide: Capture the Flag</bold></gold>"
+    title: "Capture the Flag"
+    pages:
+      - "<bold>Capture the Flag</bold><newline><newline>Steal the enemy flag and bring it back to your own base to score."
+      - "<bold>Carrying</bold><newline><newline>The carrier is slowed, weakened and can't use movement abilities. Die and the flag drops where you fell."
+      - "<bold>Winning</bold><newline><newline>Most captures when time runs out wins the round. A level score goes to Final Stand: one life, next capture wins."
+  kill-confirm:
+    name: "<gold><bold>Guide: Kill Confirm</bold></gold>"
+    title: "Kill Confirm"
+    pages:
+      - "<bold>Kill Confirm</bold><newline><newline>Every death drops a tag. Stand on an enemy's tag to confirm it and score - stand on a teammate's to deny it."
+      - "<bold>Bonus Tags</bold><newline><newline>Every third kill in a streak drops a Money Tag, which pays your team on top of the point."
+      - "<bold>Winning</bold><newline><newline>Most tags when time runs out wins the round. A level score goes to Final Stand: one life, next capture wins."
+  protect-the-president:
+    name: "<gold><bold>Guide: Protect the President</bold></gold>"
+    title: "Protect the President"
+    pages:
+      - "<bold>Protect the President</bold><newline><newline>Each team has a president. Kill the enemy president twice to win the round."
+      - "<bold>Presidents</bold><newline><newline>The president picks a buff at the start of each round and glows for everyone once combat is underway."
+      - "<bold>Winning</bold><newline><newline>More president kills when time runs out wins the round. A level score goes to Final Stand: one life, next president kill wins."
+
+# ============================================
 # LOBBY ITEMS
 # ============================================
 # Items given to players when they join the lobby
