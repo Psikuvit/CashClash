@@ -16,6 +16,9 @@ combat:
   # Dragon Scale charging, Cash Blaster's Profit Vortex shot, and the fully-charged arrow tag
   # Orb of Gravitation is destroyed by.
   fully-charged-threshold: 0.99
+  # Volume of the sound an attacker hears hitting someone who can't be hurt right now - every
+  # invincibility uses it: Totem of Haunting, Overdrive Potion, Dragon Rush, Blink Swap
+  invincible-hit-sound-volume: 0.9
 
 # ============================================
 # MYTHIC/LEGENDARY ITEMS

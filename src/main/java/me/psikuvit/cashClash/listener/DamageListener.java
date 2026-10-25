@@ -649,10 +649,11 @@ public class DamageListener implements Listener {
     }
 
     /**
-     * The shared "you hit someone who can't be hurt right now" cue.
+     * The shared "you hit someone who can't be hurt right now" cue, at
+     * {@code combat.invincible-hit-sound-volume}.
      */
     private void playInvincibleHitFeedback(Player attacker) {
-        SoundUtils.play(attacker, Sound.ITEM_SHIELD_BLOCK, 0.9f, 0.6f);
+        SoundUtils.play(attacker, Sound.ITEM_SHIELD_BLOCK, itemsConfig.getInvincibleHitSoundVolume(), 0.6f);
     }
 
     /**

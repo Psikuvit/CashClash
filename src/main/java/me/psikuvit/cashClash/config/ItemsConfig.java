@@ -75,6 +75,10 @@ public class ItemsConfig {
         return config.getDouble("combat.fully-charged-threshold", 0.99);
     }
 
+    public float getInvincibleHitSoundVolume() {
+        return (float) config.getDouble("combat.invincible-hit-sound-volume", 0.9);
+    }
+
     // ==================== UTILITIES ====================
 
     /** How many times a placed water or lava source steps outward. */
