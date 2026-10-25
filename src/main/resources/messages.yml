@@ -956,8 +956,6 @@ messages:
     flamebringer-lava-activated: "<gold>Flamebringer: Speed I from lava!</gold>"
     flamebringer-pull-activated: "<gold>🔥 Flamebringer Pull Activated!</gold>"
     flamebringer-pull-ended: "<gray>Flamebringer pull ended.</gray>"
-  # Bullseye Pants
-  bullseye-storm-triggered: "<gold><bold>STORMING ARROW!</bold> +{boost}% damage and arrow burst!</gold>"
 
   # ============================================
   # CUSTOM ITEM MESSAGES

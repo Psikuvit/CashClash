@@ -822,9 +822,13 @@ public class DamageListener implements Listener {
      * Handle Bullseye Pants "Storming arrow" passive.
      * Headshots always trigger a storm. Otherwise only arrows tagged as storming arrows when they
      * were shot (see {@code GameListener#onBullseyeShot}) deal the damage boost and the AOE burst.
+     * A storm's own arrows never set off another, headshot or not.
      */
     private void handleBullseyePantsEffect(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim) {
         if (!(event.getDamager() instanceof AbstractArrow arrow) || arrow instanceof Trident) {
+            return;
+        }
+        if (arrow.getPersistentDataContainer().has(Keys.BULLSEYE_STORM_SOURCE, PersistentDataType.STRING)) {
             return;
         }
 
@@ -846,8 +850,6 @@ public class DamageListener implements Listener {
             double originalDamage = event.getDamage();
             event.setDamage(originalDamage * damageMultiplier);
             triggerStorm(attacker, victim, originalDamage);
-            Messages.send(attacker, "armor.bullseye-storm-triggered",
-                    "boost", String.valueOf(Math.round(itemsConfig.getBullseyeDamageBoost() * 100)));
         }
     }
 
