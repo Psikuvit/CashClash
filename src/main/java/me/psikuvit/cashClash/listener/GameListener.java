@@ -1168,8 +1168,7 @@ public class GameListener implements Listener {
 
         PotionEffect effect = event.getNewEffect();
         if (effect == null || effect.isInfinite() || effect.getType().isInstant()) return;
-        if (effect.getType().getCategory() != PotionEffectTypeCategory.BENEFICIAL
-                || itemsConfig.isArmorReadyIcon(effect.getType())) return;
+        if (effect.getType().getCategory() != PotionEffectTypeCategory.BENEFICIAL) return;
 
         GameSession session = gameManager.getPlayerSession(player);
         if (session == null || session.getState() != GameState.COMBAT) return;

@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
+import me.psikuvit.cashClash.manager.items.mythic.HudSegment;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -56,11 +57,12 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
         return hasBoots && hasLegs;
     }
 
-    /**
-     * Set worn and the lava ability off cooldown - drives the ready icon.
-     */
-    public boolean isAbilityReady(Player player) {
-        return hasFlamebringerSet(player) && !cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN);
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        if (!hasFlamebringerSet(player)) return List.of();
+        List<HudSegment> segments = new ArrayList<>();
+        addCooldownSegment(segments, player.getUniqueId(), CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, "flamebringer");
+        return segments;
     }
 
     /**

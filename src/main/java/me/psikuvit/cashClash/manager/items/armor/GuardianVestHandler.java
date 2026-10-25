@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
+import me.psikuvit.cashClash.manager.items.mythic.HudSegment;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -10,6 +11,8 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,13 +36,12 @@ public class GuardianVestHandler extends ArmorSetHandler {
         return false;
     }
 
-    /**
-     * Worn, a use left this round and off cooldown - drives the ready icon.
-     */
-    public boolean isAbilityReady(Player player) {
-        UUID id = player.getUniqueId();
-        return hasGuardianVest(player) && guardianUsesThisRound.getOrDefault(id, 0) < 3
-                && !cooldownManager.isOnCooldown(id, CooldownManager.Keys.GUARDIAN_VEST);
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        if (!hasGuardianVest(player)) return List.of();
+        List<HudSegment> segments = new ArrayList<>();
+        addCooldownSegment(segments, player.getUniqueId(), CooldownManager.Keys.GUARDIAN_VEST, "guardians-vest");
+        return segments;
     }
 
     public void onPlayerDamaged(Player p, double healthAfter) {

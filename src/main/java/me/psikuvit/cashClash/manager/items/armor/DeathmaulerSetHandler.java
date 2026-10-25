@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.items.mythic.HudSegment;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -16,6 +17,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,11 +42,12 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
         return hasChest && hasLegs;
     }
 
-    /**
-     * Set worn and Soul Burst off cooldown - drives the ready icon.
-     */
-    public boolean isAbilityReady(Player player) {
-        return hasDeathmaulerSet(player) && !cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.DEATHMAULER_SOUL_BURST);
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        if (!hasDeathmaulerSet(player)) return List.of();
+        List<HudSegment> segments = new ArrayList<>();
+        addCooldownSegment(segments, player.getUniqueId(), CooldownManager.Keys.DEATHMAULER_SOUL_BURST, "deathmauler");
+        return segments;
     }
 
     public void onPlayerKill(Player killer, GameSession session) {

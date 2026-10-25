@@ -477,6 +477,18 @@ messages:
       tidy-up: "Tidy Up"
       taunt: "Taunt"
 
+  # Worn armor's part of the action bar, after the held mythic's (same separator)
+  armor-hud:
+    cooldown: "{piece}: {seconds}s"
+    tectonic-cap: "Tectonic Cap: {ready}/{max} ({seconds}s)"
+    dragon-scales: "Scales: {scales}/{max}"
+    dragon-hits: "Next scale: {hits}/{max} hits"
+    piece:
+      bunny-shoes: "Bunny Shoes"
+      guardians-vest: "Guardian's Vest"
+      flamebringer: "Flamebringer"
+      deathmauler: "Soul Burst"
+
   # ============================================
   # MYTHIC ITEM MESSAGES
   # ============================================

@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
+import me.psikuvit.cashClash.manager.items.mythic.HudSegment;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -18,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Base class for per-set armor handlers.
@@ -102,6 +104,36 @@ public abstract class ArmorSetHandler {
 
     private boolean isMeleeWeapon(Material material) {
         return material == Material.TRIDENT || Tag.ITEMS_SWORDS.isTagged(material) || Tag.ITEMS_AXES.isTagged(material);
+    }
+
+    /**
+     * What this armor shows on the action bar while it's worn: the cooldowns of its abilities
+     * that aren't ready, and any counter. Empty when there's nothing to show.
+     */
+    public List<HudSegment> hudSegments(Player player) {
+        return List.of();
+    }
+
+    /**
+     * Adds a piece's cooldown to the HUD if it's on cooldown.
+     */
+    protected void addCooldownSegment(List<HudSegment> segments, UUID uuid, String cooldownKey, String pieceKey) {
+        long remainingMs = cooldownManager.getRemainingCooldownMs(uuid, cooldownKey);
+        if (remainingMs <= 0) return;
+        segments.add(new HudSegment(hudText("cooldown",
+                "piece", hudText("piece." + pieceKey),
+                "seconds", String.valueOf(ceilSeconds(remainingMs))), false));
+    }
+
+    /**
+     * An {@code armor-hud.*} message from messages.yml.
+     */
+    protected static String hudText(String key, String... placeholders) {
+        return CashClashPlugin.getInstance().getMessagesConfig().getMessage("armor-hud." + key, placeholders);
+    }
+
+    protected static long ceilSeconds(long ms) {
+        return ms / 1000L + (ms % 1000L > 0 ? 1 : 0);
     }
 
     public abstract void cleanup();

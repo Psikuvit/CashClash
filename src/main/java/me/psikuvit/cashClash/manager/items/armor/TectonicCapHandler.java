@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
+import me.psikuvit.cashClash.manager.items.mythic.HudSegment;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -17,6 +18,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +36,7 @@ public class TectonicCapHandler extends ArmorSetHandler {
     // More points + smaller dust than a plain manual loop, for a denser/finer ring
     private static final int INNER_RING_POINTS = 48;
     private static final int OUTER_RING_POINTS = 64;
+    private static final int CHARGES = 2;
 
     private final Map<UUID, Long> tectonicCharge1Cooldown;
     private final Map<UUID, Long> tectonicCharge2Cooldown;
@@ -51,6 +54,27 @@ public class TectonicCapHandler extends ArmorSetHandler {
             if (ca == CustomArmorItem.TECTONIC_CAP) return true;
         }
         return false;
+    }
+
+    /**
+     * While a slam charge is recharging: how many are ready and when the next one is back.
+     */
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        if (!hasTectonicCap(player)) return List.of();
+
+        UUID id = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        long charge1Ms = tectonicCharge1Cooldown.getOrDefault(id, 0L) - now;
+        long charge2Ms = tectonicCharge2Cooldown.getOrDefault(id, 0L) - now;
+        int ready = (charge1Ms <= 0 ? 1 : 0) + (charge2Ms <= 0 ? 1 : 0);
+        if (ready == CHARGES) return List.of();
+
+        long nextMs = charge1Ms > 0 && charge2Ms > 0 ? Math.min(charge1Ms, charge2Ms) : Math.max(charge1Ms, charge2Ms);
+        return List.of(new HudSegment(hudText("tectonic-cap",
+                "ready", String.valueOf(ready),
+                "max", String.valueOf(CHARGES),
+                "seconds", String.valueOf(ceilSeconds(nextMs))), false));
     }
 
     /**

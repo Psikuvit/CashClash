@@ -392,7 +392,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
 
             Set<PotionEffectType> active = new HashSet<>();
             for (PotionEffect effect : target.getActivePotionEffects()) {
-                if (!cfg.isArmorReadyIcon(effect.getType())) active.add(effect.getType());
+                active.add(effect.getType());
             }
 
             bottles.keySet().removeIf(type -> {
@@ -518,7 +518,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
         for (LivingEntity member : affected) {
             boolean tidiedAny = false;
             for (PotionEffectType type : effectsToRemove) {
-                if (!cfg.isArmorReadyIcon(type) && tidyEffect(member, type)) tidiedAny = true;
+                if (tidyEffect(member, type)) tidiedAny = true;
             }
 
             if (tidiedAny) {

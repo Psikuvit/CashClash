@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.manager.items.armor;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
+import me.psikuvit.cashClash.manager.items.mythic.HudSegment;
 import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
@@ -24,6 +25,8 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -81,6 +84,27 @@ public class DragonSetHandler extends ArmorSetHandler {
 
     public int getMaxDragonScales() {
         return cfg.getDragonMaxScales();
+    }
+
+    /**
+     * The charged scales, and - until they're all charged - the fully-charged hits counted
+     * toward the next one.
+     */
+    @Override
+    public List<HudSegment> hudSegments(Player player) {
+        if (!hasDragonSet(player)) return List.of();
+
+        int scales = getDragonScales(player);
+        int maxScales = cfg.getDragonMaxScales();
+        List<HudSegment> segments = new ArrayList<>();
+        segments.add(new HudSegment(hudText("dragon-scales",
+                "scales", String.valueOf(scales), "max", String.valueOf(maxScales)), false));
+        if (scales < maxScales) {
+            segments.add(new HudSegment(hudText("dragon-hits",
+                    "hits", String.valueOf(dragonHitCount.getOrDefault(player.getUniqueId(), 0)),
+                    "max", String.valueOf(cfg.getDragonHitsForScale())), false));
+        }
+        return segments;
     }
 
     private void setDragonScales(Player player, int amount) {

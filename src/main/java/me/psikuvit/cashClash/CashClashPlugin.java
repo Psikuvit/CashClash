@@ -30,7 +30,6 @@ import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
 //import me.psikuvit.cashClash.manager.game.SpawnRoomManager;
 import me.psikuvit.cashClash.manager.game.TeamOutlineManager;
-import me.psikuvit.cashClash.manager.items.armor.ArmorIconManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.MythicHudManager;
@@ -100,7 +99,6 @@ public final class CashClashPlugin extends JavaPlugin {
     private WeaponItemManager weaponItemManager;
     private TeamOutlineManager teamOutlineManager;
     private MythicHudManager mythicHudManager;
-    private ArmorIconManager armorIconManager;
     // Spawn rooms are paused (full version on the spawn-rooms-wip branch)
     //private SpawnRoomManager spawnRoomManager;
 
@@ -151,8 +149,7 @@ public final class CashClashPlugin extends JavaPlugin {
             layoutManager = new LayoutManager(playerDataManager, lobbyManager);
             customItemManager = new CustomItemManager(cooldownManager, itemsConfig, customArmorManager);
             weaponItemManager = new WeaponItemManager(cooldownManager, itemsConfig, customArmorManager);
-            mythicHudManager = new MythicHudManager(gameManager, mythicItemManager);
-            armorIconManager = new ArmorIconManager(gameManager, customArmorManager, itemsConfig);
+            mythicHudManager = new MythicHudManager(gameManager, mythicItemManager, customArmorManager);
 
             // Tier 4: depend on tier 3 managers.
             queueManager = new QueueManager(gameManager, gamemodeManager, arenaManager, configManager, partyManager,
@@ -175,11 +172,8 @@ public final class CashClashPlugin extends JavaPlugin {
             // Step 4.6: Start the async leaderboard worker
             leaderboardManager.start();
 
-            // Step 4.7: Start the held-mythic action bar
+            // Step 4.7: Start the mythic and armor action bar
             mythicHudManager.start();
-
-            // Step 4.8: Start the armor ability ready icons
-            armorIconManager.start();
 
             // Step 4.85: Start the game queue (countdown, waiting room action bar and tips)
             queueManager.start();
@@ -243,7 +237,6 @@ public final class CashClashPlugin extends JavaPlugin {
         managers.add(chatManager);
         managers.add(teamOutlineManager);
         managers.add(mythicHudManager);
-        managers.add(armorIconManager);
         //managers.add(spawnRoomManager);
         managers.add(playerDataManager);
 
@@ -309,7 +302,6 @@ public final class CashClashPlugin extends JavaPlugin {
     public WeaponItemManager getWeaponItemManager() { return weaponItemManager; }
     public TeamOutlineManager getTeamOutlineManager() { return teamOutlineManager; }
     public MythicHudManager getMythicHudManager() { return mythicHudManager; }
-    public ArmorIconManager getArmorIconManager() { return armorIconManager; }
     //public SpawnRoomManager getSpawnRoomManager() { return spawnRoomManager; }
 
     private void registerEvents() {

@@ -4,6 +4,8 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.items.armor.ArmorSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.ActionBarQueue;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -22,11 +24,12 @@ import java.util.StringJoiner;
 import java.util.UUID;
 
 /**
- * The action bar above the hotbar while a mythic is held in either hand: the cooldowns of its
+ * The action bar above the hotbar. While a mythic is held in either hand: the cooldowns of its
  * abilities that aren't ready (nothing once they all are), plus Electric Eel's charges,
- * BlazeBite's next-shot mode and BloodWrench's hit counter. The line flashes red after an
- * ability is tried on cooldown and stays red while the holder is silenced. It steps aside while
- * another action-bar display (a countdown, the Blooming Rose HP reveal) has the bar.
+ * BlazeBite's next-shot mode and BloodWrench's hit counter - flashing red after an ability is
+ * tried on cooldown and staying red while the holder is silenced. After those, the worn armor's
+ * cooldowns and the Dragon set's scales ({@link ArmorSetHandler#hudSegments}). It steps aside
+ * while another action-bar display (a countdown, the Blooming Rose HP reveal) has the bar.
  */
 public class MythicHudManager implements Shutdownable {
 
@@ -36,13 +39,15 @@ public class MythicHudManager implements Shutdownable {
 
     private final GameManager gameManager;
     private final MythicItemManager mythicItemManager;
+    private final CustomArmorManager armorManager;
     private final Map<UUID, String> shownLine;
     private final Map<UUID, Long> shownAt;
     private BukkitTask task;
 
-    public MythicHudManager(GameManager gameManager, MythicItemManager mythicItemManager) {
+    public MythicHudManager(GameManager gameManager, MythicItemManager mythicItemManager, CustomArmorManager armorManager) {
         this.gameManager = gameManager;
         this.mythicItemManager = mythicItemManager;
+        this.armorManager = armorManager;
         this.shownLine = new HashMap<>();
         this.shownAt = new HashMap<>();
     }
@@ -90,9 +95,24 @@ public class MythicHudManager implements Shutdownable {
     }
 
     private String buildLine(GameSession session, Player player) {
+        StringJoiner line = new StringJoiner(MythicItemHandler.hudText("separator"));
+        addMythicSegments(line, session, player);
+        for (ArmorSetHandler handler : armorManager.getHandlers()) {
+            for (HudSegment segment : handler.hudSegments(player)) {
+                line.add(colored(segment, false));
+            }
+        }
+        return line.length() == 0 ? null : line.toString();
+    }
+
+    /**
+     * The held mythic's part of the line. The red flash and the silenced state only colour these,
+     * not the armor's.
+     */
+    private void addMythicSegments(StringJoiner line, GameSession session, Player player) {
         MythicItem mythic = PDCDetection.getMythic(player.getInventory().getItemInMainHand());
         if (mythic == null) mythic = PDCDetection.getMythic(player.getInventory().getItemInOffHand());
-        if (mythic == null) return null;
+        if (mythic == null) return;
 
         List<HudSegment> segments = mythicItemManager.getHandler(mythic).hudSegments(player);
         boolean silenced = session != null && session.getGamemode() instanceof CaptureTheFlagGamemode ctf
@@ -100,15 +120,16 @@ public class MythicHudManager implements Shutdownable {
         if (silenced && segments.isEmpty()) {
             segments = List.of(new HudSegment(MythicItemHandler.hudText("silenced"), true));
         }
-        if (segments.isEmpty()) return null;
 
         boolean allRed = silenced || mythicItemManager.isCooldownFlashing(player.getUniqueId());
-        StringJoiner line = new StringJoiner(MythicItemHandler.hudText("separator"));
         for (HudSegment segment : segments) {
-            String color = allRed || segment.alert() ? "red" : "white";
-            line.add("<" + color + ">" + segment.text() + "</" + color + ">");
+            line.add(colored(segment, allRed));
         }
-        return line.toString();
+    }
+
+    private static String colored(HudSegment segment, boolean forceRed) {
+        String color = forceRed || segment.alert() ? "red" : "white";
+        return "<" + color + ">" + segment.text() + "</" + color + ">";
     }
 
     @Override
