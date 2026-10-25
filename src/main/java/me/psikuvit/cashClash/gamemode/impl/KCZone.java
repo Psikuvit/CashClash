@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.gamemode.impl;
 import org.bukkit.Location;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.TextDisplay;
 
 import java.util.HashMap;
@@ -37,6 +38,8 @@ public class KCZone {
     private BlockDisplay platformDisplay;
     private Entity iconDisplay;
     private TextDisplay timerDisplay;
+    // The emerald (Money Tag) or totem (Heart Tag) floating over a bonus tag; null on a plain one
+    private ItemDisplay bonusIconDisplay;
 
     // Whether the 0.5s grey "pending activation" visuals have already been swapped to the
     // lit, kind-colored state. Guards KCZoneUtils#activateZoneEntities from re-running per tick.
@@ -109,6 +112,14 @@ public class KCZone {
 
     public void setTimerDisplay(TextDisplay timerDisplay) {
         this.timerDisplay = timerDisplay;
+    }
+
+    public ItemDisplay getBonusIconDisplay() {
+        return bonusIconDisplay;
+    }
+
+    public void setBonusIconDisplay(ItemDisplay bonusIconDisplay) {
+        this.bonusIconDisplay = bonusIconDisplay;
     }
 
     public boolean isActivated() {

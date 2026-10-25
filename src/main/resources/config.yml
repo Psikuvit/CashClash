@@ -266,6 +266,8 @@ gamemodes:
     beam-height: 6.0
     beam-y-offset: 0.2
     beam-duration-ticks: 10
+    # Height above the tag of the emerald (Money Tag) / totem (Heart Tag) floating over it (blocks)
+    bonus-icon-height: 2.4
     # Capture zone footprint: horizontal half-width and vertical tolerance (blocks) for
     # "standing in the zone", and how far outward to search for clear ground when a death
     # location's footprint is blocked before giving up

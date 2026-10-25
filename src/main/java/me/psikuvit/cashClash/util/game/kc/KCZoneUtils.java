@@ -14,7 +14,6 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
@@ -26,15 +25,15 @@ import java.util.Collection;
 
 /**
  * Spawns and despawns the temporary display entities that make up a Kill Confirm capture zone:
- * a flat glowing 3x3 platform, a nametag/emerald/heart marker floating above it, and a countdown
- * timer above that. Mirrors CTF's flag-banner convention (util.game.ctf.FlagBannerUtils) of using
+ * a flat glowing 3x3 wool platform, the dead player's nametag floating above it, a countdown
+ * timer above that, and - on a Money or Heart Tag - an emerald or totem floating over it all. Mirrors CTF's flag-banner convention (util.game.ctf.FlagBannerUtils) of using
  * BlockDisplay/ItemDisplay entities rather than real placed blocks, so nothing needs to be
  * reverted in the world.
  */
 public final class KCZoneUtils {
 
     private static final Vector3f PLATFORM_SCALE = new Vector3f(3f, 0.15f, 3f);
-    private static final Color GOLD_GLOW = Color.fromRGB(255, 215, 0);
+    // Glow of the floating emerald (Money Tag) / totem (Heart Tag)
     private static final Color GREEN_GLOW = Color.fromRGB(0, 220, 90);
     private static final Color RED_GLOW = Color.fromRGB(220, 40, 40);
     private static final Color BLUE_GLOW = Color.fromRGB(60, 90, 255);
@@ -49,6 +48,9 @@ public final class KCZoneUtils {
     // a countdown number - distinct from the -1 "not yet displayed" default and any real second count.
     private static final int OVERTIME_SENTINEL = -2;
     private static final int NO_TIME_LIMIT_SENTINEL = -3;
+
+    // Height of the timer above a tag's platform, over the nametag
+    private static final double TIMER_Y_OFFSET = 1.7;
 
     private static final int BEAM_POINTS_PER_BLOCK = 8;
     private static final float BEAM_PARTICLE_SIZE = 2.0f;
@@ -98,15 +100,16 @@ public final class KCZoneUtils {
 
         Location iconLoc = flatCenter.clone().add(0, 1.2, 0);
         long pendingSeconds = pendingSecondsRemaining(zone, System.currentTimeMillis());
-        Entity icon = switch (zone.getKind()) {
-            case NAMETAG -> spawnNametag(iconLoc);
-            case MONEY -> spawnIconItem(iconLoc, Material.EMERALD);
-            case HEART -> spawnIconItem(iconLoc, Material.TOTEM_OF_UNDYING);
-        };
-        zone.setIconDisplay(icon);
+        zone.setIconDisplay(spawnNametag(iconLoc));
 
-        Location timerLoc = flatCenter.clone().add(0, timerYOffsetFor(zone.getKind()), 0);
-        zone.setTimerDisplay(spawnTimerDisplay(timerLoc, pendingSeconds, zone.getKind()));
+        if (zone.getKind() != KCZone.ZoneKind.NAMETAG) {
+            double bonusHeight = CashClashPlugin.getInstance().getConfigManager().getKCBonusIconHeight();
+            Material bonusItem = zone.getKind() == KCZone.ZoneKind.MONEY ? Material.EMERALD : Material.TOTEM_OF_UNDYING;
+            zone.setBonusIconDisplay(spawnIconItem(flatCenter.clone().add(0, bonusHeight, 0), bonusItem));
+        }
+
+        Location timerLoc = flatCenter.clone().add(0, TIMER_Y_OFFSET, 0);
+        zone.setTimerDisplay(spawnTimerDisplay(timerLoc, pendingSeconds));
 
         SoundUtils.playAt(flatCenter, Sound.BLOCK_BEACON_ACTIVATE, 1.0f, 1.0f);
     }
@@ -125,8 +128,6 @@ public final class KCZoneUtils {
      * once, the first tick after {@link KCZone#isPendingActivation} goes false.
      */
     public static void activateZoneEntities(KCZone zone) {
-        Color glowColor = glowColorFor(zone.getKind());
-
         BlockDisplay platform = zone.getPlatformDisplay();
         if (platform != null && !platform.isDead()) {
             platform.setGlowing(true);
@@ -135,21 +136,22 @@ public final class KCZoneUtils {
         }
 
         // Glowing renders through walls independent of the model's own depth test - the only
-        // way to make an ItemDisplay (money/heart icon) visible through walls at all, and it
-        // reinforces the TextDisplay nametag's setSeeThrough(true) with the same colored outline
-        // the platform gets.
-        Entity icon = zone.getIconDisplay();
-        if (icon instanceof TextDisplay nametag && !nametag.isDead()) {
+        // way to make the bonus ItemDisplay visible through walls at all, and it reinforces the
+        // TextDisplay nametag's setSeeThrough(true) with the same colored outline the platform gets.
+        if (zone.getIconDisplay() instanceof TextDisplay nametag && !nametag.isDead()) {
             TeamColor victimTeam = TeamColor.fromTeamNumber(zone.getKillerTeam()).opposite();
             String victimTag = victimTeam.getDisplayName().toLowerCase();
             nametag.text(Messages.parse("<" + victimTag + "><bold>" + zone.getVictimName() + "'s Tag</bold></" + victimTag + ">"));
             nametag.setBrightness(ACTIVE_BRIGHTNESS);
             nametag.setGlowing(true);
             nametag.setGlowColorOverride(tagColor(zone));
-        } else if (icon instanceof Display displayIcon && !icon.isDead()) {
-            displayIcon.setBrightness(ACTIVE_BRIGHTNESS);
-            displayIcon.setGlowing(true);
-            displayIcon.setGlowColorOverride(glowColor);
+        }
+
+        ItemDisplay bonusIcon = zone.getBonusIconDisplay();
+        if (bonusIcon != null && !bonusIcon.isDead()) {
+            bonusIcon.setBrightness(ACTIVE_BRIGHTNESS);
+            bonusIcon.setGlowing(true);
+            bonusIcon.setGlowColorOverride(zone.getKind() == KCZone.ZoneKind.MONEY ? GREEN_GLOW : RED_GLOW);
         }
 
         TextDisplay timer = zone.getTimerDisplay();
@@ -172,8 +174,7 @@ public final class KCZoneUtils {
         if (secondsRemaining == zone.getLastDisplayedTimerSeconds()) return;
         zone.setLastDisplayedTimerSeconds(secondsRemaining);
 
-        String colorTag = colorTagFor(zone.getKind());
-        timer.text(Messages.parse("<" + colorTag + "><bold>" + secondsRemaining + "s</bold></" + colorTag + ">"));
+        timer.text(Messages.parse("<gold><bold>" + secondsRemaining + "s</bold></gold>"));
     }
 
     /**
@@ -191,10 +192,6 @@ public final class KCZoneUtils {
     }
 
     /**
-     * A nametag lies on wool in the dead player's team colour; Money and Heart Tags keep their
-     * own blocks.
-     */
-    /**
      * Swap a zone's timer text for the Final Stand "no time limit" label - its tag stays down
      * until someone takes it. No-ops if it's already showing.
      */
@@ -207,47 +204,21 @@ public final class KCZoneUtils {
         timer.text(Messages.parse(CashClashPlugin.getInstance().getMessagesConfig().getRaw("gamemode-kc.zone-no-time-limit")));
     }
 
+    /**
+     * Every tag - Money and Heart Tags included - lies on wool in the dead player's team colour.
+     */
     private static Material platformMaterialFor(KCZone zone) {
-        return switch (zone.getKind()) {
-            case NAMETAG -> TeamColor.fromTeamNumber(zone.getKillerTeam()).opposite() == TeamColor.RED
-                    ? Material.RED_WOOL : Material.BLUE_WOOL;
-            case MONEY -> Material.EMERALD_BLOCK;
-            case HEART -> Material.REDSTONE_BLOCK;
-        };
-    }
-
-    private static Color glowColorFor(KCZone.ZoneKind kind) {
-        return switch (kind) {
-            case NAMETAG -> GOLD_GLOW;
-            case MONEY -> GREEN_GLOW;
-            case HEART -> RED_GLOW;
-        };
+        return TeamColor.fromTeamNumber(zone.getKillerTeam()).opposite() == TeamColor.RED
+                ? Material.RED_WOOL : Material.BLUE_WOOL;
     }
 
     /**
-     * The colour a zone's tag shows as, which its beam matches: a nametag in the dead player's
-     * team colour, a Money Tag green, a Heart Tag red.
+     * The colour a zone's tag shows as, which its beam matches: the dead player's team colour,
+     * whatever kind of tag it is.
      */
     private static Color tagColor(KCZone zone) {
-        if (zone.getKind() != KCZone.ZoneKind.NAMETAG) return glowColorFor(zone.getKind());
         TeamColor victimTeam = TeamColor.fromTeamNumber(zone.getKillerTeam()).opposite();
         return victimTeam == TeamColor.RED ? RED_GLOW : BLUE_GLOW;
-    }
-
-    private static String colorTagFor(KCZone.ZoneKind kind) {
-        return switch (kind) {
-            case NAMETAG -> "gold";
-            case MONEY -> "green";
-            case HEART -> "red";
-        };
-    }
-
-    /**
-     * Height above the platform for the timer display. Raised for MONEY/HEART so it doesn't
-     * crowd the item icon underneath it.
-     */
-    private static double timerYOffsetFor(KCZone.ZoneKind kind) {
-        return kind == KCZone.ZoneKind.NAMETAG ? 1.7 : 2.1;
     }
 
     private static TextDisplay spawnNametag(Location iconLoc) {
@@ -269,21 +240,16 @@ public final class KCZoneUtils {
     }
 
     /**
-     * Pending countdown text for the timer display. NAMETAG zones already have the
-     * "Activating..." label on their icon below, so the timer stays a plain "Ns". MONEY/HEART
-     * zones use an item icon with no text of its own, so their timer carries the "Activating..."
-     * label itself.
+     * Pending countdown text for the timer display - a plain "Ns", since the nametag below it
+     * already says "Activating...".
      */
-    private static String pendingTimerText(long pendingSeconds, KCZone.ZoneKind kind) {
-        String prefix = kind == KCZone.ZoneKind.NAMETAG ? "" : "Activating... ";
-        return "<gray><bold>" + prefix + pendingSeconds + "s</bold></gray>";
+    private static String pendingTimerText(long pendingSeconds) {
+        return "<gray><bold>" + pendingSeconds + "s</bold></gray>";
     }
 
     /**
      * Refresh a zone's pending-activation text while it's still in its activation delay - the
-     * NAMETAG icon (the only icon that's text-capable; MONEY/HEART use an item icon) shows
-     * "Activating...", while the timer display above it (every zone kind has one) shows the
-     * countdown, prefixed with "Activating..." itself for MONEY/HEART zones.
+     * nametag shows "Activating..." and the timer above it the countdown.
      */
     public static void updatePendingActivationDisplay(KCZone zone, long now) {
         long pendingSeconds = pendingSecondsRemaining(zone, now);
@@ -294,7 +260,7 @@ public final class KCZoneUtils {
 
         TextDisplay timer = zone.getTimerDisplay();
         if (timer != null && !timer.isDead()) {
-            timer.text(Messages.parse(pendingTimerText(pendingSeconds, zone.getKind())));
+            timer.text(Messages.parse(pendingTimerText(pendingSeconds)));
         }
     }
 
@@ -322,9 +288,9 @@ public final class KCZoneUtils {
         }
     }
 
-    private static TextDisplay spawnTimerDisplay(Location loc, long pendingSeconds, KCZone.ZoneKind kind) {
+    private static TextDisplay spawnTimerDisplay(Location loc, long pendingSeconds) {
         return loc.getWorld().spawn(loc, TextDisplay.class, display -> {
-            display.text(Messages.parse(pendingTimerText(pendingSeconds, kind)));
+            display.text(Messages.parse(pendingTimerText(pendingSeconds)));
             display.setBillboard(Display.Billboard.CENTER);
             display.setBrightness(PENDING_BRIGHTNESS);
             display.setSeeThrough(true);
@@ -360,6 +326,9 @@ public final class KCZoneUtils {
         }
         if (zone.getTimerDisplay() != null && !zone.getTimerDisplay().isDead()) {
             zone.getTimerDisplay().remove();
+        }
+        if (zone.getBonusIconDisplay() != null && !zone.getBonusIconDisplay().isDead()) {
+            zone.getBonusIconDisplay().remove();
         }
 
         SoundUtils.playAt(zone.getCenter(), Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 1.0f);
