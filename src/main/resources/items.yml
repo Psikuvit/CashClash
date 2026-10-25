@@ -286,6 +286,8 @@ custom-armor:
     rush-teammate-invincibility-seconds: 1
     kill-strength-level: 0
     kill-strength-duration-seconds: 4
+    # Dragon Outrage's landing explosion
+    outrage-damage: 18.0
 
   # Flamebringer Set
   flamebringer:

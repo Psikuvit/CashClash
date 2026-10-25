@@ -1019,6 +1019,11 @@ public class ItemsConfig {
         return config.getInt("custom-armor.dragon.rush-range", 5);
     }
 
+    /** Damage Dragon Outrage's landing explosion deals to each enemy it catches. */
+    public double getDragonOutrageDamage() {
+        return config.getDouble("custom-armor.dragon.outrage-damage", 18.0);
+    }
+
     public double getDragonRushDamagePercent() {
         return config.getDouble("custom-armor.dragon.rush-damage-percentage", 0.25);
     }

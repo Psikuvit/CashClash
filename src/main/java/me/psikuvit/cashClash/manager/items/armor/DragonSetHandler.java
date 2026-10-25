@@ -454,7 +454,7 @@ public class DragonSetHandler extends ArmorSetHandler {
             if (!(entity instanceof LivingEntity target) || target.equals(player)) continue;
             if (inGame ? !(target instanceof Player) : !PDCDetection.isPracticeMob(target)) continue;
 
-            target.damage(18, player);
+            target.damage(cfg.getDragonOutrageDamage(), player);
 
             Vector knockback = target.getLocation()
                     .toVector()
