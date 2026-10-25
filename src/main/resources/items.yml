@@ -32,6 +32,7 @@ mythic-items:
 
   # Carl's Battleaxe
   carls-battleaxe:
+    melee-damage: 11.5          # Attack damage of a normal hit (what the tooltip shows)
     # Spin Attack (Orbit Cleaver) - Shift + right-click to spin the axe around you, dealing
     # damage to nearby enemies
     spin-attack:
@@ -68,6 +69,7 @@ mythic-items:
 
   # Electric Eel Sword
   electric-eel:
+    melee-damage: 7.0           # Attack damage of a normal hit (what the tooltip shows)
     chain-damage:
       cooldown-seconds: 1
       damage: 1.0
@@ -85,6 +87,7 @@ mythic-items:
 
   # Goblin Spear
   goblin-spear:
+    melee-damage: 9.0           # Attack damage of a normal (not thrown) hit
     # Throw attack - no limit on throws
     throw:
       damage: 9.0
@@ -130,6 +133,7 @@ mythic-items:
 
   # Warden Gloves
   warden-gloves:
+    melee-damage: 7.0           # Attack damage of a normal hit (what the tooltip shows)
     shockwave:
       cooldown-seconds: 41
       damage: 12.0

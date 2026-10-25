@@ -121,6 +121,14 @@ public class ItemsConfig {
         return config.getInt("mythic-items.carls-battleaxe.spin-attack.duration-ticks", 80); // 4 seconds
     }
 
+    /**
+     * A melee mythic's attack damage - the full value its tooltip shows, not a bonus on top.
+     * Baked into each copy when it's created.
+     */
+    public double getMythicMeleeDamage(String mythicKey, double fallback) {
+        return config.getDouble("mythic-items." + mythicKey + ".melee-damage", fallback);
+    }
+
     public double getCarlsSpinDamage() {
         return config.getDouble("mythic-items.carls-battleaxe.spin-attack.damage", 6.0);
     }

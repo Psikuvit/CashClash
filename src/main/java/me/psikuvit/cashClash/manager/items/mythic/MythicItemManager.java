@@ -308,11 +308,9 @@ public class MythicItemManager {
     private static final double PLAYER_BASE_ATTACK_SPEED = 4.0;
 
     /**
-     * Each melee mythic (Carl's Battleaxe, Electric Eel Sword, Goblin Spear) keeps its own
-     * vanilla base-material stats - axe, sword, and trident respectively - rather than being
-     * normalized to a common baseline; only Warden Gloves is explicitly pulled down to
-     * diamond-sword-equivalent (7.0 damage / 1.6 speed), since its base material (Netherite
-     * Sword) would otherwise hit harder than an unarmed-style weapon should.
+     * Each melee mythic's damage is {@code mythic-items.<key>.melee-damage} in items.yml; its
+     * swing speed stays its base material's - axe, sword, trident - with Warden Gloves (a
+     * Netherite Sword underneath) at diamond-sword speed.
      */
     private static final double DIAMOND_SWORD_DAMAGE = 7.0;
     private static final double DIAMOND_SWORD_SPEED = 1.6;
@@ -320,18 +318,17 @@ public class MythicItemManager {
     private void applyMythicAttributes(MythicItem mythic, ItemMeta meta) {
         switch (mythic) {
             case CARLS_BATTLEAXE ->
-                // Netherite Axe stats.
-                    addAttackModifiers(meta, Keys.MYTHIC_CARLS_BATTLEAXE_DAMAGE, Keys.MYTHIC_CARLS_BATTLEAXE_SPEED, 10.0, 1.0);
+                    addAttackModifiers(meta, Keys.MYTHIC_CARLS_BATTLEAXE_DAMAGE, Keys.MYTHIC_CARLS_BATTLEAXE_SPEED,
+                            cfg.getMythicMeleeDamage("carls-battleaxe", 11.5), 1.0);
             case ELECTRIC_EEL_SWORD ->
-                // Diamond Sword stats.
-                    addAttackModifiers(meta, Keys.MYTHIC_ELECTRIC_EEL_DAMAGE, Keys.MYTHIC_ELECTRIC_EEL_SPEED, DIAMOND_SWORD_DAMAGE, DIAMOND_SWORD_SPEED);
+                    addAttackModifiers(meta, Keys.MYTHIC_ELECTRIC_EEL_DAMAGE, Keys.MYTHIC_ELECTRIC_EEL_SPEED,
+                            cfg.getMythicMeleeDamage("electric-eel", DIAMOND_SWORD_DAMAGE), DIAMOND_SWORD_SPEED);
             case GOBLIN_SPEAR ->
-                // Trident stats.
-                    addAttackModifiers(meta, Keys.MYTHIC_GOBLIN_SPEAR_DAMAGE, Keys.MYTHIC_GOBLIN_SPEAR_SPEED, 9.0, 1.1);
+                    addAttackModifiers(meta, Keys.MYTHIC_GOBLIN_SPEAR_DAMAGE, Keys.MYTHIC_GOBLIN_SPEAR_SPEED,
+                            cfg.getMythicMeleeDamage("goblin-spear", 9.0), 1.1);
             case WARDEN_GLOVES ->
-                // Netherite Sword base pulled down to diamond-sword-equivalent; Rising Fury only
-                // adds reach on top.
-                    addAttackModifiers(meta, Keys.MYTHIC_WARDEN_GLOVES_DAMAGE, Keys.MYTHIC_WARDEN_GLOVES_SPEED, DIAMOND_SWORD_DAMAGE, DIAMOND_SWORD_SPEED);
+                    addAttackModifiers(meta, Keys.MYTHIC_WARDEN_GLOVES_DAMAGE, Keys.MYTHIC_WARDEN_GLOVES_SPEED,
+                            cfg.getMythicMeleeDamage("warden-gloves", DIAMOND_SWORD_DAMAGE), DIAMOND_SWORD_SPEED);
             default -> {
             }
         }
