@@ -189,6 +189,7 @@ public class Arena {
                 copiedWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
                 copiedWorld.setGameRule(GameRule.KEEP_INVENTORY, true);
                 copiedWorld.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
+                copiedWorld.setGameRule(GameRule.FIRE_DAMAGE, true);
 
                 Messages.debug("ARENA", "Created world copy: " + copyWorldName + " for arena " + name);
 

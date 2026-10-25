@@ -25,6 +25,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -320,6 +321,11 @@ public class RoundManager {
         int suddenDeathPhaseSeconds = config.getSuddenDeathPhaseDuration();
         int warningSeconds = config.getPhaseCountdownWarningSeconds();
         timeRemaining = suddenDeathRound ? suddenDeathPhaseSeconds : config.getCombatPhaseDuration();
+
+        // fireDamage can be switched off on a loaded world from outside the plugin - lava then stops hurting
+        if (session.getGameWorld() != null) {
+            session.getGameWorld().setGameRule(GameRule.FIRE_DAMAGE, true);
+        }
 
         // Teammate outlines, visible only to each player's own team (Feature #7-8)
         CashClashPlugin.getInstance().getTeamOutlineManager().showOutlines(session);
