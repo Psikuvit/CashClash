@@ -584,7 +584,7 @@ messages:
   # TEMPLATE WORLD MESSAGES
   # ============================================
   template:
-    main-usage: "<red>Usage: /cc template <register|set|setspawn|list|tp|show> ...</red>"
+    main-usage: "<red>Usage: /cc template <register|set|setspawn|list|tp|show|removevillager> ...</red>"
     register-usage: "<red>Usage: /cc template register <templateId> <worldName></red>"
     register-success: "<green>Registered template '{template_id}' to world '{world_name}'</green>"
     register-failed: "<red>Failed to register template. Check world name and server logs.</red>"
@@ -599,6 +599,9 @@ messages:
     set-shop-success: "<green>Set shop spawn for team {team} on template '{template_id}'</green>"
     set-spectator-success: "<green>Spectator spawn set for template '{template_id}'</green>"
     set-villager-success: "<green>Added villager/shop spawn for template '{template_id}'</green>"
+    remove-villager-usage: "<red>Usage: /cc template removevillager <templateId> (stand next to the villager's spot)</red>"
+    remove-villager-success: "<green>Removed the villager at {location} from template '{template_id}'.</green>"
+    remove-villager-none: "<red>No shop or mini shop villager within {radius} blocks of you on template '{template_id}'.</red>"
     setspawn-usage: "<red>Usage: /cc template setspawn <templateId></red>"
     setspawn-success: "<green>Lobby spawn for template '{template_id}' set to your current location.</green>"
     list-title: "<gold>=== Templates ===</gold>"
@@ -634,7 +637,7 @@ messages:
     not-found: "<red>Template not found: {template_id}</red>"
     not-found-or-not-loaded: "<red>Template not found or world not loaded: {template_id}</red>"
     world-not-loaded: "<red>Template world is not loaded: {template_id}</red>"
-    invalid-action: "<red>Unknown template action. Use register, set, setspawn, list, tp or show.</red>"
+    invalid-action: "<red>Unknown template action. Use register, set, setspawn, list, tp, show or removevillager.</red>"
     invalid-spawn-type: "<red>Unknown spawn type: {spawn_type}</red>"
     invalid-shop-team: "<red>Invalid shop team. Use teamRed or teamBlue.</red>"
     invalid-set-args: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager> [index/team]</red>"

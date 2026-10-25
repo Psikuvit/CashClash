@@ -138,6 +138,47 @@ public class TemplateWorld {
     }
 
     /**
+     * Removes the shop or mini shop villager spot nearest {@code near}, if one is within
+     * {@code maxDistance} blocks.
+     *
+     * @return the spot that was removed, or null if none was close enough
+     */
+    public Location removeVillagerNear(Location near, double maxDistance) {
+        double maxDistanceSq = maxDistance * maxDistance;
+        Location nearest = null;
+        double nearestSq = maxDistanceSq;
+
+        for (Location loc : villagersSpawnPoint) {
+            double distanceSq = distanceSq(loc, near);
+            if (distanceSq <= nearestSq) {
+                nearest = loc;
+                nearestSq = distanceSq;
+            }
+        }
+        TeamColor nearestMiniShop = null;
+        for (Map.Entry<TeamColor, Location> entry : miniShopVillagers.entrySet()) {
+            double distanceSq = distanceSq(entry.getValue(), near);
+            if (distanceSq <= nearestSq) {
+                nearest = entry.getValue();
+                nearestSq = distanceSq;
+                nearestMiniShop = entry.getKey();
+            }
+        }
+
+        if (nearestMiniShop != null) {
+            miniShopVillagers.remove(nearestMiniShop);
+        } else if (nearest != null) {
+            villagersSpawnPoint.remove(nearest);
+        }
+        return LocationUtils.clone(nearest);
+    }
+
+    private static double distanceSq(Location loc, Location near) {
+        if (loc == null || near == null || loc.getWorld() != near.getWorld()) return Double.MAX_VALUE;
+        return loc.distanceSquared(near);
+    }
+
+    /**
      * Get Red flag location (CTF mode)
      */
     public Location getRedFlagLoc() {

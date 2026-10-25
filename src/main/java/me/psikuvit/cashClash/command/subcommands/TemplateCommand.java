@@ -28,6 +28,8 @@ public class TemplateCommand extends AbstractArgCommand {
     // Each admin's two selected corners (pos1, pos2) for spawn rooms and doors
     private final Map<UUID, Location[]> selections = new HashMap<>();
 
+    private static final double VILLAGER_REMOVE_RADIUS = 3.0;
+
     public TemplateCommand() {
         super("template", Collections.emptyList(), "cashclash.admin");
     }
@@ -52,6 +54,7 @@ public class TemplateCommand extends AbstractArgCommand {
             case "show" -> templateShow(sender, args);
             case "list" -> templateList(sender);
             case "tp" -> templateTeleport(sender, args);
+            case "removevillager" -> templateRemoveVillager(sender, args);
             // Spawn room setup is paused along with the spawn rooms
             //case "pos1" -> templateSelect(sender, 0);
             //case "pos2" -> templateSelect(sender, 1);
@@ -69,13 +72,13 @@ public class TemplateCommand extends AbstractArgCommand {
         List<String> out = new ArrayList<>();
 
         if (args.length == 1) {
-            for (String a : List.of("register", "setspawn", "set", "list", "tp", "show")) if (a.startsWith(last)) out.add(a);
+            for (String a : List.of("register", "setspawn", "set", "list", "tp", "show", "removevillager")) if (a.startsWith(last)) out.add(a);
             return out;
         }
 
         String action = args[0].toLowerCase(Locale.ROOT);
         if (args.length == 2) {
-            if (action.equals("setspawn") || action.equals("tp") || action.equals("show")) {
+            if (action.equals("setspawn") || action.equals("tp") || action.equals("show") || action.equals("removevillager")) {
                 out.addAll(CashClashPlugin.getInstance().getArenaManager().getAllTemplates().keySet().stream()
                         .filter(id -> id.toLowerCase(Locale.ROOT).startsWith(last))
                         .toList());
@@ -161,6 +164,42 @@ public class TemplateCommand extends AbstractArgCommand {
         tpl.setSpawn(LocationUtils.clone(player.getLocation()));
         Messages.send(player, "template.setspawn-success", "template_id", id);
         CashClashPlugin.getInstance().getArenaManager().saveTemplate(id);
+    }
+
+    /**
+     * {@code /cc template removevillager <id>}: removes the shop or mini shop villager spot
+     * within {@link #VILLAGER_REMOVE_RADIUS} blocks of the player, the nearest if several are.
+     */
+    private void templateRemoveVillager(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            Messages.send(sender, "command.only-players");
+            return;
+        }
+        if (args.length < 2) {
+            Messages.send(player, "template.remove-villager-usage");
+            return;
+        }
+
+        String templateId = args[1];
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(templateId);
+        if (tpl == null || tpl.getWorld() == null) {
+            Messages.send(player, "template.not-found-or-not-loaded", "template_id", templateId);
+            return;
+        }
+        if (!player.getWorld().equals(tpl.getWorld())) {
+            Messages.send(player, "template.player-not-in-template-with-id", "template_id", templateId);
+            return;
+        }
+
+        Location removed = tpl.removeVillagerNear(player.getLocation(), VILLAGER_REMOVE_RADIUS);
+        if (removed == null) {
+            Messages.send(player, "template.remove-villager-none",
+                    "radius", String.valueOf((int) VILLAGER_REMOVE_RADIUS), "template_id", templateId);
+            return;
+        }
+
+        CashClashPlugin.getInstance().getArenaManager().saveTemplate(templateId);
+        Messages.send(player, "template.remove-villager-success", "location", formatLoc(removed), "template_id", templateId);
     }
 
     private void templateTeleport(CommandSender sender, String[] args) {
