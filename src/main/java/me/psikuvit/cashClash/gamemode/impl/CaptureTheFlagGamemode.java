@@ -272,6 +272,13 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return getRecordedRoundWinner();
     }
 
+    @Override
+    public int getLeadingTeam() {
+        int red = getFlagCaptures(1);
+        int blue = getFlagCaptures(2);
+        return red > blue ? 1 : blue > red ? 2 : 0;
+    }
+
      @Override
      public void cleanup() {
          removeBannersFromPlayers();

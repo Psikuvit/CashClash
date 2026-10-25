@@ -137,6 +137,12 @@ public abstract class Gamemode {
     public abstract int getWinningTeam();
 
     /**
+     * The team ahead on this round's objective (tags confirmed, flags captured, president
+     * kills), or 0 if level - who takes the round when its timer runs out.
+     */
+    public abstract int getLeadingTeam();
+
+    /**
      * Cleanup when the game ends
      */
     public abstract void cleanup();

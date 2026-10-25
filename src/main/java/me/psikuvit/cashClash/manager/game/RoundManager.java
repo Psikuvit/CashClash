@@ -8,6 +8,8 @@ import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.gamemode.FinalStandManager;
+import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.kit.KitService;
@@ -335,11 +337,8 @@ public class RoundManager {
                     timeRemaining = suddenDeathPhaseSeconds;
                     Messages.debug("[RoundManager] Sudden death cycle expired; restarting combat timer for the next cycle");
                 } else {
-                    if (startFinalStandDueToTimer()) {
-                        return;
-                    }
-                    int winningTeam = session.getGamemode() != null ? session.getGamemode().getWinningTeam() : 0;
-                    endCombatPhase(winningTeam);
+                    resolveRoundOnTimer();
+                    return;
                 }
             } else if (!finalStandActive && timeRemaining <= warningSeconds) {
                 SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
@@ -490,24 +489,28 @@ public class RoundManager {
         return false;
     }
 
-    private boolean startFinalStandDueToTimer() {
-        if (session.getGamemode() == null) {
-            return false;
+    /**
+     * The round's timer ran out with nobody having won outright: the team ahead on the objective
+     * takes the round, and a level score goes to Final Stand.
+     */
+    private void resolveRoundOnTimer() {
+        Gamemode gamemode = session.getGamemode();
+        FinalStandManager finalStand = gamemode != null ? gamemode.getFinalStandManager() : null;
+        if (finalStand == null) {
+            endRoundAsDraw();
+            return;
         }
 
-        var fsm = session.getGamemode().getFinalStandManager();
-        // Do not start Final Stand while Sudden Death is active
-        if (session.getGamemode().getSuddenDeathManager() != null && session.getGamemode().getSuddenDeathManager().isInSuddenDeath()) {
-            Messages.debug("[RoundManager] Final-stand suppressed because session is in sudden death");
-            return false;
-        }
-        if (fsm == null || fsm.isActive() || session.getGamemode().getWinningTeam() != 0) {
-            return false;
+        int leader = gamemode.getLeadingTeam();
+        if (leader != 0) {
+            String leaderName = leader == 1 ? session.getTeamRed().getName() : session.getTeamBlue().getName();
+            Messages.broadcast(session.getPlayers(), "round.team-wins-round", "team_name", leaderName);
+            awardRound(leader);
+            return;
         }
 
-        Messages.debug("[RoundManager] Starting final-stand for session due to round timer ending with no winner");
-        fsm.startUntilWin();
-        return true;
+        Messages.debug("[RoundManager] Round timer ran out with the score level - Final Stand");
+        finalStand.startUntilWin();
     }
 
     public void cleanup() {

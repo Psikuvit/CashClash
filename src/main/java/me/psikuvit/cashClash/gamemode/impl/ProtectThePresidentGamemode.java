@@ -312,6 +312,16 @@ public class ProtectThePresidentGamemode extends Gamemode {
         return getRecordedRoundWinner();
     }
 
+    /**
+     * The team that has killed the enemy president more times this round.
+     */
+    @Override
+    public int getLeadingTeam() {
+        int redKills = getPresidentDeaths(2);
+        int blueKills = getPresidentDeaths(1);
+        return redKills > blueKills ? 1 : blueKills > redKills ? 2 : 0;
+    }
+
     @Override
     public void cleanup() {
         clearPresidentialBuffs();

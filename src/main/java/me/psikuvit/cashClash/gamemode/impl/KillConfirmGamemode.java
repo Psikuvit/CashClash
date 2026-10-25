@@ -230,6 +230,13 @@ public class KillConfirmGamemode extends Gamemode {
     }
 
     @Override
+    public int getLeadingTeam() {
+        int red = getTeamScore(1);
+        int blue = getTeamScore(2);
+        return red > blue ? 1 : blue > red ? 2 : 0;
+    }
+
+    @Override
     public void cleanup() {
         cancelTask(zoneTickTask);
         zoneTickTask = null;
