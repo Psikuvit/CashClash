@@ -6,7 +6,6 @@ import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
 import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
-import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -129,10 +128,6 @@ public class DragonSetHandler extends ArmorSetHandler {
 
         UUID id = player.getUniqueId();
 
-        if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.DRAGON_DASH)) {
-            return;
-        }
-
         Entity target = player.getTargetEntity(cfg.getDragonRushRange());
         boolean teammate = AbilityTargets.isAlly(player, target);
         if (!teammate && !AbilityTargets.isEnemy(player, target)) {
@@ -219,12 +214,10 @@ public class DragonSetHandler extends ArmorSetHandler {
     }
 
     /**
-     * Failed Dragon Rush: short cooldown so the player can re-aim quickly.
+     * Failed Dragon Rush: just a quiet sound - no cooldown, so the player can re-aim and try
+     * again straight away.
      */
     private void failDragonRush(Player player) {
-        UUID id = player.getUniqueId();
-        cooldownManager.setCooldownSeconds(id, CooldownManager.Keys.DRAGON_DASH, 5);
-        Messages.send(player, "armor.dragon-rush-no-target");
         SoundUtils.play(player, Sound.ENTITY_ENDERMAN_TELEPORT, 0.4f, 0.4f);
     }
 
@@ -255,9 +248,6 @@ public class DragonSetHandler extends ArmorSetHandler {
      * throttle a fast attacker retriggers the reminder almost continuously.
      */
     public void startDragonRushIndicator(Player player) {
-        if (cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.DRAGON_DASH)) {
-            return;
-        }
         UUID uuid = player.getUniqueId();
         if (dragonRushIndicators.contains(uuid)) {
             return;
