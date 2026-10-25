@@ -80,7 +80,7 @@ public final class KCZoneUtils {
         flatCenter.setYaw(0f);
         flatCenter.setPitch(0f);
 
-        Material platformMaterial = platformMaterialFor(zone.getKind());
+        Material platformMaterial = platformMaterialFor(zone);
 
         BlockDisplay platform = flatCenter.getWorld().spawn(flatCenter, BlockDisplay.class, display -> {
             display.setBlock(platformMaterial.createBlockData());
@@ -129,7 +129,7 @@ public final class KCZoneUtils {
         BlockDisplay platform = zone.getPlatformDisplay();
         if (platform != null && !platform.isDead()) {
             platform.setGlowing(true);
-            platform.setGlowColorOverride(glowColor);
+            platform.setGlowColorOverride(tagColor(zone));
             platform.setBrightness(ACTIVE_BRIGHTNESS);
         }
 
@@ -189,9 +189,14 @@ public final class KCZoneUtils {
         timer.text(Messages.parse("<red><bold>Contested!</bold></red>"));
     }
 
-    private static Material platformMaterialFor(KCZone.ZoneKind kind) {
-        return switch (kind) {
-            case NAMETAG -> Material.GOLD_BLOCK;
+    /**
+     * A nametag lies on wool in the dead player's team colour; Money and Heart Tags keep their
+     * own blocks.
+     */
+    private static Material platformMaterialFor(KCZone zone) {
+        return switch (zone.getKind()) {
+            case NAMETAG -> TeamColor.fromTeamNumber(zone.getKillerTeam()).opposite() == TeamColor.RED
+                    ? Material.RED_WOOL : Material.BLUE_WOOL;
             case MONEY -> Material.EMERALD_BLOCK;
             case HEART -> Material.REDSTONE_BLOCK;
         };
