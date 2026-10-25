@@ -5,7 +5,6 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -28,39 +27,26 @@ public class PTPFinalStandUtils {
     }
 
     /**
-     * Put every non-president on their last life for the final stand - their next death keeps
-     * them out for the rest of the round - and notify the presidents.
+     * Tell each president who they're up against in the final stand.
      *
      * @param session The current session
      * @param presidentTeamLookup Function mapping player UUID to president team number (0 if not president)
      * @param opponentNameLookup Function returning the opposing president's name for a given team
      */
-    public static void giveNonPresidentsLastLife(
+    public static void notifyPresidents(
             GameSession session,
             ToIntFunction<UUID> presidentTeamLookup,
             Function<Integer, String> opponentNameLookup) {
 
-        Messages.debug("[PTP] Final Stand activated - non-Presidents are on their last life");
-
         for (UUID playerUuid : new ArrayList<>(session.getPlayers())) {
             Player player = Bukkit.getPlayer(playerUuid);
-            if (player == null || !player.isOnline()) {
+            int presTeam = presidentTeamLookup.applyAsInt(playerUuid);
+            if (player == null || !player.isOnline() || presTeam == 0) {
                 continue;
             }
 
-            int presTeam = presidentTeamLookup.applyAsInt(playerUuid);
-            if (presTeam == 0) {
-                CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
-                if (ccp == null) continue;
-
-                ccp.setLives(Math.min(ccp.getLives(), 1));
-                if (ccp.getLives() > 0) {
-                    Messages.send(player, "gamemode-ptp.final-stand-last-life");
-                }
-            } else {
-                Messages.send(player, "gamemode-ptp.final-stand-president-survived",
-                        "opponent", opponentNameLookup.apply(presTeam == 1 ? 2 : 1));
-            }
+            Messages.send(player, "gamemode-ptp.final-stand-president-survived",
+                    "opponent", opponentNameLookup.apply(presTeam == 1 ? 2 : 1));
         }
     }
 

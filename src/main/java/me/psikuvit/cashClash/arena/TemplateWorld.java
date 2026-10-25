@@ -41,6 +41,9 @@ public class TemplateWorld {
     // Each team's own mini shop villager
     private final Map<TeamColor, Location> miniShopVillagers;
 
+    // Where each team's flag moves to for a CTF Final Stand, closer together than the usual spots
+    private final Map<TeamColor, Location> finalStandFlags;
+
     // Each team's spawn room and the doorways into it
     private final Map<TeamColor, BlockRegion> spawnRooms;
     private final Map<TeamColor, List<BlockRegion>> spawnRoomDoors;
@@ -52,6 +55,7 @@ public class TemplateWorld {
         this.teamBlueSpawns = new ArrayList<>();
         this.villagersSpawnPoint = new ArrayList<>();
         this.miniShopVillagers = new EnumMap<>(TeamColor.class);
+        this.finalStandFlags = new EnumMap<>(TeamColor.class);
         this.spawnRooms = new EnumMap<>(TeamColor.class);
         this.spawnRoomDoors = new EnumMap<>(TeamColor.class);
     }
@@ -216,6 +220,18 @@ public class TemplateWorld {
     public void setMiniShopVillager(TeamColor team, Location loc) {
         if (loc == null) miniShopVillagers.remove(team);
         else miniShopVillagers.put(team, loc);
+    }
+
+    /**
+     * @return where the team's flag stands during a CTF Final Stand, or null if not set
+     */
+    public Location getFinalStandFlag(TeamColor team) {
+        return LocationUtils.clone(finalStandFlags.get(team));
+    }
+
+    public void setFinalStandFlag(TeamColor team, Location loc) {
+        if (loc == null) finalStandFlags.remove(team);
+        else finalStandFlags.put(team, loc);
     }
 
     /**

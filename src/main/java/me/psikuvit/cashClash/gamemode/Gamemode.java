@@ -1,10 +1,12 @@
 package me.psikuvit.cashClash.gamemode;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.player.CashClashPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * Abstract base class for all gamemodes.
@@ -59,6 +61,19 @@ public abstract class Gamemode {
         roundWinner = 0;
         roundWinnerTick = -1;
         roundDraw = false;
+    }
+
+    /**
+     * Final Stand's one-life rule: everyone still in the round (bar {@code exempt}) is put on
+     * their last life, so their next death keeps them out until the next round. Anyone already
+     * out stays out.
+     */
+    protected void putPlayersOnLastLife(Predicate<UUID> exempt) {
+        for (UUID uuid : session.getPlayers()) {
+            if (exempt.test(uuid)) continue;
+            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+            if (ccp != null) ccp.setLives(Math.min(ccp.getLives(), 1));
+        }
     }
 
     /**

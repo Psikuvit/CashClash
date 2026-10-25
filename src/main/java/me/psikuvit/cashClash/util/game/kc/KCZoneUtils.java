@@ -48,6 +48,7 @@ public final class KCZoneUtils {
     // Sentinel stored in KCZone#lastDisplayedTimerSeconds while showing "Contested!" instead of
     // a countdown number - distinct from the -1 "not yet displayed" default and any real second count.
     private static final int CONTESTED_SENTINEL = -2;
+    private static final int NO_TIME_LIMIT_SENTINEL = -3;
 
     private static final int BEAM_POINTS_PER_BLOCK = 8;
     private static final float BEAM_PARTICLE_SIZE = 2.0f;
@@ -193,6 +194,19 @@ public final class KCZoneUtils {
      * A nametag lies on wool in the dead player's team colour; Money and Heart Tags keep their
      * own blocks.
      */
+    /**
+     * Swap a zone's timer text for the Final Stand "no time limit" label - its tag stays down
+     * until someone takes it. No-ops if it's already showing.
+     */
+    public static void showNoTimeLimit(KCZone zone) {
+        TextDisplay timer = zone.getTimerDisplay();
+        if (timer == null || timer.isDead()) return;
+        if (zone.getLastDisplayedTimerSeconds() == NO_TIME_LIMIT_SENTINEL) return;
+        zone.setLastDisplayedTimerSeconds(NO_TIME_LIMIT_SENTINEL);
+
+        timer.text(Messages.parse(CashClashPlugin.getInstance().getMessagesConfig().getRaw("gamemode-kc.zone-no-time-limit")));
+    }
+
     private static Material platformMaterialFor(KCZone zone) {
         return switch (zone.getKind()) {
             case NAMETAG -> TeamColor.fromTeamNumber(zone.getKillerTeam()).opposite() == TeamColor.RED

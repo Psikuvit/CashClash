@@ -324,9 +324,6 @@ public class ConfigManager {
         return config.getLong("gamemodes.capture-the-flag.capture-bonus-coins", 15000);
     }
 
-    public double getCTFFinalStandCarrierHealthPenalty() {
-        return config.getDouble("gamemodes.capture-the-flag.final-stand-carrier-health-penalty", 4.0);
-    }
 
     public double getCTFCarrierMinimumMeleeDamage() {
         return config.getDouble("gamemodes.capture-the-flag.carrier-minimum-melee-damage", 1.0);
@@ -413,9 +410,6 @@ public class ConfigManager {
         return config.getLong("gamemodes.kill-confirm.capture-duration-ms", 4000);
     }
 
-    public long getKCFinalStandCaptureDurationMs() {
-        return config.getLong("gamemodes.kill-confirm.final-stand-capture-duration-ms", 2000);
-    }
 
     public long getKCMoneyBonus() {
         return config.getLong("gamemodes.kill-confirm.money-bonus", 15000);

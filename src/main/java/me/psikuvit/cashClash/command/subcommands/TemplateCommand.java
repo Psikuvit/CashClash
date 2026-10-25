@@ -93,7 +93,7 @@ public class TemplateCommand extends AbstractArgCommand {
             if (action.equals("register")) {
                 out.addAll(Bukkit.getWorlds().stream().map(World::getName).filter(n -> n.toLowerCase(Locale.ROOT).startsWith(last)).toList());
             } else if (action.equals("set")) {
-                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "minishop", "ctf")) if (t.startsWith(last)) out.add(t);
+                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "minishop", "ctf", "finalstandflag")) if (t.startsWith(last)) out.add(t);
             }
             return out;
         }
@@ -107,7 +107,7 @@ public class TemplateCommand extends AbstractArgCommand {
                 case "shop" -> {
                     for (String t : List.of("teamred", "teamblue")) if (t.startsWith(last)) out.add(t);
                 }
-                case "ctf", "minishop" -> {
+                case "ctf", "minishop", "finalstandflag" -> {
                     for (String t : List.of("red", "blue")) if (t.startsWith(last)) out.add(t);
                 }
             }
@@ -290,6 +290,10 @@ public class TemplateCommand extends AbstractArgCommand {
 
         Messages.send(player, "template.show-red-flag", "location", formatLoc(tpl.getRedFlagLoc()));
         Messages.send(player, "template.show-blue-flag", "location", formatLoc(tpl.getBlueFlagLoc()));
+        for (TeamColor team : TeamColor.values()) {
+            Messages.send(player, "template.show-final-stand-flag", "team", team.getDisplayName(),
+                    "location", formatLoc(tpl.getFinalStandFlag(team)));
+        }
 
         // Spawn rooms are paused
         //for (TeamColor team : TeamColor.values()) {
@@ -468,6 +472,15 @@ public class TemplateCommand extends AbstractArgCommand {
                 }
                 tpl.setMiniShopVillager(team, stored);
                 Messages.send(player, "template.set-minishop-success", "team", team.getDisplayName(), "template_id", templateId);
+            }
+            case "finalstandflag" -> {
+                TeamColor team = args.length < 4 ? null : parseTeam(args[3]);
+                if (team == null) {
+                    Messages.send(player, "template.set-final-stand-flag-usage");
+                    return;
+                }
+                tpl.setFinalStandFlag(team, stored);
+                Messages.send(player, "template.set-final-stand-flag-success", "team", team.getDisplayName(), "template_id", templateId);
             }
             // Spawn rooms are paused
             //case "spawnroom", "door" -> {

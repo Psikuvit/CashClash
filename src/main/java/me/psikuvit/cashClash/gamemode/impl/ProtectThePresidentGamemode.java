@@ -396,9 +396,10 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
     @Override
     public void onFinalStandActivated() {
-        Messages.broadcast(session.getPlayers(), "gamemode-ptp.final-stand-last-lives");
+        Messages.broadcast(session.getPlayers(), "gamemode-ptp.final-stand-started");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.border-closing");
-        PTPFinalStandUtils.giveNonPresidentsLastLife(session, this::findPresidentTeam, this::getPresidentName);
+        putPlayersOnLastLife(uuid -> !isNotPresident(uuid));
+        PTPFinalStandUtils.notifyPresidents(session, this::findPresidentTeam, this::getPresidentName);
         startFinalStandBorder();
     }
 

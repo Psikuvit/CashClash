@@ -74,7 +74,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<UUID, Integer> playerNearestFlagTeam;
     private final Set<UUID> stalemateMsgShown; // told about the both-flags-held block in the current state
     private final Set<UUID> blockedCarrierWarned; // carriers shown "Kill {name}" on their current visit to their capture area
-    private final Set<UUID> finalStandPenalized; // carriers currently docked the Final Stand health penalty
     private final Map<UUID, Location> carrierLastGround; // where each carrier last stood, for a void death's drop
 
       private final SuddenDeathManager suddenDeathManager;
@@ -110,7 +109,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.playerNearestFlagTeam = new HashMap<>();
         this.stalemateMsgShown = new HashSet<>();
         this.blockedCarrierWarned = new HashSet<>();
-        this.finalStandPenalized = new HashSet<>();
         this.carrierLastGround = new HashMap<>();
          this.suddenDeathManager = new SuddenDeathManager(session, this);
          this.finalStandManager = new FinalStandManager(session, this);
@@ -192,7 +190,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         playerCircleTimestamps.clear();
         playerNearestFlagTeam.clear();
         captureStartedAt.clear();
-        finalStandPenalized.clear();
         carrierLastGround.clear();
 
          // Recreated in the next combat phase. The banner rotation keeps running through the
@@ -317,7 +314,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
          playerCircleTimestamps.clear();
          playerNearestFlagTeam.clear();
          captureStartedAt.clear();
-         finalStandPenalized.clear();
      }
 
     @Override
@@ -378,10 +374,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
          CashClashPlayer.applyEffect(player, PotionEffectType.WEAKNESS, PotionEffect.INFINITE_DURATION,
                  carrierCfg.getCTFCarrierWeaknessAmplifier(), false, false);
 
-         if (finalStandManager.isActive()) {
-             applyFinalStandPenalty(playerUuid);
-         }
-
          moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
 
          SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, 1.5f);
@@ -398,7 +390,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
         int captures = flagCaptures.get(teamColor);
         int targetCaptures = WIN_CONDITION;
-        if (!suddenDeathManager.isInSuddenDeath() && captures >= WIN_CONDITION) {
+        if (isFinalStandActive() || (!suddenDeathManager.isInSuddenDeath() && captures >= WIN_CONDITION)) {
             recordRoundWin(teamNumber);
         }
 
@@ -600,32 +592,11 @@ public class CaptureTheFlagGamemode extends Gamemode {
         carrierLastGround.put(holder, player.getLocation());
     }
 
-    /** Removes the flag-carrier slowness/weakness/glowing and, if applied, the Final Stand health penalty. */
+    /** Removes the flag-carrier slowness/weakness/glowing. */
     private void clearCarrierPenalties(Player player) {
         CashClashPlayer.removeEffect(player, PotionEffectType.SLOWNESS);
         CashClashPlayer.removeEffect(player, PotionEffectType.WEAKNESS);
         CashClashPlayer.removeEffect(player, PotionEffectType.GLOWING);
-
-        removeFinalStandPenalty(player.getUniqueId());
-    }
-
-    /**
-     * Docks the Final Stand carrier health penalty (max health, not current) - a no-op if
-     * already applied to this player, since the health modifier isn't idempotent.
-     */
-    private void applyFinalStandPenalty(UUID playerUuid) {
-        if (!finalStandPenalized.add(playerUuid)) return;
-        CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
-        if (ccp != null) ccp.addHealthModifier(
-                -CashClashPlugin.getInstance().getConfigManager().getCTFFinalStandCarrierHealthPenalty());
-    }
-
-    /** Restores the Final Stand carrier health penalty - a no-op if it was never applied. */
-    private void removeFinalStandPenalty(UUID playerUuid) {
-        if (!finalStandPenalized.remove(playerUuid)) return;
-        CashClashPlayer ccp = session.getCashClashPlayer(playerUuid);
-        if (ccp != null) ccp.addHealthModifier(
-                CashClashPlugin.getInstance().getConfigManager().getCTFFinalStandCarrierHealthPenalty());
     }
 
     private void cancelTask(BukkitTask task) {
@@ -653,22 +624,44 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return finalStandManager.isActive();
     }
 
+    /**
+     * Final Stand: the flags move to their closer Final Stand spots, the next capture wins the
+     * round, everyone is on their last life, and carriers aren't silenced any more.
+     */
     @Override
     public void onFinalStandActivated() {
-        Messages.broadcast(session.getPlayers(), "gamemode-ctf.final-stand-activated");
-        Messages.debug("[CTF] Final Stand activated - removing flag silenced effects");
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.final-stand-started");
+        moveFlagsCloser();
+        putPlayersOnLastLife(uuid -> false);
         for (UUID uuid : session.getPlayers()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
                 ItemUtils.restoreNormalItemDisplay(player);
             }
         }
+    }
 
-        // A flag picked up before Final Stand started never got docked the penalty - apply it
-        // now for whoever is still holding at the moment it activates.
-        for (FlagState flag : flagStates.values()) {
-            if (flag != null && flag.isHeld()) {
-                applyFinalStandPenalty(flag.holder());
+    /**
+     * Sends each flag that has a Final Stand spot on this map ({@code /cc template set <id>
+     * finalstandflag}) there for the rest of the round - its base and scoring circle move with
+     * it, and a carrier drops it. The next round's banners go back to the usual spots.
+     */
+    private void moveFlagsCloser() {
+        TemplateWorld template = session.getArenaTemplate();
+        for (TeamColor color : TeamColor.values()) {
+            Location spot = template != null ? template.getFinalStandFlag(color) : null;
+            if (spot == null) {
+                Messages.debug("[CTF] No Final Stand spot for the " + color.getDisplayName() + " flag - it stays where it is");
+                continue;
+            }
+
+            FlagState flag = flagStates.get(color);
+            Player carrier = flag != null && flag.isHeld() ? Bukkit.getPlayer(flag.holder()) : null;
+            flagBaseLocations.put(color, LocationUtils.copyToWorld(spot, session.getGameWorld()));
+            returnFlagToBase(color.getTeamNumber());
+            if (carrier != null) {
+                clearCarrierPenalties(carrier);
+                updateSilencedItemDisplay(carrier);
             }
         }
     }

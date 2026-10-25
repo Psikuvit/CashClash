@@ -52,7 +52,6 @@ public class KillConfirmGamemode extends Gamemode {
     private final long ZONE_LIFESPAN_MS;
     private final long BONUS_ZONE_LIFESPAN_MS;
     private final long CAPTURE_DURATION_MS;
-    private final long FINAL_STAND_CAPTURE_DURATION_MS;
     private final long MONEY_BONUS;
 
     private final Map<TeamColor, Integer> teamScore;
@@ -76,7 +75,6 @@ public class KillConfirmGamemode extends Gamemode {
         this.ZONE_LIFESPAN_MS = cfg.getKCZoneLifespanMs();
         this.BONUS_ZONE_LIFESPAN_MS = cfg.getKCBonusZoneLifespanMs();
         this.CAPTURE_DURATION_MS = cfg.getKCCaptureDurationMs();
-        this.FINAL_STAND_CAPTURE_DURATION_MS = cfg.getKCFinalStandCaptureDurationMs();
         this.MONEY_BONUS = cfg.getKCMoneyBonus();
 
         this.teamScore = new EnumMap<>(TeamColor.class);
@@ -266,9 +264,14 @@ public class KillConfirmGamemode extends Gamemode {
         return "Confirm " + WIN_CONDITION + " Tags";
     }
 
+    /**
+     * Final Stand: the next confirmed tag wins the round, tags stay down until someone takes
+     * them, and everyone is on their last life.
+     */
     @Override
     public void onFinalStandActivated() {
-        Messages.broadcast(session.getPlayers(), "gamemode-kc.final-stand-activated");
+        Messages.broadcast(session.getPlayers(), "gamemode-kc.final-stand-started");
+        putPlayersOnLastLife(uuid -> false);
     }
 
     @Override
@@ -442,7 +445,9 @@ public class KillConfirmGamemode extends Gamemode {
                 zone.setHalfwayPulseFired(true);
             }
 
-            if (zone.isExpired(now)) {
+            if (isFinalStandActive()) {
+                KCZoneUtils.showNoTimeLimit(zone);
+            } else if (zone.isExpired(now)) {
                 if (isKillerTeamInZone(zone)) {
                     KCZoneUtils.showContested(zone);
                 } else {
@@ -479,7 +484,7 @@ public class KillConfirmGamemode extends Gamemode {
      * @return true if the zone was resolved (captured or denied) this tick
      */
     private boolean tickZoneOccupants(KCZone zone, long now) {
-        long requiredMs = isFinalStandActive() ? FINAL_STAND_CAPTURE_DURATION_MS : CAPTURE_DURATION_MS;
+        long requiredMs = CAPTURE_DURATION_MS;
         Map<UUID, Long> occupants = zone.getOccupantEntryTimestamps();
         boolean anyoneHolding = false;
 
@@ -547,7 +552,7 @@ public class KillConfirmGamemode extends Gamemode {
         session.getRewardManager().grantKillOrObjective(capturer, RewardType.OBJECTIVE_KC_CONFIRM, 0);
 
         teamScore.merge(color, 1, Integer::sum);
-        if (!suddenDeathManager.isInSuddenDeath() && teamScore.get(color) >= WIN_CONDITION) {
+        if (isFinalStandActive() || (!suddenDeathManager.isInSuddenDeath() && teamScore.get(color) >= WIN_CONDITION)) {
             recordRoundWin(capturingTeam);
         }
         if (suddenDeathManager.isInSuddenDeath()) {

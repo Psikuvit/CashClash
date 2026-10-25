@@ -232,8 +232,6 @@ gamemodes:
     capture-bonus-coins: 15000
     # Bonus timer (milliseconds)
     capture-bonus-timer-ms: 45000
-    # Max health taken from a flag carrier during Final Stand (4.0 = 2 hearts, 20 -> 16 max)
-    final-stand-carrier-health-penalty: 4.0
     # Weakness (see flag pickup) floors any item dealing less than this to 0 damage - this
     # guarantees a minimum hit gets through regardless of what's in hand
     carrier-minimum-melee-damage: 1.0
@@ -259,7 +257,6 @@ gamemodes:
     zone-lifespan-ms: 9000
     bonus-zone-lifespan-ms: 13000
     capture-duration-ms: 4000
-    final-stand-capture-duration-ms: 2000
     money-bonus: 15000
     # Activation beam: height (blocks), vertical offset from the zone center, and how long the
     # pulse lasts (ticks)

@@ -185,6 +185,10 @@ public class ArenaManager {
                 if (cfg.contains(miniShopPath)) {
                     tpl.setMiniShopVillager(team, LocationUtils.deserializeLocation(cfg.getConfigurationSection(miniShopPath)));
                 }
+                String finalStandFlagPath = "ctf.final_stand_flag.team" + team.getTeamNumber();
+                if (cfg.contains(finalStandFlagPath)) {
+                    tpl.setFinalStandFlag(team, LocationUtils.deserializeLocation(cfg.getConfigurationSection(finalStandFlagPath)));
+                }
 
                 String path = "spawn-rooms.team" + team.getTeamNumber();
                 tpl.setSpawnRoom(team, BlockRegion.deserialize(cfg.getString(path + ".room")));
@@ -268,6 +272,10 @@ public class ArenaManager {
             Location miniShop = tpl.getMiniShopVillager(team);
             if (miniShop != null) {
                 LocationUtils.serializeLocation(cfg, "minishop.team" + team.getTeamNumber(), miniShop);
+            }
+            Location finalStandFlag = tpl.getFinalStandFlag(team);
+            if (finalStandFlag != null) {
+                LocationUtils.serializeLocation(cfg, "ctf.final_stand_flag.team" + team.getTeamNumber(), finalStandFlag);
             }
 
             String path = "spawn-rooms.team" + team.getTeamNumber();
