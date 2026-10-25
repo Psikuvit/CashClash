@@ -15,6 +15,7 @@ import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -189,7 +190,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
         List<LivingEntity> pulled = new ArrayList<>();
         for (Entity entity : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
             if (!(entity instanceof LivingEntity target) || target.equals(owner)) continue;
-            if (!canHit(inGame, target)) continue;
+            if (!canHit(inGame, target) || isSpectating(target)) continue;
             if (!target.hasLineOfSight(center)) continue;
             if (team != null) {
                 Team targetTeam = session.getPlayerTeam((Player) target);
@@ -209,7 +210,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
                 boolean pullingAnyone = false;
 
                 for (LivingEntity target : new ArrayList<>(pulled)) {
-                    if (!target.isValid() || target.isDead()) continue;
+                    if (!target.isValid() || target.isDead() || isSpectating(target)) continue;
                     Vector toCenter = center.toVector().subtract(target.getLocation().toVector());
 
                     if (toCenter.lengthSquared() < 0.25) {
@@ -250,9 +251,16 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
      */
     private void releasePulledPlayers(List<LivingEntity> pulled, int slownessTicks) {
         for (LivingEntity target : pulled) {
-            if (!target.isValid() || target.isDead()) continue;
+            if (!target.isValid() || target.isDead() || isSpectating(target)) continue;
             applyEffect(target, PotionEffectType.SLOWNESS, slownessTicks, 0, false, false);
         }
+    }
+
+    /**
+     * A player waiting out a respawn (or out for the round) is a spectator and can't be pulled.
+     */
+    private static boolean isSpectating(LivingEntity entity) {
+        return entity instanceof Player player && player.getGameMode() == GameMode.SPECTATOR;
     }
 
     /**
