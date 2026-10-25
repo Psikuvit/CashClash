@@ -106,24 +106,25 @@ public class MythicHudManager implements Shutdownable {
     }
 
     /**
-     * The held mythic's part of the line. The red flash and the silenced state only colour these,
-     * not the armor's.
+     * The held mythic's part of the line. The red flash only colours these, not the armor's;
+     * being silenced only colours the abilities silence actually blocks.
      */
     private void addMythicSegments(StringJoiner line, GameSession session, Player player) {
         MythicItem mythic = PDCDetection.getMythic(player.getInventory().getItemInMainHand());
         if (mythic == null) mythic = PDCDetection.getMythic(player.getInventory().getItemInOffHand());
         if (mythic == null) return;
 
-        List<HudSegment> segments = mythicItemManager.getHandler(mythic).hudSegments(player);
+        MythicItemHandler handler = mythicItemManager.getHandler(mythic);
+        List<HudSegment> segments = handler.hudSegments(player);
         boolean silenced = session != null && session.getGamemode() instanceof CaptureTheFlagGamemode ctf
                 && ctf.isSilenced(player.getUniqueId());
-        if (silenced && segments.isEmpty()) {
+        if (silenced && segments.isEmpty() && handler.hasSilencedAbility()) {
             segments = List.of(new HudSegment(MythicItemHandler.hudText("silenced"), true));
         }
 
-        boolean allRed = silenced || mythicItemManager.isCooldownFlashing(player.getUniqueId());
+        boolean flashing = mythicItemManager.isCooldownFlashing(player.getUniqueId());
         for (HudSegment segment : segments) {
-            line.add(colored(segment, allRed));
+            line.add(colored(segment, flashing || (silenced && segment.silenceable())));
         }
     }
 

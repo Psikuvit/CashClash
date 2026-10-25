@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.util.CooldownManager;
 import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -50,6 +51,23 @@ public abstract class MythicItemHandler {
     }
 
     /**
+     * The abilities (HUD ability keys) a CTF flag carrier's silence blocks - their HUD segments
+     * turn red while the holder is silenced. Abilities silence doesn't touch keep working and
+     * stay white.
+     */
+    protected Set<String> silencedAbilities() {
+        return Set.of();
+    }
+
+    /**
+     * Whether silence blocks any of this mythic's abilities - if so, a silenced holder with
+     * nothing on cooldown sees "Silenced".
+     */
+    public boolean hasSilencedAbility() {
+        return !silencedAbilities().isEmpty();
+    }
+
+    /**
      * Adds an ability's cooldown to the HUD if it's on cooldown.
      */
     protected void addCooldownSegment(List<HudSegment> segments, UUID uuid, String cooldownKey, String abilityKey) {
@@ -57,7 +75,7 @@ public abstract class MythicItemHandler {
         if (remainingMs <= 0) return;
         segments.add(new HudSegment(hudText("cooldown",
                 "ability", hudText("ability." + abilityKey),
-                "seconds", String.valueOf(ceilSeconds(remainingMs))), false));
+                "seconds", String.valueOf(ceilSeconds(remainingMs))), false, silencedAbilities().contains(abilityKey)));
     }
 
     /**

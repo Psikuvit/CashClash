@@ -370,6 +370,11 @@ public class WardenGlovesHandler extends MythicItemHandler {
     }
 
     @Override
+    protected Set<String> silencedAbilities() {
+        return Set.of("rising-fury");
+    }
+
+    @Override
     public List<HudSegment> hudSegments(Player player) {
         List<HudSegment> segments = new ArrayList<>();
         UUID uuid = player.getUniqueId();

@@ -37,6 +37,7 @@ import org.bukkit.util.Vector;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -288,6 +289,11 @@ public class GoblinSpearHandler extends MythicItemHandler {
             }
         }
         return null;
+    }
+
+    @Override
+    protected Set<String> silencedAbilities() {
+        return Set.of("charge");
     }
 
     @Override

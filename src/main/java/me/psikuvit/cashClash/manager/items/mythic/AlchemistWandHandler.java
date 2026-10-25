@@ -883,6 +883,11 @@ public class AlchemistWandHandler extends MythicItemHandler {
     // ==================== LIFECYCLE ====================
 
     @Override
+    protected Set<String> silencedAbilities() {
+        return Set.of("blink-swap");
+    }
+
+    @Override
     public List<HudSegment> hudSegments(Player player) {
         List<HudSegment> segments = new ArrayList<>();
         UUID uuid = player.getUniqueId();

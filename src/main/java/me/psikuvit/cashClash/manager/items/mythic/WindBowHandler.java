@@ -15,6 +15,7 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -89,6 +90,11 @@ public class WindBowHandler extends MythicItemHandler {
         Messages.debug(shooter, "WIND_BOW: Wind gust pushed " + hitCount + " players, radius: " + radius + ", power: " + cfg.getWindBowPushPower());
         SoundUtils.playAt(impact, Sound.ENTITY_WIND_CHARGE_WIND_BURST, 1.0f, 0.8f);
         ParticleUtils.cloud(impact, 30, 1);
+    }
+
+    @Override
+    protected Set<String> silencedAbilities() {
+        return Set.of("boost");
     }
 
     @Override

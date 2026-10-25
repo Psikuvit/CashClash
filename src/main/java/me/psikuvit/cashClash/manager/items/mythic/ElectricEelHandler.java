@@ -214,6 +214,11 @@ public class ElectricEelHandler extends MythicItemHandler {
     }
 
     @Override
+    protected Set<String> silencedAbilities() {
+        return Set.of("dash");
+    }
+
+    @Override
     public List<HudSegment> hudSegments(Player player) {
         UUID uuid = player.getUniqueId();
         long now = System.currentTimeMillis();
@@ -225,8 +230,8 @@ public class ElectricEelHandler extends MythicItemHandler {
         if (charges >= maxCharges || readyAt == null) return List.of();
 
         return List.of(
-                new HudSegment(hudText("eel-charges", "charges", String.valueOf(charges), "max", String.valueOf(maxCharges)), false),
-                new HudSegment(hudText("eel-recharge", "seconds", String.valueOf(ceilSeconds(readyAt - now))), false));
+                new HudSegment(hudText("eel-charges", "charges", String.valueOf(charges), "max", String.valueOf(maxCharges)), false, true),
+                new HudSegment(hudText("eel-recharge", "seconds", String.valueOf(ceilSeconds(readyAt - now))), false, true));
     }
 
     @Override
