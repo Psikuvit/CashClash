@@ -1008,7 +1008,6 @@ messages:
     already-owned: "<red>You already own {item_name}!</red>"
     cash-blaster-supercharged: "<green>Cash Blaster supercharged!</green>"
     cash-blaster-supercharge-disabled: "<red>Cash Blaster supercharge disabled!</red>"
-    cash-blaster-vortex-full-charge: "<red>You must fully charge the bow!</red>"
     cash-blaster-vortex-need-arrows: "<red>You need 5 arrows to use Profit Vortex!</red>"
     cash-blaster-vortex-reward: "<green>Profit Vortex: your team earned +${amount}!</green>"
     cannot-place-during-shopping: "<red>You can't place this item during shopping!</red>"

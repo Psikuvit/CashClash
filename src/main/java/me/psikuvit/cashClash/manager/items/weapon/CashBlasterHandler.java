@@ -108,8 +108,8 @@ public class CashBlasterHandler extends WeaponItemHandler {
 
     /**
      * Handle a Cash Blaster shot. Normal mode: +10% arrow damage.
-     * Supercharged mode: requires a fully charged shot, consumes 4 arrows and launches a
-     * Profit Vortex arrow that spawns a damaging/levitating vortex on impact.
+     * Supercharged mode: fires at any draw, consumes 4 arrows and launches a Profit Vortex arrow
+     * that spawns a damaging/levitating vortex on impact.
      */
     public void onCashBlasterShoot(EntityShootBowEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
@@ -125,12 +125,6 @@ public class CashBlasterHandler extends WeaponItemHandler {
         }
 
         event.setCancelled(true);
-        if (event.getForce() < cfg.getFullyChargedThreshold()) {
-            Messages.send(player, "customitem.cash-blaster-vortex-full-charge");
-            SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-            return;
-        }
-
         if (cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.CASH_BLASTER_VORTEX)) {
             return;
         }

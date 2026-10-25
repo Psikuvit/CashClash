@@ -13,8 +13,7 @@ schema-version: 1
 combat:
   # How far the attack-cooldown / bow-draw meter must have filled (0.0 - 1.0) for a hit to
   # count as "fully charged" by the mechanics that require one: Deathmauler's Soul Burst,
-  # Dragon Scale charging, Cash Blaster's Profit Vortex shot, and the fully-charged arrow tag
-  # Orb of Gravitation is destroyed by.
+  # Dragon Scale charging, and the fully-charged arrow tag Orb of Gravitation is destroyed by.
   fully-charged-threshold: 0.99
   # Volume of the sound an attacker hears hitting someone who can't be hurt right now - every
   # invincibility uses it: Totem of Haunting, Overdrive Potion, Dragon Rush, Blink Swap
