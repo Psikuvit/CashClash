@@ -176,6 +176,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         suddenDeathCycleCaptures.put(TeamColor.RED, 0);
         suddenDeathCycleCaptures.put(TeamColor.BLUE, 0);
         suddenDeathWinningTeam = 0;
+        resetRoundResult();
         flagReturnTasks.values().forEach(this::cancelTask);
         flagReturnTasks.clear();
         flagReturnDisplayTasks.values().forEach(this::cancelTask);
@@ -257,24 +258,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
     @Override
     public boolean checkGameWinner() {
-        int captures1 = flagCaptures.get(TeamColor.RED);
-        int captures2 = flagCaptures.get(TeamColor.BLUE);
-
         if (suddenDeathWinningTeam > 0) {
             return true;
         }
-
-        if (!suddenDeathManager.isInSuddenDeath() && (captures1 >= WIN_CONDITION || captures2 >= WIN_CONDITION)) {
-            Messages.debug("[CTF] Game winner found - Team " + (captures1 >= WIN_CONDITION ? 1 : 2) + " with " + Math.max(captures1, captures2) + " captures");
-            return true;
-        }
-
-        if (finalStandManager.isActive() && (captures1 >= WIN_CONDITION || captures2 >= WIN_CONDITION)) {
-            Messages.debug("[CTF] Final Stand winner found - Team " + (captures1 >= WIN_CONDITION ? 1 : 2) + " with " + Math.max(captures1, captures2) + " captures");
-            return true;
-        }
-
-        return false;
+        return getRecordedRoundWinner() != 0 || isRoundDraw();
     }
 
     @Override
@@ -282,13 +269,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (suddenDeathWinningTeam > 0) {
             return suddenDeathWinningTeam;
         }
-
-        if ((!suddenDeathManager.isInSuddenDeath() || finalStandManager.isActive()) && flagCaptures.get(TeamColor.RED) >= WIN_CONDITION) {
-            return 1;
-        } else if ((!suddenDeathManager.isInSuddenDeath() || finalStandManager.isActive()) && flagCaptures.get(TeamColor.BLUE) >= WIN_CONDITION) {
-            return 2;
-        }
-        return 0;
+        return getRecordedRoundWinner();
     }
 
      @Override
@@ -410,6 +391,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         }
         int captures = flagCaptures.get(teamColor);
         int targetCaptures = WIN_CONDITION;
+        if (!suddenDeathManager.isInSuddenDeath() && captures >= WIN_CONDITION) {
+            recordRoundWin(teamNumber);
+        }
 
         session.getRewardManager().grantKillOrObjective(player, RewardType.OBJECTIVE_CTF_CAPTURE, 0);
 

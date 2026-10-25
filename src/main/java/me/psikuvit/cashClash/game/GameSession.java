@@ -296,6 +296,17 @@ public class GameSession {
     }
 
     /**
+     * Whether the match goes on to another round. Drawn rounds aren't won by anyone, so they
+     * don't count toward {@code game.total-rounds}: the match keeps going - past round 7 if it
+     * has to - until that many rounds have been won with one team ahead.
+     */
+    public boolean hasRoundsLeft() {
+        int redWins = getRoundWins(1);
+        int blueWins = getRoundWins(2);
+        return redWins + blueWins < configManager.getTotalRounds() || redWins == blueWins;
+    }
+
+    /**
      * Reset round wins for a new game
      */
     public void resetRoundWins() {
@@ -494,12 +505,11 @@ public class GameSession {
     public void nextRound() {
         sequenceManager.cleanup(); // This make sure admin force is safe to use
 
-        currentRound++;
-        // check if the round number exceeds the rounds in the config
-        if (currentRound > configManager.getTotalRounds()) {
+        if (!hasRoundsLeft()) {
             end();
             return;
         }
+        currentRound++;
 
         selectLegForRoundTwo();
         initializeRoundData();

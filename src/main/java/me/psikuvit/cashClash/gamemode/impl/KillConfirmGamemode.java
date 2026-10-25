@@ -131,6 +131,7 @@ public class KillConfirmGamemode extends Gamemode {
         suddenDeathCycleScore.put(TeamColor.RED, 0);
         suddenDeathCycleScore.put(TeamColor.BLUE, 0);
         suddenDeathWinningTeam = 0;
+        resetRoundResult();
     }
 
     @Override
@@ -208,20 +209,16 @@ public class KillConfirmGamemode extends Gamemode {
         TimerDisplayUtils.stopCountdownTimer(player);
     }
 
+    /**
+     * Over once a team has confirmed {@code WIN_CONDITION} tags - a draw if both got there on the
+     * same tick.
+     */
     @Override
     public boolean checkGameWinner() {
-        int score1 = teamScore.getOrDefault(TeamColor.RED, 0);
-        int score2 = teamScore.getOrDefault(TeamColor.BLUE, 0);
-
         if (suddenDeathWinningTeam > 0) {
             return true;
         }
-
-        if (!suddenDeathManager.isInSuddenDeath() && (score1 >= WIN_CONDITION || score2 >= WIN_CONDITION)) {
-            return true;
-        }
-
-        return finalStandManager.isActive() && (score1 >= WIN_CONDITION || score2 >= WIN_CONDITION);
+        return getRecordedRoundWinner() != 0 || isRoundDraw();
     }
 
     @Override
@@ -229,17 +226,7 @@ public class KillConfirmGamemode extends Gamemode {
         if (suddenDeathWinningTeam > 0) {
             return suddenDeathWinningTeam;
         }
-
-        int score1 = teamScore.getOrDefault(TeamColor.RED, 0);
-        int score2 = teamScore.getOrDefault(TeamColor.BLUE, 0);
-        boolean eligible = !suddenDeathManager.isInSuddenDeath() || finalStandManager.isActive();
-
-        if (eligible && score1 >= WIN_CONDITION) {
-            return 1;
-        } else if (eligible && score2 >= WIN_CONDITION) {
-            return 2;
-        }
-        return 0;
+        return getRecordedRoundWinner();
     }
 
     @Override
@@ -553,6 +540,9 @@ public class KillConfirmGamemode extends Gamemode {
         session.getRewardManager().grantKillOrObjective(capturer, RewardType.OBJECTIVE_KC_CONFIRM, 0);
 
         teamScore.merge(color, 1, Integer::sum);
+        if (!suddenDeathManager.isInSuddenDeath() && teamScore.get(color) >= WIN_CONDITION) {
+            recordRoundWin(capturingTeam);
+        }
         if (suddenDeathManager.isInSuddenDeath()) {
             suddenDeathCycleScore.merge(color, 1, Integer::sum);
             checkSuddenDeathCycleTie();

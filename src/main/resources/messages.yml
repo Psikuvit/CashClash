@@ -289,6 +289,7 @@ messages:
     team-blue-wins: "<red><bold>Blue Team wins the round!</bold></red>"
     team-red-wins: "<red><bold>Red Team wins the round!</bold></red>"
     team-wins-round: "<gold><bold>{team_name} Team Wins the Round!</bold></gold>"
+    round-draw: "<yellow><bold>DRAW!</bold></yellow> <gray>Nobody wins this round - it doesn't count toward the match.</gray>"
     team-wins-match: "<gold><bold>{team_name} Team Wins the Game! ({score})</bold></gold>"
     game-countdown-start: "<yellow>Minimum players reached! Starting game in <gold>{seconds}s</gold>. Join now!</yellow>"
     game-countdown-cancelled: "<red>Not enough players, starting countdown cancelled.</red>"

@@ -381,7 +381,7 @@ public class RoundManager {
         // Hold the win/loss result on screen (shopping-phase-parity restrictions + damage
         // off, movement stays free) before moving to the next round or ending the game.
         session.getSequenceManager().playRestricted(Sequences.roundEnd(winningTeam), () -> {
-            if (session.getCurrentRound() >= CashClashPlugin.getInstance().getConfigManager().getTotalRounds()) {
+            if (!session.hasRoundsLeft()) {
                 session.end();
             } else {
                 SchedulerUtils.runTaskLater(session::nextRound, 20L);
@@ -389,54 +389,59 @@ public class RoundManager {
         });
     }
 
+    /**
+     * Ends the round once the gamemode has a result - its win condition, or a draw when both
+     * teams met it on the same tick - or once a team is out of lives. Both teams out at once
+     * (e.g. trading the last kills on the same tick) is a draw too.
+     */
     private void checkWinCondition() {
-        // First check gamemode-specific win conditions
         if (session.getGamemode() != null && session.getGamemode().checkGameWinner()) {
             int winnerTeam = session.getGamemode().getWinningTeam();
             if (winnerTeam > 0) {
                 String winnerName = winnerTeam == 1 ? session.getTeamRed().getName() : session.getTeamBlue().getName();
                 Messages.broadcast(session.getPlayers(), "round.team-wins-round",
                         "team_name", winnerName);
-                // Track round wins for this winner
-                session.incrementRoundWins(winnerTeam);
-
-                // Check if game should end early based on dynamic win condition
-                if (checkGameEndCondition(winnerTeam)) {
-                    return; // Game ends immediately
-                }
-
-                endCombatPhase(winnerTeam);
-                return;
+                awardRound(winnerTeam);
+            } else {
+                endRoundAsDraw();
             }
+            return;
         }
 
-        // Check if one team is eliminated
         int teamRedAlive = countWithLivesLeft(session.getTeamRed());
         int teamBlueAlive = countWithLivesLeft(session.getTeamBlue());
 
-        if (teamRedAlive == 0) {
+        if (teamRedAlive == 0 && teamBlueAlive == 0) {
+            endRoundAsDraw();
+        } else if (teamRedAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcast(session.getPlayers(), "round.team-blue-wins");
-            session.incrementRoundWins(2);
-
-            // Check if game should end early based on dynamic win condition
-            if (checkGameEndCondition(2)) {
-                return; // Game ends immediately
-            }
-
-            endCombatPhase(2);
+            awardRound(2);
         } else if (teamBlueAlive == 0) {
             SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
             Messages.broadcast(session.getPlayers(), "round.team-red-wins");
-            session.incrementRoundWins(1);
-
-            // Check if game should end early based on dynamic win condition
-            if (checkGameEndCondition(1)) {
-                return; // Game ends immediately
-            }
-
-            endCombatPhase(1);
+            awardRound(1);
         }
+    }
+
+    /**
+     * Gives {@code winnerTeam} the round - and the match, if that clinches it.
+     */
+    private void awardRound(int winnerTeam) {
+        session.incrementRoundWins(winnerTeam);
+        if (checkGameEndCondition(winnerTeam)) {
+            return;
+        }
+        endCombatPhase(winnerTeam);
+    }
+
+    /**
+     * Nobody wins the round. It doesn't count toward the match, so a draw adds a round on the
+     * end (a round 8 or later if it has to).
+     */
+    private void endRoundAsDraw() {
+        Messages.broadcast(session.getPlayers(), "round.round-draw");
+        endCombatPhase(0);
     }
 
     /**

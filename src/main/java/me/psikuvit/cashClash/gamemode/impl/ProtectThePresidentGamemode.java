@@ -147,6 +147,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Reset deaths for next round
         presidents.replaceAll((team, pres) -> pres.withResetDeaths());
         suddenDeathWinningTeam = 0;
+        resetRoundResult();
         finalStandManager.cancel();
         resetFinalStandBorder();
         // Reset recent heart bonus tracking
@@ -262,9 +263,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 suddenDeathPresidentKills.merge(TeamColor.fromTeamNumber(killerTeam), 1, Integer::sum);
                 checkSuddenDeathCycleTie();
             }
-            if (finalStandManager.isActive()) {
-                suddenDeathWinningTeam = killerTeam;
-                Messages.debug("[PTP] Final Stand winner determined after president death: Team " + suddenDeathWinningTeam);
+            if (finalStandManager.isActive() || (!suddenDeathManager.isInSuddenDeath() && deaths >= WIN_CONDITION)) {
+                recordRoundWin(killerTeam);
             }
         } else if (killer != null) {
             // Regular player died, award killer's team if killer is a president
@@ -292,17 +292,16 @@ public class ProtectThePresidentGamemode extends Gamemode {
         suddenDeathManager.onPlayerSpawn(player);
     }
 
+    /**
+     * Over once a president has been assassinated {@code WIN_CONDITION} times (or, in Final
+     * Stand, once at all) - a draw if both went down on the same tick.
+     */
     @Override
     public boolean checkGameWinner() {
-        int deaths1 = getPresidentDeaths(1);
-        int deaths2 = getPresidentDeaths(2);
-
         if (suddenDeathWinningTeam > 0) {
             return true;
         }
-
-        return !suddenDeathManager.isInSuddenDeath() &&
-                (deaths1 >= WIN_CONDITION || deaths2 >= WIN_CONDITION);
+        return getRecordedRoundWinner() != 0 || isRoundDraw();
     }
 
     @Override
@@ -310,17 +309,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         if (suddenDeathWinningTeam > 0) {
             return suddenDeathWinningTeam;
         }
-
-        int deaths1 = getPresidentDeaths(1);
-        int deaths2 = getPresidentDeaths(2);
-
-        // Return the team whose president didn't reach the assassination target first.
-        if (!suddenDeathManager.isInSuddenDeath() && deaths1 >= WIN_CONDITION && deaths2 < WIN_CONDITION) {
-            return 2; // Team 2 wins the round
-        } else if (!suddenDeathManager.isInSuddenDeath() && deaths2 >= WIN_CONDITION && deaths1 < WIN_CONDITION) {
-            return 1; // Team 1 wins the round
-        }
-        return 0; // No winner yet
+        return getRecordedRoundWinner();
     }
 
     @Override

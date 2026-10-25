@@ -139,9 +139,8 @@ public final class Sequences {
         return Sequence.create()
                 .run(s -> {
                     if (winningTeam != 1 && winningTeam != 2) {
-                        // No clear winner (e.g. combat timer expired with nobody eliminated)
                         SequenceEffects.showTitle(s.getPlayers(),
-                                component(MSG.getRaw("round-end.no-winner-title")), Component.empty());
+                                component(MSG.getRaw("round-end.draw-title")), Component.empty());
                         SoundUtils.playTo(s.getPlayers(), Sound.BLOCK_END_PORTAL_SPAWN, 1.0f, 1.0f);
                         return;
                     }

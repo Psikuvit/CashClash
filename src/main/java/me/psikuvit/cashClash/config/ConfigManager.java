@@ -177,10 +177,15 @@ public class ConfigManager {
     // ==================== ECONOMY SETTINGS ====================
 
     /**
-     * The fixed money pool for a round, or 0 if the round has none configured.
+     * The fixed money pool for a round. A round past the last configured one - only reached
+     * when draws push a match into extra rounds - pays the last configured pool; 0 if none is.
      */
     public long getRoundPool(int round) {
-        return config.getLong("economy.round-pools." + round, 0);
+        for (int r = round; r >= 1; r--) {
+            String path = "economy.round-pools." + r;
+            if (config.contains(path)) return config.getLong(path, 0);
+        }
+        return 0;
     }
 
     /**

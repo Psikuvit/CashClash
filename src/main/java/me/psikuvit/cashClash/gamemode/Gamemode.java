@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.gamemode;
 
 import me.psikuvit.cashClash.game.GameSession;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -14,9 +15,50 @@ public abstract class Gamemode {
     protected final GameSession session;
     protected final GamemodeType type;
 
+    private int roundWinner;
+    private int roundWinnerTick = -1;
+    private boolean roundDraw;
+
     public Gamemode(GameSession session, GamemodeType type) {
         this.session = session;
         this.type = type;
+    }
+
+    /**
+     * Records that {@code team} has met this round's win condition. Whoever gets there first
+     * wins it; a second team getting there on the same server tick makes the round a draw, and
+     * one getting there any later changes nothing.
+     */
+    protected void recordRoundWin(int team) {
+        if (roundDraw) return;
+        int tick = Bukkit.getCurrentTick();
+        if (roundWinner == 0) {
+            roundWinner = team;
+            roundWinnerTick = tick;
+        } else if (roundWinner != team && roundWinnerTick == tick) {
+            roundWinner = 0;
+            roundDraw = true;
+        }
+    }
+
+    /**
+     * The team {@link #recordRoundWin} settled on, or 0 if none yet (or the round is a draw).
+     */
+    protected int getRecordedRoundWinner() {
+        return roundWinner;
+    }
+
+    /**
+     * Whether both teams met the win condition on the same tick - see {@link #recordRoundWin}.
+     */
+    public boolean isRoundDraw() {
+        return roundDraw;
+    }
+
+    protected void resetRoundResult() {
+        roundWinner = 0;
+        roundWinnerTick = -1;
+        roundDraw = false;
     }
 
     /**
@@ -84,8 +126,8 @@ public abstract class Gamemode {
     }
 
     /**
-     * Check if the game has a winner (returns true if game should end)
-     * This is called periodically during combat
+     * Check if the round is over (returns true if it should end) - called every second during
+     * combat. True with {@link #getWinningTeam()} at 0 means a draw.
      */
     public abstract boolean checkGameWinner();
 

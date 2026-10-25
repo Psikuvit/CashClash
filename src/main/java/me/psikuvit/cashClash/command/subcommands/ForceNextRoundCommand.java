@@ -47,9 +47,8 @@ public class ForceNextRoundCommand extends AbstractArgCommand {
         }
 
         int currentRound = session.getCurrentRound();
-        int totalRounds = CashClashPlugin.getInstance().getConfigManager().getTotalRounds();
 
-        if (currentRound >= totalRounds) {
+        if (!session.hasRoundsLeft()) {
             Messages.send(sender, "admin.forcenextround-is-final-round");
             session.end();
             Messages.broadcast(session.getPlayers(), "admin.forcenextround-broadcast-game-ended");

@@ -31,7 +31,7 @@ combat-start:
 round-end:
   round-won-title: "<green><bold>ROUND WON</bold></green>"
   round-lost-title: "<red><bold>ROUND LOSS</bold></red>"
-  no-winner-title: "<gray><bold>Round Over</bold></gray>"
+  draw-title: "<yellow><bold>DRAW</bold></yellow>"
 
 sudden-death:
   title: "<red><bold>SUDDEN DEATH</bold></red>"
