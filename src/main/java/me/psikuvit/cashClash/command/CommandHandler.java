@@ -29,7 +29,6 @@ import me.psikuvit.cashClash.command.subcommands.ShopCommand;
 import me.psikuvit.cashClash.command.subcommands.SpawnNPCCommand;
 import me.psikuvit.cashClash.command.subcommands.StatsCommand;
 import me.psikuvit.cashClash.command.subcommands.StopCommand;
-import me.psikuvit.cashClash.command.subcommands.SuddenDeathCommand;
 import me.psikuvit.cashClash.command.subcommands.TemplateCommand;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.Command;
@@ -80,7 +79,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new StopCommand());
         registerSubcommand(new ForceStartCommand());
         registerSubcommand(new ForceNextRoundCommand());
-        registerSubcommand(new SuddenDeathCommand());
+        //registerSubcommand(new SuddenDeathCommand());
         registerSubcommand(new CTFCommand());
         registerSubcommand(new PTPCommand());
         registerSubcommand(new KCCommand());
@@ -176,7 +175,7 @@ public class CommandHandler extends Command {
             Messages.send(sender, "command.help-forcestart");
             Messages.send(sender, "command.help-pickmap");
             Messages.send(sender, "command.help-forcenextround");
-            sender.sendMessage(Messages.parse("<gray>/cc suddendeath</gray> <dark_gray>-</dark_gray> <yellow>Force sudden death for testing</yellow>"));
+            //sender.sendMessage(Messages.parse("<gray>/cc suddendeath</gray> <dark_gray>-</dark_gray> <yellow>Force sudden death for testing</yellow>"));
             Messages.send(sender, "command.help-selectkit");
             Messages.send(sender, "command.help-setlobby");
             Messages.send(sender, "command.help-clearbanners");

@@ -131,14 +131,18 @@ public class RoundManager {
         startPhase(roundNumber, GameState.SHOPPING);
     }
 
+    /**
+     * PAUSED: sudden death's own rules are switched off - a 3-3 round is a normal round. Only
+     * its announcement still plays.
+     */
     private void prepareSuddenDeathRoundIfNeeded() {
         if (session.getGamemode() == null) {
             return;
         }
 
         if (session.getRoundWins(1) == 3 && session.getRoundWins(2) == 3) {
-            session.getGamemode().prepareSuddenDeathRound();
-            session.getSequenceManager().playUntracked(Sequences.suddenDeath(session.getGamemode()));
+            // session.getGamemode().prepareSuddenDeathRound();
+            session.getSequenceManager().playUntracked(Sequences.suddenDeath());
         }
     }
 

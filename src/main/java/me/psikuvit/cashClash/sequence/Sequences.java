@@ -161,15 +161,13 @@ public final class Sequences {
     /**
      * Sudden death: no lock/blindness, just a short delay then a red announcement title.
      */
-    public static Sequence suddenDeath(Gamemode gamemode) {
-        String objective = gamemode.getObjectiveShort();
-
+    public static Sequence suddenDeath() {
         return Sequence.create()
                 .waitSeconds(CashClashPlugin.getInstance().getConfigManager().getSuddenDeathPreAnnouncementHoldSeconds())
                 .run(s -> {
                     SequenceEffects.showTitle(s.getPlayers(),
                             component(MSG.getRaw("sudden-death.title")),
-                            component(MSG.getMessage("sudden-death.subtitle", "objective", objective)),
+                            Component.empty(),
                             suddenDeathTimes());
                     SoundUtils.playTo(s.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
                 });
