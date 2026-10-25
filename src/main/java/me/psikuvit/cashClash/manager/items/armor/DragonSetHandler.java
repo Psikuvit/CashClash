@@ -11,7 +11,6 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
-import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -439,10 +438,8 @@ public class DragonSetHandler extends ArmorSetHandler {
             }
         }, 10L);
 
-        boolean inGame = AbilityTargets.inGame(player);
         for (Entity entity : world.getNearbyEntities(location, 5, 3, 5)) {
-            if (!(entity instanceof LivingEntity target) || target.equals(player)) continue;
-            if (inGame ? !(target instanceof Player) : !PDCDetection.isPracticeMob(target)) continue;
+            if (!(entity instanceof LivingEntity target) || !AbilityTargets.isEnemy(player, target)) continue;
 
             target.damage(cfg.getDragonOutrageDamage(), player);
 
