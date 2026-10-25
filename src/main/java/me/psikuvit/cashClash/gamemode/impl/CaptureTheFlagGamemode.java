@@ -37,7 +37,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -66,6 +68,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<TeamColor, BukkitTask> flagReturnTasks;
     private final Map<TeamColor, BukkitTask> flagReturnDisplayTasks;
     private final Map<TeamColor, Long> flagReturnExpiry; // scheduled return time (ms) for dropped flags
+    private final Set<TeamColor> overdueReturns; // dropped flags whose return timer ran out mid-pickup
     private final Map<UUID, Long> playerCircleTimestamps; // when the player entered a pickup circle
     private final Map<UUID, Long> captureStartedAt; // when a carrier started standing in their scoring circle
     private final Map<UUID, Integer> playerNearestFlagTeam;
@@ -101,6 +104,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.flagReturnTasks = new EnumMap<>(TeamColor.class);
         this.flagReturnDisplayTasks = new EnumMap<>(TeamColor.class);
         this.flagReturnExpiry = new EnumMap<>(TeamColor.class);
+        this.overdueReturns = EnumSet.noneOf(TeamColor.class);
         this.playerCircleTimestamps = new HashMap<>();
         this.captureStartedAt = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
@@ -177,6 +181,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         flagReturnDisplayTasks.values().forEach(this::cancelTask);
         flagReturnDisplayTasks.clear();
         flagReturnExpiry.clear();
+        overdueReturns.clear();
         // Resets holders only - plate locations and banners survive into the next round.
         returnFlagToBase(1);
         returnFlagToBase(2);
@@ -300,6 +305,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          flagReturnDisplayTasks.values().forEach(this::cancelTask);
          flagReturnDisplayTasks.clear();
          flagReturnExpiry.clear();
+         overdueReturns.clear();
 
          for (FlagState flag : flagStates.values()) {
              if (flag == null) continue;
@@ -878,8 +884,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
             cancelTask(task);
         }
         flagReturnExpiry.remove(color);
+        overdueReturns.remove(color);
     }
 
+    /**
+     * A dropped flag goes home when its return timer runs out - unless someone is picking it up
+     * right then, like a contested KC tag: it then stays on the ground until they finish or step
+     * out of the circle (see {@link #returnOverdueFlags}).
+     */
     private void scheduleFlagReturnTimer(int teamNumber) {
         TeamColor color = TeamColor.fromTeamNumber(teamNumber);
         if (flagReturnTasks.containsKey(color)) {
@@ -889,6 +901,10 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> {
             flagReturnTasks.remove(color);
+            if (isAnyonePickingUp(color)) {
+                overdueReturns.add(color);
+                return;
+            }
             returnFlagToBase(teamNumber);
         }, Math.max(1L, FLAG_RETURN_MS / 50L));
         flagReturnTasks.put(color, returnTask);
@@ -982,6 +998,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                 playerNearestFlagTeam.remove(playerUuid);
             }
         }
+        returnOverdueFlags();
     }
 
     /**
@@ -1028,6 +1045,21 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private boolean isPickingUp(UUID playerUuid, TeamColor flag) {
         Integer flagTeam = playerNearestFlagTeam.get(playerUuid);
         return flagTeam != null && flagTeam == flag.getTeamNumber() && playerCircleTimestamps.containsKey(playerUuid);
+    }
+
+    private boolean isAnyonePickingUp(TeamColor flag) {
+        return session.getPlayers().stream().anyMatch(uuid -> isPickingUp(uuid, flag));
+    }
+
+    /**
+     * Sends home every flag whose return timer ran out mid-pickup, once nobody is picking it up.
+     */
+    private void returnOverdueFlags() {
+        for (TeamColor color : new ArrayList<>(overdueReturns)) {
+            if (!isAnyonePickingUp(color)) {
+                returnFlagToBase(color.getTeamNumber());
+            }
+        }
     }
 
     /**
