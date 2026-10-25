@@ -31,7 +31,9 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.BlockDisplay;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -69,6 +71,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Map<TeamColor, BukkitTask> flagReturnDisplayTasks;
     private final Map<TeamColor, Long> flagReturnExpiry; // scheduled return time (ms) for dropped flags
     private final Set<TeamColor> overdueReturns; // dropped flags whose return timer ran out mid-pickup
+    private final Map<TeamColor, TextDisplay> overtimeLabels; // "Overtime!" over each overdue flag
     private final Map<UUID, Long> playerCircleTimestamps; // when the player entered a pickup circle
     private final Map<UUID, Long> captureStartedAt; // when a carrier started standing in their scoring circle
     private final Map<UUID, Integer> playerNearestFlagTeam;
@@ -104,6 +107,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.flagReturnDisplayTasks = new EnumMap<>(TeamColor.class);
         this.flagReturnExpiry = new EnumMap<>(TeamColor.class);
         this.overdueReturns = EnumSet.noneOf(TeamColor.class);
+        this.overtimeLabels = new EnumMap<>(TeamColor.class);
         this.playerCircleTimestamps = new HashMap<>();
         this.captureStartedAt = new HashMap<>();
         this.playerNearestFlagTeam = new HashMap<>();
@@ -180,7 +184,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         flagReturnDisplayTasks.values().forEach(this::cancelTask);
         flagReturnDisplayTasks.clear();
         flagReturnExpiry.clear();
-        overdueReturns.clear();
+        clearAllOvertime();
         // Resets holders only - plate locations and banners survive into the next round.
         returnFlagToBase(1);
         returnFlagToBase(2);
@@ -290,7 +294,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
          flagReturnDisplayTasks.values().forEach(this::cancelTask);
          flagReturnDisplayTasks.clear();
          flagReturnExpiry.clear();
-         overdueReturns.clear();
+         clearAllOvertime();
 
          for (FlagState flag : flagStates.values()) {
              if (flag == null) continue;
@@ -868,12 +872,43 @@ public class CaptureTheFlagGamemode extends Gamemode {
             cancelTask(task);
         }
         flagReturnExpiry.remove(color);
+        endOvertime(color);
+    }
+
+    /**
+     * The flag's return timer ran out mid-pickup: it stays down, with "Overtime!" floating in the
+     * middle of its circle ({@code overtime-text-height} above it), until {@link #endOvertime}.
+     */
+    private void startOvertime(TeamColor color) {
+        overdueReturns.add(color);
+        FlagState flag = flagStates.get(color);
+        if (flag == null || flag.flagLoc() == null || flag.flagLoc().getWorld() == null || overtimeLabels.containsKey(color)) return;
+
+        double height = CashClashPlugin.getInstance().getConfigManager().getCTFOvertimeTextHeight();
+        Location at = flag.flagLoc().clone().add(0, height, 0);
+        overtimeLabels.put(color, at.getWorld().spawn(at, TextDisplay.class, display -> {
+            display.text(Messages.parse(CashClashPlugin.getInstance().getMessagesConfig().getRaw("gamemode-ctf.flag-overtime")));
+            display.setBillboard(Display.Billboard.CENTER);
+            display.setSeeThrough(true);
+            display.setShadowed(false);
+        }));
+    }
+
+    private void endOvertime(TeamColor color) {
         overdueReturns.remove(color);
+        TextDisplay label = overtimeLabels.remove(color);
+        if (label != null) label.remove();
+    }
+
+    private void clearAllOvertime() {
+        for (TeamColor color : TeamColor.values()) {
+            endOvertime(color);
+        }
     }
 
     /**
      * A dropped flag goes home when its return timer runs out - unless someone is picking it up
-     * right then, like a contested KC tag: it then stays on the ground until they finish or step
+     * right then, like an overtime KC tag: it then stays on the ground until they finish or step
      * out of the circle (see {@link #returnOverdueFlags}).
      */
     private void scheduleFlagReturnTimer(int teamNumber) {
@@ -886,7 +921,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         BukkitTask returnTask = SchedulerUtils.runTaskLater(() -> {
             flagReturnTasks.remove(color);
             if (isAnyonePickingUp(color)) {
-                overdueReturns.add(color);
+                startOvertime(color);
                 return;
             }
             returnFlagToBase(teamNumber);

@@ -381,6 +381,10 @@ public class ConfigManager {
         return config.getInt("gamemodes.capture-the-flag.drop-safe-spot-search-radius", 8);
     }
 
+    public double getCTFOvertimeTextHeight() {
+        return config.getDouble("gamemodes.capture-the-flag.overtime-text-height", 2.0);
+    }
+
     public int getCTFDropGroundSearchMaxDepth() {
         return config.getInt("gamemodes.capture-the-flag.drop-ground-search-max-depth", 64);
     }

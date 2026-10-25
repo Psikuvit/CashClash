@@ -369,6 +369,8 @@ messages:
     flag-stolen-red: "<blue>{player_name} has stolen Team Red's flag!</blue>"
     flag-stolen-blue: "<red>{player_name} has stolen Team Blue's flag!</red>"
     flag-captured-bonus: "<green>+{amount} coins! (Capture bonus)</green>"
+    # Floats over a dropped flag whose return timer ran out while someone was picking it up
+    flag-overtime: "<red><bold>Overtime!</bold></red>"
     capture-bonus-final-stand: "<gold>+1 Extra Heart! (Capture bonus in Final Stand)</gold>"
     capture-bonus-heart: "<gold>+1 Extra Heart! (Capture bonus in sudden death)</gold>"
     bonus-timer-expired: "<green>✓ You will receive money bonus!</green>"

@@ -214,8 +214,11 @@ gamemodes:
     # Time required to stand on capture plate (milliseconds)
     plate-activation-time-ms: 3000
     # How long a dropped flag stays down before it returns to base (milliseconds). Standing in
-    # its circle doesn't pause this.
+    # its circle doesn't pause this - but if it runs out mid-pickup the flag goes into overtime
+    # and stays until that pickup finishes or the player leaves.
     flag-return-time-ms: 5000
+    # Height above the dropped flag of the "Overtime!" text shown in its circle (blocks)
+    overtime-text-height: 2.0
     # How long a carrier stands in their own team's circle to score (milliseconds). It only
     # counts while their own flag is at base.
     capture-time-ms: 3000
