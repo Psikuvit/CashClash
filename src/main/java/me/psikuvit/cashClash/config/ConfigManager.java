@@ -717,6 +717,10 @@ public class ConfigManager {
         return config.getDouble("practice-range.void-kill-height", -64.0);
     }
 
+    public int getPracticeHealthBarSegments() {
+        return Math.max(1, config.getInt("practice-range.health-bar-segments", 10));
+    }
+
     // ==================== HUB SETTINGS ====================
 
     public String getDiscordLink() {

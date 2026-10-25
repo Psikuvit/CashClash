@@ -935,6 +935,11 @@ messages:
     name-zombie: "<yellow><bold>Dummy</bold></yellow>"
     name-piglin: "<green><bold>Teammate</bold></green>"
     name-boss: "<dark_red><bold>Boss</bold></dark_red>"
+    # An enemy's name with its health bar: {name} is one of the names above, {bar} is
+    # health-bar-filled for each piece of health it has left, then health-bar-empty for the rest
+    health-bar: "{name} {bar}"
+    health-bar-filled: "<red>|</red>"
+    health-bar-empty: "<dark_gray>|</dark_gray>"
     already-in: "<red>You're already in the practice range.</red>"
     not-in: "<red>You're not in the practice range.</red>"
     not-set-up: "<red>The practice range hasn't been set up yet.</red>"

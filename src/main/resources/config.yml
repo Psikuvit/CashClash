@@ -658,6 +658,9 @@ practice-range:
   # Y level below which a practicing player is knocked out (back to the range's spawn) and a
   # practice mob dies (and respawns) - so nobody has to fall all the way into the void
   void-kill-height: -64
+  # Pieces in the health bar after each enemy's name (the look is practice.health-bar-* in
+  # messages.yml)
+  health-bar-segments: 10
 
 # ============================================
 # HUB SETTINGS

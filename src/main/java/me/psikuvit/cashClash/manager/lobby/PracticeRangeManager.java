@@ -60,6 +60,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -121,6 +122,8 @@ public class PracticeRangeManager implements Shutdownable, Listener {
     private final Map<UUID, CashClashPlayer> practicing = new HashMap<>();
     private final Map<UUID, MobSlot> mobs = new HashMap<>();
     private final Map<UUID, Patrol> patrols = new HashMap<>();
+    // Filled health-bar pieces last shown over each enemy, so its name is only re-sent on a change
+    private final Map<UUID, Integer> shownHealthBars = new HashMap<>();
     private final List<BukkitTask> respawnTasks = new ArrayList<>();
     private Villager villager;
     private IronGolem boss;
@@ -450,6 +453,38 @@ public class PracticeRangeManager implements Shutdownable, Listener {
         }
         if (boss != null && boss.getLocation().getY() < voidKillHeight) fallen.add(boss);
         fallen.forEach(mob -> mob.setHealth(0));
+
+        Set<UUID> enemies = new HashSet<>();
+        for (Map.Entry<UUID, MobSlot> entry : mobs.entrySet()) {
+            MobKind kind = entry.getValue().kind();
+            if (kind == MobKind.PIGLIN || !(Bukkit.getEntity(entry.getKey()) instanceof LivingEntity mob)) continue;
+            updateHealthBar(mob, kind == MobKind.SKELETON ? "practice.name-skeleton" : "practice.name-zombie");
+            enemies.add(mob.getUniqueId());
+        }
+        if (boss != null && boss.isValid()) {
+            updateHealthBar(boss, "practice.name-boss");
+            enemies.add(boss.getUniqueId());
+        }
+        shownHealthBars.keySet().retainAll(enemies);
+    }
+
+    /**
+     * An enemy's name with its health bar after it: {@code practice-range.health-bar-segments}
+     * pieces, filled for the share of health it has left. Only re-sent when the bar changes.
+     */
+    private void updateHealthBar(LivingEntity mob, String nameKey) {
+        AttributeInstance maxHealth = mob.getAttribute(Attribute.MAX_HEALTH);
+        double max = maxHealth != null ? maxHealth.getValue() : mob.getHealth();
+        int segments = configManager.getPracticeHealthBarSegments();
+        int filled = max <= 0 ? 0 : (int) Math.min(segments, Math.ceil(mob.getHealth() / max * segments));
+
+        Integer shown = shownHealthBars.put(mob.getUniqueId(), filled);
+        if (shown != null && shown == filled) return;
+
+        String bar = messagesConfig.getRaw("practice.health-bar-filled").repeat(filled)
+                + messagesConfig.getRaw("practice.health-bar-empty").repeat(segments - filled);
+        mob.customName(Messages.parse(messagesConfig.getMessage("practice.health-bar",
+                "name", messagesConfig.getMessage(nameKey), "bar", bar)));
     }
 
     private Player nearestPracticingPlayer(Location from, double range) {
