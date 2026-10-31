@@ -865,6 +865,13 @@ public class ItemsConfig {
         return config.getInt("custom-items.orb-of-gravitation.hits-to-destroy", 4);
     }
 
+    /**
+     * Time after throwing an orb before another can be thrown.
+     */
+    public int getOrbCooldownSeconds() {
+        return config.getInt("custom-items.orb-of-gravitation.cooldown-seconds", 7);
+    }
+
     public double getOrbPullBeamParticleSize() {
         return config.getDouble("custom-items.orb-of-gravitation.pull-beam-particle-size", 0.5);
     }

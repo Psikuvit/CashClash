@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
@@ -99,8 +100,11 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
     /**
      * Launches the orb as a Snowball tagged with its owner. The item is NOT consumed yet - it is
      * only consumed once the orb fully resolves (destroyed, pulled-and-expired, or detonated).
+     * Each throw starts {@code cooldown-seconds} before the next one.
      */
     public void throwOrbOfGravitation(Player player) {
+        if (cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.ORB_OF_GRAVITATION)) return;
+        cooldownManager.setCooldownSeconds(player.getUniqueId(), CooldownManager.Keys.ORB_OF_GRAVITATION, cfg.getOrbCooldownSeconds());
 
         Snowball orb = player.launchProjectile(Snowball.class);
         Vector direction = player.getLocation().getDirection();
