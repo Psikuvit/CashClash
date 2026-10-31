@@ -370,6 +370,7 @@ public class RoundManager {
             phaseTask.cancel();
             phaseTask = null;
         }
+        session.setRoundEnding(true);
 
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.2f, 1.4f);
 

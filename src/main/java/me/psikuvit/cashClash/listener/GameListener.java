@@ -196,9 +196,10 @@ public class GameListener implements Listener {
 
         // A round-end/victory Sequence is holding the result on screen - deaths during
         // this window must not affect lives, bonuses, or win conditions.
-        boolean deathConsequencesGated = session.isSequenceLocked() || session.isActionsRestricted();
+        boolean deathConsequencesGated = session.isSequenceLocked() || session.isActionsRestricted() || session.isRoundEnding();
         Messages.debug(player, "DEATH", player.getName() + " died - sequenceLocked=" + session.isSequenceLocked()
                 + " actionsRestricted=" + session.isActionsRestricted()
+                + " roundEnding=" + session.isRoundEnding()
                 + " -> death consequences " + (deathConsequencesGated ? "SKIPPED" : "applied"));
         if (!deathConsequencesGated) {
             victim.handleDeath();

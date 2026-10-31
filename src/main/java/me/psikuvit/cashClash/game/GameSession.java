@@ -80,6 +80,7 @@ public class GameSession {
     private int sequenceLockCount;
     private boolean actionsRestricted;
     private boolean damageDisabled;
+    private boolean roundEnding;
 
     private Gamemode gamemode;
     private final GamemodeManager gamemodeManager;
@@ -272,6 +273,19 @@ public class GameSession {
     public void setDamageDisabled(boolean damageDisabled) {
         this.damageDisabled = damageDisabled;
         Messages.debug("SEQUENCE", "setDamageDisabled(" + damageDisabled + ") on session " + sessionId);
+    }
+
+    /**
+     * Whether a round has been decided and the session is on its way to the next buy phase (or
+     * the end of the match). PvP is off for all of it - the round-end sequence alone left a gap
+     * after it where the state was still COMBAT.
+     */
+    public boolean isRoundEnding() {
+        return roundEnding;
+    }
+
+    public void setRoundEnding(boolean roundEnding) {
+        this.roundEnding = roundEnding;
     }
 
     /**
@@ -553,6 +567,7 @@ public class GameSession {
      */
     private void transitionToShoppingPhase() {
         stateMachine.transitionTo(GameState.SHOPPING);
+        roundEnding = false;
         teamOutlineManager.clearOutlines(this);
         gamemode.onRoundEnd();
 

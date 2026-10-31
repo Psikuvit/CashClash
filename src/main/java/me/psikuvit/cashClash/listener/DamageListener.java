@@ -802,12 +802,13 @@ public class DamageListener implements Listener {
         }
 
         GameState state = session.getState();
-        if (state == GameState.WAITING || state == GameState.SHOPPING
-                || session.isActionsRestricted() || session.isDamageDisabled()) {
+        if (state == GameState.WAITING || state == GameState.SHOPPING || state == GameState.ENDING
+                || session.isActionsRestricted() || session.isDamageDisabled() || session.isRoundEnding()) {
             event.setCancelled(true);
             Messages.debug(player, "DAMAGE", "Damage cancelled - state=" + state
                     + " actionsRestricted=" + session.isActionsRestricted()
                     + " damageDisabled=" + session.isDamageDisabled()
+                    + " roundEnding=" + session.isRoundEnding()
                     + " sequenceLocked=" + session.isSequenceLocked());
             return true;
         }
