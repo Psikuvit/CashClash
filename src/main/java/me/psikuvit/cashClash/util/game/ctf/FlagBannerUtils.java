@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.game.ctf;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.gamemode.impl.FlagState;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
@@ -148,7 +149,8 @@ public class FlagBannerUtils {
 
     /**
      * Move a banner to follow a player (attach to player's head)
-     * Uses direct teleport approach for instant rotation with player
+     * Uses direct teleport approach for instant rotation with player. The carrier can't see it -
+     * riding just behind their head, it would fill their own screen.
      *
      * @param banner The banner to move
      * @param player The player to follow
@@ -156,12 +158,15 @@ public class FlagBannerUtils {
      * @return The BukkitTask for banner carrying
      */
     public static BukkitTask createCarryingTask(BlockDisplay banner, Player player, Runnable onTaskComplete) {
+        player.hideEntity(CashClashPlugin.getInstance(), banner);
+
         return SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             @Override
             public void run() {
                 // A carrier who left the game world (sent to the lobby) must not drag the banner along.
                 if (!player.isOnline() || banner.isDead() || player.isDead() || player.getWorld() != banner.getWorld()) {
                     cancel();
+                    showToEveryone(banner);
                     if (onTaskComplete != null) {
                         onTaskComplete.run();
                     }
@@ -196,8 +201,18 @@ public class FlagBannerUtils {
          }
 
          banner.teleport(location);
+         showToEveryone(banner);
          Messages.debug("[CTF] Moved banner back to plate at " + location);
      }
+
+    /**
+     * Undoes {@link #createCarryingTask}'s hiding of a banner from its carrier, whoever that was.
+     */
+    private static void showToEveryone(BlockDisplay banner) {
+        for (Player viewer : banner.getWorld().getPlayers()) {
+            viewer.showEntity(CashClashPlugin.getInstance(), banner);
+        }
+    }
 
      /**
       * Initialize both team banners at their base locations.
