@@ -74,7 +74,7 @@ mythic-items:
     melee-damage: 7.0           # Attack damage of a normal hit (what the tooltip shows)
     chain-damage:
       cooldown-seconds: 1
-      damage: 1.0
+      damage: 1.0               # True damage - armor, Protection and Resistance don't reduce it
       radius: 5
     # Independent dash charges (each recharges on its own timer) - replaces the old
     # single-cooldown teleport. Damages + slows every enemy caught along the dash path.
@@ -82,7 +82,7 @@ mythic-items:
       max-charges: 3
       recharge-seconds: 15
       distance: 4.0
-      damage: 3.0
+      damage: 3.0               # True damage - armor, Protection and Resistance don't reduce it
       hit-radius: 1.2
       slow-percent: 12
       slow-duration-seconds: 2
@@ -122,7 +122,7 @@ mythic-items:
       sphere-particle-density: 14  # points per block of ring radius on the sphere shell
       sphere-duration-ticks: 60  # 3 seconds
       sphere-burst-damage: 4.0  # 2 hearts
-      sphere-damage-per-second: 2.0  # enemies inside lose 1 heart every second
+      sphere-damage-per-second: 2.0  # enemies inside lose 1 heart every second - true damage, armor doesn't reduce it
     # Blood tornado
     supercharge:
       vortex-radius: 4.0

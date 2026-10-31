@@ -129,7 +129,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
                 for (LivingEntity target : AbilityTargets.enemiesNear(shooter, hitLocation, sphereRadius, sphereRadius, sphereRadius)) {
                     if (target instanceof Player victim) applyHealNegation(victim, healNegationDuration);
                     if (damageTick && damagePerSecond > 0) {
-                        target.damage(damagePerSecond, shooter);
+                        manager.dealTrueDamage(target, damagePerSecond, shooter);
                     }
                 }
             }

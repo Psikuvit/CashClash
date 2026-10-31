@@ -72,7 +72,7 @@ public class ElectricEelHandler extends MythicItemHandler {
         for (LivingEntity target : AbilityTargets.enemiesNear(attacker, victimLoc, radius, radius, radius)) {
             if (target.equals(victim)) continue;
 
-            target.damage(cfg.getEelChainDamage(), attacker);
+            manager.dealTrueDamage(target, cfg.getEelChainDamage(), attacker);
             chainCount++;
 
             // Lightning spark effect
@@ -150,7 +150,7 @@ public class ElectricEelHandler extends MythicItemHandler {
                     if (alreadyHit.contains(target.getUniqueId())) continue;
 
                     alreadyHit.add(target.getUniqueId());
-                    target.damage(dashDamage, player);
+                    manager.dealTrueDamage(target, dashDamage, player);
                     applyEelDashSlow(target);
                     AbilityTargets.playSound(target, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.0f, 1.2f);
                     ParticleUtils.electricSpark(target.getLocation().add(0, 1, 0), 20, 0.4);

@@ -412,6 +412,27 @@ public class DamageListener implements Listener {
         return null;
     }
 
+    // ==================== TRUE DAMAGE ====================
+
+    /**
+     * True damage (Electric Eel's dash and chain, the Blood Sphere's ticks) ignores armor through
+     * its damage type; this clears what's left - Protection and Resistance. HIGHEST so nothing
+     * after it rescales the damage and brings them back.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onTrueDamage(EntityDamageEvent event) {
+        if (!mythicManager.isTakingTrueDamage(event.getEntity().getUniqueId())) return;
+
+        for (EntityDamageEvent.DamageModifier modifier : new EntityDamageEvent.DamageModifier[]{
+                EntityDamageEvent.DamageModifier.ARMOR,
+                EntityDamageEvent.DamageModifier.MAGIC,
+                EntityDamageEvent.DamageModifier.RESISTANCE}) {
+            if (event.isApplicable(modifier)) {
+                event.setDamage(modifier, 0);
+            }
+        }
+    }
+
     // ==================== KILL ASSISTS ====================
 
     /**

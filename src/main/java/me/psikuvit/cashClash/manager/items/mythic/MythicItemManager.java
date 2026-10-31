@@ -15,6 +15,9 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.damage.DamageType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
@@ -59,6 +62,9 @@ public class MythicItemManager {
     // Until when each player's mythic HUD flashes red after using an ability on cooldown
     private final Map<UUID, Long> cooldownFlashUntil;
 
+    // Entities a dealTrueDamage hit is landing on right now
+    private final Set<UUID> trueDamageTargets;
+
     // Handler registry - one handler per mythic item
     private final Map<MythicItem, MythicItemHandler> handlers;
     private final List<MythicItemHandler> allHandlers;
@@ -75,6 +81,7 @@ public class MythicItemManager {
         sessionAvailableMythics = new ConcurrentHashMap<>();
         activeTasks = new ConcurrentHashMap<>();
         cooldownFlashUntil = new ConcurrentHashMap<>();
+        trueDamageTargets = ConcurrentHashMap.newKeySet();
 
         handlers = new EnumMap<>(MythicItem.class);
         allHandlers = new ArrayList<>();
@@ -152,6 +159,28 @@ public class MythicItemManager {
         if (System.currentTimeMillis() < until) return true;
         cooldownFlashUntil.remove(uuid);
         return false;
+    }
+
+    /**
+     * Deals damage that armor, Protection and Resistance don't reduce, still credited to
+     * {@code source}. Armor is skipped by the damage type itself; the damage listener clears the
+     * rest for targets marked here (see {@link #isTakingTrueDamage}).
+     */
+    void dealTrueDamage(LivingEntity target, double amount, Player source) {
+        UUID id = target.getUniqueId();
+        trueDamageTargets.add(id);
+        try {
+            target.damage(amount, DamageSource.builder(DamageType.INDIRECT_MAGIC)
+                    .withCausingEntity(source)
+                    .withDirectEntity(source)
+                    .build());
+        } finally {
+            trueDamageTargets.remove(id);
+        }
+    }
+
+    public boolean isTakingTrueDamage(UUID uuid) {
+        return trueDamageTargets.contains(uuid);
     }
 
     /**
