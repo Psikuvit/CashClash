@@ -277,6 +277,7 @@ public class DamageListener implements Listener {
         //}
 
         if (attacker != null && target != null
+                && (victim == null || gameManager.getPlayerSession(attacker) != null)
                 && mythicManager.getHandler(AlchemistWandHandler.class).isTidyUpActive(attacker.getUniqueId())
                 && PDCDetection.getMythic(attacker.getInventory().getItemInMainHand()) == MythicItem.ALCHEMIST_WAND) {
             return false;
