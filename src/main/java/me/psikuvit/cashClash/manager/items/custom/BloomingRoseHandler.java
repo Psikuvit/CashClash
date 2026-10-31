@@ -84,6 +84,12 @@ public class BloomingRoseHandler extends CustomItemHandler {
         int teamNumber = team != null ? team.getTeamNumber() : 0;
         UUID owner = player.getUniqueId();
 
+        if (session == null && countPracticeRoses(owner) >= cfg.getBloomingRosePracticeMaxPlaced()) {
+            Messages.send(player, "customitem.blooming-rose-practice-limit",
+                    "max", String.valueOf(cfg.getBloomingRosePracticeMaxPlaced()));
+            return;
+        }
+
         consumeItem(player, item);
 
         Block origin = loc.getBlock();
@@ -100,6 +106,17 @@ public class BloomingRoseHandler extends CustomItemHandler {
         SoundUtils.playAt(center, Sound.BLOCK_CHERRY_WOOD_PLACE, 1.0f, 1.0f);
 
         startBloomingRoseHpRevealLoop();
+    }
+
+    /**
+     * Roses a player has standing in the practice range.
+     */
+    private int countPracticeRoses(UUID owner) {
+        int count = 0;
+        for (BloomingRoseZone zone : bloomingRoseZones.values()) {
+            if (zone.session() == null && zone.owner().equals(owner)) count++;
+        }
+        return count;
     }
 
     /**

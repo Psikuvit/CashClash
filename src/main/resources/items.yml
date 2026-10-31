@@ -516,6 +516,8 @@ custom-items:
     damage-reduction-percent: 25
     min-health-floor: 4.0
     regen-duration-seconds: 5
+    # Most roses one player can have standing at once in the practice range
+    practice-max-placed: 3
 
   # Orb of Gravitation
   orb-of-gravitation:

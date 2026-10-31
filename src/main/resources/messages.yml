@@ -1057,6 +1057,7 @@ messages:
     hunters-mark-target: "<red><bold>You have been marked! You take extra damage.</bold></red>"
     hunters-mark-no-target: "<red>No enemy close enough to mark! (Stand within 2 blocks)</red>"
     blooming-rose-placed: "<green>Blooming Rose planted!</green>"
+    blooming-rose-practice-limit: "<red>You can only have {max} Blooming Roses planted at once here!</red>"
     blooming-rose-teammates-regen: "<green>Recovering from the rose's energy!</green>"
     orb-destroyed: "<dark_yellow>The orb shatters!</dark_yellow>"
     orb-pulled: "<gold>You have been pulled!</gold>"

@@ -832,6 +832,10 @@ public class ItemsConfig {
         return config.getInt("custom-items.blooming-rose.regen-duration-seconds", 5);
     }
 
+    public int getBloomingRosePracticeMaxPlaced() {
+        return config.getInt("custom-items.blooming-rose.practice-max-placed", 3);
+    }
+
     // Orb of Gravitation
     public double getOrbThrowSpeed() {
         return config.getDouble("custom-items.orb-of-gravitation.throw-speed", 0.35);
