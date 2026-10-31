@@ -49,6 +49,7 @@ import me.psikuvit.cashClash.manager.player.TabListManager;
 import me.psikuvit.cashClash.manager.player.WorldVisibilityManager;
 import me.psikuvit.cashClash.manager.shop.ShopManager;
 import me.psikuvit.cashClash.party.PartyManager;
+import me.psikuvit.cashClash.rank.RankManager;
 import me.psikuvit.cashClash.shop.ShopService;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -100,6 +101,7 @@ public final class CashClashPlugin extends JavaPlugin {
     private WeaponItemManager weaponItemManager;
     private TeamOutlineManager teamOutlineManager;
     private MythicHudManager mythicHudManager;
+    private RankManager rankManager;
     // Spawn rooms are paused (full version on the spawn-rooms-wip branch)
     //private SpawnRoomManager spawnRoomManager;
 
@@ -129,7 +131,7 @@ public final class CashClashPlugin extends JavaPlugin {
 
             // Tier 1: depend only on tier 0 managers.
             arenaManager = new ArenaManager(configManager, gameManager);
-            chatManager = new ChatManager(partyManager, gameManager);
+            rankManager = new RankManager(messagesConfig, gameManager, playerDataManager, tabListManager);
             rejoinManager = new RejoinManager(configManager, gameManager);
             leaderboardManager = new LeaderboardManager(configManager, playerDataManager);
             afkManager = new AfkManager(configManager, gameManager, messagesConfig);
@@ -141,6 +143,7 @@ public final class CashClashPlugin extends JavaPlugin {
             //spawnRoomManager = new SpawnRoomManager(gameManager, configManager, messagesConfig);
 
             // Tier 2: depend on tier 1 managers.
+            chatManager = new ChatManager(partyManager, gameManager, rankManager);
             shopManager = new ShopManager(arenaManager, gameManager);
             lobbyManager = new LobbyManager(itemsConfig, arenaManager, scoreboardManager, tabListManager);
             customArmorManager = new CustomArmorManager(cooldownManager, itemsConfig);
@@ -303,6 +306,7 @@ public final class CashClashPlugin extends JavaPlugin {
     public WeaponItemManager getWeaponItemManager() { return weaponItemManager; }
     public TeamOutlineManager getTeamOutlineManager() { return teamOutlineManager; }
     public MythicHudManager getMythicHudManager() { return mythicHudManager; }
+    public RankManager getRankManager() { return rankManager; }
     //public SpawnRoomManager getSpawnRoomManager() { return spawnRoomManager; }
 
     private void registerEvents() {
@@ -321,6 +325,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new ChatListener(),
                 transferInputListener,
                 teamOutlineManager,
+                rankManager,
                 queueManager,
                 practiceRangeManager
                 //spawnRoomManager

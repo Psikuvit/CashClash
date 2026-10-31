@@ -21,6 +21,7 @@ import me.psikuvit.cashClash.command.subcommands.MythicsCommand;
 import me.psikuvit.cashClash.command.subcommands.PTPCommand;
 import me.psikuvit.cashClash.command.subcommands.PickMapCommand;
 import me.psikuvit.cashClash.command.subcommands.PracticeCommand;
+import me.psikuvit.cashClash.command.subcommands.RankCommand;
 import me.psikuvit.cashClash.command.subcommands.ReloadCommand;
 import me.psikuvit.cashClash.command.subcommands.SelectKitCommand;
 import me.psikuvit.cashClash.command.subcommands.SetLobbyCommand;
@@ -30,9 +31,11 @@ import me.psikuvit.cashClash.command.subcommands.SpawnNPCCommand;
 import me.psikuvit.cashClash.command.subcommands.StatsCommand;
 import me.psikuvit.cashClash.command.subcommands.StopCommand;
 import me.psikuvit.cashClash.command.subcommands.TemplateCommand;
+import me.psikuvit.cashClash.rank.RankManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
@@ -103,6 +106,9 @@ public class CommandHandler extends Command {
         registerSubcommand(new MythicsCommand());
         registerSubcommand(new CustomItemCommand());
         registerSubcommand(new BlockDisplayCommand());
+
+        // Owner commands
+        registerSubcommand(new RankCommand());
     }
 
     public void registerSubcommand(AbstractArgCommand cmd) {
@@ -124,8 +130,7 @@ public class CommandHandler extends Command {
             return true;
         }
 
-        String perm = sub.getPermission();
-        if (perm != null && !perm.isBlank() && !sender.hasPermission(perm)) {
+        if (!canUse(sender, sub)) {
             Messages.send(sender, "command.no-permission");
             return true;
         }
@@ -144,7 +149,7 @@ public class CommandHandler extends Command {
         if (args.length == 1) {
             List<String> out = new ArrayList<>();
             for (AbstractArgCommand c : new LinkedHashSet<>(subcommands.values())) {
-                if (c.getPermission() != null && !c.getPermission().isBlank() && !sender.hasPermission(c.getPermission())) continue;
+                if (!canUse(sender, c)) continue;
                 if (c.getName().toLowerCase(Locale.ROOT).startsWith(token)) out.add(c.getName());
             }
             return out;
@@ -155,6 +160,15 @@ public class CommandHandler extends Command {
 
         String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
         return sub.onTabComplete(sender, subArgs);
+    }
+
+    /**
+     * Whether a sender may run a subcommand. The console can run all of them - including the
+     * owner-only ones, whose permission ops don't get by default.
+     */
+    private static boolean canUse(CommandSender sender, AbstractArgCommand sub) {
+        String perm = sub.getPermission();
+        return perm == null || perm.isBlank() || sender instanceof ConsoleCommandSender || sender.hasPermission(perm);
     }
 
     private void sendHelp(CommandSender sender) {
@@ -182,6 +196,10 @@ public class CommandHandler extends Command {
             Messages.send(sender, "command.help-reload");
             Messages.send(sender, "command.help-debug");
             Messages.send(sender, "command.help-shop");
+        }
+        if (sender.hasPermission(RankManager.OWNER_PERMISSION)) {
+            Messages.send(sender, "command.help-owner-section");
+            Messages.send(sender, "command.help-rank");
         }
     }
 }

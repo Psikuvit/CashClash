@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.party.Party;
 import me.psikuvit.cashClash.party.PartyManager;
+import me.psikuvit.cashClash.rank.RankManager;
 import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -22,10 +23,12 @@ public class ChatManager implements Shutdownable {
     private final Map<UUID, ChatChannel> playerChannels;
     private final PartyManager partyManager;
     private final GameManager gameManager;
+    private final RankManager rankManager;
 
-    public ChatManager(PartyManager partyManager, GameManager gameManager) {
+    public ChatManager(PartyManager partyManager, GameManager gameManager, RankManager rankManager) {
         this.partyManager = partyManager;
         this.gameManager = gameManager;
+        this.rankManager = rankManager;
         this.playerChannels = new ConcurrentHashMap<>();
     }
 
@@ -111,6 +114,7 @@ public class ChatManager implements Shutdownable {
         }
 
         Component chatMessage = Messages.parse(ChatChannel.PARTY.getPrefix())
+                .append(rankManager.tag(sender))
                 .append(Messages.parse(ChatChannel.PARTY.getNameColor() + sender.getName()))
                 .append(Messages.parse("<gray>: </gray>"))
                 .append(Messages.parse("<white>" + message + "</white>"));
@@ -138,6 +142,7 @@ public class ChatManager implements Shutdownable {
         }
 
         Component chatMessage = Messages.parse(ChatChannel.TEAM.getPrefix())
+                .append(rankManager.tag(sender))
                 .append(Messages.parse(ChatChannel.TEAM.getNameColor() + sender.getName()))
                 .append(Messages.parse("<gray>: </gray>"))
                 .append(Messages.parse("<white>" + message + "</white>"));
@@ -162,6 +167,7 @@ public class ChatManager implements Shutdownable {
         }
 
         Component chatMessage = Messages.parse(ChatChannel.GAME.getPrefix())
+                .append(rankManager.tag(sender))
                 .append(Messages.parse(ChatChannel.GAME.getNameColor() + sender.getName()))
                 .append(Messages.parse("<gray>: </gray>"))
                 .append(Messages.parse("<white>" + message + "</white>"));

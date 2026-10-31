@@ -35,6 +35,8 @@ messages:
     help-clearbanners: "<yellow>/cc clearbanners <gray>- Remove leftover flag banners from your world</gray>"
     help-reload: "<yellow>/cc reload [config|shop|items|all] <gray>- Reload configs</gray>"
     help-debug: "<yellow>/cc debug <gray>- Toggle debug mode</gray>"
+    help-owner-section: "<gray>--- Owner Commands ---</gray>"
+    help-rank: "<yellow>/cc rank set <player> <owner|admin|none> <gray>- Give or take a rank (owner: console only)</gray>"
     layout-unknown-action: "<red>Unknown layout action: <gray>{action}</gray></red>"
     layout-usage: "<gray>Usage: <yellow>/cc layout</yellow> (open editor), <yellow>/cc layout confirm</yellow>, <yellow>/cc layout cancel</yellow></gray>"
 
@@ -1077,6 +1079,26 @@ messages:
     invalid-input: "<red>Invalid input!</red>"
     invalid-number: "<red>'{input}' is not a valid number.</red>"
 
+  # ============================================
+  # RANKS
+  # ============================================
+  ranks:
+    # Shown before a ranked player's name in chat, death messages and the tab list
+    owner-tag: "<hover:show_text:'<gold>Cash Clash Owner</gold>'><gradient:#FFD700:#FF8C00><bold>OWNER</bold></gradient></hover>"
+    admin-tag: "<hover:show_text:'<red>Cash Clash Admin</red>'><red><bold>ADMIN</bold></red></hover>"
+    # Sent to everyone in the world an owner joins into
+    owner-joined: "<gradient:#FFD700:#FF8C00>✦ Owner <bold>{player}</bold> has joined the server! ✦</gradient>"
+    usage: "<red>Usage: /cc rank set <player> <owner|admin|none>, /cc rank list</red>"
+    player-unknown: "<red>No player named {player} has ever joined.</red>"
+    set: "<green>{player} is now {rank}.</green>"
+    removed: "<green>{player} no longer has a rank.</green>"
+    unchanged: "<red>{player} already has that rank.</red>"
+    owner-console-only: "<red>Only the console can give or take the owner rank.</red>"
+    save-failed: "<red>Couldn't save {player}'s rank - nothing was changed.</red>"
+    set-you: "<gold><bold>You are now {rank}!</bold></gold>"
+    removed-you: "<gray>You no longer have a rank.</gray>"
+    list-empty: "<gray>Nobody has a rank.</gray>"
+    list: "<gold>Ranks:</gold> <white>{players}</white>"
 # ============================================
 # HOVER GLOSSARY
 # ============================================

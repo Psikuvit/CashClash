@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.storage;
 
+import me.psikuvit.cashClash.rank.Rank;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -18,6 +20,8 @@ public class PlayerData {
     private transient long lastSeen;
     // Kit name -> (slot -> item identifier) for custom layouts
     private Map<String, Map<Integer, String>> kitLayouts;
+    // Staff rank, or null for none
+    private Rank rank;
 
     // No-arg constructor for Gson
     public PlayerData() {}
@@ -154,5 +158,13 @@ public class PlayerData {
 
     public boolean hasKitLayout(String kitName) {
         return kitLayouts != null && kitLayouts.containsKey(kitName);
+    }
+
+    public Rank getRank() {
+        return rank;
+    }
+
+    public void setRank(Rank rank) {
+        this.rank = rank;
     }
 }

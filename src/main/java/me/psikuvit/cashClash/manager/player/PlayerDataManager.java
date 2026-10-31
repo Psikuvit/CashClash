@@ -153,6 +153,38 @@ public class PlayerDataManager implements Shutdownable {
         return getOrLoadData(uuid);
     }
 
+    /**
+     * A player's data for a one-off read or change while they may be offline: the cached copy
+     * when they're online, otherwise loaded from storage (a fresh one if nothing is stored)
+     * without being cached. Empty if storage couldn't be read - saving a fresh copy then would
+     * wipe what's stored.
+     */
+    public Optional<PlayerData> readData(UUID uuid) {
+        PlayerData cached = cache.get(uuid);
+        if (cached != null) return Optional.of(cached);
+        try {
+            return Optional.of(provider.loadPlayer(uuid).orElseGet(() -> new PlayerData(uuid)));
+        } catch (SQLException e) {
+            Messages.debug("Failed to load player from DB: " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Saves a player's data straight away rather than on quit.
+     *
+     * @return false if storage refused it
+     */
+    public boolean saveData(PlayerData data) {
+        try {
+            provider.savePlayer(data);
+            return true;
+        } catch (SQLException e) {
+            Messages.debug("Failed to save player: " + e.getMessage());
+            return false;
+        }
+    }
+
     public void incWins(UUID uuid) {
         PlayerData d = getOrLoadData(uuid);
         d.incWins();
