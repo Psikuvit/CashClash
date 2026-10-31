@@ -464,6 +464,14 @@ public class ItemsConfig {
         return config.getInt("mythic-items.alchemist-wand.tidy-up.remove-max-seconds", 10);
     }
 
+    /**
+     * Damage of a CTF flag carrier's Tidy Up hit on an enemy, in place of the wand's own (which the
+     * flag's Weakness takes to nothing).
+     */
+    public double getAlchemistTidyUpCarrierDamage() {
+        return config.getDouble("mythic-items.alchemist-wand.tidy-up-melee-damage-silenced", 5.0);
+    }
+
     // Alchemist Wand Taunt
     public int getAlchemistTauntDuration() {
         return config.getInt("mythic-items.alchemist-wand.taunt.duration-seconds", 7);

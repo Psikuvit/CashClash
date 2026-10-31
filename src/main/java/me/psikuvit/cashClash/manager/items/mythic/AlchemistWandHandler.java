@@ -76,6 +76,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
     private final Map<UUID, BukkitTask> alchemistTidyUpDisplayTasks;
     // wielder -> target -> effect -> bottle display (only visible to the wielder)
     private final Map<UUID, Map<UUID, Map<PotionEffectType, ItemDisplay>>> alchemistTidyUpBottles;
+    private final Set<UUID> carrierStrikes; // flag carriers whose Tidy Up hit is being dealt right now
 
     // Alchemist Wand Taunt tracking
     private final Map<UUID, TauntSession> alchemistTaunts;   // wielder -> their active session
@@ -90,6 +91,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
         this.alchemistTidyUpTimeoutTasks = new ConcurrentHashMap<>();
         this.alchemistTidyUpDisplayTasks = new ConcurrentHashMap<>();
         this.alchemistTidyUpBottles = new ConcurrentHashMap<>();
+        this.carrierStrikes = ConcurrentHashMap.newKeySet();
         this.alchemistTaunts = new ConcurrentHashMap<>();
         this.alchemistTauntRedirect = new ConcurrentHashMap<>();
         this.alchemistTauntRedirecting = ConcurrentHashMap.newKeySet();
@@ -532,6 +534,33 @@ public class AlchemistWandHandler extends MythicItemHandler {
                 + " (" + (sameTeam ? "cleanse" : "strip") + ")");
 
         endAlchemistTidyUp(attacker, false);
+    }
+
+    /**
+     * A CTF flag carrier's Tidy Up swing. The flag's Weakness takes the wand's damage to nothing,
+     * so vanilla never turns the swing into a hit - it's dealt here instead: an enemy takes
+     * {@code tidy-up-melee-damage-silenced} (see {@link #isCarrierStrike}), a teammate nothing,
+     * and the window resolves either way.
+     */
+    public void carrierTidyUpStrike(Player attacker, LivingEntity victim) {
+        UUID uuid = attacker.getUniqueId();
+        if (AbilityTargets.isEnemy(attacker, victim)) {
+            carrierStrikes.add(uuid);
+            try {
+                victim.damage(cfg.getAlchemistTidyUpCarrierDamage(), attacker);
+            } finally {
+                carrierStrikes.remove(uuid);
+            }
+        }
+        onAlchemistMeleeHit(attacker, victim);
+    }
+
+    /**
+     * Whether this player's damage event is their flag-carrier Tidy Up hit, which lands for
+     * {@code tidy-up-melee-damage-silenced} whatever else would change it.
+     */
+    public boolean isCarrierStrike(UUID uuid) {
+        return carrierStrikes.contains(uuid);
     }
 
     /**

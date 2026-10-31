@@ -943,6 +943,10 @@ public class DamageListener implements Listener {
         handleCustomItemEffects(attacker, weapon, session);
         handleMythicItemEffects(event, attacker, victim, weapon);
         applyCombatModifiers(event, attacker, weapon);
+
+        if (mythicManager.getHandler(AlchemistWandHandler.class).isCarrierStrike(attacker.getUniqueId())) {
+            event.setDamage(itemsConfig.getAlchemistTidyUpCarrierDamage());
+        }
     }
 
     /**
@@ -1003,16 +1007,32 @@ public class DamageListener implements Listener {
     }
 
     /**
-     * The Alchemist Wand is a pure ability tool, like Warden Gloves: it carries real attack
-     * damage only so vanilla resolves the swing into a damage event at all (a 0-damage weapon
-     * is skipped outright by vanilla's attack path, so none of this would run). Outside an
-     * active Tidy Up window the hit is therefore dropped entirely - Tidy Up remains the one
-     * state in which a wand swing does anything.
+     * A CTF flag carrier's Tidy Up swing: the vanilla attack is dropped and the wand deals the hit
+     * itself, at {@code tidy-up-melee-damage-silenced} - see
+     * {@link AlchemistWandHandler#carrierTidyUpStrike}. Only flag carriers; any other Weakness is
+     * left to {@link #onZeroDamageTidyUpHit}.
      */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onCarrierTidyUpSwing(PrePlayerAttackEntityEvent event) {
+        Player attacker = event.getPlayer();
+        if (!event.willAttack() || !(event.getAttacked() instanceof LivingEntity victim)) return;
+        if (PDCDetection.getMythic(attacker.getInventory().getItemInMainHand()) != MythicItem.ALCHEMIST_WAND) return;
+
+        AlchemistWandHandler handler = mythicManager.getHandler(AlchemistWandHandler.class);
+        if (!handler.isTidyUpActive(attacker.getUniqueId())) return;
+
+        GameSession session = gameManager.getPlayerSession(attacker);
+        if (session == null || !(session.getGamemode() instanceof CaptureTheFlagGamemode ctf)
+                || !ctf.isSilenced(attacker.getUniqueId())) return;
+
+        event.setCancelled(true);
+        handler.carrierTidyUpStrike(attacker, victim);
+    }
+
     /**
-     * A Tidy Up hit from a player whose attack does no damage at all - a flag carrier, whose
-     * Weakness takes the wand's small attack damage to nothing - never becomes a damage event,
-     * so it's resolved on the swing instead. Any other Tidy Up hit goes through
+     * A Tidy Up hit from a player whose attack does no damage at all - Weakness taking the wand's
+     * small attack damage to nothing - never becomes a damage event, so it's resolved on the
+     * swing instead, dealing nothing. Any other Tidy Up hit goes through
      * {@link #applyAlchemistWandMelee} as usual.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -1026,6 +1046,13 @@ public class DamageListener implements Listener {
         mythicManager.getHandler(AlchemistWandHandler.class).onAlchemistMeleeHit(attacker, victim);
     }
 
+    /**
+     * The Alchemist Wand is a pure ability tool, like Warden Gloves: it carries real attack
+     * damage only so vanilla resolves the swing into a damage event at all (a 0-damage weapon
+     * is skipped outright by vanilla's attack path, so none of this would run). Outside an
+     * active Tidy Up window the hit is therefore dropped entirely - Tidy Up remains the one
+     * state in which a wand swing does anything.
+     */
     private void applyAlchemistWandMelee(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim) {
         AlchemistWandHandler handler = mythicManager.getHandler(AlchemistWandHandler.class);
         if (!handler.isTidyUpActive(attacker.getUniqueId())) {

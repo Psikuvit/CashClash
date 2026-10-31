@@ -183,6 +183,9 @@ mythic-items:
       duration-seconds: 10
       cooldown-seconds: 24
       remove-max-seconds: 10
+    # Damage of the Tidy Up hit a CTF flag carrier lands on an enemy - the flag's Weakness would
+    # otherwise take the wand's damage to nothing. Only flag carriers; other Weakness is untouched.
+    tidy-up-melee-damage-silenced: 5.0
     # Taunt - Shift + right click to chain nearby teammates, redirecting their damage to you
     taunt:
       duration-seconds: 7
