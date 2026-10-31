@@ -288,6 +288,9 @@ gamemodes:
   # Protect the President settings
   protect-the-president:
     selection-time-seconds: 15
+    # Countdown before each team's president is revealed: round 1, then every round after it
+    reveal-countdown-seconds: 5
+    reveal-countdown-seconds-later-rounds: 3
     kill-bonus-threshold: 2
     kill-bonus-amount: 15000
     captures-to-win: 2

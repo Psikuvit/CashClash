@@ -83,13 +83,14 @@ public final class Sequences {
 
     /**
      * Protect the President buy-phase reveal: blind + freeze all players, "Selecting
-     * President...", a 5-second countdown, then reveal each team's own president to
-     * only that team.
+     * President...", a countdown (5s in round 1, 3s after by default), then reveal each team's
+     * own president to only that team.
      */
-    public static Sequence presidentReveal(ProtectThePresidentGamemode ptp) {
+    public static Sequence presidentReveal(ProtectThePresidentGamemode ptp, int round) {
         // "Selecting President..." holds for as long as the reveal title does afterward, rather
         // than being visible for only ~1s before the countdown overwrites it.
         double revealHoldSeconds = CashClashPlugin.getInstance().getConfigManager().getPresidentRevealHoldSeconds();
+        int countdownSeconds = CashClashPlugin.getInstance().getConfigManager().getPTPRevealCountdownSeconds(round);
 
         return Sequence.create()
                 .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), revealBlindnessTicks()))
@@ -97,7 +98,7 @@ public final class Sequences {
                 .run(s -> SequenceEffects.showTitle(s.getPlayers(),
                         component(MSG.getRaw("president.selecting")), Component.empty()))
                 .waitSeconds(revealHoldSeconds)
-                .countdown(5, count -> s -> SequenceEffects.showTitle(s.getPlayers(),
+                .countdown(countdownSeconds, count -> s -> SequenceEffects.showTitle(s.getPlayers(),
                         Component.text(count), Component.empty()))
                 .then(20L, s -> {
                     revealPresidentToTeam(s.getTeamRed(), ptp.getPresident(1));

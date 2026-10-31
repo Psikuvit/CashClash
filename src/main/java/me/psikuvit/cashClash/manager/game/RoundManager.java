@@ -123,7 +123,7 @@ public class RoundManager {
         if (session.getGamemode() instanceof ProtectThePresidentGamemode ptp) {
             // Selection happens now so the reveal sequence shows a settled name
             ptp.selectPresidentsForRound();
-            session.getSequenceManager().play(Sequences.presidentReveal(ptp), true, () -> {
+            session.getSequenceManager().play(Sequences.presidentReveal(ptp, roundNumber), true, () -> {
                 ptp.beginBuffSelectionPhase();
                 startPhase(roundNumber, GameState.BUFF_SELECTION);
             });

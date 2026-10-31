@@ -468,6 +468,15 @@ public class ConfigManager {
         return config.getInt("gamemodes.protect-the-president.selection-time-seconds", 15);
     }
 
+    /**
+     * The countdown before the president reveal - its own length in round 1, shorter after it.
+     */
+    public int getPTPRevealCountdownSeconds(int round) {
+        return round <= 1
+                ? config.getInt("gamemodes.protect-the-president.reveal-countdown-seconds", 5)
+                : config.getInt("gamemodes.protect-the-president.reveal-countdown-seconds-later-rounds", 3);
+    }
+
     public int getPTPKillBonusThreshold() {
         return config.getInt("gamemodes.protect-the-president.kill-bonus-threshold", 2);
     }
