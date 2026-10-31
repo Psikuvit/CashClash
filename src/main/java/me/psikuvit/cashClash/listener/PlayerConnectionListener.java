@@ -101,9 +101,17 @@ public class PlayerConnectionListener implements Listener {
         Messages.send(player, "lobby-messages.welcome-help");
     }
 
+    /**
+     * Arriving anywhere outside a game also puts the tab entry back to its lobby look, however
+     * the player got there - no [R]/[B] or team colour can outlive the game.
+     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
-        worldVisibilityManager.refreshVisibility(event.getPlayer());
+        Player player = event.getPlayer();
+        worldVisibilityManager.refreshVisibility(player);
+        if (gameManager.getPlayerSession(player) == null) {
+            tabListManager.setPlayerToLobby(player);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)

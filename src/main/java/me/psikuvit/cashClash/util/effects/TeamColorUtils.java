@@ -118,6 +118,22 @@ public final class TeamColorUtils {
     }
 
     /**
+     * Takes a player out of the red, blue and green-glow teams on every online player's board,
+     * so nobody - the player or anyone still in their old game - sees them in a team colour
+     * once they're back in the lobby.
+     */
+    public static void removeFromTeamColors(Player player) {
+        String entry = player.getName();
+        for (Player viewer : Bukkit.getOnlinePlayers()) {
+            Scoreboard board = viewer.getScoreboard();
+            for (String teamName : new String[]{TEAM_RED_NAME, TEAM_BLUE_NAME, TEAM_GLOW_GREEN_NAME}) {
+                Team team = board.getTeam(teamName);
+                if (team != null) team.removeEntry(entry);
+            }
+        }
+    }
+
+    /**
      * A player's team colour for particles ({@link TeamColor#getParticleColor}), or
      * {@code fallback} when they aren't on a team in a game - the practice range, say.
      */

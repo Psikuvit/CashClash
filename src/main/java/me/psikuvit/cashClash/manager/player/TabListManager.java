@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 
@@ -19,18 +20,15 @@ public final class TabListManager {
     }
 
     /**
-     * Configure a player to show the lobby-style tab.
-     * This keeps their scoreboard (sidebar) but updates their playerListName and
-     * ensures the scoreboard has at least an empty team setup.
+     * Configure a player to show the lobby-style tab: their name in gold (after any rank tag
+     * their display name carries), with no team prefix or team colour left over from a game -
+     * including on the boards of anyone still in that game.
      */
     public void setPlayerToLobby(Player player) {
         if (player == null || !player.isOnline()) return;
 
-        Component comp = Messages.parse("<gold>" + player.getName() + "</gold>");
-        player.playerListName(comp);
-
-        Scoreboard board = player.getScoreboard();
-        TeamColorUtils.assignPlayersToTeams(board, null);
+        player.playerListName(Component.text().color(NamedTextColor.GOLD).append(player.displayName()).build());
+        TeamColorUtils.removeFromTeamColors(player);
     }
 
     /**
@@ -44,7 +42,7 @@ public final class TabListManager {
         else if (session.getTeamBlue().hasPlayer(player.getUniqueId())) teamNumber = 2;
 
         String prefix = teamNumber == 1 ? "<red>[R] </red>" : teamNumber == 2 ? "<blue>[B] </blue>" : "<gray>[?] </gray>";
-        Component comp = Messages.parse(prefix + player.getName());
+        Component comp = Messages.parse(prefix).append(player.displayName());
         player.playerListName(comp);
 
         Scoreboard board = player.getScoreboard();
