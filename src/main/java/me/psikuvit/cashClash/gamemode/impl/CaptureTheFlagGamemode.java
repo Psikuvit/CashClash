@@ -454,13 +454,19 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return flagCaptures.get(TeamColor.fromTeamNumber(teamNumber));
     }
 
+    /**
+     * Near a flag that's down (at its base or dropped), or - for a carrier - on a base they could
+     * score at. A base whose flag was taken is only a scoring spot, so it doesn't count for
+     * anyone else walking over it.
+     */
     @Override
     public boolean isInCaptureArea(Player player) {
+        boolean carrier = isSilenced(player.getUniqueId());
         for (TeamColor color : TeamColor.values()) {
             FlagState flag = flagStates.get(color);
             if (flag != null && !flag.isHeld() && isPlayerNearFlag(player, flag)) return true;
             Location base = flagBaseLocations.get(color);
-            if (base != null && isPlayerInScoringZone(player, base)) return true;
+            if (carrier && base != null && isPlayerInScoringZone(player, base)) return true;
         }
         return false;
     }
