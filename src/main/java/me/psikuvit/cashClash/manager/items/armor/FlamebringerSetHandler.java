@@ -1,6 +1,9 @@
 package me.psikuvit.cashClash.manager.items.armor;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.manager.items.mythic.AlchemistWandHandler;
 import me.psikuvit.cashClash.manager.items.mythic.HudSegment;
+import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
 import me.psikuvit.cashClash.util.CooldownManager;
@@ -10,6 +13,7 @@ import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Color;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
@@ -22,16 +26,18 @@ import org.bukkit.util.Vector;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Flamebringer Set - Furnace Blood (fire immunity speed), lava speed procs, fire trail,
- * and a gravitational pull after enough kills.
+ * and a gravitational pull that kills charge and a crouch releases.
  */
 public class FlamebringerSetHandler extends ArmorSetHandler {
 
-    private final Map<UUID, Integer> flamebringerKills; // Player -> kill count this round
+    private final Set<UUID> sneakReady = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Integer> flamebringerKills; // Player -> kills charged toward the pull this round
     private final Map<UUID, BukkitTask> flamebringerFireTask; // Player -> fire effect task
     private final Map<UUID, Long> flamebringerSpeedEndTime; // Player -> time when speed effect should end
     private final Map<UUID, BukkitTask> flamebringerTrailTasks; // Player -> fire trail task
@@ -62,6 +68,9 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
         if (!hasFlamebringerSet(player)) return List.of();
         List<HudSegment> segments = new ArrayList<>();
         addCooldownSegment(segments, player.getUniqueId(), CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, "flamebringer");
+        segments.add(new HudSegment(hudText("flamebringer-pull",
+                "kills", String.valueOf(flamebringerKills.getOrDefault(player.getUniqueId(), 0)),
+                "max", String.valueOf(cfg.getFlamebringerKillsForPull())), false));
         return segments;
     }
 
@@ -174,48 +183,92 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
     }
 
     /**
-     * Handle Flamebringer kill tracking and gravitational pull on 2nd kill.
+     * Kills charge the gravitational pull, up to {@code kills-for-pull} - kills past that don't
+     * carry over into the next charge.
      */
     public void onFlamebringerKill(Player killer) {
         if (!hasFlamebringerSet(killer)) return;
 
         UUID id = killer.getUniqueId();
-        int kills = flamebringerKills.getOrDefault(id, 0) + 1;
-        flamebringerKills.put(id, kills);
+        int needed = cfg.getFlamebringerKillsForPull();
+        int before = flamebringerKills.getOrDefault(id, 0);
+        if (before >= needed) return;
 
-        if (kills >= cfg.getFlamebringerKillsForPull()) {
-            flamebringerKills.put(id, 0);
-
-            Messages.send(killer, "armor.flamebringer-pull-activated");
-            SoundUtils.play(killer, Sound.ENTITY_BLAZE_SHOOT, 1.0f, 0.8f);
-
-            double radius = cfg.getFlamebringerPullRadius();
-            double duration = cfg.getFlamebringerPullDuration();
-            double pullStrength = cfg.getFlamebringerPullStrength();
-
-            Location killerLoc = killer.getLocation();
-
-            int durationTicks = (int) (duration * 20);
-            BukkitTask pullTask = SchedulerUtils.runTaskTimer(() -> {
-                if (!killer.isOnline()) return;
-
-                ParticleUtils.flamebringerPull(killerLoc, radius);
-
-                for (LivingEntity target : AbilityTargets.enemiesNear(killer, killerLoc, radius, radius, radius)) {
-                    Vector direction = killerLoc.toVector().subtract(target.getLocation().toVector()).normalize();
-                    target.setVelocity(direction.multiply(pullStrength));
-                }
-            }, 0L, 2L);
-
-            SchedulerUtils.runTaskLater(() -> {
-                if (pullTask != null) {
-                    pullTask.cancel();
-                }
-                if (killer.isOnline()) {
-                    Messages.send(killer, "armor.flamebringer-pull-ended");
-                }
-            }, durationTicks);
+        flamebringerKills.put(id, before + 1);
+        if (before + 1 >= needed) {
+            Messages.send(killer, "armor.flamebringer-pull-ready");
+            SoundUtils.play(killer, Sound.ITEM_FIRECHARGE_USE, 1.0f, 0.6f);
         }
+    }
+
+    /**
+     * Sneak-start arms the pull and the release fires it, like Bunny Shoes - so a shift-ability
+     * used mid-sneak wins over it.
+     */
+    public void onPlayerToggleSneak(Player player, boolean sneaking) {
+        if (!hasFlamebringerSet(player)) return;
+
+        UUID id = player.getUniqueId();
+        if (sneaking) {
+            sneakReady.add(id);
+        } else if (sneakReady.remove(id)) {
+            tryActivatePull(player);
+        }
+    }
+
+    private void tryActivatePull(Player player) {
+        UUID id = player.getUniqueId();
+        if (!player.isOnline() || player.isDead() || player.getGameMode() == GameMode.SPECTATOR) return;
+        if (flamebringerKills.getOrDefault(id, 0) < cfg.getFlamebringerKillsForPull()) return;
+        if (manager.isMythicShiftLocked(id)) return;
+        if (CashClashPlugin.getInstance().getMythicItemManager().getHandler(AlchemistWandHandler.class).isTaunting(id)) return;
+        if (CashClashPlugin.getInstance().getMythicItemManager().getHandler(WardenGlovesHandler.class).isRisingFuryActive(id)) return;
+
+        if (isInShoppingPhase(player)) {
+            sendShoppingPhaseRestriction(player, "gamestate.cannot-use-custom-armor-shopping");
+            return;
+        }
+        if (isSilenced(player)) {
+            Messages.send(player, "listener.cannot-use-items-while-silenced");
+            return;
+        }
+
+        flamebringerKills.put(id, 0);
+        startGravitationalPull(player);
+    }
+
+    /**
+     * Pulls every enemy around the player's spot at activation towards it for the configured
+     * duration.
+     */
+    private void startGravitationalPull(Player player) {
+        Messages.send(player, "armor.flamebringer-pull-activated");
+        SoundUtils.play(player, Sound.ENTITY_BLAZE_SHOOT, 1.0f, 0.8f);
+
+        double radius = cfg.getFlamebringerPullRadius();
+        double pullStrength = cfg.getFlamebringerPullStrength();
+        int durationTicks = (int) (cfg.getFlamebringerPullDuration() * 20);
+        Location center = player.getLocation();
+
+        BukkitTask pullTask = SchedulerUtils.runTaskTimer(() -> {
+            if (!player.isOnline()) return;
+
+            ParticleUtils.flamebringerPull(center, radius);
+
+            for (LivingEntity target : AbilityTargets.enemiesNear(player, center, radius, radius, radius)) {
+                Vector direction = center.toVector().subtract(target.getLocation().toVector()).normalize();
+                target.setVelocity(direction.multiply(pullStrength));
+            }
+        }, 0L, 2L);
+
+        SchedulerUtils.runTaskLater(() -> {
+            if (pullTask != null) {
+                pullTask.cancel();
+            }
+            if (player.isOnline()) {
+                Messages.send(player, "armor.flamebringer-pull-ended");
+            }
+        }, durationTicks);
     }
 
     @Override
@@ -223,6 +276,7 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
         // Cancel all flamebringer tasks
         flamebringerFireTask.values().forEach(BukkitTask::cancel);
         flamebringerFireTask.clear();
+        sneakReady.clear();
         flamebringerKills.clear();
         flamebringerSpeedEndTime.clear();
         flamebringerTrailTasks.values().forEach(BukkitTask::cancel);

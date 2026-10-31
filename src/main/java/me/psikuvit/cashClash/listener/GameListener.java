@@ -683,7 +683,8 @@ public class GameListener implements Listener {
 
         if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {
             boolean hasSneakAbility = armorManager.getHandler(BunnyShoesHandler.class).hasBunnyShoes(p)
-                    || armorManager.getHandler(DragonSetHandler.class).hasDragonSet(p);
+                    || armorManager.getHandler(DragonSetHandler.class).hasDragonSet(p)
+                    || armorManager.getHandler(FlamebringerSetHandler.class).hasFlamebringerSet(p);
             if (event.isSneaking() && hasSneakAbility) {
                 Messages.sendPhaseRestriction(p, session, "gamestate.cannot-use-custom-armor-shopping");
             }
@@ -730,6 +731,7 @@ public class GameListener implements Listener {
         }
 
         armorManager.getHandler(BunnyShoesHandler.class).onPlayerToggleSneak(p, event.isSneaking());
+        armorManager.getHandler(FlamebringerSetHandler.class).onPlayerToggleSneak(p, event.isSneaking());
     }
 
     private boolean isSilenced(GameSession session, Player player) {
