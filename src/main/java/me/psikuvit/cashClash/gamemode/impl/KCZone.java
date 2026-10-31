@@ -40,6 +40,8 @@ public class KCZone {
     private TextDisplay timerDisplay;
     // The emerald (Money Tag) or totem (Heart Tag) floating over a bonus tag; null on a plain one
     private ItemDisplay bonusIconDisplay;
+    // "Contested!" over the tag while a finished hold is blocked by an enemy on it; null otherwise
+    private TextDisplay contestedDisplay;
 
     // Whether the 0.5s grey "pending activation" visuals have already been swapped to the
     // lit, kind-colored state. Guards KCZoneUtils#activateZoneEntities from re-running per tick.
@@ -120,6 +122,14 @@ public class KCZone {
 
     public void setBonusIconDisplay(ItemDisplay bonusIconDisplay) {
         this.bonusIconDisplay = bonusIconDisplay;
+    }
+
+    public TextDisplay getContestedDisplay() {
+        return contestedDisplay;
+    }
+
+    public void setContestedDisplay(TextDisplay contestedDisplay) {
+        this.contestedDisplay = contestedDisplay;
     }
 
     public boolean isActivated() {

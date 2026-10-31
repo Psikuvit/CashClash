@@ -20,6 +20,7 @@ import me.psikuvit.cashClash.util.enums.TeamColor;
 import me.psikuvit.cashClash.util.game.kc.KCZoneUtils;
 import me.psikuvit.cashClash.util.game.kc.KCZoneValidator;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -29,6 +30,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -473,7 +475,7 @@ public class KillConfirmGamemode extends Gamemode {
         Team killerTeamObj = zone.getKillerTeam() == 1 ? session.getTeamRed() : session.getTeamBlue();
         for (UUID uuid : killerTeamObj.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline() && KCZoneValidator.isPlayerInZone(p, zone.getCenter())) {
+            if (p != null && isHoldingZone(p, zone)) {
                 return true;
             }
         }
@@ -481,12 +483,44 @@ public class KillConfirmGamemode extends Gamemode {
     }
 
     /**
+     * Whether a player counts as standing on a tag: alive, out of spectator, and not using
+     * Overdrive's invincibility.
+     */
+    private boolean isHoldingZone(Player player, KCZone zone) {
+        if (!player.isOnline() || player.getGameMode() == GameMode.SPECTATOR || CashClashPlayer.isPlayerDead(player)) {
+            return false;
+        }
+        boolean usingOverdrive = CashClashPlugin.getInstance().getCustomItemManager()
+                .getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId());
+        return !usingOverdrive && KCZoneValidator.isPlayerInZone(player, zone.getCenter());
+    }
+
+    /**
+     * Each team standing on the tag this tick, by team number.
+     */
+    private Set<Integer> teamsInZone(KCZone zone) {
+        Set<Integer> teams = new HashSet<>();
+        for (UUID uuid : session.getPlayers()) {
+            Player player = Bukkit.getPlayer(uuid);
+            Team team = player != null ? session.getPlayerTeam(player) : null;
+            if (team != null && isHoldingZone(player, zone)) teams.add(team.getTeamNumber());
+        }
+        return teams;
+    }
+
+    /**
+     * Holds keep counting while an enemy is on the tag too, but a finished one can't take it -
+     * the tag shows "Contested!" until the enemy steps off or dies, and then the first finished
+     * hold takes it straight away.
+     *
      * @return true if the zone was resolved (captured or denied) this tick
      */
     private boolean tickZoneOccupants(KCZone zone, long now) {
         long requiredMs = CAPTURE_DURATION_MS;
         Map<UUID, Long> occupants = zone.getOccupantEntryTimestamps();
+        Set<Integer> teamsPresent = teamsInZone(zone);
         boolean anyoneHolding = false;
+        boolean contested = false;
 
         for (UUID uuid : session.getPlayers()) {
             Player player = Bukkit.getPlayer(uuid);
@@ -495,9 +529,7 @@ public class KillConfirmGamemode extends Gamemode {
                 continue;
             }
 
-            boolean usingOverdrive = CashClashPlugin.getInstance().getCustomItemManager()
-                    .getHandler(OverdriveHandler.class).isOverdriveInvincible(uuid);
-            if (usingOverdrive || !KCZoneValidator.isPlayerInZone(player, zone.getCenter())) {
+            if (!isHoldingZone(player, zone)) {
                 if (occupants.remove(uuid) != null) {
                     TimerDisplayUtils.stopCountdownTimer(player);
                     Messages.send(player, "gamemode-kc.zone-capture-cancelled", "victim_name", zone.getVictimName());
@@ -512,20 +544,29 @@ public class KillConfirmGamemode extends Gamemode {
                 Messages.send(player, "gamemode-kc.zone-capturing", "victim_name", zone.getVictimName());
             }
 
+            anyoneHolding = true;
             long elapsed = now - entry;
             if (elapsed >= requiredMs) {
                 Team playerTeam = session.getPlayerTeam(player);
                 if (playerTeam == null) continue;
+                if (teamsPresent.size() > 1) {
+                    contested = true;
+                    continue;
+                }
                 resolveZone(zone, player, playerTeam.getTeamNumber());
                 return true;
             }
 
-            anyoneHolding = true;
             long remainingMs = requiredMs - elapsed;
             TimerDisplayUtils.startCountdownTimer(player, remainingMs, 1,
                     secondsRemaining -> "<gold>Capturing: " + secondsRemaining + "s</gold>");
         }
 
+        if (contested) {
+            KCZoneUtils.showContested(zone);
+        } else {
+            KCZoneUtils.hideContested(zone);
+        }
         if (anyoneHolding) {
             KCZoneUtils.spawnCaptureProgressParticles(zone.getCenter());
         }

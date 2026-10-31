@@ -427,6 +427,10 @@ public class ConfigManager {
         return config.getDouble("gamemodes.kill-confirm.bonus-icon-height", 2.4);
     }
 
+    public double getKCContestedTextHeight() {
+        return config.getDouble("gamemodes.kill-confirm.contested-text-height", 3.0);
+    }
+
     public double getKCBeamYOffset() {
         return config.getDouble("gamemodes.kill-confirm.beam-y-offset", 0.2);
     }

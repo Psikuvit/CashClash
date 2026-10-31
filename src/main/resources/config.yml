@@ -268,6 +268,9 @@ gamemodes:
     beam-duration-ticks: 10
     # Height above the tag of the emerald (Money Tag) / totem (Heart Tag) floating over it (blocks)
     bonus-icon-height: 2.4
+    # Height above the tag of "Contested!", shown while an enemy standing on it blocks a finished
+    # capture (blocks)
+    contested-text-height: 3.0
     # Capture zone footprint: horizontal half-width and vertical tolerance (blocks) for
     # "standing in the zone", and how far outward to search for clear ground when a death
     # location's footprint is blocked before giving up

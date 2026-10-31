@@ -417,6 +417,8 @@ messages:
     zone-no-time-limit: "<gold><bold>Final Stand</bold></gold>"
     # A tag's timer text once it hits 0s while the killer's team is still standing on it
     zone-overtime: "<red><bold>Overtime!</bold></red>"
+    # Floats over a tag while an enemy standing on it stops a finished capture
+    zone-contested: "<red><bold>Contested!</bold></red>"
     sudden-death: "<red><bold>SUDDEN DEATH!</bold> Whoever has the most points by the end of 3 minutes wins!</red>"
     sudden-death-timer-start: "<yellow>The game has entered sudden death! Money bonuses have been replaced with an extra heart that lasts for 45 seconds. Whoever has the most points by the end of 3 minutes wins!</yellow>"
     sudden-death-tied-restart: "<gold>Sudden death is tied! A new 3-minute point race begins now.</gold>"

@@ -330,8 +330,37 @@ public final class KCZoneUtils {
         if (zone.getBonusIconDisplay() != null && !zone.getBonusIconDisplay().isDead()) {
             zone.getBonusIconDisplay().remove();
         }
+        hideContested(zone);
 
         SoundUtils.playAt(zone.getCenter(), Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 1.0f);
+    }
+
+    /**
+     * Floats "Contested!" ({@code gamemode-kc.zone-contested}) {@code contested-text-height} above
+     * a tag. No-ops if it's already showing.
+     */
+    public static void showContested(KCZone zone) {
+        if (zone.getContestedDisplay() != null && !zone.getContestedDisplay().isDead()) return;
+        Location center = zone.getCenter();
+        if (center == null || center.getWorld() == null) return;
+
+        Location at = center.clone().add(0, CashClashPlugin.getInstance().getConfigManager().getKCContestedTextHeight(), 0);
+        at.setYaw(0f);
+        at.setPitch(0f);
+        zone.setContestedDisplay(at.getWorld().spawn(at, TextDisplay.class, display -> {
+            display.text(Messages.parse(CashClashPlugin.getInstance().getMessagesConfig().getRaw("gamemode-kc.zone-contested")));
+            display.setBillboard(Display.Billboard.CENTER);
+            display.setBrightness(ACTIVE_BRIGHTNESS);
+            display.setSeeThrough(true);
+            display.setShadowed(false);
+            display.setPersistent(false);
+        }));
+    }
+
+    public static void hideContested(KCZone zone) {
+        TextDisplay contested = zone.getContestedDisplay();
+        if (contested != null && !contested.isDead()) contested.remove();
+        zone.setContestedDisplay(null);
     }
 
     /**
