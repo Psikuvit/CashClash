@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
+import me.psikuvit.cashClash.util.game.TimerDisplayUtils;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.ItemUtils;
@@ -46,6 +47,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * charge ability that catches and drags enemies.
  */
 public class GoblinSpearHandler extends MythicItemHandler {
+
+    private static final int PRIORITY_CHARGE_TIMER = 4;
 
     private final Map<UUID, List<LivingEntity>> goblinSpearCharging;
     private final ChanceBag venomJavelinChance;
@@ -180,6 +183,10 @@ public class GoblinSpearHandler extends MythicItemHandler {
 
         // Track the task
         manager.trackTask(uuid, chargeTask);
+
+        TimerDisplayUtils.startCountdownTimer(player, maxDuration * 50L, PRIORITY_CHARGE_TIMER,
+                seconds -> CashClashPlugin.getInstance().getMessagesConfig()
+                        .getMessage("mythic.goblin-charge-timer", "seconds", String.valueOf(seconds)));
     }
 
     /**
@@ -190,6 +197,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
     private void endCharge(Player player, boolean hitWall, int ticksTraveled, Vector chargeDirection) {
         UUID uuid = player.getUniqueId();
         List<LivingEntity> caughtPlayers = goblinSpearCharging.remove(uuid);
+        TimerDisplayUtils.stopCountdownTimer(uuid, PRIORITY_CHARGE_TIMER);
 
         if (!hitWall) {
             Messages.debug(player, "GOBLIN_SPEAR: Charge ended without wall impact");

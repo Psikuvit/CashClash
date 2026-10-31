@@ -520,6 +520,8 @@ messages:
      boombox-placed: "<green>Speedbox placed! Pulsing knockback for 12 seconds.</green>"
      wall-impact: "<gold>Wall impact! Dealt {damage} damage to {enemy_count} enemies!</gold>"
      charge-activated: "<green>Charge!</green>"
+     # Action bar while a Goblin Spear charge runs, counting down to its end
+     goblin-charge-timer: "<green>Charge: {seconds}s</green>"
      blood-vortex-activated: "<dark_purple>Blood Vortex activated!</dark_purple>"
      shockwave-activated: "<dark_aqua>SHOCKWAVE!</dark_aqua>"
      warden-rising-fury-activated: "<dark_red><bold>RISING FURY ACTIVATED!</bold></dark_red>"
