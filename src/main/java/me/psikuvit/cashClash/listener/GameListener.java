@@ -678,6 +678,7 @@ public class GameListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player p = event.getPlayer();
+        if (p.getGameMode() == GameMode.SPECTATOR) return;
         GameSession session = gameManager.getPlayerSession(p);
 
         if (session != null && (session.getState() == GameState.SHOPPING || session.isActionsRestricted())) {

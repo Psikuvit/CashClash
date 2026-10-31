@@ -13,6 +13,7 @@ import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Color;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -147,7 +148,7 @@ public class DragonSetHandler extends ArmorSetHandler {
      * Dragon Rush: consume a scale to dash to a target in line of sight.
      */
     public void onDragonRush(Player player) {
-        if (!hasDragonSet(player)) return;
+        if (!hasDragonSet(player) || player.getGameMode() == GameMode.SPECTATOR) return;
 
         UUID id = player.getUniqueId();
 
@@ -387,7 +388,7 @@ public class DragonSetHandler extends ArmorSetHandler {
      * fall damage from that landing.
      */
     public void startDragonOutrage(Player player) {
-        if (!hasDragonSet(player)) return;
+        if (!hasDragonSet(player) || player.getGameMode() == GameMode.SPECTATOR) return;
         if (getDragonScales(player) < cfg.getDragonMaxScales()) return;
 
         UUID uuid = player.getUniqueId();
