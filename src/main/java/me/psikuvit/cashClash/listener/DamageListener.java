@@ -584,7 +584,7 @@ public class DamageListener implements Listener {
         if (gameManager.getPlayerSession(player) == null) return;
 
         armorManager.getHandler(DragonSetHandler.class).onDragonOutrageLanding(event, player);
-        armorManager.getHandler(TectonicCapHandler.class).onTectonicCapFall(event, player);
+        armorManager.getHandler(TectonicCapHandler.class).onTectonicCapFall(event, player, player.getFallDistance());
     }
 
     /**

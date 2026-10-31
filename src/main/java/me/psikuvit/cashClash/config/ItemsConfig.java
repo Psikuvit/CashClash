@@ -953,8 +953,16 @@ public class ItemsConfig {
         return (float) config.getDouble("custom-armor.tectonic-cap.fall-warning-min-distance", 3.0);
     }
 
-    public double getTectonicCapFallDamageRadiusScale() {
-        return config.getDouble("custom-armor.tectonic-cap.fall-damage-radius-scale", 0.3);
+    /**
+     * Every this many blocks fallen adds {@link #getTectonicCapDamageScalePercent()} to the slam's
+     * base damage, pro rata.
+     */
+    public double getTectonicCapDamageScaleBlocks() {
+        return config.getDouble("custom-armor.tectonic-cap.damage-scale-blocks", 5.0);
+    }
+
+    public double getTectonicCapDamageScalePercent() {
+        return config.getDouble("custom-armor.tectonic-cap.damage-scale-percent", 10.0);
     }
 
     public double getTectonicCapKnockbackUpward() {

@@ -26,16 +26,13 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Tectonic Cap - negates fall damage and slams the ground, damaging nearby enemies.
  * Two charges with a shared recharge; each charge recharges independently after the
- * configured recharge time. The slam radius scales with the negated fall damage.
+ * configured recharge time. The slam's damage scales with the distance fallen; its range is
+ * fixed.
  */
 public class TectonicCapHandler extends ArmorSetHandler {
 
-    // Ring radii for both the falling-warning aura and the slam impact burst
-    private static final double INNER_RING_RADIUS = 2.0;
-    private static final double OUTER_RING_RADIUS = 4.0;
-    // More points + smaller dust than a plain manual loop, for a denser/finer ring
-    private static final int INNER_RING_POINTS = 48;
-    private static final int OUTER_RING_POINTS = 64;
+    // Ring density, so a wider configured range still draws a solid ring
+    private static final int RING_POINTS_PER_BLOCK = 16;
     private static final int CHARGES = 2;
 
     private final Map<UUID, Long> tectonicCharge1Cooldown;
@@ -104,7 +101,15 @@ public class TectonicCapHandler extends ArmorSetHandler {
         nextFallWarningTick.put(id, now + 250L);
     }
 
-    public void onTectonicCapFall(EntityDamageEvent event, Player player) {
+    /**
+     * The slam on landing. Damage is {@code base-damage} plus {@code damage-scale-percent} for
+     * every {@code damage-scale-blocks} fallen; the outer ring marks the damage range and the
+     * inner one the slowness range, both straight from config.
+     *
+     * @param fallDistance blocks fallen - passed in, since a landing detected outside a game has
+     *                     already reset the player's own fall distance
+     */
+    public void onTectonicCapFall(EntityDamageEvent event, Player player, float fallDistance) {
         if (!hasTectonicCap(player)) return;
 
         UUID id = player.getUniqueId();
@@ -127,9 +132,11 @@ public class TectonicCapHandler extends ArmorSetHandler {
             return;
         }
 
-        double fallDamage = event.getFinalDamage();
         event.setCancelled(true);
-        double radius = cfg.getTectonicCapRadius() + (fallDamage * cfg.getTectonicCapFallDamageRadiusScale());
+        double radius = cfg.getTectonicCapRadius();
+        double slowRadius = cfg.getTectonicCapSlowRadius();
+        double damage = cfg.getTectonicCapDamage()
+                * (1.0 + fallDistance / cfg.getTectonicCapDamageScaleBlocks() * cfg.getTectonicCapDamageScalePercent() / 100.0);
 
         SchedulerUtils.runTaskTimer(new BukkitRunnable() {
             int ticks = 0;
@@ -139,15 +146,18 @@ public class TectonicCapHandler extends ArmorSetHandler {
                     cancel();
                     return;
                 }
-                ParticleUtils.circle(impact, INNER_RING_RADIUS, INNER_RING_POINTS, 0, Color.fromRGB(80, 45, 20), 2);
-                ParticleUtils.circle(impact, OUTER_RING_RADIUS, OUTER_RING_POINTS, 0, Color.fromRGB(180, 120, 60), 2);
+                ParticleUtils.circle(impact, slowRadius, ringPoints(slowRadius), 0, Color.fromRGB(80, 45, 20), 2);
+                ParticleUtils.circle(impact, radius, ringPoints(radius), 0, Color.fromRGB(180, 120, 60), 2);
             }
         }, 0L, 2L);
 
         SoundUtils.playAt(impact, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.9f);
 
         for (LivingEntity target : AbilityTargets.enemiesNear(player, player.getLocation(), radius, radius, radius)) {
-            target.damage(cfg.getTectonicCapDamage() + fallDamage, player);
+            double distance = horizontalDistance(target.getLocation(), impact);
+            if (distance > radius) continue;
+
+            target.damage(damage, player);
 
             Vector knockback = target.getLocation()
                     .toVector()
@@ -157,7 +167,7 @@ public class TectonicCapHandler extends ArmorSetHandler {
                     .multiply(cfg.getTectonicCapKnockbackHorizontal());
 
             target.setVelocity(knockback);
-            if (target.getLocation().distance(impact) <= cfg.getTectonicCapSlowRadius()) {
+            if (distance <= slowRadius) {
                 int slowDurationTicks = cfg.getTectonicCapSlowDurationSeconds() * 20;
                 AbilityTargets.applyEffect(target, PotionEffectType.SLOWNESS, slowDurationTicks, cfg.getTectonicCapSlowAmplifier(), false, true);
             }
@@ -169,6 +179,19 @@ public class TectonicCapHandler extends ArmorSetHandler {
         } else {
             tectonicCharge2Cooldown.put(id, cooldownEnd);
         }
+    }
+
+    private static int ringPoints(double radius) {
+        return (int) Math.ceil(radius * RING_POINTS_PER_BLOCK);
+    }
+
+    /**
+     * Distance on the ground plane, matching the flat rings that show the slam's ranges.
+     */
+    private static double horizontalDistance(Location a, Location b) {
+        double dx = a.getX() - b.getX();
+        double dz = a.getZ() - b.getZ();
+        return Math.sqrt(dx * dx + dz * dz);
     }
 
     @Override

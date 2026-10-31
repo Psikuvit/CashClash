@@ -112,7 +112,7 @@ public class MoveListener implements Listener {
         EntityDamageEvent landing = new EntityDamageEvent(player, EntityDamageEvent.DamageCause.FALL,
                 DamageSource.builder(DamageType.FALL).build(), damage);
         armorManager.getHandler(DragonSetHandler.class).onDragonOutrageLanding(landing, player);
-        armorManager.getHandler(TectonicCapHandler.class).onTectonicCapFall(landing, player);
+        armorManager.getHandler(TectonicCapHandler.class).onTectonicCapFall(landing, player, fell);
     }
 
     /**
