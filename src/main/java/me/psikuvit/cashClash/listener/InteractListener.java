@@ -41,9 +41,11 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Fireball;
@@ -157,6 +159,24 @@ public class InteractListener implements Listener {
      * trigger since mythic item right-clicks are handled separately in handleMythicItem, which
      * never sees left-clicks.
      */
+    /**
+     * Chests, barrels and pots (decorated and flower) can't be opened or filled outside creative
+     * mode, in a game or in the hub. Only the block's own use is refused, so an item held while
+     * clicking one still works.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onLockedContainerInteract(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null) return;
+        if (event.getPlayer().getGameMode() == GameMode.CREATIVE) return;
+
+        Material type = event.getClickedBlock().getType();
+        boolean locked = type == Material.CHEST || type == Material.TRAPPED_CHEST || type == Material.BARREL
+                || type == Material.DECORATED_POT || Tag.COPPER_CHESTS.isTagged(type) || Tag.FLOWER_POTS.isTagged(type);
+        if (locked) {
+            event.setUseInteractedBlock(Event.Result.DENY);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGH)
     public void onAlchemistWandSwing(PlayerAnimationEvent event) {
         if (event.getAnimationType() != PlayerAnimationType.ARM_SWING) return;
