@@ -37,6 +37,7 @@ messages:
     help-debug: "<yellow>/cc debug <gray>- Toggle debug mode</gray>"
     help-owner-section: "<gray>--- Owner Commands ---</gray>"
     help-rank: "<yellow>/cc rank set <player> <owner|admin|none> <gray>- Give or take a rank (owner: console only)</gray>"
+    help-resetstats: "<yellow>/cc resetstats <gray>- Reset every player's stats</gray>"
     layout-unknown-action: "<red>Unknown layout action: <gray>{action}</gray></red>"
     layout-usage: "<gray>Usage: <yellow>/cc layout</yellow> (open editor), <yellow>/cc layout confirm</yellow>, <yellow>/cc layout cancel</yellow></gray>"
 
@@ -1099,6 +1100,13 @@ messages:
     removed-you: "<gray>You no longer have a rank.</gray>"
     list-empty: "<gray>Nobody has a rank.</gray>"
     list: "<gold>Ranks:</gold> <white>{players}</white>"
+    reset-stats-confirm: "<red><bold>Reset ALL player stats on the server?</bold></red> <gray>This can't be undone.</gray> <click:run_command:'/cc resetstats confirm'><hover:show_text:'<red>Reset every stat</red>'><green><bold>[YES]</bold></green></hover></click> <click:run_command:'/cc resetstats cancel'><hover:show_text:'<gray>Keep the stats</gray>'><red><bold>[NO]</bold></red></hover></click> <dark_gray>(expires in {seconds}s)</dark_gray>"
+    reset-stats-expired: "<gray>The stats reset request expired.</gray>"
+    reset-stats-none-pending: "<red>There's no stats reset to confirm - run /cc resetstats first.</red>"
+    reset-stats-cancelled: "<gray>Stats reset cancelled.</gray>"
+    reset-stats-done: "<green>Reset the stats of {count} players.</green>"
+    reset-stats-broadcast: "<gold>All player stats have been reset by {player}.</gold>"
+
 # ============================================
 # HOVER GLOSSARY
 # ============================================

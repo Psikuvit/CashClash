@@ -69,7 +69,10 @@ public class LeaderboardManager implements Shutdownable {
         }
     }
 
-    private void refresh() {
+    /**
+     * Recomputes every board from stored data - on the timer, or straight away after a stats reset.
+     */
+    public void refresh() {
         List<PlayerData> all = playerDataManager.loadAllPlayers();
         int limit = configManager.getLeaderboardSize();
         cached.put(LeaderboardType.WINS, sorted(all, Comparator.comparingInt(PlayerData::getWins).reversed(), limit));

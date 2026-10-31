@@ -23,6 +23,7 @@ import me.psikuvit.cashClash.command.subcommands.PickMapCommand;
 import me.psikuvit.cashClash.command.subcommands.PracticeCommand;
 import me.psikuvit.cashClash.command.subcommands.RankCommand;
 import me.psikuvit.cashClash.command.subcommands.ReloadCommand;
+import me.psikuvit.cashClash.command.subcommands.ResetStatsCommand;
 import me.psikuvit.cashClash.command.subcommands.SelectKitCommand;
 import me.psikuvit.cashClash.command.subcommands.SetLobbyCommand;
 import me.psikuvit.cashClash.command.subcommands.SetWaitingLobbyCommand;
@@ -109,6 +110,7 @@ public class CommandHandler extends Command {
 
         // Owner commands
         registerSubcommand(new RankCommand());
+        registerSubcommand(new ResetStatsCommand());
     }
 
     public void registerSubcommand(AbstractArgCommand cmd) {
@@ -200,6 +202,7 @@ public class CommandHandler extends Command {
         if (sender.hasPermission(RankManager.OWNER_PERMISSION)) {
             Messages.send(sender, "command.help-owner-section");
             Messages.send(sender, "command.help-rank");
+            Messages.send(sender, "command.help-resetstats");
         }
     }
 }

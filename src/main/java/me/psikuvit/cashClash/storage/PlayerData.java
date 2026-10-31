@@ -131,6 +131,20 @@ public class PlayerData {
         this.playtimeMillis += amount;
     }
 
+    /**
+     * Zeroes every stat - wins, losses, kills, deaths, coins and playtime. Kit layouts are
+     * preferences, not stats, and are kept.
+     */
+    public void resetStats() {
+        wins = 0;
+        losses = 0;
+        deaths = 0;
+        kills = 0;
+        totalCoinsInvested = 0;
+        totalCoinsEarned = 0;
+        playtimeMillis = 0;
+    }
+
     public long getLastSeen() {
         return lastSeen;
     }

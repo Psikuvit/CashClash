@@ -185,6 +185,27 @@ public class PlayerDataManager implements Shutdownable {
         }
     }
 
+    /**
+     * Zeroes every stored and online player's stats ({@link PlayerData#resetStats}) and saves
+     * them. Online players' playtime starts counting again from now.
+     *
+     * @return how many players were reset
+     */
+    public int resetAllStats() {
+        long now = System.currentTimeMillis();
+        List<PlayerData> all = loadAllPlayers();
+        for (PlayerData data : all) {
+            data.resetStats();
+            if (cache.containsKey(data.getUuid())) data.setLastSeen(now);
+            try {
+                provider.savePlayer(data);
+            } catch (SQLException e) {
+                Messages.debug("Failed to save player during stats reset: " + e.getMessage());
+            }
+        }
+        return all.size();
+    }
+
     public void incWins(UUID uuid) {
         PlayerData d = getOrLoadData(uuid);
         d.incWins();
