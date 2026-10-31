@@ -920,6 +920,13 @@ public class ItemsConfig {
         return config.getDouble("custom-armor.deathmauler.soul-burst.heal-per-enemy", 3.0);
     }
 
+    /**
+     * How long after a wearer's hit a death still counts as their kill.
+     */
+    public int getDeathmaulerKillCreditWindowSeconds() {
+        return config.getInt("custom-armor.deathmauler.kill-credit-window-seconds", 5);
+    }
+
     // Bunny Shoes
     public int getBunnyShoesDuration() {
         return config.getInt("custom-armor.bunny-shoes.duration-seconds", 15);

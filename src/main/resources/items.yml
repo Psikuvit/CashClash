@@ -267,6 +267,9 @@ custom-armor:
       radius: 5.5               # How far the ring reaches (blocks)
       drain-per-enemy: 3.0      # Health taken from each enemy the ring reaches
       heal-per-enemy: 3.0       # Health you get back for each of them
+    # A player the wearer hit who dies within this many seconds counts as the wearer's kill
+    # (kill heal included) when no other player got the kill
+    kill-credit-window-seconds: 5
 
   # Dragon Set
   dragon:

@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
@@ -19,6 +20,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,8 +31,35 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DeathmaulerSetHandler extends ArmorSetHandler {
 
+    private record RecentHit(UUID attacker, long atMs) {}
+
+    private final Map<UUID, RecentHit> recentHits; // Victim -> the last wearer to hit them
+
     public DeathmaulerSetHandler(CustomArmorManager manager) {
         super(manager);
+        this.recentHits = new ConcurrentHashMap<>();
+    }
+
+    /**
+     * Remembers a wearer's hit on a player, so a death shortly after still counts as the wearer's
+     * kill (see {@link #takeRecentHitter}).
+     */
+    public void recordHit(Player attacker, Player victim) {
+        if (!hasDeathmaulerSet(attacker)) return;
+        recentHits.put(victim.getUniqueId(), new RecentHit(attacker.getUniqueId(), System.currentTimeMillis()));
+    }
+
+    /**
+     * The wearer who hit this player within {@code kill-credit-window-seconds}, or null. The hit
+     * is forgotten either way - a death uses it up.
+     */
+    public Player takeRecentHitter(Player victim) {
+        RecentHit hit = recentHits.remove(victim.getUniqueId());
+        if (hit == null || System.currentTimeMillis() - hit.atMs() > cfg.getDeathmaulerKillCreditWindowSeconds() * 1000L) {
+            return null;
+        }
+        Player attacker = Bukkit.getPlayer(hit.attacker());
+        return attacker != null && attacker.isOnline() ? attacker : null;
     }
 
     public boolean hasDeathmaulerSet(Player player) {
@@ -133,6 +162,7 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
                     hitPlayers.add(target.getUniqueId());
 
                     if (target instanceof Player victimPlayer) {
+                        recordHit(attacker, victimPlayer);
                         CashClashPlayer.setHealth(victimPlayer, victimPlayer.getHealth() - drain);
                     } else {
                         target.setHealth(Math.max(0.0, target.getHealth() - drain));
@@ -147,11 +177,11 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
 
     @Override
     public void cleanup() {
-        // No persistent state
+        recentHits.clear();
     }
 
     @Override
     public void resetRoundTracking() {
-        // No persistent state
+        recentHits.clear();
     }
 }

@@ -430,6 +430,7 @@ public class DamageListener implements Listener {
         if (session == null || session != gameManager.getPlayerSession(attacker)) return;
 
         session.getAssistTracker().recordDamage(attacker.getUniqueId(), victim.getUniqueId());
+        armorManager.getHandler(DeathmaulerSetHandler.class).recordHit(attacker, victim);
     }
 
     // ==================== TOTEM OF HAUNTING ====================

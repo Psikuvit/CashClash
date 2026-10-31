@@ -191,6 +191,9 @@ public class GameListener implements Listener {
 
         playerDataManager.incDeaths(player.getUniqueId());
 
+        DeathmaulerSetHandler deathmauler = armorManager.getHandler(DeathmaulerSetHandler.class);
+        Player deathmaulerHitter = creditableHitter(session, player, deathmauler.takeRecentHitter(player));
+
         // A round-end/victory Sequence is holding the result on screen - deaths during
         // this window must not affect lives, bonuses, or win conditions.
         boolean deathConsequencesGated = session.isSequenceLocked() || session.isActionsRestricted();
@@ -201,9 +204,12 @@ public class GameListener implements Listener {
             victim.handleDeath();
             session.getCurrentRoundData().recordDeath(player.getUniqueId());
 
-            Player killer = player.getKiller();
+            Player killer = player.getKiller() != null ? player.getKiller() : deathmaulerHitter;
             if (killer != null) {
                 handleKillerRewards(session, player, killer);
+            }
+            if (deathmaulerHitter != null && !deathmaulerHitter.equals(killer)) {
+                deathmauler.onPlayerKill(deathmaulerHitter, session);
             }
 
             // Notify gamemode of death
@@ -219,6 +225,15 @@ public class GameListener implements Listener {
         } else {
             handleTemporarySpectatorAndRespawn(player, victim, deathLocation);
         }
+    }
+
+    /**
+     * A Deathmauler wearer who recently hit the victim, if they're an enemy of the victim in the
+     * same game - otherwise null.
+     */
+    private Player creditableHitter(GameSession session, Player victim, Player hitter) {
+        if (hitter == null || hitter.equals(victim) || gameManager.getPlayerSession(hitter) != session) return null;
+        return AbilityTargets.isEnemy(hitter, victim) ? hitter : null;
     }
 
     private void handleKillerRewards(GameSession session, Player victim, Player killer) {
