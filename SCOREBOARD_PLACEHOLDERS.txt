@@ -198,13 +198,13 @@ Example: "Time Remaining: {time} seconds"
 
 {red_flag_holder} / {blue_flag_holder}
   - Shows who is currently carrying that team's flag
-  - Returns: Carrier's player name, or "At Base" if not taken
+  - Returns: Carrier's player name, "Dropped" while it lies on the ground, or "At Base" if not taken
   - Default: "At Base"
   - Use Case: CTF gamemode only
 
 {red_flag_status} / {blue_flag_status}
-  - Shows whether that team's flag is safe or taken
-  - Returns: "<green>Safe</green>" or "<red>Taken by <name></red>"
+  - Shows whether that team's flag is safe, taken or dropped
+  - Returns: "<green>Safe</green>", "<red>Taken by <name></red>" or "<yellow>Dropped</yellow>"
   - Default: "<green>Safe</green>"
   - Use Case: CTF gamemode only
 

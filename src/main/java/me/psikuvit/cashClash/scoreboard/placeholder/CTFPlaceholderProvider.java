@@ -45,10 +45,10 @@ public class CTFPlaceholderProvider implements PlaceholderProvider {
             case "teamBlue_captures" -> String.valueOf(gamemode.getFlagCaptures(2));
             case "teamRed_capture_circles" -> getCaptureCircles(gamemode.getFlagCaptures(1));
             case "teamBlue_capture_circles" -> getCaptureCircles(gamemode.getFlagCaptures(2));
-            case "red_flag_holder" -> getFlagHolderName(gamemode.getFlagHolder(1));
-            case "blue_flag_holder" -> getFlagHolderName(gamemode.getFlagHolder(2));
-            case "red_flag_status" -> getFlagStatus(gamemode.getFlagHolder(1));
-            case "blue_flag_status" -> getFlagStatus(gamemode.getFlagHolder(2));
+            case "red_flag_holder" -> gamemode.isFlagDropped(1) ? "Dropped" : getFlagHolderName(gamemode.getFlagHolder(1));
+            case "blue_flag_holder" -> gamemode.isFlagDropped(2) ? "Dropped" : getFlagHolderName(gamemode.getFlagHolder(2));
+            case "red_flag_status" -> gamemode.isFlagDropped(1) ? "<yellow>Dropped</yellow>" : getFlagStatus(gamemode.getFlagHolder(1));
+            case "blue_flag_status" -> gamemode.isFlagDropped(2) ? "<yellow>Dropped</yellow>" : getFlagStatus(gamemode.getFlagHolder(2));
             case "money_bonus_timer" -> {
                 long remaining = gamemode.getBonusTimeRemainingMs(player.getUniqueId());
                 if (remaining <= 0) yield "";

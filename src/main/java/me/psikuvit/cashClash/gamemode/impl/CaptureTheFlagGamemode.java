@@ -442,6 +442,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return flag != null ? flag.holder() : null;
     }
 
+    /**
+     * Whether a team's flag is lying on the ground away from its base, waiting to be picked up
+     * or returned.
+     */
+    public boolean isFlagDropped(int teamNumber) {
+        return isDroppedFlagWaitingForReturn(teamNumber);
+    }
+
     public int getFlagCaptures(int teamNumber) {
         return flagCaptures.get(TeamColor.fromTeamNumber(teamNumber));
     }
