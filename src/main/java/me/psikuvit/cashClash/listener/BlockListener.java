@@ -28,6 +28,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -121,13 +122,20 @@ public class BlockListener implements Listener {
         final Material fluid;
         final UUID sessionId;
         final List<List<FluidStep>> rings;
+        final long despawnAt;
         volatile boolean active = true;
+        // Placements of this fluid emptied onto one another, this one included - they drain and
+        // despawn as one body (see joinPlacements)
+        Set<PlacedFluid> group;
 
-        PlacedFluid(Location origin, Material fluid, UUID sessionId, List<List<FluidStep>> rings) {
+        PlacedFluid(Location origin, Material fluid, UUID sessionId, List<List<FluidStep>> rings, long despawnAt) {
             this.origin = origin;
             this.fluid = fluid;
             this.sessionId = sessionId;
             this.rings = rings;
+            this.despawnAt = despawnAt;
+            this.group = new HashSet<>();
+            this.group.add(this);
         }
     }
 
@@ -221,13 +229,19 @@ public class BlockListener implements Listener {
         Material fluid = water ? Material.WATER : Material.LAVA;
 
         PlacedFluid placedHere = fluidCells.get(origin);
-        if (water && placedHere != null && placedHere.fluid == Material.LAVA && origin.equals(placedHere.origin)) {
+        boolean onPlacedSource = placedHere != null && origin.equals(placedHere.origin);
+        if (water && onPlacedSource && placedHere.fluid == Material.LAVA) {
             washAwayLava(placedHere);
-        } else {
+        } else if (!water && onPlacedSource && placedHere.fluid == Material.WATER) {
+            drainGroup(placedHere, "source replaced by lava");
+        } else if (placedHere == null) {
             rememberReplacedBlock(target);
         }
         trackPlacedBlock(zoneId, target);
-        placeQuickFluid(target, origin, fluid, zoneId);
+        PlacedFluid placement = placeQuickFluid(target, origin, fluid, zoneId);
+        if (placedHere != null && placedHere.active && placedHere.fluid == fluid) {
+            joinPlacements(placedHere, placement);
+        }
 
         if (water) {
             queueWaterBucketRefill(player);
@@ -272,7 +286,7 @@ public class BlockListener implements Listener {
         }
 
         if (loc.equals(placement.origin)) {
-            drainPlacement(placement, "source scooped by " + event.getPlayer().getName());
+            drainGroup(placement, "source scooped by " + event.getPlayer().getName());
             return;
         }
 
@@ -298,9 +312,76 @@ public class BlockListener implements Listener {
 
         fluidReplacedBlocks.remove(loc);
         if (loc.equals(placement.origin)) {
-            drainPlacement(placement, "source covered by " + event.getPlayer().getName());
+            drainGroup(placement, "source covered by " + event.getPlayer().getName());
         } else {
             fluidCells.remove(loc);
+        }
+    }
+
+    /**
+     * Lava turning to obsidian or cobblestone against water. A placement whose source solidifies
+     * stops spreading and drains, like scooping it - the planned rings used to keep flowing out
+     * of the new obsidian. A spread cell that solidifies just leaves its placement. Either way the
+     * new block goes when the placement would have despawned, so the map still heals.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFluidSolidified(BlockFormEvent event) {
+        Location loc = event.getBlock().getLocation().toBlockLocation();
+        PlacedFluid placement = fluidCells.get(loc);
+        if (placement == null) return;
+
+        Material formed = event.getNewState().getType();
+        if (loc.equals(placement.origin)) {
+            drainGroup(placement, "source turned to " + formed);
+        } else {
+            fluidCells.remove(loc);
+        }
+
+        long ticksLeft = Math.max(1L, (placement.despawnAt - System.currentTimeMillis()) / 50L);
+        SchedulerUtils.runTaskLater(() -> {
+            if (!loc.isWorldLoaded()) return;
+            Block block = loc.getBlock();
+            if (block.getType() == formed) restoreAfterFluid(block);
+        }, ticksLeft);
+    }
+
+    /**
+     * Drains every placement in a group (see {@link #joinPlacements}), each the way
+     * {@link #drainPlacement} drains one.
+     */
+    private void drainGroup(PlacedFluid placement, String reason) {
+        for (PlacedFluid member : List.copyOf(placement.group)) {
+            drainPlacement(member, reason);
+        }
+    }
+
+    /**
+     * A placement's despawn timer ran out. In a group only the member with the latest timer
+     * drains it - an earlier one leaves the body to that one.
+     */
+    private void despawnPlacement(PlacedFluid placement) {
+        for (PlacedFluid member : placement.group) {
+            if (member.active && member.despawnAt > placement.despawnAt) return;
+        }
+        drainGroup(placement, "despawn timer");
+    }
+
+    /**
+     * Joins a placement to the one its fluid was emptied onto, so draining any source in the
+     * group drains the whole body, however many buckets went on top of each other. The group
+     * lasts as long as its newest member, and every source's countdown label says so.
+     */
+    private static void joinPlacements(PlacedFluid existing, PlacedFluid added) {
+        Set<PlacedFluid> group = existing.group;
+        group.addAll(added.group);
+
+        long despawnAt = 0;
+        for (PlacedFluid member : group) {
+            member.group = group;
+            despawnAt = Math.max(despawnAt, member.despawnAt);
+        }
+        for (PlacedFluid member : group) {
+            extendDespawnTimer(member.origin, despawnAt);
         }
     }
 
@@ -326,12 +407,12 @@ public class BlockListener implements Listener {
 
         long tickInterval = itemsConfig.getFluidDrainTicks(placement.fluid);
         long delay = 0;
-        SchedulerUtils.runTaskLater(() -> removeFluidRing(List.of(placement.origin), true), delay);
+        SchedulerUtils.runTaskLater(() -> removeFluidRing(placement, List.of(placement.origin), true), delay);
         delay += tickInterval;
 
         for (List<FluidStep> ring : placement.rings) {
             List<Location> cells = ring.stream().map(FluidStep::location).toList();
-            SchedulerUtils.runTaskLater(() -> removeFluidRing(cells, false), delay);
+            SchedulerUtils.runTaskLater(() -> removeFluidRing(placement, cells, false), delay);
             delay += tickInterval;
         }
     }
@@ -342,26 +423,38 @@ public class BlockListener implements Listener {
      * block: restoring it when the water drained left untracked lava on the map for good.
      */
     private void washAwayLava(PlacedFluid lava) {
-        lava.active = false;
-        fluidCells.remove(lava.origin);
+        for (PlacedFluid member : List.copyOf(lava.group)) {
+            member.active = false;
+            fluidCells.remove(member.origin);
+            if (!member.origin.equals(lava.origin)) {
+                Block source = member.origin.getBlock();
+                if (source.getType() == Material.LAVA) restoreAfterFluid(source);
+            }
 
-        for (List<FluidStep> ring : lava.rings) {
-            for (FluidStep step : ring) {
-                Location loc = step.location();
-                if (fluidCells.get(loc) != lava) continue;
+            for (List<FluidStep> ring : member.rings) {
+                for (FluidStep step : ring) {
+                    Location loc = step.location();
+                    if (fluidCells.get(loc) != member) continue;
 
-                fluidCells.remove(loc);
-                Block block = loc.getBlock();
-                if (block.getType() == Material.LAVA) restoreAfterFluid(block);
+                    fluidCells.remove(loc);
+                    Block block = loc.getBlock();
+                    if (block.getType() == Material.LAVA) restoreAfterFluid(block);
+                }
             }
         }
 
         Messages.debug("FLUID", "lava placement at " + at(lava.origin) + " washed away by water on its source");
     }
 
-    /** Restores (or untracks) every block in one ring. Only the source ring gets a sound cue. */
-    private void removeFluidRing(List<Location> ring, boolean playSound) {
+    /**
+     * Restores (or untracks) every block in one ring. Only the source ring gets a sound cue. A
+     * cell another placement has taken over since - a bucket emptied onto it - is left to that one.
+     */
+    private void removeFluidRing(PlacedFluid placement, List<Location> ring, boolean playSound) {
         for (Location loc : ring) {
+            PlacedFluid owner = fluidCells.get(loc);
+            if (owner != null && owner != placement) continue;
+
             Block block = loc.getBlock();
             Material type = block.getType();
             if (type == Material.WATER || type == Material.LAVA) {
@@ -656,6 +749,14 @@ public class BlockListener implements Listener {
         }, 0L, 10L);
     }
 
+    /**
+     * Moves a countdown label's end time, e.g. when its fluid joins a group that lasts longer.
+     */
+    private static void extendDespawnTimer(Location loc, long expiresAt) {
+        despawnTimers.computeIfPresent(loc.toBlockLocation(),
+                (key, timer) -> new DespawnTimer(timer.display(), timer.material(), expiresAt, timer.colorTag()));
+    }
+
     private static void removeDespawnTimer(Location loc) {
         DespawnTimer timer = despawnTimers.remove(loc.toBlockLocation());
         if (timer != null && !timer.display().isDead()) {
@@ -827,14 +928,15 @@ public class BlockListener implements Listener {
      * of where real water would be. Also starts the placement's despawn timer immediately, same
      * as the source's own countdown label.
      */
-    private void placeQuickFluid(Block source, Location origin, Material fluid, UUID sessionId) {
-        PlacedFluid placement = new PlacedFluid(origin, fluid, sessionId, planQuickFluid(source, fluid));
+    private PlacedFluid placeQuickFluid(Block source, Location origin, Material fluid, UUID sessionId) {
+        long despawnTicks = itemsConfig.getFluidDespawnSeconds(fluid) * 20L;
+        PlacedFluid placement = new PlacedFluid(origin, fluid, sessionId, planQuickFluid(source, fluid),
+                System.currentTimeMillis() + despawnTicks * 50L);
         fluidCells.put(origin, placement);
 
         SchedulerUtils.runTaskLater(() -> revealRing(placement, 0), itemsConfig.getFluidFlowTicks(fluid));
-
-        SchedulerUtils.runTaskLater(() -> drainPlacement(placement, "despawn timer"),
-                itemsConfig.getFluidDespawnSeconds(fluid) * 20L);
+        SchedulerUtils.runTaskLater(() -> despawnPlacement(placement), despawnTicks);
+        return placement;
     }
 
     /**
