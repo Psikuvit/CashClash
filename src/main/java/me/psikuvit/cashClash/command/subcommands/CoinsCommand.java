@@ -16,7 +16,7 @@ import java.util.Collections;
 public class CoinsCommand extends AbstractArgCommand {
 
     public CoinsCommand() {
-        super("coins", Collections.emptyList(), null);
+        super("coins", Collections.emptyList(), "cashclash.admin");
     }
 
     @Override
