@@ -805,6 +805,8 @@ messages:
   transfer:
     usage: "<red>Usage: /cc transfer <player> <amount></red>"
     insufficient-funds: "<red>You don't have enough coins.</red>"
+    insufficient-after-fee: "<red>You don't have enough to transfer after the fee!</red>"
+    below-minimum: "<red>You can't transfer less than ${minimum}!</red>"
     sent: "<green>Transferred {amount} coins to {target} (fee applied).</green>"
     received: "<green>You received {amount} coins from {sender}</green>"
     must-be-in-game: "<red>You must be in a game to transfer money!</red>"

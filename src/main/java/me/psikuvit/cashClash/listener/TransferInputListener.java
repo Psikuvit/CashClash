@@ -112,8 +112,9 @@ public class TransferInputListener implements Listener {
         try {
             long amount = Long.parseLong(amountStr.replaceAll("[^0-9]", ""));
 
-            if (amount <= 0) {
-                Messages.send(player, "transfer.enter-valid-amount");
+            long minimum = CashClashPlugin.getInstance().getConfigManager().getMinTransferAmount();
+            if (amount < minimum) {
+                Messages.send(player, "transfer.below-minimum", "minimum", String.format("%,d", minimum));
                 SchedulerUtils.runTaskLater(() -> TransferGUI.open(player), 20L);
                 return;
             }
@@ -153,23 +154,21 @@ public class TransferInputListener implements Listener {
             return;
         }
 
-        if (!senderCcp.canAfford(amount)) {
-            Messages.send(sender, "transfer.insufficient-funds");
+        long fee = (long) (amount * CashClashPlugin.getInstance().getConfigManager().getGuiTransferFee());
+        long totalCost = amount + fee;
+        if (!senderCcp.canAfford(totalCost)) {
+            Messages.send(sender, "transfer.insufficient-after-fee");
             Messages.send(sender, "transfer.balance", "balance", String.format("%,d", senderCcp.getCoins()));
             SchedulerUtils.runTaskLater(() -> TransferGUI.open(sender), 20L);
             return;
         }
 
-        long fee = (long) (amount * CashClashPlugin.getInstance().getConfigManager().getGuiTransferFee());
-        long netAmount = amount - fee;
-
-        // Deduct from sender and add to receiver
-        senderCcp.deductCoins(amount);
-        receiverCcp.addCoins(netAmount);
+        senderCcp.deductCoins(totalCost);
+        receiverCcp.addCoins(amount);
 
         Messages.send(sender, "transfer.sent", "amount", String.format("%,d", amount), "target", receiver.getName());
         Messages.send(sender, "transfer.fee", "fee", String.format("%,d", fee));
-        Messages.send(receiver, "transfer.received", "amount", String.format("%,d", netAmount), "sender", sender.getName());
+        Messages.send(receiver, "transfer.received", "amount", String.format("%,d", amount), "sender", sender.getName());
 
         // Reopen shop after a short delay
         SchedulerUtils.runTaskLater(() -> ShopGUI.openMain(sender), 20L);

@@ -46,6 +46,12 @@ public class TransferCommand extends AbstractArgCommand {
             return true;
         }
 
+        long minimum = CashClashPlugin.getInstance().getConfigManager().getMinTransferAmount();
+        if (amount < minimum) {
+            Messages.send(player, "transfer.below-minimum", "minimum", String.format("%,d", minimum));
+            return true;
+        }
+
         var session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
         if (session == null) { Messages.send(player, "generic.player-not-in-game"); return true; }
 
@@ -58,14 +64,12 @@ public class TransferCommand extends AbstractArgCommand {
 
         boolean ok = EconomyManager.transferMoney(senderCCP, receiverCCP, amount, session);
         if (!ok) {
-            Messages.send(player, "transfer.insufficient-funds");
+            Messages.send(player, "transfer.insufficient-after-fee");
             return true;
         }
 
         Messages.send(player, "transfer.sent", "amount", String.valueOf(amount), "target", target.getName());
-        Messages.send(target, "transfer.received",
-                "amount", String.valueOf((long) (amount * (1 - EconomyManager.getTransferFee(session)))),
-                "sender", player.getName());
+        Messages.send(target, "transfer.received", "amount", String.valueOf(amount), "sender", player.getName());
 
         return true;
     }

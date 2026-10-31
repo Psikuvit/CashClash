@@ -118,8 +118,11 @@ economy:
   late-round-steal-percentage: 0.25
 
   # Flat fee for the transfer GUI (chat-input money transfer), independent of the
-  # round-based transfer fees above
+  # round-based transfer fees above. It's charged on top: sending $1000 at 0.10 costs the
+  # sender $1100 and the receiver gets the full $1000.
   gui-transfer-fee: 0.10
+  # Smallest amount a player can transfer
+  min-transfer-amount: 10
 
 # ============================================
 # COMBAT SETTINGS

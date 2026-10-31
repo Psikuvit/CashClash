@@ -156,19 +156,22 @@ public class EconomyManager {
         };
     }
 
+    /**
+     * The receiver gets the whole amount; the fee is charged to the sender on top of it.
+     *
+     * @return false if the sender can't cover the amount plus the fee
+     */
     public static boolean transferMoney(CashClashPlayer sender, CashClashPlayer receiver, long amount, GameSession session) {
-        if (!sender.canAfford(amount)) {
+        long fee = (long) (amount * getTransferFee(session));
+        if (!sender.canAfford(amount + fee)) {
             return false;
         }
- 
-        double fee = getTransferFee(session);
-        long netAmount = (long) (amount * (1 - fee));
- 
-        Messages.debug("ECONOMY", "Transfer: " + sender.getPlayer().getName() + " -> " + receiver.getPlayer().getName() + " Amount: " + amount + " Fee: " + fee + " Net: " + netAmount);
 
-        sender.deductCoins(amount);
-        receiver.addCoins(netAmount);
- 
+        Messages.debug("ECONOMY", "Transfer: " + sender.getPlayer().getName() + " -> " + receiver.getPlayer().getName() + " Amount: " + amount + " Fee: " + fee);
+
+        sender.deductCoins(amount + fee);
+        receiver.addCoins(amount);
+
         return true;
     }
 

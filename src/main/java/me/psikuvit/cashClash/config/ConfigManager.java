@@ -254,6 +254,10 @@ public class ConfigManager {
         return config.getDouble("economy.gui-transfer-fee", 0.10);
     }
 
+    public long getMinTransferAmount() {
+        return config.getLong("economy.min-transfer-amount", 10);
+    }
+
     // ==================== COMBAT ====================
 
     public double getStrengthNerfMultiplier() {
