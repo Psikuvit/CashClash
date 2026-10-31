@@ -1,19 +1,23 @@
 package me.psikuvit.cashClash.util.enums;
 
+import org.bukkit.Color;
+
 public enum TeamColor {
     /**
      * Team color identifiers
      */
-    RED("Red","<red>"),
+    RED("Red","<red>", Color.fromRGB(220, 20, 20)),
 
-    BLUE("Blue","<blue>");
+    BLUE("Blue","<blue>", Color.fromRGB(40, 90, 255));
 
     private final String displayName;
     private final String miniMessageColor;
+    private final Color particleColor;
 
-    TeamColor(String displayName, String miniMessageColor) {
+    TeamColor(String displayName, String miniMessageColor, Color particleColor) {
         this.displayName = displayName;
         this.miniMessageColor = miniMessageColor;
+        this.particleColor = particleColor;
     }
 
     public String getDisplayName() {
@@ -22,6 +26,13 @@ public enum TeamColor {
 
     public String getMiniMessageColor() {
         return miniMessageColor;
+    }
+
+    /**
+     * The dust colour a team's placed items and abilities are drawn in.
+     */
+    public Color getParticleColor() {
+        return particleColor;
     }
 
     public String getColoredName() {

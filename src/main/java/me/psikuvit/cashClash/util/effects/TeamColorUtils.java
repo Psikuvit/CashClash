@@ -1,9 +1,12 @@
 package me.psikuvit.cashClash.util.effects;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -112,6 +115,20 @@ public final class TeamColorUtils {
         if (greenTeam != null) {
             greenTeam.addEntry(player.getName());
         }
+    }
+
+    /**
+     * A player's team colour for particles ({@link TeamColor#getParticleColor}), or
+     * {@code fallback} when they aren't on a team in a game - the practice range, say.
+     */
+    public static Color particleColor(Player player, Color fallback) {
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
+        if (session == null) return fallback;
+
+        UUID uuid = player.getUniqueId();
+        if (session.getTeamRed().hasPlayer(uuid)) return TeamColor.RED.getParticleColor();
+        if (session.getTeamBlue().hasPlayer(uuid)) return TeamColor.BLUE.getParticleColor();
+        return fallback;
     }
 
     /**

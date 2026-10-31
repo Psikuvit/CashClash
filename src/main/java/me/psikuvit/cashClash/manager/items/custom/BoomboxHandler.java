@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -22,8 +23,11 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitTask;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -33,11 +37,19 @@ import java.util.Set;
  */
 public class BoomboxHandler extends CustomItemHandler {
 
+    // The ring floating over a placed boombox, in the placer's team colour
+    private static final double FLOATING_RING_HEIGHT = 1.5;
+    private static final double FLOATING_RING_RADIUS = 0.6;
+    private static final int FLOATING_RING_POINTS = 20;
+    private static final Color OUTSIDE_GAME_RING_COLOR = Color.fromRGB(255, 140, 0);
+
     private final Set<Location> activeBoomboxes;
+    private final Map<Location, BukkitTask> floatingRingTasks;
 
     public BoomboxHandler(CustomItemManager manager) {
         super(manager);
         this.activeBoomboxes = new HashSet<>();
+        this.floatingRingTasks = new HashMap<>();
     }
 
     public void placeBoombox(Player player, ItemStack item, Block clickedBlock) {
@@ -57,6 +69,7 @@ public class BoomboxHandler extends CustomItemHandler {
 
         placeBlock.setType(Material.JUKEBOX);
         activeBoomboxes.add(placeBlock.getLocation());
+        startFloatingRing(placeBlock.getLocation(), TeamColorUtils.particleColor(player, OUTSIDE_GAME_RING_COLOR));
 
         consumeItem(player, item);
         Messages.send(player, "mythic.boombox-placed");
@@ -82,11 +95,27 @@ public class BoomboxHandler extends CustomItemHandler {
 
         SchedulerUtils.runTaskLater(() -> {
             activeBoomboxes.remove(placeBlock.getLocation());
+            stopFloatingRing(placeBlock.getLocation());
             if (placeBlock.getType() == Material.JUKEBOX) {
                 placeBlock.setType(Material.AIR);
             }
         }, 12 * 20L);
 
+    }
+
+    /**
+     * Keeps a ring floating over the boombox for as long as it stands, so both teams can tell
+     * whose it is.
+     */
+    private void startFloatingRing(Location blockLoc, Color color) {
+        Location ringCenter = blockLoc.clone().add(0.5, FLOATING_RING_HEIGHT, 0.5);
+        floatingRingTasks.put(blockLoc, SchedulerUtils.runTaskTimer(() ->
+                ParticleUtils.circle(ringCenter, FLOATING_RING_RADIUS, FLOATING_RING_POINTS, 0, color, 1.0f), 0L, 2L));
+    }
+
+    private void stopFloatingRing(Location blockLoc) {
+        BukkitTask task = floatingRingTasks.remove(blockLoc);
+        if (task != null) task.cancel();
     }
 
     /**
@@ -140,6 +169,8 @@ public class BoomboxHandler extends CustomItemHandler {
 
     @Override
     public void cleanup() {
+        floatingRingTasks.values().forEach(BukkitTask::cancel);
+        floatingRingTasks.clear();
         activeBoomboxes.forEach(loc -> {
             Block block = loc.getBlock();
             if (block.getType() == Material.JUKEBOX) {

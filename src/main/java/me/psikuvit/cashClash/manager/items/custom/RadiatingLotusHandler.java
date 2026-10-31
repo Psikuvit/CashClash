@@ -10,6 +10,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
@@ -39,6 +40,9 @@ import java.util.UUID;
  * the holder is slowed by an attribute modifier.
  */
 public class RadiatingLotusHandler extends CustomItemHandler {
+
+    // The detonation burst is the user's team colour; outside a game it stays green
+    private static final Color OUTSIDE_GAME_BURST_COLOR = Color.fromRGB(60, 200, 60);
 
     // Radiating Lotus - charge-hold state
     private final Map<UUID, Integer> lotusChargeTicks;
@@ -117,7 +121,7 @@ public class RadiatingLotusHandler extends CustomItemHandler {
         double healRadius = Math.max(3.0, chargeSeconds * cfg.getLotusHealRadiusPerSecond());
         double healAmount = cfg.getLotusHealAmount();
 
-        ParticleUtils.spawnDust(loc.clone().add(0, 1, 0), Color.fromRGB(60, 200, 60), 2.0f, 40, 0.5);
+        ParticleUtils.spawnDust(loc.clone().add(0, 1, 0), TeamColorUtils.particleColor(player, OUTSIDE_GAME_BURST_COLOR), 2.0f, 40, 0.5);
         spawnHealRadiusDiamond(loc, healRadius);
 
         World world = loc.getWorld();
