@@ -207,6 +207,10 @@ weapons:
     vortex-duration-ticks: 80
     vortex-kill-reward: 400
     vortex-arrow-cost: 4
+    # Slowness on enemies inside the vortex (0 = Slowness I, 1 = Slowness II, ...)
+    vortex-slowness-amplifier: 0
+    # Multiplier on a Cash Blaster arrow's damage, normal and vortex shots alike (1.1 = +10%)
+    arrow-damage-multiplier: 1.1
 
   # Soul Katana
   soul-katana:

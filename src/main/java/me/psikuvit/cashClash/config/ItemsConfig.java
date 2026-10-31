@@ -694,6 +694,14 @@ public class ItemsConfig {
         return config.getInt("weapons.cash-blaster.vortex-arrow-cost", 4);
     }
 
+    public int getCashBlasterVortexSlownessAmplifier() {
+        return config.getInt("weapons.cash-blaster.vortex-slowness-amplifier", 0);
+    }
+
+    public double getCashBlasterArrowDamageMultiplier() {
+        return config.getDouble("weapons.cash-blaster.arrow-damage-multiplier", 1.1);
+    }
+
     // Respawn Anchor
     public int getRespawnAnchorDuration() {
         return config.getInt("custom-items.respawn-anchor.revive-duration-seconds", 10);

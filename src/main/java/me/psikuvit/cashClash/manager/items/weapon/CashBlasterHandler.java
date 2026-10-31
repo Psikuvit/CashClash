@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.util.items.PDCDetection;
@@ -47,6 +48,11 @@ import java.util.UUID;
  * them dies inside it; a spectral-vortex variant glows enemies first.
  */
 public class CashBlasterHandler extends WeaponItemHandler {
+
+    // The small circle at a vortex's centre, in the shooter's team colour
+    private static final double CENTER_RING_RADIUS = 0.6;
+    private static final int CENTER_RING_POINTS = 16;
+    private static final Color OUTSIDE_GAME_CENTER_COLOR = Color.fromRGB(255, 215, 0);
 
     private final Map<UUID, Boolean> cashBlasterSupercharged;
 
@@ -107,7 +113,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
     }
 
     /**
-     * Handle a Cash Blaster shot. Normal mode: +10% arrow damage.
+     * Handle a Cash Blaster shot. Normal mode: arrow damage times {@code arrow-damage-multiplier}.
      * Supercharged mode: fires at any draw, consumes 4 arrows and launches a Profit Vortex arrow
      * that spawns a damaging/levitating vortex on impact.
      */
@@ -116,9 +122,9 @@ public class CashBlasterHandler extends WeaponItemHandler {
         if (!hasCashBlasterInHand(player)) return;
         if (!(event.getProjectile() instanceof AbstractArrow arrow)) return;
 
-        // Normal mode: +10% arrow damage with no vanilla critical, keeping the bonus flat
+        // Normal mode: the damage bonus with no vanilla critical, keeping the bonus flat
         if (!cashBlasterSupercharged.getOrDefault(player.getUniqueId(), false)) {
-            arrow.setDamage(arrow.getDamage() * 1.10);
+            arrow.setDamage(arrow.getDamage() * cfg.getCashBlasterArrowDamageMultiplier());
             arrow.setCritical(false);
             startCashBlasterTrail(arrow, false, false);
             return;
@@ -139,7 +145,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
         boolean firedArrowWasSpectral = arrow instanceof SpectralArrow;
         int spectralArrowsConsumed = countSpectralArrowsConsumed(player, arrowCost) + (firedArrowWasSpectral ? 1 : 0);
         Arrow vortexArrow = player.launchProjectile(Arrow.class);
-        vortexArrow.setDamage(vortexArrow.getDamage() * 1.10);
+        vortexArrow.setDamage(vortexArrow.getDamage() * cfg.getCashBlasterArrowDamageMultiplier());
         vortexArrow.setCritical(false);
         PDCSetter.of(vortexArrow)
                 .set(Keys.PROFIT_VORTEX_ARROW, PersistentDataType.BYTE, (byte) 1)
@@ -190,8 +196,12 @@ public class CashBlasterHandler extends WeaponItemHandler {
 
         double radius = cfg.getCashBlasterVortexRadius();
         int durationTicks = cfg.getCashBlasterVortexDurationTicks();
+        int slownessAmplifier = cfg.getCashBlasterVortexSlownessAmplifier();
+        Color teamColor = TeamColorUtils.particleColor(shooter, OUTSIDE_GAME_CENTER_COLOR);
+        Location centerRing = vortexLocation.clone().add(0, 0.2, 0);
 
         BukkitTask vortexTask = SchedulerUtils.runTaskTimer(() -> {
+            ParticleUtils.circle(centerRing, CENTER_RING_RADIUS, CENTER_RING_POINTS, 0, teamColor, 1.2f);
             for (double angle = 0; angle < Math.PI * 2; angle += Math.PI / 24) {
                 double x = Math.cos(angle) * radius;
                 double z = Math.sin(angle) * radius;
@@ -214,7 +224,7 @@ public class CashBlasterHandler extends WeaponItemHandler {
                     AbilityTargets.applyEffect(target, PotionEffectType.GLOWING, (glowSeconds + 1) * 20, 0, false, true);
                     spectralVortexMarkedPlayers.get(vortexLocation).add(target.getUniqueId());
                 }
-                AbilityTargets.applyEffect(target, PotionEffectType.SLOWNESS, 20, 0);
+                AbilityTargets.applyEffect(target, PotionEffectType.SLOWNESS, 20, slownessAmplifier);
                 caughtInProfitVortex.put(target.getUniqueId(), vortexLocation);
             }
         }, 0L, 5L);
