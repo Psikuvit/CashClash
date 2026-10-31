@@ -110,6 +110,14 @@ public class ConfigManager {
         return config.getInt("game.phase-countdown-warning-seconds", 3);
     }
 
+    public int getCombatTimeWarningSeconds() {
+        return config.getInt("game.combat-time-warning-seconds", 30);
+    }
+
+    public float getRoundStartHornVolume() {
+        return (float) config.getDouble("game.round-start-horn-volume", 1.0);
+    }
+
     public int getFinalStandDurationSeconds() {
         return config.getInt("game.final-stand-duration-seconds", 180);
     }

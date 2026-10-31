@@ -29,6 +29,10 @@ game:
 
   # How many seconds before a phase timer ends to start playing the countdown ping/message
   phase-countdown-warning-seconds: 3
+  # Combat timer warning: a "<n>s Remaining" chat message and a ping when this many seconds are left
+  combat-time-warning-seconds: 30
+  # Volume of the goat horn everyone in a game hears when a round's combat starts
+  round-start-horn-volume: 1.0
 
   # Respawn settings
   respawn-delay: 5

@@ -286,6 +286,8 @@ messages:
     combat-phase-starting: "<red><bold>Combat Phase Starting!</bold></red>"
     round-ended: "<yellow>Round {round} ended!</yellow>"
     combat-countdown: "<yellow>{time_remaining} seconds remaining!</yellow>"
+    # Once per round, at game.combat-time-warning-seconds left on the combat timer
+    time-warning: "<gold><bold>{seconds}s Remaining</bold></gold>"
     team-blue-wins: "<red><bold>Blue Team wins the round!</bold></red>"
     team-red-wins: "<red><bold>Red Team wins the round!</bold></red>"
     team-wins-round: "<gold><bold>{team_name} Team Wins the Round!</bold></gold>"

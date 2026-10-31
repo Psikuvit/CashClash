@@ -330,6 +330,8 @@ public class RoundManager {
         // Teammate outlines, visible only to each player's own team (Feature #7-8)
         CashClashPlugin.getInstance().getTeamOutlineManager().showOutlines(session);
         session.getSequenceManager().playUntracked(Sequences.combatStart(session.getCurrentRound()));
+        SoundUtils.playTo(session.getPlayers(), Sound.ITEM_GOAT_HORN_SOUND_0, config.getRoundStartHornVolume(), 1.0f);
+        int timeWarningSeconds = config.getCombatTimeWarningSeconds();
 
         // Start countdown
         phaseTask = SchedulerUtils.runTaskTimer(() -> {
@@ -350,6 +352,10 @@ public class RoundManager {
                 SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
                 Messages.broadcast(session.getPlayers(), "round.combat-countdown",
                     "time_remaining", String.valueOf(timeRemaining));
+            } else if (!finalStandActive && timeRemaining == timeWarningSeconds) {
+                SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+                Messages.broadcast(session.getPlayers(), "round.time-warning",
+                    "seconds", String.valueOf(timeWarningSeconds));
             }
 
             // Check armor effects for all players (Flamebringer fire)
