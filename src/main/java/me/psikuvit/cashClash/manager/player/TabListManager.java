@@ -20,9 +20,9 @@ public final class TabListManager {
     }
 
     /**
-     * Configure a player to show the lobby-style tab: their name in gold (after any rank tag
-     * their display name carries), with no team prefix or team colour left over from a game -
-     * including on the boards of anyone still in that game.
+     * Configure a player to show the lobby-style tab: their display name in gold, with no team
+     * prefix or team colour left over from a game - including on the boards of anyone still in
+     * that game.
      */
     public void setPlayerToLobby(Player player) {
         if (player == null || !player.isOnline()) return;

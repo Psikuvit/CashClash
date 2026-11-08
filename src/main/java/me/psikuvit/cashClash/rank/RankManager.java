@@ -1,17 +1,12 @@
 package me.psikuvit.cashClash.rank;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.config.MessagesConfig;
-import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
-import me.psikuvit.cashClash.manager.player.TabListManager;
 import me.psikuvit.cashClash.storage.PlayerData;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import net.kyori.adventure.text.Component;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -30,28 +25,21 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Staff ranks: who is an owner or an admin, the tag shown before their name in chat and the tab
- * list, and what each rank may do. A rank is set with {@code /cc rank} and saved with the
- * player's data. Both ranks are server operators - op is re-applied on every join, so the saved
- * rank stays the source of truth - and owners also get {@code cashclash.owner}, which the
- * owner-only commands require.
+ * Staff ranks: who is an owner or an admin, and what each rank may do. A rank is set with
+ * {@code /cc rank} and saved with the player's data. Both ranks are server operators - op is
+ * re-applied on every join, so the saved rank stays the source of truth - and owners also get
+ * {@code cashclash.owner}, which the owner-only commands require. Ranks don't change how a name
+ * looks; that's left to a dedicated rank/chat plugin.
  */
 public class RankManager implements Listener {
 
     public static final String OWNER_PERMISSION = "cashclash.owner";
 
-    private final MessagesConfig messagesConfig;
-    private final GameManager gameManager;
     private final PlayerDataManager playerDataManager;
-    private final TabListManager tabListManager;
     private final Map<UUID, PermissionAttachment> ownerAttachments;
 
-    public RankManager(MessagesConfig messagesConfig, GameManager gameManager, PlayerDataManager playerDataManager,
-                       TabListManager tabListManager) {
-        this.messagesConfig = messagesConfig;
-        this.gameManager = gameManager;
+    public RankManager(PlayerDataManager playerDataManager) {
         this.playerDataManager = playerDataManager;
-        this.tabListManager = tabListManager;
         this.ownerAttachments = new HashMap<>();
     }
 
@@ -80,7 +68,11 @@ public class RankManager implements Listener {
         }
 
         target.setOp(rank != null);
-        if (target.getPlayer() != null) refresh(target.getPlayer());
+        Player online = target.getPlayer();
+        if (online != null) {
+            apply(online);
+            online.updateCommands();
+        }
         return true;
     }
 
@@ -95,18 +87,6 @@ public class RankManager implements Listener {
         return ranked;
     }
 
-    /**
-     * The rank tag followed by a space, ready to go in front of a name - empty for no rank.
-     */
-    public Component tag(Player player) {
-        Rank rank = getRank(player);
-        if (rank == null) return Component.empty();
-        return Messages.parse(messagesConfig.getRaw(rank.getTagMessageKey())).append(Component.space());
-    }
-
-    /**
-     * LOWEST so the tag is on the player's name before anything else sets up their tab entry.
-     */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent event) {
         apply(event.getPlayer());
@@ -137,8 +117,7 @@ public class RankManager implements Listener {
     }
 
     /**
-     * Puts a player's rank on them: op, the owner permission, and the tag on their display name
-     * (which chat, death messages and the tab list show).
+     * Puts a player's rank on them: op and the owner permission.
      */
     private void apply(Player player) {
         Rank rank = getRank(player);
@@ -149,21 +128,5 @@ public class RankManager implements Listener {
         if (rank == Rank.OWNER) {
             ownerAttachments.put(player.getUniqueId(), player.addAttachment(CashClashPlugin.getInstance(), OWNER_PERMISSION, true));
         }
-
-        player.displayName(tag(player).append(Component.text(player.getName())));
-    }
-
-    /**
-     * {@link #apply} plus the tab entry, for a rank given or taken while the player is online.
-     */
-    private void refresh(Player player) {
-        apply(player);
-        GameSession session = gameManager.getPlayerSession(player);
-        if (session != null) {
-            tabListManager.setPlayerToSession(player, session);
-        } else {
-            tabListManager.setPlayerToLobby(player);
-        }
-        player.updateCommands();
     }
 }

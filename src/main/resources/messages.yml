@@ -1084,9 +1084,6 @@ messages:
   # RANKS
   # ============================================
   ranks:
-    # Shown before a ranked player's name in chat, death messages and the tab list
-    owner-tag: "<hover:show_text:'<gold>Cash Clash Owner</gold>'><gradient:#FFD700:#FF8C00><bold>OWNER</bold></gradient></hover>"
-    admin-tag: "<hover:show_text:'<red>Cash Clash Admin</red>'><red><bold>ADMIN</bold></red></hover>"
     # Sent to everyone in the world an owner joins into
     owner-joined: "<gradient:#FFD700:#FF8C00>✦ Owner <bold>{player}</bold> has joined the server! ✦</gradient>"
     usage: "<red>Usage: /cc rank set <player> <owner|admin|none>, /cc rank list</red>"
