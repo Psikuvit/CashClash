@@ -500,15 +500,16 @@ public class DamageListener implements Listener {
      * {@code EntityResurrectEvent} never fires for it - this replicates a real totem's save by
      * hand: health drops to 1, the totem is consumed, and the same nerfed Regen/Fire
      * Res/Absorption effects apply that a real totem's own effects used to be overridden with.
-     * Runs on the base {@code EntityDamageEvent} (not just by-entity) so fall/fire/lava/void
-     * deaths are covered too, matching what a real totem would have saved from.
+     * Runs on the base {@code EntityDamageEvent} (not just by-entity) so fall/fire/lava deaths are
+     * covered too, matching what a real totem would have saved from. Not the void - a real totem
+     * doesn't save from it either, nor does the Totem of Haunting - in either hand.
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onLethalDamageMiniTotemCheck(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player victim)) {
             return;
         }
-        if (CashClashPlayer.from(victim) == null) {
+        if (CashClashPlayer.from(victim) == null || event.getCause() == EntityDamageEvent.DamageCause.VOID) {
             return;
         }
         if (victim.getHealth() - event.getFinalDamage() > 0) {
