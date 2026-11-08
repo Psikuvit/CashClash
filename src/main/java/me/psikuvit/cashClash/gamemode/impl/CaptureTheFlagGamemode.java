@@ -650,7 +650,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void onFinalStandActivated() {
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.final-stand-started");
         moveFlagsCloser();
-        putPlayersOnLastLife(uuid -> false);
+        putPlayersOnLastLife();
         for (UUID uuid : session.getPlayers()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {

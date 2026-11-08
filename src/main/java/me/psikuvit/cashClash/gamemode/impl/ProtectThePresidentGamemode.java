@@ -398,7 +398,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public void onFinalStandActivated() {
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.final-stand-started");
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.border-closing");
-        putPlayersOnLastLife(uuid -> !isNotPresident(uuid));
+        putPlayersOnLastLife();
         PTPFinalStandUtils.notifyPresidents(session, this::findPresidentTeam, this::getPresidentName);
         startFinalStandBorder();
     }
@@ -875,6 +875,15 @@ public class ProtectThePresidentGamemode extends Gamemode {
     @Override
     public boolean isFinalStandActive() {
         return finalStandManager.isActive();
+    }
+
+    /**
+     * Nobody respawns during Final Stand - the spawns are outside the closing border, so anyone
+     * still waiting on a respawn when it starts stays out.
+     */
+    @Override
+    public boolean allowsRespawn() {
+        return !isFinalStandActive();
     }
 
     /**

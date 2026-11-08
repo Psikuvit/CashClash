@@ -6,7 +6,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
-import java.util.function.Predicate;
 
 /**
  * Abstract base class for all gamemodes.
@@ -64,13 +63,11 @@ public abstract class Gamemode {
     }
 
     /**
-     * Final Stand's one-life rule: everyone still in the round (bar {@code exempt}) is put on
-     * their last life, so their next death keeps them out until the next round. Anyone already
-     * out stays out.
+     * Final Stand's one-life rule: everyone still in the round is put on their last life, so
+     * their next death keeps them out until the next round. Anyone already out stays out.
      */
-    protected void putPlayersOnLastLife(Predicate<UUID> exempt) {
+    protected void putPlayersOnLastLife() {
         for (UUID uuid : session.getPlayers()) {
-            if (exempt.test(uuid)) continue;
             CashClashPlayer ccp = session.getCashClashPlayer(uuid);
             if (ccp != null) ccp.setLives(Math.min(ccp.getLives(), 1));
         }
@@ -210,6 +207,14 @@ public abstract class Gamemode {
     public boolean isFinalStandActive() {
         FinalStandManager fsm = getFinalStandManager();
         return fsm.isActive();
+    }
+
+    /**
+     * Whether a dead player waiting out their respawn timer may come back right now. A player
+     * refused stays out for the rest of the round.
+     */
+    public boolean allowsRespawn() {
+        return true;
     }
 
 

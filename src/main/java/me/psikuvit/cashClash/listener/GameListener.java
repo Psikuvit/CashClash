@@ -316,7 +316,8 @@ public class GameListener implements Listener {
             @Override
             public void run() {
                 GameSession session = gameManager.getPlayerSession(player);
-                if (remaining <= 0 || !player.isOnline() || session == null || !isGameInCombat(session)) {
+                if (remaining <= 0 || !player.isOnline() || session == null || !isGameInCombat(session)
+                        || session.isRoundEnding() || (session.getGamemode() != null && !session.getGamemode().allowsRespawn())) {
                     cancel();
                     return;
                 }
@@ -382,8 +383,16 @@ public class GameListener implements Listener {
         if (session == null) return;
 
         // If round ended (moved to shopping phase), don't respawn into combat
-        if (!isGameInCombat(session)) {
+        if (!isGameInCombat(session) || session.isRoundEnding()) {
             Messages.send(player, "listener.round-ended-no-respawn");
+            return;
+        }
+
+        Gamemode gamemode = session.getGamemode();
+        if (gamemode != null && !gamemode.allowsRespawn()) {
+            CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
+            if (ccp != null) ccp.setLives(0);
+            Messages.send(player, "listener.no-respawn-final-stand");
             return;
         }
 

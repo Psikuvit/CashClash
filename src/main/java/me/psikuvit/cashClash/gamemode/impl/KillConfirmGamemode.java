@@ -273,7 +273,7 @@ public class KillConfirmGamemode extends Gamemode {
     @Override
     public void onFinalStandActivated() {
         Messages.broadcast(session.getPlayers(), "gamemode-kc.final-stand-started");
-        putPlayersOnLastLife(uuid -> false);
+        putPlayersOnLastLife();
     }
 
     @Override
