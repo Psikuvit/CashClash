@@ -541,6 +541,7 @@ messages:
      alchemist-taunt-activated: "<gold>Alchemist Wand: TAUNT! Teammates chained together.</gold>"
      alchemist-taunt-ended: "<gray>Alchemist Wand: Taunt has ended.</gray>"
      alchemist-blink-protected: "<aqua>Blink Swap! You absorb the next {hits} hits for {seconds}s.</aqua>"
+     alchemist-blink-flag-carrier: "<red>You can't swap places with the flag carrier!</red>"
      alchemist-blink-protection-used: "<gray>Blink Swap protection used up.</gray>"
      alchemist-blink-protection-expired: "<gray>Blink Swap protection wore off.</gray>"
      alchemist-tidy-up-activated: "<aqua>Alchemist Wand: TIDY UP! Your next melee hit will cleanse or strip effects.</aqua>"

@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.manager.items.mythic;
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
@@ -137,6 +138,11 @@ public class AlchemistWandHandler extends MythicItemHandler {
             return;
         }
 
+        if (isFlagCarrier(player, target)) {
+            Messages.send(player, "mythic.alchemist-blink-flag-carrier");
+            return;
+        }
+
         Location playerLocation = player.getLocation().clone();
         Location targetLocation = target.getLocation().clone();
 
@@ -157,6 +163,16 @@ public class AlchemistWandHandler extends MythicItemHandler {
         );
 
         Messages.debug(player, "ALCHEMIST_WAND: Blink Swap successful with " + target.getName());
+    }
+
+    /**
+     * Whether a Blink Swap target is carrying a CTF flag - nobody can swap places with them, or
+     * the swap would carry the flag across the map.
+     */
+    private boolean isFlagCarrier(Player wielder, LivingEntity target) {
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(wielder);
+        return session != null && session.getGamemode() instanceof CaptureTheFlagGamemode ctf
+                && ctf.isSilenced(target.getUniqueId());
     }
 
     /**
