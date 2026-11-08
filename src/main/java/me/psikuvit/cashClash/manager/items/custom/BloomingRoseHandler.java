@@ -11,7 +11,6 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -47,8 +46,8 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
     private static final int PRIORITY_ROSE_HP_REVEAL = 4;
     private static final long ROSE_HP_REVEAL_DISPLAY_MS = 1000L;
-    // The boundary ring's colour for a rose planted outside a game, where there's no team
-    private static final Color OUTSIDE_GAME_RING_COLOR = Color.fromRGB(220, 20, 20);
+    // The zone's outer circle matches the tree's cherry-log bark
+    private static final Color RING_COLOR = Color.fromRGB(112, 52, 110);
 
     // Blooming Rose - placed sakura zones keyed by trunk location
     private final Map<Location, BloomingRoseZone> bloomingRoseZones;
@@ -99,7 +98,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
         Location center = origin.getLocation();
         long expiresAt = System.currentTimeMillis() + cfg.getBloomingRoseZoneDurationSeconds() * 1000L;
         BukkitTask upkeepTask = startRoseZoneTask(center, originalBlocks, expiresAt, session, teamNumber, owner);
-        BukkitTask ringTask = spawnRoseFormationVisual(center, TeamColorUtils.particleColor(player, OUTSIDE_GAME_RING_COLOR));
+        BukkitTask ringTask = spawnRoseFormationVisual(center);
         bloomingRoseZones.put(center, new BloomingRoseZone(session, teamNumber, owner, center, expiresAt, originalBlocks, upkeepTask, ringTask));
 
         Messages.send(player, "customitem.blooming-rose-placed");
@@ -198,7 +197,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
     }
 
     /**
-     * Draws a team-coloured ring on the ground at the zone's healing radius so players can see its bounds -
+     * Draws a cherry-log purple ring on the ground at the zone's healing radius so players can see its bounds -
      * a direct point-by-point loop (not routed through the shared ring helpers) redrawn often
      * enough that it never visibly fades between draws, with a generous size/count per point so
      * it's unmistakable even against grass/terrain.
@@ -313,13 +312,13 @@ public class BloomingRoseHandler extends CustomItemHandler {
     }
 
     /**
-     * Sakura formation visual: a formingRing (zone radius) in the placer's team colour that
-     * draws in while two pink figure-eight cursors converge from opposite ends around the trunk.
-     * Also starts the boundary ring's continuous redraw loop (same colour), which - unlike the two
-     * animations above - never stops on its own, so its task is returned for the caller to track
-     * and cancel when the zone is destroyed.
+     * Sakura formation visual: a cherry-log purple formingRing (zone radius) that draws in while
+     * two pink figure-eight cursors converge from opposite ends around the trunk. Also starts the
+     * boundary ring's continuous redraw loop (same colour), which - unlike the two animations
+     * above - never stops on its own, so its task is returned for the caller to track and cancel
+     * when the zone is destroyed.
      */
-    private BukkitTask spawnRoseFormationVisual(Location center, Color ringColor) {
+    private BukkitTask spawnRoseFormationVisual(Location center) {
         double radius = cfg.getBloomingRoseZoneRadius();
         Color pink = Color.fromRGB(255, 150, 190);
 
@@ -330,11 +329,11 @@ public class BloomingRoseHandler extends CustomItemHandler {
             public void run() {
                 formed += 6;
                 if (formed >= 90) {
-                    ParticleUtils.formingRing(center.clone().add(0, 1, 0), radius, 90, 90, ringColor, 0.12f);
+                    ParticleUtils.formingRing(center.clone().add(0, 1, 0), radius, 90, 90, RING_COLOR, 0.12f);
                     cancel();
                     return;
                 }
-                ParticleUtils.formingRing(center.clone().add(0, 1, 0), radius, 90, formed, ringColor, 0.12f);
+                ParticleUtils.formingRing(center.clone().add(0, 1, 0), radius, 90, formed, RING_COLOR, 0.12f);
             }
         }, 0L, 1L);
         Location figureEightCenter = center.clone().add(0.5, 1, 0.5); // +0.5 X/Z: block-center, not corner
@@ -359,7 +358,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
                 ParticleUtils.figureEight(figureEightCenter, radius * 0.5, pink, 60, formed, true);
             }
         }, 0L, 1L);
-        return SchedulerUtils.runTaskTimer(() -> spawnRoseRadiusRing(center, ringColor), 0L, 1);
+        return SchedulerUtils.runTaskTimer(() -> spawnRoseRadiusRing(center, RING_COLOR), 0L, 1);
     }
 
     /**
