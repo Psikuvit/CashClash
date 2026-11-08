@@ -15,6 +15,8 @@ import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -32,6 +34,7 @@ public class FlagBannerUtils {
     private static final double BANNER_ANGULAR_SPEED = 0.03;
     private static final double CARRIED_BANNER_HEIGHT = 2.0;
     private static final double CARRIED_BANNER_BEHIND_DISTANCE = 0.5;
+    private static final int CARRIER_HAT_RESEND_TICKS = 20;
 
     private FlagBannerUtils() {
         throw new AssertionError("Utility class");
@@ -149,8 +152,13 @@ public class FlagBannerUtils {
 
     /**
      * Move a banner to follow a player (attach to player's head)
-     * Uses direct teleport approach for instant rotation with player. The carrier can't see it -
-     * riding just behind their head, it would fill their own screen.
+     * Uses direct teleport approach for instant rotation with player. The carrier doesn't see
+     * this one - riding just behind their head, it filled their first-person screen. They see the
+     * banner on their own head instead, sent to them alone as their helmet: the server can't
+     * tell which camera view a player is in, but Minecraft never draws your own helmet in first
+     * person, so it shows in both third-person views only. It's re-sent every
+     * {@value #CARRIER_HAT_RESEND_TICKS} ticks in case the client's inventory resyncs, and their
+     * real helmet goes back on their screen when they stop carrying it.
      *
      * @param banner The banner to move
      * @param player The player to follow
@@ -159,18 +167,25 @@ public class FlagBannerUtils {
      */
     public static BukkitTask createCarryingTask(BlockDisplay banner, Player player, Runnable onTaskComplete) {
         player.hideEntity(CashClashPlugin.getInstance(), banner);
+        ItemStack carrierHat = new ItemStack(banner.getBlock().getMaterial());
 
         return SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private int ticks;
+
             @Override
             public void run() {
                 // A carrier who left the game world (sent to the lobby) must not drag the banner along.
                 if (!player.isOnline() || banner.isDead() || player.isDead() || player.getWorld() != banner.getWorld()) {
                     cancel();
-                    showToEveryone(banner);
+                    releaseFromCarrier(banner);
                     if (onTaskComplete != null) {
                         onTaskComplete.run();
                     }
                     return;
+                }
+
+                if (ticks++ % CARRIER_HAT_RESEND_TICKS == 0) {
+                    player.sendEquipmentChange(player, EquipmentSlot.HEAD, carrierHat);
                 }
 
                 // Position banner behind the carrying player's head and rotate with player
@@ -201,16 +216,20 @@ public class FlagBannerUtils {
          }
 
          banner.teleport(location);
-         showToEveryone(banner);
+         releaseFromCarrier(banner);
          Messages.debug("[CTF] Moved banner back to plate at " + location);
      }
 
     /**
-     * Undoes {@link #createCarryingTask}'s hiding of a banner from its carrier, whoever that was.
+     * Undoes {@link #createCarryingTask}'s view for whoever was carrying the banner - the one
+     * player it's hidden from: shows it to them again and puts their real helmet back on their
+     * own screen.
      */
-    private static void showToEveryone(BlockDisplay banner) {
+    private static void releaseFromCarrier(BlockDisplay banner) {
         for (Player viewer : banner.getWorld().getPlayers()) {
+            if (viewer.canSee(banner)) continue;
             viewer.showEntity(CashClashPlugin.getInstance(), banner);
+            viewer.sendEquipmentChange(viewer, EquipmentSlot.HEAD, viewer.getInventory().getHelmet());
         }
     }
 
