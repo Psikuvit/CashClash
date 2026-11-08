@@ -266,6 +266,7 @@ public final class GameplayItemFactory {
                 }
             }
             case INVIS_CLOAK -> ItemUtils.setCooldownGroup(tags.meta(), Keys.INVIS_CLOAK_COOLDOWN_GROUP);
+            case ORB_OF_GRAVITATION -> ItemUtils.setCooldownGroup(tags.meta(), Keys.ORB_OF_GRAVITATION_COOLDOWN_GROUP);
             case ICE_FAN -> {
                 tags.meta().setMaxStackSize(1);
                 tags.set(Keys.ITEM_USES, PersistentDataType.INTEGER, CashClashPlugin.getInstance().getItemsConfig().getIceFanMaxUses());

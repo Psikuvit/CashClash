@@ -100,7 +100,8 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
     /**
      * Launches the orb as a Snowball tagged with its owner. The item is NOT consumed yet - it is
      * only consumed once the orb fully resolves (destroyed, pulled-and-expired, or detonated).
-     * Each throw starts {@code cooldown-seconds} before the next one.
+     * Each throw starts {@code cooldown-seconds} before the next one, shown as the gray overlay
+     * once the orb resolves (see {@link #showCooldownOverlay}).
      */
     public void throwOrbOfGravitation(Player player) {
         if (cooldownManager.isOnCooldown(player.getUniqueId(), CooldownManager.Keys.ORB_OF_GRAVITATION)) return;
@@ -308,6 +309,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
      * switched items since throwing, and the item is not consumed until the orb resolves).
      */
     private void consumeOrbItem(Player player) {
+        showCooldownOverlay(player);
         ItemStack main = player.getInventory().getItemInMainHand();
         if (PDCDetection.getCustomItem(main) == CustomItem.ORB_OF_GRAVITATION) {
             consumeItem(player, main);
@@ -318,6 +320,19 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
                 slot.setAmount(slot.getAmount() - 1);
                 return;
             }
+        }
+    }
+
+    /**
+     * The gray cooldown sweep on the player's orbs for what's left of the throw cooldown - only
+     * once their thrown orb has resolved. The client won't right-click an item on cooldown, and
+     * that click is what detonates an orb still in the air.
+     */
+    private void showCooldownOverlay(Player player) {
+        if (hasLiveOrb(player)) return;
+        long remainingMs = cooldownManager.getRemainingCooldownMs(player.getUniqueId(), CooldownManager.Keys.ORB_OF_GRAVITATION);
+        if (remainingMs > 0) {
+            player.setCooldown(Keys.ORB_OF_GRAVITATION_COOLDOWN_GROUP, (int) (remainingMs / 50L));
         }
     }
 
