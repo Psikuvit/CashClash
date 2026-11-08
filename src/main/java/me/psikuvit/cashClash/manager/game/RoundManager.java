@@ -76,42 +76,41 @@ public class RoundManager {
      * already there is a no-op in practice.
      */
     public void teleportToBuyPhase() {
-        Team teamRed = session.getTeamRed();
-        Team teamBlue = session.getTeamBlue();
+        for (UUID uuid : session.getPlayers()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) teleportToBuyPhase(p);
+        }
+    }
 
+    /**
+     * Sends one player to their team's shop area - the round's buy phase spot, also where a
+     * player rejoining during the buy phase lands.
+     */
+    public void teleportToBuyPhase(Player p) {
         Arena arena = CashClashPlugin.getInstance().getArenaManager().getArena(session.getArenaNumber());
         if (arena == null || session.getGameWorld() == null) return;
 
         TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(arena.getTemplateId());
         World copiedWorld = session.getGameWorld();
 
-        Location teamRedShopTpl = tpl.getTeamRedShopSpawn();
-        Location teamBlueShopTpl = tpl.getTeamBlueShopSpawn();
+        UUID uuid = p.getUniqueId();
+        Location destTemplate = null;
+        if (session.getTeamRed().hasPlayer(uuid)) {
+            destTemplate = tpl.getTeamRedShopSpawn();
+        } else if (session.getTeamBlue().hasPlayer(uuid)) {
+            destTemplate = tpl.getTeamBlueShopSpawn();
+        }
 
-        for (UUID uuid : session.getPlayers()) {
-            Player p = Bukkit.getPlayer(uuid);
-            if (p == null || !p.isOnline()) continue;
+        if (destTemplate == null) {
+            Messages.send(p, "round.shopping-area-missing");
+            destTemplate = tpl.getSpectatorSpawn();
+        }
 
-            int teamNum = teamRed.hasPlayer(uuid) ? 1 : (teamBlue.hasPlayer(uuid) ? 2 : 0);
-            Location destTemplate = null;
-
-            if (teamNum == 1 && teamRedShopTpl != null) {
-                destTemplate = teamRedShopTpl;
-            } else if (teamNum == 2 && teamBlueShopTpl != null) {
-                destTemplate = teamBlueShopTpl;
-            }
-
-            if (destTemplate == null) {
-                Messages.send(p, "round.shopping-area-missing");
-                destTemplate = tpl.getSpectatorSpawn();
-            }
-
-            if (destTemplate != null) {
-                Location dest = LocationUtils.copyToWorld(destTemplate, copiedWorld);
-                p.setGameMode(GameMode.SURVIVAL);
-                p.teleport(dest);
-                p.closeInventory();
-            }
+        if (destTemplate != null) {
+            Location dest = LocationUtils.copyToWorld(destTemplate, copiedWorld);
+            p.setGameMode(GameMode.SURVIVAL);
+            p.teleport(dest);
+            p.closeInventory();
         }
     }
 

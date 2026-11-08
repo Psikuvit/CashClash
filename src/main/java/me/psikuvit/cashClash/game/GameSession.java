@@ -951,12 +951,15 @@ public class GameSession {
         // Restore player state from rejoin data
         rejoinManager.restorePlayerState(player, existingCcp, data);
 
-        // Teleport to spawn location
-        Location spawn = getSpawnForPlayer(uuid);
-        if (spawn != null) {
-            player.teleport(spawn);
-        } else if (gameWorld != null) {
-            player.teleport(gameWorld.getSpawnLocation());
+        if (getState() == GameState.SHOPPING && roundManager != null) {
+            roundManager.teleportToBuyPhase(player);
+        } else {
+            Location spawn = getSpawnForPlayer(uuid);
+            if (spawn != null) {
+                player.teleport(spawn);
+            } else if (gameWorld != null) {
+                player.teleport(gameWorld.getSpawnLocation());
+            }
         }
 
         // Apply respawn protection
