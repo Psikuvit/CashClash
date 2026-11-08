@@ -244,6 +244,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void onPlayerSpawn(Player player) {
         removeFlagIfCarriedByPlayer(1, player.getUniqueId(), player);
         removeFlagIfCarriedByPlayer(2, player.getUniqueId(), player);
+        updateSilencedItemDisplay(player);
         suddenDeathManager.onPlayerSpawn(player);
     }
 
@@ -251,8 +252,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void onPlayerRemove(Player player) {
         UUID playerUuid = player.getUniqueId();
 
-        removeFlagIfCarriedByPlayer(1, playerUuid, player);
-        removeFlagIfCarriedByPlayer(2, playerUuid, player);
+        dropFlagIfCarriedBy(1, player);
+        dropFlagIfCarriedBy(2, player);
         flagBars.hideFor(player);
         carrierLastGround.remove(playerUuid);
     }
@@ -526,24 +527,46 @@ public class CaptureTheFlagGamemode extends Gamemode {
     }
 
     private void handleFlagHolderDeath(int teamNumber, UUID victimUuid, Player victim) {
-        FlagState flag = flagStates.get(TeamColor.fromTeamNumber(teamNumber));
-        if (flag == null || !flag.isHeld() || !flag.holder().equals(victimUuid)) {
-            return;
-        }
+        if (!isCarrying(teamNumber, victimUuid)) return;
 
+        Messages.debug("[CTF] Team " + teamNumber + " flag holder eliminated: " + victim.getName());
+        dropCarriedFlag(teamNumber, victim, "gamemode-ctf.flag-holder-eliminated");
+    }
+
+    /**
+     * A carrier who disconnects or leaves the game drops the flag where they were, the same way
+     * as dying with it: it waits there to be picked up or returned. Reconnecting doesn't give it
+     * back.
+     */
+    private void dropFlagIfCarriedBy(int teamNumber, Player player) {
+        if (!isCarrying(teamNumber, player.getUniqueId())) return;
+
+        Messages.debug("[CTF] Team " + teamNumber + " flag holder left the game: " + player.getName());
+        dropCarriedFlag(teamNumber, player, "gamemode-ctf.flag-holder-left");
+    }
+
+    private boolean isCarrying(int teamNumber, UUID playerUuid) {
+        FlagState flag = flagStates.get(TeamColor.fromTeamNumber(teamNumber));
+        return flag != null && flag.isHeld() && flag.holder().equals(playerUuid);
+    }
+
+    /**
+     * The flag drop: announced with {@code messageKey}, dropped on the ground near the carrier
+     * with its return timer running, and the carrier's penalties lifted.
+     */
+    private void dropCarriedFlag(int teamNumber, Player carrier, String messageKey) {
         String teamName = teamNumber == 1 ? "Red" : "Blue";
-        Messages.debug("[CTF] Team " + teamName + " flag holder eliminated: " + victim.getName());
         String colorTag = teamNumber == 1 ? "red" : "blue";
-        Messages.broadcast(session.getPlayers(), "gamemode-ctf.flag-holder-eliminated",
+        Messages.broadcast(session.getPlayers(), messageKey,
                 "color", colorTag,
                 "team_name", teamName);
 
-        dropFlagAtLocation(teamNumber, flagDropSpot(victim));
-        carrierLastGround.remove(victimUuid);
+        dropFlagAtLocation(teamNumber, flagDropSpot(carrier));
+        carrierLastGround.remove(carrier.getUniqueId());
         SoundUtils.playTo(session.getPlayers(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.5f, 0.5f);
 
-        clearCarrierPenalties(victim);
-        updateSilencedItemDisplay(victim);
+        clearCarrierPenalties(carrier);
+        updateSilencedItemDisplay(carrier);
 
         // One flag is down again, so the both-flags-held block no longer applies.
         stalemateMsgShown.clear();

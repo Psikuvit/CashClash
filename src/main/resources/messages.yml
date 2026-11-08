@@ -370,6 +370,7 @@ messages:
     objective: "<yellow>Capture the enemy's flag and return it to your base to score!</yellow>"
     bonus-info: "<yellow>Capturing the flag 45 seconds after stealing it grants your team a split 15k bonus!</yellow>"
     flag-holder-eliminated: "<{color}><bold>Team {team_name}'s flag holder was eliminated!</bold></{color}>"
+    flag-holder-left: "<{color}><bold>Team {team_name}'s flag holder left the game - the flag was dropped!</bold></{color}>"
     flag-captured: "<{color}><bold>Team {team_name} captured the flag! {captures}/{win_condition}</bold></{color}>"
     flag-stolen-red: "<blue>{player_name} has stolen Team Red's flag!</blue>"
     flag-stolen-blue: "<red>{player_name} has stolen Team Blue's flag!</red>"
