@@ -1,7 +1,6 @@
 package me.psikuvit.cashClash.manager.player;
 
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -32,7 +31,9 @@ public final class TabListManager {
     }
 
     /**
-     * Configure a player to the session tab (team colored, session entries present).
+     * Configure a player to the session tab: [R]/[B] and their name in their team's colour. A
+     * custom tab name isn't recoloured by scoreboard teams, so it stays in the team colour
+     * whatever team a viewer's board puts the player in - e.g. teammates' green outline team.
      */
     public void setPlayerToSession(Player player, GameSession session) {
         if (player == null || session == null || !player.isOnline()) return;
@@ -41,8 +42,9 @@ public final class TabListManager {
         if (session.getTeamRed().hasPlayer(player.getUniqueId())) teamNumber = 1;
         else if (session.getTeamBlue().hasPlayer(player.getUniqueId())) teamNumber = 2;
 
-        String prefix = teamNumber == 1 ? "<red>[R] </red>" : teamNumber == 2 ? "<blue>[B] </blue>" : "<gray>[?] </gray>";
-        Component comp = Messages.parse(prefix).append(player.displayName());
+        String prefix = teamNumber == 1 ? "[R] " : teamNumber == 2 ? "[B] " : "[?] ";
+        NamedTextColor color = teamNumber == 1 ? NamedTextColor.RED : teamNumber == 2 ? NamedTextColor.BLUE : NamedTextColor.GRAY;
+        Component comp = Component.text().color(color).append(Component.text(prefix)).append(player.displayName()).build();
         player.playerListName(comp);
 
         Scoreboard board = player.getScoreboard();

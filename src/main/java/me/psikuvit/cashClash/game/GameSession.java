@@ -968,6 +968,7 @@ public class GameSession {
 
         // Set up scoreboard
         scoreboardManager.setScoreboard(player);
+        tabListManager.setPlayerToSession(player, this);
 
         Messages.send(player, "round.rejoin-success");
         Messages.send(player, "round.rejoin-status",
