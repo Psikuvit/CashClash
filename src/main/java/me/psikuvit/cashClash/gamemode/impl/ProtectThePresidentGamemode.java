@@ -558,6 +558,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 PTPInventoryUtils.restoreInventory(presPlayer);
             }
         }
+        if (session.getCurrentRound() == 1) {
+            session.giveStartingKits();
+        }
 
         // Unlock the shop for all players
         Messages.broadcast(session.getPlayers(), "gamemode-ptp.buff-selected");

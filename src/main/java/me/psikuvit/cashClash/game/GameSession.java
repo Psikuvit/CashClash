@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
+import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.listener.BlockListener;
@@ -369,15 +370,26 @@ public class GameSession {
         sequenceManager.play(Sequences.roundStart(gamemode), true, () -> {
             scoreboardManager.createBoardForSession(this);
             gamemode.onGameStart();
-            players.keySet().forEach(this::applyKit);
-            players.keySet().forEach(uuid -> {
-                Player player = Bukkit.getPlayer(uuid);
-                if (player != null) GuideBooks.give(player, gamemode.getType());
-            });
+            if (!(gamemode instanceof ProtectThePresidentGamemode)) {
+                giveStartingKits();
+            }
             roundManager.startShoppingPhase(currentRound);
         });
 
         Messages.debug("GAME", "GameSession " + sessionId + " started in Arena " + arenaNumber);
+    }
+
+    /**
+     * Round 1's starting kit, then the gamemode's guide book (the kit clears the inventory). Right
+     * after the round-start sequence - except in Protect the President, where the presidents'
+     * buff selection comes first and the gamemode calls this once it's over.
+     */
+    public void giveStartingKits() {
+        players.keySet().forEach(this::applyKit);
+        players.keySet().forEach(uuid -> {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) GuideBooks.give(player, gamemode.getType());
+        });
     }
 
     /**
