@@ -34,7 +34,7 @@ public class EconomyManager {
     /**
      * Pays every player an equal share of the current round's pool at the start of its buy
      * phase, on top of whatever they have left over. Only the first buy phase announces the
-     * share; later ones show the previous round's earnings instead (see {@link #sendRoundEarnings}).
+     * share; later ones add the round just played's transfers to it (see {@link #sendRoundEarnings}).
      */
     public static void payRoundShare(GameSession session) {
         long pool = getRoundPool(session);
@@ -44,7 +44,7 @@ public class EconomyManager {
         boolean announceShare = session.getPreviousRoundData() == null;
         for (UUID uuid : session.getPlayers()) {
             long paid = session.getRewardManager().grant(uuid, RewardType.ROUND_DISTRIBUTION, share);
-            session.getCurrentRoundData().addPoolEarnings(uuid, paid);
+            session.getCurrentRoundData().setPoolShare(uuid, paid);
             Player player = Bukkit.getPlayer(uuid);
             if (announceShare && player != null) {
                 Messages.send(player, "economy.round-share-paid",
@@ -57,19 +57,22 @@ public class EconomyManager {
     }
 
     /**
-     * Tells a player entering a buy phase what they ended up with from the previous round's
-     * pool: their share plus kill and assist transfers received, minus transfers lost on death.
+     * Tells a player entering a buy phase about the pool it just paid out: what they got is their
+     * share of it, plus the kill and assist transfers they received in the round just played,
+     * minus the transfers they lost. Transfers cancel out, so everyone's amounts add up to the pool.
      */
     public static void sendRoundEarnings(GameSession session, Player player) {
         RoundData previousRound = session.getPreviousRoundData();
         if (previousRound == null) return;
 
-        long pool = CashClashPlugin.getInstance().getConfigManager().getRoundPool(session.getCurrentRound() - 1);
+        long pool = getRoundPool(session);
         if (pool <= 0) return;
 
+        UUID uuid = player.getUniqueId();
+        long earned = session.getCurrentRoundData().getPoolShare(uuid) + previousRound.getPoolTransfers(uuid);
         Messages.send(player, "economy.round-money-earned",
                 "pool", String.format("%,d", pool),
-                "amount", String.format("%,d", previousRound.getPoolEarnings(player.getUniqueId())));
+                "amount", String.format("%,d", earned));
     }
 
     /**
@@ -98,7 +101,7 @@ public class EconomyManager {
         RoundData roundData = session.getCurrentRoundData();
         if (transfer > 0) {
             victimCcp.deductCoins(transfer);
-            roundData.addPoolEarnings(victim.getUniqueId(), -transfer);
+            roundData.addPoolTransfer(victim.getUniqueId(), -transfer);
             Messages.send(victim, "economy.kill-transfer-lost",
                     "amount", String.format("%,d", transfer),
                     "killer", killer.getName());
@@ -107,13 +110,13 @@ public class EconomyManager {
         session.getRewardManager().grantKillOrObjective(killer, RewardType.KILL, killerShare,
                 "amount", String.format("%,d", killerShare),
                 "victim", victim.getName());
-        roundData.addPoolEarnings(killer.getUniqueId(), killerShare);
+        roundData.addPoolTransfer(killer.getUniqueId(), killerShare);
 
         for (UUID assister : assisters) {
             session.getRewardManager().grantAssist(assister, assistShare,
                     "amount", String.format("%,d", assistShare),
                     "victim", victim.getName());
-            roundData.addPoolEarnings(assister, assistShare);
+            roundData.addPoolTransfer(assister, assistShare);
         }
 
         Messages.debug("ECONOMY", victim.getName() + " killed by " + killer.getName() + " - transfer " + transfer
