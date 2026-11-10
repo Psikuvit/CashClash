@@ -1,5 +1,7 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
+import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.manager.items.custom.IceFanHandler;
 import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -85,8 +87,9 @@ public class BlazebiteHandler extends MythicItemHandler {
     /**
      * Glacier mode: the first hit frostbites the player it hits - particles and sounds only, no
      * slowdown. A second hit while they're still frostbitten freezes them solid: no moving or
-     * jumping for {@code freeze-duration-seconds}. A hit on someone already frozen solid does
-     * nothing more.
+     * jumping for {@code freeze-duration-seconds}. So does a first hit on someone still under an
+     * Ice Fan freeze, which the hit uses up. A hit on someone already frozen solid does nothing
+     * more.
      */
     private void handleGlacier(Player shooter, Entity hitEntity) {
         if (!AbilityTargets.isEnemy(shooter, hitEntity)) return;
@@ -97,14 +100,17 @@ public class BlazebiteHandler extends MythicItemHandler {
 
         long now = System.currentTimeMillis();
         Long frostbiteExpiry = glacierFrostbiteExpiry.get(victimId);
+        boolean frostbitten = frostbiteExpiry != null && frostbiteExpiry > now;
+        boolean iceFanFrozen = CashClashPlugin.getInstance().getCustomItemManager()
+                .getHandler(IceFanHandler.class).consumeFreeze(victimId);
 
-        if (frostbiteExpiry != null && frostbiteExpiry > now) {
+        if (frostbitten || iceFanFrozen) {
             int freezeTicks = cfg.getBlazebiteFreezeDurationTicks();
             glacierFrostbiteExpiry.remove(victimId);
             startGlacierParticles(victimId, ParticleUtils::freezeParticles, freezeTicks);
             freezeSolid(victim, freezeTicks);
 
-            Messages.debug(shooter, "BLAZEBITE: Glacier double hit on " + victim.getName() + " - frozen solid for " + (freezeTicks / 20) + "s");
+            Messages.debug(shooter, "BLAZEBITE: Glacier hit on chilled " + victim.getName() + " - frozen solid for " + (freezeTicks / 20) + "s");
             if (victim instanceof Player frozen) Messages.send(frozen, "mythic.you-are-frozen");
             AbilityTargets.playSound(victim, Sound.BLOCK_GLASS_BREAK, 1.0f, 0.5f);
             AbilityTargets.playSound(victim, Sound.ENTITY_PLAYER_HURT_FREEZE, 1.0f, 0.8f);

@@ -127,6 +127,15 @@ public class IceFanHandler extends CustomItemHandler {
     }
 
     /**
+     * Ends the target's Ice Fan freeze, if there is one, and says whether it was still running.
+     * BlazeBite's Glacier arrow spends it to freeze the target solid.
+     */
+    public boolean consumeFreeze(UUID targetId) {
+        Long expiresAt = iceFanFreezeExpiresAt.remove(targetId);
+        return expiresAt != null && expiresAt > System.currentTimeMillis();
+    }
+
+    /**
      * Pulses the blue freeze heart indicator every 5 ticks (matching BlazeBite Glacier's
      * frostbite particle cadence) for the whole freeze duration, not just a one-off burst on the
      * hit that caused it. The freeze is purely visual: it never sets vanilla freeze ticks, which

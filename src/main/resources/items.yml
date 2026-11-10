@@ -156,7 +156,8 @@ mythic-items:
   blazebite-crossbows:
     damage-bonus-percent: 20  # BlazeBite arrows deal this much more than a plain crossbow bolt
     # Glacier's first hit (frostbite) is cosmetic - particles and sounds only, no slowdown. A
-    # second Glacier hit while frostbitten freezes the player solid. Volcano hits don't thaw.
+    # second Glacier hit while frostbitten freezes the player solid, and so does a first hit on a
+    # player still under an Ice Fan freeze. Volcano hits don't thaw.
     glacier:
       frostbite-duration-seconds: 5  # First hit: frostbite particles last this long
       freeze-duration-seconds: 3  # Hit again while frostbitten: frozen solid (can't move or jump) this long
@@ -493,7 +494,7 @@ custom-items:
   ice-fan:
     max-uses: 3                       # Number of activations before it breaks
     burst-damage: 4.5
-    freeze-duration-ms: 1500          # Freeze added to each target hit - cosmetic (freeze hearts), no slowdown
+    freeze-duration-ms: 1500          # Freeze added to each target hit - freeze hearts, no slowdown; a BlazeBite Glacier hit during it freezes them solid
     max-freeze-ms: 6000               # Maximum total freeze duration
     freeze-pump-interval-ticks: 1     # How often the freeze display updates
     cooldown-seconds: 1               # Cooldown between activations
