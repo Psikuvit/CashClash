@@ -12,7 +12,6 @@ import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.weapon.SoulKatanaHandler;
 import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
@@ -25,6 +24,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.util.BoundingBox;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -119,11 +119,9 @@ public class MoveListener implements Listener {
      * Launches a player standing on a floor bounce pad or touching a wall-mounted one.
      */
     private void checkBouncePads(Player player) {
-        Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
-        if (blockBelow.getType() == Material.SLIME_BLOCK) {
-            if (customItemManager.getHandler(BouncePadHandler.class).isBouncePad(blockBelow)) {
-                customItemManager.getHandler(BouncePadHandler.class).handleBouncePad(player, blockBelow);
-            }
+        Block floorPad = bouncePadUnderFeet(player);
+        if (floorPad != null) {
+            customItemManager.getHandler(BouncePadHandler.class).handleBouncePad(player, floorPad);
         }
 
         // Check the four horizontal neighbors for wall-mounted bounce pads
@@ -137,6 +135,24 @@ public class MoveListener implements Listener {
         checkWallBouncePad(player, currentBlock, BlockFace.EAST, fracX > 1 - touchThreshold);
         checkWallBouncePad(player, currentBlock, BlockFace.NORTH, fracZ < touchThreshold);
         checkWallBouncePad(player, currentBlock, BlockFace.SOUTH, fracZ > 1 - touchThreshold);
+    }
+
+    /**
+     * The bounce pad under any part of the player's feet, or null. Going by their hitbox instead
+     * of their centre point is what makes a pad's whole top work, right out to its edges.
+     */
+    private Block bouncePadUnderFeet(Player player) {
+        BouncePadHandler handler = customItemManager.getHandler(BouncePadHandler.class);
+        BoundingBox feet = player.getBoundingBox();
+        int y = (int) Math.floor(feet.getMinY() - 0.1);
+
+        for (int x = (int) Math.floor(feet.getMinX()); x <= (int) Math.floor(feet.getMaxX()); x++) {
+            for (int z = (int) Math.floor(feet.getMinZ()); z <= (int) Math.floor(feet.getMaxZ()); z++) {
+                Block block = player.getWorld().getBlockAt(x, y, z);
+                if (handler.isBouncePad(block)) return block;
+            }
+        }
+        return null;
     }
 
     private void checkWallBouncePad(Player player, Block currentBlock, BlockFace face, boolean nearFace) {
