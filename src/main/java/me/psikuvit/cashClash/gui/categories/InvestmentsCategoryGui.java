@@ -103,19 +103,14 @@ public class InvestmentsCategoryGui extends AbstractShopCategoryGui {
         CashClashPlayer ccp = getCashClashPlayer();
         if (ccp == null) return;
 
-        PurchaseRecord rec = ccp.peekLastPurchase();
-        if (rec == null || rec.round() != sess.getCurrentRound()) {
-            Messages.send(viewer, "shop.no-purchase-undo");
-            return;
-        }
-
-        if (rec.item().getCategory() != ShopCategory.INVESTMENTS) {
+        PurchaseRecord rec = ccp.findLastPurchase(ShopCategory.INVESTMENTS, sess.getCurrentRound(), purchase -> true);
+        if (rec == null) {
             Messages.send(viewer, "shop.no-purchase-undo-category");
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
-        ccp.popLastPurchase();
+        ccp.removePurchase(rec);
         CashClashPlugin.getInstance().getShopService().refund(viewer, rec.price());
 
         // Clear the investment

@@ -14,6 +14,7 @@ import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -145,7 +146,9 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
     }
 
     /**
-     * Handle undo purchase for this category.
+     * Undoes this round's most recent purchase from this category, whatever was bought from the
+     * other categories since. A purchase whose item has since gone is passed over: a mythic can
+     * take the weapon it was discounted by, so refunding that weapon would pay for it twice.
      */
     protected void handleUndoPurchase() {
         if (!CashClashPlugin.getInstance().getShopService().canShop(viewer)) {
@@ -157,17 +160,14 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         CashClashPlayer ccp = getCashClashPlayer();
         if (ccp == null) return;
 
-        PurchaseRecord rec = ccp.peekLastPurchase();
-        if (rec == null || rec.round() != CashClashPlugin.getInstance().getShopService().getShopRound(viewer)) {
-            Messages.send(viewer, "shop.no-purchase-undo");
-            return;
-        }
-        Messages.debug(rec.toString());
-        if (rec.item().getCategory() != category) {
+        PurchaseRecord rec = ccp.findLastPurchase(category, CashClashPlugin.getInstance().getShopService().getShopRound(viewer),
+                purchase -> purchase.isSetPurchase() || ItemUtils.hasShopItem(viewer, purchase.item().name()));
+        if (rec == null) {
             Messages.send(viewer, "shop.no-purchase-undo-category");
             SoundUtils.play(viewer, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
+        Messages.debug(rec.toString());
 
         CashClashPlugin.getInstance().getShopService().processRefund(viewer, rec);
         refresh();

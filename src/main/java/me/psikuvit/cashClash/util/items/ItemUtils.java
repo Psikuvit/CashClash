@@ -122,6 +122,16 @@ public final class ItemUtils {
         }
     }
 
+    /**
+     * Whether the player still holds any of a shop item, worn or anywhere in their inventory.
+     */
+    public static boolean hasShopItem(Player player, String itemTag) {
+        for (ItemStack stack : player.getInventory().getContents()) {
+            if (PDCDetection.hasTag(stack, itemTag)) return true;
+        }
+        return false;
+    }
+
     public static boolean removeItemFromPlayer(Player player, String itemTag, int quantity) {
         int remaining = Math.max(1, quantity);
 

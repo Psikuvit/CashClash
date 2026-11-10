@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
+import me.psikuvit.cashClash.shop.ShopCategory;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.enums.BonusType;
 import org.bukkit.attribute.Attribute;
@@ -19,9 +20,11 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * Wrapper for player data within a Cash Clash game
@@ -141,12 +144,22 @@ public class CashClashPlayer {
         purchaseHistory.addLast(record);
     }
 
-    public void popLastPurchase() {
-        purchaseHistory.pollLast();
+    /**
+     * The given round's most recent purchase from one shop category that {@code filter} accepts,
+     * or null if there's none.
+     */
+    public PurchaseRecord findLastPurchase(ShopCategory category, int round, Predicate<PurchaseRecord> filter) {
+        Iterator<PurchaseRecord> newestFirst = purchaseHistory.descendingIterator();
+        while (newestFirst.hasNext()) {
+            PurchaseRecord record = newestFirst.next();
+            if (record.round() != round) return null;
+            if (record.item().getCategory() == category && filter.test(record)) return record;
+        }
+        return null;
     }
 
-    public PurchaseRecord peekLastPurchase() {
-        return purchaseHistory.peekLast();
+    public void removePurchase(PurchaseRecord record) {
+        purchaseHistory.removeLastOccurrence(record);
     }
 
     public Queue<PurchaseRecord> getPurchaseHistory() {

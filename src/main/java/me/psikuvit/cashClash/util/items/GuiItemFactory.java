@@ -484,7 +484,7 @@ public final class GuiItemFactory {
     public ItemStack createUndoButton() {
         return ShopItemBuilder.of(Material.ARROW)
                 .name("<yellow>Undo Purchase</yellow>")
-                .lore("<gray>Undo last purchase and receive a refund</gray>")
+                .lore("<gray>Undo your last purchase in this category and receive a refund</gray>")
                 .build();
     }
     

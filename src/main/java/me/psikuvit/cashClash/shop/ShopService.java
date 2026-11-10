@@ -187,8 +187,7 @@ public class ShopService {
         CashClashPlayer ccp = CashClashPlayer.from(player);
         if (ccp == null) return;
 
-        // Remove the purchase record
-        ccp.popLastPurchase();
+        ccp.removePurchase(record);
 
         refund(player, record.price());
 
