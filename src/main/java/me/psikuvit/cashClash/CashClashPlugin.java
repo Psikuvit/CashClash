@@ -41,6 +41,7 @@ import me.psikuvit.cashClash.manager.lobby.LobbyManager;
 import me.psikuvit.cashClash.manager.lobby.MannequinManager;
 import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.manager.lobby.QueueManager;
+import me.psikuvit.cashClash.manager.player.AdvancementManager;
 import me.psikuvit.cashClash.manager.player.AfkManager;
 import me.psikuvit.cashClash.manager.player.LeaderboardManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
@@ -102,6 +103,7 @@ public final class CashClashPlugin extends JavaPlugin {
     private TeamOutlineManager teamOutlineManager;
     private MythicHudManager mythicHudManager;
     private RankManager rankManager;
+    private AdvancementManager advancementManager;
     // Spawn rooms are paused (full version on the spawn-rooms-wip branch)
     //private SpawnRoomManager spawnRoomManager;
 
@@ -128,6 +130,7 @@ public final class CashClashPlugin extends JavaPlugin {
             partyManager = new PartyManager();
             itemFactory = new ItemFactory();
             cooldownManager = new CooldownManager();
+            advancementManager = new AdvancementManager();
 
             // Tier 1: depend only on tier 0 managers.
             arenaManager = new ArenaManager(configManager, gameManager);
@@ -240,6 +243,7 @@ public final class CashClashPlugin extends JavaPlugin {
         managers.add(partyManager);
         managers.add(chatManager);
         managers.add(teamOutlineManager);
+        managers.add(advancementManager);
         managers.add(mythicHudManager);
         //managers.add(spawnRoomManager);
         managers.add(playerDataManager);
@@ -307,6 +311,7 @@ public final class CashClashPlugin extends JavaPlugin {
     public TeamOutlineManager getTeamOutlineManager() { return teamOutlineManager; }
     public MythicHudManager getMythicHudManager() { return mythicHudManager; }
     public RankManager getRankManager() { return rankManager; }
+    public AdvancementManager getAdvancementManager() { return advancementManager; }
     //public SpawnRoomManager getSpawnRoomManager() { return spawnRoomManager; }
 
     private void registerEvents() {
@@ -325,6 +330,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new ChatListener(),
                 transferInputListener,
                 teamOutlineManager,
+                advancementManager,
                 rankManager,
                 queueManager,
                 practiceRangeManager
