@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.manager.items.custom.BouncePadHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
 import me.psikuvit.cashClash.manager.items.weapon.SoulKatanaHandler;
 import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -119,6 +120,8 @@ public class MoveListener implements Listener {
      * Launches a player standing on a floor bounce pad or touching a wall-mounted one.
      */
     private void checkBouncePads(Player player) {
+        if (AbilityTargets.isSpectator(player)) return;
+
         Block floorPad = bouncePadUnderFeet(player);
         if (floorPad != null) {
             customItemManager.getHandler(BouncePadHandler.class).handleBouncePad(player, floorPad);

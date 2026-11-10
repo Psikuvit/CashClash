@@ -93,11 +93,11 @@ public abstract class CustomItemHandler {
     }
 
     /**
-     * Whether an ability can hit an entity: in a game any player (each item narrows that down by
-     * team itself), outside one only a practice-range mob.
+     * Whether an ability can hit an entity: in a game any player who isn't spectating (each item
+     * narrows that down by team itself), outside one only a practice-range mob.
      */
     protected static boolean canHit(boolean inGame, Entity entity) {
-        return inGame ? entity instanceof Player : PDCDetection.isPracticeMob(entity);
+        return inGame ? entity instanceof Player && !AbilityTargets.isSpectator(entity) : PDCDetection.isPracticeMob(entity);
     }
 
     /**

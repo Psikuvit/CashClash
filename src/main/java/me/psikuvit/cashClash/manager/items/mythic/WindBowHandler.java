@@ -79,7 +79,7 @@ public class WindBowHandler extends MythicItemHandler {
         int hitCount = 0;
         for (Entity entity : impact.getWorld().getNearbyEntities(impact, radius, radius, radius)) {
             if (entity.equals(shooter)) continue;
-            boolean pushed = inGame ? entity instanceof Player
+            boolean pushed = inGame ? entity instanceof Player && !AbilityTargets.isSpectator(entity)
                     : PDCDetection.isPracticeMob(entity) || PDCDetection.isPracticeTeammate(entity);
             if (!pushed) continue;
 

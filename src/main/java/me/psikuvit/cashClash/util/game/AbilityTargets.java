@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -37,11 +38,19 @@ public final class AbilityTargets {
     }
 
     /**
+     * Whether an entity is a player in spectator mode: dead and waiting to respawn, or out of the
+     * round. They stay on their team, but nothing should hit, help or push them.
+     */
+    public static boolean isSpectator(Entity entity) {
+        return entity instanceof Player player && player.getGameMode() == GameMode.SPECTATOR;
+    }
+
+    /**
      * Whether an ability used by {@code user} may hit {@code target}: in a game a player on the
      * other team, outside one a practice-range enemy mob.
      */
     public static boolean isEnemy(Player user, Entity target) {
-        if (!(target instanceof LivingEntity living) || living.equals(user) || living.isDead()) return false;
+        if (!(target instanceof LivingEntity living) || living.equals(user) || living.isDead() || isSpectator(target)) return false;
 
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(user);
         if (session == null) return PDCDetection.isPracticeMob(target);
@@ -57,7 +66,7 @@ public final class AbilityTargets {
      * game a teammate, outside one a practice-range piglin.
      */
     public static boolean isAlly(Player user, Entity target) {
-        if (!(target instanceof LivingEntity living) || living.equals(user) || living.isDead()) return false;
+        if (!(target instanceof LivingEntity living) || living.equals(user) || living.isDead() || isSpectator(target)) return false;
 
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(user);
         if (session == null) return PDCDetection.isPracticeTeammate(target);
