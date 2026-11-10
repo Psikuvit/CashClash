@@ -44,6 +44,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -185,9 +186,14 @@ public class CaptureTheFlagGamemode extends Gamemode {
         flagReturnDisplayTasks.clear();
         flagReturnExpiry.clear();
         clearAllOvertime();
+        List<Player> carriers = onlineCarriers();
         // Resets holders only - plate locations and banners survive into the next round.
         returnFlagToBase(1);
         returnFlagToBase(2);
+        for (Player carrier : carriers) {
+            clearCarrierPenalties(carrier);
+            updateSilencedItemDisplay(carrier);
+        }
         stalemateMsgShown.clear();
         blockedCarrierWarned.clear();
 
@@ -631,6 +637,21 @@ public class CaptureTheFlagGamemode extends Gamemode {
         if (player == null || !player.isOnGround()) return;
         if (!player.getLocation().subtract(0, 0.1, 0).getBlock().getType().isSolid()) return;
         carrierLastGround.put(holder, player.getLocation());
+    }
+
+    /**
+     * The online players still holding a flag. A round often ends with one held - the other team
+     * scores, or the timer runs out - and the carrier's penalties have to come off before the next
+     * round, since only a capture, drop or death takes them off otherwise.
+     */
+    private List<Player> onlineCarriers() {
+        List<Player> carriers = new ArrayList<>();
+        for (FlagState flag : flagStates.values()) {
+            if (flag == null || !flag.isHeld()) continue;
+            Player holder = Bukkit.getPlayer(flag.holder());
+            if (holder != null) carriers.add(holder);
+        }
+        return carriers;
     }
 
     /** Removes the flag-carrier slowness/weakness/glowing. */
