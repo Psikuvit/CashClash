@@ -119,12 +119,16 @@ public class WardenGlovesHandler extends MythicItemHandler {
             Vector toTarget = target.getLocation().toVector().subtract(player.getLocation().toVector()).normalize();
             if (direction.dot(toTarget) < 0.3) continue; // Not in cone (about 70 degree cone)
 
+            double healthBefore = target.getHealth();
             shockwaveDamageActive.add(uuid);
             try {
                 target.damage(cfg.getWardenShockwaveDamage(), player);
             } finally {
                 shockwaveDamageActive.remove(uuid);
             }
+            Messages.debug(player, "WARDEN_GLOVES: Shockwave hit " + target.getName() + " at "
+                    + String.format("%.1f", target.getLocation().distance(loc)) + " blocks, health lost: "
+                    + String.format("%.2f", healthBefore - target.getHealth()));
 
             Vector knockback = toTarget.multiply(cfg.getWardenKnockbackPower()).setY(0.8);
             target.setVelocity(knockback);
