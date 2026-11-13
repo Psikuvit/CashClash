@@ -39,6 +39,9 @@ public final class CustomModelDataMapper {
     private static final Map<MythicItem, NamespacedKey> MYTHIC_ITEM_MODELS = new HashMap<>();
     // Cash Blaster uses setItemModel() too (pull-frame states), same reason as Wind Bow/BloodWrench.
     private static final Map<WeaponItem, NamespacedKey> WEAPON_ITEM_MODELS = new HashMap<>();
+    // A custom item whose pack hook sits on another vanilla item than its own material: setItemModel()
+    // points it at that item's definition, where the CUSTOM_MODEL_DATA string picks the model.
+    private static final Map<CustomItem, NamespacedKey> CUSTOM_ITEM_DEFINITIONS = new HashMap<>();
 
     static {
         // assets/minecraft/items/fire_charge.json      when: "dynamite"
@@ -65,6 +68,13 @@ public final class CustomModelDataMapper {
         CUSTOM_ITEM_KEYS.put(CustomItem.HUNTERS_MARK,        "hunters_mark");
         // assets/minecraft/items/gunpowder.json         when: "orbofgravitation"
         CUSTOM_ITEM_KEYS.put(CustomItem.ORB_OF_GRAVITATION,  "orbofgravitation");
+        // assets/minecraft/items/jukebox.json           when: "speed_box"
+        CUSTOM_ITEM_KEYS.put(CustomItem.BOOMBOX,             "speed_box");
+        // assets/minecraft/items/cherry_sapling.json    when: "blooming_rose"
+        CUSTOM_ITEM_KEYS.put(CustomItem.BLOOMING_ROSE,       "blooming_rose");
+        // assets/minecraft/items/black_concrete.json    when: "bounce_pad" - the item itself is a slime block
+        CUSTOM_ITEM_KEYS.put(CustomItem.BOUNCE_PAD,          "bounce_pad");
+        CUSTOM_ITEM_DEFINITIONS.put(CustomItem.BOUNCE_PAD,   NamespacedKey.minecraft("black_concrete"));
         // assets/minecraft/items/iron_sword.json         when: "soulkatana"
         WEAPON_KEYS.put(WeaponItem.SOUL_KATANA,           "soulkatana");
 
@@ -177,6 +187,8 @@ public final class CustomModelDataMapper {
     }
 
     public static void applyCustomModel(ItemStack item, CustomItem customItem) {
+        NamespacedKey definition = CUSTOM_ITEM_DEFINITIONS.get(customItem);
+        if (definition != null) applyItemModel(item, definition);
         String key = getItemKey(customItem);
         if (key != null) applyStringModelData(item, key);
     }
