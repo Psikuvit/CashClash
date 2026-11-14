@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -199,9 +200,16 @@ public class KillConfirmGamemode extends Gamemode {
         suddenDeathManager.onPlayerSpawn(player);
     }
 
+    /**
+     * A player who disconnects or leaves mid-combat drops a tag where they stood, the same as a
+     * death with no killer.
+     */
     @Override
     public void onPlayerRemove(Player player) {
         UUID uuid = player.getUniqueId();
+        if (session.getState() == GameState.COMBAT && !session.isRoundEnding() && !CashClashPlayer.isPlayerDead(player)) {
+            onNaturalDeath(player);
+        }
         for (KCZone zone : activeZones) {
             zone.getOccupantEntryTimestamps().remove(uuid);
         }
