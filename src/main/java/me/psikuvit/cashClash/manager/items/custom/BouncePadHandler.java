@@ -5,17 +5,20 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
+import me.psikuvit.cashClash.util.items.BlockModelDisplay;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
@@ -47,8 +50,9 @@ public class BouncePadHandler extends CustomItemHandler {
      *                      a horizontal face for a wall-mounted pad); also the direction
      *                      players are launched when they touch it.
      * @param ringTask     redraws the team-coloured ring around the pad until it's removed
+     * @param model        the pack's bounce pad model shown over the slime block
      */
-    private record BouncePadInfo(int teamNumber, BlockFace attachedFace, BukkitTask ringTask) {}
+    private record BouncePadInfo(int teamNumber, BlockFace attachedFace, BukkitTask ringTask, ItemDisplay model) {}
 
     public BouncePadHandler(CustomItemManager manager) {
         super(manager);
@@ -83,7 +87,8 @@ public class BouncePadHandler extends CustomItemHandler {
         Color ringColor = TeamColorUtils.particleColor(player, OUTSIDE_GAME_RING_COLOR);
         BukkitTask ringTask = SchedulerUtils.runTaskTimer(() ->
                 ParticleUtils.circle(ringCenter, RING_RADIUS, RING_POINTS, 0, ringColor, 1.0f), 0L, 2L);
-        bouncePadTeams.put(blockLoc, new BouncePadInfo(teamNumber, face, ringTask));
+        ItemDisplay model = BlockModelDisplay.show(placeBlock, CustomItem.BOUNCE_PAD);
+        bouncePadTeams.put(blockLoc, new BouncePadInfo(teamNumber, face, ringTask, model));
 
         consumeItem(player, item);
         Messages.send(player, "customitem.bounce-pad-placed");
@@ -92,6 +97,7 @@ public class BouncePadHandler extends CustomItemHandler {
         SchedulerUtils.runTaskLater(() -> {
             BouncePadInfo pad = bouncePadTeams.remove(blockLoc);
             if (pad != null && pad.ringTask() != null) pad.ringTask().cancel();
+            if (pad != null) BlockModelDisplay.remove(pad.model());
             if (placeBlock.getType() == Material.SLIME_BLOCK) {
                 placeBlock.setType(Material.AIR);
             }
@@ -155,6 +161,7 @@ public class BouncePadHandler extends CustomItemHandler {
     public void cleanup() {
         bouncePadTeams.forEach((loc, pad) -> {
             if (pad.ringTask() != null) pad.ringTask().cancel();
+            BlockModelDisplay.remove(pad.model());
             Block block = loc.getBlock();
             if (block.getType() == Material.SLIME_BLOCK) {
                 block.setType(Material.AIR);

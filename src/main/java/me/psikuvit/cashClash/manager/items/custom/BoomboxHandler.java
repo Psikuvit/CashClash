@@ -7,11 +7,13 @@ import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.player.CashClashPlayer;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
+import me.psikuvit.cashClash.util.items.BlockModelDisplay;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -20,6 +22,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
@@ -45,11 +48,14 @@ public class BoomboxHandler extends CustomItemHandler {
 
     private final Set<Location> activeBoomboxes;
     private final Map<Location, BukkitTask> floatingRingTasks;
+    // The pack's speed box model shown over each placed jukebox
+    private final Map<Location, ItemDisplay> boomboxModels;
 
     public BoomboxHandler(CustomItemManager manager) {
         super(manager);
         this.activeBoomboxes = new HashSet<>();
         this.floatingRingTasks = new HashMap<>();
+        this.boomboxModels = new HashMap<>();
     }
 
     public void placeBoombox(Player player, ItemStack item, Block clickedBlock) {
@@ -69,6 +75,7 @@ public class BoomboxHandler extends CustomItemHandler {
 
         placeBlock.setType(Material.JUKEBOX);
         activeBoomboxes.add(placeBlock.getLocation());
+        boomboxModels.put(placeBlock.getLocation(), BlockModelDisplay.show(placeBlock, CustomItem.BOOMBOX));
         startFloatingRing(placeBlock.getLocation(), TeamColorUtils.particleColor(player, OUTSIDE_GAME_RING_COLOR));
 
         consumeItem(player, item);
@@ -96,6 +103,7 @@ public class BoomboxHandler extends CustomItemHandler {
         SchedulerUtils.runTaskLater(() -> {
             activeBoomboxes.remove(placeBlock.getLocation());
             stopFloatingRing(placeBlock.getLocation());
+            BlockModelDisplay.remove(boomboxModels.remove(placeBlock.getLocation()));
             if (placeBlock.getType() == Material.JUKEBOX) {
                 placeBlock.setType(Material.AIR);
             }
@@ -171,6 +179,8 @@ public class BoomboxHandler extends CustomItemHandler {
     public void cleanup() {
         floatingRingTasks.values().forEach(BukkitTask::cancel);
         floatingRingTasks.clear();
+        boomboxModels.values().forEach(BlockModelDisplay::remove);
+        boomboxModels.clear();
         activeBoomboxes.forEach(loc -> {
             Block block = loc.getBlock();
             if (block.getType() == Material.JUKEBOX) {

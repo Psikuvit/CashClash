@@ -14,6 +14,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
+import me.psikuvit.cashClash.util.items.BlockModelDisplay;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -22,8 +23,10 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
@@ -34,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -51,6 +55,8 @@ public class BloomingRoseHandler extends CustomItemHandler {
     private static final long ROSE_HP_REVEAL_DISPLAY_MS = 1000L;
     // The boundary ring's colour outside a game, where there's no team: the tree's cherry-log bark
     private static final Color OUTSIDE_GAME_RING_COLOR = Color.fromRGB(112, 52, 110);
+    // The sides of the trunk the rose model can stand on, in clockwise order
+    private static final List<BlockFace> ROSE_SIDES = List.of(BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST);
 
     // Blooming Rose - placed sakura zones keyed by trunk location
     private final Map<Location, BloomingRoseZone> bloomingRoseZones;
@@ -69,9 +75,12 @@ public class BloomingRoseHandler extends CustomItemHandler {
      * @param task          the zone upkeep task (drift particles + floor heal + expiry)
      * @param ringTask      the infinite boundary-ring redraw task - has no expiry check of its
      *                      own, so it must be cancelled here rather than left to stop itself
+     * @param rose          the pack's rose model standing beside the trunk, or null if there was
+     *                      no free spot for it
      */
     private record BloomingRoseZone(GameSession session, int teamNumber, UUID owner, Location center, long expiresAt,
-                                    Map<Block, BlockData> originalBlocks, BukkitTask task, BukkitTask ringTask) {}
+                                    Map<Block, BlockData> originalBlocks, BukkitTask task, BukkitTask ringTask,
+                                    ItemDisplay rose) {}
 
     public BloomingRoseHandler(CustomItemManager manager) {
         super(manager);
@@ -106,7 +115,10 @@ public class BloomingRoseHandler extends CustomItemHandler {
         long expiresAt = System.currentTimeMillis() + cfg.getBloomingRoseZoneDurationSeconds() * 1000L;
         BukkitTask upkeepTask = startRoseZoneTask(center, originalBlocks, expiresAt, session, teamNumber, owner);
         BukkitTask ringTask = spawnRoseFormationVisual(center, TeamColorUtils.particleColor(player, OUTSIDE_GAME_RING_COLOR));
-        bloomingRoseZones.put(center, new BloomingRoseZone(session, teamNumber, owner, center, expiresAt, originalBlocks, upkeepTask, ringTask));
+        Block roseSpot = roseSpot(origin, player);
+        ItemDisplay rose = roseSpot != null ? BlockModelDisplay.show(roseSpot, CustomItem.BLOOMING_ROSE) : null;
+        bloomingRoseZones.put(center, new BloomingRoseZone(session, teamNumber, owner, center, expiresAt, originalBlocks,
+                upkeepTask, ringTask, rose));
 
         Messages.send(player, "customitem.blooming-rose-placed");
         SoundUtils.playAt(center, Sound.BLOCK_CHERRY_WOOD_PLACE, 1.0f, 1.0f);
@@ -131,6 +143,20 @@ public class BloomingRoseHandler extends CustomItemHandler {
      * so the structure can be fully torn down (and the map restored, not left as air) on expiry
      * or manual destruction (the intended counterplay).
      */
+    /**
+     * Where the planted rose's own model stands: on the ground beside the trunk, on the side
+     * facing whoever planted it, or the next free side round. Null if every side is blocked.
+     */
+    private Block roseSpot(Block origin, Player planter) {
+        Block trunkBase = origin.getRelative(BlockFace.UP);
+        int first = ROSE_SIDES.indexOf(planter.getFacing().getOppositeFace());
+        for (int i = 0; i < ROSE_SIDES.size(); i++) {
+            Block spot = trunkBase.getRelative(ROSE_SIDES.get((Math.max(first, 0) + i) % ROSE_SIDES.size()));
+            if (spot.getType().isAir() && spot.getRelative(BlockFace.DOWN).getType().isSolid()) return spot;
+        }
+        return null;
+    }
+
     private void buildRoseStructure(Block origin, Map<Block, BlockData> originalBlocks) {
         World world = origin.getWorld();
         int baseX = origin.getX();
@@ -246,6 +272,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
 
         if (zone.task() != null) zone.task().cancel();
         if (zone.ringTask() != null) zone.ringTask().cancel();
+        BlockModelDisplay.remove(zone.rose());
         for (Map.Entry<Block, BlockData> entry : zone.originalBlocks().entrySet()) {
             Block block = entry.getKey();
             if (block.getType() == Material.CHERRY_LOG || block.getType() == Material.CHERRY_LEAVES) {
@@ -414,6 +441,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
         bloomingRoseZones.values().forEach(zone -> {
             if (zone.task() != null) zone.task().cancel();
             if (zone.ringTask() != null) zone.ringTask().cancel();
+            BlockModelDisplay.remove(zone.rose());
             for (Map.Entry<Block, BlockData> entry : zone.originalBlocks().entrySet()) {
                 Block block = entry.getKey();
                 if (block.getType() == Material.CHERRY_LOG || block.getType() == Material.CHERRY_LEAVES) {
