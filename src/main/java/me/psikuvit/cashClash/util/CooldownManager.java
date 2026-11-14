@@ -306,6 +306,7 @@ public class CooldownManager implements Shutdownable {
         public static final String CONSUMABLE = "CONSUMABLE";
         public static final String ICE_FAN_BURST = "ICE_FAN_BURST";
         public static final String ORB_OF_GRAVITATION = "ORB_OF_GRAVITATION";
+        public static final String BLOOMING_ROSE = "BLOOMING_ROSE";
         public static final String SOUL_KATANA_PHANTOM_SLICE = "SOUL_KATANA_PHANTOM_SLICE";
         public static final String CASH_BLASTER_TOGGLE = "CASH_BLASTER_TOGGLE";
         public static final String CASH_BLASTER_VORTEX = "CASH_BLASTER_VORTEX";

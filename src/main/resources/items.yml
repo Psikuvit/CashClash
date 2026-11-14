@@ -523,6 +523,8 @@ custom-items:
     regen-duration-seconds: 5
     # Most roses one player can have standing at once in the practice range
     practice-max-placed: 3
+    # Seconds before the same player can plant another rose (gray overlay on the item meanwhile)
+    cooldown-seconds: 13
 
   # Orb of Gravitation
   orb-of-gravitation:

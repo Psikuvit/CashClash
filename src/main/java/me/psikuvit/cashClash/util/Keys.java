@@ -187,6 +187,7 @@ public class Keys {
     public static final NamespacedKey CASH_BLASTER_COOLDOWN_GROUP;
     public static final NamespacedKey INVIS_CLOAK_COOLDOWN_GROUP;
     public static final NamespacedKey ORB_OF_GRAVITATION_COOLDOWN_GROUP;
+    public static final NamespacedKey BLOOMING_ROSE_COOLDOWN_GROUP;
 
     /**
      * Flag marking an item as a kit item (round-start gear), so it can be identified and
@@ -255,6 +256,7 @@ public class Keys {
         CASH_BLASTER_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "cash_blaster");
         INVIS_CLOAK_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "invis_cloak");
         ORB_OF_GRAVITATION_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "orb_of_gravitation");
+        BLOOMING_ROSE_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "blooming_rose");
         KIT_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "kit_item");
         LOBBY_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "lobby_item");
         GUIDE_BOOK = new NamespacedKey(CashClashPlugin.getInstance(), "guide_book");

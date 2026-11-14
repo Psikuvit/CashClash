@@ -7,6 +7,8 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.ActionBarQueue;
+import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -83,6 +85,7 @@ public class BloomingRoseHandler extends CustomItemHandler {
         if (session != null && team == null) return;
         int teamNumber = team != null ? team.getTeamNumber() : 0;
         UUID owner = player.getUniqueId();
+        if (cooldownManager.isOnCooldown(owner, CooldownManager.Keys.BLOOMING_ROSE)) return;
 
         if (session == null && countPracticeRoses(owner) >= cfg.getBloomingRosePracticeMaxPlaced()) {
             Messages.send(player, "customitem.blooming-rose-practice-limit",
@@ -91,6 +94,9 @@ public class BloomingRoseHandler extends CustomItemHandler {
         }
 
         consumeItem(player, item);
+        int cooldownSeconds = cfg.getBloomingRoseCooldownSeconds();
+        cooldownManager.setCooldownSeconds(owner, CooldownManager.Keys.BLOOMING_ROSE, cooldownSeconds);
+        player.setCooldown(Keys.BLOOMING_ROSE_COOLDOWN_GROUP, cooldownSeconds * 20);
 
         Block origin = loc.getBlock();
         Map<Block, BlockData> originalBlocks = new HashMap<>();
