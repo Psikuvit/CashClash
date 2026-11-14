@@ -25,10 +25,19 @@ import java.util.UUID;
 public class EconomyManager {
 
     /**
-     * The fixed money pool of the session's current round, or 0 if that round has none.
+     * The round the economy is on: one more than the rounds decided so far. A draw doesn't count,
+     * so the round after one pays and transfers as though the drawn round never happened.
+     */
+    public static int getEconomyRound(GameSession session) {
+        return session.getRoundWins(1) + session.getRoundWins(2) + 1;
+    }
+
+    /**
+     * The pool the economy round's buy phase pays out, or 0 if there's none. Past the last
+     * configured round it's the last pool again.
      */
     public static long getRoundPool(GameSession session) {
-        return CashClashPlugin.getInstance().getConfigManager().getRoundPool(session.getCurrentRound());
+        return CashClashPlugin.getInstance().getConfigManager().getRoundPool(getEconomyRound(session));
     }
 
     /**
@@ -36,7 +45,7 @@ public class EconomyManager {
      * and any extra rounds after it, that's the last pool again.
      */
     private static long getNextRoundPool(GameSession session) {
-        return CashClashPlugin.getInstance().getConfigManager().getRoundPool(session.getCurrentRound() + 1);
+        return CashClashPlugin.getInstance().getConfigManager().getRoundPool(getEconomyRound(session) + 1);
     }
 
     private static long standardShare(long pool) {
@@ -44,7 +53,7 @@ public class EconomyManager {
     }
 
     /**
-     * Pays every player their part of the current round's pool at the start of its buy phase, on
+     * Pays every player their part of the economy round's pool at the start of its buy phase, on
      * top of whatever they have left over: an equal share, plus the kill and assist transfers
      * they won in the round just played, minus the ones they lost (never below nothing). Only
      * the first buy phase announces the share; later ones announce the total
@@ -68,7 +77,8 @@ public class EconomyManager {
             }
         }
 
-        Messages.debug("ECONOMY", "Round " + session.getCurrentRound() + " pool " + pool + " - share " + share);
+        Messages.debug("ECONOMY", "Round " + session.getCurrentRound() + " (economy round " + getEconomyRound(session)
+                + ") pool " + pool + " - share " + share);
     }
 
     /**
@@ -167,7 +177,7 @@ public class EconomyManager {
     }
 
     public static double getTransferFee(GameSession session) {
-        int round = session.getCurrentRound();
+        int round = getEconomyRound(session);
         ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
         return switch (round) {
             case 1 -> cfg.getRound1TransferFee();

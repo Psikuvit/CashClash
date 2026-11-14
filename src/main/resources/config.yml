@@ -77,8 +77,10 @@ armor:
 # ============================================
 economy:
   # Each round has a fixed money pool. At the start of the buy phase before that round, every
-  # player is paid an equal share (pool / pool-split), added to whatever they have left over.
-  # Extra rounds after a draw (round 8+) pay the last pool listed here.
+  # player is paid an equal share (pool / pool-split), added to whatever they have left over,
+  # plus what their kills won (or lost) in the round before. A draw doesn't move the economy
+  # on: the round after it pays and transfers like the drawn round again. Rounds past the last
+  # one listed here (round 8+ after draws) use the last pool.
   round-pools:
     1: 120000
     2: 200000
