@@ -5,6 +5,11 @@
 # Enable debug mode (logs detailed info to console)
 debug: false
 
+# How many particles every effect spawns, 0-100: 50 is the standard amount, lower thins
+# them out, 0 turns them off, 100 doubles them.
+particles:
+  density: 50
+
 # ============================================
 # GAME SETTINGS
 # ============================================

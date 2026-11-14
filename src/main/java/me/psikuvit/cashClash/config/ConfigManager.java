@@ -70,6 +70,14 @@ public class ConfigManager {
         return config.getBoolean("debug", false);
     }
 
+    /**
+     * Particle density for every effect, 0-100: 50 is each effect's standard amount, 0 none, 100
+     * double.
+     */
+    public int getParticleDensity() {
+        return Math.clamp(config.getInt("particles.density", 50), 0, 100);
+    }
+
     public int getMinPlayers() {
         return config.getInt("game.min-players", 8);
     }

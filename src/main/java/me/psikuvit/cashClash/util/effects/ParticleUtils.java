@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.util.effects;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -17,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.IntConsumer;
 
 /**
  * Utility helpers that simplify spawning particles both globally and per-player,
@@ -24,6 +27,8 @@ import java.util.UUID;
  */
 public final class ParticleUtils {
 
+    // particles.density's midpoint: the counts written in this class
+    private static final int STANDARD_DENSITY = 50;
     private static final int EMERALD_RING_COUNT = 6;
     private static final double EMERALD_RING_RADIUS = 0.9;
     private static final int EMERALD_RING_DURATION_TICKS = 30;
@@ -40,7 +45,7 @@ public final class ParticleUtils {
     public static void spawn(Particle particle, Location location, int count, double offsetX, double offsetY, double offsetZ, double extra) {
         if (particle == null || location == null) return;
         if (location.getWorld() == null) return;
-        location.getWorld().spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra);
+        atDensity(count, n -> location.getWorld().spawnParticle(particle, location, n, offsetX, offsetY, offsetZ, extra));
     }
 
     /**
@@ -64,7 +69,7 @@ public final class ParticleUtils {
     public static void spawn(Particle particle, Location location, int count, double offsetX, double offsetY, double offsetZ, double extra, Object data) {
         if (particle == null || location == null) return;
         if (location.getWorld() == null) return;
-        location.getWorld().spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra, data);
+        atDensity(count, n -> location.getWorld().spawnParticle(particle, location, n, offsetX, offsetY, offsetZ, extra, data));
     }
 
     /**
@@ -79,8 +84,8 @@ public final class ParticleUtils {
      */
     public static void spawnDust(Location location, Color color, float size, int count, double offsetX, double offsetY, double offsetZ) {
         if (location == null || location.getWorld() == null || color == null) return;
-        location.getWorld().spawnParticle(Particle.DUST, location, count, offsetX, offsetY, offsetZ,
-                new Particle.DustOptions(color, size));
+        atDensity(count, n -> location.getWorld().spawnParticle(Particle.DUST, location, n, offsetX, offsetY, offsetZ,
+                new Particle.DustOptions(color, size)));
     }
 
     /**
@@ -99,17 +104,46 @@ public final class ParticleUtils {
 
     public static void spawnForPlayer(Player player, Particle particle, Location location, int count, double offsetX, double offsetY, double offsetZ, double extra) {
         if (player == null || !player.isOnline() || particle == null || location == null) return;
-        player.spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra);
+        atDensity(count, n -> player.spawnParticle(particle, location, n, offsetX, offsetY, offsetZ, extra));
     }
 
     public static void spawnFor(Collection<UUID> players, Particle particle, Location location, int count, double offsetX, double offsetY, double offsetZ, double extra) {
         if (players == null || particle == null || location == null) return;
-        for (UUID u : players) {
-            if (u == null) continue;
-            Player p = Bukkit.getPlayer(u);
-            if (p == null || !p.isOnline()) continue;
-            p.spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, extra);
+        atDensity(count, n -> {
+            for (UUID u : players) {
+                if (u == null) continue;
+                Player p = Bukkit.getPlayer(u);
+                if (p == null || !p.isOnline()) continue;
+                p.spawnParticle(particle, location, n, offsetX, offsetY, offsetZ, extra);
+            }
+        });
+    }
+
+    /**
+     * Spawns {@code count} particles scaled by config.yml's {@code particles.density}: 50 is the
+     * count as written, 0 is none and 100 is double. A fractional count is rounded at random, so
+     * a shape drawn one particle per point thins out evenly instead of vanishing all at once. A
+     * count of 0 is vanilla's single directional particle (the offset is its velocity), so that
+     * one is repeated rather than multiplied.
+     */
+    private static void atDensity(int count, IntConsumer spawn) {
+        int density = CashClashPlugin.getInstance().getConfigManager().getParticleDensity();
+        if (density == STANDARD_DENSITY) {
+            spawn.accept(count);
+            return;
         }
+        if (count == 0) {
+            for (int i = scaleCount(1, density); i > 0; i--) spawn.accept(0);
+            return;
+        }
+        int scaled = scaleCount(count, density);
+        if (scaled > 0) spawn.accept(scaled);
+    }
+
+    private static int scaleCount(int count, int density) {
+        double exact = count * density / (double) STANDARD_DENSITY;
+        int whole = (int) exact;
+        return ThreadLocalRandom.current().nextDouble() < exact - whole ? whole + 1 : whole;
     }
 
     // ==================== CONVENIENCE METHODS ====================
