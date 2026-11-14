@@ -170,12 +170,14 @@ public class SuddenDeathManager {
     }
 
     /**
-     * Reapply extra heart effect when player spawns (if still in sudden death and has one)
+     * Reapply a player's extra heart when they respawn. Heart bonuses also pay out in a 3-3
+     * round while sudden death's own rules are off, so this doesn't wait for those; the hearts
+     * are cleared when the round ends.
      */
     public void onPlayerSpawn(Player player) {
         UUID playerUuid = player.getUniqueId();
 
-        if (inSuddenDeath && extraHeartHolders.contains(playerUuid)) {
+        if (extraHeartHolders.contains(playerUuid)) {
             // Reapply only current health state; do not stack another modifier on each respawn
             var ccp = session.getCashClashPlayer(playerUuid);
             if (ccp != null) {

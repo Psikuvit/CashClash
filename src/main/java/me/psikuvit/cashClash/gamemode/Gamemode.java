@@ -217,6 +217,14 @@ public abstract class Gamemode {
         return true;
     }
 
+    /**
+     * Whether bonuses pay out extra hearts instead of money: in a sudden death round (3-3, and
+     * every round after a drawn one), and while sudden death's own rules are on.
+     */
+    public boolean paysHeartBonuses() {
+        return session.isSuddenDeathRound() || getSuddenDeathManager().isInSuddenDeath();
+    }
+
 
     /**
      * Message key broadcast when a tied sudden-death cycle restarts - lets

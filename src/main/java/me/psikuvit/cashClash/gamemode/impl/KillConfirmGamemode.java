@@ -152,7 +152,7 @@ public class KillConfirmGamemode extends Gamemode {
 
         KCZone.ZoneKind kind;
         if (tripleKill) {
-            kind = suddenDeathManager.isInSuddenDeath() ? KCZone.ZoneKind.HEART : KCZone.ZoneKind.MONEY;
+            kind = paysHeartBonuses() ? KCZone.ZoneKind.HEART : KCZone.ZoneKind.MONEY;
         } else {
             kind = KCZone.ZoneKind.NAMETAG;
         }

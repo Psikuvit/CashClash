@@ -324,6 +324,15 @@ public class GameSession {
     }
 
     /**
+     * Whether this round decides the match - both teams one win short of it (3-3 in a best of
+     * 7). A draw leaves the score as it is, so every round after a drawn one is one too.
+     */
+    public boolean isSuddenDeathRound() {
+        int decidingScore = configManager.getTotalRounds() / 2;
+        return getRoundWins(1) == decidingScore && getRoundWins(2) == decidingScore;
+    }
+
+    /**
      * Reset round wins for a new game
      */
     public void resetRoundWins() {

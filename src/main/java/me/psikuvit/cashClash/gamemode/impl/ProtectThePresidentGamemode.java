@@ -146,6 +146,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
         // Reset deaths for next round
         presidents.replaceAll((team, pres) -> pres.withResetDeaths());
+        suddenDeathManager.resetForNewRound();
         suddenDeathWinningTeam = 0;
         resetRoundResult();
         finalStandManager.cancel();
@@ -596,7 +597,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
 
             Messages.debug("[PTP] Team " + team + " reached " + killCount + " kills - Awarding bonus");
 
-            if (suddenDeathManager.isInSuddenDeath()) {
+            if (paysHeartBonuses()) {
                 // In sudden death: award extra hearts instead of coins
                 for (UUID uuid : teamObj.getPlayers()) {
                     Player p = Bukkit.getPlayer(uuid);

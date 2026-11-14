@@ -1235,7 +1235,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         for (UUID uuid : teamObj.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null) {
-                if (suddenDeathManager.isInSuddenDeath()) {
+                if (paysHeartBonuses()) {
                     applyExtraHeartCTF(p);
                     Messages.send(p, "gamemode-ctf.capture-bonus-heart");
                 } else {

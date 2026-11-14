@@ -52,7 +52,7 @@ public class CTFPlaceholderProvider implements PlaceholderProvider {
             case "money_bonus_timer" -> {
                 long remaining = gamemode.getBonusTimeRemainingMs(player.getUniqueId());
                 if (remaining <= 0) yield "";
-                String label = gamemode.getSuddenDeathManager().isInSuddenDeath() ? "Heart Bonus: " : "Money Bonus: ";
+                String label = gamemode.paysHeartBonuses() ? "Heart Bonus: " : "Money Bonus: ";
                 yield label + FormatUtils.formatMillis(remaining);
             }
             default -> null;
