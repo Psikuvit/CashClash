@@ -509,6 +509,10 @@ public class ConfigManager {
         return config.getDouble("gamemodes.protect-the-president.potion-duration-bonus-percent", 40.0);
     }
 
+    public int getPTPPresidentLeftSecondDeathSeconds() {
+        return config.getInt("gamemodes.protect-the-president.president-left-second-death-seconds", 25);
+    }
+
     public double getPTPHpHealAmount() {
         return config.getDouble("gamemodes.protect-the-president.hp-heal-amount", 4.0);
     }

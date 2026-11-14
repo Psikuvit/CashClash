@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.FinalStandManager;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -48,6 +49,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private final Map<TeamColor, Integer> suddenDeathPresidentKills;
     private final Map<UUID, List<PresidentialBuff>> selectedBuffs;
     private final Map<TeamColor, BukkitTask> glowingTasks;
+    // A president who left mid-combat -> the timer for their second death
+    private final Map<UUID, BukkitTask> presidentLeftTimers;
 
     private final SuddenDeathManager suddenDeathManager;
     private final FinalStandManager finalStandManager;
@@ -76,6 +79,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.suddenDeathPresidentKills = new EnumMap<>(TeamColor.class);
         this.selectedBuffs = new HashMap<>();
         this.glowingTasks = new EnumMap<>(TeamColor.class);
+        this.presidentLeftTimers = new HashMap<>();
         this.suddenDeathManager = new SuddenDeathManager(session, this);
         this.finalStandManager = new FinalStandManager(session, this);
         this.selectionPhaseActive = false;
@@ -143,6 +147,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
         // Cancel all glowing tasks
         glowingTasks.values().forEach(this::cancelTask);
         glowingTasks.clear();
+        presidentLeftTimers.values().forEach(this::cancelTask);
+        presidentLeftTimers.clear();
 
         // Reset deaths for next round
         presidents.replaceAll((team, pres) -> pres.withResetDeaths());
@@ -230,16 +236,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
         int presidentTeam = findPresidentTeam(victimUuid);
 
         if (presidentTeam != 0) {
-            // President died - update death count and notify
-            TeamColor presidentColor = TeamColor.fromTeamNumber(presidentTeam);
-            President deadPresident = presidents.get(presidentColor);
-            President updatedPresident = deadPresident.withDeath();
-            presidents.put(presidentColor, updatedPresident);
-            int deaths = updatedPresident.deaths();
-            int killerTeam = (presidentTeam == 1) ? 2 : 1;
-
-            Messages.debug("[PTP] President died! Team " + presidentTeam + " - Deaths: " + deaths + " | Killer team: " + killerTeam);
-
             // Clear health modifier when president dies so they don't keep extra hearts on
             // respawn - value only, not a full reset: this runs mid PlayerDeathEvent, and
             // resetHealthModifier()'s healToFull() would set their HP back up while they're
@@ -250,23 +246,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 Messages.debug("[PTP] Cleared health modifier for deceased president: " + victim.getName());
             }
 
-            if (deaths == 1) {
-                String presTeamName = presidentTeam == 1 ? "Red" : "Blue";
-                String colorTag = presTeamName.toLowerCase();
-                Messages.broadcast(session.getPlayers(), "gamemode-ptp.president-died",
-                        "color", colorTag,
-                        "team_name", presTeamName,
-                        "win_condition", String.valueOf(WIN_CONDITION));
-            }
-
-            addTeamKill(killerTeam);
-            if (suddenDeathManager.isInSuddenDeath()) {
-                suddenDeathPresidentKills.merge(TeamColor.fromTeamNumber(killerTeam), 1, Integer::sum);
-                checkSuddenDeathCycleTie();
-            }
-            if (finalStandManager.isActive() || (!suddenDeathManager.isInSuddenDeath() && deaths >= WIN_CONDITION)) {
-                recordRoundWin(killerTeam);
-            }
+            recordPresidentDeath(presidentTeam);
         } else if (killer != null) {
             // Regular player died, award killer's team if killer is a president
             int killerPresidentTeam = findPresidentTeam(killer.getUniqueId());
@@ -274,6 +254,75 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 addTeamKill(killerPresidentTeam);
             }
         }
+    }
+
+    /**
+     * Counts a death against a team's president: the other team scores it like an assassination,
+     * and enough of them win the round.
+     */
+    private void recordPresidentDeath(int presidentTeam) {
+        TeamColor presidentColor = TeamColor.fromTeamNumber(presidentTeam);
+        President updatedPresident = presidents.get(presidentColor).withDeath();
+        presidents.put(presidentColor, updatedPresident);
+        int deaths = updatedPresident.deaths();
+        int killerTeam = (presidentTeam == 1) ? 2 : 1;
+
+        Messages.debug("[PTP] President died! Team " + presidentTeam + " - Deaths: " + deaths + " | Killer team: " + killerTeam);
+
+        if (deaths == 1) {
+            String presTeamName = presidentTeam == 1 ? "Red" : "Blue";
+            String colorTag = presTeamName.toLowerCase();
+            Messages.broadcast(session.getPlayers(), "gamemode-ptp.president-died",
+                    "color", colorTag,
+                    "team_name", presTeamName,
+                    "win_condition", String.valueOf(WIN_CONDITION));
+        }
+
+        addTeamKill(killerTeam);
+        if (suddenDeathManager.isInSuddenDeath()) {
+            suddenDeathPresidentKills.merge(TeamColor.fromTeamNumber(killerTeam), 1, Integer::sum);
+            checkSuddenDeathCycleTie();
+        }
+        if (finalStandManager.isActive() || (!suddenDeathManager.isInSuddenDeath() && deaths >= WIN_CONDITION)) {
+            recordRoundWin(killerTeam);
+        }
+    }
+
+    /**
+     * A president who disconnects or leaves during combat takes a death for it, and a second one
+     * if they still aren't back after {@code president-left-second-death-seconds}. Coming back in
+     * time costs nothing more.
+     */
+    @Override
+    public void onPlayerRemove(Player player) {
+        UUID uuid = player.getUniqueId();
+        int presidentTeam = findPresidentTeam(uuid);
+        if (presidentTeam == 0 || session.getState() != GameState.COMBAT || session.isRoundEnding()) return;
+
+        cancelTask(presidentLeftTimers.remove(uuid));
+        broadcastPresidentLeft("gamemode-ptp.president-left", presidentTeam);
+        recordPresidentDeath(presidentTeam);
+
+        int round = session.getCurrentRound();
+        int seconds = CashClashPlugin.getInstance().getConfigManager().getPTPPresidentLeftSecondDeathSeconds();
+        presidentLeftTimers.put(uuid, SchedulerUtils.runTaskLater(() -> {
+            presidentLeftTimers.remove(uuid);
+            Player back = Bukkit.getPlayer(uuid);
+            boolean returned = back != null && CashClashPlugin.getInstance().getGameManager().getPlayerSession(back) == session;
+            if (returned || session.getCurrentRound() != round || session.getState() != GameState.COMBAT
+                    || session.isRoundEnding() || findPresidentTeam(uuid) != presidentTeam) return;
+
+            broadcastPresidentLeft("gamemode-ptp.president-left-timeout", presidentTeam);
+            recordPresidentDeath(presidentTeam);
+        }, seconds * 20L));
+    }
+
+    private void broadcastPresidentLeft(String messageKey, int presidentTeam) {
+        String teamName = presidentTeam == 1 ? "Red" : "Blue";
+        Messages.broadcast(session.getPlayers(), messageKey,
+                "color", teamName.toLowerCase(),
+                "team_name", teamName,
+                "seconds", String.valueOf(CashClashPlugin.getInstance().getConfigManager().getPTPPresidentLeftSecondDeathSeconds()));
     }
 
     @Override
@@ -329,6 +378,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
         cancelTask(selectionTask);
         glowingTasks.values().forEach(this::cancelTask);
         glowingTasks.clear();
+        presidentLeftTimers.values().forEach(this::cancelTask);
+        presidentLeftTimers.clear();
         finalStandManager.cancel();
         resetFinalStandBorder();
         suddenDeathManager.cleanup();

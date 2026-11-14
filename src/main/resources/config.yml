@@ -306,6 +306,9 @@ gamemodes:
     kill-bonus-threshold: 2
     kill-bonus-amount: 15000
     captures-to-win: 2
+    # A president who disconnects mid-combat takes a death, and a second one if they still
+    # aren't back after this many seconds
+    president-left-second-death-seconds: 25
     # Attack Speed buff: added to the president's attack speed attribute (vanilla base 4.0)
     attack-speed-bonus: 0.2
     # Potion Duration buff: positive effects on the president last this much longer
