@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
  
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.player.CashClashPlayer;
@@ -55,8 +56,9 @@ public class EconomyManager {
     /**
      * Pays every player their part of the economy round's pool at the start of its buy phase, on
      * top of whatever they have left over: an equal share, plus the kill and assist transfers
-     * they won in the round just played, minus the ones they lost (never below nothing). Only
-     * the first buy phase announces the share; later ones announce the total
+     * they won in the round just played, minus the ones they lost (never below nothing). A player
+     * who's away gets the plain share when they come back instead ({@link #payMissedShares}).
+     * Only the first buy phase announces the share; later ones announce the total
      * ({@link #sendRoundEarnings}).
      */
     public static void payRoundShare(GameSession session) {
@@ -65,7 +67,10 @@ public class EconomyManager {
 
         long share = standardShare(pool);
         RoundData previousRound = session.getPreviousRoundData();
+        RejoinManager rejoinManager = CashClashPlugin.getInstance().getRejoinManager();
         for (UUID uuid : session.getPlayers()) {
+            if (rejoinManager.recordMissedShare(uuid, session, share)) continue;
+
             long transfers = previousRound != null ? previousRound.getPoolTransfers(uuid) : 0;
             long paid = session.getRewardManager().grant(uuid, RewardType.ROUND_DISTRIBUTION, Math.max(0, share + transfers));
             session.getCurrentRoundData().setPoolPayout(uuid, paid);
@@ -95,6 +100,28 @@ public class EconomyManager {
         Messages.send(player, "economy.round-money-earned",
                 "pool", String.format("%,d", pool),
                 "amount", String.format("%,d", session.getCurrentRoundData().getPoolPayout(player.getUniqueId())));
+    }
+
+    /**
+     * Pays a player coming back from a disconnect the standard share of every buy phase they
+     * missed - what they'd have got with no kills and no deaths. Coming back during combat, the
+     * share of that round's buy phase isn't paid.
+     */
+    public static void payMissedShares(GameSession session, Player player, List<RejoinData.MissedShare> missed) {
+        boolean inCombat = session.getState() == GameState.COMBAT;
+        long total = 0;
+        int count = 0;
+        for (RejoinData.MissedShare share : missed) {
+            if (inCombat && share.round() == session.getCurrentRound()) continue;
+            total += share.amount();
+            count++;
+        }
+        if (count == 0) return;
+
+        long paid = session.getRewardManager().grant(player.getUniqueId(), RewardType.ROUND_DISTRIBUTION, total);
+        Messages.send(player, "economy.missed-shares-paid",
+                "amount", String.format("%,d", paid),
+                "count", String.valueOf(count));
     }
 
     /**

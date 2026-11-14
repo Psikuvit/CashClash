@@ -18,6 +18,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -130,7 +131,8 @@ public class RejoinManager implements Shutdownable {
                 armorContents,
                 offhandItem,
                 purchaseHistory,
-                System.currentTimeMillis()
+                System.currentTimeMillis(),
+                new ArrayList<>()
         );
 
         pendingRejoins.put(player.getUniqueId(), data);
@@ -141,6 +143,20 @@ public class RejoinManager implements Shutdownable {
         Messages.broadcast(session.getPlayers(), "rejoin.disconnect-warning",
                 "player_name", player.getName(), "timeout_seconds", String.valueOf(timeout));
 
+        return true;
+    }
+
+    /**
+     * Notes down the standard share a player who's away from {@code session} would have been paid
+     * at this buy phase, to pay when they come back.
+     *
+     * @return false if the player isn't away from that session, so they should be paid now
+     */
+    public boolean recordMissedShare(UUID playerUuid, GameSession session, long amount) {
+        RejoinData data = pendingRejoins.get(playerUuid);
+        if (data == null || !data.sessionId().equals(session.getSessionId())) return false;
+
+        data.missedShares().add(new RejoinData.MissedShare(session.getCurrentRound(), amount));
         return true;
     }
 

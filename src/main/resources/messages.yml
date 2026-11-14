@@ -273,6 +273,8 @@ messages:
     kill-transfer-received: "<gold>+${amount}</gold> <gray>next buy phase for killing <white>{victim}</white></gray>"
     kill-transfer-lost: "<red>-${amount}</red> <gray>off your next buy phase, taken by <white>{killer}</white></gray>"
     kill-transfer-assist: "<gold>+${amount}</gold> <gray>next buy phase for assisting on <white>{victim}</white></gray>"
+    # Sent to a player who rejoins after missing buy phases: the plain share of each one they missed
+    missed-shares-paid: "<gold>+${amount}</gold> <gray>your share of the {count} buy phase(s) you missed</gray>"
 
   # ============================================
   # ROUND/GAME MESSAGES

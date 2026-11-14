@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.player.PurchaseRecord;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 
@@ -23,6 +24,8 @@ import java.util.UUID;
  * @param offhandItem     Their offhand item (cloned)
  * @param purchaseHistory Their purchase history
  * @param disconnectTime  When they disconnected (System.currentTimeMillis())
+ * @param missedShares    The buy-phase shares paid out while they were away, added as each buy
+ *                        phase starts and paid when they come back
  */
 public record RejoinData(
         UUID playerUuid,
@@ -37,8 +40,17 @@ public record RejoinData(
         ItemStack[] armorContents,
         ItemStack offhandItem,
         Queue<PurchaseRecord> purchaseHistory,
-        long disconnectTime
+        long disconnectTime,
+        List<MissedShare> missedShares
 ) {
+
+    /**
+     * The standard share of one buy phase's pool a disconnected player didn't receive.
+     *
+     * @param round  the round whose buy phase paid it
+     * @param amount the share
+     */
+    public record MissedShare(int round, long amount) {}
 
     /**
      * Check if this rejoin data has expired.

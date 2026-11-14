@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.listener.BlockListener;
+import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinData;
@@ -950,6 +951,7 @@ public class GameSession {
 
         // Restore player state from rejoin data
         rejoinManager.restorePlayerState(player, existingCcp, data);
+        EconomyManager.payMissedShares(this, player, data.missedShares());
 
         if (getState() == GameState.SHOPPING && roundManager != null) {
             roundManager.teleportToBuyPhase(player);
