@@ -194,6 +194,14 @@ public class TectonicCapHandler extends ArmorSetHandler {
         return Math.sqrt(dx * dx + dz * dz);
     }
 
+    /**
+     * Readies both slam charges at once - the buy phase resets every cooldown.
+     */
+    public void resetCharges(UUID playerUuid) {
+        tectonicCharge1Cooldown.remove(playerUuid);
+        tectonicCharge2Cooldown.remove(playerUuid);
+    }
+
     @Override
     public void cleanup() {
         tectonicCharge1Cooldown.clear();

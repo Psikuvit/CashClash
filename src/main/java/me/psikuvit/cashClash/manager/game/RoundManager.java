@@ -15,10 +15,13 @@ import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
+import me.psikuvit.cashClash.manager.items.armor.TectonicCapHandler;
 import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
+import me.psikuvit.cashClash.manager.items.mythic.ElectricEelHandler;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.sequence.Sequences;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
@@ -27,6 +30,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -111,6 +115,22 @@ public class RoundManager {
             p.setGameMode(GameMode.SURVIVAL);
             p.teleport(dest);
             p.closeInventory();
+        }
+        resetCooldowns(p);
+    }
+
+    /**
+     * Puts every item cooldown back to zero for the buy phase, so nothing is left counting down
+     * on the action bar: the shared cooldowns, the charge timers Tectonic Cap and Electric Eel
+     * keep themselves, and the gray overlays on the hotbar.
+     */
+    private void resetCooldowns(Player p) {
+        CashClashPlugin plugin = CashClashPlugin.getInstance();
+        plugin.getCooldownManager().clearAllCooldowns(p.getUniqueId());
+        plugin.getCustomArmorManager().getHandler(TectonicCapHandler.class).resetCharges(p.getUniqueId());
+        plugin.getMythicItemManager().getHandler(ElectricEelHandler.class).resetCharges(p.getUniqueId());
+        for (NamespacedKey group : Keys.COOLDOWN_GROUPS) {
+            p.setCooldown(group, 0);
         }
     }
 

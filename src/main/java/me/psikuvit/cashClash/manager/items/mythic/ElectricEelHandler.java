@@ -234,6 +234,14 @@ public class ElectricEelHandler extends MythicItemHandler {
                 new HudSegment(hudText("eel-recharge", "seconds", String.valueOf(ceilSeconds(readyAt - now))), false, true));
     }
 
+    /**
+     * Refills every dash charge at once - the buy phase resets every cooldown.
+     */
+    public void resetCharges(UUID playerUuid) {
+        eelDashCharges.remove(playerUuid);
+        eelNextChargeReadyAt.remove(playerUuid);
+    }
+
     @Override
     public void cleanup() {
         eelDashCharges.clear();

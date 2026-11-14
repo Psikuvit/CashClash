@@ -3,6 +3,8 @@ package me.psikuvit.cashClash.util;
 import me.psikuvit.cashClash.CashClashPlugin;
 import org.bukkit.NamespacedKey;
 
+import java.util.List;
+
 public class Keys {
 
     /**
@@ -188,6 +190,8 @@ public class Keys {
     public static final NamespacedKey INVIS_CLOAK_COOLDOWN_GROUP;
     public static final NamespacedKey ORB_OF_GRAVITATION_COOLDOWN_GROUP;
     public static final NamespacedKey BLOOMING_ROSE_COOLDOWN_GROUP;
+    /** Every cooldown group above - the buy phase clears them all. */
+    public static final List<NamespacedKey> COOLDOWN_GROUPS;
 
     /**
      * Flag marking an item as a kit item (round-start gear), so it can be identified and
@@ -257,6 +261,8 @@ public class Keys {
         INVIS_CLOAK_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "invis_cloak");
         ORB_OF_GRAVITATION_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "orb_of_gravitation");
         BLOOMING_ROSE_COOLDOWN_GROUP = new NamespacedKey(CashClashPlugin.getInstance(), "blooming_rose");
+        COOLDOWN_GROUPS = List.of(SOUL_KATANA_COOLDOWN_GROUP, CASH_BLASTER_COOLDOWN_GROUP, INVIS_CLOAK_COOLDOWN_GROUP,
+                ORB_OF_GRAVITATION_COOLDOWN_GROUP, BLOOMING_ROSE_COOLDOWN_GROUP);
         KIT_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "kit_item");
         LOBBY_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "lobby_item");
         GUIDE_BOOK = new NamespacedKey(CashClashPlugin.getInstance(), "guide_book");
