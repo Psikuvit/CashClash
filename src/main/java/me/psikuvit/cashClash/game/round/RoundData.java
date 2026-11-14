@@ -63,22 +63,24 @@ public class RoundData {
     }
 
     /**
-     * Records the share of this round's pool a player was paid at the start of its buy phase.
+     * Records what a player was paid from the pool at the start of this round's buy phase: their
+     * share plus the last round's kill transfers.
      */
-    public void setPoolShare(UUID player, long amount) {
+    public void setPoolPayout(UUID player, long amount) {
         PlayerRoundStats s = getStats(player);
         if (s != null) {
-            s.setPoolShare(amount);
+            s.setPoolPayout(amount);
         }
     }
 
-    public long getPoolShare(UUID player) {
+    public long getPoolPayout(UUID player) {
         PlayerRoundStats s = getStats(player);
-        return s == null ? 0 : s.getPoolShare();
+        return s == null ? 0 : s.getPoolPayout();
     }
 
     /**
-     * Records money a player gained (or, negative, lost) through a kill transfer this round.
+     * Records money a player gained (or, negative, lost) through a kill transfer this round - paid
+     * at the next buy phase.
      */
     public void addPoolTransfer(UUID player, long amount) {
         PlayerRoundStats s = getStats(player);

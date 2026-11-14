@@ -91,18 +91,20 @@ economy:
   # matches still pay the same amount per player.
   pool-split: 8
 
-  # A kill moves money from the victim to the killer (and assisting teammates). It is always
-  # taken from the victim, so kills never create money.
+  # A kill moves money from the victim's payout at the next buy phase to the killer's (and
+  # assisting teammates'). Nobody's balance changes during the round, and the victim can't lose
+  # more than that payout, so kills never create money.
   kill-transfer:
-    # Percent of the current round's pool moved per kill (0.75 = 0.75%)
+    # Percent of the next buy phase's pool moved per kill (0.75 = 0.75%)
     base-percent: 0.75
     # Percent of the transfer each assisting teammate receives; the killer keeps the rest
     assist-share-percent: 20
     # A teammate of the killer who damaged the victim this many seconds before the kill assists
     assist-window-seconds: 5
-    # Comeback rates: when the killer's team has less money than the other team, its kills use
-    # the rate of the highest threshold reached instead of base-percent.
-    # Deficit % = (richer team money - poorer team money) / richer team money * 100
+    # Comeback rates: both teams start every round level, at half of the next pool each, and
+    # kills move money between those halves. When the killer's team has fallen behind this
+    # round, its kills use the rate of the highest threshold reached instead of base-percent.
+    # Deficit % = (ahead team's half - behind team's half) / ahead team's half * 100
     # Format: <minimum deficit percent (whole number)>: <transfer percent>
     comeback-tiers:
       10: 1.00

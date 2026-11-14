@@ -32,62 +32,78 @@ public class EconomyManager {
     }
 
     /**
-     * Pays every player an equal share of the current round's pool at the start of its buy
-     * phase, on top of whatever they have left over. Only the first buy phase announces the
-     * share; later ones add the round just played's transfers to it (see {@link #sendRoundEarnings}).
+     * The pool a kill takes its money from: the next buy phase's. In the last configured round,
+     * and any extra rounds after it, that's the last pool again.
+     */
+    private static long getNextRoundPool(GameSession session) {
+        return CashClashPlugin.getInstance().getConfigManager().getRoundPool(session.getCurrentRound() + 1);
+    }
+
+    private static long standardShare(long pool) {
+        return pool / Math.max(1, CashClashPlugin.getInstance().getConfigManager().getRoundPoolSplit());
+    }
+
+    /**
+     * Pays every player their part of the current round's pool at the start of its buy phase, on
+     * top of whatever they have left over: an equal share, plus the kill and assist transfers
+     * they won in the round just played, minus the ones they lost (never below nothing). Only
+     * the first buy phase announces the share; later ones announce the total
+     * ({@link #sendRoundEarnings}).
      */
     public static void payRoundShare(GameSession session) {
         long pool = getRoundPool(session);
         if (pool <= 0) return;
 
-        long share = pool / Math.max(1, CashClashPlugin.getInstance().getConfigManager().getRoundPoolSplit());
-        boolean announceShare = session.getPreviousRoundData() == null;
+        long share = standardShare(pool);
+        RoundData previousRound = session.getPreviousRoundData();
         for (UUID uuid : session.getPlayers()) {
-            long paid = session.getRewardManager().grant(uuid, RewardType.ROUND_DISTRIBUTION, share);
-            session.getCurrentRoundData().setPoolShare(uuid, paid);
+            long transfers = previousRound != null ? previousRound.getPoolTransfers(uuid) : 0;
+            long paid = session.getRewardManager().grant(uuid, RewardType.ROUND_DISTRIBUTION, Math.max(0, share + transfers));
+            session.getCurrentRoundData().setPoolPayout(uuid, paid);
             Player player = Bukkit.getPlayer(uuid);
-            if (announceShare && player != null) {
+            if (previousRound == null && player != null) {
                 Messages.send(player, "economy.round-share-paid",
                         "pool", String.format("%,d", pool),
                         "amount", String.format("%,d", paid));
             }
         }
 
-        Messages.debug("ECONOMY", "Round " + session.getCurrentRound() + " pool " + pool + " - paid " + share + " to each player");
+        Messages.debug("ECONOMY", "Round " + session.getCurrentRound() + " pool " + pool + " - share " + share);
     }
 
     /**
-     * Tells a player entering a buy phase about the pool it just paid out: what they got is their
-     * share of it, plus the kill and assist transfers they received in the round just played,
-     * minus the transfers they lost. Transfers cancel out, so everyone's amounts add up to the pool.
+     * Tells a player entering a buy phase about the pool it just paid out and what they got from
+     * it: their share plus the kill and assist transfers from the round just played. Transfers
+     * cancel out, so everyone's amounts add up to the pool.
      */
     public static void sendRoundEarnings(GameSession session, Player player) {
-        RoundData previousRound = session.getPreviousRoundData();
-        if (previousRound == null) return;
+        if (session.getPreviousRoundData() == null) return;
 
         long pool = getRoundPool(session);
         if (pool <= 0) return;
 
-        UUID uuid = player.getUniqueId();
-        long earned = session.getCurrentRoundData().getPoolShare(uuid) + previousRound.getPoolTransfers(uuid);
         Messages.send(player, "economy.round-money-earned",
                 "pool", String.format("%,d", pool),
-                "amount", String.format("%,d", earned));
+                "amount", String.format("%,d", session.getCurrentRoundData().getPoolPayout(player.getUniqueId())));
     }
 
     /**
-     * Moves the kill transfer from the victim to the killer and any teammates who assisted. The
-     * whole amount comes out of the victim's balance (capped at what they have), so a kill never
-     * creates money; each assist takes its configured share and the killer keeps the rest.
+     * Moves the kill transfer off the victim's payout at the next buy phase and onto the killer's
+     * and any assisting teammates': a percentage of that buy phase's pool. Nobody's balance
+     * changes during the round, and a kill never creates money. The victim can't lose more than
+     * that payout; each assist takes its configured share and the killer keeps the rest.
      */
     public static void transferKillMoney(GameSession session, Player victim, Player killer) {
-        CashClashPlayer victimCcp = session.getCashClashPlayer(victim.getUniqueId());
         Team killerTeam = session.getPlayerTeam(killer);
-        if (victimCcp == null || killerTeam == null || killerTeam == session.getPlayerTeam(victim)) return;
+        if (session.getCashClashPlayer(victim.getUniqueId()) == null || killerTeam == null
+                || killerTeam == session.getPlayerTeam(victim)) return;
 
         ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
-        long idealTransfer = Math.round(getRoundPool(session) * killTransferPercent(session, killerTeam) / 100.0);
-        long transfer = Math.max(0, Math.min(victimCcp.getCoins(), idealTransfer));
+        RoundData roundData = session.getCurrentRoundData();
+        long nextPool = getNextRoundPool(session);
+        long idealTransfer = Math.round(nextPool * killTransferPercent(session, killerTeam, nextPool) / 100.0);
+        long victimPayout = standardShare(nextPool) + roundData.getPoolTransfers(victim.getUniqueId());
+        long transfer = Math.max(0, Math.min(victimPayout, idealTransfer));
 
         List<UUID> assisters = session.getAssistTracker()
                 .getRecentAttackers(victim.getUniqueId(), killer.getUniqueId(), cfg.getAssistWindowSeconds() * 1000L)
@@ -98,39 +114,42 @@ public class EconomyManager {
                 : Math.min((long) (transfer * cfg.getKillTransferAssistSharePercent() / 100.0), transfer / assisters.size());
         long killerShare = transfer - assistShare * assisters.size();
 
-        RoundData roundData = session.getCurrentRoundData();
-        if (transfer > 0) {
-            victimCcp.deductCoins(transfer);
-            roundData.addPoolTransfer(victim.getUniqueId(), -transfer);
-            Messages.send(victim, "economy.kill-transfer-lost",
-                    "amount", String.format("%,d", transfer),
-                    "killer", killer.getName());
-        }
+        roundData.addPoolTransfer(victim.getUniqueId(), -transfer);
+        Messages.send(victim, "economy.kill-transfer-lost",
+                "amount", String.format("%,d", transfer),
+                "killer", killer.getName());
 
-        session.getRewardManager().grantKillOrObjective(killer, RewardType.KILL, killerShare,
+        roundData.addPoolTransfer(killer.getUniqueId(), killerShare);
+        Messages.send(killer, "economy.kill-transfer-received",
                 "amount", String.format("%,d", killerShare),
                 "victim", victim.getName());
-        roundData.addPoolTransfer(killer.getUniqueId(), killerShare);
+        session.getRewardManager().grantKillOrObjective(killer, RewardType.KILL, 0);
 
         for (UUID assister : assisters) {
-            session.getRewardManager().grantAssist(assister, assistShare,
-                    "amount", String.format("%,d", assistShare),
-                    "victim", victim.getName());
             roundData.addPoolTransfer(assister, assistShare);
+            Player assistPlayer = Bukkit.getPlayer(assister);
+            if (assistPlayer != null) {
+                Messages.send(assistPlayer, "economy.kill-transfer-assist",
+                        "amount", String.format("%,d", assistShare),
+                        "victim", victim.getName());
+            }
+            session.getRewardManager().grantAssist(assister, 0);
         }
 
         Messages.debug("ECONOMY", victim.getName() + " killed by " + killer.getName() + " - transfer " + transfer
-                + " (killer " + killerShare + ", " + assisters.size() + " assist(s) at " + assistShare + ")");
+                + " of next pool " + nextPool + " (killer " + killerShare + ", " + assisters.size() + " assist(s) at " + assistShare + ")");
     }
 
     /**
      * The kill-transfer rate for a kill made by {@code killerTeam}: the base rate, or a comeback
-     * rate when that team is behind the other team's total money by one of the configured tiers.
+     * rate when that team is behind on this round's kills by one of the configured tiers. Both
+     * teams start every round level, at half of the next pool each, so the comeback rates reset
+     * every round.
      */
-    private static double killTransferPercent(GameSession session, Team killerTeam) {
+    private static double killTransferPercent(GameSession session, Team killerTeam, long nextPool) {
         ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
-        long killerTeamMoney = teamCoins(session, killerTeam);
-        long otherTeamMoney = teamCoins(session, session.getOpposingTeam(killerTeam));
+        long killerTeamMoney = nextPool / 2 + teamTransfers(session, killerTeam);
+        long otherTeamMoney = nextPool / 2 + teamTransfers(session, session.getOpposingTeam(killerTeam));
         if (otherTeamMoney <= killerTeamMoney) return cfg.getKillTransferBasePercent();
 
         double deficitPercent = (otherTeamMoney - killerTeamMoney) * 100.0 / otherTeamMoney;
@@ -138,11 +157,11 @@ public class EconomyManager {
         return tier != null ? tier.getValue() : cfg.getKillTransferBasePercent();
     }
 
-    private static long teamCoins(GameSession session, Team team) {
+    private static long teamTransfers(GameSession session, Team team) {
+        RoundData roundData = session.getCurrentRoundData();
         long total = 0;
         for (UUID uuid : team.getPlayers()) {
-            CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-            if (ccp != null) total += ccp.getCoins();
+            total += roundData.getPoolTransfers(uuid);
         }
         return total;
     }
