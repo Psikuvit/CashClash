@@ -159,18 +159,24 @@ public final class Sequences {
     }
 
     /**
-     * Sudden death: no lock/blindness, just a short delay then a red announcement title.
+     * Sudden death: blind and freeze everyone, show the red title for its configured fade-in and
+     * stay, then clear it all - the same shape as the other buy-phase reveals.
      */
     public static Sequence suddenDeath() {
+        var cfg = CashClashPlugin.getInstance().getConfigManager();
+        long titleTicks = (cfg.getSuddenDeathTitleFadeInMs() + cfg.getSuddenDeathTitleStayMs()) / 50L;
         return Sequence.create()
-                .waitSeconds(CashClashPlugin.getInstance().getConfigManager().getSuddenDeathPreAnnouncementHoldSeconds())
+                .run(s -> SequenceEffects.applyBlindness(s.getPlayers(), revealBlindnessTicks()))
+                .waitSeconds(cfg.getSuddenDeathPreAnnouncementHoldSeconds())
                 .run(s -> {
                     SequenceEffects.showTitle(s.getPlayers(),
                             component(MSG.getRaw("sudden-death.title")),
                             Component.empty(),
                             suddenDeathTimes());
                     SoundUtils.playTo(s.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-                });
+                })
+                .pause(titleTicks)
+                .run(Sequences::clearLock);
     }
 
     /**

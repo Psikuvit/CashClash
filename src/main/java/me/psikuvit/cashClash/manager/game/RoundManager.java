@@ -68,9 +68,7 @@ public class RoundManager {
         // happened to be standing.
         teleportToBuyPhase();
 
-        prepareSuddenDeathRoundIfNeeded();
-
-        beginBuyPhase(roundNumber);
+        prepareSuddenDeathRoundIfNeeded(roundNumber);
     }
 
     /**
@@ -155,17 +153,18 @@ public class RoundManager {
 
     /**
      * PAUSED: sudden death's own rules are switched off - a 3-3 round is a normal round. Only
-     * its announcement still plays.
+     * its announcement still plays, in that round's buy phase and every one after a drawn
+     * round: it blinds and freezes everyone like the other reveals, and the buy phase (and its
+     * timer) only begins once it's over.
      */
-    private void prepareSuddenDeathRoundIfNeeded() {
-        if (session.getGamemode() == null) {
+    private void prepareSuddenDeathRoundIfNeeded(int roundNumber) {
+        if (session.getGamemode() == null || !session.isSuddenDeathRound()) {
+            beginBuyPhase(roundNumber);
             return;
         }
 
-        if (session.getRoundWins(1) == 3 && session.getRoundWins(2) == 3) {
-            // session.getGamemode().prepareSuddenDeathRound();
-            session.getSequenceManager().playUntracked(Sequences.suddenDeath());
-        }
+        // session.getGamemode().prepareSuddenDeathRound();
+        session.getSequenceManager().play(Sequences.suddenDeath(), true, () -> beginBuyPhase(roundNumber));
     }
 
     /**
