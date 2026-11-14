@@ -25,6 +25,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.util.BoundingBox;
 
 import java.util.HashMap;
@@ -86,6 +87,15 @@ public class MoveListener implements Listener {
         armorManager.getHandler(TectonicCapHandler.class).handleFallWarning(player);
 
         checkBouncePads(player);
+    }
+
+    /**
+     * A teleport ends a Soul Katana dash - falling into the void sends the player back to a spawn,
+     * and the dash's strike must not land there.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTeleport(PlayerTeleportEvent event) {
+        weaponItemManager.getHandler(SoulKatanaHandler.class).endSoulKatanaDash(event.getPlayer());
     }
 
     /**

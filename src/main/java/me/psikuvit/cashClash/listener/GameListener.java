@@ -31,6 +31,7 @@ import me.psikuvit.cashClash.manager.items.mythic.GoblinSpearHandler;
 import me.psikuvit.cashClash.manager.items.mythic.MythicItemManager;
 import me.psikuvit.cashClash.manager.items.mythic.WindBowHandler;
 import me.psikuvit.cashClash.manager.items.weapon.CashBlasterHandler;
+import me.psikuvit.cashClash.manager.items.weapon.SoulKatanaHandler;
 import me.psikuvit.cashClash.manager.items.weapon.WeaponItemManager;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.manager.player.PlayerDataManager;
@@ -156,6 +157,7 @@ public class GameListener implements Listener {
 
         Player player = event.getPlayer();
         GameSession session = gameManager.getPlayerSession(player);
+        weaponItemManager.getHandler(SoulKatanaHandler.class).endSoulKatanaDash(player);
 
         if (session == null) {
             event.setKeepInventory(true);

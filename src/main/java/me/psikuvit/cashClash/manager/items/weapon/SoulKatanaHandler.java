@@ -186,7 +186,11 @@ public class SoulKatanaHandler extends WeaponItemHandler {
                 Sound.BLOCK_SCULK_SENSOR_CLICKING, "customitem.soul-katana-healing-restored");
     }
 
-    private void endSoulKatanaDash(Player player) {
+    /**
+     * Ends a Phantom Slice dash without its strike - on death or a teleport (the void, the
+     * practice range's knock-out), so it doesn't land wherever the player turns up next.
+     */
+    public void endSoulKatanaDash(Player player) {
         UUID id = player.getUniqueId();
         soulKatanaDashing.remove(id);
         soulKatanaLeftGround.remove(id);
