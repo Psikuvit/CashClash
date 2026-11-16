@@ -615,7 +615,9 @@ public final class ParticleUtils {
 
     /**
      * A ring of six solid emeralds spinning briefly around the player - the shared coin
-     * reward flourish for Investor's Set and Cash Blaster payouts. Schedules its own frames.
+     * reward flourish for Investor's Set and Cash Blaster payouts. Everyone but the player
+     * sees it; hidden on the tick it spawns, before it's ever sent to them. Schedules its own
+     * frames.
      */
     public static void emeraldRing(Player player) {
         if (player == null || !player.isOnline()) return;
@@ -625,14 +627,16 @@ public final class ParticleUtils {
         ItemStack emerald = new ItemStack(Material.EMERALD);
         List<ItemDisplay> ring = new ArrayList<>();
         for (int i = 0; i < EMERALD_RING_COUNT; i++) {
-            ring.add(world.spawn(player.getLocation(), ItemDisplay.class, d -> {
+            ItemDisplay display = world.spawn(player.getLocation(), ItemDisplay.class, d -> {
                 d.setItemStack(emerald);
                 d.setBillboard(Display.Billboard.FIXED);
                 d.setBrightness(new Display.Brightness(15, 15));
                 d.setPersistent(false);
                 d.setInterpolationDuration(1);
                 d.setTeleportDuration(1);
-            }));
+            });
+            player.hideEntity(CashClashPlugin.getInstance(), display);
+            ring.add(display);
         }
 
         for (int tick = 0; tick <= EMERALD_RING_DURATION_TICKS; tick++) {
