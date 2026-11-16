@@ -26,6 +26,8 @@ armor:
 # ============================================
 weapons:
   iron-sword: 1250
+  # Players start with a wooden axe: stone, then iron, then diamond
+  stone-axe: 500
   iron-axe: 1250
   diamond-sword: 3000
   diamond-axe: 3000

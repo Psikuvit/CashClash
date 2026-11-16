@@ -312,11 +312,11 @@ public class ShopService {
         } else if (matName.endsWith("BOOTS")) {
             player.getInventory().setBoots(new ItemStack(Material.GOLDEN_BOOTS));
         }
-        // Check if this was a sword/axe - restore stone tools
+        // Check if this was a sword/axe - restore the starting tools
         else if (matName.contains("SWORD")) {
             player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
         } else if (matName.contains("AXE") && !matName.contains("PICKAXE")) {
-            player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
+            player.getInventory().addItem(new ItemStack(Material.WOODEN_AXE));
         }
     }
 

@@ -10,6 +10,7 @@ import org.bukkit.Material;
  */
 public enum WeaponItem implements Purchasable {
     IRON_SWORD(Material.IRON_SWORD, "iron-sword", "Iron Sword"),
+    STONE_AXE(Material.STONE_AXE, "stone-axe", "Stone Axe"),
     IRON_AXE(Material.IRON_AXE, "iron-axe", "Iron Axe"),
     DIAMOND_SWORD(Material.DIAMOND_SWORD, "diamond-sword", "Diamond Sword"),
     DIAMOND_AXE(Material.DIAMOND_AXE, "diamond-axe", "Diamond Axe"),

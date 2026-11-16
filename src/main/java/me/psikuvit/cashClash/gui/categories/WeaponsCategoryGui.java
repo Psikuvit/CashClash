@@ -42,15 +42,18 @@ public class WeaponsCategoryGui extends AbstractShopCategoryGui {
             setButton(11, createPurchasableButtonMaxed(WeaponItem.IRON_SWORD, false));
         }
 
-        // Axe progression
+        // Axe progression: the starting wooden axe, then stone, iron, diamond
+        boolean hasStoneAxe = hasItem(Material.STONE_AXE);
         boolean hasIronAxe = hasItem(Material.IRON_AXE);
         boolean hasDiamondAxe = hasItem(Material.DIAMOND_AXE);
         if (hasDiamondAxe) {
             setButton(12, createPurchasableButtonMaxed(WeaponItem.DIAMOND_AXE, true));
         } else if (hasIronAxe) {
             setButton(12, createPurchasableButtonMaxed(WeaponItem.DIAMOND_AXE, false));
-        } else {
+        } else if (hasStoneAxe) {
             setButton(12, createPurchasableButtonMaxed(WeaponItem.IRON_AXE, false));
+        } else {
+            setButton(12, createPurchasableButtonMaxed(WeaponItem.STONE_AXE, false));
         }
 
         // Ranged weapons

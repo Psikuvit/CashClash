@@ -32,6 +32,9 @@ import java.util.Set;
 public class KitService {
 
     private static final byte KIT_ITEM_FLAG = (byte) 1;
+    // The starting axe in a kit layout; layouts saved while it was a stone axe still name that
+    private static final String AXE_LAYOUT_KEY = "MATERIAL:WOODEN_AXE";
+    private static final String LEGACY_AXE_LAYOUT_KEY = "MATERIAL:STONE_AXE";
 
     private KitService() {
         throw new AssertionError("Nope.");
@@ -123,7 +126,7 @@ public class KitService {
                 player.getInventory().addItem(crossbow, arrows);
             }
             case LUMBERJACK -> {
-                // Add Sharpness 1 to the stone axe
+                // Add Sharpness 1 to the starting axe
                 int axeSlot = getAxeSlot(player);
                 if (axeSlot >= 0) {
                     ItemStack axe = player.getInventory().getItem(axeSlot);
@@ -196,14 +199,14 @@ public class KitService {
         markKitItem(stoneSword);
         player.getInventory().addItem(stoneSword);
 
-        ItemStack stoneAxe = new ItemStack(Material.STONE_AXE);
-        ItemMeta axeMeta = stoneAxe.getItemMeta();
+        ItemStack woodenAxe = new ItemStack(Material.WOODEN_AXE);
+        ItemMeta axeMeta = woodenAxe.getItemMeta();
         if (axeMeta != null) {
             axeMeta.setUnbreakable(true);
-            stoneAxe.setItemMeta(axeMeta);
+            woodenAxe.setItemMeta(axeMeta);
         }
-        markKitItem(stoneAxe);
-        player.getInventory().addItem(stoneAxe);
+        markKitItem(woodenAxe);
+        player.getInventory().addItem(woodenAxe);
 
         ItemStack shears = new ItemStack(Material.SHEARS);
         ItemMeta shearsMeta = shears.getItemMeta();
@@ -287,9 +290,9 @@ public class KitService {
     public static void applyForLayout(Kit kit, Player player) {
         player.getInventory().clear();
 
-        // Stone tools
+        // Starting tools
         player.getInventory().addItem(new ItemStack(Material.STONE_SWORD));
-        player.getInventory().addItem(new ItemStack(Material.STONE_AXE));
+        player.getInventory().addItem(new ItemStack(Material.WOODEN_AXE));
 
         player.getInventory().addItem(new ItemStack(Material.SHEARS));
 
@@ -388,7 +391,9 @@ public class KitService {
 
         // === TOOLS ===
         itemMap.put("MATERIAL:STONE_SWORD", new ItemStack(Material.STONE_SWORD));
-        itemMap.put("MATERIAL:STONE_AXE", new ItemStack(Material.STONE_AXE));
+        ItemStack woodenAxe = new ItemStack(Material.WOODEN_AXE);
+        itemMap.put(AXE_LAYOUT_KEY, woodenAxe);
+        itemMap.put(LEGACY_AXE_LAYOUT_KEY, woodenAxe);
 
         itemMap.put("MATERIAL:SHEARS", new ItemStack(Material.SHEARS));
 
@@ -525,6 +530,10 @@ public class KitService {
             if (item != null && !placedItems.contains(itemId)) {
                 player.getInventory().setItem(slot, item.clone());
                 placedItems.add(itemId);
+                if (itemId.equals(AXE_LAYOUT_KEY) || itemId.equals(LEGACY_AXE_LAYOUT_KEY)) {
+                    placedItems.add(AXE_LAYOUT_KEY);
+                    placedItems.add(LEGACY_AXE_LAYOUT_KEY);
+                }
             }
         }
 
@@ -534,7 +543,8 @@ public class KitService {
                 // Skip duplicate mappings (fallbacks and numbered grenades)
                 if (entry.getKey().startsWith("CUSTOM:GRENADE_") ||
                     entry.getKey().equals("MATERIAL:COOKED_BEEF") ||
-                    entry.getKey().equals("MATERIAL:BREAD")) {
+                    entry.getKey().equals("MATERIAL:BREAD") ||
+                    entry.getKey().equals(LEGACY_AXE_LAYOUT_KEY)) {
                     continue;
                 }
                 player.getInventory().addItem(entry.getValue().clone());
@@ -625,7 +635,7 @@ public class KitService {
                 removeProtectionIfBaseItem(legs, Material.GOLDEN_LEGGINGS);
                 removeProtectionIfBaseItem(boots, Material.GOLDEN_BOOTS);
             }
-            case LUMBERJACK -> removeSharpnessFromBaseTool(player, Material.STONE_AXE);
+            case LUMBERJACK -> removeSharpnessFromBaseTool(player, Material.WOODEN_AXE);
             case FIGHTER -> removeSharpnessFromBaseTool(player, Material.STONE_SWORD);
             default -> {}
         }
