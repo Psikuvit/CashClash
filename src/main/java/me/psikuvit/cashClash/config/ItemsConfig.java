@@ -799,6 +799,10 @@ public class ItemsConfig {
         return config.getInt("custom-items.overdrive-potion.speed-boost-percent", 25);
     }
 
+    public int getOverdriveMaxCarried() {
+        return config.getInt("custom-items.overdrive-potion.max-carried", 2);
+    }
+
     // Hunter's Mark
     public double getHuntersMarkRange() {
         return config.getDouble("custom-items.hunters-mark.range", 1);

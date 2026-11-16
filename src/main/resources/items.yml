@@ -507,6 +507,7 @@ custom-items:
   overdrive-potion:
     invincibility-seconds: 4
     speed-boost-percent: 25
+    max-carried: 2              # Most Overdrive Potions one player can carry at once
 
   # Hunter's Mark
   hunters-mark:

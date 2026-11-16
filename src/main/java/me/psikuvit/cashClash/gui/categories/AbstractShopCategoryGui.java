@@ -253,6 +253,9 @@ public abstract class AbstractShopCategoryGui extends AbstractGui {
         if (type == CustomItem.TOTEM_OF_HAUNTING && CashClashPlugin.getInstance().getShopService().isTotemCapReached(viewer)) {
             return;
         }
+        if (type == CustomItem.OVERDRIVE_POTION && CashClashPlugin.getInstance().getShopService().isOverdriveCapReached(viewer)) {
+            return;
+        }
 
         long price = type.getPrice();
         if (!CashClashPlugin.getInstance().getShopService().canAfford(viewer, price)) {

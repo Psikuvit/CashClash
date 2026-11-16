@@ -1037,6 +1037,7 @@ messages:
     invis-lost-capture-area: "<red>Invisibility lost - you walked into a capture area!</red>"
     invis-blocked-capture-area: "<red>You can't go invisible in a capture area!</red>"
     max-one-cloak: "<red>You can only carry one Invisibility Cloak at a time!</red>"
+    max-overdrive: "<red>You can only carry {max} Overdrive Potions at a time!</red>"
     max-one-armor-piece: "<red>You already own this armor piece!</red>"
     max-one-armor-set: "<red>You already own this armor set!</red>"
     already-owned: "<red>You already own {item_name}!</red>"

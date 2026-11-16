@@ -107,6 +107,19 @@ public class ShopService {
     }
 
     /**
+     * Whether the player already carries as many Overdrive Potions as they're allowed
+     * ({@code custom-items.overdrive-potion.max-carried}), telling them so if they do.
+     */
+    public boolean isOverdriveCapReached(Player player) {
+        int max = CashClashPlugin.getInstance().getItemsConfig().getOverdriveMaxCarried();
+        if (countCustomItem(player, CustomItem.OVERDRIVE_POTION) < max) return false;
+
+        Messages.send(player, "customitem.max-overdrive", "max", String.valueOf(max));
+        SoundUtils.play(player, Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+        return true;
+    }
+
+    /**
      * A player may only ever own one of a given custom armor piece/set - same cap as
      * {@code CustomItem.INVIS_CLOAK} (see {@code AbstractShopCategoryGui
      * #handleCustomItemPurchase}). Public because full-set purchases go through
