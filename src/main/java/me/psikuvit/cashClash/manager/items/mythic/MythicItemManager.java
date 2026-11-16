@@ -310,8 +310,8 @@ public class MythicItemManager {
 
         PDCSetter tags = PDCSetter.of(item);
 
-        // Display name with mythic color
-        tags.meta().displayName(Messages.parse("<light_purple><bold>" + mythic.getDisplayName() + "</bold></light_purple>"));
+        String name = cfg.getItemName("mythic-items", mythic.getConfigKey(), mythic.getDisplayName());
+        tags.meta().displayName(Messages.parse("<light_purple><bold>" + name + "</bold></light_purple>"));
 
         // Lore
         List<Component> lore = itemFactory.getGameplayFactory().getConfiguredLore(mythic);

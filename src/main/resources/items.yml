@@ -1046,8 +1046,11 @@ item-lore:
         - "<yellow>Money bonus</yellow>"
 
   # ==================== MYTHIC ITEMS ====================
+  # name: the mythic's name, in the shop and in hand. Put a colour in front to recolour it,
+  # e.g. "<#ffffff>Wind Bow" - without one it's light purple. It's always bold.
   mythic-items:
     carls-battleaxe:
+      name: "Carl's Battleaxe"
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>A legendary battleaxe</dark_purple>"
@@ -1055,6 +1058,7 @@ item-lore:
         - "<yellow>Shift + right-click: Orbit Cleaver, spin attack</yellow>"
         - "<yellow>Critical Hit launches enemies</yellow>"
     wind-bow:
+      name: "Wind Bow"
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>A bow of the winds</dark_purple>"
@@ -1067,12 +1071,14 @@ item-lore:
         - "<yellow>Chain damage to nearby enemies</yellow>"
         - "<yellow>Teleport ability</yellow>"
     electric-eel-sword:
+      name: "Electric Eel Sword"
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>A sword crackling with energy</dark_purple>"
         - "<yellow>Chain damage to nearby enemies</yellow>"
         - "<yellow>Teleport ability</yellow>"
     goblin-spear:
+      name: "Goblin Spear"
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>A spear of poison</dark_purple>"
@@ -1085,12 +1091,14 @@ item-lore:
         - "<yellow>3rd hit landed: blood bubble</yellow>"
         - "<yellow>7th hit landed: blood tornado, then it starts over</yellow>"
     bloodwrench-crossbow:
+      name: "BloodWrench Crossbow"
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>A crossbow that feeds on hits</dark_purple>"
         - "<yellow>3rd hit landed: blood bubble</yellow>"
         - "<yellow>7th hit landed: blood tornado, then it starts over</yellow>"
     warden-gloves:
+      name: "Warden Gloves"
       lore:
         - "<light_purple>✦ MYTHIC ARMOR ✦</light_purple>"
         - "<dark_purple>Powerful protective gloves</dark_purple>"
@@ -1098,12 +1106,14 @@ item-lore:
         - "<yellow>Right-click: Shockwave</yellow>"
         - "<yellow>Shift + right-click: Rising Fury, stacking reach</yellow>"
     blazebite-crossbows:
+      name: "BlazeBite Crossbows"
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>Shots alternate between ice and fire</dark_purple>"
         - "<yellow>Glacier arrow: frostbite; hit again to freeze solid</yellow>"
         - "<yellow>Volcano arrow: fire/explosion AOE (Magma Storm)</yellow>"
     alchemist-wand:
+      name: "Alchemist Wand"
       lore:
         - "<light_purple>✦ MYTHIC UTILITY ✦</light_purple>"
         - "<dark_purple>A wand of team support</dark_purple>"
