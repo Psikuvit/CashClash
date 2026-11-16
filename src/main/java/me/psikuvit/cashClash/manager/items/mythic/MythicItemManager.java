@@ -55,6 +55,9 @@ public class MythicItemManager {
     // Active tasks across all handlers, cancelled on per-player and global cleanup
     private final Map<UUID, List<BukkitTask>> activeTasks;
 
+    // Tasks that outlive their owner's death (zones left on the field), cancelled on quit and global cleanup
+    private final Map<UUID, List<BukkitTask>> lingeringTasks;
+
     // Until when each player's mythic HUD flashes red after using an ability on cooldown
     private final Map<UUID, Long> cooldownFlashUntil;
 
@@ -76,6 +79,7 @@ public class MythicItemManager {
         sessionPurchasedMythics = new ConcurrentHashMap<>();
         sessionAvailableMythics = new ConcurrentHashMap<>();
         activeTasks = new ConcurrentHashMap<>();
+        lingeringTasks = new ConcurrentHashMap<>();
         cooldownFlashUntil = new ConcurrentHashMap<>();
         trueDamageTargets = ConcurrentHashMap.newKeySet();
 
@@ -185,6 +189,14 @@ public class MythicItemManager {
      */
     void trackTask(UUID uuid, BukkitTask task) {
         activeTasks.computeIfAbsent(uuid, k -> new ArrayList<>()).add(task);
+    }
+
+    /**
+     * Registers a scheduled task that keeps running through its owner's death, like a zone left
+     * on the field; it's only cancelled when the owner quits or the plugin cleans up.
+     */
+    void trackLingeringTask(UUID uuid, BukkitTask task) {
+        lingeringTasks.computeIfAbsent(uuid, k -> new ArrayList<>()).add(task);
     }
 
     // ==================== PURCHASE & OWNERSHIP ====================
@@ -374,13 +386,22 @@ public class MythicItemManager {
         }
         cooldownFlashUntil.remove(uuid);
 
-        // Cancel player tasks
-        List<BukkitTask> tasks = activeTasks.remove(uuid);
-        if (tasks != null) {
-            tasks.forEach(task -> {
-                if (task != null && !task.isCancelled()) task.cancel();
-            });
-        }
+        cancelTasks(activeTasks.remove(uuid));
+    }
+
+    /**
+     * Clean up all state for a player who quit, including what they left on the field.
+     */
+    public void cleanupOnQuit(Player player) {
+        cleanup(player);
+        cancelTasks(lingeringTasks.remove(player.getUniqueId()));
+    }
+
+    private static void cancelTasks(List<BukkitTask> tasks) {
+        if (tasks == null) return;
+        tasks.forEach(task -> {
+            if (task != null && !task.isCancelled()) task.cancel();
+        });
     }
 
     /**
@@ -400,10 +421,10 @@ public class MythicItemManager {
         }
 
         // Cancel all active tasks
-        activeTasks.values().forEach(tasks -> tasks.forEach(task -> {
-            if (task != null && !task.isCancelled()) task.cancel();
-        }));
+        activeTasks.values().forEach(MythicItemManager::cancelTasks);
         activeTasks.clear();
+        lingeringTasks.values().forEach(MythicItemManager::cancelTasks);
+        lingeringTasks.clear();
         cooldownFlashUntil.clear();
 
         CashClashPlugin.getInstance().getLogger().info("[MythicItemManager] Cleanup complete");

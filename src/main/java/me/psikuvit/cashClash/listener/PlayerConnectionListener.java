@@ -128,7 +128,7 @@ public class PlayerConnectionListener implements Listener {
         layoutManager.handleDisconnect(player.getUniqueId());
 
         // Cleanup mythic state
-        mythicItemManager.cleanup(player);
+        mythicItemManager.cleanupOnQuit(player);
 
         // Remove lobby scoreboard
         scoreboardManager.setScoreboard(player);

@@ -141,7 +141,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
             Messages.debug(shooter, "BLOODWRENCH: Blood sphere expired");
         }, durationTicks);
 
-        manager.trackTask(shooter.getUniqueId(), sphereTask);
+        manager.trackLingeringTask(shooter.getUniqueId(), sphereTask);
     }
 
     /**
@@ -189,7 +189,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
 
                 // Wielder heals for a percentage of the damage the vortex dealt this batch -
                 // reduced by their own active healing-reduction debuff (e.g. Soul Katana).
-                if (totalDamageDealt > 0) {
+                if (totalDamageDealt > 0 && !shooter.isDead() && !AbilityTargets.isSpectator(shooter)) {
                     CashClashPlayer.heal(shooter, totalDamageDealt * selfHealPercent);
                     ParticleUtils.bloodHealPulse(shooter);
                 }
@@ -204,7 +204,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
             SoundUtils.playAt(hitLocation, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.5f);
         }, durationTicks);
 
-        manager.trackTask(shooter.getUniqueId(), vortexTask);
+        manager.trackLingeringTask(shooter.getUniqueId(), vortexTask);
     }
 
     /**
