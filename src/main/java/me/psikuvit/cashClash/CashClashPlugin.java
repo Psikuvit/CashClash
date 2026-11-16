@@ -9,6 +9,7 @@ import me.psikuvit.cashClash.command.HubCommand;
 import me.psikuvit.cashClash.command.LeaveCommand;
 import me.psikuvit.cashClash.command.PartyCommandHandler;
 import me.psikuvit.cashClash.command.RejoinCommand;
+import me.psikuvit.cashClash.command.StartCommand;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.config.MessagesConfig;
@@ -351,6 +352,7 @@ public final class CashClashPlugin extends JavaPlugin {
         getServer().getCommandMap().register("cashclash", new HubCommand());
         getServer().getCommandMap().register("cashclash", new LeaveCommand());
         getServer().getCommandMap().register("cashclash", new RejoinCommand());
+        getServer().getCommandMap().register("cashclash", new StartCommand());
         getServer().getCommandMap().register("cashclash", new DiscordCommand());
         getServer().getCommandMap().register("cashclash", new GuideBookCommand());
         getLogger().info("Commands registered");

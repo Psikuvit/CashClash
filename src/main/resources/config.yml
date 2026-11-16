@@ -646,6 +646,11 @@ leaderboard:
 # (/cc setwaitinglobby). Once game.min-players are queued a countdown starts; when it ends a
 # random free map is picked and up to game.max-players start a game, party members on the same
 # team.
+start-command:
+  # /start starts the game straight away with everyone in the queue. Anyone can use it, op or
+  # not, while this is true; false turns the command off.
+  enabled: true
+
 queue:
   # Countdown before the game starts once enough players are queued (seconds)
   countdown-seconds: 10

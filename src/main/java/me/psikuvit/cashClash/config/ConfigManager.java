@@ -805,6 +805,13 @@ public class ConfigManager {
     }
 
     /**
+     * Whether /start - anyone starting the queue's game right away - is turned on.
+     */
+    public boolean isStartCommandEnabled() {
+        return config.getBoolean("start-command.enabled", true);
+    }
+
+    /**
      * Check if inventory should be restored on rejoin.
      */
     public boolean isRejoinRestoreInventory() {

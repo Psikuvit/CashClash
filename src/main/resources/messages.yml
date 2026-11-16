@@ -962,6 +962,7 @@ messages:
     no-arena: "<red>No arena is ready to host a game. Ask an admin to set one up.</red>"
     force-started: "<green>Starting a game with everyone in the queue.</green>"
     force-start-empty: "<red>Nobody is in the queue.</red>"
+    start-disabled: "<red>/start is turned off on this server.</red>"
 
   # ============================================
   # PRACTICE RANGE MESSAGES
