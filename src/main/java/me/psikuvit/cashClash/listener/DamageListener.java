@@ -128,7 +128,8 @@ public class DamageListener implements Listener {
         try {
             if (customItemManager.getHandler(TotemOfHauntingHandler.class).isTotemInvincible(player.getUniqueId())) {
                 playInvincibleHitFeedbackIfEntity(event);
-                event.setCancelled(true);
+                // Zeroed, not cancelled: the hit still lands and knocks back, it just does nothing
+                event.setDamage(0);
                 return;
             }
 
@@ -647,12 +648,13 @@ public class DamageListener implements Listener {
     // ==================== PROTECTION HANDLERS ====================
 
     /**
-     * Cancels a hit on a victim who is currently untouchable (Totem of Haunting or Overdrive
-     * Potion invincibility) and gives the attacker an audible "that did nothing" cue. The main
-     * {@link #onEntityDamage} handler already cancels these, but it has no attacker to play a
-     * sound to, so the swing otherwise reads as a silent whiff.
+     * Stops a hit on a victim who is currently untouchable (Totem of Haunting, Overdrive Potion,
+     * Dragon Rush) and gives the attacker an audible "that did nothing" cue. The main
+     * {@link #onEntityDamage} handler already stops these, but it has no attacker to play a
+     * sound to, so the swing otherwise reads as a silent whiff. The Totem of Haunting's hit is
+     * zeroed rather than cancelled, so it still knocks the victim back.
      *
-     * @return true if damage was cancelled
+     * @return true if the hit was stopped
      */
     private boolean handleInvincibleVictim(EntityDamageByEntityEvent event, Player attacker, Player victim) {
         UUID victimId = victim.getUniqueId();
@@ -664,13 +666,18 @@ public class DamageListener implements Listener {
             return false;
         }
 
-        if (!customItemManager.getHandler(TotemOfHauntingHandler.class).isTotemInvincible(victimId)
+        boolean totem = customItemManager.getHandler(TotemOfHauntingHandler.class).isTotemInvincible(victimId);
+        if (!totem
                 && !customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(victimId)
                 && !armorManager.getHandler(DragonSetHandler.class).isDragonRushInvincible(victimId)) {
             return false;
         }
 
-        event.setCancelled(true);
+        if (totem) {
+            event.setDamage(0);
+        } else {
+            event.setCancelled(true);
+        }
         playInvincibleHitFeedback(attacker);
         return true;
     }
