@@ -261,8 +261,8 @@ public class PartyManager implements Shutdownable {
             return;
         }
 
-        if (isInParty(invitee)) {
-            Messages.send(inviter, "party.player-already-in-party",
+        if (party.isMember(invitee.getUniqueId())) {
+            Messages.send(inviter, "party.player-already-in-your-party",
                 "player_name", invitee.getName());
             return;
         }
@@ -304,7 +304,7 @@ public class PartyManager implements Shutdownable {
     }
 
     /**
-     * Accept a party invite.
+     * Accept a party invite. A player already in another party leaves it to join this one.
      */
     public void acceptInvite(Player player, String inviterName) {
         List<PartyInvite> invites = pendingInvites.get(player.getUniqueId());
@@ -335,16 +335,20 @@ public class PartyManager implements Shutdownable {
             return;
         }
 
-        if (isInParty(player)) {
-            Messages.send(player, "party.already-in-party-accept");
-            return;
-        }
-
         Party party = getParty(invite.getPartyId());
         if (party == null) {
             Messages.send(player, "party.party-no-longer-exists");
             invites.remove(invite);
             return;
+        }
+
+        if (party.isMember(player.getUniqueId())) {
+            Messages.send(player, "party.already-in-this-party");
+            invites.remove(invite);
+            return;
+        }
+        if (isInParty(player)) {
+            leaveParty(player);
         }
 
         // Join the party
