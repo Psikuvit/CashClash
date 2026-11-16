@@ -40,7 +40,7 @@ public class BouncePadHandler extends CustomItemHandler {
     // The ring circling a pad's middle, in the placer's team colour - just clear of the block's corners
     private static final double RING_RADIUS = 0.85;
     private static final int RING_POINTS = 24;
-    private static final Color OUTSIDE_GAME_RING_COLOR = Color.fromRGB(120, 220, 90);
+    private static final Color OUTSIDE_GAME_RING_COLOR = Color.fromRGB(120, 200, 255);
 
     // Bounce pad tracking - stores location -> owner team + the face it's attached to
     private final Map<Location, BouncePadInfo> bouncePadTeams;

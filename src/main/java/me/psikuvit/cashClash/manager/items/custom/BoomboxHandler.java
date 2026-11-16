@@ -34,8 +34,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Boombox: places a 12-second JUKEBOX that pulses 4 times (every 3s), drawing an
- * orange forming ring and granting same-team players within radius a temporary
+ * Boombox: places a 12-second JUKEBOX that pulses 4 times (every 3s), drawing a
+ * gray forming ring and granting same-team players within radius a temporary
  * speed boost each pulse (flag carriers excluded in CTF).
  */
 public class BoomboxHandler extends CustomItemHandler {
@@ -44,7 +44,8 @@ public class BoomboxHandler extends CustomItemHandler {
     private static final double FLOATING_RING_HEIGHT = 1.5;
     private static final double FLOATING_RING_RADIUS = 0.6;
     private static final int FLOATING_RING_POINTS = 20;
-    private static final Color OUTSIDE_GAME_RING_COLOR = Color.fromRGB(255, 140, 0);
+    private static final Color OUTSIDE_GAME_RING_COLOR = Color.fromRGB(20, 20, 20);
+    private static final Color PULSE_RING_COLOR = Color.fromRGB(150, 150, 150);
 
     private final Set<Location> activeBoomboxes;
     private final Map<Location, BukkitTask> floatingRingTasks;
@@ -126,7 +127,7 @@ public class BoomboxHandler extends CustomItemHandler {
     }
 
     /**
-     * Draws the orange speed-radius ring, forming point-by-point rather than appearing all at
+     * Draws the gray speed-radius ring, forming point-by-point rather than appearing all at
      * once (see ParticleUtils.formingRing).
      */
     private void spawnBoomboxRing(Location center, double radius) {
@@ -136,7 +137,7 @@ public class BoomboxHandler extends CustomItemHandler {
             int formed = i + 1;
             int delay = Math.round(i * (float) formTicks / ringPoints);
             SchedulerUtils.runTaskLater(() ->
-                    ParticleUtils.formingRing(center, radius, ringPoints, formed, Color.fromRGB(255, 140, 0), 1.4f), delay);
+                    ParticleUtils.formingRing(center, radius, ringPoints, formed, PULSE_RING_COLOR, 1.4f), delay);
         }
     }
 
