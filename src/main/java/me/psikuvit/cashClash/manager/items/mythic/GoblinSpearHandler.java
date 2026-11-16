@@ -51,11 +51,13 @@ public class GoblinSpearHandler extends MythicItemHandler {
     private static final int PRIORITY_CHARGE_TIMER = 4;
 
     private final Map<UUID, List<LivingEntity>> goblinSpearCharging;
+    private final Map<UUID, BukkitTask> chargeTasks;
     private final ChanceBag venomJavelinChance;
 
     public GoblinSpearHandler(MythicItemManager manager) {
         super(manager);
         this.goblinSpearCharging = new ConcurrentHashMap<>();
+        this.chargeTasks = new ConcurrentHashMap<>();
         this.venomJavelinChance = new ChanceBag();
     }
 
@@ -138,6 +140,10 @@ public class GoblinSpearHandler extends MythicItemHandler {
                     cancel();
                     return;
                 }
+                if (isStuck(player)) {
+                    stopChargeEarly(player);
+                    return;
+                }
 
                 // Move player forward
                 Vector velocity = chargeDirection.clone().multiply(chargeSpeed);
@@ -180,6 +186,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
             }
         };
         BukkitTask chargeTask = SchedulerUtils.runTaskTimer(chargeRunnable, 0L, 1L);
+        if (chargeTask != null) chargeTasks.put(uuid, chargeTask);
 
         // Track the task
         manager.trackTask(uuid, chargeTask);
@@ -197,6 +204,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
     private void endCharge(Player player, boolean hitWall, int ticksTraveled, Vector chargeDirection) {
         UUID uuid = player.getUniqueId();
         List<LivingEntity> caughtPlayers = goblinSpearCharging.remove(uuid);
+        chargeTasks.remove(uuid);
         TimerDisplayUtils.stopCountdownTimer(uuid, PRIORITY_CHARGE_TIMER);
 
         if (!hitWall) {
@@ -252,6 +260,28 @@ public class GoblinSpearHandler extends MythicItemHandler {
 
         // Stop the player
         player.setVelocity(new Vector(0, 0, 0));
+    }
+
+    /**
+     * Ends a charge on the spot, before it reaches a wall: pulled by an Orb of Gravitation or
+     * Carl's Battleaxe, or stuck in a web, water or lava. Nobody takes impact or recoil damage,
+     * caught enemies are let go, and the charger stops moving forward.
+     */
+    public void stopChargeEarly(LivingEntity entity) {
+        if (!(entity instanceof Player player) || !goblinSpearCharging.containsKey(player.getUniqueId())) return;
+
+        BukkitTask task = chargeTasks.get(player.getUniqueId());
+        if (task != null) task.cancel();
+        endCharge(player, false, 0, new Vector());
+
+        Messages.send(player, "mythic.charge-stopped-early");
+        SoundUtils.play(player, Sound.ENTITY_RAVAGER_STUNNED, 1.0f, 1.0f);
+    }
+
+    private static boolean isStuck(Player player) {
+        if (player.isInWater() || player.isInLava()) return true;
+        return player.getLocation().getBlock().getType() == Material.COBWEB
+                || player.getEyeLocation().getBlock().getType() == Material.COBWEB;
     }
 
     /**
@@ -315,6 +345,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
     @Override
     public void cleanup() {
         goblinSpearCharging.clear();
+        chargeTasks.clear();
         venomJavelinChance.clear();
     }
 

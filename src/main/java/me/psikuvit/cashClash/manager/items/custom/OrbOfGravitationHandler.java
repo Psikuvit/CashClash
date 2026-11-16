@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.manager.items.mythic.GoblinSpearHandler;
 import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
@@ -192,6 +193,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
 
         // Slowness I once + a colour progress marker for the beam lerp
         boolean inGame = isGameWorld(center.getWorld());
+        GoblinSpearHandler goblinSpear = CashClashPlugin.getInstance().getMythicItemManager().getHandler(GoblinSpearHandler.class);
         List<LivingEntity> pulled = new ArrayList<>();
         for (Entity entity : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
             if (!(entity instanceof LivingEntity target) || target.equals(owner)) continue;
@@ -202,6 +204,7 @@ public class OrbOfGravitationHandler extends CustomItemHandler {
                 if (targetTeam != null && targetTeam.getTeamNumber() == team.getTeamNumber()) continue;
             }
             if (target instanceof Player pulledPlayer) Messages.send(pulledPlayer, "customitem.orb-pulled");
+            goblinSpear.stopChargeEarly(target);
             pulled.add(target);
         }
 

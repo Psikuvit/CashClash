@@ -531,6 +531,8 @@ messages:
      boombox-placed: "<green>Speedbox placed! Pulsing knockback for 12 seconds.</green>"
      wall-impact: "<gold>Wall impact! Dealt {damage} damage to {enemy_count} enemies!</gold>"
      charge-activated: "<green>Charge!</green>"
+     # A Goblin Spear charge cut short by a pull, a web, water or lava
+     charge-stopped-early: "<red>Your charge was stopped early!</red>"
      # Action bar while a Goblin Spear charge runs, counting down to its end
      goblin-charge-timer: "<green>Charge: {seconds}s</green>"
      blood-vortex-activated: "<dark_purple>Blood Vortex activated!</dark_purple>"

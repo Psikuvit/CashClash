@@ -308,6 +308,7 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                         LivingEntity target = (LivingEntity) entity;
                         if (caught.contains(target)) continue;
                         caught.add(target);
+                        manager.getHandler(GoblinSpearHandler.class).stopChargeEarly(target);
                         AbilityTargets.playSound(target, Sound.ENTITY_PLAYER_HURT, 1.0f, 1.0f);
                         Messages.debug(player, "CARLS_BATTLEAXE: Throw caught " + target.getName());
                     }
