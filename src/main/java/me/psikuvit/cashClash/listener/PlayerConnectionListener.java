@@ -140,21 +140,8 @@ public class PlayerConnectionListener implements Listener {
         var session = gameManager.getPlayerSession(player);
         if (session != null) {
             Messages.debug(player, "GAME", "Player quit while in session " + session.getSessionId());
-
-            // Try to save rejoin data
-            boolean rejoinSaved = rejoinManager.saveRejoinData(player, session);
-
-            if (rejoinSaved) {
-                // Mark player as disconnected but don't remove them yet
-                session.markPlayerDisconnected(player);
-                // Don't remove from GameManager - let RejoinManager handle timeout
-                Messages.debug(player, "REJOIN", "Rejoin data saved for player");
-            } else {
-                // Rejoin not enabled or game ending - remove immediately
-                session.removePlayer(player);
-                gameManager.removePlayerFromSession(player);
-                Messages.debug(player, "GAME", "Player removed from session (rejoin not applicable)");
-            }
+            boolean kept = rejoinManager.leaveGame(player, session, true);
+            Messages.debug(player, "REJOIN", kept ? "Rejoin data saved for player" : "Player removed from session (rejoin not applicable)");
         }
     }
 }

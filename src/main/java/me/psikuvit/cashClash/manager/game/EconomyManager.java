@@ -16,6 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -68,7 +69,9 @@ public class EconomyManager {
         long share = standardShare(pool);
         RoundData previousRound = session.getPreviousRoundData();
         RejoinManager rejoinManager = CashClashPlugin.getInstance().getRejoinManager();
-        for (UUID uuid : session.getPlayers()) {
+        List<UUID> everyone = new ArrayList<>(session.getPlayers());
+        everyone.addAll(rejoinManager.getAwayPlayers(session));
+        for (UUID uuid : everyone) {
             if (rejoinManager.recordMissedShare(uuid, session, share)) continue;
 
             long transfers = previousRound != null ? previousRound.getPoolTransfers(uuid) : 0;

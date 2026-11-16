@@ -956,6 +956,7 @@ public class GameSession {
             } else {
                 teamBlue.addPlayer(uuid);
             }
+            arenaManager.incrementPlayerCount(arenaNumber);
         }
 
         // Restore player state from rejoin data

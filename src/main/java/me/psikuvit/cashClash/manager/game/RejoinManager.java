@@ -20,6 +20,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
@@ -31,6 +32,8 @@ import java.util.UUID;
 public class RejoinManager implements Shutdownable {
 
     private final Map<UUID, RejoinData> pendingRejoins;
+    // The game each player last walked out of, so /rejoin can tell "over" from "never left one"
+    private final Map<UUID, UUID> lastLeftSessions;
     private BukkitTask cleanupTask;
     private final ConfigManager configManager;
     private final GameManager gameManager;
@@ -39,7 +42,67 @@ public class RejoinManager implements Shutdownable {
         this.configManager = configManager;
         this.gameManager = gameManager;
         this.pendingRejoins = new HashMap<>();
+        this.lastLeftSessions = new HashMap<>();
         startCleanupTask();
+    }
+
+    /** What {@link #rejoinViaCommand} found. */
+    public enum RejoinResult { REJOINED, NOTHING_TO_REJOIN, GAME_OVER, TOO_LATE }
+
+    /**
+     * Takes a player out of their game the way disconnecting does: the gamemode handles them
+     * leaving, and with rejoining on their spot is kept until the timeout; otherwise they're
+     * out for good. A player who
+     * disconnected stays on the session's lists, where being offline keeps the game off them;
+     * one who used /leave is still online, so they come off every list and {@link
+     * GameSession#rejoinPlayer} puts them back.
+     *
+     * @return whether their spot is kept for a rejoin
+     */
+    public boolean leaveGame(Player player, GameSession session, boolean disconnecting) {
+        lastLeftSessions.put(player.getUniqueId(), session.getSessionId());
+
+        boolean kept = saveRejoinData(player, session);
+        if (kept && disconnecting) {
+            session.markPlayerDisconnected(player);
+            return true;
+        }
+        session.removePlayer(player);
+        gameManager.removePlayerFromSession(player);
+        return kept;
+    }
+
+    /**
+     * Players away from {@code session} with their spot kept who are no longer on its player
+     * list - the ones who used /leave - so buy phases still note what they'd have been paid.
+     */
+    public List<UUID> getAwayPlayers(GameSession session) {
+        List<UUID> away = new ArrayList<>();
+        for (RejoinData data : pendingRejoins.values()) {
+            if (data.sessionId().equals(session.getSessionId()) && !session.getPlayers().contains(data.playerUuid())) {
+                away.add(data.playerUuid());
+            }
+        }
+        return away;
+    }
+
+    /**
+     * /rejoin: puts a player who walked out of a game back into it, if it's still going and
+     * their spot is still kept.
+     */
+    public RejoinResult rejoinViaCommand(Player player) {
+        UUID uuid = player.getUniqueId();
+        if (hasPendingRejoin(uuid) && processRejoin(player)) return RejoinResult.REJOINED;
+
+        UUID left = lastLeftSessions.get(uuid);
+        if (left == null) return RejoinResult.NOTHING_TO_REJOIN;
+
+        GameSession session = findSessionById(left);
+        if (session == null || session.getState() == GameState.ENDING || session.getState() == GameState.WAITING) {
+            lastLeftSessions.remove(uuid);
+            return RejoinResult.GAME_OVER;
+        }
+        return RejoinResult.TOO_LATE;
     }
 
     /**
@@ -247,6 +310,7 @@ public class RejoinManager implements Shutdownable {
             gameManager.addPlayerToSession(player, session);
 
             pendingRejoins.remove(player.getUniqueId());
+            lastLeftSessions.remove(player.getUniqueId());
             Messages.debug("REJOIN", "Successfully restored " + player.getName() + " to session " + session.getSessionId());
 
             // Notify team
@@ -344,6 +408,7 @@ public class RejoinManager implements Shutdownable {
             cleanupTask = null;
         }
         pendingRejoins.clear();
+        lastLeftSessions.clear();
     }
 
     // ==================== HELPER METHODS ====================

@@ -880,6 +880,14 @@ messages:
     timeout-removed-broadcast: "<red>{player_name} did not rejoin in time and has been removed.</red>"
     disconnect-warning: "<yellow>{player_name} disconnected! They have <gold>{timeout_seconds}s</gold> to rejoin.</yellow>"
     reconnected-broadcast: "<green>{player_name} has reconnected!</green>"
+    # /leave and /rejoin
+    not-in-game: "<red>You're not in a game!</red>"
+    left-game: "<yellow>You left the game. Use <gold>/rejoin</gold> within <gold>{timeout_seconds}s</gold> to go back.</yellow>"
+    left-game-for-good: "<yellow>You left the game.</yellow>"
+    already-in-game: "<red>You're already in a game!</red>"
+    nothing-to-rejoin: "<red>You haven't left a game you can rejoin.</red>"
+    game-already-over: "<red>That game is already over!</red>"
+    too-late: "<red>It's too late to rejoin that game.</red>"
 
   # ============================================
   # LISTENER MESSAGES
