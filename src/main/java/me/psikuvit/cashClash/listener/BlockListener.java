@@ -215,6 +215,15 @@ public class BlockListener implements Listener {
             return;
         }
 
+        GameSession session = gameManager.getPlayerSession(player);
+        if (session != null && (session.getState() != GameState.COMBAT || session.isActionsRestricted())) {
+            event.setCancelled(true);
+            player.updateInventory();
+            boolean buyPhase = session.getState() != GameState.COMBAT && session.getState() != GameState.ENDING;
+            Messages.send(player, buyPhase ? "customitem.cannot-place-during-shopping" : "gamestate.round-is-over");
+            return;
+        }
+
         Block target = event.getBlock();
 
         if (bucket == Material.WATER_BUCKET && target.getBlockData() instanceof Waterlogged) {
