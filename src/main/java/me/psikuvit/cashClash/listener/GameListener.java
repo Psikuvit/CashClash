@@ -4,6 +4,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.event.PlayerBackToGameEvent;
+import me.psikuvit.cashClash.event.PlayerLeaveGameEvent;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -237,6 +238,29 @@ public class GameListener implements Listener {
     private Player creditableHitter(GameSession session, Player victim, Player hitter) {
         if (hitter == null || hitter.equals(victim) || gameManager.getPlayerSession(hitter) != session) return null;
         return AbilityTargets.isEnemy(hitter, victim) ? hitter : null;
+    }
+
+    /**
+     * A player who disconnects or /leaves mid-combat within {@code combat-log.seconds} of an
+     * enemy's hit counts as killed by that enemy, who gets everything a kill pays: the kill
+     * transfer, assists, armor kill effects, Investor's and Profit Vortex payouts.
+     */
+    @EventHandler
+    public void onLeaveGame(PlayerLeaveGameEvent event) {
+        Player leaver = event.getPlayer();
+        GameSession session = event.getSession();
+        int window = configManager.getCombatLogSeconds();
+        if (window <= 0 || session.getState() != GameState.COMBAT) return;
+        if (session.isSequenceLocked() || session.isActionsRestricted() || session.isRoundEnding()) return;
+
+        UUID hitterId = session.getAssistTracker().getLastAttacker(leaver.getUniqueId(), window * 1000L);
+        Player hitter = hitterId != null ? Bukkit.getPlayer(hitterId) : null;
+        if (hitter == null || gameManager.getPlayerSession(hitter) != session || !AbilityTargets.isEnemy(hitter, leaver)) return;
+
+        handleKillerRewards(session, leaver, hitter);
+        weaponItemManager.getHandler(CashBlasterHandler.class).onProfitVortexDeath(leaver, hitter);
+        session.getAssistTracker().clearVictim(leaver.getUniqueId());
+        Messages.send(hitter, "listener.combat-log-kill", "player_name", leaver.getName());
     }
 
     private void handleKillerRewards(GameSession session, Player victim, Player killer) {

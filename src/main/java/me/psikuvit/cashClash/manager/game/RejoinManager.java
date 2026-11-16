@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.event.PlayerBackToGameEvent;
+import me.psikuvit.cashClash.event.PlayerLeaveGameEvent;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
@@ -50,9 +51,9 @@ public class RejoinManager implements Shutdownable {
     public enum RejoinResult { REJOINED, NOTHING_TO_REJOIN, GAME_OVER, TOO_LATE }
 
     /**
-     * Takes a player out of their game the way disconnecting does: the gamemode handles them
-     * leaving, and with rejoining on their spot is kept until the timeout; otherwise they're
-     * out for good. A player who
+     * Takes a player out of their game the way disconnecting does: whoever hit them last gets the
+     * kill ({@link PlayerLeaveGameEvent}), the gamemode handles them leaving, and with rejoining
+     * on their spot is kept until the timeout; otherwise they're out for good. A player who
      * disconnected stays on the session's lists, where being offline keeps the game off them;
      * one who used /leave is still online, so they come off every list and {@link
      * GameSession#rejoinPlayer} puts them back.
@@ -60,6 +61,7 @@ public class RejoinManager implements Shutdownable {
      * @return whether their spot is kept for a rejoin
      */
     public boolean leaveGame(Player player, GameSession session, boolean disconnecting) {
+        Bukkit.getPluginManager().callEvent(new PlayerLeaveGameEvent(player, session));
         lastLeftSessions.put(player.getUniqueId(), session.getSessionId());
 
         boolean kept = saveRejoinData(player, session);

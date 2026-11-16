@@ -893,6 +893,8 @@ messages:
   # LISTENER MESSAGES
   # ============================================
   listener:
+    # To the last enemy to hit a player who disconnected or used /leave mid-fight
+    combat-log-kill: "<green>{player_name} left mid-fight - the kill is yours!</green>"
     you-died-title: "<red><bold>YOU DIED!</bold></red>"
     out-of-lives: "<red>You are out of lives for this round!</red>"
     respawn-delay: "<yellow>You will respawn in {seconds} seconds...</yellow>"

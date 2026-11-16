@@ -58,9 +58,9 @@ public class EconomyManager {
      * Pays every player their part of the economy round's pool at the start of its buy phase, on
      * top of whatever they have left over: an equal share, plus the kill and assist transfers
      * they won in the round just played, minus the ones they lost (never below nothing). A player
-     * who's away gets the plain share when they come back instead ({@link #payMissedShares}).
-     * Only the first buy phase announces the share; later ones announce the total
-     * ({@link #sendRoundEarnings}).
+     * who's away gets that payout when they come back instead ({@link #payMissedShares}), so a
+     * kill credited when they left still costs them. Only the first buy phase announces the
+     * share; later ones announce the total ({@link #sendRoundEarnings}).
      */
     public static void payRoundShare(GameSession session) {
         long pool = getRoundPool(session);
@@ -72,9 +72,9 @@ public class EconomyManager {
         List<UUID> everyone = new ArrayList<>(session.getPlayers());
         everyone.addAll(rejoinManager.getAwayPlayers(session));
         for (UUID uuid : everyone) {
-            if (rejoinManager.recordMissedShare(uuid, session, share)) continue;
-
             long transfers = previousRound != null ? previousRound.getPoolTransfers(uuid) : 0;
+            if (rejoinManager.recordMissedShare(uuid, session, Math.max(0, share + transfers))) continue;
+
             long paid = session.getRewardManager().grant(uuid, RewardType.ROUND_DISTRIBUTION, Math.max(0, share + transfers));
             session.getCurrentRoundData().setPoolPayout(uuid, paid);
             Player player = Bukkit.getPlayer(uuid);

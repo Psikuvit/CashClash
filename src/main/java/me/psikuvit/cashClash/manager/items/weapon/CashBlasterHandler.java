@@ -244,10 +244,15 @@ public class CashBlasterHandler extends WeaponItemHandler {
      * Player died while inside a Profit Vortex: award 400 coins to the vortex owner's team.
      */
     public void onProfitVortexDeath(PlayerDeathEvent event) {
-        Player victim = event.getEntity();
-        if (!caughtInProfitVortex.containsKey(victim.getUniqueId())) return;
+        onProfitVortexDeath(event.getEntity(), event.getEntity().getKiller());
+    }
 
-        Player killer = victim.getKiller();
+    /**
+     * The same payout for a kill that wasn't a death - a player who left mid-fight while in the
+     * vortex, credited to whoever hit them last.
+     */
+    public void onProfitVortexDeath(Player victim, Player killer) {
+        if (!caughtInProfitVortex.containsKey(victim.getUniqueId())) return;
         if (killer == null) return;
 
         Location vortexLocation = caughtInProfitVortex.get(victim.getUniqueId());

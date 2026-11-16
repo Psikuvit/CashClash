@@ -797,6 +797,14 @@ public class ConfigManager {
     }
 
     /**
+     * How recently an enemy's hit makes a player who disconnects or /leaves count as killed by
+     * that enemy; 0 turns it off.
+     */
+    public int getCombatLogSeconds() {
+        return config.getInt("combat-log.seconds", 10);
+    }
+
+    /**
      * Check if inventory should be restored on rejoin.
      */
     public boolean isRejoinRestoreInventory() {

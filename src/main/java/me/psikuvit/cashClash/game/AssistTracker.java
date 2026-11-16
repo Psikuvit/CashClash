@@ -37,6 +37,25 @@ public class AssistTracker {
     }
 
     /**
+     * Whoever hit the victim last, if that was within the last {@code windowMillis} - else null.
+     */
+    public UUID getLastAttacker(UUID victim, long windowMillis) {
+        Map<UUID, Long> hits = lastHitTimes.get(victim);
+        if (hits == null) return null;
+
+        long cutoff = System.currentTimeMillis() - windowMillis;
+        UUID last = null;
+        long lastTime = cutoff;
+        for (Map.Entry<UUID, Long> hit : hits.entrySet()) {
+            if (hit.getValue() >= lastTime) {
+                last = hit.getKey();
+                lastTime = hit.getValue();
+            }
+        }
+        return last;
+    }
+
+    /**
      * Forgets every hit recorded on a player, once their death has been resolved.
      */
     public void clearVictim(UUID victim) {

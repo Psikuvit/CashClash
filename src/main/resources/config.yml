@@ -615,6 +615,12 @@ rejoin:
   # Restore player balance on rejoin
   restore-balance: true
 
+# A player who disconnects or uses /leave mid-combat within this many seconds of an enemy's
+# hit counts as killed by the last enemy to hit them, who gets everything a kill pays (kill
+# money from the pool, armor kill effects, Investor's and Cash Blaster payouts). 0 turns it off.
+combat-log:
+  seconds: 10
+
 # ============================================
 # AFK SETTINGS
 # ============================================
