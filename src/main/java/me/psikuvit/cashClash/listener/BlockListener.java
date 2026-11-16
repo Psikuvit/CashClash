@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -148,6 +149,9 @@ public class BlockListener implements Listener {
     private static final int MAX_FLOWING_FLUID_LEVEL = 7;
     private static final int FALLING_FLUID_LEVEL = 8;
     private static final BlockFace[] HORIZONTAL_FACES = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
+    private static final BlockFace[] TOUCHING_FACES = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST,
+            BlockFace.UP, BlockFace.DOWN};
+    private static final Color OBSIDIAN_BREAK_COLOR = Color.fromRGB(150, 60, 220);
 
     private static final Map<Location, PlacedFluid> fluidCells = new ConcurrentHashMap<>();
 
@@ -270,6 +274,7 @@ public class BlockListener implements Listener {
                 return;
             }
             showDespawnTimer(target, fluid, itemsConfig.getFluidDespawnSeconds(fluid) * 20L, water ? "aqua" : "gold");
+            if (water) solidifyLavaAround(target, zoneId);
         });
     }
 
@@ -331,7 +336,7 @@ public class BlockListener implements Listener {
      * Lava turning to obsidian or cobblestone against water. A placement whose source solidifies
      * stops spreading and drains, like scooping it - the planned rings used to keep flowing out
      * of the new obsidian. A spread cell that solidifies just leaves its placement. Either way the
-     * new block goes when the placement would have despawned, so the map still heals.
+     * new block despawns like the obsidian placed water makes (see {@link #solidifyLavaAround}).
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onFluidSolidified(BlockFormEvent event) {
@@ -346,12 +351,56 @@ public class BlockListener implements Listener {
             fluidCells.remove(loc);
         }
 
-        long ticksLeft = Math.max(1L, (placement.despawnAt - System.currentTimeMillis()) / 50L);
+        SchedulerUtils.runTask(() -> {
+            if (loc.isWorldLoaded() && loc.getBlock().getType() == formed) scheduleSolidifiedDespawn(loc.getBlock(), formed);
+        });
+    }
+
+    /**
+     * Placed water reaching lava turns that lava to obsidian, placed lava and the map's own
+     * alike. A placed lava source that turns drains the rest of its pool, like scooping it.
+     */
+    private void solidifyLavaAround(Block water, UUID zoneId) {
+        for (BlockFace face : TOUCHING_FACES) {
+            Block lava = water.getRelative(face);
+            if (lava.getType() != Material.LAVA) continue;
+
+            Location loc = lava.getLocation().toBlockLocation();
+            PlacedFluid placement = fluidCells.get(loc);
+            if (placement == null) {
+                fluidReplacedBlocks.putIfAbsent(loc, lava.getBlockData());
+            } else if (loc.equals(placement.origin)) {
+                drainGroup(placement, "source turned to obsidian by water");
+            } else {
+                fluidCells.remove(loc);
+            }
+
+            lava.setType(Material.OBSIDIAN, false);
+            trackPlacedBlock(zoneId, lava);
+            SoundUtils.playAt(loc.clone().add(0.5, 0.5, 0.5), Sound.BLOCK_LAVA_EXTINGUISH, 0.6f, 1.0f);
+            scheduleSolidifiedDespawn(lava, Material.OBSIDIAN);
+        }
+    }
+
+    /**
+     * Lava that met water stays solid for {@code obsidian-despawn-seconds} under a purple
+     * countdown, then breaks with a puff of purple and gives back whatever was there before.
+     */
+    private void scheduleSolidifiedDespawn(Block block, Material formed) {
+        long ticks = itemsConfig.getFluidObsidianDespawnSeconds() * 20L;
+        showDespawnTimer(block, formed, ticks, "light_purple");
+
+        Location loc = block.getLocation().toBlockLocation();
         SchedulerUtils.runTaskLater(() -> {
             if (!loc.isWorldLoaded()) return;
-            Block block = loc.getBlock();
-            if (block.getType() == formed) restoreAfterFluid(block);
-        }, ticksLeft);
+            Block current = loc.getBlock();
+            if (current.getType() != formed) return;
+
+            Location center = loc.clone().add(0.5, 0.5, 0.5);
+            ParticleUtils.spawnDust(center, OBSIDIAN_BREAK_COLOR, 0.6f, 14, 0.35);
+            SoundUtils.playAt(center, Sound.BLOCK_AMETHYST_BLOCK_BREAK, 0.8f, 0.9f);
+            restoreAfterFluid(current);
+        }, ticks);
     }
 
     /**
@@ -1029,6 +1078,7 @@ public class BlockListener implements Listener {
             fluidCells.put(loc, placement);
             trackPlacedBlock(placement.sessionId, block);
             Messages.debug("FLUID", "  ring " + ringNumber + " placed " + describe(block) + " at " + at(loc));
+            if (placement.fluid == Material.WATER) solidifyLavaAround(block, placement.sessionId);
         }
 
         SchedulerUtils.runTaskLater(() -> revealRing(placement, index + 1), itemsConfig.getFluidFlowTicks(placement.fluid));

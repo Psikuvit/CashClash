@@ -346,7 +346,9 @@ utilities:
   #   fall-max-depth  - how far it falls straight down (blocks) to find solid ground before it
   #                     spreads, so a bucket emptied over a ledge settles on the floor below
   #                     instead of spreading from mid-air; a fall that hasn't landed by then stops
+  #   obsidian-despawn-seconds - lava that placed water reaches turns to obsidian for this long
   fluids:
+    obsidian-despawn-seconds: 5
     water:
       flow-distance: 3
       flow-ticks: 5

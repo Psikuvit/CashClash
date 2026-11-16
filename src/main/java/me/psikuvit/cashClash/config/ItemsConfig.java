@@ -105,6 +105,10 @@ public class ItemsConfig {
         return config.getInt(fluidPath(fluid) + "fall-max-depth", 16);
     }
 
+    public int getFluidObsidianDespawnSeconds() {
+        return config.getInt("utilities.fluids.obsidian-despawn-seconds", 5);
+    }
+
     private static String fluidPath(Material fluid) {
         return "utilities.fluids." + (fluid == Material.LAVA ? "lava." : "water.");
     }
