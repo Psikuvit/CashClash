@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +52,9 @@ public class ProtectThePresidentGamemode extends Gamemode {
     private final Map<TeamColor, BukkitTask> glowingTasks;
     // A president who left mid-combat -> the timer for their second death
     private final Map<UUID, BukkitTask> presidentLeftTimers;
+    // Each team's latest president and how many rounds running they've been it
+    private final Map<TeamColor, UUID> lastPresidents;
+    private final Map<TeamColor, Integer> presidentRuns;
 
     private final SuddenDeathManager suddenDeathManager;
     private final FinalStandManager finalStandManager;
@@ -80,6 +84,8 @@ public class ProtectThePresidentGamemode extends Gamemode {
         this.selectedBuffs = new HashMap<>();
         this.glowingTasks = new EnumMap<>(TeamColor.class);
         this.presidentLeftTimers = new HashMap<>();
+        this.lastPresidents = new EnumMap<>(TeamColor.class);
+        this.presidentRuns = new EnumMap<>(TeamColor.class);
         this.suddenDeathManager = new SuddenDeathManager(session, this);
         this.finalStandManager = new FinalStandManager(session, this);
         this.selectionPhaseActive = false;
@@ -508,13 +514,30 @@ public class ProtectThePresidentGamemode extends Gamemode {
      * roster first is what actually randomizes it.
      */
     private void selectPresidents() {
-        UUID pres1Uuid = randomPlayer(session.getTeamRed().getPlayers());
-        President pres1 = President.create(pres1Uuid, 1);
-        presidents.put(TeamColor.RED, pres1);
+        for (TeamColor color : TeamColor.values()) {
+            Team team = color == TeamColor.RED ? session.getTeamRed() : session.getTeamBlue();
+            UUID chosen = choosePresident(color, team.getPlayers());
+            presidents.put(color, President.create(chosen, color.getTeamNumber()));
+        }
+    }
 
-        UUID pres2Uuid = randomPlayer(session.getTeamBlue().getPlayers());
-        President pres2 = President.create(pres2Uuid, 2);
-        presidents.put(TeamColor.BLUE, pres2);
+    /**
+     * A random player from the team, leaving out whoever has just been president
+     * {@code max-terms-in-a-row} rounds running - unless they're the only one there is. Being
+     * picked again extends their run; anyone else starts a new one.
+     */
+    private UUID choosePresident(TeamColor color, Set<UUID> players) {
+        UUID last = lastPresidents.get(color);
+        int run = presidentRuns.getOrDefault(color, 0);
+        int maxTerms = CashClashPlugin.getInstance().getConfigManager().getPTPMaxPresidentTermsInARow();
+
+        Set<UUID> candidates = new HashSet<>(players);
+        if (last != null && run >= maxTerms && candidates.size() > 1) candidates.remove(last);
+
+        UUID chosen = randomPlayer(candidates);
+        presidentRuns.put(color, chosen != null && chosen.equals(last) ? run + 1 : 1);
+        lastPresidents.put(color, chosen);
+        return chosen;
     }
 
     private UUID randomPlayer(Set<UUID> players) {

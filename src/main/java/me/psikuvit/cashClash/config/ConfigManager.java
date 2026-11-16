@@ -501,8 +501,8 @@ public class ConfigManager {
         return config.getInt("gamemodes.protect-the-president.captures-to-win", 2);
     }
 
-    public double getPTPAttackSpeedBonus() {
-        return config.getDouble("gamemodes.protect-the-president.attack-speed-bonus", 0.2);
+    public int getPTPMaxPresidentTermsInARow() {
+        return config.getInt("gamemodes.protect-the-president.max-terms-in-a-row", 2);
     }
 
     public double getPTPPotionDurationBonusPercent() {

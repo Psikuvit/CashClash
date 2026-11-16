@@ -309,8 +309,9 @@ gamemodes:
     # A president who disconnects mid-combat takes a death, and a second one if they still
     # aren't back after this many seconds
     president-left-second-death-seconds: 25
-    # Attack Speed buff: added to the president's attack speed attribute (vanilla base 4.0)
-    attack-speed-bonus: 0.2
+    # Most rounds in a row the same player can be their team's president (they can be it again
+    # later, just not straight after)
+    max-terms-in-a-row: 2
     # Potion Duration buff: positive effects on the president last this much longer
     potion-duration-bonus-percent: 40.0
     # HP buff: permanent max-health increase, applied via the health modifier system (4.0 = 2 hearts)
