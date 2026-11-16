@@ -10,8 +10,11 @@ import me.psikuvit.cashClash.util.Messages;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -28,8 +31,33 @@ public final class ItemUtils {
 
     private static final float ONE_TICK_SECONDS = 0.05f;
 
+    /**
+     * Player attribute bases that item modifiers stack on top of - see {@link #setAttackStats}.
+     */
+    private static final double PLAYER_BASE_ATTACK_DAMAGE = 1.0;
+    private static final double PLAYER_BASE_ATTACK_SPEED = 4.0;
+
+    /** A sword's swing speed, the same from wood to netherite. */
+    public static final double SWORD_ATTACK_SPEED = 1.6;
+
     private ItemUtils() {
         throw new AssertionError("Nope.");
+    }
+
+    /**
+     * Gives an item mainhand attack damage and speed under stable, item-specific keys.
+     * <p>
+     * {@code totalDamage}/{@code totalSpeed} are the weapon's full effective stats, not deltas:
+     * writing any attribute modifier onto an ItemMeta replaces the base material's own default
+     * modifiers outright, so a netherite sword carrying one modifier no longer contributes its
+     * native +7 damage. Each value is therefore emitted relative to the bare player attribute.
+     */
+    public static void setAttackStats(ItemMeta meta, NamespacedKey damageKey, NamespacedKey speedKey,
+                                      double totalDamage, double totalSpeed) {
+        meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
+                damageKey, totalDamage - PLAYER_BASE_ATTACK_DAMAGE, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+        meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(
+                speedKey, totalSpeed - PLAYER_BASE_ATTACK_SPEED, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
     }
 
 

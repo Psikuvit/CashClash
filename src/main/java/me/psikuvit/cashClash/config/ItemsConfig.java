@@ -893,6 +893,10 @@ public class ItemsConfig {
         return config.getDouble("weapons.soul-katana.strike-damage", 6.0);
     }
 
+    public double getSoulKatanaMeleeDamage() {
+        return config.getDouble("weapons.soul-katana.melee-damage", 7.0);
+    }
+
     public int getSoulKatanaHealingReductionPercent() {
         return config.getInt("weapons.soul-katana.healing-reduction-percent", 30);
     }

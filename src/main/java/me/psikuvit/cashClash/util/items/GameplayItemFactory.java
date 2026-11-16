@@ -282,7 +282,11 @@ public final class GameplayItemFactory {
      */
     private void applyWeaponProperties(PDCSetter tags, WeaponItem weaponItem) {
         switch (weaponItem) {
-            case SOUL_KATANA -> ItemUtils.setCooldownGroup(tags.meta(), Keys.SOUL_KATANA_COOLDOWN_GROUP);
+            case SOUL_KATANA -> {
+                ItemUtils.setCooldownGroup(tags.meta(), Keys.SOUL_KATANA_COOLDOWN_GROUP);
+                ItemUtils.setAttackStats(tags.meta(), Keys.SOUL_KATANA_DAMAGE, Keys.SOUL_KATANA_SPEED,
+                        CashClashPlugin.getInstance().getItemsConfig().getSoulKatanaMeleeDamage(), ItemUtils.SWORD_ATTACK_SPEED);
+            }
             case CASH_BLASTER -> ItemUtils.setCooldownGroup(tags.meta(), Keys.CASH_BLASTER_COOLDOWN_GROUP);
             default -> {
             }

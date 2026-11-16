@@ -215,6 +215,7 @@ weapons:
 
   # Soul Katana
   soul-katana:
+    melee-damage: 7.0           # A normal hit's attack damage (7.0 = a diamond sword's)
     leap-distance: 3
     strike-damage: 6.0
     healing-reduction-percent: 30

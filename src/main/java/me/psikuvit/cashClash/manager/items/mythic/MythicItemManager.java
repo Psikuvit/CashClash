@@ -12,14 +12,10 @@ import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
-import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -330,53 +326,29 @@ public class MythicItemManager {
     }
 
     /**
-     * Player attribute bases that item modifiers stack on top of. Needed because the modifiers
-     * written here are absolute, not deltas - see {@link #addAttackModifiers}.
-     */
-    private static final double PLAYER_BASE_ATTACK_DAMAGE = 1.0;
-    private static final double PLAYER_BASE_ATTACK_SPEED = 4.0;
-
-    /**
      * Each melee mythic's damage is {@code mythic-items.<key>.melee-damage} in items.yml; its
      * swing speed stays its base material's - axe, sword, trident - with Warden Gloves (a
      * Netherite Sword underneath) at diamond-sword speed.
      */
     private static final double DIAMOND_SWORD_DAMAGE = 7.0;
-    private static final double DIAMOND_SWORD_SPEED = 1.6;
 
     private void applyMythicAttributes(MythicItem mythic, ItemMeta meta) {
         switch (mythic) {
             case CARLS_BATTLEAXE ->
-                    addAttackModifiers(meta, Keys.MYTHIC_CARLS_BATTLEAXE_DAMAGE, Keys.MYTHIC_CARLS_BATTLEAXE_SPEED,
+                    ItemUtils.setAttackStats(meta, Keys.MYTHIC_CARLS_BATTLEAXE_DAMAGE, Keys.MYTHIC_CARLS_BATTLEAXE_SPEED,
                             cfg.getMythicMeleeDamage("carls-battleaxe", 11.5), 1.0);
             case ELECTRIC_EEL_SWORD ->
-                    addAttackModifiers(meta, Keys.MYTHIC_ELECTRIC_EEL_DAMAGE, Keys.MYTHIC_ELECTRIC_EEL_SPEED,
-                            cfg.getMythicMeleeDamage("electric-eel", DIAMOND_SWORD_DAMAGE), DIAMOND_SWORD_SPEED);
+                    ItemUtils.setAttackStats(meta, Keys.MYTHIC_ELECTRIC_EEL_DAMAGE, Keys.MYTHIC_ELECTRIC_EEL_SPEED,
+                            cfg.getMythicMeleeDamage("electric-eel", DIAMOND_SWORD_DAMAGE), ItemUtils.SWORD_ATTACK_SPEED);
             case GOBLIN_SPEAR ->
-                    addAttackModifiers(meta, Keys.MYTHIC_GOBLIN_SPEAR_DAMAGE, Keys.MYTHIC_GOBLIN_SPEAR_SPEED,
+                    ItemUtils.setAttackStats(meta, Keys.MYTHIC_GOBLIN_SPEAR_DAMAGE, Keys.MYTHIC_GOBLIN_SPEAR_SPEED,
                             cfg.getMythicMeleeDamage("goblin-spear", 9.0), 1.1);
             case WARDEN_GLOVES ->
-                    addAttackModifiers(meta, Keys.MYTHIC_WARDEN_GLOVES_DAMAGE, Keys.MYTHIC_WARDEN_GLOVES_SPEED,
-                            cfg.getMythicMeleeDamage("warden-gloves", DIAMOND_SWORD_DAMAGE), DIAMOND_SWORD_SPEED);
+                    ItemUtils.setAttackStats(meta, Keys.MYTHIC_WARDEN_GLOVES_DAMAGE, Keys.MYTHIC_WARDEN_GLOVES_SPEED,
+                            cfg.getMythicMeleeDamage("warden-gloves", DIAMOND_SWORD_DAMAGE), ItemUtils.SWORD_ATTACK_SPEED);
             default -> {
             }
         }
-    }
-
-    /**
-     * Adds mainhand ATTACK_DAMAGE/ATTACK_SPEED modifiers under stable, item-specific keys.
-     * <p>
-     * {@code totalDamage}/{@code totalSpeed} are the weapon's full effective stats, not deltas:
-     * writing any attribute modifier onto an ItemMeta replaces the base material's own default
-     * modifiers outright, so a netherite sword carrying one modifier no longer contributes its
-     * native +7 damage. Each value is therefore emitted relative to the bare player attribute.
-     */
-    private void addAttackModifiers(ItemMeta meta, NamespacedKey damageKey, NamespacedKey speedKey, double totalDamage, double totalSpeed) {
-        meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
-                damageKey, totalDamage - PLAYER_BASE_ATTACK_DAMAGE, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
-
-        meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(
-                speedKey, totalSpeed - PLAYER_BASE_ATTACK_SPEED, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
     }
 
     /**

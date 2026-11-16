@@ -130,6 +130,8 @@ public class Keys {
     public static final NamespacedKey MYTHIC_GOBLIN_SPEAR_SPEED;
     public static final NamespacedKey MYTHIC_WARDEN_GLOVES_DAMAGE;
     public static final NamespacedKey MYTHIC_WARDEN_GLOVES_SPEED;
+    public static final NamespacedKey SOUL_KATANA_DAMAGE;
+    public static final NamespacedKey SOUL_KATANA_SPEED;
 
     /**
      * Warden Gloves' Rising Fury reach-stack modifier keys (one per stack, up to 3).
@@ -240,6 +242,8 @@ public class Keys {
         MYTHIC_GOBLIN_SPEAR_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_spear_speed");
         MYTHIC_WARDEN_GLOVES_DAMAGE = new NamespacedKey(CashClashPlugin.getInstance(), "warden_gloves_damage");
         MYTHIC_WARDEN_GLOVES_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "warden_gloves_speed");
+        SOUL_KATANA_DAMAGE = new NamespacedKey(CashClashPlugin.getInstance(), "soul_katana_damage");
+        SOUL_KATANA_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "soul_katana_speed");
         WARDEN_REACH_STACK_1 = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_1");
         WARDEN_REACH_STACK_2 = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_2");
         WARDEN_REACH_STACK_3 = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_3");
