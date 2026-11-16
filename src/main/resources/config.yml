@@ -10,6 +10,10 @@ debug: false
 particles:
   density: 50
 
+# How strong Speed I is, as a multiple of vanilla's: 1 = vanilla Speed I, 2 = twice its speed
+# boost, 0.5 = half of it, 0 = no boost at all. Speed II and up are left as they are.
+speed-one-strength: 1.0
+
 # ============================================
 # GAME SETTINGS
 # ============================================

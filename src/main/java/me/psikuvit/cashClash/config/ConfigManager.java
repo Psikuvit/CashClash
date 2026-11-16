@@ -78,6 +78,13 @@ public class ConfigManager {
         return Math.clamp(config.getInt("particles.density", 50), 0, 100);
     }
 
+    /**
+     * Speed I's boost as a multiple of vanilla's (1 = vanilla, 0 = none).
+     */
+    public double getSpeedOneStrength() {
+        return Math.max(0.0, config.getDouble("speed-one-strength", 1.0));
+    }
+
     public int getMinPlayers() {
         return config.getInt("game.min-players", 8);
     }
