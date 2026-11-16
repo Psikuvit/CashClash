@@ -694,7 +694,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         for (PresidentialBuff buff : buffs) {
             switch (buff) {
                 case OFFENSE -> PresidentialEffectsUtils.applyPotionEffect(presPlayer, PotionEffectType.STRENGTH);
-                case ATTACK_SPEED -> PresidentialEffectsUtils.applyAttackSpeedBuff(presPlayer);
+                case SPEED -> PresidentialEffectsUtils.applyPotionEffect(presPlayer, PotionEffectType.SPEED);
                 case HP -> PresidentialEffectsUtils.applyHpBuff(presPlayer);
                 case POTION_DURATION -> Messages.debug("[PTP] Potion Duration buff active for: " + presPlayer.getName());
             }
@@ -871,7 +871,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
         
         switch (slot) {
             case 1 -> buff = PresidentialBuff.OFFENSE;       // Strength
-            case 3 -> buff = PresidentialBuff.ATTACK_SPEED;
+            case 3 -> buff = PresidentialBuff.SPEED;
             case 5 -> buff = PresidentialBuff.POTION_DURATION;
             case 7 -> buff = PresidentialBuff.HP;            // Health
             default -> {
@@ -986,7 +986,7 @@ public class ProtectThePresidentGamemode extends Gamemode {
     public enum PresidentialBuff {
         OFFENSE("Strength"),
         POTION_DURATION("Potion Duration"),
-        ATTACK_SPEED("Attack Speed"),
+        SPEED("Speed"),
         HP("Extra Hearts");
 
         private final String name;

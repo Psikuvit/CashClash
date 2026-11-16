@@ -89,14 +89,12 @@ public class PresidentialBuffSelectionUtils {
     }
 
     /**
-     * Create the Attack Speed buff selection item, a Haste-yellow bottle.
+     * Create the Speed buff selection item - permanent Speed I for the round.
      *
      * @return The created ItemStack
      */
-    public static ItemStack createAttackSpeedBuffItem() {
-        String amount = String.valueOf(CashClashPlugin.getInstance().getConfigManager().getPTPAttackSpeedBonus());
-        return createBuffSelectionItem("Attack Speed Potion",
-                description("attack-speed-buff-description", "amount", amount), Color.fromRGB(0xD9C043));
+    public static ItemStack createSpeedBuffItem() {
+        return createBuffSelectionItem("Speed Potion", description("speed-buff-description"), PotionType.SWIFTNESS);
     }
 
     /**
@@ -138,7 +136,7 @@ public class PresidentialBuffSelectionUtils {
     public static String getBuffFromSlot(int slot) {
         return switch (slot) {
             case 1 -> "Strength";
-            case 3 -> "Attack Speed";
+            case 3 -> "Speed";
             case 5 -> "Potion Duration";
             case 7 -> "Extra Hearts";
             default -> null;

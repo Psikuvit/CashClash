@@ -30,7 +30,7 @@ public class PTPInventoryUtils {
             Messages.debug("[PTP] Giving buff selection items to president: " + president.getName());
 
             president.getInventory().setItem(1, PresidentialBuffSelectionUtils.createStrengthBuffItem());
-            president.getInventory().setItem(3, PresidentialBuffSelectionUtils.createAttackSpeedBuffItem());
+            president.getInventory().setItem(3, PresidentialBuffSelectionUtils.createSpeedBuffItem());
             president.getInventory().setItem(5, PresidentialBuffSelectionUtils.createPotionDurationBuffItem());
             president.getInventory().setItem(7, PresidentialBuffSelectionUtils.createExtraHeartsBuffItem());
 

@@ -2,11 +2,7 @@ package me.psikuvit.cashClash.util.game.ptp;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.player.CashClashPlayer;
-import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -44,28 +40,7 @@ public class PresidentialEffectsUtils {
         }
         CashClashPlayer.removeEffect(player, PotionEffectType.GLOWING);
         CashClashPlayer.removeEffect(player, PotionEffectType.STRENGTH);
-        removeAttackSpeedBuff(player);
-    }
-
-    /**
-     * Apply the Attack Speed buff: the president's attack speed goes up by
-     * {@code gamemodes.protect-the-president.attack-speed-bonus}. Transient, so it is never saved
-     * with the player and can't outlive the game.
-     */
-    public static void applyAttackSpeedBuff(Player player) {
-        if (player == null) return;
-        AttributeInstance attackSpeed = player.getAttribute(Attribute.ATTACK_SPEED);
-        if (attackSpeed == null) return;
-
-        double bonus = CashClashPlugin.getInstance().getConfigManager().getPTPAttackSpeedBonus();
-        attackSpeed.removeModifier(Keys.PTP_ATTACK_SPEED);
-        attackSpeed.addTransientModifier(new AttributeModifier(Keys.PTP_ATTACK_SPEED, bonus, AttributeModifier.Operation.ADD_NUMBER));
-        Messages.debug("[PTP] Added +" + bonus + " attack speed to president: " + player.getName());
-    }
-
-    public static void removeAttackSpeedBuff(Player player) {
-        AttributeInstance attackSpeed = player.getAttribute(Attribute.ATTACK_SPEED);
-        if (attackSpeed != null) attackSpeed.removeModifier(Keys.PTP_ATTACK_SPEED);
+        CashClashPlayer.removeEffect(player, PotionEffectType.SPEED);
     }
 
     /**
