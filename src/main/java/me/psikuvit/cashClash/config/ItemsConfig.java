@@ -443,6 +443,10 @@ public class ItemsConfig {
         return config.getInt("mythic-items.alchemist-wand.blink-swap.protection-hits", 2);
     }
 
+    public int getAlchemistBlinkTeammateProtectionHits() {
+        return config.getInt("mythic-items.alchemist-wand.blink-swap.teammate-protection-hits", 1);
+    }
+
     public int getAlchemistBlinkProtectionSeconds() {
         return config.getInt("mythic-items.alchemist-wand.blink-swap.protection-seconds", 5);
     }

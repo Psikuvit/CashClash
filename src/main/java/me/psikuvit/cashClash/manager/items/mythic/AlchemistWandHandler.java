@@ -152,7 +152,10 @@ public class AlchemistWandHandler extends MythicItemHandler {
         player.teleport(targetLocation);
         target.teleport(playerLocation);
 
-        grantBlinkProtection(player);
+        grantBlinkProtection(player, cfg.getAlchemistBlinkProtectionHits());
+        if (target instanceof Player teammate && cfg.getAlchemistBlinkTeammateProtectionHits() > 0) {
+            grantBlinkProtection(teammate, cfg.getAlchemistBlinkTeammateProtectionHits());
+        }
 
         SoundUtils.play(player, Sound.ENTITY_EVOKER_CAST_SPELL, 1.0f, 1.0f);
 
@@ -176,12 +179,11 @@ public class AlchemistWandHandler extends MythicItemHandler {
     }
 
     /**
-     * Opens a Blink Swap protection window: the configured number of hits absorbed, expiring
-     * after protection-seconds even if none are used.
+     * Opens a Blink Swap protection window - for the wielder and for the teammate they swapped
+     * with: {@code hits} hits absorbed, expiring after protection-seconds even if none are used.
      */
-    private void grantBlinkProtection(Player player) {
+    private void grantBlinkProtection(Player player, int hits) {
         UUID uuid = player.getUniqueId();
-        int hits = cfg.getAlchemistBlinkProtectionHits();
         int seconds = cfg.getAlchemistBlinkProtectionSeconds();
 
         alchemistBlinkProtection.put(uuid, hits);
