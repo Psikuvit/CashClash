@@ -220,6 +220,9 @@ public class RoundManager {
                 p.setSaturation(20.0f);
                 KitService.restoreStarterArmor(p);
                 refillWaterBuckets(p);
+                if (roundNumber > 1 && KitService.restoreStarterWaterBucket(p)) {
+                    Messages.send(p, "listener.water-bucket-refilled");
+                }
                 Messages.send(p, "round.shopping-area-teleported");
                 EconomyManager.sendRoundEarnings(session, p);
             }

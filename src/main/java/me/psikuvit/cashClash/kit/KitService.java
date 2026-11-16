@@ -249,6 +249,27 @@ public class KitService {
         if (isEmptySlot(inventory.getBoots())) inventory.setBoots(createUnbreakable(Material.GOLDEN_BOOTS));
     }
 
+    /**
+     * Fills the starter water bucket back up: a player holding no water bucket has an empty
+     * bucket filled, or is given a new one. Returns whether they got one.
+     */
+    public static boolean restoreStarterWaterBucket(Player player) {
+        PlayerInventory inventory = player.getInventory();
+        if (inventory.contains(Material.WATER_BUCKET)) return false;
+
+        ItemStack waterBucket = new ItemStack(Material.WATER_BUCKET);
+        markKitItem(waterBucket);
+        int emptySlot = inventory.first(Material.BUCKET);
+        ItemStack empty = emptySlot >= 0 ? inventory.getItem(emptySlot) : null;
+        if (empty != null && empty.getAmount() == 1) {
+            inventory.setItem(emptySlot, waterBucket);
+        } else {
+            if (empty != null) empty.setAmount(empty.getAmount() - 1);
+            inventory.addItem(waterBucket);
+        }
+        return true;
+    }
+
     private static boolean isEmptySlot(ItemStack item) {
         return item == null || item.getType().isAir();
     }
