@@ -783,8 +783,8 @@ public final class ParticleUtils {
     /**
      * Dark-blue, tightly-condensed burst particles - used by Ice Fan's right-click burst.
      */
-    public static void iceFanBurst(Location location) {
-        spawnDust(location, Color.fromRGB(0, 0, 139), 1.6f, 25, 0.2, 0.15, 0.2);
+    public static void iceFanBurst(Location location, int count) {
+        spawnDust(location, Color.fromRGB(0, 0, 139), 1.6f, count, 0.2, 0.15, 0.2);
     }
 
     /**

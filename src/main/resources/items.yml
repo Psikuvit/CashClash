@@ -253,6 +253,8 @@ custom-armor:
     slow-radius: 2.0
     slow-duration-seconds: 4
     slow-amplifier: 1
+    # Particles per block of radius on the slam's two rings (was 16) - lower = fewer particles
+    particle-density: 6
 
   # Guardian's Vest
   guardians-vest:
@@ -504,6 +506,7 @@ custom-items:
     range: 3.5                        # Reach of the half-circle sweep - both what it hits and how far its particles travel
     particle-height: 1.0              # Height (blocks above the player's feet) the particles are drawn at - eye level is ~1.6
     particle-start-distance: 1.0      # How far out (blocks) the particles start; bigger = further from the player
+    particle-density: 6               # Particles in each puff of the sweep (was 25) - lower = fewer particles
 
   # Overdrive Potion
   overdrive-potion:

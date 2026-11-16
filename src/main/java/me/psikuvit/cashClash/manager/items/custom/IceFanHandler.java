@@ -173,6 +173,7 @@ public class IceFanHandler extends CustomItemHandler {
         double range = cfg.getIceFanRange();
         double start = Math.min(cfg.getIceFanParticleStartDistance(), range);
         int steps = Math.max(1, (int) Math.ceil((range - start) / PARTICLE_RING_SPACING));
+        int density = cfg.getIceFanParticleDensity();
 
         for (int i = 0; i <= steps; i++) {
             double distance = start + (range - start) * i / steps;
@@ -180,7 +181,7 @@ public class IceFanHandler extends CustomItemHandler {
                 if (!player.isOnline()) return;
                 for (double angle = -HALF_CIRCLE_HALF_ANGLE_DEGREES; angle <= HALF_CIRCLE_HALF_ANGLE_DEGREES; angle += ARC_STEP_DEGREES) {
                     Vector rotated = rotateAroundY(arcDirection, Math.toRadians(angle));
-                    ParticleUtils.iceFanBurst(origin.clone().add(rotated.multiply(distance)));
+                    ParticleUtils.iceFanBurst(origin.clone().add(rotated.multiply(distance)), density);
                 }
             }, i);
         }

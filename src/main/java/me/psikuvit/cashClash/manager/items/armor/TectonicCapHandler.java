@@ -31,8 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TectonicCapHandler extends ArmorSetHandler {
 
-    // Ring density, so a wider configured range still draws a solid ring
-    private static final int RING_POINTS_PER_BLOCK = 16;
     private static final int CHARGES = 2;
 
     private final Map<UUID, Long> tectonicCharge1Cooldown;
@@ -181,8 +179,8 @@ public class TectonicCapHandler extends ArmorSetHandler {
         }
     }
 
-    private static int ringPoints(double radius) {
-        return (int) Math.ceil(radius * RING_POINTS_PER_BLOCK);
+    private int ringPoints(double radius) {
+        return (int) Math.ceil(radius * cfg.getTectonicCapParticleDensity());
     }
 
     /**

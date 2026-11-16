@@ -790,6 +790,10 @@ public class ItemsConfig {
         return config.getDouble("custom-items.ice-fan.particle-height", 1.0);
     }
 
+    public int getIceFanParticleDensity() {
+        return config.getInt("custom-items.ice-fan.particle-density", 6);
+    }
+
     public double getIceFanParticleStartDistance() {
         return config.getDouble("custom-items.ice-fan.particle-start-distance", 1.0);
     }
@@ -1026,6 +1030,10 @@ public class ItemsConfig {
 
     public int getTectonicCapSlowAmplifier() {
         return config.getInt("custom-armor.tectonic-cap.slow-amplifier", 1);
+    }
+
+    public int getTectonicCapParticleDensity() {
+        return config.getInt("custom-armor.tectonic-cap.particle-density", 6);
     }
 
     // Bullseye Pants
