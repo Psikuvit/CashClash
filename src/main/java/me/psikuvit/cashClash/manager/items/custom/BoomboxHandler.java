@@ -73,9 +73,8 @@ public class BoomboxHandler extends CustomItemHandler {
             return;
         }
 
-        placeBlock.setType(Material.JUKEBOX);
         activeBoomboxes.add(placeBlock.getLocation());
-        boomboxModels.put(placeBlock.getLocation(), BlockModelDisplay.show(placeBlock, CustomItem.BOOMBOX));
+        boomboxModels.put(placeBlock.getLocation(), BlockModelDisplay.place(placeBlock, Material.JUKEBOX, CustomItem.BOOMBOX));
         startFloatingRing(placeBlock.getLocation(), TeamColorUtils.particleColor(player, OUTSIDE_GAME_RING_COLOR));
 
         consumeItem(player, item);

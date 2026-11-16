@@ -1,7 +1,9 @@
 package me.psikuvit.cashClash.util.items;
 
 import me.psikuvit.cashClash.shop.items.CustomItem;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Display;
@@ -15,16 +17,33 @@ import org.joml.Vector3f;
  * Puts the resource pack's block model on a custom item's placed block. A pack can't restyle one
  * block without restyling every block of that type, so the model is an item display of the item
  * sitting over the real block, a hair bigger so it hides it. The real block underneath still does
- * the work: collision, bouncing, and being what the item's handler looks for. On an empty spot
- * (the Blooming Rose's rose) it's just the model.
+ * the work: collision, bouncing, and being what the item's handler looks for.
  */
 public final class BlockModelDisplay {
 
     // Just enough to enclose the real block without its faces flickering through the model's
     private static final float COVER_SCALE = 1.002f;
+    // A client draws a new display entity only from its first tick, so the real block waits this long
+    private static final long REVEAL_DELAY_TICKS = 2L;
 
     private BlockModelDisplay() {
         throw new AssertionError("Nope.");
+    }
+
+    /**
+     * Places {@code material} at {@code block} under {@code item}'s pack model without the real
+     * block ever showing on its own. The spot is an invisible barrier until the model is drawn,
+     * then the real block goes in underneath it; a model removed before then takes the barrier
+     * with it.
+     */
+    public static ItemDisplay place(Block block, Material material, CustomItem item) {
+        block.setType(Material.BARRIER);
+        ItemDisplay display = show(block, item);
+        SchedulerUtils.runTaskLater(() -> {
+            if (block.getType() != Material.BARRIER) return;
+            block.setType(display.isValid() ? material : Material.AIR);
+        }, REVEAL_DELAY_TICKS);
+        return display;
     }
 
     /**

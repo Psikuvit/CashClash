@@ -80,14 +80,12 @@ public class BouncePadHandler extends CustomItemHandler {
             return;
         }
 
-        // Use a full block so players can reliably trigger it
-        placeBlock.setType(Material.SLIME_BLOCK);
+        ItemDisplay model = BlockModelDisplay.place(placeBlock, Material.SLIME_BLOCK, CustomItem.BOUNCE_PAD);
         Location blockLoc = placeBlock.getLocation();
         Location ringCenter = blockLoc.clone().add(0.5, 0.5, 0.5);
         Color ringColor = TeamColorUtils.particleColor(player, OUTSIDE_GAME_RING_COLOR);
         BukkitTask ringTask = SchedulerUtils.runTaskTimer(() ->
                 ParticleUtils.circle(ringCenter, RING_RADIUS, RING_POINTS, 0, ringColor, 1.0f), 0L, 2L);
-        ItemDisplay model = BlockModelDisplay.show(placeBlock, CustomItem.BOUNCE_PAD);
         bouncePadTeams.put(blockLoc, new BouncePadInfo(teamNumber, face, ringTask, model));
 
         consumeItem(player, item);
