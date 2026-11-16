@@ -532,7 +532,7 @@ public class DamageListener implements Listener {
         consumeMiniTotem(victim, totem);
         CashClashPlayer.setHealth(victim, 1.0);
 
-        SoundUtils.play(victim, Sound.ITEM_TOTEM_USE, 1.0f, 1.0f);
+        SoundUtils.playAt(victim.getLocation(), Sound.ITEM_TOTEM_USE, 1.0f, 1.0f);
         ParticleUtils.totem(victim.getLocation().add(0, 1, 0), 30, 0.5);
 
         SchedulerUtils.runTaskLater(() -> {

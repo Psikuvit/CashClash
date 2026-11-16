@@ -59,8 +59,8 @@ public class TotemOfHauntingHandler extends CustomItemHandler {
         SchedulerUtils.runTaskLater(() -> totemInvincible.remove(uuid), invincibilitySeconds * 20L);
 
         Messages.send(player, "customitem.totem-haunting-triggered");
-        SoundUtils.play(player, Sound.ITEM_TOTEM_USE, 1.0f, 0.6f);
-        SoundUtils.play(player, Sound.ENTITY_WITHER_AMBIENT, 0.4f, 0.5f);
+        SoundUtils.playAt(player.getLocation(), Sound.ITEM_TOTEM_USE, 1.0f, 0.6f);
+        SoundUtils.playAt(player.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 0.4f, 0.5f);
 
         spawnHauntingSpiral(player);
     }
