@@ -1,7 +1,6 @@
 package me.psikuvit.cashClash.scoreboard.placeholder;
 
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
-import me.psikuvit.cashClash.util.FormatUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -49,12 +48,8 @@ public class CTFPlaceholderProvider implements PlaceholderProvider {
             case "blue_flag_holder" -> gamemode.isFlagDropped(2) ? "Dropped" : getFlagHolderName(gamemode.getFlagHolder(2));
             case "red_flag_status" -> gamemode.isFlagDropped(1) ? "<yellow>Dropped</yellow>" : getFlagStatus(gamemode.getFlagHolder(1));
             case "blue_flag_status" -> gamemode.isFlagDropped(2) ? "<yellow>Dropped</yellow>" : getFlagStatus(gamemode.getFlagHolder(2));
-            case "money_bonus_timer" -> {
-                long remaining = gamemode.getBonusTimeRemainingMs(player.getUniqueId());
-                if (remaining <= 0) yield "";
-                String label = gamemode.paysHeartBonuses() ? "Heart Bonus: " : "Money Bonus: ";
-                yield label + FormatUtils.formatMillis(remaining);
-            }
+            // The capture bonus timer is gone; servers whose scoreboard still lists it get a blank line
+            case "money_bonus_timer" -> "";
             default -> null;
         };
     }

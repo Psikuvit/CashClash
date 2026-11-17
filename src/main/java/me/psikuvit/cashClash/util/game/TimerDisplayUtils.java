@@ -1,7 +1,5 @@
 package me.psikuvit.cashClash.util.game;
 
-import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.gamemode.impl.FlagState;
 import me.psikuvit.cashClash.util.ActionBarQueue;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
@@ -16,8 +14,8 @@ import java.util.function.Function;
 /**
  * Owns every actionbar countdown timer in the plugin: the generic engine (state tracking, the
  * per-tick task, second-change-only updates, optional completion message), used by any
- * countdown that calls {@link #startCountdownTimer}/{@link #stopCountdownTimer} directly, plus
- * the CTF capture-bonus window helpers. Rendering itself is always
+ * countdown that calls {@link #startCountdownTimer}/{@link #stopCountdownTimer} directly.
+ * Rendering itself is always
  * routed through {@link ActionBarQueue#sendRaw} - this class never touches
  * {@code Player#sendActionBar} on its own, so there's exactly one place that actually writes to
  * a player's actionbar.
@@ -28,15 +26,6 @@ import java.util.function.Function;
  * {@link #startCountdownTimer(Player, long, int, Function, String)}).
  */
 public class TimerDisplayUtils {
-
-    /**
-     * CTF's capture-bonus window - kept in sync with {@code CaptureTheFlagGamemode}'s own
-     * CAPTURE_TIMER_MS (same config key) rather than a locally duplicated constant, since a
-     * duplicate here would silently drift from the gamemode's actual bonus-window check.
-     */
-    private static long captureBonusDurationMs() {
-        return CashClashPlugin.getInstance().getConfigManager().getCTFCaptureBonusTimerMs();
-    }
 
     // ==================== TIMER ENGINE (moved from ActionBarQueue) ====================
 
@@ -227,32 +216,5 @@ public class TimerDisplayUtils {
 
     private static long calculateSecondsRemaining(long remainingMs) {
         return remainingMs / 1000 + (remainingMs % 1000 > 0 ? 1 : 0);
-    }
-
-    // ========= BONUS TIMER METHODS =========
-
-    /**
-     * Get bonus time remaining for a flag in milliseconds
-     *
-     * @param flag The flag state
-     * @return Remaining bonus time, or 0 if expired
-     */
-    public static long getBonusTimeRemaining(FlagState flag) {
-        if (flag == null) {
-            return 0;
-        }
-        long now = System.currentTimeMillis();
-        long elapsed = now - flag.captureTime();
-        return Math.max(0, captureBonusDurationMs() - elapsed);
-    }
-
-    /**
-     * Check if flag is within bonus window (45 seconds of capture)
-     *
-     * @param flag The flag state
-     * @return True if flag is held and within bonus window
-     */
-    public static boolean isWithinBonusWindow(FlagState flag) {
-        return flag != null && flag.isHeld() && getBonusTimeRemaining(flag) > 0;
     }
 }

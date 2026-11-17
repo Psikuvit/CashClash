@@ -17,7 +17,6 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.DropSpotUtils;
-import me.psikuvit.cashClash.util.game.TimerDisplayUtils;
 import me.psikuvit.cashClash.util.game.ctf.FlagBannerUtils;
 import me.psikuvit.cashClash.util.game.ctf.FlagBaseMechanicsUtils;
 import me.psikuvit.cashClash.util.game.ctf.FlagBossBars;
@@ -58,8 +57,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
      // Config-driven (config.yml: gamemodes.capture-the-flag) rather than hardcoded, so a server
      // admin can retune win conditions/bonuses/timers without a rebuild.
      private final int WIN_CONDITION;
-     private final long CAPTURE_BONUS;
-     private final long CAPTURE_TIMER_MS;
+     private final int CARRIER_KILLS_PER_BONUS;
+     private final long CARRIER_KILL_BONUS;
      private final long FLAG_PICKUP_DURATION_MS;
      private final long FLAG_RETURN_MS;
      private final long FLAG_CAPTURE_DURATION_MS;
@@ -79,6 +78,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
     private final Set<UUID> stalemateMsgShown; // told about the both-flags-held block in the current state
     private final Set<UUID> blockedCarrierWarned; // carriers shown "Kill {name}" on their current visit to their capture area
     private final Map<UUID, Location> carrierLastGround; // where each carrier last stood, for a void death's drop
+    private final Map<UUID, Integer> carrierKills; // kills each player has made this round while carrying a flag
 
       private final SuddenDeathManager suddenDeathManager;
       private final FinalStandManager finalStandManager;
@@ -94,8 +94,8 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
         this.WIN_CONDITION = cfg.getCTFCapturesToWin();
-        this.CAPTURE_BONUS = cfg.getCTFCaptureBonusCoins();
-        this.CAPTURE_TIMER_MS = cfg.getCTFCaptureBonusTimerMs();
+        this.CARRIER_KILLS_PER_BONUS = Math.max(1, cfg.getCTFCarrierKillsPerBonus());
+        this.CARRIER_KILL_BONUS = cfg.getCTFCarrierKillBonusCoins();
         this.FLAG_PICKUP_DURATION_MS = cfg.getCTFPlateActivationTimeMs();
         this.FLAG_RETURN_MS = cfg.getCTFFlagReturnTimeMs();
         this.FLAG_CAPTURE_DURATION_MS = cfg.getCTFCaptureTimeMs();
@@ -115,6 +115,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         this.stalemateMsgShown = new HashSet<>();
         this.blockedCarrierWarned = new HashSet<>();
         this.carrierLastGround = new HashMap<>();
+        this.carrierKills = new HashMap<>();
          this.suddenDeathManager = new SuddenDeathManager(session, this);
          this.finalStandManager = new FinalStandManager(session, this);
          this.flagBars = new FlagBossBars();
@@ -138,7 +139,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Messages.debug("[CTF] Gamemode started");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.game-started");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.objective");
-        Messages.broadcast(session.getPlayers(), "gamemode-ctf.bonus-info");
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.carrier-bonus-info",
+                "kills", String.valueOf(CARRIER_KILLS_PER_BONUS),
+                "amount", String.format("%,d", CARRIER_KILL_BONUS));
     }
 
     @Override
@@ -201,6 +204,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
         playerNearestFlagTeam.clear();
         captureStartedAt.clear();
         carrierLastGround.clear();
+        carrierKills.clear();
 
          // Recreated in the next combat phase. The banner rotation keeps running through the
          // buy phase, so the banners never stand still.
@@ -240,6 +244,22 @@ public class CaptureTheFlagGamemode extends Gamemode {
 
         handleFlagHolderDeath(1, victimUuid, victim);
         handleFlagHolderDeath(2, victimUuid, victim);
+
+        if (killer != null && !killer.equals(victim) && isSilenced(killer.getUniqueId())) {
+            onCarrierKill(killer);
+        }
+    }
+
+    /**
+     * A flag carrier's kill. Every {@code carrier-kills-per-bonus}th kill they make while
+     * carrying, counted over the round, earns their team the carrier kill bonus.
+     */
+    private void onCarrierKill(Player carrier) {
+        int kills = carrierKills.merge(carrier.getUniqueId(), 1, Integer::sum);
+        if (kills % CARRIER_KILLS_PER_BONUS != 0) return;
+
+        Team team = session.getPlayerTeam(carrier);
+        if (team != null) awardCarrierKillBonus(team, carrier);
     }
 
     /**
@@ -414,19 +434,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
         SoundUtils.playTo(session.getPlayers(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
         clearCarrierPenalties(player);
         updateSilencedItemDisplay(player);
-
-        long now = System.currentTimeMillis();
-        int enemyTeamNumber = (teamNumber == 1) ? 2 : 1;
-        FlagState enemyFlag = flagStates.get(TeamColor.fromTeamNumber(enemyTeamNumber));
-
-        boolean bonusEarned = (enemyFlag != null && enemyFlag.captureTime() > 0 &&
-                (now - enemyFlag.captureTime()) <= CAPTURE_TIMER_MS);
-
-        if (bonusEarned) {
-            awardCaptureBonus(teamNumber);
-        } else {
-            Messages.debug("[CTF] Flag captured after 45s - no bonus awarded to Team " + teamNumber);
-        }
 
         resetFlagsAfterCapture(teamNumber);
 
@@ -1204,47 +1211,30 @@ public class CaptureTheFlagGamemode extends Gamemode {
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.sudden-death-timer-start");
     }
 
-     /**
-      * Time left on a capture-bonus window, for a player's scoreboard: the flag they're carrying
-      * if they carry one, otherwise their own team's flag while an enemy is carrying it.
-      */
-      public long getBonusTimeRemainingMs(UUID playerUuid) {
-          for (FlagState flag : flagStates.values()) {
-              if (playerUuid.equals(flag.holder())) {
-                  return TimerDisplayUtils.getBonusTimeRemaining(flag);
-              }
-          }
-
-          Team team = session.getPlayerTeam(playerUuid);
-          FlagState ownFlag = team != null ? flagStates.get(TeamColor.fromTeamNumber(team.getTeamNumber())) : null;
-          return ownFlag != null && ownFlag.isHeld() ? TimerDisplayUtils.getBonusTimeRemaining(ownFlag) : 0;
-      }
-
     /**
-     * Award capture bonus after 45 seconds
+     * The carrier kill bonus, split across the carrier's team - or, in a sudden death round, an
+     * extra heart each.
      */
-    private void awardCaptureBonus(int team) {
-        long bonusPerPlayer = CAPTURE_BONUS / 4;
-        var teamObj = team == 1 ? session.getTeamRed() : session.getTeamBlue();
+    private void awardCarrierKillBonus(Team team, Player carrier) {
+        long bonusPerPlayer = CARRIER_KILL_BONUS / 4;
+        Messages.debug("[CTF] " + carrier.getName() + " earned the carrier kill bonus for Team " + team.getTeamNumber());
 
-        Messages.debug("[CTF] Awarding 45-second capture bonus to Team " + team + ": " + bonusPerPlayer + " per player");
-
-        for (UUID uuid : teamObj.getPlayers()) {
+        for (UUID uuid : team.getPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
-            if (p != null) {
-                if (paysHeartBonuses()) {
-                    applyExtraHeartCTF(p);
-                    Messages.send(p, "gamemode-ctf.capture-bonus-heart");
-                } else {
-                    session.getRewardManager().grant(p, RewardType.CTF_HOLD_BONUS, bonusPerPlayer,
-                            "amount", String.format("%,d", bonusPerPlayer));
-                }
+            if (p == null) continue;
+            if (paysHeartBonuses()) {
+                applyExtraHeartCTF(p);
+                Messages.send(p, "gamemode-ctf.carrier-kill-bonus-heart");
+            } else {
+                session.getRewardManager().grant(p, RewardType.CTF_CARRIER_KILL_BONUS, bonusPerPlayer,
+                        "amount", String.format("%,d", bonusPerPlayer));
             }
         }
 
-        String teamName = team == 1 ? "Red" : "Blue";
-        Messages.broadcast(session.getPlayers(), "gamemode-ctf.capture-bonus-team-broadcast",
-                "team_name", teamName);
+        Messages.broadcast(session.getPlayers(), "gamemode-ctf.carrier-kill-bonus-broadcast",
+                "player_name", carrier.getName(),
+                "kills", String.valueOf(CARRIER_KILLS_PER_BONUS),
+                "team_name", team.getTeamNumber() == 1 ? "Red" : "Blue");
     }
 
     /**

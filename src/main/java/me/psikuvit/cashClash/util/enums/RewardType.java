@@ -14,7 +14,7 @@ public enum RewardType {
     OBJECTIVE_CTF_CAPTURE(null, true),
     OBJECTIVE_KC_CONFIRM(null, true),
     BONUS(null, false),
-    CTF_HOLD_BONUS("gamemode-ctf.flag-captured-bonus", false),
+    CTF_CARRIER_KILL_BONUS("gamemode-ctf.carrier-kill-bonus", false),
     KC_CONFIRM_BONUS("gamemode-kc.money-tag-bonus-coins", false),
     PTP_KILL_STREAK_BONUS("gamemode-ptp.kill-bonus", false),
     // "economy.round-money-earned" is sent by EconomyManager itself, since it needs the pool

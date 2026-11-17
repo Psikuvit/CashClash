@@ -347,16 +347,16 @@ public class ConfigManager {
         return config.getInt("gamemodes.capture-the-flag.normal-captures-to-win", 2);
     }
 
-    public long getCTFCaptureBonusCoins() {
-        return config.getLong("gamemodes.capture-the-flag.capture-bonus-coins", 15000);
+    public int getCTFCarrierKillsPerBonus() {
+        return config.getInt("gamemodes.capture-the-flag.carrier-kills-per-bonus", 2);
+    }
+
+    public long getCTFCarrierKillBonusCoins() {
+        return config.getLong("gamemodes.capture-the-flag.carrier-kill-bonus-coins", 15000);
     }
 
     public int getCTFCarrierSlownessAmplifier() {
         return config.getInt("gamemodes.capture-the-flag.carrier-slowness-amplifier", 0);
-    }
-
-    public long getCTFCaptureBonusTimerMs() {
-        return config.getLong("gamemodes.capture-the-flag.capture-bonus-timer-ms", 45000);
     }
 
     public double getCTFPickupCircleRadius() {
