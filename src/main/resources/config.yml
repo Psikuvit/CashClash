@@ -255,12 +255,8 @@ gamemodes:
     capture-bonus-coins: 15000
     # Bonus timer (milliseconds)
     capture-bonus-timer-ms: 45000
-    # Weakness (see flag pickup) floors any item dealing less than this to 0 damage - this
-    # guarantees a minimum hit gets through regardless of what's in hand
-    carrier-minimum-melee-damage: 1.0
-    # Slowness/Weakness level applied while carrying a flag (0 = level I, 1 = level II, ...)
+    # Slowness level applied while carrying a flag (0 = level I, 1 = level II, ...)
     carrier-slowness-amplifier: 0
-    carrier-weakness-amplifier: 0
     # Radius (blocks) for detecting a player near the flag pickup point / scoring banner,
     # and the max vertical distance still counted as "near" (handles multi-level bases)
     pickup-circle-radius: 1.5

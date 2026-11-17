@@ -1119,26 +1119,6 @@ public class DamageListener implements Listener {
         applyWeaknessNerf(event, attacker);
         applyPowerNerf(event, attacker, weapon);
         applyInvestorMeleeNerf(event, attacker);
-        applyFlagCarrierMeleeNerf(event, attacker);
-    }
-
-    /**
-     * The flag carrier's Weakness effect is a flat -4 damage subtraction, which floors any
-     * low-base-damage item to 0 - only swords/axes/tridents have enough headroom to survive it.
-     * This guarantees every item still lands something, without touching Weakness itself (it
-     * stays as the single, visible reason the carrier hits softer).
-     */
-    private void applyFlagCarrierMeleeNerf(EntityDamageByEntityEvent event, Player attacker) {
-        if (!(event.getDamager() instanceof Player)) return;
-
-        GameSession session = gameManager.getPlayerSession(attacker);
-        if (session == null || !(session.getGamemode() instanceof CaptureTheFlagGamemode ctf)) return;
-        if (!ctf.isSilenced(attacker.getUniqueId())) return;
-
-        double minimum = configManager.getCTFCarrierMinimumMeleeDamage();
-        if (event.getDamage() < minimum) {
-            event.setDamage(minimum);
-        }
     }
 
     /**

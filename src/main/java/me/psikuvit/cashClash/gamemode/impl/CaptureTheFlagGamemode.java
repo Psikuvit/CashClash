@@ -382,8 +382,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
          ConfigManager carrierCfg = CashClashPlugin.getInstance().getConfigManager();
          CashClashPlayer.applyEffect(player, PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION,
                  carrierCfg.getCTFCarrierSlownessAmplifier(), false, false);
-         CashClashPlayer.applyEffect(player, PotionEffectType.WEAKNESS, PotionEffect.INFINITE_DURATION,
-                 carrierCfg.getCTFCarrierWeaknessAmplifier(), false, false);
 
          moveBannerToPlayer(updatedFlag.bannerDisplay(), player);
 
@@ -654,10 +652,9 @@ public class CaptureTheFlagGamemode extends Gamemode {
         return carriers;
     }
 
-    /** Removes the flag-carrier slowness/weakness/glowing. */
+    /** Removes the flag-carrier slowness and glowing. */
     private void clearCarrierPenalties(Player player) {
         CashClashPlayer.removeEffect(player, PotionEffectType.SLOWNESS);
-        CashClashPlayer.removeEffect(player, PotionEffectType.WEAKNESS);
         CashClashPlayer.removeEffect(player, PotionEffectType.GLOWING);
     }
 

@@ -351,17 +351,8 @@ public class ConfigManager {
         return config.getLong("gamemodes.capture-the-flag.capture-bonus-coins", 15000);
     }
 
-
-    public double getCTFCarrierMinimumMeleeDamage() {
-        return config.getDouble("gamemodes.capture-the-flag.carrier-minimum-melee-damage", 1.0);
-    }
-
     public int getCTFCarrierSlownessAmplifier() {
         return config.getInt("gamemodes.capture-the-flag.carrier-slowness-amplifier", 0);
-    }
-
-    public int getCTFCarrierWeaknessAmplifier() {
-        return config.getInt("gamemodes.capture-the-flag.carrier-weakness-amplifier", 0);
     }
 
     public long getCTFCaptureBonusTimerMs() {
