@@ -778,6 +778,20 @@ public class ConfigManager {
         plugin.saveConfig();
     }
 
+    /**
+     * How many particles spawn lines are drawn with: 1.0 standard, 0 none, 2 double.
+     */
+    public double getSpawnLineParticleDensity() {
+        return Math.max(0.0, config.getDouble("spawn-lines.particle-density", 1.0));
+    }
+
+    public void setSpawnLineParticleDensity(double density) {
+        config.set("spawn-lines.particle-density", density);
+        CashClashPlugin plugin = CashClashPlugin.getInstance();
+        plugin.getConfig().set("spawn-lines.particle-density", density);
+        plugin.saveConfig();
+    }
+
     // ==================== REJOIN SETTINGS ====================
 
     /**

@@ -28,6 +28,7 @@ import me.psikuvit.cashClash.command.subcommands.SelectKitCommand;
 import me.psikuvit.cashClash.command.subcommands.SetLobbyCommand;
 import me.psikuvit.cashClash.command.subcommands.SetWaitingLobbyCommand;
 import me.psikuvit.cashClash.command.subcommands.ShopCommand;
+import me.psikuvit.cashClash.command.subcommands.SpawnLineCommand;
 import me.psikuvit.cashClash.command.subcommands.SpawnNPCCommand;
 import me.psikuvit.cashClash.command.subcommands.StatsCommand;
 import me.psikuvit.cashClash.command.subcommands.StopCommand;
@@ -91,6 +92,7 @@ public class CommandHandler extends Command {
         registerSubcommand(new SelectKitCommand());
         registerSubcommand(new SetLobbyCommand());
         registerSubcommand(new HubBreakCommand());
+        registerSubcommand(new SpawnLineCommand());
         registerSubcommand(new SetWaitingLobbyCommand());
         registerSubcommand(new PracticeCommand());
         registerSubcommand(new ClearBannersCommand());

@@ -10,6 +10,11 @@ debug: false
 particles:
   density: 50
 
+# How many particles the maps' spawn lines are drawn with: 1.0 as standard, 2 doubles them,
+# 0 hides them. Covers every line on every map; /cc spawnline <value> sets it in game.
+spawn-lines:
+  particle-density: 1.0
+
 # How strong Speed I is, as a multiple of vanilla's: 1 = vanilla Speed I, 2 = twice its speed
 # boost, 0.5 = half of it, 0 = no boost at all. Speed II and up are left as they are.
 speed-one-strength: 1.0
