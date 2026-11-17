@@ -59,8 +59,7 @@ mythic-items:
 
   # Wind Bow
   wind-bow:
-    # Fixed-luck share of shots that release a wind gust where they land (100 = every shot)
-    gust-chance-percent: 100
+    # Only a fully drawn shot releases a wind gust where it lands; any other shot is a plain arrow
     # Soaring Heights - left-click to launch up and forward
     boost:
       cooldown-seconds: 30
@@ -1076,7 +1075,7 @@ item-lore:
       lore:
         - "<light_purple>✦ MYTHIC WEAPON ✦</light_purple>"
         - "<dark_purple>A bow of the winds</dark_purple>"
-        - "<yellow>Arrows release a wind gust where they land</yellow>"
+        - "<yellow>Fully drawn shots release a wind gust where they land</yellow>"
         - "<yellow>Left-click: Soaring Heights</yellow>"
     electric-eel:
       lore:

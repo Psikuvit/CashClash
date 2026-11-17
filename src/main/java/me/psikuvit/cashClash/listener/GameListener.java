@@ -898,11 +898,11 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Wind Bow shot: rolls whether this arrow releases a wind gust where it lands, and tags it.
+     * Wind Bow shot: a fully drawn arrow is tagged to release a wind gust where it lands.
      */
     private void handleWindBowShot(EntityShootBowEvent event, Player player) {
         if (event.getProjectile() instanceof AbstractArrow arrow
-                && mythicManager.getHandler(WindBowHandler.class).rollGust(player)) {
+                && mythicManager.getHandler(WindBowHandler.class).releasesGust(event.getForce())) {
             PDCSetter.of(arrow).set(Keys.WIND_BOW_GUST_ARROW, PersistentDataType.BYTE, (byte) 1).apply();
         }
     }

@@ -214,10 +214,6 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.wind-bow.arrow-push.power", 1.5);
     }
 
-    public double getWindBowGustChancePercent() {
-        return config.getDouble("mythic-items.wind-bow.gust-chance-percent", 100);
-    }
-
     // Electric Eel
     public int getEelChainCooldown() {
         return config.getInt("mythic-items.electric-eel.chain-damage.cooldown-seconds", 1);

@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
-import me.psikuvit.cashClash.util.ChanceBag;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -19,24 +18,21 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Wind Bow - left-click Soaring Heights boost, and a wind gust wherever a fixed-luck share of its
- * arrows land.
+ * Wind Bow - left-click Soaring Heights boost, and a wind gust wherever a fully drawn shot lands.
+ * Any other shot is a plain arrow.
  */
 public class WindBowHandler extends MythicItemHandler {
 
-    private final ChanceBag gustChance;
-
     public WindBowHandler(MythicItemManager manager) {
         super(manager);
-        this.gustChance = new ChanceBag();
     }
 
     /**
-     * Rolls whether this shot's impact releases a wind gust - exactly the configured share of the
-     * player's shots.
+     * Whether a shot releases a wind gust where it lands: only when the bow was drawn all the
+     * way back.
      */
-    public boolean rollGust(Player player) {
-        return gustChance.roll(player.getUniqueId(), cfg.getWindBowGustChancePercent());
+    public boolean releasesGust(float force) {
+        return force >= 1.0f;
     }
 
     /**
@@ -107,11 +103,5 @@ public class WindBowHandler extends MythicItemHandler {
 
     @Override
     public void cleanup() {
-        gustChance.clear();
-    }
-
-    @Override
-    public void cleanupPlayer(Player player) {
-        gustChance.reset(player.getUniqueId());
     }
 }
