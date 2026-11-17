@@ -153,6 +153,18 @@ public class ConfigManager {
         return config.getInt("game.respawn-delay-per-death", 1);
     }
 
+    public int getRespawnDelayOwnZone() {
+        return config.getInt("game.respawn-delay-own-zone", 2);
+    }
+
+    public int getRespawnDelayNeutralZone() {
+        return config.getInt("game.respawn-delay-neutral-zone", 1);
+    }
+
+    public int getRespawnDelayEnemyZone() {
+        return config.getInt("game.respawn-delay-enemy-zone", 0);
+    }
+
     public int getRespawnProtection() {
         return config.getInt("game.respawn-protection", 15);
     }

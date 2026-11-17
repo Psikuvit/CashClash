@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.event.PlayerBackToGameEvent;
@@ -49,7 +50,9 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
+import me.psikuvit.cashClash.util.enums.TeamColor;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
+import me.psikuvit.cashClash.util.game.SpawnZoneUtils;
 import me.psikuvit.cashClash.util.items.GuideBooks;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
@@ -312,11 +315,12 @@ public class GameListener implements Listener {
 
     /**
      * Every earlier death this round adds {@code respawn-delay-per-death} to the base delay; the
-     * count starts over each round.
+     * count starts over each round. Where they died adds its zone's seconds on top.
      */
     private void handleTemporarySpectatorAndRespawn(Player player, CashClashPlayer victim, Location spectatorLocation) {
         int earlierDeaths = Math.max(0, victim.getDeathsThisRound() - 1);
-        int respawnDelaySec = configManager.getRespawnDelay() + earlierDeaths * configManager.getRespawnDelayPerDeath();
+        int respawnDelaySec = configManager.getRespawnDelay() + earlierDeaths * configManager.getRespawnDelayPerDeath()
+                + spawnZoneDelay(player, spectatorLocation);
         int respawnProtectionSec = configManager.getRespawnProtection();
 
         Messages.send(player, "listener.respawn-delay", "seconds", String.valueOf(respawnDelaySec));
@@ -325,6 +329,23 @@ public class GameListener implements Listener {
         startRespawnCountdown(player, respawnDelaySec);
 
         SchedulerUtils.runTaskLater(() -> respawnPlayer(player, respawnProtectionSec), respawnDelaySec * 20L);
+    }
+
+    /**
+     * The respawn seconds a death adds by where it happened, once the map has both teams' spawn
+     * lines: dying in your own team's zone, in the neutral zone or in the enemy's zone. Height
+     * doesn't count, and a death on a line counts as inside its zone.
+     */
+    private int spawnZoneDelay(Player player, Location deathLocation) {
+        GameSession session = gameManager.getPlayerSession(player);
+        TemplateWorld template = session != null ? session.getArenaTemplate() : null;
+        Team team = session != null ? session.getPlayerTeam(player) : null;
+        if (team == null || !SpawnZoneUtils.hasZones(template)) return 0;
+
+        TeamColor own = TeamColor.fromTeamNumber(team.getTeamNumber());
+        if (SpawnZoneUtils.isInZone(template, own, deathLocation)) return configManager.getRespawnDelayOwnZone();
+        if (SpawnZoneUtils.isInZone(template, own.opposite(), deathLocation)) return configManager.getRespawnDelayEnemyZone();
+        return configManager.getRespawnDelayNeutralZone();
     }
 
     /**
