@@ -82,6 +82,14 @@ public class ShopConfig {
         return config.getInt("mini-shop.markup-percent", 10);
     }
 
+    /**
+     * Whether a diamond sword is a trade-in for the Soul Katana (and gets taken by it), on top
+     * of an iron sword.
+     */
+    public boolean isSoulKatanaDiamondSwordTradeIn() {
+        return config.getBoolean("trade-ins.soul-katana-diamond-sword", true);
+    }
+
     public long getInvestmentCost(String investmentKey) {
         return config.getLong("investments." + investmentKey + ".cost", 0);
     }

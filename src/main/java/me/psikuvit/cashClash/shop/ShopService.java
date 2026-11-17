@@ -496,7 +496,9 @@ public class ShopService {
                 ItemStack weaponItem = itemFactory.createGameplayItem(item);
 
                 if (ItemSelectionUtils.isSpecialWeapon(weaponItem)) {
-                    ItemStack displacedItem = ItemSelectionUtils.removeOutclassedMatches(player.getInventory(), weaponItem);
+                    Material highestTaken = item == WeaponItem.SOUL_KATANA && DiscountService.soulKatanaTakesDiamondSword()
+                            ? Material.DIAMOND_SWORD : weaponItem.getType();
+                    ItemStack displacedItem = ItemSelectionUtils.removeOutclassedMatches(player.getInventory(), weaponItem, highestTaken);
                     player.getInventory().addItem(weaponItem);
                     cachePurchase(player, ccp, PurchaseRecord.displacing(item, totalPrice, round, displacedItem));
                 } else {

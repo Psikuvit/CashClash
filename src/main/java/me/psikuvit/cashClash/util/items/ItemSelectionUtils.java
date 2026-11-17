@@ -71,10 +71,19 @@ public final class ItemSelectionUtils {
      * @return the strongest weapon removed, or null if nothing was
      */
     public static ItemStack removeOutclassedMatches(PlayerInventory inv, ItemStack newWeapon) {
+        return newWeapon == null ? null : removeOutclassedMatches(inv, newWeapon, newWeapon.getType());
+    }
+
+    /**
+     * {@link #removeOutclassedMatches(PlayerInventory, ItemStack)}, clearing everything up to
+     * {@code highestTaken}'s tier rather than the new weapon's own - for a special weapon that
+     * trades in better gear than it outclasses (the Soul Katana taking a diamond sword).
+     */
+    public static ItemStack removeOutclassedMatches(PlayerInventory inv, ItemStack newWeapon, Material highestTaken) {
         if (inv == null || newWeapon == null) return null;
 
         Material newType = newWeapon.getType();
-        int newRank = rankMaterial(newType);
+        int newRank = rankMaterial(highestTaken);
         ItemStack best = null;
 
         for (int i = 0; i < inv.getSize(); i++) {

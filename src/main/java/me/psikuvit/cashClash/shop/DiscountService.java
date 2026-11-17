@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.shop;
 
+import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.player.PurchaseRecord.ArmorSlot;
 import me.psikuvit.cashClash.shop.items.ArmorItem;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
@@ -48,7 +49,7 @@ public final class DiscountService {
             case CustomArmorItem armor -> customArmorDiscount(player, armor);
             case MythicItem mythic -> mythicDiscount(player, mythic);
             case WeaponItem weapon when weapon == WeaponItem.CASH_BLASTER -> bowTradeInValue(player);
-            case WeaponItem weapon when weapon == WeaponItem.SOUL_KATANA -> ironSwordTradeInValue(player);
+            case WeaponItem weapon when weapon == WeaponItem.SOUL_KATANA -> soulKatanaTradeInValue(player);
             default -> 0;
         };
     }
@@ -121,14 +122,23 @@ public final class DiscountService {
     }
 
     /**
-     * The Soul Katana is an iron-tier blade, so buying it takes a shop-bought iron sword (and
-     * leaves a diamond one alone) - only the iron sword is a trade-in.
+     * The Soul Katana is an iron-tier blade, so buying it takes a shop-bought iron sword - and,
+     * with {@code trade-ins.soul-katana-diamond-sword} on, a diamond one too
+     * ({@link #soulKatanaTakesDiamondSword}). Whichever it takes is the trade-in.
      */
-    private static long ironSwordTradeInValue(Player player) {
+    private static long soulKatanaTradeInValue(Player player) {
+        if (soulKatanaTakesDiamondSword()) return weaponTradeInValue(player, WeaponItem.IRON_SWORD, WeaponItem.DIAMOND_SWORD);
         for (ItemStack is : player.getInventory().getContents()) {
             if (PDCDetection.getWeapon(is) == WeaponItem.IRON_SWORD) return WeaponItem.IRON_SWORD.getPrice();
         }
         return 0;
+    }
+
+    /**
+     * Whether buying the Soul Katana takes a diamond sword as well as an iron one.
+     */
+    public static boolean soulKatanaTakesDiamondSword() {
+        return CashClashPlugin.getInstance().getShopConfig().isSoulKatanaDiamondSwordTradeIn();
     }
 
     private static long bowTradeInValue(Player player) {

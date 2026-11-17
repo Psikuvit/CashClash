@@ -142,6 +142,13 @@ mythic-items:
 mini-shop:
   markup-percent: 10
 
+# Trade-ins: gear an item replaces takes what it cost off the item's price.
+trade-ins:
+  # true: a shop-bought diamond sword takes the Soul Katana's price down by what it cost (iron +
+  # diamond sword prices), and buying the Soul Katana takes that diamond sword. false: only an
+  # iron sword counts, and a diamond sword is kept alongside the Soul Katana.
+  soul-katana-diamond-sword: true
+
 # ============================================
 # INVESTMENT PRICES
 # ============================================
