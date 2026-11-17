@@ -337,6 +337,14 @@ custom-armor:
 # UTILITIES
 # ============================================
 utilities:
+  # Placed leaves despawn after start-seconds. Every blocks-per-step leaves a player places in a
+  # round takes seconds-per-step off their next ones (never below minimum-seconds), so 25 last
+  # 8s, the next 25 last 7s, and so on. It's back to start-seconds at the next buy phase.
+  leaves:
+    start-seconds: 8
+    blocks-per-step: 25
+    seconds-per-step: 1
+    minimum-seconds: 1
   # Placed water/lava ignore vanilla flow entirely: they fall straight down through open space,
   # and only a block sitting on solid ground steps outward - in all four directions,
   # flow-distance times in total, regardless of the surrounding terrain. A placed fluid washes

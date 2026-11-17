@@ -105,6 +105,22 @@ public class ItemsConfig {
         return config.getInt(fluidPath(fluid) + "fall-max-depth", 16);
     }
 
+    public int getLeafStartSeconds() {
+        return config.getInt("utilities.leaves.start-seconds", 8);
+    }
+
+    public int getLeafBlocksPerStep() {
+        return config.getInt("utilities.leaves.blocks-per-step", 25);
+    }
+
+    public int getLeafSecondsPerStep() {
+        return config.getInt("utilities.leaves.seconds-per-step", 1);
+    }
+
+    public int getLeafMinimumSeconds() {
+        return config.getInt("utilities.leaves.minimum-seconds", 1);
+    }
+
     public int getFluidObsidianDespawnSeconds() {
         return config.getInt("utilities.fluids.obsidian-despawn-seconds", 5);
     }

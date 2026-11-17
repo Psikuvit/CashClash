@@ -103,6 +103,8 @@ public class BlockListener implements Listener {
     private static final Map<UUID, Map<Integer, Integer>> waterLavaSourceCount = new ConcurrentHashMap<>();
     private static final Map<Location, BukkitTask> webDespawnTasks = new ConcurrentHashMap<>();
     private static final Map<Location, BukkitTask> leafDecayTasks = new ConcurrentHashMap<>();
+    // How many leaves each player has placed this round, per game - each step shortens the next ones
+    private static final Map<UUID, Map<UUID, Integer>> leavesPlacedThisRound = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
     // What a placed fluid displaced, so the map can be put back exactly as it was once the
     // fluid despawns rather than left as a hole where a plant or lever used to be.
@@ -158,6 +160,7 @@ public class BlockListener implements Listener {
     // ==================== BLOCK PLACE ====================
 
     public static void cleanupRound(UUID sessionId) {
+        leavesPlacedThisRound.remove(sessionId);
         Set<Location> blocks = placedBlocks.remove(sessionId);
         if (blocks != null) {
             for (Location loc : blocks) {
@@ -182,6 +185,7 @@ public class BlockListener implements Listener {
      */
     public static void cleanupSession(UUID sessionId) {
         placedBlocks.remove(sessionId);
+        leavesPlacedThisRound.remove(sessionId);
         waterLavaSourceCount.remove(sessionId);
         playerWaterBucketRefillCount.remove(sessionId);
         fluidCells.entrySet().removeIf(entry -> {
@@ -700,10 +704,28 @@ public class BlockListener implements Listener {
     private boolean handleLeafPlacement(BlockPlaceEvent event, Material blockType, UUID sessionId, UUID playerId, Block block) {
         if (!isLeafBlock(blockType)) return false;
 
+        long lifespanTicks = leafLifespanTicks(sessionId, playerId);
         trackPlacedBlock(sessionId, block);
-        scheduleLeafDecay(block);
-        showDespawnTimer(block, blockType, 160, "green");
+        scheduleLeafDecay(block, lifespanTicks);
+        showDespawnTimer(block, blockType, lifespanTicks, "green");
         return true;
+    }
+
+    /**
+     * How long a player's next placed leaves last: {@code leaves.start-seconds}, less
+     * {@code seconds-per-step} for every {@code blocks-per-step} leaves they've already placed
+     * this round, never under {@code minimum-seconds}. The count starts over at the next buy
+     * phase ({@link #cleanupRound}); practice leaves always last the full time.
+     */
+    private long leafLifespanTicks(UUID zoneId, UUID playerId) {
+        int start = itemsConfig.getLeafStartSeconds();
+        if (PRACTICE_ZONE.equals(zoneId)) return start * 20L;
+
+        int placedBefore = leavesPlacedThisRound.computeIfAbsent(zoneId, k -> new ConcurrentHashMap<>())
+                .merge(playerId, 1, Integer::sum) - 1;
+        int steps = placedBefore / Math.max(1, itemsConfig.getLeafBlocksPerStep());
+        int seconds = Math.max(itemsConfig.getLeafMinimumSeconds(), start - steps * itemsConfig.getLeafSecondsPerStep());
+        return seconds * 20L;
     }
 
     /**
@@ -1242,9 +1264,9 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Schedule leaf block to decay after 8 seconds with visual effects.
+     * Schedule leaf block to decay after {@code lifespanTicks} with visual effects.
      */
-    private void scheduleLeafDecay(Block block) {
+    private void scheduleLeafDecay(Block block, long lifespanTicks) {
         Location loc = block.getLocation().toBlockLocation();
         BukkitTask task = SchedulerUtils.runTaskLater(() -> {
             if (isLeafBlock(block.getType())) {
@@ -1256,7 +1278,7 @@ public class BlockListener implements Listener {
             }
             leafDecayTasks.remove(loc);
             practicePlacedBlocks.remove(loc);
-        }, 160);
+        }, lifespanTicks);
         leafDecayTasks.put(loc, task);
     }
 
