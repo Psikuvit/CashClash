@@ -51,6 +51,9 @@ public class TemplateWorld {
     private final Map<TeamColor, BlockRegion> spawnRooms;
     private final Map<TeamColor, List<BlockRegion>> spawnRoomDoors;
 
+    // Each team's two spawn lines, which bound its spawn zone
+    private final Map<TeamColor, SpawnLine[]> spawnLines;
+
     public TemplateWorld(String id, World world) {
         this.id = id;
         this.worldName = world != null ? world.getName() : null;
@@ -61,6 +64,7 @@ public class TemplateWorld {
         this.finalStandFlags = new EnumMap<>(TeamColor.class);
         this.spawnRooms = new EnumMap<>(TeamColor.class);
         this.spawnRoomDoors = new EnumMap<>(TeamColor.class);
+        this.spawnLines = new EnumMap<>(TeamColor.class);
     }
 
     public String getId() {
@@ -271,6 +275,25 @@ public class TemplateWorld {
 
     public void clearSpawnRoomDoors(TeamColor team) {
         spawnRoomDoors.remove(team);
+    }
+
+    /**
+     * @param line 1 or 2
+     * @return that spawn line of the team, never null - {@link SpawnLine#EMPTY} if it isn't set
+     */
+    public SpawnLine getSpawnLine(TeamColor team, int line) {
+        SpawnLine[] lines = spawnLines.get(team);
+        SpawnLine spawnLine = lines != null ? lines[line - 1] : null;
+        if (spawnLine == null) return SpawnLine.EMPTY;
+        return new SpawnLine(LocationUtils.clone(spawnLine.start()), LocationUtils.clone(spawnLine.end()));
+    }
+
+    public void setSpawnLine(TeamColor team, int line, SpawnLine spawnLine) {
+        spawnLines.computeIfAbsent(team, t -> new SpawnLine[2])[line - 1] = spawnLine;
+    }
+
+    public void clearSpawnLines(TeamColor team) {
+        spawnLines.remove(team);
     }
 
     public boolean isConfigured() {

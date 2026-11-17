@@ -3,6 +3,7 @@ package me.psikuvit.cashClash.command.subcommands;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.arena.BlockRegion;
+import me.psikuvit.cashClash.arena.SpawnLine;
 import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
 import me.psikuvit.cashClash.util.LocationUtils;
@@ -56,11 +57,24 @@ public class TemplateCommand extends AbstractArgCommand {
             case "tp" -> templateTeleport(sender, args);
             case "removevillager" -> templateRemoveVillager(sender, args);
             case "resetborder" -> templateResetBorder(sender, args);
+            case "resetspawnlines" -> {
+                if (args.length < 2) {
+                    Messages.send(sender, "template.reset-spawn-lines-usage");
+                    return true;
+                }
+                templateResetSpawnLines(sender, args[1], args.length < 3 ? null : args[2]);
+            }
             // Spawn room setup is paused along with the spawn rooms
             //case "pos1" -> templateSelect(sender, 0);
             //case "pos2" -> templateSelect(sender, 1);
             //case "cleardoors" -> templateClearDoors(sender, args);
-            default -> Messages.send(sender, "template.invalid-action");
+            default -> {
+                if (args.length >= 2 && args[1].equalsIgnoreCase("resetspawnlines")) {
+                    templateResetSpawnLines(sender, args[0], args.length < 3 ? null : args[2]);
+                } else {
+                    Messages.send(sender, "template.invalid-action");
+                }
+            }
         }
 
         return true;
@@ -73,13 +87,17 @@ public class TemplateCommand extends AbstractArgCommand {
         List<String> out = new ArrayList<>();
 
         if (args.length == 1) {
-            for (String a : List.of("register", "setspawn", "set", "list", "tp", "show", "removevillager", "resetborder")) if (a.startsWith(last)) out.add(a);
+            for (String a : List.of("register", "setspawn", "set", "list", "tp", "show", "removevillager", "resetborder", "resetspawnlines")) if (a.startsWith(last)) out.add(a);
             return out;
         }
 
         String action = args[0].toLowerCase(Locale.ROOT);
+        if (args.length == 3 && action.equals("resetspawnlines")) {
+            for (String t : List.of("red", "blue")) if (t.startsWith(last)) out.add(t);
+            return out;
+        }
         if (args.length == 2) {
-            if (List.of("setspawn", "tp", "show", "removevillager", "resetborder").contains(action)) {
+            if (List.of("setspawn", "tp", "show", "removevillager", "resetborder", "resetspawnlines").contains(action)) {
                 out.addAll(CashClashPlugin.getInstance().getArenaManager().getAllTemplates().keySet().stream()
                         .filter(id -> id.toLowerCase(Locale.ROOT).startsWith(last))
                         .toList());
@@ -94,7 +112,7 @@ public class TemplateCommand extends AbstractArgCommand {
             if (action.equals("register")) {
                 out.addAll(Bukkit.getWorlds().stream().map(World::getName).filter(n -> n.toLowerCase(Locale.ROOT).startsWith(last)).toList());
             } else if (action.equals("set")) {
-                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "minishop", "ctf", "finalstandflag", "border")) if (t.startsWith(last)) out.add(t);
+                for (String t : List.of("spectator", "teamred", "teamblue", "shop", "villager", "minishop", "ctf", "finalstandflag", "border", "spawnline")) if (t.startsWith(last)) out.add(t);
             }
             return out;
         }
@@ -114,7 +132,20 @@ public class TemplateCommand extends AbstractArgCommand {
                 case "border" -> {
                     for (String t : List.of("1", "2")) if (t.startsWith(last)) out.add(t);
                 }
+                case "spawnline" -> {
+                    for (String t : List.of("start", "end")) if (t.startsWith(last)) out.add(t);
+                }
             }
+            return out;
+        }
+
+        if (action.equals("set") && args[2].equalsIgnoreCase("spawnline")) {
+            List<String> options = switch (args.length) {
+                case 5 -> List.of("1", "2");
+                case 6 -> List.of("red", "blue");
+                default -> List.of();
+            };
+            for (String t : options) if (t.startsWith(last)) out.add(t);
             return out;
         }
 
@@ -325,6 +356,13 @@ public class TemplateCommand extends AbstractArgCommand {
             Messages.send(player, "template.show-border-corner", "corner", String.valueOf(corner),
                     "location", formatLoc(tpl.getBorderCorner(corner)));
         }
+        for (TeamColor team : TeamColor.values()) {
+            for (int line = 1; line <= 2; line++) {
+                SpawnLine spawnLine = tpl.getSpawnLine(team, line);
+                Messages.send(player, "template.show-spawn-line", "team", team.getDisplayName(), "line", String.valueOf(line),
+                        "start", formatLoc(spawnLine.start()), "end", formatLoc(spawnLine.end()));
+            }
+        }
 
         // Spawn rooms are paused
         //for (TeamColor team : TeamColor.values()) {
@@ -526,6 +564,9 @@ public class TemplateCommand extends AbstractArgCommand {
                 tpl.setFinalStandFlag(team, stored);
                 Messages.send(player, "template.set-final-stand-flag-success", "team", team.getDisplayName(), "template_id", templateId);
             }
+            case "spawnline" -> {
+                if (!setSpawnLineEnd(player, tpl, args)) return;
+            }
             // Spawn rooms are paused
             //case "spawnroom", "door" -> {
             //    TeamColor team = args.length < 4 ? null : parseTeam(args[3]);
@@ -551,6 +592,56 @@ public class TemplateCommand extends AbstractArgCommand {
         }
 
         CashClashPlugin.getInstance().getArenaManager().saveTemplate(templateId);
+    }
+
+    /**
+     * {@code set <id> spawnline <start|end> <1|2> <red|blue>}: puts one end of one of the
+     * team's spawn lines on the block the player stands in.
+     *
+     * @return false (after telling them why) if the arguments don't name a line end
+     */
+    private boolean setSpawnLineEnd(Player player, TemplateWorld tpl, String[] args) {
+        String end = args.length < 4 ? "" : args[3].toLowerCase(Locale.ROOT);
+        int line = args.length < 5 ? 0 : switch (args[4]) {
+            case "1" -> 1;
+            case "2" -> 2;
+            default -> 0;
+        };
+        TeamColor team = args.length < 6 ? null : parseTeam(args[5]);
+        if (!(end.equals("start") || end.equals("end")) || line == 0 || team == null) {
+            Messages.send(player, "template.set-spawn-line-usage");
+            return false;
+        }
+
+        Location block = LocationUtils.copyToWorld(player.getLocation().getBlock().getLocation(), tpl.getWorld());
+        SpawnLine current = tpl.getSpawnLine(team, line);
+        SpawnLine updated = end.equals("start") ? current.withStart(block) : current.withEnd(block);
+        tpl.setSpawnLine(team, line, updated);
+
+        Messages.send(player, updated.isComplete() ? "template.set-spawn-line-complete" : "template.set-spawn-line-success",
+                "end", end, "line", String.valueOf(line), "team", team.getDisplayName(), "template_id", tpl.getId());
+        return true;
+    }
+
+    /**
+     * {@code resetspawnlines <id> <red|blue>} (or {@code <id> resetspawnlines <red|blue>}):
+     * clears both of the team's spawn lines, to draw them again.
+     */
+    private void templateResetSpawnLines(CommandSender sender, String templateId, String teamArg) {
+        TemplateWorld tpl = CashClashPlugin.getInstance().getArenaManager().getTemplate(templateId);
+        if (tpl == null) {
+            Messages.send(sender, "template.not-found", "template_id", templateId);
+            return;
+        }
+        TeamColor team = teamArg != null ? parseTeam(teamArg) : null;
+        if (team == null) {
+            Messages.send(sender, "template.reset-spawn-lines-usage");
+            return;
+        }
+
+        tpl.clearSpawnLines(team);
+        CashClashPlugin.getInstance().getArenaManager().saveTemplate(templateId);
+        Messages.send(sender, "template.reset-spawn-lines-success", "team", team.getDisplayName(), "template_id", templateId);
     }
 
     private String formatLoc(Location l) {

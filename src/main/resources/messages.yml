@@ -626,12 +626,12 @@ messages:
   # TEMPLATE WORLD MESSAGES
   # ============================================
   template:
-    main-usage: "<red>Usage: /cc template <register|set|setspawn|list|tp|show|removevillager|resetborder> ...</red>"
+    main-usage: "<red>Usage: /cc template <register|set|setspawn|list|tp|show|removevillager|resetborder|resetspawnlines> ...</red>"
     register-usage: "<red>Usage: /cc template register <templateId> <worldName></red>"
     register-success: "<green>Registered template '{template_id}' to world '{world_name}'</green>"
     register-failed: "<red>Failed to register template. Check world name and server logs.</red>"
     already-exists: "<red>Template with ID '{template_id}' already exists.</red>"
-    set-usage: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager|minishop|ctf|finalstandflag|border> [index/team/corner]</red>"
+    set-usage: "<red>Usage: /cc template set <templateId> <spectator|teamRed|teamBlue|shop|villager|minishop|ctf|finalstandflag|border|spawnline> [index/team/corner]</red>"
     set-minishop-usage: "<red>Usage: /cc template set <templateId> minishop <red|blue> (stand where the villager goes)</red>"
     set-minishop-success: "<green>Set {team}'s mini shop villager on template '{template_id}' to your location.</green>"
     set-final-stand-flag-usage: "<red>Usage: /cc template set <templateId> finalstandflag <red|blue> (stand where the flag goes in a CTF Final Stand)</red>"
@@ -640,6 +640,12 @@ messages:
     set-border-success: "<green>Set Final Stand border corner {corner} on template '{template_id}' to your location.</green>"
     reset-border-usage: "<red>Usage: /cc template resetborder <templateId></red>"
     reset-border-success: "<green>Cleared the Final Stand border corners on template '{template_id}' - it starts around the middle of the team spawns again.</green>"
+    # Spawn lines: two per team, the space between them is the team's spawn zone
+    set-spawn-line-usage: "<red>Usage: /cc template set <templateId> spawnline <start|end> <1|2> <red|blue> (stand on the block the line starts or ends at)</red>"
+    set-spawn-line-success: "<green>Set the {end} of {team}'s spawn line {line} on template '{template_id}' to your block.</green> <gray>Now set its other end.</gray>"
+    set-spawn-line-complete: "<green>Set the {end} of {team}'s spawn line {line} on template '{template_id}' to your block - the line is complete.</green>"
+    reset-spawn-lines-usage: "<red>Usage: /cc template resetspawnlines <templateId> <red|blue></red>"
+    reset-spawn-lines-success: "<green>Cleared {team}'s spawn lines on template '{template_id}'.</green>"
     set-team-usage: "<red>Usage: /cc template set <templateId> {type} <1|2|3></red>"
     set-shop-usage: "<red>Usage: /cc template set <templateId> shop <teamRed|teamBlue></red>"
     set-lobby-usage: "<red>Usage: /cc template set <templateId> lobby</red>"
@@ -670,6 +676,7 @@ messages:
     show-blue-flag: "<yellow>Blue Flag: {location}</yellow>"
     show-final-stand-flag: "<yellow>{team} Final Stand flag:</yellow> {location}"
     show-border-corner: "<yellow>Final Stand border corner {corner}:</yellow> {location}"
+    show-spawn-line: "<yellow>{team} spawn line {line}:</yellow> {start} <gray>to</gray> {end}"
     show-shops: "<yellow>Shops:</yellow> <gray>{shop_info}</gray>"
     show-spawn-room: "<yellow>{team} spawn room:</yellow> {region} <gray>({doors} door(s))</gray>"
     pos-set: "<green>Position {index} set to {x}, {y}, {z}.</green>"

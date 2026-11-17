@@ -197,6 +197,13 @@ public class ArenaManager {
                     tpl.setFinalStandFlag(team, LocationUtils.deserializeLocation(cfg.getConfigurationSection(finalStandFlagPath)));
                 }
 
+                for (int line = 1; line <= 2; line++) {
+                    String linePath = "spawn-lines.team" + team.getTeamNumber() + ".line" + line;
+                    tpl.setSpawnLine(team, line, new SpawnLine(
+                            LocationUtils.deserializeLocation(cfg.getConfigurationSection(linePath + ".start")),
+                            LocationUtils.deserializeLocation(cfg.getConfigurationSection(linePath + ".end"))));
+                }
+
                 String path = "spawn-rooms.team" + team.getTeamNumber();
                 tpl.setSpawnRoom(team, BlockRegion.deserialize(cfg.getString(path + ".room")));
                 for (String door : cfg.getStringList(path + ".doors")) {
@@ -290,6 +297,13 @@ public class ArenaManager {
             Location finalStandFlag = tpl.getFinalStandFlag(team);
             if (finalStandFlag != null) {
                 LocationUtils.serializeLocation(cfg, "ctf.final_stand_flag.team" + team.getTeamNumber(), finalStandFlag);
+            }
+
+            for (int line = 1; line <= 2; line++) {
+                String linePath = "spawn-lines.team" + team.getTeamNumber() + ".line" + line;
+                SpawnLine spawnLine = tpl.getSpawnLine(team, line);
+                if (spawnLine.start() != null) LocationUtils.serializeLocation(cfg, linePath + ".start", spawnLine.start());
+                if (spawnLine.end() != null) LocationUtils.serializeLocation(cfg, linePath + ".end", spawnLine.end());
             }
 
             String path = "spawn-rooms.team" + team.getTeamNumber();
