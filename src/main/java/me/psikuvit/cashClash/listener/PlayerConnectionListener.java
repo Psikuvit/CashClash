@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.manager.player.PlayerDataManager;
 import me.psikuvit.cashClash.manager.player.ScoreboardManager;
 import me.psikuvit.cashClash.manager.player.TabListManager;
 import me.psikuvit.cashClash.manager.player.WorldVisibilityManager;
+import me.psikuvit.cashClash.party.PartyManager;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -30,6 +31,7 @@ public class PlayerConnectionListener implements Listener {
     private final LayoutManager layoutManager;
     private final LobbyManager lobbyManager;
     private final MythicItemManager mythicItemManager;
+    private final PartyManager partyManager;
     private final PlayerDataManager playerDataManager;
     private final RejoinManager rejoinManager;
     private final ScoreboardManager scoreboardManager;
@@ -38,7 +40,7 @@ public class PlayerConnectionListener implements Listener {
 
     public PlayerConnectionListener(ConfigManager configManager, GameManager gameManager,
                                    LayoutManager layoutManager, LobbyManager lobbyManager, MythicItemManager mythicItemManager,
-                                   PlayerDataManager playerDataManager, RejoinManager rejoinManager,
+                                   PartyManager partyManager, PlayerDataManager playerDataManager, RejoinManager rejoinManager,
                                    ScoreboardManager scoreboardManager, TabListManager tabListManager,
                                    WorldVisibilityManager worldVisibilityManager) {
         this.configManager = configManager;
@@ -46,6 +48,7 @@ public class PlayerConnectionListener implements Listener {
         this.layoutManager = layoutManager;
         this.lobbyManager = lobbyManager;
         this.mythicItemManager = mythicItemManager;
+        this.partyManager = partyManager;
         this.playerDataManager = playerDataManager;
         this.rejoinManager = rejoinManager;
         this.scoreboardManager = scoreboardManager;
@@ -129,6 +132,10 @@ public class PlayerConnectionListener implements Listener {
 
         // Cleanup mythic state
         mythicItemManager.cleanupOnQuit(player);
+
+        if (partyManager.isInParty(player)) {
+            partyManager.leaveParty(player);
+        }
 
         // Remove lobby scoreboard
         scoreboardManager.setScoreboard(player);
