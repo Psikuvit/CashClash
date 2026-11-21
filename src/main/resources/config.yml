@@ -64,6 +64,25 @@ game:
   death-spectator-rise-height: 4.0
   death-spectator-rise-ticks: 16
 
+  # Map blocks players can break during the combat phase, on top of the blocks they placed
+  # themselves. They drop nothing and stay broken for the rest of the game.
+  breakable-plants:
+    - SHORT_GRASS
+    - FERN
+    - LARGE_FERN
+    - TALL_GRASS
+    - SEAGRASS
+    - TALL_SEAGRASS
+    - KELP
+    - KELP_PLANT
+    - SMALL_DRIPLEAF
+    - CAVE_VINES
+    - CAVE_VINES_PLANT
+    - VINE
+    - FIREFLY_BUSH
+    - BUSH
+    - SHORT_DRY_GRASS
+
 # ============================================
 # ROUND SETTINGS
 # ============================================

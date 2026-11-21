@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -67,11 +68,14 @@ public class BlockListener implements Listener {
      */
     private static final UUID PRACTICE_ZONE = new UUID(0L, 0L);
 
+    private final ConfigManager configManager;
     private final GameManager gameManager;
     private final ItemsConfig itemsConfig;
     private final PracticeRangeManager practiceRangeManager;
 
-    public BlockListener(GameManager gameManager, ItemsConfig itemsConfig, PracticeRangeManager practiceRangeManager) {
+    public BlockListener(ConfigManager configManager, GameManager gameManager, ItemsConfig itemsConfig,
+                         PracticeRangeManager practiceRangeManager) {
+        this.configManager = configManager;
         this.gameManager = gameManager;
         this.itemsConfig = itemsConfig;
         this.practiceRangeManager = practiceRangeManager;
@@ -1261,8 +1265,12 @@ public class BlockListener implements Listener {
 
         Set<Location> sessionPlacedBlocks = placedBlocks.get(sessionId);
 
-        // If the block was NOT placed by a player, cancel the break
         if (!isBlockPlayerPlaced(sessionPlacedBlocks, loc)) {
+            if (session.getState() == GameState.COMBAT && configManager.getBreakablePlants().contains(block.getType())) {
+                event.setDropItems(false);
+                clearHangingColumn(block);
+                return;
+            }
             event.setCancelled(true);
             return;
         }
@@ -1273,6 +1281,25 @@ public class BlockListener implements Listener {
 
         // Update water/lava source count if applicable
         updateBlockTypeCountOnBreak(session, player, block);
+    }
+
+    /**
+     * Breaking kelp takes the kelp above it with it, and cave vines the vines below - vanilla
+     * pops those as items. They're cleared here instead, so a broken plant drops nothing.
+     */
+    private static void clearHangingColumn(Block broken) {
+        Material type = broken.getType();
+        if (type == Material.KELP || type == Material.KELP_PLANT) {
+            for (Block b = broken.getRelative(BlockFace.UP); b.getType() == Material.KELP || b.getType() == Material.KELP_PLANT;
+                 b = b.getRelative(BlockFace.UP)) {
+                b.setType(Material.WATER, false);
+            }
+        } else if (type == Material.CAVE_VINES || type == Material.CAVE_VINES_PLANT) {
+            for (Block b = broken.getRelative(BlockFace.DOWN); b.getType() == Material.CAVE_VINES || b.getType() == Material.CAVE_VINES_PLANT;
+                 b = b.getRelative(BlockFace.DOWN)) {
+                b.setType(Material.AIR, false);
+            }
+        }
     }
 
     /**

@@ -2,14 +2,17 @@ package me.psikuvit.cashClash.config;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.util.Messages;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -159,6 +162,19 @@ public class ConfigManager {
 
     public int getRespawnDelayEnemyZone() {
         return config.getInt("game.respawn-delay-enemy-zone", 0);
+    }
+
+    /**
+     * The map blocks players may break during combat besides their own placed blocks - plants,
+     * by default. Unknown names are skipped.
+     */
+    public Set<Material> getBreakablePlants() {
+        Set<Material> plants = EnumSet.noneOf(Material.class);
+        for (String name : config.getStringList("game.breakable-plants")) {
+            Material material = Material.matchMaterial(name);
+            if (material != null) plants.add(material);
+        }
+        return plants;
     }
 
     public int getRespawnProtection() {
