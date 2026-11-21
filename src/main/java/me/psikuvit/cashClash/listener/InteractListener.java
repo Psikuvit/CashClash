@@ -160,9 +160,9 @@ public class InteractListener implements Listener {
      * never sees left-clicks.
      */
     /**
-     * Chests, barrels and pots (decorated and flower) can't be opened or filled outside creative
-     * mode, in a game or in the hub. Only the block's own use is refused, so an item held while
-     * clicking one still works.
+     * Chests, barrels, pots (decorated and flower) and crafting tables can't be opened or filled
+     * outside creative mode, in a game or in the hub. Only the block's own use is refused, so an
+     * item held while clicking one still works.
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onLockedContainerInteract(PlayerInteractEvent event) {
@@ -171,9 +171,26 @@ public class InteractListener implements Listener {
 
         Material type = event.getClickedBlock().getType();
         boolean locked = type == Material.CHEST || type == Material.TRAPPED_CHEST || type == Material.BARREL
-                || type == Material.DECORATED_POT || Tag.COPPER_CHESTS.isTagged(type) || Tag.FLOWER_POTS.isTagged(type);
+                || type == Material.DECORATED_POT || type == Material.CRAFTING_TABLE
+                || Tag.COPPER_CHESTS.isTagged(type) || Tag.FLOWER_POTS.isTagged(type);
         if (locked) {
             event.setUseInteractedBlock(Event.Result.DENY);
+        }
+    }
+
+    /**
+     * Axes can't strip logs, wood, stems or bamboo blocks outside creative mode. Only the axe's
+     * own use on the block is refused, so its abilities still go off.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onStripWood(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null || event.getItem() == null) return;
+        if (event.getPlayer().getGameMode() == GameMode.CREATIVE || !Tag.ITEMS_AXES.isTagged(event.getItem().getType())) return;
+
+        Material type = event.getClickedBlock().getType();
+        boolean strippable = (Tag.LOGS.isTagged(type) || Tag.BAMBOO_BLOCKS.isTagged(type)) && !type.name().startsWith("STRIPPED_");
+        if (strippable) {
+            event.setUseItemInHand(Event.Result.DENY);
         }
     }
 
