@@ -172,7 +172,15 @@ public class ShopItemBuilder {
      * @return This builder for chaining
      */
     public ShopItemBuilder nextTier(String nextTier) {
-        lore.add(Messages.parse("<aqua>Next: " + nextTier + "</aqua>"));
+        return nextTier(nextTier, "aqua");
+    }
+
+    /**
+     * Adds the next upgrade tier in {@code color} - a MiniMessage colour name or hex code
+     * (e.g. {@code #ffffff}).
+     */
+    public ShopItemBuilder nextTier(String nextTier, String color) {
+        lore.add(Messages.parse("<" + color + ">Next: " + nextTier + "</" + color + ">"));
         return this;
     }
 

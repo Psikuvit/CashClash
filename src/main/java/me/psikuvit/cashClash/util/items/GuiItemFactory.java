@@ -178,7 +178,9 @@ public final class GuiItemFactory {
 
         // Show upgrade path based on material tier
         String materialName = item.getMaterial().name();
-        if (materialName.contains("IRON")) {
+        if (materialName.startsWith("STONE_")) {
+            builder.nextTier("Iron tier", "#ffffff");
+        } else if (materialName.contains("IRON")) {
             builder.nextTier("Diamond tier");
         } else if (materialName.contains("DIAMOND")) {
             builder.finalTier();
