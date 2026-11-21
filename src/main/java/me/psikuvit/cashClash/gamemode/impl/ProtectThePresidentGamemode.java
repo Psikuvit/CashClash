@@ -721,8 +721,6 @@ public class ProtectThePresidentGamemode extends Gamemode {
                 case HP -> PresidentialEffectsUtils.applyHpBuff(presPlayer);
                 case POTION_DURATION -> Messages.debug("[PTP] Potion Duration buff active for: " + presPlayer.getName());
             }
-
-            Messages.send(presPlayer, "gamemode-ptp.buff-activated", "buff_name", buff.getName());
         }
     }
 

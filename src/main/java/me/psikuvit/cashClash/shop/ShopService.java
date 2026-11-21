@@ -574,8 +574,6 @@ public class ShopService {
         if (ccp != null) {
             ccp.deductCoins(cost);
             Messages.debug(player, Messages.DebugCategory.SHOP, "Coins deducted: -" + cost + " (new balance=" + ccp.getCoins() + ")");
-            Messages.send(player, "shop.purchase-successful",
-                "cost", String.format("%,d", cost));
             SoundUtils.play(player, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
         }
     }

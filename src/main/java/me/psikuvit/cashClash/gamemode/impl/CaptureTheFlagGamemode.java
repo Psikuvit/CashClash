@@ -138,10 +138,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
     public void onGameStart() {
         Messages.debug("[CTF] Gamemode started");
         Messages.broadcast(session.getPlayers(), "gamemode-ctf.game-started");
-        Messages.broadcast(session.getPlayers(), "gamemode-ctf.objective");
-        Messages.broadcast(session.getPlayers(), "gamemode-ctf.carrier-bonus-info",
-                "kills", String.valueOf(CARRIER_KILLS_PER_BONUS),
-                "amount", String.format("%,d", CARRIER_KILL_BONUS));
     }
 
     @Override
@@ -1054,11 +1050,6 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     // Entering a circle - or switching to a different one - restarts the timer.
                     playerCircleTimestamps.put(playerUuid, now);
                     playerNearestFlagTeam.put(playerUuid, nearestTeam);
-
-                    String teamName = nearestTeam == 1 ? "Red" : "Blue";
-                    String colorTag = nearestTeam == 1 ? "red" : "blue";
-                    Messages.send(player, "gamemode-ctf.flag-capturing",
-                            "team_name", teamName, "color", colorTag);
                 } else if (prevTime != null) {
                     long elapsedMs = now - prevTime;
 
@@ -1069,13 +1060,7 @@ public class CaptureTheFlagGamemode extends Gamemode {
                     }
                 }
             } else {
-                if (playerNearestFlagTeam.containsKey(playerUuid)) {
-                    Integer previousTeam = playerNearestFlagTeam.get(playerUuid);
-                    String teamName = previousTeam == 1 ? "Red" : "Blue";
-                    Messages.send(player, "gamemode-ctf.flag-capture-cancelled",
-                            "team_name", teamName);
-                    playerCircleTimestamps.remove(playerUuid);
-                }
+                playerCircleTimestamps.remove(playerUuid);
                 playerNearestFlagTeam.remove(playerUuid);
             }
         }

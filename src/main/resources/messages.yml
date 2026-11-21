@@ -215,7 +215,6 @@ messages:
     purchase-undone-item-not-found: "<gray>(Could not find item(s) to remove from inventory.)</gray>"
     purchased-quantity: "<green>Purchased {item_name} x{quantity} for ${price}</green>"
     purchased: "<green>Purchased {item_name} for ${price}</green>"
-    purchase-successful: "<green>Purchase successful! Deducted ${cost}</green>"
     not-in-game: "<red>You are not part of this game session.</red>"
     must-be-in-game: "<red>You must be in a game to shop.</red>"
     closed-in-combat: "<red>The shop is closed during combat - the villager in your spawn room sells supplies.</red>"
@@ -281,7 +280,6 @@ messages:
   # ============================================
   round:
     buff-selection-title: "<yellow><bold>Round {round} - Buff Selection Phase!</bold></yellow>"
-    buff-selection-prompt: "<gold>Presidents: Right-click an item to select your buff!</gold>"
     buff-selection-time: "<gray>You have <yellow>15 seconds </yellow><gray>to select!</gray>"
     shopping-phase-title: "<yellow><bold>Round {round} - Shopping Phase!</bold></yellow>"
     shopping-phase-time: "<gray>You have <yellow>{time_remaining} seconds </yellow><gray>to shop!</gray>"
@@ -326,8 +324,6 @@ messages:
     rejoin-status: "<yellow>Round: <gold>{round}</gold> | Lives: <gold>{lives}</gold></yellow>"
     game-force-end: "<yellow>Game ending - one team has no remaining players.</yellow>"
     shopping-area-missing: "<red>Your team's shopping area is not set. Teleporting to spectator area.</red>"
-    shopping-area-teleported: "<yellow>Teleported to your team's shopping area.</yellow>"
-    water-refilled-shopping: "<aqua>Water buckets refilled for shopping phase!</aqua>"
 
   # ============================================
   # GAMEMODE - PROTECT THE PRESIDENT
@@ -342,7 +338,6 @@ messages:
     buff-selection-time-remaining: "<gold>Presidents must select their buffs in {time_remaining}s!</gold>"
     no-buff-selected: "<gold>No buff selected! Random buff applied: {buff_name}</gold>"
     buff-selected: "<gold>Presidents have selected their buffs! Shop is now unlocked!</gold>"
-    buff-activated: "<gold>Buff Activated: {buff_name}!</gold>"
     buff-deselected: "<red>Buff deselected!</red>"
     buff-selected-player: "<green>Buff selected: {buff_name}!</green>"
     president-died: "<{color}><bold>Team {team_name}'s president has been assassinated!</bold> <yellow>{win_condition} total wins the match</yellow>"
@@ -374,8 +369,6 @@ messages:
     game-started: "<gold>Capture the Flag has been selected as the gamemode!</gold>"
     round-start-message: "<gold>Capture the Flag Round!</gold>"
     buy-phase-message: "<yellow>Capture the enemy's flag! First team to {win_condition} captures wins!</yellow>"
-    objective: "<yellow>Capture the enemy's flag and return it to your base to score!</yellow>"
-    carrier-bonus-info: "<yellow>Every {kills} kills your flag carrier gets earns your team a split {amount} bonus!</yellow>"
     flag-holder-eliminated: "<{color}><bold>Team {team_name}'s flag holder was eliminated!</bold></{color}>"
     flag-holder-left: "<{color}><bold>Team {team_name}'s flag holder left the game - the flag was dropped!</bold></{color}>"
     flag-captured: "<{color}><bold>Team {team_name} captured the flag! {captures}/{win_condition}</bold></{color}>"
@@ -388,8 +381,6 @@ messages:
     flag-pickup: "<{color}>The flag carrier is highlighted!</{color}>"
     flag-dropped: "<{color}>The flag has been dropped!</{color}>"
     silenced-activated: "<red>You have been silenced! Movement abilities are locked.</red>"
-    flag-capturing: "<{color}>Capturing Team {team_name}'s flag... Stand still!</{color}>"
-    flag-capture-cancelled: "<yellow>Capturing Team {team_name}'s flag cancelled.</yellow>"
     flag-captured-by-player: "<gold><bold>{player_name} has captured the flag! {captures}/{win_condition}</bold></gold>"
     sudden-death: "<red><bold>SUDDEN DEATH!</bold> Capture more flags than the other team in 3 minutes to win the match!</red>"
     sudden-death-timer-start: "<yellow>The game has entered sudden death! Money bonuses have been replaced with an extra heart that lasts for 45 seconds. Capture more flags than the other team in 3 minutes to win the match!</yellow>"
@@ -412,8 +403,6 @@ messages:
     game-started: "<gold>Kill Confirm has been selected as the gamemode!</gold>"
     round-start-message: "<gold>Kill Confirm Round!</gold>"
     buy-phase-message: "<yellow>Confirm your kills for points, deny the enemy's! First team to {win_condition} wins!</yellow>"
-    objective: "<yellow>Kills don't score - capture the nametags they drop for a point!</yellow>"
-    bonus-info: "<yellow>A player's 3rd kill in a streak drops a Money Tag - capture it for a split 15k team bonus!</yellow>"
     zone-capturing: "<gold>Confirming {victim_name}'s tag... Stand still!</gold>"
     zone-capture-cancelled: "<yellow>Capturing {victim_name}'s tag cancelled.</yellow>"
     tag-expired: "<gray>No one captured {victim_name}'s tag!</gray>"
@@ -918,7 +907,6 @@ messages:
     buff-potion-undrinkable: "<red>You cannot drink this potion! Right-click it to select your buff.</red>"
     cannot-use-consumables-dead: "<red>You cannot use consumables while dead!</red>"
     team-kill-bonus: "<aqua>Team Kill Bonus: +${bonus}</aqua>"
-    water-bucket-refilled: "<aqua>Water bucket refilled!</aqua>"
     max-webs-reached: "<red>You already own 8 webs!</red>"
     max-totems-reached: "<red>You already own the max of 2 totems (Mini Totem or Totem of Haunting, combined)!</red>"
     max-water-lava-sources: "<red>Your team has reached the maximum of 4 water/lava sources!</red>"

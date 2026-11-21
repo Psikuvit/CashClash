@@ -664,7 +664,6 @@ public class BlockListener implements Listener {
         }
 
         player.getInventory().setContents(contents);
-        Messages.send(player, "listener.water-bucket-refilled");
     }
 
     @EventHandler(priority = EventPriority.HIGH)

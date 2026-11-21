@@ -192,7 +192,6 @@ public class RoundManager {
         if (phaseType == GameState.BUFF_SELECTION) {
             Messages.broadcast(session.getPlayers(), "round.buff-selection-title",
                 "round", String.valueOf(roundNumber));
-            Messages.broadcast(session.getPlayers(), "round.buff-selection-prompt");
             Messages.broadcast(session.getPlayers(), "round.buff-selection-time");
         } else {
             Messages.broadcast(session.getPlayers(), "round.shopping-phase-title",
@@ -222,10 +221,7 @@ public class RoundManager {
                 p.setSaturation(20.0f);
                 KitService.restoreStarterArmor(p);
                 refillWaterBuckets(p);
-                if (roundNumber > 1 && KitService.restoreStarterWaterBucket(p)) {
-                    Messages.send(p, "listener.water-bucket-refilled");
-                }
-                Messages.send(p, "round.shopping-area-teleported");
+                if (roundNumber > 1) KitService.restoreStarterWaterBucket(p);
                 EconomyManager.sendRoundEarnings(session, p);
             }
         }

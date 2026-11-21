@@ -101,8 +101,6 @@ public class KillConfirmGamemode extends Gamemode {
     public void onGameStart() {
         Messages.debug("[KC] Gamemode started");
         Messages.broadcast(session.getPlayers(), "gamemode-kc.game-started");
-        Messages.broadcast(session.getPlayers(), "gamemode-kc.objective");
-        Messages.broadcast(session.getPlayers(), "gamemode-kc.bonus-info");
     }
 
     @Override
