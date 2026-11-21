@@ -166,7 +166,7 @@ public final class CashClashPlugin extends JavaPlugin {
             layoutManager = new LayoutManager(playerDataManager, lobbyManager);
             customItemManager = new CustomItemManager(cooldownManager, itemsConfig, customArmorManager);
             weaponItemManager = new WeaponItemManager(cooldownManager, itemsConfig, customArmorManager);
-            mythicHudManager = new MythicHudManager(gameManager, mythicItemManager, customArmorManager);
+            mythicHudManager = new MythicHudManager(gameManager, mythicItemManager, customArmorManager, messagesConfig);
 
             // Tier 4: depend on tier 3 managers.
             queueManager = new QueueManager(gameManager, gamemodeManager, arenaManager, configManager, partyManager,

@@ -286,6 +286,8 @@ messages:
     shopping-phase-title: "<yellow><bold>Round {round} - Shopping Phase!</bold></yellow>"
     shopping-phase-time: "<gray>You have <yellow>{time_remaining} seconds </yellow><gray>to shop!</gray>"
     both-teams-ready: "<green>Both teams are ready! Ending shopping phase early.</green>"
+    # The action bar during the buy phase, in place of the item cooldowns
+    ready-bar: "<white>Players Ready:</white> <red>[{red_ready}/{red_total}]</red> <blue>[{blue_ready}/{blue_total}]</blue>"
     shopping-countdown: "<yellow>{time_remaining} seconds remaining!</yellow>"
     buff-selection-complete: "<gold>Buff selection complete! Starting shopping phase...</gold>"
     combat-phase-starting: "<red><bold>Combat Phase Starting!</bold></red>"

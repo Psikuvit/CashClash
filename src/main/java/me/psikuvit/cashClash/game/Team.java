@@ -97,6 +97,13 @@ public class Team {
         return true;
     }
 
+    /**
+     * How many of the team's players have readied up this buy phase.
+     */
+    public int getReadyCount() {
+        return (int) readyStatus.values().stream().filter(Boolean::booleanValue).count();
+    }
+
     public boolean isPlayerReady(UUID uuid) {
         return readyStatus.getOrDefault(uuid, false);
     }

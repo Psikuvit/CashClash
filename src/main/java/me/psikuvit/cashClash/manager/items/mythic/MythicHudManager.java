@@ -1,6 +1,9 @@
 package me.psikuvit.cashClash.manager.items.mythic;
 
+import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
+import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -29,7 +32,9 @@ import java.util.UUID;
  * BlazeBite's next-shot mode and BloodWrench's hit counter - flashing red after an ability is
  * tried on cooldown and staying red while the holder is silenced. After those, the worn armor's
  * cooldowns and the Dragon set's scales ({@link ArmorSetHandler#hudSegments}). It steps aside
- * while another action-bar display (a countdown, the Blooming Rose HP reveal) has the bar.
+ * while another action-bar display (a countdown, the Blooming Rose HP reveal) has the bar. In a
+ * game's buy phase it shows how many of each team are ready instead, and nothing during buff
+ * selection.
  */
 public class MythicHudManager implements Shutdownable {
 
@@ -40,14 +45,17 @@ public class MythicHudManager implements Shutdownable {
     private final GameManager gameManager;
     private final MythicItemManager mythicItemManager;
     private final CustomArmorManager armorManager;
+    private final MessagesConfig messagesConfig;
     private final Map<UUID, String> shownLine;
     private final Map<UUID, Long> shownAt;
     private BukkitTask task;
 
-    public MythicHudManager(GameManager gameManager, MythicItemManager mythicItemManager, CustomArmorManager armorManager) {
+    public MythicHudManager(GameManager gameManager, MythicItemManager mythicItemManager, CustomArmorManager armorManager,
+                            MessagesConfig messagesConfig) {
         this.gameManager = gameManager;
         this.mythicItemManager = mythicItemManager;
         this.armorManager = armorManager;
+        this.messagesConfig = messagesConfig;
         this.shownLine = new HashMap<>();
         this.shownAt = new HashMap<>();
     }
@@ -95,6 +103,9 @@ public class MythicHudManager implements Shutdownable {
     }
 
     private String buildLine(GameSession session, Player player) {
+        if (session != null && session.getState() == GameState.BUFF_SELECTION) return null;
+        if (session != null && session.getState() == GameState.SHOPPING) return readyLine(session);
+
         StringJoiner line = new StringJoiner(MythicItemHandler.hudText("separator"));
         addMythicSegments(line, session, player);
         for (ArmorSetHandler handler : armorManager.getHandlers()) {
@@ -126,6 +137,17 @@ public class MythicHudManager implements Shutdownable {
         for (HudSegment segment : segments) {
             line.add(colored(segment, flashing || (silenced && segment.silenceable())));
         }
+    }
+
+    /**
+     * The buy phase's bar, in place of the item segments: how many of each team have readied up.
+     */
+    private String readyLine(GameSession session) {
+        Team red = session.getTeamRed();
+        Team blue = session.getTeamBlue();
+        return messagesConfig.getMessage("round.ready-bar",
+                "red_ready", String.valueOf(red.getReadyCount()), "red_total", String.valueOf(red.getPlayers().size()),
+                "blue_ready", String.valueOf(blue.getReadyCount()), "blue_total", String.valueOf(blue.getPlayers().size()));
     }
 
     private static String colored(HudSegment segment, boolean forceRed) {
