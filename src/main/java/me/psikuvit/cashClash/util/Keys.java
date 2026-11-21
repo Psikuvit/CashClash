@@ -198,6 +198,12 @@ public class Keys {
     public static final NamespacedKey KIT_ITEM;
 
     /**
+     * Flag marking the starting gear every player gets in round 1 (stone sword, wooden axe,
+     * shears, water bucket, starter armor), which can't be dropped in a game.
+     */
+    public static final NamespacedKey STARTER_ITEM;
+
+    /**
      * Identifies a lobby-only item (stats book, arena selector, layout configurator) by its
      * {@code LobbyItemType} id.
      */
@@ -264,6 +270,7 @@ public class Keys {
         COOLDOWN_GROUPS = List.of(SOUL_KATANA_COOLDOWN_GROUP, CASH_BLASTER_COOLDOWN_GROUP, INVIS_CLOAK_COOLDOWN_GROUP,
                 ORB_OF_GRAVITATION_COOLDOWN_GROUP, BLOOMING_ROSE_COOLDOWN_GROUP);
         KIT_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "kit_item");
+        STARTER_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "starter_item");
         LOBBY_ITEM = new NamespacedKey(CashClashPlugin.getInstance(), "lobby_item");
         GUIDE_BOOK = new NamespacedKey(CashClashPlugin.getInstance(), "guide_book");
         CTF_FLAG_BANNER = new NamespacedKey(CashClashPlugin.getInstance(), "ctf_flag_banner");

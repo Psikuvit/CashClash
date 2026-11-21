@@ -11,6 +11,7 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
+import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.RespawnManager;
@@ -338,11 +339,16 @@ public class GameListener implements Listener {
         Player player = event.getPlayer();
         GameSession session = gameManager.getPlayerSession(player);
 
-        // During a game, only shop items are locked - items that aren't given by the shop
-        // (base kit gear, vanilla materials) may be dropped freely.
-        if (session != null && PDCDetection.hasPurchaseTag(event.getItemDrop().getItemStack())) {
+        if (session == null) return;
+        ItemStack dropped = event.getItemDrop().getItemStack();
+        if (PDCDetection.hasPurchaseTag(dropped)) {
             event.setCancelled(true);
             Messages.send(player, "listener.item-cannot-drop");
+        } else if (KitService.isStarterItem(dropped) || dropped.getType() == Material.WATER_BUCKET
+                || dropped.getType() == Material.BUCKET) {
+            // A bucket loses its tags as vanilla empties or fills it, so buckets go by type
+            event.setCancelled(true);
+            Messages.send(player, "listener.starter-item-cannot-drop");
         }
     }
 

@@ -197,7 +197,7 @@ public class KitService {
             stoneSword.setItemMeta(swordMeta);
         }
         markKitItem(stoneSword);
-        player.getInventory().addItem(stoneSword);
+        player.getInventory().addItem(starter(stoneSword));
 
         ItemStack woodenAxe = new ItemStack(Material.WOODEN_AXE);
         ItemMeta axeMeta = woodenAxe.getItemMeta();
@@ -206,7 +206,7 @@ public class KitService {
             woodenAxe.setItemMeta(axeMeta);
         }
         markKitItem(woodenAxe);
-        player.getInventory().addItem(woodenAxe);
+        player.getInventory().addItem(starter(woodenAxe));
 
         ItemStack shears = new ItemStack(Material.SHEARS);
         ItemMeta shearsMeta = shears.getItemMeta();
@@ -215,7 +215,7 @@ public class KitService {
             shears.setItemMeta(shearsMeta);
         }
         markKitItem(shears);
-        player.getInventory().addItem(shears);
+        player.getInventory().addItem(starter(shears));
 
         // === FOOD ===
         ItemFactory factory = CashClashPlugin.getInstance().getItemFactory();
@@ -230,7 +230,7 @@ public class KitService {
         // === UTILITY ===
         ItemStack waterBucket = new ItemStack(Material.WATER_BUCKET);
         markKitItem(waterBucket);
-        player.getInventory().addItem(waterBucket);
+        player.getInventory().addItem(starter(waterBucket));
     }
 
     /**
@@ -257,7 +257,7 @@ public class KitService {
         PlayerInventory inventory = player.getInventory();
         if (inventory.contains(Material.WATER_BUCKET)) return false;
 
-        ItemStack waterBucket = new ItemStack(Material.WATER_BUCKET);
+        ItemStack waterBucket = starter(new ItemStack(Material.WATER_BUCKET));
         markKitItem(waterBucket);
         int emptySlot = inventory.first(Material.BUCKET);
         ItemStack empty = emptySlot >= 0 ? inventory.getItem(emptySlot) : null;
@@ -281,7 +281,24 @@ public class KitService {
             meta.setUnbreakable(true);
             item.setItemMeta(meta);
         }
+        return starter(item);
+    }
+
+    /**
+     * Tags a piece of the round-1 starting gear (see {@link #isStarterItem}).
+     */
+    private static ItemStack starter(ItemStack item) {
+        PDCSetter.of(item).set(Keys.STARTER_ITEM, PersistentDataType.BYTE, KIT_ITEM_FLAG).apply();
         return item;
+    }
+
+    /**
+     * Whether an item is part of the starting gear every player gets in round 1 - the stone
+     * sword, wooden axe, shears, water bucket and starter armor.
+     */
+    public static boolean isStarterItem(ItemStack item) {
+        if (item == null || item.getType().isAir() || !item.hasItemMeta()) return false;
+        return item.getItemMeta().getPersistentDataContainer().has(Keys.STARTER_ITEM, PersistentDataType.BYTE);
     }
 
     private static int getSwordSlot(Player player) {
@@ -411,12 +428,12 @@ public class KitService {
         Map<String, ItemStack> itemMap = new HashMap<>();
 
         // === TOOLS ===
-        itemMap.put("MATERIAL:STONE_SWORD", new ItemStack(Material.STONE_SWORD));
-        ItemStack woodenAxe = new ItemStack(Material.WOODEN_AXE);
+        itemMap.put("MATERIAL:STONE_SWORD", starter(new ItemStack(Material.STONE_SWORD)));
+        ItemStack woodenAxe = starter(new ItemStack(Material.WOODEN_AXE));
         itemMap.put(AXE_LAYOUT_KEY, woodenAxe);
         itemMap.put(LEGACY_AXE_LAYOUT_KEY, woodenAxe);
 
-        itemMap.put("MATERIAL:SHEARS", new ItemStack(Material.SHEARS));
+        itemMap.put("MATERIAL:SHEARS", starter(new ItemStack(Material.SHEARS)));
 
         // === FOOD ===
         ItemStack steak = CashClashPlugin.getInstance().getItemFactory().createGameplayItem(FoodItem.STEAK);
@@ -430,7 +447,7 @@ public class KitService {
         itemMap.put("MATERIAL:BREAD", bread); // Fallback
 
         // === UTILITY ===
-        itemMap.put("MATERIAL:WATER_BUCKET", new ItemStack(Material.WATER_BUCKET));
+        itemMap.put("MATERIAL:WATER_BUCKET", starter(new ItemStack(Material.WATER_BUCKET)));
 
         // Place items according to layout
         placeItemsWithLayout(player, itemMap, layout);
