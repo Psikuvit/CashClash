@@ -1,6 +1,7 @@
 package me.psikuvit.cashClash.util;
 
 import me.psikuvit.cashClash.CashClashPlugin;
+import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.MessagesConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
@@ -38,6 +40,8 @@ public final class Messages {
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
     private static final int DEFAULT_WRAP_WIDTH = 40;
     private static final MessagesConfig config = CashClashPlugin.getInstance().getMessagesConfig();
+    // When each player was last shown an error message (epoch millis)
+    private static final Map<UUID, Long> lastErrorAt = new ConcurrentHashMap<>();
 
     /**
      * Log a debug message to the console if debug mode is enabled.
@@ -183,7 +187,8 @@ public final class Messages {
      */
     public static void send(@Nullable Player player, @Nullable String key) {
         if (player != null && player.isOnline()) {
-            player.sendMessage(parseChat(config.getRaw(key)));
+            String message = config.getRaw(key);
+            if (!errorOnCooldown(player, key, message)) player.sendMessage(parseChat(message));
         }
     }
 
@@ -195,8 +200,31 @@ public final class Messages {
      */
     public static void send(@Nullable Player player, @Nullable String key, @NotNull String... args) {
         if (player != null && player.isOnline()) {
-            player.sendMessage(parseChat(config.getMessage(key, args)));
+            String message = config.getMessage(key, args);
+            if (!errorOnCooldown(player, key, message)) player.sendMessage(parseChat(message));
         }
+    }
+
+    /**
+     * Error messages - red ones sent to one player, like "Not enough coins!" - can't follow each
+     * other within config.yml's {@code error-messages.cooldown-seconds}, so spam-clicking can't
+     * flood chat. Broadcasts and the keys listed under {@code error-messages.not-errors} always go
+     * through.
+     *
+     * @return whether this message is an error that has to be held back
+     */
+    private static boolean errorOnCooldown(@NotNull CommandSender sender, @Nullable String key, @Nullable String message) {
+        if (!(sender instanceof Player player) || message == null || !message.startsWith("<red>")) return false;
+
+        ConfigManager cfg = CashClashPlugin.getInstance().getConfigManager();
+        long cooldownMs = cfg.getErrorMessageCooldownMs();
+        if (cooldownMs <= 0 || cfg.getNotErrorMessages().contains(key)) return false;
+
+        long now = System.currentTimeMillis();
+        Long last = lastErrorAt.get(player.getUniqueId());
+        if (last != null && now - last < cooldownMs) return true;
+        lastErrorAt.put(player.getUniqueId(), now);
+        return false;
     }
 
     /**
@@ -255,7 +283,8 @@ public final class Messages {
      */
     public static void send(@Nullable CommandSender sender, @Nullable String key) {
         if (sender != null) {
-            sender.sendMessage(parseChat(config.getRaw(key)));
+            String message = config.getRaw(key);
+            if (!errorOnCooldown(sender, key, message)) sender.sendMessage(parseChat(message));
         }
     }
 
@@ -268,7 +297,8 @@ public final class Messages {
      */
     public static void send(@Nullable CommandSender sender, @Nullable String key, @NotNull String... args) {
         if (sender != null) {
-            sender.sendMessage(parseChat(config.getMessage(key, args)));
+            String message = config.getMessage(key, args);
+            if (!errorOnCooldown(sender, key, message)) sender.sendMessage(parseChat(message));
         }
     }
 
@@ -290,10 +320,11 @@ public final class Messages {
      * Broadcast a message to a collection of player UUIDs.
      */
     public static void broadcast(Collection<UUID> players, String key) {
+        Component message = parseChat(config.getRaw(key));
         players.forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
-                send(player, key);
+                player.sendMessage(message);
             }
         });
     }
@@ -302,10 +333,11 @@ public final class Messages {
      * Broadcast a message to a collection of player UUIDs.
      */
     public static void broadcast(Collection<UUID> players, String key, String... args) {
+        Component message = parseChat(config.getMessage(key, args));
         players.forEach(uuid -> {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null && player.isOnline()) {
-                send(player, key, args);
+                player.sendMessage(message);
             }
         });
     }

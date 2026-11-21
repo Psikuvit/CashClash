@@ -737,6 +737,69 @@ hub:
   block-breaking: false
 
 # ============================================
+# ERROR MESSAGES
+# ============================================
+error-messages:
+  # Once an error message shows a player (a red chat message sent just to them, like "Not enough
+  # coins!" or "You cannot drop shop items."), no other error message can show to them for this
+  # many seconds, so spam-clicking can't flood chat. 0 turns it off.
+  cooldown-seconds: 2
+  # Red messages that aren't errors - these always show (messages.yml keys).
+  not-errors:
+    - economy.kill-transfer-lost
+    - party.disbanded-members
+    - party.disbanded-by-owner
+    - party.kicked
+    - party.invite-denied-broadcast
+    - round.combat-phase-starting
+    - round.team-blue-wins
+    - round.team-red-wins
+    - round.game-countdown-cancelled
+    - round.investment-failed
+    - round.investment-failed-detail
+    - round.game-end-lose
+    - round.shopping-area-missing
+    - gamemode-ptp.red-president
+    - gamemode-ptp.buff-deselected
+    - gamemode-ptp.sudden-death
+    - gamemode-ptp.border-closing
+    - gamemode-ctf.flag-stolen-blue
+    - gamemode-ctf.flag-overtime
+    - gamemode-ctf.silenced-activated
+    - gamemode-ctf.sudden-death
+    - gamemode-kc.tag-denied
+    - gamemode-kc.zone-overtime
+    - gamemode-kc.zone-contested
+    - gamemode-kc.sudden-death
+    - mythic.charge-stopped-early
+    - cashquake.lottery-lose
+    - cashquake.life-steal-kill
+    - cashquake.tax-deducted
+    - cashquake.item-broke-temporary
+    - cashquake.lost-items-ten
+    - cashquake.lost-item
+    - rejoin.session-ended
+    - rejoin.game-ended
+    - rejoin.timeout-removed-broadcast
+    - listener.out-of-lives
+    - listener.round-ended-no-respawn
+    - listener.no-respawn-final-stand
+    - listener.invisibility-lost-attacker
+    - listener.invisibility-lost-victim
+    - lobby-messages.rejoin-failed
+    - lobby-messages.afk-kick
+    - practice.knocked-out
+    - customitem.invis-out-of-coins
+    - customitem.invis-disabled-shopping
+    - customitem.invis-lost-capture-area
+    - customitem.cash-blaster-supercharge-disabled
+    - customitem.totem-haunting-witness
+    - customitem.ice-fan-broken
+    - customitem.hunters-mark-applied
+    - customitem.hunters-mark-target
+    - transfer.cancelled
+
+# ============================================
 # OWNER COMMANDS
 # ============================================
 owner-commands:

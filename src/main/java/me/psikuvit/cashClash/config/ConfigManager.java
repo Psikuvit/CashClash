@@ -178,6 +178,20 @@ public class ConfigManager {
     }
 
     /**
+     * How long after one error message no other can show to the same player; 0 or less turns it off.
+     */
+    public long getErrorMessageCooldownMs() {
+        return (long) (config.getDouble("error-messages.cooldown-seconds", 2.0) * 1000L);
+    }
+
+    /**
+     * The red messages that aren't errors, which the error cooldown never holds back.
+     */
+    public List<String> getNotErrorMessages() {
+        return config.getStringList("error-messages.not-errors");
+    }
+
+    /**
      * The players, by in-game name in any case, who may run /cc xyzresetstats.
      */
     public List<String> getResetStatsPlayers() {
