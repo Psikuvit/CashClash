@@ -18,6 +18,7 @@ import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.TectonicCapHandler;
 import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
 import me.psikuvit.cashClash.manager.items.mythic.ElectricEelHandler;
+import me.psikuvit.cashClash.manager.items.mythic.GoblinSpearHandler;
 import me.psikuvit.cashClash.manager.player.BonusManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.sequence.Sequences;
@@ -211,6 +212,7 @@ public class RoundManager {
         Team teamBlue = session.getTeamBlue();
 
         if (phaseType == GameState.SHOPPING) {
+            CashClashPlugin.getInstance().getMythicItemManager().getHandler(GoblinSpearHandler.class).returnToOwner(session);
             for (UUID uuid : session.getPlayers()) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p == null || !p.isOnline()) continue;

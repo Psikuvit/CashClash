@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.ChanceBag;
 import me.psikuvit.cashClash.util.CooldownManager;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -15,14 +16,18 @@ import me.psikuvit.cashClash.util.game.TimerDisplayUtils;
 import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.util.items.CustomModelDataMapper;
 import me.psikuvit.cashClash.util.items.ItemUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Trident;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Transformation;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -415,6 +420,56 @@ public class GoblinSpearHandler extends MythicItemHandler {
                 }
             }
         }, 0L, 1L);
+    }
+
+    /**
+     * Puts the game's Goblin Spear back with the player who bought it, at every buy phase: a spear
+     * thrown as a round ends can come down where a teammate picks it up. Anyone else's copy is
+     * taken away, a thrown one still out in the world goes too, and the owner is given a new one
+     * if they don't have it.
+     */
+    public void returnToOwner(GameSession session) {
+        UUID ownerId = manager.getMythicOwner(session, MythicItem.GOBLIN_SPEAR);
+        if (ownerId == null) return;
+
+        for (UUID uuid : session.getPlayers()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null && !uuid.equals(ownerId)) removeSpears(player);
+        }
+
+        World world = session.getGameWorld();
+        if (world != null) {
+            for (Trident trident : world.getEntitiesByClass(Trident.class)) {
+                String itemId = trident.getPersistentDataContainer().get(Keys.ITEM_ID, PersistentDataType.STRING);
+                if (MythicItem.GOBLIN_SPEAR.getConfigKey().equals(itemId)) trident.remove();
+            }
+        }
+
+        Player owner = Bukkit.getPlayer(ownerId);
+        if (owner != null && !holdsSpear(owner)) {
+            owner.getInventory().addItem(manager.createMythicItem(MythicItem.GOBLIN_SPEAR, owner));
+            Messages.debug(owner, "GOBLIN_SPEAR: Returned to its owner at the buy phase");
+        }
+    }
+
+    private static boolean isSpear(ItemStack item) {
+        return item != null && PDCDetection.getMythic(item) == MythicItem.GOBLIN_SPEAR;
+    }
+
+    private static boolean holdsSpear(Player player) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (isSpear(item)) return true;
+        }
+        return isSpear(player.getItemOnCursor());
+    }
+
+    private static void removeSpears(Player player) {
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int i = 0; i < contents.length; i++) {
+            if (isSpear(contents[i])) contents[i] = null;
+        }
+        player.getInventory().setContents(contents);
+        if (isSpear(player.getItemOnCursor())) player.setItemOnCursor(null);
     }
 
     /**
