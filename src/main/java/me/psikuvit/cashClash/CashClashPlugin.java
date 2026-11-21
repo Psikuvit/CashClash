@@ -144,7 +144,6 @@ public final class CashClashPlugin extends JavaPlugin {
             arenaManager = new ArenaManager(configManager, gameManager);
             chatManager = new ChatManager(partyManager, gameManager);
             rankManager = new RankManager(playerDataManager);
-            rejoinManager = new RejoinManager(configManager, gameManager);
             respawnManager = new RespawnManager(configManager, gameManager);
             leaderboardManager = new LeaderboardManager(configManager, playerDataManager);
             afkManager = new AfkManager(configManager, gameManager, messagesConfig);
@@ -156,6 +155,7 @@ public final class CashClashPlugin extends JavaPlugin {
             //spawnRoomManager = new SpawnRoomManager(gameManager, configManager, messagesConfig);
 
             // Tier 2: depend on tier 1 managers.
+            rejoinManager = new RejoinManager(configManager, gameManager, respawnManager);
             shopManager = new ShopManager(arenaManager, gameManager);
             lobbyManager = new LobbyManager(itemsConfig, arenaManager, scoreboardManager, tabListManager);
             customArmorManager = new CustomArmorManager(cooldownManager, itemsConfig);

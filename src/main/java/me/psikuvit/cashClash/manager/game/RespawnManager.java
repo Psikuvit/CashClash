@@ -28,7 +28,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Respawn timers: how long a death keeps a player spectating ({@code respawn-delay} plus the
- * seconds of the spawn zone they died in), the countdown title, and the respawn itself.
+ * seconds of the spawn zone they died in), the countdown title, and the respawn itself. Each
+ * timer is kept as a deadline, so a player who leaves while it runs comes back to whatever is
+ * left of it ({@link #resumeAfterRejoin}).
  */
 public class RespawnManager implements Shutdownable {
 
@@ -94,7 +96,15 @@ public class RespawnManager implements Shutdownable {
     }
 
     /**
-     * Stops a player's respawn timer.
+     * When the player's running respawn timer ends (epoch millis), or 0 if they aren't waiting on one.
+     */
+    public long getDeadline(UUID uuid) {
+        return deadlines.getOrDefault(uuid, 0L);
+    }
+
+    /**
+     * Stops a player's respawn timer, e.g. as they leave the game - {@link #getDeadline} has to be
+     * read before this to carry it over to a rejoin.
      */
     public void cancel(UUID uuid) {
         deadlines.remove(uuid);
@@ -102,6 +112,54 @@ public class RespawnManager implements Shutdownable {
         if (respawn != null) respawn.cancel();
         BukkitTask countdown = countdownTasks.remove(uuid);
         if (countdown != null) countdown.cancel();
+    }
+
+    /**
+     * Puts a player rejoining during the combat round they left in back where leaving left them,
+     * so leaving can't skip a respawn timer: a player who left while waiting on one is put back
+     * spectating where they were, for whatever is left of it (none left: false, they come back at
+     * the spawn as usual). Leaving alive counts as a normal death where they stood. Out of lives,
+     * or in a round nobody respawns in, they spectate for the rest of it.
+     *
+     * @return whether they were put back spectating, rather than at their spawn
+     */
+    public boolean resumeAfterRejoin(Player player, GameSession session, RejoinData data, CashClashPlayer ccp) {
+        if (session.getState() != GameState.COMBAT || session.isRoundEnding()) return false;
+        if (data.leftRound() != session.getCurrentRound() || data.leftAt() == null) return false;
+
+        Location spot = data.leftAt();
+        boolean waiting = data.respawnAt() > 0;
+        boolean leftAlive = !waiting && data.lives() > 0;
+        if (leftAlive) ccp.handleDeath();
+
+        Gamemode gamemode = session.getGamemode();
+        boolean respawnAllowed = gamemode == null || gamemode.allowsRespawn();
+        if (ccp.getLives() <= 0 || !respawnAllowed) {
+            ccp.setLives(0);
+            spectate(player, spot, leftAlive);
+            if (leftAlive) Messages.sendTitle(player, "listener.you-died-title", null);
+            Messages.send(player, respawnAllowed ? "listener.out-of-lives" : "listener.no-respawn-final-stand");
+            return true;
+        }
+
+        int seconds;
+        if (waiting) {
+            long leftMs = data.respawnAt() - System.currentTimeMillis();
+            if (leftMs <= 0) return false;
+            seconds = (int) Math.ceil(leftMs / 1000.0);
+        } else {
+            seconds = deathDelaySeconds(player, session, spot);
+        }
+
+        spectate(player, spot, leftAlive);
+        startRespawnTimer(player, seconds);
+        return true;
+    }
+
+    private void spectate(Player player, Location spot, boolean rise) {
+        player.setGameMode(GameMode.SPECTATOR);
+        player.teleport(spot);
+        if (rise) riseSpectator(player);
     }
 
     /**

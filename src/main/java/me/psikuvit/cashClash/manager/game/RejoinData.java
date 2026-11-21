@@ -2,6 +2,7 @@ package me.psikuvit.cashClash.manager.game;
 
 import me.psikuvit.cashClash.kit.Kit;
 import me.psikuvit.cashClash.player.PurchaseRecord;
+import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
@@ -26,6 +27,10 @@ import java.util.UUID;
  * @param disconnectTime  When they disconnected (System.currentTimeMillis())
  * @param missedShares    The buy-phase shares paid out while they were away, added as each buy
  *                        phase starts and paid when they come back
+ * @param leftRound       The round they left in mid-combat, or -1 if they left outside combat
+ * @param leftAt          Where they were when they left
+ * @param respawnAt       When the respawn timer they left with runs out (epoch millis), or 0 if
+ *                        they weren't waiting on one
  */
 public record RejoinData(
         UUID playerUuid,
@@ -41,7 +46,10 @@ public record RejoinData(
         ItemStack offhandItem,
         Queue<PurchaseRecord> purchaseHistory,
         long disconnectTime,
-        List<MissedShare> missedShares
+        List<MissedShare> missedShares,
+        int leftRound,
+        Location leftAt,
+        long respawnAt
 ) {
 
     /**

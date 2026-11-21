@@ -17,6 +17,7 @@ import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinData;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
+import me.psikuvit.cashClash.manager.game.RespawnManager;
 import me.psikuvit.cashClash.manager.game.RoundManager;
 import me.psikuvit.cashClash.manager.game.TeamOutlineManager;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
@@ -87,6 +88,7 @@ public class GameSession {
     private Gamemode gamemode;
     private final GamemodeManager gamemodeManager;
     private final RejoinManager rejoinManager;
+    private final RespawnManager respawnManager;
     private final ArenaManager arenaManager;
     private final ShopManager shopManager;
     private final ScoreboardManager scoreboardManager;
@@ -109,6 +111,7 @@ public class GameSession {
         this.arenaNumber = arenaNumber;
         this.gamemodeManager = plugin.getGamemodeManager();
         this.rejoinManager = plugin.getRejoinManager();
+        this.respawnManager = plugin.getRespawnManager();
         this.arenaManager = plugin.getArenaManager();
         this.shopManager = plugin.getShopManager();
         this.scoreboardManager = plugin.getScoreboardManager();
@@ -963,20 +966,19 @@ public class GameSession {
         rejoinManager.restorePlayerState(player, existingCcp, data);
         EconomyManager.payMissedShares(this, player, data.missedShares());
 
-        if (getState() == GameState.SHOPPING && roundManager != null) {
-            roundManager.teleportToBuyPhase(player);
-        } else {
-            Location spawn = getSpawnForPlayer(uuid);
-            if (spawn != null) {
-                player.teleport(spawn);
-            } else if (gameWorld != null) {
-                player.teleport(gameWorld.getSpawnLocation());
+        if (!respawnManager.resumeAfterRejoin(player, this, data, existingCcp)) {
+            if (getState() == GameState.SHOPPING && roundManager != null) {
+                roundManager.teleportToBuyPhase(player);
+            } else {
+                Location spawn = getSpawnForPlayer(uuid);
+                if (spawn != null) {
+                    player.teleport(spawn);
+                } else if (gameWorld != null) {
+                    player.teleport(gameWorld.getSpawnLocation());
+                }
             }
+            existingCcp.setRespawnProtection(configManager.getRespawnProtection() * 1000L);
         }
-
-        // Apply respawn protection
-        int protSec = configManager.getRespawnProtection();
-        existingCcp.setRespawnProtection(protSec * 1000L);
 
         // Set up scoreboard
         scoreboardManager.setScoreboard(player);

@@ -38,10 +38,12 @@ public class RejoinManager implements Shutdownable {
     private BukkitTask cleanupTask;
     private final ConfigManager configManager;
     private final GameManager gameManager;
+    private final RespawnManager respawnManager;
 
-    public RejoinManager(ConfigManager configManager, GameManager gameManager) {
+    public RejoinManager(ConfigManager configManager, GameManager gameManager, RespawnManager respawnManager) {
         this.configManager = configManager;
         this.gameManager = gameManager;
+        this.respawnManager = respawnManager;
         this.pendingRejoins = new HashMap<>();
         this.lastLeftSessions = new HashMap<>();
         startCleanupTask();
@@ -65,6 +67,7 @@ public class RejoinManager implements Shutdownable {
         lastLeftSessions.put(player.getUniqueId(), session.getSessionId());
 
         boolean kept = saveRejoinData(player, session);
+        respawnManager.cancel(player.getUniqueId());
         if (kept && disconnecting) {
             session.markPlayerDisconnected(player);
             return true;
@@ -197,7 +200,10 @@ public class RejoinManager implements Shutdownable {
                 offhandItem,
                 purchaseHistory,
                 System.currentTimeMillis(),
-                new ArrayList<>()
+                new ArrayList<>(),
+                state == GameState.COMBAT && !session.isRoundEnding() ? session.getCurrentRound() : -1,
+                player.getLocation().clone(),
+                respawnManager.getDeadline(player.getUniqueId())
         );
 
         pendingRejoins.put(player.getUniqueId(), data);
@@ -320,8 +326,11 @@ public class RejoinManager implements Shutdownable {
                     "player_name", player.getName());
 
             // Fired only after the GameManager mapping above is in place, so its handlers
-            // (team outlines, gamemode spawn hooks) can actually resolve this session.
-            Bukkit.getPluginManager().callEvent(new PlayerBackToGameEvent(player));
+            // (team outlines, gamemode spawn hooks) can actually resolve this session. A player
+            // put back on a respawn timer gets it when they respawn.
+            if (player.getGameMode() != GameMode.SPECTATOR) {
+                Bukkit.getPluginManager().callEvent(new PlayerBackToGameEvent(player));
+            }
         }
 
         return restored;
