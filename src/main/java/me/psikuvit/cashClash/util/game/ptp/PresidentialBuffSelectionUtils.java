@@ -47,7 +47,14 @@ public class PresidentialBuffSelectionUtils {
      * {@code color}, with the "No Effects" tooltip line hidden.
      */
     public static ItemStack createBuffSelectionItem(String name, String benefit, Color color) {
-        ItemStack item = createBuffSelectionItem(name, benefit, meta -> meta.setColor(color));
+        return hidePotionContents(createBuffSelectionItem(name, benefit, meta -> meta.setColor(color)));
+    }
+
+    /**
+     * Hides vanilla's potion tooltip lines (the effect and its duration, e.g. "Strength (3:00)")
+     * - the item's own name and lore stay.
+     */
+    private static ItemStack hidePotionContents(ItemStack item) {
         item.setData(DataComponentTypes.TOOLTIP_DISPLAY,
                 TooltipDisplay.tooltipDisplay().addHiddenComponents(DataComponentTypes.POTION_CONTENTS).build());
         return item;
@@ -80,12 +87,13 @@ public class PresidentialBuffSelectionUtils {
     }
 
     /**
-     * Create a strength potion buff selection item
+     * Create the Strength buff selection item - a Strength bottle without vanilla's
+     * "Strength (3:00)" line.
      *
      * @return The created ItemStack
      */
     public static ItemStack createStrengthBuffItem() {
-        return createBuffSelectionItem("Strength Potion", description("strength-buff-description"), PotionType.STRENGTH);
+        return hidePotionContents(createBuffSelectionItem("Strength Potion", description("strength-buff-description"), PotionType.STRENGTH));
     }
 
     /**
