@@ -20,8 +20,10 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Villager;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
@@ -39,6 +41,8 @@ public class ShopManager {
 
     private static final double LOOK_RANGE = 4;
     private static final long LOOK_UPDATE_TICKS = 2L;
+    // How far above a shop villager's head its name floats
+    private static final double NAME_TAG_HEIGHT = 0.3;
 
     // sessionId -> spawned entity UUIDs
     private final Map<UUID, List<UUID>> sessionShops;
@@ -46,6 +50,8 @@ public class ShopManager {
     private final Map<UUID, Integer> entityTeam;
     // Mini shop villagers, and the one team each serves
     private final Map<UUID, TeamColor> miniShopTeams;
+    // Shop villager -> the text display carrying its name
+    private final Map<UUID, UUID> nameTags;
 
     private BukkitTask lookAtPlayerTask;
 
@@ -59,6 +65,7 @@ public class ShopManager {
         this.entityToSession = new HashMap<>();
         this.entityTeam = new HashMap<>();
         this.miniShopTeams = new HashMap<>();
+        this.nameTags = new HashMap<>();
         startLookAtPlayerTask();
     }
 
@@ -116,6 +123,11 @@ public class ShopManager {
         }
     }
 
+    /**
+     * The villager's name floats above it as a text display rather than a name tag: a vanilla
+     * name tag shows through walls, a text display only when {@link #updateNameTagVisibility}
+     * says so.
+     */
     private Villager spawnShopVillager(GameSession session, Location spawnLoc, Component name) {
         Villager villager = spawnLoc.getWorld().spawn(spawnLoc, Villager.class);
 
@@ -123,12 +135,35 @@ public class ShopManager {
         villager.setAI(false);
         villager.setSilent(true);
         villager.setPersistent(true);
-        villager.customName(name);
-        villager.setCustomNameVisible(true);
+
+        Location tagLoc = villager.getLocation().add(0, villager.getHeight() + NAME_TAG_HEIGHT, 0);
+        TextDisplay nameTag = spawnLoc.getWorld().spawn(tagLoc, TextDisplay.class, display -> {
+            display.text(name);
+            display.setBillboard(Display.Billboard.CENTER);
+            display.setSeeThrough(false);
+            display.setBrightness(new Display.Brightness(15, 15));
+            display.setPersistent(true);
+        });
+        nameTags.put(villager.getUniqueId(), nameTag.getUniqueId());
 
         PDCSetter.of(villager).set(Keys.SHOP_NPC_KEY, PersistentDataType.BYTE, (byte) 1).apply();
         entityToSession.put(villager.getUniqueId(), session.getSessionId());
         return villager;
+    }
+
+    /**
+     * Main shop names show through walls outside combat, so players can find the shop in the buy
+     * phase; mini shop names never do, and no shop's name does during combat.
+     */
+    private void updateNameTagVisibility(UUID villagerId) {
+        UUID tagId = nameTags.get(villagerId);
+        if (!(tagId != null && Bukkit.getEntity(tagId) instanceof TextDisplay nameTag)) return;
+
+        UUID sessionId = entityToSession.get(villagerId);
+        GameSession session = gameManager.getActiveSessions().stream()
+                .filter(s -> s.getSessionId().equals(sessionId)).findFirst().orElse(null);
+        boolean seeThrough = !miniShopTeams.containsKey(villagerId) && session != null && session.getState() != GameState.COMBAT;
+        if (nameTag.isSeeThrough() != seeThrough) nameTag.setSeeThrough(seeThrough);
     }
 
     /**
@@ -141,6 +176,9 @@ public class ShopManager {
         for (UUID id : list) {
             Villager e = (Villager) Bukkit.getEntity(id);
             if (e != null && !e.isDead()) e.remove();
+            UUID tagId = nameTags.remove(id);
+            Entity nameTag = tagId != null ? Bukkit.getEntity(tagId) : null;
+            if (nameTag != null) nameTag.remove();
 
             entityToSession.remove(id);
             entityTeam.remove(id);
@@ -204,6 +242,7 @@ public class ShopManager {
                 Entity entity = Bukkit.getEntity(entityId);
                 if (!(entity instanceof Villager villager)) continue;
                 if (villager.isDead()) continue;
+                updateNameTagVisibility(entityId);
 
                 // Find the nearest player within range
                 Player nearestPlayer = null;
