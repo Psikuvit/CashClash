@@ -2,7 +2,6 @@ package me.psikuvit.cashClash.command.subcommands;
 
 import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.command.AbstractArgCommand;
-import me.psikuvit.cashClash.rank.RankManager;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import org.bukkit.Bukkit;
@@ -18,9 +17,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * /cc resetstats - wipes every player's stats (wins, losses, kills, deaths, coins, playtime) on
- * the server. Owners only, and only after clicking YES on the confirmation it sends, which
- * expires after {@value #CONFIRM_SECONDS} seconds.
+ * /cc xyzresetstats - wipes every player's stats (wins, losses, kills, deaths, coins, playtime) on
+ * the server. The odd name keeps command auto-fill from ever suggesting it by accident. Only the
+ * players named in config.yml's {@code owner-commands.reset-stats-players} can run it, and only
+ * by clicking YES on the prompt it sends, which expires after {@value #CONFIRM_SECONDS} seconds.
  */
 public class ResetStatsCommand extends AbstractArgCommand {
 
@@ -30,7 +30,14 @@ public class ResetStatsCommand extends AbstractArgCommand {
     private final Map<String, Long> pendingConfirmations = new HashMap<>();
 
     public ResetStatsCommand() {
-        super("resetstats", Collections.emptyList(), RankManager.OWNER_PERMISSION);
+        super("xyzresetstats", Collections.emptyList(), null);
+    }
+
+    @Override
+    public boolean isAllowed(@NotNull CommandSender sender) {
+        if (!(sender instanceof Player player)) return false;
+        return CashClashPlugin.getInstance().getConfigManager().getResetStatsPlayers().stream()
+                .anyMatch(name -> name.equalsIgnoreCase(player.getName()));
     }
 
     @Override
@@ -42,7 +49,7 @@ public class ResetStatsCommand extends AbstractArgCommand {
                 if (pendingConfirmations.remove(sender.getName()) != null) {
                     Messages.send(sender, "ranks.reset-stats-cancelled");
                 } else {
-                    Messages.send(sender, "ranks.reset-stats-none-pending");
+                    Messages.send(sender, "ranks.xyz-reset-stats-none-pending");
                 }
             }
             default -> requestConfirmation(sender);
@@ -53,7 +60,7 @@ public class ResetStatsCommand extends AbstractArgCommand {
     private void requestConfirmation(CommandSender sender) {
         long expiresAt = System.currentTimeMillis() + CONFIRM_SECONDS * 1000L;
         pendingConfirmations.put(sender.getName(), expiresAt);
-        Messages.send(sender, "ranks.reset-stats-confirm", "seconds", String.valueOf(CONFIRM_SECONDS));
+        Messages.send(sender, "ranks.xyz-reset-stats-confirm", "seconds", String.valueOf(CONFIRM_SECONDS));
 
         SchedulerUtils.runTaskLater(() -> {
             if (pendingConfirmations.remove(sender.getName(), expiresAt)) {
@@ -65,7 +72,7 @@ public class ResetStatsCommand extends AbstractArgCommand {
     private void confirm(CommandSender sender) {
         Long expiresAt = pendingConfirmations.remove(sender.getName());
         if (expiresAt == null || System.currentTimeMillis() > expiresAt) {
-            Messages.send(sender, "ranks.reset-stats-none-pending");
+            Messages.send(sender, "ranks.xyz-reset-stats-none-pending");
             return;
         }
 

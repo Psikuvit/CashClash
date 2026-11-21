@@ -177,6 +177,13 @@ public class ConfigManager {
         return plants;
     }
 
+    /**
+     * The players, by in-game name in any case, who may run /cc xyzresetstats.
+     */
+    public List<String> getResetStatsPlayers() {
+        return config.getStringList("owner-commands.reset-stats-players");
+    }
+
     public int getRespawnProtection() {
         return config.getInt("game.respawn-protection", 15);
     }

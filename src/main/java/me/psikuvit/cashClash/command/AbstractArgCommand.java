@@ -31,6 +31,14 @@ public abstract class AbstractArgCommand {
     }
 
     /**
+     * A further check on who may run this command, on top of its permission. Everyone, unless a
+     * command narrows it.
+     */
+    public boolean isAllowed(@NotNull CommandSender sender) {
+        return true;
+    }
+
+    /**
      * Execute the command. args does NOT include the subcommand token.
      */
     public abstract boolean onCommand(@NotNull CommandSender sender, @NotNull String[] args);

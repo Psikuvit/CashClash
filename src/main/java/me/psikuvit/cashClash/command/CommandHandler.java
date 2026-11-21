@@ -172,7 +172,8 @@ public class CommandHandler extends Command {
      */
     private static boolean canUse(CommandSender sender, AbstractArgCommand sub) {
         String perm = sub.getPermission();
-        return perm == null || perm.isBlank() || sender instanceof ConsoleCommandSender || sender.hasPermission(perm);
+        boolean permitted = perm == null || perm.isBlank() || sender instanceof ConsoleCommandSender || sender.hasPermission(perm);
+        return permitted && sub.isAllowed(sender);
     }
 
     private void sendHelp(CommandSender sender) {
@@ -204,7 +205,10 @@ public class CommandHandler extends Command {
         if (sender.hasPermission(RankManager.OWNER_PERMISSION)) {
             Messages.send(sender, "command.help-owner-section");
             Messages.send(sender, "command.help-rank");
-            Messages.send(sender, "command.help-resetstats");
+        }
+        AbstractArgCommand resetStats = subcommands.get("xyzresetstats");
+        if (resetStats != null && resetStats.isAllowed(sender)) {
+            Messages.send(sender, "command.help-xyzresetstats");
         }
     }
 }

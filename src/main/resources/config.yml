@@ -736,3 +736,13 @@ hub:
   # Players in creative mode can always break blocks.
   block-breaking: false
 
+# ============================================
+# OWNER COMMANDS
+# ============================================
+owner-commands:
+  # The only players (in-game names, any case) who can run /cc xyzresetstats, which wipes every
+  # player's stats after a yes/no prompt.
+  reset-stats-players:
+    - Homeaway
+    - Talon_88
+

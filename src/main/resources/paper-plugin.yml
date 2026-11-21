@@ -33,7 +33,7 @@ permissions:
     description: Allows use of admin commands
     default: op
   cashclash.owner:
-    description: Owner-only commands (/cc rank, /cc resetstats) - given to players with the owner rank
+    description: Owner-only commands (/cc rank) - given to players with the owner rank
     default: false
   cashclash.vip:
     description: VIP rank permissions
