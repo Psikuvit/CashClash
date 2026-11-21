@@ -378,7 +378,7 @@ public class RejoinManager implements Shutdownable {
         player.setSaturation(20.0f);
         player.setGameMode(GameMode.SURVIVAL);
 
-        // Full wipe, not just tracked: a disconnect can leave an effect (e.g. carrier Weakness)
+        // Full wipe, not just tracked: a disconnect can leave an effect (e.g. carrier Slowness)
         // active in saved NBT that this rejoin's fresh CashClashPlayer never tracked.
         ccp.clearAllEffects();
     }

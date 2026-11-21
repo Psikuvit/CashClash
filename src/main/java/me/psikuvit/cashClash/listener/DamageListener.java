@@ -4,7 +4,6 @@ import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
-import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.manager.game.GameManager;
@@ -974,10 +973,6 @@ public class DamageListener implements Listener {
         handleCustomItemEffects(attacker, weapon, session);
         handleMythicItemEffects(event, attacker, victim, weapon);
         applyCombatModifiers(event, attacker, weapon);
-
-        if (mythicManager.getHandler(AlchemistWandHandler.class).isCarrierStrike(attacker.getUniqueId())) {
-            event.setDamage(itemsConfig.getAlchemistTidyUpCarrierDamage());
-        }
     }
 
     /**
@@ -1035,29 +1030,6 @@ public class DamageListener implements Listener {
         if (event.isCritical()) {
             handler.apply(attacker, victim);
         }
-    }
-
-    /**
-     * A CTF flag carrier's Tidy Up swing: the vanilla attack is dropped and the wand deals the hit
-     * itself, at {@code tidy-up-melee-damage-silenced} - see
-     * {@link AlchemistWandHandler#carrierTidyUpStrike}. Only flag carriers; any other Weakness is
-     * left to {@link #onZeroDamageTidyUpHit}.
-     */
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void onCarrierTidyUpSwing(PrePlayerAttackEntityEvent event) {
-        Player attacker = event.getPlayer();
-        if (!event.willAttack() || !(event.getAttacked() instanceof LivingEntity victim)) return;
-        if (PDCDetection.getMythic(attacker.getInventory().getItemInMainHand()) != MythicItem.ALCHEMIST_WAND) return;
-
-        AlchemistWandHandler handler = mythicManager.getHandler(AlchemistWandHandler.class);
-        if (!handler.isTidyUpActive(attacker.getUniqueId())) return;
-
-        GameSession session = gameManager.getPlayerSession(attacker);
-        if (session == null || !(session.getGamemode() instanceof CaptureTheFlagGamemode ctf)
-                || !ctf.isSilenced(attacker.getUniqueId())) return;
-
-        event.setCancelled(true);
-        handler.carrierTidyUpStrike(attacker, victim);
     }
 
     /**
