@@ -12,6 +12,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import org.bukkit.Color;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -25,9 +26,11 @@ import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockFromToEvent;
@@ -37,6 +40,8 @@ import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -103,6 +108,14 @@ public class BlockListener implements Listener {
     private static final Map<UUID, Map<Integer, Integer>> waterLavaSourceCount = new ConcurrentHashMap<>();
     private static final Map<Location, BukkitTask> webDespawnTasks = new ConcurrentHashMap<>();
     private static final Map<Location, BukkitTask> leafDecayTasks = new ConcurrentHashMap<>();
+
+    /**
+     * How long after water is placed in front of a waterloggable block the same player's bucket
+     * can't scoop: the client may follow that click with its own bucket use, which the bucket -
+     * empty by then - would turn into scooping the water straight back up.
+     */
+    private static final long REDIRECT_FOLLOW_UP_MS = 250L;
+    private final Map<UUID, Long> bucketRedirectedAt = new ConcurrentHashMap<>();
     // How many leaves each player has placed this round, per game - each step shortens the next ones
     private static final Map<UUID, Map<UUID, Integer>> leavesPlacedThisRound = new ConcurrentHashMap<>();
     private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
@@ -223,12 +236,9 @@ public class BlockListener implements Listener {
             return;
         }
 
-        GameSession session = gameManager.getPlayerSession(player);
-        if (session != null && (session.getState() != GameState.COMBAT || session.isActionsRestricted())) {
+        if (bucketRefused(player)) {
             event.setCancelled(true);
             player.updateInventory();
-            boolean buyPhase = session.getState() != GameState.COMBAT && session.getState() != GameState.ENDING;
-            Messages.send(player, buyPhase ? "customitem.cannot-place-during-shopping" : "gamestate.round-is-over");
             return;
         }
 
@@ -236,11 +246,77 @@ public class BlockListener implements Listener {
 
         if (bucket == Material.WATER_BUCKET && target.getBlockData() instanceof Waterlogged) {
             event.setCancelled(true);
-            Messages.debug(player, "FLUID", "bucket refused: " + describe(target) + " is waterloggable");
-            Messages.send(player, "listener.water-bucket-waterlog-blocked");
+            placeWaterInFront(player, event.getBlockClicked(), event.getBlockFace(), event.getHand(), zoneId);
             return;
         }
 
+        placeFromBucket(player, target, bucket, zoneId);
+    }
+
+    /**
+     * Buckets only empty during combat: in the buy phase (or any other moment the game holds
+     * actions back) the bucket stays full and the player is told why.
+     */
+    private boolean bucketRefused(Player player) {
+        GameSession session = gameManager.getPlayerSession(player);
+        if (session == null || (session.getState() == GameState.COMBAT && !session.isActionsRestricted())) return false;
+
+        boolean buyPhase = session.getState() != GameState.COMBAT && session.getState() != GameState.ENDING;
+        Messages.send(player, buyPhase ? "customitem.cannot-place-during-shopping" : "gamestate.round-is-over");
+        return true;
+    }
+
+    /**
+     * A water bucket used on a waterloggable block that has a use of its own - a trapdoor, a
+     * fence gate, a sign - places water the way it does for a crouching player instead of using
+     * the block: see {@link #placeWaterInFront}. Crouching players already get that from vanilla.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onWaterBucketOnUsableBlock(PlayerInteractEvent event) {
+        Block clicked = event.getClickedBlock();
+        ItemStack item = event.getItem();
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || clicked == null || event.getHand() == null) return;
+        if (item == null || item.getType() != Material.WATER_BUCKET || event.getPlayer().isSneaking()) return;
+        if (!(clicked.getBlockData() instanceof Waterlogged) || !clicked.getType().isInteractable()) return;
+
+        Player player = event.getPlayer();
+        UUID zoneId = zoneId(player);
+        if (zoneId == null || bucketRefused(player)) return;
+
+        event.setUseInteractedBlock(Event.Result.DENY);
+        event.setUseItemInHand(Event.Result.DENY);
+        placeWaterInFront(player, clicked, event.getBlockFace(), event.getHand(), zoneId);
+    }
+
+    /**
+     * Water aimed into a waterloggable block goes into the block in front of the clicked face
+     * instead - where it lands for a crouching player - since placed fluid never waterlogs
+     * anything. Refused when that spot is solid or waterloggable too.
+     */
+    private void placeWaterInFront(Player player, Block clicked, BlockFace face, EquipmentSlot hand, UUID zoneId) {
+        Block inFront = clicked.getRelative(face);
+        if (inFront.getType().isSolid() || inFront.getBlockData() instanceof Waterlogged) {
+            Messages.debug(player, "FLUID", "bucket refused: " + describe(clicked) + " is waterloggable, "
+                    + describe(inFront) + " in front of it");
+            Messages.send(player, "listener.water-bucket-waterlog-blocked");
+            player.updateInventory();
+            return;
+        }
+
+        if (player.getGameMode() != GameMode.CREATIVE) player.getInventory().setItem(hand, new ItemStack(Material.BUCKET));
+        player.swingHand(hand);
+        bucketRedirectedAt.put(player.getUniqueId(), System.currentTimeMillis());
+        SoundUtils.playAt(inFront.getLocation(), Sound.ITEM_BUCKET_EMPTY, 1.0f, 1.0f);
+        placeFromBucket(player, inFront, Material.WATER_BUCKET, zoneId);
+        inFront.setType(Material.WATER);
+    }
+
+    /**
+     * Places an emptied bucket's fluid as a tracked placement at {@code target}: joins, drains or
+     * washes away whatever placed fluid is already there, plans the spread and puts the despawn
+     * countdown over the source once it has landed.
+     */
+    private void placeFromBucket(Player player, Block target, Material bucket, UUID zoneId) {
         Location origin = target.getLocation().toBlockLocation();
         boolean water = bucket == Material.WATER_BUCKET;
         Material fluid = water ? Material.WATER : Material.LAVA;
@@ -293,6 +369,13 @@ public class BlockListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBucketFill(PlayerBucketFillEvent event) {
+        Long redirectedAt = bucketRedirectedAt.remove(event.getPlayer().getUniqueId());
+        if (redirectedAt != null && System.currentTimeMillis() - redirectedAt < REDIRECT_FOLLOW_UP_MS) {
+            event.setCancelled(true);
+            event.getPlayer().updateInventory();
+            return;
+        }
+
         Block target = event.getBlockClicked();
         Location loc = target.getLocation().toBlockLocation();
 
