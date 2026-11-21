@@ -149,10 +149,6 @@ public class ConfigManager {
         return config.getInt("game.respawn-delay", 5);
     }
 
-    public int getRespawnDelayPerDeath() {
-        return config.getInt("game.respawn-delay-per-death", 1);
-    }
-
     public int getRespawnDelayOwnZone() {
         return config.getInt("game.respawn-delay-own-zone", 2);
     }

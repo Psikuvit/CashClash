@@ -48,14 +48,12 @@ game:
   # Volume of the goat horn everyone in a game hears when a round's combat starts
   round-start-horn-volume: 1.0
 
-  # Respawn settings
+  # Respawn settings: every death waits respawn-delay seconds, plus the seconds below for where
+  # the player died - the same for every death, all game.
   respawn-delay: 5
-  # Seconds added to respawn-delay for each earlier death in the same round (resets every round)
-  respawn-delay-per-death: 1
-  # Seconds added to respawn-delay by where a player died, on maps with both teams' spawn lines
-  # set (/cc template set <id> spawnline ...): in their own team's spawn zone, in the neutral
-  # zone between the teams' zones, or in the enemy team's zone. Height doesn't matter, and a
-  # death on a line counts as inside that line's zone.
+  # On maps with both teams' spawn lines set (/cc template set <id> spawnline ...): in their own
+  # team's spawn zone, in the neutral zone between the teams' zones, or in the enemy team's
+  # zone. Height doesn't matter, and a death on a line counts as inside that line's zone.
   respawn-delay-own-zone: 2
   respawn-delay-neutral-zone: 1
   respawn-delay-enemy-zone: 0

@@ -33,6 +33,7 @@ import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.game.GamemodeManager;
 import me.psikuvit.cashClash.manager.game.RejoinManager;
+import me.psikuvit.cashClash.manager.game.RespawnManager;
 import me.psikuvit.cashClash.manager.game.SpawnLineManager;
 //import me.psikuvit.cashClash.manager.game.SpawnRoomManager;
 import me.psikuvit.cashClash.manager.game.TeamOutlineManager;
@@ -90,6 +91,7 @@ public final class CashClashPlugin extends JavaPlugin {
     private ArenaManager arenaManager;
     private ChatManager chatManager;
     private RejoinManager rejoinManager;
+    private RespawnManager respawnManager;
     private LeaderboardManager leaderboardManager;
     private AfkManager afkManager;
     private MannequinManager mannequinManager;
@@ -143,6 +145,7 @@ public final class CashClashPlugin extends JavaPlugin {
             chatManager = new ChatManager(partyManager, gameManager);
             rankManager = new RankManager(playerDataManager);
             rejoinManager = new RejoinManager(configManager, gameManager);
+            respawnManager = new RespawnManager(configManager, gameManager);
             leaderboardManager = new LeaderboardManager(configManager, playerDataManager);
             afkManager = new AfkManager(configManager, gameManager, messagesConfig);
             mannequinManager = new MannequinManager(this); // Legitimate: needs getDataFolder() + getLogger()
@@ -246,6 +249,7 @@ public final class CashClashPlugin extends JavaPlugin {
         managers.add(practiceRangeManager);
         managers.add(gameManager);
         managers.add(rejoinManager);
+        managers.add(respawnManager);
         managers.add(gamemodeManager);
         managers.add(scoreboardManager);
         managers.add(cooldownManager);
@@ -304,6 +308,7 @@ public final class CashClashPlugin extends JavaPlugin {
     public ArenaManager getArenaManager() { return arenaManager; }
     public ChatManager getChatManager() { return chatManager; }
     public RejoinManager getRejoinManager() { return rejoinManager; }
+    public RespawnManager getRespawnManager() { return respawnManager; }
     public LeaderboardManager getLeaderboardManager() { return leaderboardManager; }
     public AfkManager getAfkManager() { return afkManager; }
     public MannequinManager getMannequinManager() { return mannequinManager; }
@@ -333,7 +338,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new DamageListener(gameManager, customArmorManager, customItemManager, mythicItemManager, weaponItemManager, cooldownManager, itemsConfig, configManager),
                 new InteractListener(gameManager, customItemManager, mythicItemManager, customArmorManager, weaponItemManager),
                 new MoveListener(gameManager, customItemManager, customArmorManager, weaponItemManager),
-                new GameListener(configManager, cooldownManager, customArmorManager, customItemManager, gameManager, itemsConfig, mythicItemManager, playerDataManager, shopManager, weaponItemManager),
+                new GameListener(configManager, cooldownManager, customArmorManager, customItemManager, gameManager, itemsConfig, mythicItemManager, playerDataManager, respawnManager, shopManager, weaponItemManager),
                 new HungerListener(),
                 new SpeedStrengthListener(configManager),
                 new PlayerConnectionListener(configManager, gameManager, layoutManager, lobbyManager, mythicItemManager, partyManager, playerDataManager, rejoinManager, scoreboardManager, tabListManager, worldVisibilityManager),

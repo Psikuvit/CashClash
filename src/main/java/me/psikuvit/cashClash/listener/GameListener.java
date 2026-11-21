@@ -1,7 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
 import me.psikuvit.cashClash.CashClashPlugin;
-import me.psikuvit.cashClash.arena.TemplateWorld;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.event.PlayerBackToGameEvent;
@@ -14,6 +13,7 @@ import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.game.EconomyManager;
 import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.manager.game.RespawnManager;
 import me.psikuvit.cashClash.manager.items.armor.BullseyePantsHandler;
 import me.psikuvit.cashClash.manager.items.armor.BunnyShoesHandler;
 import me.psikuvit.cashClash.manager.items.armor.CustomArmorManager;
@@ -50,14 +50,11 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
-import me.psikuvit.cashClash.util.enums.TeamColor;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
-import me.psikuvit.cashClash.util.game.SpawnZoneUtils;
 import me.psikuvit.cashClash.util.items.GuideBooks;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
@@ -93,10 +90,8 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionEffectTypeCategory;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -106,9 +101,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * Handles: death, food, drops, sneak, flight, bow shoot, projectile hit, entity interactions, inventory clicks.
  */
 public class GameListener implements Listener {
-
-    // A respawn countdown title outlives its one-second tick slightly, so the next number lands first
-    private static final long RESPAWN_TITLE_STAY_MS = 1200L;
 
     private final Map<UUID, Location> pendingSpectatorTransition = new ConcurrentHashMap<>();
     private boolean stretchingEffect;
@@ -121,13 +113,14 @@ public class GameListener implements Listener {
     private final ItemsConfig itemsConfig;
     private final MythicItemManager mythicManager;
     private final PlayerDataManager playerDataManager;
+    private final RespawnManager respawnManager;
     private final ShopManager shopManager;
     private final WeaponItemManager weaponItemManager;
 
     public GameListener(ConfigManager configManager, CooldownManager cooldownManager,
                        CustomArmorManager armorManager, CustomItemManager customItemManager, GameManager gameManager,
                        ItemsConfig itemsConfig, MythicItemManager mythicManager, PlayerDataManager playerDataManager,
-                       ShopManager shopManager, WeaponItemManager weaponItemManager) {
+                       RespawnManager respawnManager, ShopManager shopManager, WeaponItemManager weaponItemManager) {
         this.configManager = configManager;
         this.cooldownManager = cooldownManager;
         this.armorManager = armorManager;
@@ -136,6 +129,7 @@ public class GameListener implements Listener {
         this.itemsConfig = itemsConfig;
         this.mythicManager = mythicManager;
         this.playerDataManager = playerDataManager;
+        this.respawnManager = respawnManager;
         this.shopManager = shopManager;
         this.weaponItemManager = weaponItemManager;
     }
@@ -230,7 +224,7 @@ public class GameListener implements Listener {
         if (victim.getLives() <= 0) {
             handlePermanentSpectator(player, deathLocation);
         } else {
-            handleTemporarySpectatorAndRespawn(player, victim, deathLocation);
+            handleTemporarySpectatorAndRespawn(player, session, deathLocation);
         }
     }
 
@@ -314,65 +308,12 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Every earlier death this round adds {@code respawn-delay-per-death} to the base delay; the
-     * count starts over each round. Where they died adds its zone's seconds on top.
+     * Every death waits out {@code respawn-delay} plus the seconds of the zone it happened in -
+     * see {@link RespawnManager#deathDelaySeconds}.
      */
-    private void handleTemporarySpectatorAndRespawn(Player player, CashClashPlayer victim, Location spectatorLocation) {
-        int earlierDeaths = Math.max(0, victim.getDeathsThisRound() - 1);
-        int respawnDelaySec = configManager.getRespawnDelay() + earlierDeaths * configManager.getRespawnDelayPerDeath()
-                + spawnZoneDelay(player, spectatorLocation);
-        int respawnProtectionSec = configManager.getRespawnProtection();
-
-        Messages.send(player, "listener.respawn-delay", "seconds", String.valueOf(respawnDelaySec));
-
+    private void handleTemporarySpectatorAndRespawn(Player player, GameSession session, Location spectatorLocation) {
         queueSpectatorTransition(player, spectatorLocation);
-        startRespawnCountdown(player, respawnDelaySec);
-
-        SchedulerUtils.runTaskLater(() -> respawnPlayer(player, respawnProtectionSec), respawnDelaySec * 20L);
-    }
-
-    /**
-     * The respawn seconds a death adds by where it happened, once the map has both teams' spawn
-     * lines: dying in your own team's zone, in the neutral zone or in the enemy's zone. Height
-     * doesn't count, and a death on a line counts as inside its zone.
-     */
-    private int spawnZoneDelay(Player player, Location deathLocation) {
-        GameSession session = gameManager.getPlayerSession(player);
-        TemplateWorld template = session != null ? session.getArenaTemplate() : null;
-        Team team = session != null ? session.getPlayerTeam(player) : null;
-        if (team == null || !SpawnZoneUtils.hasZones(template)) return 0;
-
-        TeamColor own = TeamColor.fromTeamNumber(team.getTeamNumber());
-        if (SpawnZoneUtils.isInZone(template, own, deathLocation)) return configManager.getRespawnDelayOwnZone();
-        if (SpawnZoneUtils.isInZone(template, own.opposite(), deathLocation)) return configManager.getRespawnDelayEnemyZone();
-        return configManager.getRespawnDelayNeutralZone();
-    }
-
-    /**
-     * "Respawning in N seconds" as a title, counting down once a second until the respawn. Each
-     * title stays a little past the next tick and never fades in, so the count reads as one
-     * steady title; it stops if the round's combat ends first.
-     */
-    private void startRespawnCountdown(Player player, int seconds) {
-        Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofMillis(RESPAWN_TITLE_STAY_MS),
-                Duration.ofMillis(configManager.getDefaultTitleFadeOutMs()));
-
-        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
-            private int remaining = seconds;
-
-            @Override
-            public void run() {
-                GameSession session = gameManager.getPlayerSession(player);
-                if (remaining <= 0 || !player.isOnline() || session == null || !isGameInCombat(session)
-                        || session.isRoundEnding() || (session.getGamemode() != null && !session.getGamemode().allowsRespawn())) {
-                    cancel();
-                    return;
-                }
-                String titleKey = remaining == 1 ? "listener.respawn-countdown-title-one" : "listener.respawn-countdown-title";
-                Messages.sendTitle(player, titleKey, null, times, "seconds", String.valueOf(remaining));
-                remaining--;
-            }
-        }, 0L, 20L);
+        respawnManager.startRespawnTimer(player, respawnManager.deathDelaySeconds(player, session, spectatorLocation));
     }
 
     /**
@@ -386,116 +327,6 @@ public class GameListener implements Listener {
      */
     private void queueSpectatorTransition(Player player, Location spectatorLocation) {
         pendingSpectatorTransition.put(player.getUniqueId(), spectatorLocation);
-    }
-
-    /**
-     * Rises a freshly-spectating player a short distance straight up, instead of dropping them
-     * motionless at the spectator location - fast at the start and easing off toward the top, so
-     * it reads as an upward boost rather than a slow elevator ride, and gets them up to a
-     * spectating vantage point over the fight quickly. Spectators aren't subject to normal
-     * velocity/gravity, so this is animated via incremental teleports rather than
-     * {@code setVelocity}. Y is driven off the original death location so it isn't thrown off by
-     * the player freely flying around mid-animation (spectators can move); X/Z/facing are read
-     * fresh each tick so their own movement/looking still works normally. Self-cancels if the
-     * player leaves spectator mode (e.g. respawned) before it finishes.
-     */
-    private void startSpectatorRiseAnimation(Player player) {
-        double totalHeight = configManager.getDeathSpectatorRiseHeight();
-        int totalTicks = configManager.getDeathSpectatorRiseTicks();
-        double baseY = player.getLocation().getY();
-
-        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
-            int ticks = 0;
-
-            @Override
-            public void run() {
-                if (!player.isOnline() || player.getGameMode() != GameMode.SPECTATOR || ticks >= totalTicks) {
-                    cancel();
-                    return;
-                }
-                ticks++;
-                double progress = (double) ticks / totalTicks;
-                // Ease-out (1 - (1-x)^2): most of the climb happens in the first few ticks, then
-                // eases off - a boost, not a steady lift.
-                double eased = 1 - Math.pow(1 - progress, 2);
-                Location current = player.getLocation();
-                current.setY(baseY + totalHeight * eased);
-                player.teleport(current);
-            }
-        }, 0L, 1L);
-    }
-
-    private void respawnPlayer(Player player, int respawnProtectionSec) {
-        GameSession session = gameManager.getPlayerSession(player);
-        if (session == null) return;
-
-        // If round ended (moved to shopping phase), don't respawn into combat
-        if (!isGameInCombat(session) || session.isRoundEnding()) {
-            Messages.send(player, "listener.round-ended-no-respawn");
-            return;
-        }
-
-        Gamemode gamemode = session.getGamemode();
-        if (gamemode != null && !gamemode.allowsRespawn()) {
-            CashClashPlayer ccp = session.getCashClashPlayer(player.getUniqueId());
-            if (ccp != null) ccp.setLives(0);
-            Messages.send(player, "listener.no-respawn-final-stand");
-            return;
-        }
-
-        Messages.debug(player, "RESPAWN", "Respawning " + player.getName() + " with " + respawnProtectionSec + "s protection");
-
-        teleportToSpawn(player, session);
-        restorePlayerHealth(player, session);
-        preparePlayerForCombat(player, session, respawnProtectionSec);
-        player.clearTitle();
-        Messages.send(player, "listener.respawned");
-
-        // Fire custom event when player is back in game
-        Bukkit.getPluginManager().callEvent(new PlayerBackToGameEvent(player));
-    }
-
-    /**
-     * Check if game is in combat phase
-     */
-    private boolean isGameInCombat(GameSession session) {
-        return session.getState() == GameState.COMBAT;
-    }
-
-    /**
-     * Teleport player to spawn location
-     */
-    private void teleportToSpawn(Player player, GameSession session) {
-        Location spawnLocation = session.getSpawnForPlayer(player.getUniqueId());
-        if (spawnLocation != null) {
-            player.teleport(spawnLocation);
-        }
-    }
-
-    /**
-     * Restore player health to max using centralized health system
-     */
-    private void restorePlayerHealth(Player player, GameSession session) {
-        var ccp = session.getCashClashPlayer(player.getUniqueId());
-        if (ccp != null) {
-            ccp.applyHealth();
-            ccp.healToFull();
-        }
-    }
-
-    /**
-     * Prepare player for combat (food, gamemode, protection, bonus)
-     */
-    private void preparePlayerForCombat(Player player, GameSession session, int respawnProtectionSec) {
-        player.setFoodLevel(20);
-        player.setGameMode(GameMode.SURVIVAL);
-
-        CashClashPlayer cashClashPlayer = session.getCashClashPlayer(player.getUniqueId());
-        if (cashClashPlayer != null) {
-            cashClashPlayer.setRespawnProtection(respawnProtectionSec * 1000L);
-            Messages.debug(player, "RESPAWN", "Set respawn protection for " + player.getName()
-                    + " until " + cashClashPlayer.getRespawnProtectionUntil() + " (now=" + System.currentTimeMillis() + ")");
-        }
     }
 
     // ==================== ITEM DROP ====================
@@ -1200,7 +1031,7 @@ public class GameListener implements Listener {
             SchedulerUtils.runTask(() -> {
                 if (!player.isOnline()) return;
                 player.setGameMode(GameMode.SPECTATOR);
-                startSpectatorRiseAnimation(player);
+                respawnManager.riseSpectator(player);
             });
             return;
         }
