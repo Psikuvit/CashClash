@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Location;
 import org.bukkit.Sound;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -21,6 +22,9 @@ import java.util.UUID;
  * Any other shot is a plain arrow.
  */
 public class WindBowHandler extends MythicItemHandler {
+
+    // The speed vanilla gives a bow's arrow at full draw, in blocks per tick
+    private static final double FULL_DRAW_ARROW_SPEED = 3.0;
 
     public WindBowHandler(MythicItemManager manager) {
         super(manager);
@@ -58,6 +62,18 @@ public class WindBowHandler extends MythicItemHandler {
         ParticleUtils.cloud(player.getLocation(), 20, 0.5);
 
         Messages.send(player, "mythic.wind-bow-boost-activated");
+    }
+
+    /**
+     * Launches a shot at the speed its draw gives ({@code force} x vanilla's full-draw speed)
+     * without the shooter's own movement on top, which vanilla adds: an arrow's damage follows
+     * its speed, so a shot fired mid Soaring Heights boost would otherwise hit far harder - or
+     * shot backwards, far softer - than the same shot fired standing still.
+     */
+    public void steadyLaunchSpeed(AbstractArrow arrow, float force) {
+        Vector velocity = arrow.getVelocity();
+        if (velocity.lengthSquared() < 1.0E-6) return;
+        arrow.setVelocity(velocity.normalize().multiply(force * FULL_DRAW_ARROW_SPEED));
     }
 
     /**

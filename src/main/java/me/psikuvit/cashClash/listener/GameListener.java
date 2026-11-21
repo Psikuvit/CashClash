@@ -63,6 +63,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.AbstractArrow;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -735,11 +736,15 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Wind Bow shot: a fully drawn arrow is tagged to release a wind gust where it lands.
+     * Wind Bow shot: launched at a steady speed for its draw, and a fully drawn arrow is tagged
+     * to release a wind gust where it lands.
      */
     private void handleWindBowShot(EntityShootBowEvent event, Player player) {
-        if (event.getProjectile() instanceof AbstractArrow arrow
-                && mythicManager.getHandler(WindBowHandler.class).releasesGust(event.getForce())) {
+        if (!(event.getProjectile() instanceof AbstractArrow arrow)) return;
+
+        WindBowHandler windBow = mythicManager.getHandler(WindBowHandler.class);
+        windBow.steadyLaunchSpeed(arrow, event.getForce());
+        if (windBow.releasesGust(event.getForce())) {
             PDCSetter.of(arrow).set(Keys.WIND_BOW_GUST_ARROW, PersistentDataType.BYTE, (byte) 1).apply();
         }
     }
@@ -830,17 +835,20 @@ public class GameListener implements Listener {
 
     /**
      * Wind Bow arrow impact: a gust-tagged arrow releases its wind gust wherever it lands - on a
-     * player or on the ground.
+     * player or on the ground - a tick later. This event fires before the arrow deals its damage,
+     * so a gust released in it would push the victim before the hit lands. The tag comes off at
+     * once, so an arrow that hits twice (bounces off a player, then lands) gusts only once.
      */
     private void handleWindBowArrow(Player shooter, AbstractArrow arrow, ProjectileHitEvent event) {
         if (!arrow.getPersistentDataContainer().has(Keys.WIND_BOW_GUST_ARROW, PersistentDataType.BYTE)) return;
+        arrow.getPersistentDataContainer().remove(Keys.WIND_BOW_GUST_ARROW);
 
-        Location impact = event.getHitEntity() != null ? event.getHitEntity().getLocation() : arrow.getLocation();
-        mythicManager.getHandler(WindBowHandler.class).releaseGust(shooter, impact);
-
-        if (event.getHitEntity() instanceof Player) {
-            arrow.remove();
-        }
+        Entity hit = event.getHitEntity();
+        SchedulerUtils.runTask(() -> {
+            Location impact = hit != null ? hit.getLocation() : arrow.getLocation();
+            mythicManager.getHandler(WindBowHandler.class).releaseGust(shooter, impact);
+            if (hit instanceof Player) arrow.remove();
+        });
     }
 
     /**
