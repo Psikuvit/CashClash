@@ -437,18 +437,31 @@ public class GoblinSpearHandler extends MythicItemHandler {
             if (player != null && !uuid.equals(ownerId)) removeSpears(player);
         }
 
-        World world = session.getGameWorld();
-        if (world != null) {
-            for (Trident trident : world.getEntitiesByClass(Trident.class)) {
-                String itemId = trident.getPersistentDataContainer().get(Keys.ITEM_ID, PersistentDataType.STRING);
-                if (MythicItem.GOBLIN_SPEAR.getConfigKey().equals(itemId)) trident.remove();
-            }
-        }
-
+        removeThrownSpears(session);
         Player owner = Bukkit.getPlayer(ownerId);
-        if (owner != null && !holdsSpear(owner)) {
-            owner.getInventory().addItem(manager.createMythicItem(MythicItem.GOBLIN_SPEAR, owner));
-            Messages.debug(owner, "GOBLIN_SPEAR: Returned to its owner at the buy phase");
+        if (owner != null) restoreToOwner(owner, session);
+    }
+
+    /**
+     * A player who owns the game's Goblin Spear but doesn't have it - they threw it and died
+     * before it came back - is given it back, and the thrown one is taken out of the world.
+     * Nothing happens when they have it, or don't own it. Runs as they respawn, and at the buy
+     * phase through {@link #returnToOwner}.
+     */
+    public void restoreToOwner(Player player, GameSession session) {
+        if (!player.getUniqueId().equals(manager.getMythicOwner(session, MythicItem.GOBLIN_SPEAR)) || holdsSpear(player)) return;
+
+        removeThrownSpears(session);
+        player.getInventory().addItem(manager.createMythicItem(MythicItem.GOBLIN_SPEAR, player));
+        Messages.debug(player, "GOBLIN_SPEAR: Given back to its owner, who didn't have it");
+    }
+
+    private static void removeThrownSpears(GameSession session) {
+        World world = session.getGameWorld();
+        if (world == null) return;
+        for (Trident trident : world.getEntitiesByClass(Trident.class)) {
+            String itemId = trident.getPersistentDataContainer().get(Keys.ITEM_ID, PersistentDataType.STRING);
+            if (MythicItem.GOBLIN_SPEAR.getConfigKey().equals(itemId)) trident.remove();
         }
     }
 

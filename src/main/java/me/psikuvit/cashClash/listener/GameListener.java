@@ -1083,6 +1083,7 @@ public class GameListener implements Listener {
         GameSession session = gameManager.getPlayerSession(player);
         if (session != null) {
             session.getGamemode().onPlayerSpawn(player);
+            mythicManager.getHandler(GoblinSpearHandler.class).restoreToOwner(player, session);
         }
     }
 
