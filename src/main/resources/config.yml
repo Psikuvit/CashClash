@@ -800,6 +800,15 @@ error-messages:
     - transfer.cancelled
 
 # ============================================
+# OP-ONLY COMMANDS
+# ============================================
+# Commands - any plugin's - that only operators can run. Anyone else is refused, and the commands
+# don't show in their auto-fill. Names without the slash.
+op-only-commands:
+  - banner
+  - armorcolor
+
+# ============================================
 # OWNER COMMANDS
 # ============================================
 owner-commands:

@@ -192,6 +192,13 @@ public class ConfigManager {
     }
 
     /**
+     * Command names (any plugin's) that only operators may run.
+     */
+    public List<String> getOpOnlyCommands() {
+        return config.getStringList("op-only-commands");
+    }
+
+    /**
      * The players, by in-game name in any case, who may run /cc xyzresetstats.
      */
     public List<String> getResetStatsPlayers() {

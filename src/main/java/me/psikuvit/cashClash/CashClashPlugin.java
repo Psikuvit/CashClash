@@ -23,6 +23,7 @@ import me.psikuvit.cashClash.listener.GameListener;
 import me.psikuvit.cashClash.listener.HungerListener;
 import me.psikuvit.cashClash.listener.InteractListener;
 import me.psikuvit.cashClash.listener.MoveListener;
+import me.psikuvit.cashClash.listener.OpOnlyCommandListener;
 import me.psikuvit.cashClash.listener.PlayerConnectionListener;
 import me.psikuvit.cashClash.listener.SpeedStrengthListener;
 import me.psikuvit.cashClash.listener.TransferInputListener;
@@ -346,6 +347,7 @@ public final class CashClashPlugin extends JavaPlugin {
                 new AfkListener(),
                 new ArenaNPCListener(),
                 new ChatListener(),
+                new OpOnlyCommandListener(configManager),
                 transferInputListener,
                 teamOutlineManager,
                 advancementManager,
