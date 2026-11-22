@@ -7,6 +7,10 @@
 
 schema-version: 1
 
+# Food every player starts round 1 with
+starting-kit:
+  bread: 8
+
 # ============================================
 # GENERAL COMBAT
 # ============================================

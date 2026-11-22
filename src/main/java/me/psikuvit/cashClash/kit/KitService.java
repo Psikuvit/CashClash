@@ -226,7 +226,7 @@ public class KitService {
         player.getInventory().addItem(steak);
 
         ItemStack bread = factory.createGameplayItem(FoodItem.BREAD);
-        bread.setAmount(16);
+        bread.setAmount(CashClashPlugin.getInstance().getItemsConfig().getStartingBread());
         player.getInventory().addItem(bread);
 
         // === UTILITY ===
@@ -365,7 +365,7 @@ public class KitService {
         player.getInventory().addItem(steak);
 
         ItemStack bread = factory.createGameplayItem(FoodItem.BREAD);
-        bread.setAmount(16);
+        bread.setAmount(CashClashPlugin.getInstance().getItemsConfig().getStartingBread());
         player.getInventory().addItem(bread);
 
         // Water bucket
@@ -466,7 +466,7 @@ public class KitService {
         itemMap.put("MATERIAL:COOKED_BEEF", steak); // Fallback
 
         ItemStack bread = CashClashPlugin.getInstance().getItemFactory().createGameplayItem(FoodItem.BREAD);
-        bread.setAmount(16);
+        bread.setAmount(CashClashPlugin.getInstance().getItemsConfig().getStartingBread());
         itemMap.put("CUSTOM:BREAD", bread);
         itemMap.put("MATERIAL:BREAD", bread); // Fallback
 

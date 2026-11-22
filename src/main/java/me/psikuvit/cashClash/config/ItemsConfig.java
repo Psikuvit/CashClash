@@ -75,6 +75,13 @@ public class ItemsConfig {
         return config.getDouble("combat.fully-charged-threshold", 0.99);
     }
 
+    /**
+     * How much bread every player starts round 1 with.
+     */
+    public int getStartingBread() {
+        return config.getInt("starting-kit.bread", 8);
+    }
+
     public float getInvincibleHitSoundVolume() {
         return (float) config.getDouble("combat.invincible-hit-sound-volume", 0.9);
     }
