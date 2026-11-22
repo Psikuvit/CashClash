@@ -118,8 +118,20 @@ public final class DiscountService {
             case CARLS_BATTLEAXE -> weaponTradeInValue(player, WeaponItem.IRON_AXE, WeaponItem.DIAMOND_AXE);
             case ELECTRIC_EEL_SWORD, WARDEN_GLOVES -> weaponTradeInValue(player, WeaponItem.IRON_SWORD, WeaponItem.DIAMOND_SWORD);
             case WIND_BOW -> bowTradeInValue(player);
+            case BLOODWRENCH_CROSSBOW, BLAZEBITE_CROSSBOWS -> crossbowSlot(player) >= 0 ? UtilityItem.CROSSBOW.getPrice() : 0;
             default -> 0;
         };
+    }
+
+    /**
+     * A slot holding a shop-bought crossbow, or -1 if the player has none. However many they
+     * carry, a crossbow mythic only takes - and is discounted by - one of them.
+     */
+    public static int crossbowSlot(Player player) {
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
+            if (PDCDetection.getUtility(player.getInventory().getItem(slot)) == UtilityItem.CROSSBOW) return slot;
+        }
+        return -1;
     }
 
     /**

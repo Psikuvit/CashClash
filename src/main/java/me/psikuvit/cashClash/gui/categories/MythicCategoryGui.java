@@ -112,6 +112,9 @@ public final class MythicCategoryGui {
             } else {
                 ItemUtils.returnItemToInventoryOrDrop(player, mythicItem);
             }
+        } else if ((mythic == MythicItem.BLOODWRENCH_CROSSBOW || mythic == MythicItem.BLAZEBITE_CROSSBOWS)
+                && DiscountService.crossbowSlot(player) >= 0) {
+            player.getInventory().setItem(DiscountService.crossbowSlot(player), mythicItem);
         } else {
             ItemUtils.replaceBestMatchingTool(player, mythicItem);
         }
