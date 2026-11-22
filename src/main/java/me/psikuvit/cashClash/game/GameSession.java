@@ -5,6 +5,8 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.arena.Arena;
 import me.psikuvit.cashClash.arena.ArenaManager;
 import me.psikuvit.cashClash.arena.TemplateWorld;
+import me.psikuvit.cashClash.chat.ChatChannel;
+import me.psikuvit.cashClash.chat.ChatManager;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.game.round.RoundData;
 import me.psikuvit.cashClash.gamemode.Gamemode;
@@ -694,6 +696,25 @@ public class GameSession {
                 scoreboardManager.setScoreboard(p);
                 tabListManager.setPlayerToLobby(p);
             }
+        }
+        SchedulerUtils.runTaskLater(() -> resetFormerPlayers(uuids), 1L);
+    }
+
+    /**
+     * Once the game has fully gone - the end teleport and the world copy's removal both move
+     * players about while this game still counts them - everyone who was in it is put back to
+     * the hub's look once more: no [R]/[B] or team colour in the tab list or over their head, and
+     * no team or game chat channel left pointing at teammates who aren't theirs any more.
+     */
+    private void resetFormerPlayers(List<UUID> uuids) {
+        ChatManager chatManager = CashClashPlugin.getInstance().getChatManager();
+        for (UUID u : uuids) {
+            Player p = Bukkit.getPlayer(u);
+            if (p == null || !p.isOnline() || gameManager.getPlayerSession(p) != null) continue;
+
+            tabListManager.setPlayerToLobby(p);
+            ChatChannel channel = chatManager.getPlayerChannel(p);
+            if (channel == ChatChannel.TEAM || channel == ChatChannel.GAME) chatManager.setPlayerChannel(p, ChatChannel.GLOBAL);
         }
     }
 
