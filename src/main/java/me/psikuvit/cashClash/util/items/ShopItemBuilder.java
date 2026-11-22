@@ -140,6 +140,16 @@ public class ShopItemBuilder {
     }
 
     /**
+     * Adds one price line at the bottom of the lore, as is - never wrapped. Wrapping re-applies the
+     * line's first tag to each piece, so a line made of several tagged parts splits into broken
+     * tags (a stray {@code </dark_gray>} showing as text).
+     */
+    public ShopItemBuilder priceLine(String miniMessage) {
+        priceLore.add(Messages.parse(miniMessage));
+        return this;
+    }
+
+    /**
      * Adds a description to the lore (auto-wraps long text).
      *
      * @param description The description text

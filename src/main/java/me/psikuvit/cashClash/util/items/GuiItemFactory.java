@@ -304,10 +304,10 @@ public final class GuiItemFactory {
                         .lore("<yellow>Click to purchase entire set</yellow>");
 
                 if (finalPrice < totalPrice) {
-                    builder.priceDetail("<dark_gray>Set Total:</dark_gray> <dark_gray><st>$" + String.format("%,d", totalPrice) + "</st></dark_gray>")
-                            .priceDetail("<dark_gray>Trade-in price:</dark_gray> <gold>$" + String.format("%,d", finalPrice) + "</gold>");
+                    builder.priceLine("<dark_gray>Set Total:</dark_gray> <dark_gray><st>$" + String.format("%,d", totalPrice) + "</st></dark_gray>")
+                            .priceLine("<dark_gray>Trade-in price:</dark_gray> <gold>$" + String.format("%,d", finalPrice) + "</gold>");
                 } else {
-                    builder.priceDetail("<dark_gray>Set Total:</dark_gray> <gold>$" + String.format("%,d", totalPrice) + "</gold>");
+                    builder.priceLine("<dark_gray>Set Total:</dark_gray> <gold>$" + String.format("%,d", totalPrice) + "</gold>");
                 }
 
                 items[i] = builder
