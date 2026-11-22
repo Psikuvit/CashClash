@@ -136,8 +136,7 @@ public class InteractListener implements Listener {
                     }
                 }
 
-                ItemStack mainHand = player.getInventory().getItemInMainHand();
-                MythicItem mythic = PDCDetection.getMythic(mainHand);
+                MythicItem mythic = PDCDetection.getMythic(trident.getItemStack());
 
                 if (mythic == MythicItem.GOBLIN_SPEAR) {
                     if (mythicManager.getHandler(GoblinSpearHandler.class).isGoblinSpearCharging(player.getUniqueId())) {
