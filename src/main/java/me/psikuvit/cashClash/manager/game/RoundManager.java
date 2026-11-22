@@ -35,14 +35,22 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
  * Manages round progression and timing
  */
 public class RoundManager {
+
+    // How long into the buy phase every player's equipment is re-sent (refreshEquipment)
+    private static final long EQUIPMENT_REFRESH_DELAY_TICKS = 2L;
 
     private final GameSession session;
     private BukkitTask phaseTask;
@@ -126,6 +134,29 @@ public class RoundManager {
             p.closeInventory();
         }
         resetCooldowns(p);
+    }
+
+    /**
+     * Re-sends every player's armor and held items, to themselves and to everyone who can see
+     * them, a moment into the buy phase: after the teleport and the armor changes there a client
+     * can keep drawing a piece as missing - an invisible helmet - until its slot is clicked.
+     */
+    private void refreshEquipment() {
+        for (UUID uuid : session.getPlayers()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p == null || !p.isOnline()) continue;
+
+            p.updateInventory();
+            Map<EquipmentSlot, ItemStack> equipment = new EnumMap<>(EquipmentSlot.class);
+            for (EquipmentSlot slot : List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS,
+                    EquipmentSlot.FEET, EquipmentSlot.HAND, EquipmentSlot.OFF_HAND)) {
+                ItemStack item = p.getInventory().getItem(slot);
+                equipment.put(slot, item != null ? item : ItemStack.empty());
+            }
+            for (Player viewer : p.getWorld().getPlayers()) {
+                if (!viewer.equals(p) && viewer.canSee(p)) viewer.sendEquipmentChange(p, equipment);
+            }
+        }
     }
 
     /**
@@ -235,6 +266,7 @@ public class RoundManager {
                 if (roundNumber > 1) KitService.restoreStarterWaterBucket(p);
                 EconomyManager.sendRoundEarnings(session, p);
             }
+            SchedulerUtils.runTaskLater(this::refreshEquipment, EQUIPMENT_REFRESH_DELAY_TICKS);
         }
 
         // Start the appropriate phase timer
