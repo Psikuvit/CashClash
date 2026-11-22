@@ -22,6 +22,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -202,7 +203,27 @@ public class RespawnManager implements Shutdownable {
         }, 0L, 20L);
     }
 
+    /**
+     * Final Stand: everyone in the game still waiting out a respawn timer comes back at once - even
+     * in PTP, where nobody respawns after that.
+     */
+    public void respawnWaitingNow(GameSession session) {
+        for (UUID uuid : List.copyOf(deadlines.keySet())) {
+            if (!session.getPlayers().contains(uuid)) continue;
+            cancel(uuid);
+            respawn(uuid, true);
+        }
+    }
+
     private void respawn(UUID uuid) {
+        respawn(uuid, false);
+    }
+
+    /**
+     * @param instant a Final Stand respawn ({@link #respawnWaitingNow}), which skips the gamemode's
+     *                no-respawn rule and says so
+     */
+    private void respawn(UUID uuid, boolean instant) {
         respawnTasks.remove(uuid);
         countdownTasks.remove(uuid);
         deadlines.remove(uuid);
@@ -218,7 +239,7 @@ public class RespawnManager implements Shutdownable {
         }
 
         Gamemode gamemode = session.getGamemode();
-        if (gamemode != null && !gamemode.allowsRespawn()) {
+        if (!instant && gamemode != null && !gamemode.allowsRespawn()) {
             CashClashPlayer ccp = session.getCashClashPlayer(uuid);
             if (ccp != null) ccp.setLives(0);
             Messages.send(player, "listener.no-respawn-final-stand");
@@ -240,7 +261,7 @@ public class RespawnManager implements Shutdownable {
         player.setFoodLevel(20);
         player.setGameMode(GameMode.SURVIVAL);
         player.clearTitle();
-        Messages.send(player, "listener.respawned");
+        Messages.send(player, instant ? "listener.respawned-instantly" : "listener.respawned");
 
         Bukkit.getPluginManager().callEvent(new PlayerBackToGameEvent(player));
     }

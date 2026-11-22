@@ -86,6 +86,7 @@ public class FinalStandManager {
         if (gamemode != null) {
             gamemode.onFinalStandActivated();
         }
+        CashClashPlugin.getInstance().getRespawnManager().respawnWaitingNow(session);
     }
 
     /**
