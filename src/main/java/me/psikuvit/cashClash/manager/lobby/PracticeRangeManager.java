@@ -454,18 +454,22 @@ public class PracticeRangeManager implements Shutdownable, Listener {
         if (boss != null && boss.getLocation().getY() < voidKillHeight) fallen.add(boss);
         fallen.forEach(mob -> mob.setHealth(0));
 
-        Set<UUID> enemies = new HashSet<>();
+        Set<UUID> barred = new HashSet<>();
         for (Map.Entry<UUID, MobSlot> entry : mobs.entrySet()) {
-            MobKind kind = entry.getValue().kind();
-            if (kind == MobKind.PIGLIN || !(Bukkit.getEntity(entry.getKey()) instanceof LivingEntity mob)) continue;
-            updateHealthBar(mob, kind == MobKind.SKELETON ? "practice.name-skeleton" : "practice.name-zombie");
-            enemies.add(mob.getUniqueId());
+            if (!(Bukkit.getEntity(entry.getKey()) instanceof LivingEntity mob)) continue;
+            String nameKey = switch (entry.getValue().kind()) {
+                case SKELETON -> "practice.name-skeleton";
+                case ZOMBIE -> "practice.name-zombie";
+                case PIGLIN -> "practice.name-piglin";
+            };
+            updateHealthBar(mob, nameKey);
+            barred.add(mob.getUniqueId());
         }
         if (boss != null && boss.isValid()) {
             updateHealthBar(boss, "practice.name-boss");
-            enemies.add(boss.getUniqueId());
+            barred.add(boss.getUniqueId());
         }
-        shownHealthBars.keySet().retainAll(enemies);
+        shownHealthBars.keySet().retainAll(barred);
     }
 
     /**
