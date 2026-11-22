@@ -405,8 +405,8 @@ public class InteractListener implements Listener {
         }
 
         // Overdrive Potion: while invincible the player cannot use ANY inventory item except
-        // the Overdrive Potion itself (to cancel early). Left-clicks (block breaking, melee)
-        // are untouched.
+        // the Overdrive Potion itself (which only says one is already active). Left-clicks
+        // (block breaking, melee) are untouched.
         if (action.isRightClick() && customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
             CustomItem inHand = item != null ? PDCDetection.getCustomItem(item) : null;
             if (inHand != CustomItem.OVERDRIVE_POTION) {
@@ -641,10 +641,10 @@ public class InteractListener implements Listener {
             }
             case OVERDRIVE_POTION -> {
                 if (action.isRightClick()) {
-                    // Already active: right-click again cancels the invincibility early
+                    // One at a time, and it always runs its full duration
                     if (customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
                         event.setCancelled(true);
-                        customItemManager.getHandler(OverdriveHandler.class).cancelOverdriveEarly(player);
+                        Messages.send(player, "customitem.overdrive-already-active");
                         return true;
                     }
                     if (isSilenced(player)) {

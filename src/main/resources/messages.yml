@@ -1087,7 +1087,7 @@ messages:
     ice-fan-broken: "<red>Your Ice Fan has broken!</red>"
     overdrive-activated: "<light_purple><bold>OVERDRIVE!</bold> You are invincible!</light_purple>"
     overdrive-ended: "<light_purple>Overdrive ended.</light_purple>"
-    overdrive-cancelled: "<light_purple>Overdrive invincibility cancelled. Speed boost remains!</light_purple>"
+    overdrive-already-active: "<red>You already have an overdrive potion activated!</red>"
     overdrive-inventory-locked: "<red>You cannot use your inventory while Overdrive is active!</red>"
     hunters-mark-applied: "<red><bold>Marked {player_name}!</bold></red>"
     hunters-mark-target: "<red><bold>You have been marked! You take extra damage.</bold></red>"

@@ -975,7 +975,7 @@ item-lore:
       lore:
         - "<gray>Drink to become invincible</gray>"
         - "<yellow>+25% speed while active</yellow>"
-        - "<dark_gray>Right-click again to cancel early</dark_gray>"
+        - "<dark_gray>Lasts its full duration - one at a time</dark_gray>"
         - "<dark_gray>Cannot be used while holding the flag</dark_gray>"
     hunters-mark:
       lore:

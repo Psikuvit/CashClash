@@ -85,22 +85,6 @@ public class OverdriveHandler extends CustomItemHandler {
         SchedulerUtils.runTaskLater(() -> endOverdrive(player), seconds * 20L);
     }
 
-    /**
-     * Right-clicking again while active cancels the invincibility early; the speed boost keeps
-     * running until the original duration elapses (endOverdrive handles its removal).
-     */
-    public void cancelOverdriveEarly(Player player) {
-        UUID uuid = player.getUniqueId();
-        if (!overdriveInvincible.remove(uuid)) return;
-
-        BukkitTask task = overdrivePulseTasks.remove(uuid);
-        if (task != null) task.cancel();
-
-        ParticleUtils.spawnDust(player.getLocation().add(0, 1, 0), Color.fromRGB(150, 40, 220), 1.2f, 20, 0.4);
-        Messages.send(player, "customitem.overdrive-cancelled");
-        SoundUtils.play(player, Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, 1.0f, 0.8f);
-    }
-
     private void endOverdrive(Player player) {
         UUID uuid = player.getUniqueId();
         overdriveInvincible.remove(uuid);
