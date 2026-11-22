@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.gui.ShopGUI;
 import me.psikuvit.cashClash.gui.builder.AbstractGui;
+import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.DiscountService;
@@ -112,6 +113,8 @@ public final class MythicCategoryGui {
             } else {
                 ItemUtils.returnItemToInventoryOrDrop(player, mythicItem);
             }
+            // Landing in the held slot switches no slot, which is what normally pairs the hands
+            CashClashPlugin.getInstance().getMythicItemManager().getHandler(WardenGlovesHandler.class).onHandSwitch(player);
         } else if ((mythic == MythicItem.BLOODWRENCH_CROSSBOW || mythic == MythicItem.BLAZEBITE_CROSSBOWS)
                 && DiscountService.crossbowSlot(player) >= 0) {
             player.getInventory().setItem(DiscountService.crossbowSlot(player), mythicItem);
