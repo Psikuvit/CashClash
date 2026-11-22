@@ -86,8 +86,10 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
         cooldownManager.setCooldownSeconds(uuid, CooldownManager.Keys.CARLS_BATTLEAXE_SLASH, cfg.getCarlsSpinCooldown());
         spinningPlayers.add(uuid);
 
-        // Apply slowness during spin
-        CashClashPlayer.applyEffect(attacker, PotionEffectType.SLOWNESS, cfg.getCarlsSpinDuration(), 1);
+        int slownessLevel = cfg.getCarlsSpinSlownessLevel();
+        if (slownessLevel > 0) {
+            CashClashPlayer.applyEffect(attacker, PotionEffectType.SLOWNESS, cfg.getCarlsSpinDuration(), slownessLevel - 1);
+        }
 
         Messages.send(attacker, "mythic.carls-battleaxe-activated");
         SoundUtils.play(attacker, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.5f, 1.5f);

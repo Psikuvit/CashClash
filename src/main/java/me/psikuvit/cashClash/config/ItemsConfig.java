@@ -145,6 +145,13 @@ public class ItemsConfig {
     }
 
     /**
+     * The Slowness level the spin puts on its user (1 = Slowness I), or 0 for none.
+     */
+    public int getCarlsSpinSlownessLevel() {
+        return config.getInt("mythic-items.carls-battleaxe.spin-attack.slowness-level", 2);
+    }
+
+    /**
      * A melee mythic's attack damage - the full value its tooltip shows, not a bonus on top.
      * Baked into each copy when it's created.
      */
