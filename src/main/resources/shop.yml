@@ -148,6 +148,9 @@ trade-ins:
   # diamond sword prices), and buying the Soul Katana takes that diamond sword. false: only an
   # iron sword counts, and a diamond sword is kept alongside the Soul Katana.
   soul-katana-diamond-sword: true
+  # How much of what traded-in gear cost comes off the new item's price, in percent: 90 means a
+  # $20,000 piece takes $18,000 off. Mythics always get the full 100.
+  discount-percent: 90
 
 # ============================================
 # INVESTMENT PRICES

@@ -90,6 +90,13 @@ public class ShopConfig {
         return config.getBoolean("trade-ins.soul-katana-diamond-sword", true);
     }
 
+    /**
+     * How much of a traded-in item's cost comes off a non-mythic purchase, in percent.
+     */
+    public double getTradeInDiscountPercent() {
+        return config.getDouble("trade-ins.discount-percent", 90);
+    }
+
     public long getInvestmentCost(String investmentKey) {
         return config.getLong("investments." + investmentKey + ".cost", 0);
     }

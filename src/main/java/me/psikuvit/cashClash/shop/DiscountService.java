@@ -50,10 +50,10 @@ public final class DiscountService {
      */
     public static long getDiscount(Player player, Purchasable item) {
         return switch (item) {
-            case CustomArmorItem armor -> customArmorDiscount(player, armor);
+            case CustomArmorItem armor -> afterFee(customArmorDiscount(player, armor));
             case MythicItem mythic -> mythicDiscount(player, mythic);
-            case WeaponItem weapon when weapon == WeaponItem.CASH_BLASTER -> bowTradeInValue(player);
-            case WeaponItem weapon when weapon == WeaponItem.SOUL_KATANA -> soulKatanaTradeInValue(player);
+            case WeaponItem weapon when weapon == WeaponItem.CASH_BLASTER -> afterFee(bowTradeInValue(player));
+            case WeaponItem weapon when weapon == WeaponItem.SOUL_KATANA -> afterFee(soulKatanaTradeInValue(player));
             default -> 0;
         };
     }
@@ -70,7 +70,7 @@ public final class DiscountService {
             boolean diamondCounts = ItemSelectionUtils.rankMaterial(piece.getMaterial()) >= DIAMOND_RANK;
             total += wornArmorTradeInValue(player, piece, diamondCounts);
         }
-        return total;
+        return afterFee(total);
     }
 
     /**
@@ -80,6 +80,14 @@ public final class DiscountService {
      */
     public static boolean keptOverSetPiece(ItemStack worn, CustomArmorItem piece) {
         return ItemSelectionUtils.rankMaterial(worn.getType()) > ItemSelectionUtils.rankMaterial(piece.getMaterial());
+    }
+
+    /**
+     * Trade-ins only count for {@code trade-ins.discount-percent} of what the gear cost (90: a
+     * $20,000 piece takes $18,000 off). Mythics skip this and get the full value.
+     */
+    private static long afterFee(long tradeInValue) {
+        return Math.round(tradeInValue * CashClashPlugin.getInstance().getShopConfig().getTradeInDiscountPercent() / 100.0);
     }
 
     /**
