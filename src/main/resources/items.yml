@@ -565,6 +565,8 @@ custom-items:
 permanent-enchants:
   bullseye-pants:
     projectile_protection: 2
+  bunny-shoes:
+    feather_falling: 3
   flamebringer-leggings:
     fire_protection: 2
   flamebringer-boots:
