@@ -1117,6 +1117,13 @@ public class ItemsConfig {
         return config.getDouble("custom-armor.dragon.rush-hitbox-size", 1.0);
     }
 
+    /**
+     * Whether fully drawn bow hits count toward a Dragon Scale as well as melee hits.
+     */
+    public boolean isDragonBowHitsEnabled() {
+        return config.getBoolean("custom-armor.dragon.bow-hits-count", true);
+    }
+
     /** Damage Dragon Outrage's landing explosion deals to each enemy it catches. */
     public double getDragonOutrageDamage() {
         return config.getDouble("custom-armor.dragon.outrage-damage", 18.0);

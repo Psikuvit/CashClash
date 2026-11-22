@@ -860,7 +860,7 @@ public class DamageListener implements Listener {
      * Handle armor-based attack effects.
      */
     private void handleAttackerArmorEffects(EntityDamageByEntityEvent event, Player attacker, LivingEntity victim) {
-        armorManager.getHandler(DragonSetHandler.class).handleDragonHit(attacker);
+        armorManager.getHandler(DragonSetHandler.class).handleDragonHit(attacker, event.getDamager());
         armorManager.getHandler(DragonSetHandler.class).onDragonRushHit(event);
         handleBullseyePantsEffect(event, attacker, victim);
         armorManager.getHandler(DeathmaulerSetHandler.class).tryDeathmaulerSoulBurst(attacker, victim);

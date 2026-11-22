@@ -290,6 +290,9 @@ custom-armor:
   # Dragon Set
   dragon:
     hits-for-scale: 5
+    # Bow hits drawn to combat.fully-charged-threshold count toward a scale too (a Bullseye
+    # storm's burst arrows never do); false for melee hits only
+    bow-hits-count: true
     max-scales: 3
     rush-range: 5
     # How wide a target counts as when you aim the rush at them: 1 as they are, 2 twice as wide

@@ -107,7 +107,7 @@ public class SoulKatanaHandler extends WeaponItemHandler {
 
             dealPhantomSliceDamage(target, player);
             armorManager.getHandler(DeathmaulerSetHandler.class).tryDeathmaulerSoulBurst(player, target);
-            armorManager.getHandler(DragonSetHandler.class).handleDragonHit(player);
+            armorManager.getHandler(DragonSetHandler.class).handleDragonHit(player, player);
             SoundUtils.playAt(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.0f);
 
             if (target instanceof Player victim) {

@@ -7,6 +7,7 @@ import me.psikuvit.cashClash.manager.items.mythic.HudSegment;
 import me.psikuvit.cashClash.manager.items.mythic.WardenGlovesHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.shop.items.CustomArmorItem;
+import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -15,13 +16,16 @@ import me.psikuvit.cashClash.util.game.AbilityTargets;
 import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -130,11 +134,16 @@ public class DragonSetHandler extends ArmorSetHandler {
     }
 
     /**
-     * Charge a Dragon Scale on fully-charged melee hits.
+     * Charge a Dragon Scale on fully-charged hits: melee, and - while {@code bow-hits-count} is on
+     * - a bow arrow drawn to {@code combat.fully-charged-threshold}. A Bullseye storm's burst
+     * arrows never count.
+     *
+     * @param damager what dealt the hit: the player for melee, or their arrow
      */
-    public void handleDragonHit(Player player) {
+    public void handleDragonHit(Player player, Entity damager) {
         if (!hasDragonSet(player)) return;
-        if (!isFullyChargedMelee(player)) return;
+        boolean counts = damager instanceof AbstractArrow arrow ? countsAsBowHit(arrow) : damager.equals(player) && isFullyChargedMelee(player);
+        if (!counts) return;
         if (getDragonScales(player) >= cfg.getDragonMaxScales()) return;
 
         int hits = dragonHitCount.getOrDefault(player.getUniqueId(), 0) + 1;
@@ -148,6 +157,13 @@ public class DragonSetHandler extends ArmorSetHandler {
         }
 
         startDragonRushIndicator(player);
+    }
+
+    private boolean countsAsBowHit(AbstractArrow arrow) {
+        return cfg.isDragonBowHitsEnabled()
+                && arrow.getWeapon() != null && arrow.getWeapon().getType() == Material.BOW
+                && arrow.getPersistentDataContainer().has(Keys.FULLY_CHARGED_ARROW, PersistentDataType.BYTE)
+                && !arrow.getPersistentDataContainer().has(Keys.BULLSEYE_STORM_SOURCE, PersistentDataType.STRING);
     }
 
     /**
