@@ -515,6 +515,7 @@ messages:
      carls-battleaxe-already-spinning: "<red>You're already spinning!</red>"
      carls-battleaxe-activated: "<gold>Carl's Battleaxe: SPIN ATTACK!</gold>"
      carls-battleaxe-ended: "<gray>Spin attack ended.</gray>"
+     carls-battleaxe-inventory-locked: "<red>You cannot use your inventory while spinning!</red>"
      carls-battleaxe-throw-activated: "<gold>Carl's Battleaxe: THROW!</gold>"
      carls-battleaxe-throw-hit: "<gold>Caught {enemy_count} enemies with the throw!</gold>"
      wind-bow-critical: "<gold>Critical launch!</gold>"

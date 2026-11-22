@@ -238,7 +238,8 @@ public class InteractListener implements Listener {
         if (!(event.getPlayer() instanceof Player player) || !inventoryLocked(player)) return;
 
         event.setCancelled(true);
-        Messages.send(player, "customitem.overdrive-inventory-locked");
+        boolean overdrive = customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId());
+        Messages.send(player, overdrive ? "customitem.overdrive-inventory-locked" : "mythic.carls-battleaxe-inventory-locked");
     }
 
     /**
