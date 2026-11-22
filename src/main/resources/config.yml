@@ -178,6 +178,8 @@ combat:
   weakness-nerf-multiplier: 0.5
   # Multiplier applied to the Power enchantment's damage bonus (1.0 = no nerf)
   power-nerf-multiplier: 0.2
+  # Multiplier applied to the Sharpness enchantment's melee damage bonus (1.0 = no nerf)
+  sharpness-nerf-multiplier: 0.5
   # Power enchant level a non-legendary bow is capped at (excess levels beyond this
   # are ignored rather than nerfed) - the Wind Bow legendary is exempt
   max-power-level-regular-bow: 2

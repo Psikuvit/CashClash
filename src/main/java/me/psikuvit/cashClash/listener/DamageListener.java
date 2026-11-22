@@ -1108,8 +1108,23 @@ public class DamageListener implements Listener {
     private void applyCombatModifiers(EntityDamageByEntityEvent event, Player attacker, ItemStack weapon) {
         applyStrengthNerf(event, attacker);
         applyWeaknessNerf(event, attacker);
+        applySharpnessNerf(event, attacker, weapon);
         applyPowerNerf(event, attacker, weapon);
         applyInvestorMeleeNerf(event, attacker);
+    }
+
+    /**
+     * Sharpness nerf, the same way as {@link #applyStrengthNerf}: the melee weapon's Sharpness
+     * bonus (0.5 per level + 0.5) only counts for {@code sharpness-nerf-multiplier} of itself.
+     */
+    private void applySharpnessNerf(EntityDamageByEntityEvent event, Player attacker, ItemStack weapon) {
+        if (!(event.getDamager() instanceof Player)) return;
+        int level = weapon.getEnchantmentLevel(Enchantment.SHARPNESS);
+        if (level <= 0) return;
+
+        double sharpnessBonus = 0.5 * level + 0.5;
+        double damageReduction = sharpnessBonus * (1.0 - configManager.getSharpnessNerfMultiplier());
+        event.setDamage(Math.max(0, event.getDamage() - damageReduction));
     }
 
     /**

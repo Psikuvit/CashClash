@@ -339,6 +339,10 @@ public class ConfigManager {
         return config.getDouble("combat.power-nerf-multiplier", 0.2);
     }
 
+    public double getSharpnessNerfMultiplier() {
+        return config.getDouble("combat.sharpness-nerf-multiplier", 0.5);
+    }
+
     public int getMaxPowerLevelRegularBow() {
         return config.getInt("combat.max-power-level-regular-bow", 2);
     }
