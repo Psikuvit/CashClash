@@ -108,10 +108,10 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
 
     /**
      * Triggered when lava damages the player: grants Speed and a fire trail, then goes on the
-     * configured cooldown. No limit on how many times per round.
+     * configured cooldown. No limit on how many times per round. Not while carrying a CTF flag.
      */
     public void onFlamebringerLavaDamage(Player p) {
-        if (!hasFlamebringerSet(p)) return;
+        if (!hasFlamebringerSet(p) || isSilenced(p)) return;
         UUID id = p.getUniqueId();
 
         if (cooldownManager.isOnCooldown(id, CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN)) {
@@ -140,7 +140,7 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
             }
 
             Long endTime = flamebringerTrailEndTime.get(id);
-            if (endTime == null || System.currentTimeMillis() >= endTime || !hasFlamebringerSet(p)) {
+            if (endTime == null || System.currentTimeMillis() >= endTime || !hasFlamebringerSet(p) || isSilenced(p)) {
                 stopFlamebringerTrail(p);
                 return;
             }
@@ -226,10 +226,6 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
 
         if (isInShoppingPhase(player)) {
             sendShoppingPhaseRestriction(player, "gamestate.cannot-use-custom-armor-shopping");
-            return;
-        }
-        if (isSilenced(player)) {
-            Messages.send(player, "listener.cannot-use-items-while-silenced");
             return;
         }
 
