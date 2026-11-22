@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +52,8 @@ public class MythicItemManager {
     private final Map<UUID, Map<UUID, MythicItem>> playerMythics;
     private final Map<UUID, Set<MythicItem>> sessionPurchasedMythics;
     private final Map<UUID, List<MythicItem>> sessionAvailableMythics;
+    // Mythics picked with /cc pickmythic for the next game to sell
+    private final Set<MythicItem> pickedMythics = new LinkedHashSet<>();
 
     // Active tasks across all handlers, cancelled on per-player and global cleanup
     private final Map<UUID, List<BukkitTask>> activeTasks;
@@ -270,20 +273,40 @@ public class MythicItemManager {
     // ==================== RANDOM LEGENDARY SELECTION ====================
 
     /**
-     * Select random legendaries (per {@link ItemsConfig#getLegendsPerGame()}) for a game session.
-     * Should be called when the game starts.
+     * Picks a mythic for the next game to sell ({@code /cc pickmythic}).
+     *
+     * @return false if it was already picked
+     */
+    public boolean pickMythic(MythicItem mythic) {
+        return pickedMythics.add(mythic);
+    }
+
+    public void clearPickedMythics() {
+        pickedMythics.clear();
+    }
+
+    public List<MythicItem> getPickedMythics() {
+        return List.copyOf(pickedMythics);
+    }
+
+    /**
+     * Selects the legendaries (per {@link ItemsConfig#getLegendsPerGame()}) a game session sells:
+     * the ones picked with {@code /cc pickmythic} first - all of them, even past the count - then
+     * random ones for any slots left. The picks are used up by the first game to get here.
      */
     public void selectLegendariesForSession(GameSession session) {
         if (session == null) return;
         UUID sessionId = session.getSessionId();
 
-        // Get all mythic items and shuffle them
-        List<MythicItem> allMythics = new ArrayList<>(Arrays.asList(MythicItem.values()));
-        Collections.shuffle(allMythics, ThreadLocalRandom.current());
+        List<MythicItem> selectedMythics = new ArrayList<>(pickedMythics);
+        pickedMythics.clear();
 
-        // Select the configured count (or all if fewer mythics exist than that)
-        int count = Math.min(cfg.getLegendsPerGame(), allMythics.size());
-        List<MythicItem> selectedMythics = new ArrayList<>(allMythics.subList(0, count));
+        List<MythicItem> others = new ArrayList<>(Arrays.asList(MythicItem.values()));
+        others.removeAll(selectedMythics);
+        Collections.shuffle(others, ThreadLocalRandom.current());
+        int fill = Math.max(0, cfg.getLegendsPerGame() - selectedMythics.size());
+        selectedMythics.addAll(others.subList(0, Math.min(fill, others.size())));
+        int count = selectedMythics.size();
 
         sessionAvailableMythics.put(sessionId, selectedMythics);
 

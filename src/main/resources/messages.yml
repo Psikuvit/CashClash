@@ -29,6 +29,7 @@ messages:
     help-stop: "<yellow>/cc stop <gray>- Stop an ongoing game</gray>"
     help-forcestart: "<yellow>/cc forcestart <gray>- Force start a game immediately</gray>"
     help-pickmap: "<yellow>/cc pickmap <template> <gray>- Pick the map for the queue's next game</gray>"
+    help-pickmythic: "<yellow>/cc pickmythic <mythic> <gray>- Pick a mythic the next game sells</gray>"
     help-forcenextround: "<yellow>/cc forcenextround <gray>- Force the next round to start</gray>"
     help-selectkit: "<yellow>/cc selectkit <gray>- Select a kit for all players</gray>"
     help-setlobby: "<yellow>/cc setlobby <gray>- Set the lobby spawn point</gray>"
@@ -616,6 +617,11 @@ messages:
     next-gamemode-set: "<green>The queue's next game will be <yellow>{gamemode}</yellow>.</green>"
     next-map-set: "<green>The queue's next game will be played on <yellow>{template}</yellow>.</green>"
     pickmap-usage: "<red>Usage: /cc pickmap <template></red>"
+    pickmythic-usage: "<red>Usage: /cc pickmythic <mythic> (once per mythic), or /cc pickmythic clear</red>"
+    pickmythic-added: "<green>{mythic} will be sold in the next game.</green>"
+    pickmythic-already: "<yellow>{mythic} is already picked for the next game.</yellow>"
+    pickmythic-list: "<yellow>Picked for the next game:</yellow> <white>{mythics}</white>"
+    pickmythic-cleared: "<green>The next game's mythics will be picked at random again.</green>"
     pickmap-unknown: "<red>No ready arena uses the template <gray>{template}</gray>.</red>"
 
   # ============================================
