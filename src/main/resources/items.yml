@@ -459,6 +459,7 @@ custom-items:
     amplifier: 0              # Regeneration I
     duration-seconds: 11
     consume-ticks: 32
+    saturation: 8.0           # Added on top of the eater's saturation (never past 20)
 
   # Sunscreen
   sunscreen:

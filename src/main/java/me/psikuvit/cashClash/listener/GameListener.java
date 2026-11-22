@@ -104,6 +104,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class GameListener implements Listener {
 
+    // Vanilla's most saturation a player can hold
+    private static final float MAX_SATURATION = 20.0f;
+
     private final Map<UUID, Location> pendingSpectatorTransition = new ConcurrentHashMap<>();
     private boolean stretchingEffect;
 
@@ -431,6 +434,9 @@ public class GameListener implements Listener {
                 case COOKIE_OF_LIFE -> {
                     playFoodParticles(p, Color.fromRGB(255, 120, 220));
                     SoundUtils.play(p, Sound.ENTITY_BREEZE_JUMP, 1.0f, 1.2f);
+                    // A tick later: eating clamps saturation to the food bar, which would cut this short
+                    float saturation = (float) itemsConfig.getCookieOfLifeSaturation();
+                    SchedulerUtils.runTask(() -> p.setSaturation(Math.min(MAX_SATURATION, p.getSaturation() + saturation)));
                 }
                 case SUNSCREEN -> playFoodParticles(p, Color.fromRGB(255, 150, 40));
                 case CAN_OF_SPINACH -> {

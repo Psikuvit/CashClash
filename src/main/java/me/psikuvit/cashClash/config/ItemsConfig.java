@@ -659,6 +659,13 @@ public class ItemsConfig {
         return config.getInt("custom-items.cookie-of-life.duration-seconds", 11);
     }
 
+    /**
+     * Saturation a Cookie of Life adds on top of what the eater already has.
+     */
+    public double getCookieOfLifeSaturation() {
+        return config.getDouble("custom-items.cookie-of-life.saturation", 8.0);
+    }
+
     public int getSunscreenAmplifier() {
         return config.getInt("custom-items.sunscreen.amplifier", 0);
     }
