@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
+import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.manager.Shutdownable;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.items.armor.ArmorSetHandler;
@@ -103,8 +104,11 @@ public class MythicHudManager implements Shutdownable {
     }
 
     private String buildLine(GameSession session, Player player) {
-        if (session != null && session.getState() == GameState.BUFF_SELECTION) return null;
-        if (session != null && session.getState() == GameState.SHOPPING) return readyLine(session);
+        if (session != null && session.getState() == GameState.SHOPPING) {
+            if (session.isSequenceLocked()) return null;
+            if (session.isBuffSelectionPhase()) return buffSelectionLine(session, player);
+            return session.isShoppingRunning() ? readyLine(session) : null;
+        }
 
         StringJoiner line = new StringJoiner(MythicItemHandler.hudText("separator"));
         addMythicSegments(line, session, player);
@@ -148,6 +152,15 @@ public class MythicHudManager implements Shutdownable {
         return messagesConfig.getMessage("round.ready-bar",
                 "red_ready", String.valueOf(red.getReadyCount()), "red_total", String.valueOf(red.getPlayers().size()),
                 "blue_ready", String.valueOf(blue.getReadyCount()), "blue_total", String.valueOf(blue.getPlayers().size()));
+    }
+
+    /**
+     * PTP's buff selection: presidents are told to pick a potion, everyone else to wait for theirs.
+     */
+    private String buffSelectionLine(GameSession session, Player player) {
+        boolean president = session.getGamemode() instanceof ProtectThePresidentGamemode ptp
+                && !ptp.isNotPresident(player.getUniqueId());
+        return messagesConfig.getRaw(president ? "round.buff-selection-bar-president" : "round.buff-selection-bar-wait");
     }
 
     private static String colored(HudSegment segment, boolean forceRed) {

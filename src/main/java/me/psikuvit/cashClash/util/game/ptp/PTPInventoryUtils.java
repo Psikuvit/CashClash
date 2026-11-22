@@ -35,7 +35,6 @@ public class PTPInventoryUtils {
             president.getInventory().setItem(7, PresidentialBuffSelectionUtils.createExtraHeartsBuffItem());
 
             president.updateInventory();
-            Messages.send(president, "gamemode-ptp.buff-selection-prompt");
         });
     }
 

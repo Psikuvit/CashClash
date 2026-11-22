@@ -419,6 +419,13 @@ public class GameSession {
         return roundManager != null && roundManager.isBuffSelectionPhase();
     }
 
+    /**
+     * Whether the buy phase proper is on - see {@link RoundManager#isShoppingRunning}.
+     */
+    public boolean isShoppingRunning() {
+        return roundManager != null && roundManager.isShoppingRunning();
+    }
+
     public void startCombatPhase() {
         stateMachine.transitionTo(GameState.COMBAT);
 

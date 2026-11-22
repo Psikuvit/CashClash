@@ -48,9 +48,18 @@ public class RoundManager {
     private BukkitTask phaseTask;
     private int timeRemaining;
     private boolean buffSelectionPhase;
+    private boolean shoppingRunning;
 
     public RoundManager(GameSession session) {
         this.session = session;
+    }
+
+    /**
+     * Whether the buy phase proper is on: its timer is running, after any reveal sequence and
+     * PTP's buff selection, until combat starts.
+     */
+    public boolean isShoppingRunning() {
+        return shoppingRunning;
     }
 
     /**
@@ -63,6 +72,7 @@ public class RoundManager {
 
     public void startShoppingPhase(int roundNumber) {
         Messages.debug("GAME", "Starting shopping phase for round " + roundNumber + " in session " + session.getSessionId());
+        shoppingRunning = false;
 
         // Get players to the shop area before any freeze/reveal sequence plays (PTP
         // president reveal, sudden death) so they aren't blind/frozen wherever they
@@ -179,6 +189,7 @@ public class RoundManager {
             phaseTask = null;
         }
         buffSelectionPhase = phaseType == GameState.BUFF_SELECTION;
+        shoppingRunning = phaseType == GameState.SHOPPING;
 
         // Set duration based on phase type
         ConfigManager config = CashClashPlugin.getInstance().getConfigManager();
@@ -306,6 +317,7 @@ public class RoundManager {
             phaseTask.cancel();
             phaseTask = null;
         }
+        shoppingRunning = false;
 
         // Unready all players when combat phase starts
         Team teamRed = session.getTeamRed();

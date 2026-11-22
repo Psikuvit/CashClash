@@ -286,6 +286,9 @@ messages:
     both-teams-ready: "<green>Both teams are ready! Ending shopping phase early.</green>"
     # The action bar during the buy phase, in place of the item cooldowns
     ready-bar: "<white>Players Ready:</white> <red>[{red_ready}/{red_total}]</red> <blue>[{blue_ready}/{blue_total}]</blue>"
+    # The action bar during PTP's buff selection: to the presidents, then to everyone else
+    buff-selection-bar-president: "<gold>Right click a potion to select a buff!</gold>"
+    buff-selection-bar-wait: "<yellow>Wait for the president to select a buff!</yellow>"
     shopping-countdown: "<yellow>{time_remaining} seconds remaining!</yellow>"
     buff-selection-complete: "<gold>Buff selection complete! Starting shopping phase...</gold>"
     combat-phase-starting: "<red><bold>Combat Phase Starting!</bold></red>"
@@ -334,7 +337,6 @@ messages:
     round-start-message-sudden-death: "<gold>{president1_name} and {president2_name} are elected as your presidents! You can select up to 2 bonus effects for this final fight!</gold>"
     red-president: "<red>{president_name} is Team Red's president and can pick up to 2 bonus effects.</red>"
     blue-president: "<blue>{president_name} is Team Blue's president and can pick up to 2 bonus effects.</blue>"
-    buff-selection-prompt: "<gold>Right-click an item to select your buff! Right-click again to deselect. You may select up to 2 buffs.</gold>"
     buff-selection-time-remaining: "<gold>Presidents must select their buffs in {time_remaining}s!</gold>"
     no-buff-selected: "<gold>No buff selected! Random buff applied: {buff_name}</gold>"
     buff-selected: "<gold>Presidents have selected their buffs! Shop is now unlocked!</gold>"
