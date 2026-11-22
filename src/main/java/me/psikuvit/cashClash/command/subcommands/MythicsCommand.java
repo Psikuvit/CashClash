@@ -42,7 +42,7 @@ public class MythicsCommand extends AbstractArgCommand {
             return true;
         }
 
-        MythicItem mythicItem = ShopItems.getMythic(args[0]);
+        MythicItem mythicItem = ShopItems.getMythic(args[0].toUpperCase(Locale.ROOT));
 
         if (mythicItem == null) {
             Messages.send(player, "generic.mythic-not-found", "item_name", args[0]);
@@ -62,7 +62,7 @@ public class MythicsCommand extends AbstractArgCommand {
 
         if (args.length == 1) {
             for (MythicItem a : MythicItem.values())
-                if (a.name().startsWith(last)) out.add(a.name());
+                if (a.name().toLowerCase(Locale.ROOT).startsWith(last)) out.add(a.name());
             return out;
         }
         return Collections.emptyList();
