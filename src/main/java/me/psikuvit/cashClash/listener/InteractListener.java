@@ -41,6 +41,7 @@ import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.enums.RewardType;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
+import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -71,6 +72,8 @@ import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
+
+import java.util.UUID;
 
 /**
  * Consolidated listener for all PlayerInteractEvent handling.
@@ -207,24 +210,32 @@ public class InteractListener implements Listener {
     // ==================== OVERDRIVE POTION HOTBAR LOCK ====================
 
     /**
-     * Blocks hotbar slot switching while Overdrive Potion invincibility is active, matching
-     * the existing "cannot use any inventory item" restriction (see onPlayerInteract).
+     * Whether the player's hotbar and inventory are locked: while Overdrive Potion invincibility
+     * is active, and while they're spinning with Carl's Battleaxe.
+     */
+    private boolean inventoryLocked(Player player) {
+        UUID uuid = player.getUniqueId();
+        return customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(uuid)
+                || mythicManager.getHandler(CarlsBattleaxeHandler.class).isSpinning(uuid);
+    }
+
+    /**
+     * Blocks hotbar slot switching while the inventory is locked ({@link #inventoryLocked}),
+     * matching Overdrive's "cannot use any inventory item" restriction (see onPlayerInteract).
      */
     @EventHandler(priority = EventPriority.HIGH)
     public void onOverdriveHotbarSwitch(PlayerItemHeldEvent event) {
-        Player player = event.getPlayer();
-        if (customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) {
+        if (inventoryLocked(event.getPlayer())) {
             event.setCancelled(true);
         }
     }
 
     /**
-     * Blocks opening a container/GUI while Overdrive Potion invincibility is active.
+     * Blocks opening a container/GUI while the inventory is locked.
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onOverdriveInventoryOpen(InventoryOpenEvent event) {
-        if (!(event.getPlayer() instanceof Player player)) return;
-        if (!customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) return;
+        if (!(event.getPlayer() instanceof Player player) || !inventoryLocked(player)) return;
 
         event.setCancelled(true);
         Messages.send(player, "customitem.overdrive-inventory-locked");
@@ -236,8 +247,7 @@ public class InteractListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onOverdriveInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-        if (!customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) return;
+        if (!(event.getWhoClicked() instanceof Player player) || !inventoryLocked(player)) return;
 
         event.setCancelled(true);
         player.closeInventory();
@@ -248,10 +258,20 @@ public class InteractListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onOverdriveInventoryDrag(InventoryDragEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-        if (!customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(player.getUniqueId())) return;
+        if (event.getWhoClicked() instanceof Player player && inventoryLocked(player)) {
+            event.setCancelled(true);
+        }
+    }
 
-        event.setCancelled(true);
+    /**
+     * No attacking while spinning with Carl's Battleaxe - the spin does the hitting. This stops the
+     * player's own swing only, so the spin's hits (dealt by the spin itself) still land.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onSpinningAttack(PrePlayerAttackEntityEvent event) {
+        if (mythicManager.getHandler(CarlsBattleaxeHandler.class).isSpinning(event.getPlayer().getUniqueId())) {
+            event.setCancelled(true);
+        }
     }
 
     // ==================== WARDEN GLOVES BOTH-HANDS TRACKING ====================

@@ -116,6 +116,8 @@ public class CarlsBattleaxeHandler extends MythicItemHandler {
                     cleanup();
                     return;
                 }
+                // No event fires for a player's own inventory - it can only be closed back
+                attacker.closeInventory();
 
                 // Update axe display position - spin around player and bob up/down
                 if (axeDisplay.isValid()) {
