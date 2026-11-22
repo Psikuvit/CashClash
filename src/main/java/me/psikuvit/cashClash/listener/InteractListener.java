@@ -375,7 +375,9 @@ public class InteractListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND) return;
+        boolean offhandMark = event.getHand() == EquipmentSlot.OFF_HAND
+                && PDCDetection.getCustomItem(event.getItem()) == CustomItem.HUNTERS_MARK;
+        if (event.getHand() != EquipmentSlot.HAND && !offhandMark) return;
 
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
@@ -658,7 +660,8 @@ public class InteractListener implements Listener {
             case HUNTERS_MARK -> {
                 if (action.isRightClick()) {
                     event.setCancelled(true);
-                    customItemManager.getHandler(HuntersMarkHandler.class).useHuntersMark(player, item);
+                    customItemManager.getHandler(HuntersMarkHandler.class).useHuntersMark(player, item,
+                            event.getHand() != null ? event.getHand() : EquipmentSlot.HAND);
                     return true;
                 }
             }

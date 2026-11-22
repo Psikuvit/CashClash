@@ -7,20 +7,16 @@ import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
-import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.Transformation;
-import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,9 +25,8 @@ import java.util.UUID;
 
 /**
  * Hunter's Mark: a single right-click within range of an enemy instantly marks them,
- * making them take a flat 15% more damage for the mark's duration. The mark is tracked
- * by a rotating marked-block icon over the target's head plus a floating vulnerability %
- * and self-tears down on expiry or death.
+ * making them take a flat 15% more damage for the mark's duration. The mark shows as a floating
+ * vulnerability % over the target's head and tears itself down on expiry or death.
  */
 public class HuntersMarkHandler extends CustomItemHandler {
 
@@ -40,10 +35,9 @@ public class HuntersMarkHandler extends CustomItemHandler {
     private final Map<UUID, Long> markedUntil;
 
     /**
-     * Active mark on a target: the tracking/rotation task plus its two display entities
-     * (a rotating black concrete block on the head and a floating vulnerability % above it).
+     * Active mark on a target: the tracking task plus the floating vulnerability % above them.
      */
-    private record HunterMarkInfo(BukkitTask task, UUID targetUuid, ItemDisplay markDisplay, TextDisplay textDisplay, long expiresAt) {
+    private record HunterMarkInfo(BukkitTask task, UUID targetUuid, TextDisplay textDisplay, long expiresAt) {
     }
 
     public HuntersMarkHandler(CustomItemManager manager) {
@@ -56,16 +50,23 @@ public class HuntersMarkHandler extends CustomItemHandler {
      * Right-click within range of an enemy instantly applies Hunter's Mark - no charge-up.
      */
     public void useHuntersMark(Player player, ItemStack item) {
+        useHuntersMark(player, item, EquipmentSlot.HAND);
+    }
+
+    /**
+     * Uses a Hunter's Mark held in {@code hand} - it works from the off-hand too.
+     */
+    public void useHuntersMark(Player player, ItemStack item, EquipmentSlot hand) {
         LivingEntity target = findNearestMarkTarget(player, cfg.getHuntersMarkRange());
         if (target == null) {
             Messages.send(player, "customitem.hunters-mark-no-target");
             return;
         }
-        applyHunterMark(player, target, item);
+        applyHunterMark(player, target, item, hand);
     }
 
-    private void applyHunterMark(Player hunter, LivingEntity target, ItemStack item) {
-        consumeItem(hunter, item);
+    private void applyHunterMark(Player hunter, LivingEntity target, ItemStack item, EquipmentSlot hand) {
+        consumeItem(hunter, item, hand);
 
         clearHunterMark(target.getUniqueId());
 
@@ -90,7 +91,6 @@ public class HuntersMarkHandler extends CustomItemHandler {
         HunterMarkInfo info = hunterMarks.remove(targetUuid);
         if (info != null) {
             info.task().cancel();
-            if (!info.markDisplay().isDead()) info.markDisplay().remove();
             if (!info.textDisplay().isDead()) info.textDisplay().remove();
         }
         markedUntil.remove(targetUuid);
@@ -120,17 +120,6 @@ public class HuntersMarkHandler extends CustomItemHandler {
         long expiresAt = System.currentTimeMillis() + durationMillis;
         World world = target.getWorld();
 
-        ItemStack markIcon = new ItemStack(Material.BLACK_CONCRETE);
-
-        ItemDisplay markDisplay = world.spawn(target.getEyeLocation(), ItemDisplay.class, display -> {
-            display.setItemStack(markIcon);
-            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-            display.setBillboard(Display.Billboard.FIXED);
-            display.setBrightness(new Display.Brightness(15, 15));
-            Transformation t = display.getTransformation();
-            display.setTransformation(new Transformation(t.getTranslation(), t.getLeftRotation(), new Vector3f(0.6f, 0.6f, 0.6f), t.getRightRotation()));
-        });
-
         TextDisplay textDisplay = world.spawn(target.getEyeLocation(), TextDisplay.class, display -> {
             display.setBillboard(Display.Billboard.CENTER);
             display.setSeeThrough(true);
@@ -144,13 +133,10 @@ public class HuntersMarkHandler extends CustomItemHandler {
                 clearHunterMark(targetUuid);
                 return;
             }
-            Location eye = target.getEyeLocation();
-            markDisplay.teleport(eye.clone().add(0, 0.25, 0));
-            markDisplay.setRotation(markDisplay.getYaw() + 12f, 0f);
-            textDisplay.teleport(eye.clone().add(0, cfg.getHuntersMarkPercentTextHeight(), 0));
+            textDisplay.teleport(target.getEyeLocation().add(0, cfg.getHuntersMarkPercentTextHeight(), 0));
         }, 0L, 1L);
 
-        hunterMarks.put(targetUuid, new HunterMarkInfo(task, targetUuid, markDisplay, textDisplay, expiresAt));
+        hunterMarks.put(targetUuid, new HunterMarkInfo(task, targetUuid, textDisplay, expiresAt));
     }
 
     private int hunterMarkPercent() {

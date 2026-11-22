@@ -13,6 +13,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
@@ -52,10 +53,17 @@ public abstract class CustomItemHandler {
      * it sat in. The item is expected to be in the player's main hand.
      */
     protected void consumeItem(Player player, ItemStack item) {
+        consumeItem(player, item, EquipmentSlot.HAND);
+    }
+
+    /**
+     * Uses up one of an item held in {@code hand}.
+     */
+    protected void consumeItem(Player player, ItemStack item, EquipmentSlot hand) {
         if (item.getAmount() > 1) {
             item.setAmount(item.getAmount() - 1);
         } else {
-            player.getInventory().setItemInMainHand(null);
+            player.getInventory().setItem(hand, null);
         }
     }
 
