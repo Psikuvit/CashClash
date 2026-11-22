@@ -1110,6 +1110,13 @@ public class ItemsConfig {
         return config.getInt("custom-armor.dragon.rush-range", 5);
     }
 
+    /**
+     * How wide a target counts as when aiming Dragon Rush at them: 1 as they are, 2 twice as wide.
+     */
+    public double getDragonRushHitboxSize() {
+        return config.getDouble("custom-armor.dragon.rush-hitbox-size", 1.0);
+    }
+
     /** Damage Dragon Outrage's landing explosion deals to each enemy it catches. */
     public double getDragonOutrageDamage() {
         return config.getDouble("custom-armor.dragon.outrage-damage", 18.0);

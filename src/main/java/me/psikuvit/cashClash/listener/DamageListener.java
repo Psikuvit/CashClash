@@ -140,7 +140,8 @@ public class DamageListener implements Listener {
 
             if (armorManager.getHandler(DragonSetHandler.class).isDragonRushInvincible(player.getUniqueId())) {
                 playInvincibleHitFeedbackIfEntity(event);
-                event.setCancelled(true);
+                // Zeroed, not cancelled: the hit still knocks back, it just does no damage
+                event.setDamage(0);
                 return;
             }
 
@@ -666,13 +667,12 @@ public class DamageListener implements Listener {
         }
 
         boolean totem = customItemManager.getHandler(TotemOfHauntingHandler.class).isTotemInvincible(victimId);
-        if (!totem
-                && !customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(victimId)
-                && !armorManager.getHandler(DragonSetHandler.class).isDragonRushInvincible(victimId)) {
+        boolean dragonRush = armorManager.getHandler(DragonSetHandler.class).isDragonRushInvincible(victimId);
+        if (!totem && !dragonRush && !customItemManager.getHandler(OverdriveHandler.class).isOverdriveInvincible(victimId)) {
             return false;
         }
 
-        if (totem) {
+        if (totem || dragonRush) {
             event.setDamage(0);
         } else {
             event.setCancelled(true);

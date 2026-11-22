@@ -145,6 +145,15 @@ public class DragonSetHandler extends ArmorSetHandler {
     }
 
     /**
+     * The teammate or enemy a Dragon Rush (or its reminder) is aimed at - the same look-at check
+     * Blink Swap uses, with its own {@code rush-hitbox-size} - or null.
+     */
+    private LivingEntity rushTarget(Player player) {
+        return AbilityTargets.lookedAt(player, cfg.getDragonRushRange(), cfg.getDragonRushHitboxSize(),
+                entity -> AbilityTargets.isAlly(player, entity) || AbilityTargets.isEnemy(player, entity));
+    }
+
+    /**
      * Dragon Rush: consume a scale to dash to a target in line of sight.
      */
     public void onDragonRush(Player player) {
@@ -152,17 +161,12 @@ public class DragonSetHandler extends ArmorSetHandler {
 
         UUID id = player.getUniqueId();
 
-        Entity target = player.getTargetEntity(cfg.getDragonRushRange());
-        boolean teammate = AbilityTargets.isAlly(player, target);
-        if (!teammate && !AbilityTargets.isEnemy(player, target)) {
+        LivingEntity rushTarget = rushTarget(player);
+        if (rushTarget == null) {
             failDragonRush(player);
             return;
         }
-        LivingEntity rushTarget = (LivingEntity) target;
-        if (!player.hasLineOfSight(rushTarget)) {
-            failDragonRush(player);
-            return;
-        }
+        boolean teammate = AbilityTargets.isAlly(player, rushTarget);
 
         if (!consumeDragonScale(player)) {
             Messages.send(player, "armor.dragon-need-scale");
@@ -296,14 +300,8 @@ public class DragonSetHandler extends ArmorSetHandler {
                     dragonRushIndicators.remove(uuid);
                     return;
                 }
-                Entity target = player.getTargetEntity(cfg.getDragonRushRange());
-                if (!AbilityTargets.isAlly(player, target) && !AbilityTargets.isEnemy(player, target)) {
-                    return;
-                }
-                if (!player.hasLineOfSight(target)) {
-                    return;
-                }
-                showDragonRushIndicator(player, (LivingEntity) target);
+                LivingEntity target = rushTarget(player);
+                if (target != null) showDragonRushIndicator(player, target);
             }, delay);
         }
 
