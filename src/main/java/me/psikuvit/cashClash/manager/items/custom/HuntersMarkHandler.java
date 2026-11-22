@@ -97,6 +97,13 @@ public class HuntersMarkHandler extends CustomItemHandler {
     }
 
     /**
+     * Whether the target is marked right now.
+     */
+    public boolean isMarked(UUID targetUuid) {
+        return getVulnerabilityMultiplier(targetUuid) > 1.0;
+    }
+
+    /**
      * @return damage-in multiplier for the target: 1.0 when not marked, otherwise 1 + the flat
      * mark vulnerability %.
      */

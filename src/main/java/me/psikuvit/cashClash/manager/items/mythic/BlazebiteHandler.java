@@ -150,6 +150,22 @@ public class BlazebiteHandler extends MythicItemHandler {
     }
 
     /**
+     * Tidy Up's cleanse: takes Glacier's frostbite and a freeze solid off a player at once.
+     *
+     * @return false if they had neither
+     */
+    public boolean cleanseFreeze(UUID entityId) {
+        Long frostbiteExpiry = glacierFrostbiteExpiry.remove(entityId);
+        boolean frostbitten = frostbiteExpiry != null && frostbiteExpiry > System.currentTimeMillis();
+        boolean frozen = frozenSolidThawTasks.containsKey(entityId);
+        if (!frostbitten && !frozen) return false;
+
+        stopGlacierParticles(entityId);
+        thaw(entityId);
+        return true;
+    }
+
+    /**
      * Lifts a freeze solid, if the player or practice mob is frozen. Safe to call for a player
      * who's offline.
      */

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * BloodWrench Crossbow - counts the hits its wielder lands on players: one set hit releases a
@@ -37,10 +38,42 @@ public class BloodwrenchHandler extends MythicItemHandler {
     // When each wielder's last blood tornado went off, so the HUD can hold the full count briefly
     private final Map<UUID, Long> lastTornadoAt;
 
+    // Blood spheres and tornadoes still on the field, so Tidy Up can tell who's standing in one
+    private final List<Zone> spheres;
+    private final List<Zone> tornadoes;
+
+    /** A live zone: its centre and reach, alive for as long as its task runs. */
+    private record Zone(Location center, double radius, double height, BukkitTask task) {
+        boolean contains(LivingEntity entity) {
+            Location loc = entity.getLocation();
+            return !task.isCancelled() && loc.getWorld() == center.getWorld()
+                    && Math.abs(loc.getX() - center.getX()) <= radius && Math.abs(loc.getZ() - center.getZ()) <= radius
+                    && Math.abs(loc.getY() - center.getY()) <= height;
+        }
+    }
+
     public BloodwrenchHandler(MythicItemManager manager) {
         super(manager);
         this.landedHits = new ConcurrentHashMap<>();
         this.lastTornadoAt = new ConcurrentHashMap<>();
+        this.spheres = new CopyOnWriteArrayList<>();
+        this.tornadoes = new CopyOnWriteArrayList<>();
+    }
+
+    /**
+     * Whether an entity is standing in a live Blood Sphere, which keeps re-blocking their healing.
+     */
+    public boolean isInBloodSphere(LivingEntity entity) {
+        spheres.removeIf(zone -> zone.task().isCancelled());
+        return spheres.stream().anyMatch(zone -> zone.contains(entity));
+    }
+
+    /**
+     * Whether an entity is standing in a live blood tornado, which keeps re-applying its levitation.
+     */
+    public boolean isInBloodTornado(LivingEntity entity) {
+        tornadoes.removeIf(zone -> zone.task().isCancelled());
+        return tornadoes.stream().anyMatch(zone -> zone.contains(entity));
     }
 
     /**
@@ -142,6 +175,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
         }, durationTicks);
 
         manager.trackLingeringTask(shooter.getUniqueId(), sphereTask);
+        if (sphereTask != null) spheres.add(new Zone(hitLocation, sphereRadius, sphereRadius, sphereTask));
     }
 
     /**
@@ -205,6 +239,7 @@ public class BloodwrenchHandler extends MythicItemHandler {
         }, durationTicks);
 
         manager.trackLingeringTask(shooter.getUniqueId(), vortexTask);
+        if (vortexTask != null) tornadoes.add(new Zone(hitLocation, radius, radius + 2, vortexTask));
     }
 
     /**
@@ -226,6 +261,8 @@ public class BloodwrenchHandler extends MythicItemHandler {
     public void cleanup() {
         landedHits.clear();
         lastTornadoAt.clear();
+        spheres.clear();
+        tornadoes.clear();
     }
 
     /**

@@ -4,6 +4,8 @@ import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.Team;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
+import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
+import me.psikuvit.cashClash.manager.items.custom.HuntersMarkHandler;
 import me.psikuvit.cashClash.player.CashClashPlayer;
 import me.psikuvit.cashClash.util.CooldownManager;
 import me.psikuvit.cashClash.util.Messages;
@@ -57,7 +59,7 @@ public class AlchemistWandHandler extends MythicItemHandler {
             PotionEffectType.MINING_FATIGUE, PotionEffectType.NAUSEA, PotionEffectType.BLINDNESS,
             PotionEffectType.HUNGER, PotionEffectType.WITHER, PotionEffectType.LEVITATION,
             PotionEffectType.UNLUCK, PotionEffectType.DARKNESS, PotionEffectType.BAD_OMEN,
-            PotionEffectType.INFESTED
+            PotionEffectType.INFESTED, PotionEffectType.GLOWING
     );
 
     // Buffs Tidy Up strips off the enemy team on an enemy hit.
@@ -521,8 +523,10 @@ public class AlchemistWandHandler extends MythicItemHandler {
         for (LivingEntity member : affected) {
             boolean tidiedAny = false;
             for (PotionEffectType type : effectsToRemove) {
+                if (sameTeam && keepsEffect(session, member, type)) continue;
                 if (tidyEffect(member, type)) tidiedAny = true;
             }
+            if (sameTeam && cleanseAbilityDebuffs(member)) tidiedAny = true;
 
             if (tidiedAny) {
                 ParticleUtils.verticalBeam(member.getLocation(), beamColor, 5.0, 6, 0.5f, 6);
@@ -535,6 +539,52 @@ public class AlchemistWandHandler extends MythicItemHandler {
                 + " (" + (sameTeam ? "cleanse" : "strip") + ")");
 
         endAlchemistTidyUp(attacker, false);
+    }
+
+    /**
+     * Effects the cleanse leaves on a teammate: what a gamemode puts on a player - a CTF flag
+     * carrier's Slowness and glow, a PTP president's glow - and levitation while they're still in
+     * the blood tornado that keeps re-applying it.
+     */
+    private boolean keepsEffect(GameSession session, LivingEntity member, PotionEffectType type) {
+        if (type == PotionEffectType.LEVITATION && manager.getHandler(BloodwrenchHandler.class).isInBloodTornado(member)) return true;
+        if (session == null) return false;
+
+        UUID uuid = member.getUniqueId();
+        if (session.getGamemode() instanceof CaptureTheFlagGamemode ctf && ctf.isSilenced(uuid)) {
+            return type == PotionEffectType.SLOWNESS || type == PotionEffectType.GLOWING;
+        }
+        return type == PotionEffectType.GLOWING && session.getGamemode() instanceof ProtectThePresidentGamemode ptp
+                && !ptp.isNotPresident(uuid);
+    }
+
+    /**
+     * The cleanse's debuffs that aren't potion effects, all removed outright: Hunter's Mark, a
+     * healing reduction (Soul Katana's, or a Blood Sphere's once they've left it), fire, and
+     * BlazeBite's frostbite and freeze solid.
+     *
+     * @return whether any was removed
+     */
+    private boolean cleanseAbilityDebuffs(LivingEntity member) {
+        UUID uuid = member.getUniqueId();
+        boolean cleansed = false;
+
+        HuntersMarkHandler huntersMark = CashClashPlugin.getInstance().getCustomItemManager().getHandler(HuntersMarkHandler.class);
+        if (huntersMark.isMarked(uuid)) {
+            huntersMark.clearHunterMark(uuid);
+            cleansed = true;
+        }
+        if (member instanceof Player player && CashClashPlayer.isHealingReduced(player)
+                && !manager.getHandler(BloodwrenchHandler.class).isInBloodSphere(player)) {
+            CashClashPlayer.clearHealingReduction(player);
+            cleansed = true;
+        }
+        if (member.getFireTicks() > 0) {
+            member.setFireTicks(0);
+            cleansed = true;
+        }
+        if (manager.getHandler(BlazebiteHandler.class).cleanseFreeze(uuid)) cleansed = true;
+        return cleansed;
     }
 
     /**
