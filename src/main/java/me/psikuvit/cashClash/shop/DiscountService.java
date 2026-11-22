@@ -8,8 +8,10 @@ import me.psikuvit.cashClash.shop.items.MythicItem;
 import me.psikuvit.cashClash.shop.items.Purchasable;
 import me.psikuvit.cashClash.shop.items.UtilityItem;
 import me.psikuvit.cashClash.shop.items.WeaponItem;
+import me.psikuvit.cashClash.util.items.ItemSelectionUtils;
 import me.psikuvit.cashClash.util.items.ItemUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -21,6 +23,8 @@ import org.bukkit.inventory.ItemStack;
  * sells diamond as an upgrade over iron.
  */
 public final class DiscountService {
+
+    private static final int DIAMOND_RANK = ItemSelectionUtils.rankMaterial(Material.DIAMOND_HELMET);
 
     private DiscountService() {
         throw new AssertionError("Nope.");
@@ -55,15 +59,27 @@ public final class DiscountService {
     }
 
     /**
-     * The trade-in discount on a whole armor set: each piece is discounted by the iron or diamond
-     * piece worn in its slot.
+     * The trade-in discount on a whole armor set: each piece is discounted by the iron piece worn
+     * in its slot, or by a diamond one only when the set piece itself is diamond or better. An
+     * iron-tier piece (the Dragon helmet and boots) doesn't take a diamond piece - buying the set
+     * puts that back in the inventory ({@link #keptOverSetPiece}) - so it's no discount either.
      */
     public static long getSetDiscount(Player player, CustomArmorItem.ArmorSet set) {
         long total = 0;
         for (CustomArmorItem piece : set.getPieces()) {
-            total += wornArmorTradeInValue(player, piece, true);
+            boolean diamondCounts = ItemSelectionUtils.rankMaterial(piece.getMaterial()) >= DIAMOND_RANK;
+            total += wornArmorTradeInValue(player, piece, diamondCounts);
         }
         return total;
+    }
+
+    /**
+     * Whether shop armor worn in a set piece's slot is better than the piece, so buying the set
+     * keeps it (back in the inventory) rather than trading it in - a diamond helmet under the
+     * Dragon set's iron helmet.
+     */
+    public static boolean keptOverSetPiece(ItemStack worn, CustomArmorItem piece) {
+        return ItemSelectionUtils.rankMaterial(worn.getType()) > ItemSelectionUtils.rankMaterial(piece.getMaterial());
     }
 
     /**

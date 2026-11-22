@@ -426,8 +426,13 @@ public class ShopService {
                                 replacedSetItems.put(slot, currentArmor.clone());
                                 ItemUtils.returnItemToInventoryOrDrop(player, currentArmor.clone());
                             } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
-                                // Purchased vanilla armor (iron/diamond) - track but don't return to inventory
-                                replacedSetItems.put(slot, currentArmor.clone());
+                                if (DiscountService.keptOverSetPiece(currentArmor, piece)) {
+                                    // Better than the set piece: kept, not traded in
+                                    ItemUtils.returnItemToInventoryOrDrop(player, currentArmor.clone());
+                                } else {
+                                    // Purchased vanilla armor (iron/diamond) - track but don't return to inventory
+                                    replacedSetItems.put(slot, currentArmor.clone());
+                                }
                             }
                         }
 

@@ -419,9 +419,11 @@ public class ArmorCategoryGui extends AbstractShopCategoryGui {
                     replacedSetItems.put(slot, clonedArmor);
                     ItemUtils.returnItemToInventoryOrDrop(player, currentArmor.clone());
                 } else if (PDCDetection.getAnyShopTag(currentArmor) != null) {
-                    // Purchased vanilla armor (iron/diamond): track for refund but don't return to inventory
-                    // The refund system will directly equip this from the map
-                    replacedSetItems.put(slot, clonedArmor);
+                    if (DiscountService.keptOverSetPiece(currentArmor, piece)) {
+                        ItemUtils.returnItemToInventoryOrDrop(player, currentArmor.clone());
+                    } else {
+                        replacedSetItems.put(slot, clonedArmor);
+                    }
                 }
             }
 
