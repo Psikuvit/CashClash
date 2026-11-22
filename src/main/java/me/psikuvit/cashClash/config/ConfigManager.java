@@ -108,6 +108,13 @@ public class ConfigManager {
         return config.getInt("game.combat-phase-duration", 360);
     }
 
+    /**
+     * Saturation every player gets as a round's combat starts - the buy phase sets it to 0.
+     */
+    public double getRoundStartSaturation() {
+        return config.getDouble("game.round-start-saturation", 5.0);
+    }
+
     public int getShoppingPhaseDuration() {
         return config.getInt("game.shopping-phase-duration", 90);
     }

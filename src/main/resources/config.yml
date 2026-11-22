@@ -33,6 +33,8 @@ game:
 
   # Phase durations (seconds)
   combat-phase-duration: 360
+  # Saturation every player starts a round's combat with (the buy phase sets it to 0)
+  round-start-saturation: 5.0
   shopping-phase-duration: 90
   first-round-shopping-duration: 120
   buff-selection-duration: 15

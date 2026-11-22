@@ -260,7 +260,7 @@ public class RoundManager {
 
                 CashClashPlayer.healToFull(p);
                 p.setFoodLevel(20);
-                p.setSaturation(20.0f);
+                p.setSaturation(0.0f);
                 KitService.restoreStarterArmor(p);
                 refillWaterBuckets(p);
                 if (roundNumber > 1) KitService.restoreStarterWaterBucket(p);
@@ -388,6 +388,12 @@ public class RoundManager {
         // fireDamage can be switched off on a loaded world from outside the plugin - lava then stops hurting
         if (session.getGameWorld() != null) {
             session.getGameWorld().setGameRule(GameRule.FIRE_DAMAGE, true);
+        }
+
+        float startSaturation = (float) config.getRoundStartSaturation();
+        for (UUID uuid : session.getPlayers()) {
+            Player p = Bukkit.getPlayer(uuid);
+            if (p != null && p.isOnline()) p.setSaturation(startSaturation);
         }
 
         // Teammate outlines, visible only to each player's own team (Feature #7-8)
