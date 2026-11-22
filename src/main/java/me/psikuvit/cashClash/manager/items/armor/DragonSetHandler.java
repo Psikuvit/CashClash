@@ -551,9 +551,21 @@ public class DragonSetHandler extends ArmorSetHandler {
      * Dragon kill effect: Strength + a swirling Dragon Fury veil.
      */
     public void onPlayerKillDragon(Player killer) {
-        if (!hasDragonSet(killer)) return;
+        grantKillStrength(killer, cfg.getDragonKillStrengthDuration() * 20);
+    }
 
-        CashClashPlayer.applyEffect(killer, PotionEffectType.STRENGTH, cfg.getDragonKillStrengthDuration() * 20, cfg.getDragonKillStrengthLevel());
+    /**
+     * An assist on a kill grants the kill's Strength for {@code assist-strength-duration-percent}
+     * (half) of its duration.
+     */
+    public void onPlayerAssistDragon(Player assister) {
+        grantKillStrength(assister, (int) Math.round(cfg.getDragonKillStrengthDuration() * 20 * cfg.getDragonAssistStrengthPercent() / 100.0));
+    }
+
+    private void grantKillStrength(Player killer, int durationTicks) {
+        if (!hasDragonSet(killer) || durationTicks <= 0) return;
+
+        CashClashPlayer.applyEffect(killer, PotionEffectType.STRENGTH, durationTicks, cfg.getDragonKillStrengthLevel());
         SoundUtils.play(killer, Sound.ENTITY_ENDER_DRAGON_GROWL, 0.4f, 1.6f);
 
         Color purple = Color.fromRGB(160, 40, 255);

@@ -128,6 +128,20 @@ public class EconomyManager {
     }
 
     /**
+     * The killer's teammates who assisted on a kill: they hit the victim within
+     * {@code assist-window-seconds} before it.
+     */
+    public static List<UUID> getAssisters(GameSession session, Player victim, Player killer) {
+        Team killerTeam = session.getPlayerTeam(killer);
+        if (killerTeam == null) return List.of();
+        long windowMs = CashClashPlugin.getInstance().getConfigManager().getAssistWindowSeconds() * 1000L;
+        return session.getAssistTracker().getRecentAttackers(victim.getUniqueId(), killer.getUniqueId(), windowMs)
+                .stream()
+                .filter(killerTeam::hasPlayer)
+                .toList();
+    }
+
+    /**
      * Moves the kill transfer off the victim's payout at the next buy phase and onto the killer's
      * and any assisting teammates': a percentage of that buy phase's pool. Nobody's balance
      * changes during the round, and a kill never creates money. The victim can't lose more than
@@ -145,11 +159,7 @@ public class EconomyManager {
         long victimPayout = standardShare(nextPool) + roundData.getPoolTransfers(victim.getUniqueId());
         long transfer = Math.max(0, Math.min(victimPayout, idealTransfer));
 
-        List<UUID> assisters = session.getAssistTracker()
-                .getRecentAttackers(victim.getUniqueId(), killer.getUniqueId(), cfg.getAssistWindowSeconds() * 1000L)
-                .stream()
-                .filter(killerTeam::hasPlayer)
-                .toList();
+        List<UUID> assisters = getAssisters(session, victim, killer);
         long assistShare = assisters.isEmpty() ? 0
                 : Math.min((long) (transfer * cfg.getKillTransferAssistSharePercent() / 100.0), transfer / assisters.size());
         long killerShare = transfer - assistShare * assisters.size();

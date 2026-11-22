@@ -966,6 +966,10 @@ public class ItemsConfig {
         return config.getDouble("custom-armor.deathmauler.kill-heal-amount", 8.0);
     }
 
+    public double getDeathmaulerAssistHealAmount() {
+        return config.getDouble("custom-armor.deathmauler.assist-heal-amount", 2.0);
+    }
+
     public int getDeathmaulerSoulBurstCooldown() {
         return config.getInt("custom-armor.deathmauler.soul-burst.cooldown-seconds", 35);
     }
@@ -1149,6 +1153,10 @@ public class ItemsConfig {
         return config.getInt("custom-armor.dragon.kill-strength-duration-seconds", 4);
     }
 
+    public double getDragonAssistStrengthPercent() {
+        return config.getDouble("custom-armor.dragon.assist-strength-duration-percent", 50);
+    }
+
     // Flamebringer Set
     public boolean getFlamebringerNoFireKb() {
         return config.getBoolean("custom-armor.flamebringer.no-fire-kb", true);
@@ -1177,6 +1185,10 @@ public class ItemsConfig {
 
     public int getFlamebringerKillsForPull() {
         return config.getInt("custom-armor.flamebringer.kills-for-pull", 2);
+    }
+
+    public double getFlamebringerAssistKillCredit() {
+        return config.getDouble("custom-armor.flamebringer.assist-kill-credit", 0.5);
     }
 
     public int getFlamebringerAbilityCooldownSeconds() {

@@ -281,6 +281,14 @@ public class GameListener implements Listener {
         armorManager.getHandler(DeathmaulerSetHandler.class).onPlayerKill(killer, session);
         armorManager.getHandler(DragonSetHandler.class).onPlayerKillDragon(killer);
         armorManager.getHandler(FlamebringerSetHandler.class).onFlamebringerKill(killer);
+
+        for (UUID assisterId : EconomyManager.getAssisters(session, victim, killer)) {
+            Player assister = Bukkit.getPlayer(assisterId);
+            if (assister == null) continue;
+            armorManager.getHandler(DeathmaulerSetHandler.class).onPlayerAssist(assister);
+            armorManager.getHandler(DragonSetHandler.class).onPlayerAssistDragon(assister);
+            armorManager.getHandler(FlamebringerSetHandler.class).onFlamebringerAssist(assister);
+        }
     }
 
     /**

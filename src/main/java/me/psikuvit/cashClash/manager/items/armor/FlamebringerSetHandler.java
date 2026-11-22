@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FlamebringerSetHandler extends ArmorSetHandler {
 
     private final Set<UUID> sneakReady = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, Integer> flamebringerKills; // Player -> kills charged toward the pull this round
+    private final Map<UUID, Double> flamebringerKills; // Player -> kill credit charged toward the pull this round
     private final Map<UUID, BukkitTask> flamebringerFireTask; // Player -> fire effect task
     private final Map<UUID, Long> flamebringerSpeedEndTime; // Player -> time when speed effect should end
     private final Map<UUID, BukkitTask> flamebringerTrailTasks; // Player -> fire trail task
@@ -69,7 +69,7 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
         List<HudSegment> segments = new ArrayList<>();
         addCooldownSegment(segments, player.getUniqueId(), CooldownManager.Keys.FLAMEBRINGER_LAVA_COOLDOWN, "flamebringer");
         segments.add(new HudSegment(hudText("flamebringer-pull",
-                "kills", String.valueOf(flamebringerKills.getOrDefault(player.getUniqueId(), 0)),
+                "kills", formatCredit(flamebringerKills.getOrDefault(player.getUniqueId(), 0.0)),
                 "max", String.valueOf(cfg.getFlamebringerKillsForPull())), false));
         return segments;
     }
@@ -187,18 +187,38 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
      * carry over into the next charge.
      */
     public void onFlamebringerKill(Player killer) {
-        if (!hasFlamebringerSet(killer)) return;
+        addPullCredit(killer, 1.0);
+    }
 
-        UUID id = killer.getUniqueId();
-        int needed = cfg.getFlamebringerKillsForPull();
-        int before = flamebringerKills.getOrDefault(id, 0);
+    /**
+     * An assist on a kill charges {@code assist-kill-credit} (half a kill) toward the pull.
+     */
+    public void onFlamebringerAssist(Player assister) {
+        addPullCredit(assister, cfg.getFlamebringerAssistKillCredit());
+    }
+
+    /**
+     * Charges kill credit toward the pull, never past the {@code kills-for-pull} it needs - a full
+     * kill at 1.5 of 2 only brings it to 2.
+     */
+    private void addPullCredit(Player player, double credit) {
+        if (!hasFlamebringerSet(player)) return;
+
+        UUID id = player.getUniqueId();
+        double needed = cfg.getFlamebringerKillsForPull();
+        double before = flamebringerKills.getOrDefault(id, 0.0);
         if (before >= needed) return;
 
-        flamebringerKills.put(id, before + 1);
-        if (before + 1 >= needed) {
-            Messages.send(killer, "armor.flamebringer-pull-ready");
-            SoundUtils.play(killer, Sound.ITEM_FIRECHARGE_USE, 1.0f, 0.6f);
+        double after = Math.min(needed, before + credit);
+        flamebringerKills.put(id, after);
+        if (after >= needed) {
+            Messages.send(player, "armor.flamebringer-pull-ready");
+            SoundUtils.play(player, Sound.ITEM_FIRECHARGE_USE, 1.0f, 0.6f);
         }
+    }
+
+    private static String formatCredit(double credit) {
+        return credit == Math.floor(credit) ? String.valueOf((int) credit) : String.valueOf(credit);
     }
 
     /**
@@ -219,7 +239,7 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
     private void tryActivatePull(Player player) {
         UUID id = player.getUniqueId();
         if (!player.isOnline() || player.isDead() || player.getGameMode() == GameMode.SPECTATOR) return;
-        if (flamebringerKills.getOrDefault(id, 0) < cfg.getFlamebringerKillsForPull()) return;
+        if (flamebringerKills.getOrDefault(id, 0.0) < cfg.getFlamebringerKillsForPull()) return;
         if (manager.isMythicShiftLocked(id)) return;
         if (CashClashPlugin.getInstance().getMythicItemManager().getHandler(AlchemistWandHandler.class).isTaunting(id)) return;
         if (CashClashPlugin.getInstance().getMythicItemManager().getHandler(WardenGlovesHandler.class).isRisingFuryActive(id)) return;
@@ -229,7 +249,7 @@ public class FlamebringerSetHandler extends ArmorSetHandler {
             return;
         }
 
-        flamebringerKills.put(id, 0);
+        flamebringerKills.put(id, 0.0);
         startGravitationalPull(player);
     }
 

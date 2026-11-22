@@ -80,9 +80,20 @@ public class DeathmaulerSetHandler extends ArmorSetHandler {
     }
 
     public void onPlayerKill(Player killer, GameSession session) {
+        healFromKill(killer, cfg.getDeathmaulerKillHealAmount());
+    }
+
+    /**
+     * An assist on a kill heals {@code assist-heal-amount} (a heart) instead of the kill's heal.
+     */
+    public void onPlayerAssist(Player assister) {
+        healFromKill(assister, cfg.getDeathmaulerAssistHealAmount());
+    }
+
+    private void healFromKill(Player killer, double amount) {
         if (!hasDeathmaulerSet(killer)) return;
 
-        CashClashPlayer.heal(killer, cfg.getDeathmaulerKillHealAmount());
+        CashClashPlayer.heal(killer, amount);
 
         Messages.send(killer, "armor.deathmauler-heal");
 

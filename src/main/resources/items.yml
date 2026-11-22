@@ -270,6 +270,8 @@ custom-armor:
   # Deathmauler Set
   deathmauler:
     kill-heal-amount: 8.0
+    # Health an assist on a kill heals instead (2 = one heart)
+    assist-heal-amount: 2.0
     extra-heart-chance: 0.30
     absorption:
       no-damage-delay-seconds: 8
@@ -303,6 +305,8 @@ custom-armor:
     rush-teammate-invincibility-seconds: 1
     kill-strength-level: 0
     kill-strength-duration-seconds: 4
+    # An assist on a kill grants the kill's Strength for this much of its duration, in percent
+    assist-strength-duration-percent: 50
     # Dragon Outrage's landing explosion
     outrage-damage: 18.0
 
@@ -315,6 +319,8 @@ custom-armor:
     pull-duration-seconds: 1.5
     pull-strength: 0.4
     kills-for-pull: 2
+    # Kill credit an assist charges toward the pull (a kill is 1); never past kills-for-pull
+    assist-kill-credit: 0.5
     # Cooldown after the lava speed boost triggers (no limit on uses per round)
     ability-cooldown-seconds: 15
 
