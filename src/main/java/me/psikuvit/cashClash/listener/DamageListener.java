@@ -1,5 +1,6 @@
 package me.psikuvit.cashClash.listener;
 
+import io.papermc.paper.event.entity.EntityKnockbackEvent;
 import io.papermc.paper.event.player.PrePlayerAttackEntityEvent;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
@@ -593,6 +594,18 @@ public class DamageListener implements Listener {
      * Outside a game there's no fall damage to go by, so {@code MoveListener} detects those
      * landings instead.
      */
+    /**
+     * Nothing knocks a player off course mid Dragon Outrage flight - a hit there used to throw
+     * the landing, and the scales with it.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onOutrageKnockback(EntityKnockbackEvent event) {
+        if (event.getEntity() instanceof Player player
+                && armorManager.getHandler(DragonSetHandler.class).isInDragonOutrage(player.getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler
     public void onFall(EntityDamageEvent event) {
         if (event.isCancelled()) return;

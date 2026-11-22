@@ -23,6 +23,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
@@ -46,6 +47,10 @@ public class DragonSetHandler extends ArmorSetHandler {
 
     /** Minimum gap between two Dragon Rush reminder playbacks for the same player. */
     private static final long RUSH_INDICATOR_INTERVAL_MS = 5_000L;
+    // Ticks after a Dragon Outrage launch before standing on the ground counts as landing (the
+    // launch tick itself still reads on-ground), and how long after landing its fall is still forgiven
+    private static final int OUTRAGE_LIFTOFF_TICKS = 3;
+    private static final long OUTRAGE_FALL_GRACE_MS = 1_000L;
 
     private final Set<UUID> sneakReady = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Integer> dragonScales; // Player -> charged scales (max 3)
@@ -56,6 +61,7 @@ public class DragonSetHandler extends ArmorSetHandler {
     private final Map<UUID, Long> nextRushIndicatorAt; // Player -> earliest epoch millis the reminder may replay
     private final Set<UUID> dragonOutrageIndicators; // Players with an active Dragon Outrage reminder
     private final Set<UUID> dragonOutrageActive; // Players mid Dragon Outrage flight (launch -> landing)
+    private final Map<UUID, Long> outrageLandedAt = new ConcurrentHashMap<>(); // Player -> when their last Outrage landed
 
     public DragonSetHandler(CustomArmorManager manager) {
         super(manager);
@@ -401,16 +407,65 @@ public class DragonSetHandler extends ArmorSetHandler {
 
         // Send the player ~5 blocks up; gravity brings them back down naturally
         player.setVelocity(new Vector(0, 1.2, 0));
+        watchOutrageLanding(player);
     }
 
     /**
-     * Cancel fall damage and release the storm when a player lands from Dragon Outrage.
+     * Releases the storm the moment a Dragon Outrage flight touches down, whatever the landing -
+     * going by fall damage alone, a hit that knocked the player onto a ledge too low to hurt
+     * them threw the scales away for nothing. Knockback can't change the flight either
+     * ({@link #isInDragonOutrage}).
+     */
+    private void watchOutrageLanding(Player player) {
+        UUID uuid = player.getUniqueId();
+        SchedulerUtils.runTaskTimer(new BukkitRunnable() {
+            private int ticks;
+
+            @Override
+            public void run() {
+                if (!dragonOutrageActive.contains(uuid)) {
+                    cancel();
+                    return;
+                }
+                if (!player.isOnline() || player.isDead()) {
+                    dragonOutrageActive.remove(uuid);
+                    cancel();
+                    return;
+                }
+                if (++ticks > OUTRAGE_LIFTOFF_TICKS && player.isOnGround()) {
+                    land(player);
+                    cancel();
+                }
+            }
+        }, 1L, 1L);
+    }
+
+    /**
+     * Whether a player is mid Dragon Outrage flight, where knockback doesn't move them.
+     */
+    public boolean isInDragonOutrage(UUID uuid) {
+        return dragonOutrageActive.contains(uuid);
+    }
+
+    /**
+     * Cancel fall damage and release the storm when a player lands from Dragon Outrage. The
+     * landing watcher may have released it a moment earlier - the fall damage is cancelled then
+     * too.
      */
     public void onDragonOutrageLanding(EntityDamageEvent event, Player player) {
         UUID uuid = player.getUniqueId();
-        if (!dragonOutrageActive.remove(uuid)) return;
+        if (dragonOutrageActive.contains(uuid)) {
+            event.setCancelled(true);
+            land(player);
+        } else if (outrageLandedAt.getOrDefault(uuid, 0L) > System.currentTimeMillis() - OUTRAGE_FALL_GRACE_MS) {
+            event.setCancelled(true);
+        }
+    }
 
-        event.setCancelled(true);
+    private void land(Player player) {
+        UUID uuid = player.getUniqueId();
+        if (!dragonOutrageActive.remove(uuid)) return;
+        outrageLandedAt.put(uuid, System.currentTimeMillis());
         dragonOutrageExplosion(player, player.getLocation());
     }
 
@@ -516,6 +571,7 @@ public class DragonSetHandler extends ArmorSetHandler {
         nextRushIndicatorAt.clear();
         dragonOutrageIndicators.clear();
         dragonOutrageActive.clear();
+        outrageLandedAt.clear();
     }
 
     @Override
@@ -528,5 +584,6 @@ public class DragonSetHandler extends ArmorSetHandler {
         nextRushIndicatorAt.clear();
         dragonOutrageIndicators.clear();
         dragonOutrageActive.clear();
+        outrageLandedAt.clear();
     }
 }
