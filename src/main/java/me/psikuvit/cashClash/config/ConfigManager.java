@@ -808,6 +808,14 @@ public class ConfigManager {
         return Math.max(1, config.getInt("practice-range.health-bar-segments", 10));
     }
 
+    public double getPracticePiglinLeverDamagePercent() {
+        return config.getDouble("practice-range.piglin-lever-damage-percent", 30);
+    }
+
+    public int getPracticePiglinRespawnSeconds() {
+        return config.getInt("practice-range.piglin-respawn-seconds", 3);
+    }
+
     // ==================== HUB SETTINGS ====================
 
     public String getDiscordLink() {

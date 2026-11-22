@@ -6,6 +6,7 @@ import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.util.LocationUtils;
 import me.psikuvit.cashClash.util.Messages;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
@@ -19,13 +20,13 @@ import java.util.Locale;
 /**
  * /cc practice - enters the practice range. Admins set it up with
  * /cc practice setspawn | setvillager | addskeleton | addpiglin | zombiestart | zombieend |
- * setboss | clear, each using where they're standing, and setbossbutton, using the button
- * they're looking at.
+ * setboss | clear, each using where they're standing, and setbossbutton / setpiglinlever, using
+ * the button or lever they're looking at.
  */
 public class PracticeCommand extends AbstractArgCommand {
 
     private static final List<String> SETUP = List.of("setspawn", "setvillager", "addskeleton", "addpiglin",
-            "zombiestart", "zombieend", "setboss", "setbossbutton", "clear");
+            "zombiestart", "zombieend", "setboss", "setbossbutton", "setpiglinlever", "clear");
 
     public PracticeCommand() {
         super("practice", Collections.emptyList(), null);
@@ -74,6 +75,15 @@ public class PracticeCommand extends AbstractArgCommand {
                 } else {
                     practice.setBossButton(button.getLocation());
                     Messages.send(player, "practice.boss-button-set");
+                }
+            }
+            case "setpiglinlever" -> {
+                Block lever = player.getTargetBlockExact(5);
+                if (lever == null || lever.getType() != Material.LEVER) {
+                    Messages.send(player, "practice.piglin-lever-not-lever");
+                } else {
+                    practice.setPiglinLever(lever.getLocation());
+                    Messages.send(player, "practice.piglin-lever-set");
                 }
             }
             case "zombiestart" -> {

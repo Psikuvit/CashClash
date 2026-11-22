@@ -725,6 +725,11 @@ practice-range:
   # Pieces in the health bar after each enemy's (and piglin's) name (the look is
   # practice.health-bar-* in messages.yml)
   health-bar-segments: 10
+  # Each flick of the piglin lever (/cc practice setpiglinlever) takes this much of every
+  # piglin's max health off, in percent - one already that low dies instead
+  piglin-lever-damage-percent: 30
+  # How long after dying a piglin comes back (seconds)
+  piglin-respawn-seconds: 3
 
 # ============================================
 # HUB SETTINGS

@@ -80,6 +80,9 @@ import java.util.UUID;
  */
 public class PracticeRangeManager implements Shutdownable, Listener {
 
+    // A piglin lever flick that would leave a piglin with this share of its max health or less kills it
+    private static final double PIGLIN_LEVER_KILL_SHARE = 0.01;
+
     private enum MobKind { SKELETON, ZOMBIE, PIGLIN }
 
     private record ZombiePath(Location start, Location end) {}
@@ -114,6 +117,7 @@ public class PracticeRangeManager implements Shutdownable, Listener {
     private Location villagerLocation;
     private Location bossSpawn;
     private Location bossButton;
+    private Location piglinLever;
     private final List<Location> skeletonSpots = new ArrayList<>();
     private final List<Location> piglinSpots = new ArrayList<>();
     private final List<ZombiePath> zombiePaths = new ArrayList<>();
@@ -540,7 +544,8 @@ public class PracticeRangeManager implements Shutdownable, Listener {
                 case ZOMBIE -> { if (slot.index() < zombiePaths.size()) spawnZombie(slot.index()); }
                 case PIGLIN -> { if (slot.index() < piglinSpots.size()) spawnPiglin(slot.index()); }
             }
-        }, configManager.getPracticeMobRespawnSeconds() * 20L);
+        }, (slot.kind() == MobKind.PIGLIN ? configManager.getPracticePiglinRespawnSeconds()
+                : configManager.getPracticeMobRespawnSeconds()) * 20L);
         respawnTasks.add(task[0]);
     }
 
@@ -640,6 +645,28 @@ public class PracticeRangeManager implements Shutdownable, Listener {
         toggleBoss();
     }
 
+    /**
+     * Each flick of the piglin lever takes {@code piglin-lever-damage-percent} of every piglin's
+     * max health off - 100% to 70, 40, 10 - and kills one that's already that low.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPiglinLever(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND) return;
+        Block block = event.getClickedBlock();
+        if (block == null || piglinLever == null || !block.getLocation().equals(piglinLever)) return;
+        if (!isPracticing(event.getPlayer())) return;
+
+        double damageShare = configManager.getPracticePiglinLeverDamagePercent() / 100.0;
+        for (Map.Entry<UUID, MobSlot> entry : mobs.entrySet()) {
+            if (entry.getValue().kind() != MobKind.PIGLIN || !(Bukkit.getEntity(entry.getKey()) instanceof LivingEntity piglin)) continue;
+
+            AttributeInstance maxHealth = piglin.getAttribute(Attribute.MAX_HEALTH);
+            double max = maxHealth != null ? maxHealth.getValue() : piglin.getHealth();
+            double health = piglin.getHealth() - max * damageShare;
+            piglin.setHealth(health <= max * PIGLIN_LEVER_KILL_SHARE ? 0 : health);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGH)
     public void onShopVillagerClick(PlayerInteractEntityEvent event) {
         if (!(event.getRightClicked() instanceof Villager npc)) return;
@@ -706,6 +733,14 @@ public class PracticeRangeManager implements Shutdownable, Listener {
         save();
     }
 
+    /**
+     * @param loc the lever block's location
+     */
+    public void setPiglinLever(Location loc) {
+        piglinLever = loc;
+        save();
+    }
+
     public void setPendingZombieStart(Player admin, Location loc) {
         pendingZombieStarts.put(admin.getUniqueId(), loc);
     }
@@ -746,6 +781,7 @@ public class PracticeRangeManager implements Shutdownable, Listener {
         villagerLocation = readLocation(data.getConfigurationSection("villager"));
         bossSpawn = readLocation(data.getConfigurationSection("boss"));
         bossButton = readLocation(data.getConfigurationSection("boss-button"));
+        piglinLever = readLocation(data.getConfigurationSection("piglin-lever"));
         readLocations(data.getConfigurationSection("skeletons"), skeletonSpots);
         readLocations(data.getConfigurationSection("piglins"), piglinSpots);
 
@@ -777,6 +813,7 @@ public class PracticeRangeManager implements Shutdownable, Listener {
         LocationUtils.serializeLocation(data, "villager", villagerLocation);
         LocationUtils.serializeLocation(data, "boss", bossSpawn);
         LocationUtils.serializeLocation(data, "boss-button", bossButton);
+        LocationUtils.serializeLocation(data, "piglin-lever", piglinLever);
         for (int i = 0; i < skeletonSpots.size(); i++) {
             LocationUtils.serializeLocation(data, "skeletons." + i, skeletonSpots.get(i));
         }
