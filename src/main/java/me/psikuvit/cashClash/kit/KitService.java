@@ -19,8 +19,10 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionType;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -250,24 +252,46 @@ public class KitService {
     }
 
     /**
-     * Fills the starter water bucket back up: a player holding no water bucket has an empty
-     * bucket filled, or is given a new one. Returns whether they got one.
+     * Puts a player's buckets back the way they started, at every buy phase from round 2: the
+     * Pyromaniac's lava bucket is lava again and every other bucket is water, whatever each was
+     * emptied into or scooped up since - a lava bucket refilled with water comes back as lava,
+     * and the other way round. Someone left without a bucket gets their starting ones back.
      */
-    public static boolean restoreStarterWaterBucket(Player player) {
+    public static void restoreBuckets(Player player, Kit kit) {
         PlayerInventory inventory = player.getInventory();
-        if (inventory.contains(Material.WATER_BUCKET)) return false;
+        int lavaBuckets = kit == Kit.PYROMANIAC ? 1 : 0;
 
-        ItemStack waterBucket = starter(new ItemStack(Material.WATER_BUCKET));
-        markKitItem(waterBucket);
-        int emptySlot = inventory.first(Material.BUCKET);
-        ItemStack empty = emptySlot >= 0 ? inventory.getItem(emptySlot) : null;
-        if (empty != null && empty.getAmount() == 1) {
-            inventory.setItem(emptySlot, waterBucket);
-        } else {
-            if (empty != null) empty.setAmount(empty.getAmount() - 1);
-            inventory.addItem(waterBucket);
+        List<Integer> lavaSlots = new ArrayList<>();
+        List<Integer> otherSlots = new ArrayList<>();
+        int total = 0;
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            ItemStack item = inventory.getItem(slot);
+            if (item == null) continue;
+            Material type = item.getType();
+            if (type == Material.LAVA_BUCKET) {
+                lavaSlots.add(slot);
+            } else if (type == Material.WATER_BUCKET || type == Material.BUCKET) {
+                otherSlots.add(slot);
+            } else {
+                continue;
+            }
+            total += item.getAmount();
+            inventory.setItem(slot, null);
         }
-        return true;
+
+        List<Integer> slots = new ArrayList<>(lavaSlots);
+        slots.addAll(otherSlots);
+        total = Math.max(total, lavaBuckets + 1);
+        for (int i = 0; i < total; i++) {
+            ItemStack bucket = new ItemStack(i < lavaBuckets ? Material.LAVA_BUCKET : Material.WATER_BUCKET);
+            markKitItem(bucket);
+            if (i >= lavaBuckets) starter(bucket);
+            if (i < slots.size()) {
+                inventory.setItem(slots.get(i), bucket);
+            } else {
+                inventory.addItem(bucket);
+            }
+        }
     }
 
     private static boolean isEmptySlot(ItemStack item) {

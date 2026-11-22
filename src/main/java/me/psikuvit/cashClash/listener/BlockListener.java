@@ -1,6 +1,5 @@
 package me.psikuvit.cashClash.listener;
 
-import me.psikuvit.cashClash.CashClashPlugin;
 import me.psikuvit.cashClash.config.ConfigManager;
 import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
@@ -122,7 +121,6 @@ public class BlockListener implements Listener {
     private final Map<UUID, Long> bucketRedirectedAt = new ConcurrentHashMap<>();
     // How many leaves each player has placed this round, per game - each step shortens the next ones
     private static final Map<UUID, Map<UUID, Integer>> leavesPlacedThisRound = new ConcurrentHashMap<>();
-    private static final Map<UUID, Map<UUID, Integer>> playerWaterBucketRefillCount = new ConcurrentHashMap<>();
     // What a placed fluid displaced, so the map can be put back exactly as it was once the
     // fluid despawns rather than left as a hole where a plant or lever used to be.
     private static final Map<Location, BlockData> fluidReplacedBlocks = new ConcurrentHashMap<>();
@@ -204,28 +202,11 @@ public class BlockListener implements Listener {
         placedBlocks.remove(sessionId);
         leavesPlacedThisRound.remove(sessionId);
         waterLavaSourceCount.remove(sessionId);
-        playerWaterBucketRefillCount.remove(sessionId);
         fluidCells.entrySet().removeIf(entry -> {
             if (!entry.getValue().sessionId.equals(sessionId)) return false;
             fluidReplacedBlocks.remove(entry.getKey());
             return true;
         });
-    }
-
-    /**
-     * Queue a water bucket refill for the player to receive during the next shopping phase.
-     */
-    private static void queueWaterBucketRefill(Player player) {
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (session == null) {
-            return;
-        }
-
-        UUID sessionId = session.getSessionId();
-        UUID playerId = player.getUniqueId();
-        playerWaterBucketRefillCount
-            .computeIfAbsent(sessionId, k -> new ConcurrentHashMap<>())
-            .merge(playerId, 1, Integer::sum);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -338,10 +319,6 @@ public class BlockListener implements Listener {
         PlacedFluid placement = placeQuickFluid(target, origin, fluid, zoneId);
         if (placedHere != null && placedHere.active && placedHere.fluid == fluid) {
             joinPlacements(placedHere, placement);
-        }
-
-        if (water) {
-            queueWaterBucketRefill(player);
         }
 
         Messages.debug(player, "FLUID", "bucket " + fluid + " at " + at(origin)
@@ -621,51 +598,6 @@ public class BlockListener implements Listener {
         }
     }
 
-    /**
-     * Refill all queued water buckets for a player during the shopping phase.
-     * Replaces empty buckets in inventory with full ones.
-     */
-    public static void refillWaterBuckets(Player player) {
-        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
-        if (session == null) {
-            return;
-        }
-
-        Map<UUID, Integer> counts = playerWaterBucketRefillCount.get(session.getSessionId());
-        if (counts == null) {
-            return;
-        }
-
-        int refillCount = counts.getOrDefault(player.getUniqueId(), 0);
-        if (refillCount <= 0) {
-            return;
-        }
-
-        counts.remove(player.getUniqueId());
-
-        ItemStack[] contents = player.getInventory().getContents();
-        int refilled = 0;
-        for (int i = 0; i < contents.length && refilled < refillCount; i++) {
-            ItemStack item = contents[i];
-            if (item != null && item.getType() == Material.BUCKET) {
-                if (item.getAmount() > 1) {
-                    item.setAmount(item.getAmount() - 1);
-                    player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
-                } else {
-                    contents[i] = new ItemStack(Material.WATER_BUCKET);
-                }
-                refilled++;
-            }
-        }
-
-        while (refilled < refillCount) {
-            player.getInventory().addItem(new ItemStack(Material.WATER_BUCKET));
-            refilled++;
-        }
-
-        player.getInventory().setContents(contents);
-    }
-
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockPlaceGame(BlockPlaceEvent event) {
         if (event.isCancelled()) return;
@@ -839,11 +771,6 @@ public class BlockListener implements Listener {
         placeQuickFluid(event.getBlock(), origin, blockType, sessionId);
         showDespawnTimer(event.getBlock(), blockType, itemsConfig.getFluidDespawnSeconds(blockType) * 20L,
                 blockType == Material.WATER ? "aqua" : "gold");
-
-        // Schedule water bucket refill (only for water, not lava)
-        if (blockType == Material.WATER) {
-            queueWaterBucketRefill(player);
-        }
         return true;
     }
 

@@ -13,7 +13,6 @@ import me.psikuvit.cashClash.gamemode.Gamemode;
 import me.psikuvit.cashClash.gamemode.impl.CaptureTheFlagGamemode;
 import me.psikuvit.cashClash.gamemode.impl.ProtectThePresidentGamemode;
 import me.psikuvit.cashClash.kit.KitService;
-import me.psikuvit.cashClash.listener.BlockListener;
 import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.TectonicCapHandler;
 import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
@@ -262,8 +261,8 @@ public class RoundManager {
                 p.setFoodLevel(20);
                 p.setSaturation(0.0f);
                 KitService.restoreStarterArmor(p);
-                refillWaterBuckets(p);
-                if (roundNumber > 1) KitService.restoreStarterWaterBucket(p);
+                CashClashPlayer ccp = session.getCashClashPlayer(uuid);
+                if (roundNumber > 1 && ccp != null) KitService.restoreBuckets(p, ccp.getCurrentKit());
                 EconomyManager.sendRoundEarnings(session, p);
             }
             SchedulerUtils.runTaskLater(this::refreshEquipment, EQUIPMENT_REFRESH_DELAY_TICKS);
@@ -605,11 +604,4 @@ public class RoundManager {
     public int getTimeRemaining() {
         return timeRemaining;
     }
-
-     /**
-      * Refill all water buckets in a player's inventory during shopping phase.
-      */
-     private void refillWaterBuckets(Player player) {
-           BlockListener.refillWaterBuckets(player);
-     }
 }
