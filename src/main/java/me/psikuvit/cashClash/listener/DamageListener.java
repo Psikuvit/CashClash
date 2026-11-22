@@ -43,6 +43,7 @@ import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.items.PDCDetection;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
@@ -121,7 +122,12 @@ public class DamageListener implements Listener {
         }
 
         if (event.getCause() == EntityDamageEvent.DamageCause.VOID) {
-            event.setDamage(1000.0);
+            // Vanilla's void damage gets through spectator mode's invulnerability
+            if (player.getGameMode() == GameMode.SPECTATOR) {
+                event.setCancelled(true);
+            } else {
+                event.setDamage(1000.0);
+            }
             return;
         }
 
