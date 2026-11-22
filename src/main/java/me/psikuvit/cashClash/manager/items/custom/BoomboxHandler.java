@@ -13,6 +13,7 @@ import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.ParticleUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
+import me.psikuvit.cashClash.util.game.AbilityTargets;
 import me.psikuvit.cashClash.util.items.BlockModelDisplay;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -151,7 +152,8 @@ public class BoomboxHandler extends CustomItemHandler {
 
         GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(placer);
         if (session == null) {
-            if (placer.isOnline() && placer.getWorld().equals(world) && placer.getLocation().distance(center) <= radius) {
+            if (placer.isOnline() && !AbilityTargets.isSpectator(placer) && placer.getWorld().equals(world)
+                    && placer.getLocation().distance(center) <= radius) {
                 CashClashPlayer.applyEffect(placer, PotionEffectType.SPEED, durationTicks, amplifier, false, true);
             }
             return;
@@ -161,7 +163,7 @@ public class BoomboxHandler extends CustomItemHandler {
         if (placerTeam == null) return;
 
         for (Entity entity : world.getNearbyEntities(center, radius, radius, radius)) {
-            if (!(entity instanceof Player target)) continue;
+            if (!(entity instanceof Player target) || AbilityTargets.isSpectator(target)) continue;
             Team targetTeam = session.getPlayerTeam(target);
             if (targetTeam == null || targetTeam.getTeamNumber() != placerTeam.getTeamNumber()) continue;
             if (session.getGamemode() instanceof CaptureTheFlagGamemode ctf && ctf.isSilenced(target.getUniqueId())) continue;
