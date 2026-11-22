@@ -467,6 +467,13 @@ public class ItemsConfig {
         return config.getDouble("mythic-items.alchemist-wand.blink-swap.range", 10.0);
     }
 
+    /**
+     * How wide a teammate counts as when aiming Blink Swap at them: 1 as they are, 2 twice as wide.
+     */
+    public double getAlchemistBlinkSwapHitboxSize() {
+        return config.getDouble("mythic-items.alchemist-wand.blink-swap.hitbox-size", 1.0);
+    }
+
     // Alchemist Wand Tidy Up
     public int getAlchemistTidyUpDuration() {
         return config.getInt("mythic-items.alchemist-wand.tidy-up.duration-seconds", 10);

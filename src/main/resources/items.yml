@@ -176,6 +176,9 @@ mythic-items:
       teammate-protection-hits: 1
       protection-seconds: 5
       range: 10.0
+      # How wide a teammate counts as when you aim at them: 1 as they are, 2 twice as wide (easier
+      # to hit), 0.5 half
+      hitbox-size: 1.0
     # Tidy Up - Left click to see everyone's potion effects; your next melee hit cleanses
     # your team's debuffs (if you hit a teammate) or strips the enemy team's buffs (if you
     # hit an enemy). An effect with at most remove-max-seconds left is removed; a longer one

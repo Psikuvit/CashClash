@@ -30,7 +30,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayDeque;
@@ -115,24 +114,10 @@ public class AlchemistWandHandler extends MythicItemHandler {
             return;
         }
 
-        Location start = player.getEyeLocation();
-        Vector direction = start.getDirection().normalize();
-
-        RayTraceResult result = player.getWorld().rayTraceEntities(
-                start,
-                direction,
-                cfg.getAlchemistBlinkSwapRange(),
-                0.1,
-                entity -> AbilityTargets.isAlly(player, entity)
-        );
-
-        if (result == null || !(result.getHitEntity() instanceof LivingEntity target)) {
-            Messages.debug(player, "ALCHEMIST_WAND: No valid teammate target");
-            return;
-        }
-
-        if (!player.hasLineOfSight(target)) {
-            Messages.debug(player, "ALCHEMIST_WAND: Target is not in line of sight");
+        LivingEntity target = AbilityTargets.lookedAt(player, cfg.getAlchemistBlinkSwapRange(),
+                cfg.getAlchemistBlinkSwapHitboxSize(), entity -> AbilityTargets.isAlly(player, entity));
+        if (target == null) {
+            Messages.debug(player, "ALCHEMIST_WAND: No teammate in sight");
             return;
         }
 

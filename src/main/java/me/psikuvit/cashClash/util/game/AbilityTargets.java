@@ -17,9 +17,11 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.RayTraceResult;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Who an item ability hits and who it helps. In a game that's decided by team. Outside one - the
@@ -29,8 +31,27 @@ import java.util.List;
  */
 public final class AbilityTargets {
 
+    // A look-at ray's own thickness at hitbox size 1, and half a player's width, which each step of
+    // hitbox size adds to every side of a target
+    private static final double BASE_RAY_SIZE = 0.1;
+    private static final double PLAYER_HALF_WIDTH = 0.3;
+
     private AbilityTargets() {
         throw new AssertionError("Nope.");
+    }
+
+    /**
+     * The entity a player is looking straight at within {@code range} that {@code filter} accepts,
+     * with a clear line of sight to it - or null. {@code hitboxSize} scales how wide a target
+     * counts as: 1 is as it is, 2 twice as wide, 0.5 half. Blink Swap and the Dragon set's
+     * teleport both aim through this.
+     */
+    public static LivingEntity lookedAt(Player player, double range, double hitboxSize, Predicate<Entity> filter) {
+        Location eye = player.getEyeLocation();
+        double raySize = Math.max(0.0, BASE_RAY_SIZE + PLAYER_HALF_WIDTH * (hitboxSize - 1.0));
+        RayTraceResult result = player.getWorld().rayTraceEntities(eye, eye.getDirection().normalize(), range, raySize, filter);
+        if (result == null || !(result.getHitEntity() instanceof LivingEntity target)) return null;
+        return player.hasLineOfSight(target) ? target : null;
     }
 
     public static boolean inGame(Player player) {
