@@ -102,7 +102,7 @@ public class PresidentialBuffSelectionUtils {
      * @return The created ItemStack
      */
     public static ItemStack createSpeedBuffItem() {
-        return createBuffSelectionItem("Speed Potion", description("speed-buff-description"), PotionType.SWIFTNESS);
+        return hidePotionContents(createBuffSelectionItem("Speed Potion", description("speed-buff-description"), PotionType.SWIFTNESS));
     }
 
     /**
