@@ -321,12 +321,12 @@ public class GameListener implements Listener {
     }
 
     /**
-     * Every death waits out {@code respawn-delay} plus the seconds of the zone it happened in -
-     * see {@link RespawnManager#deathDelaySeconds}.
+     * Every death adds the seconds of the zone it happened in to the player's respawn timer for
+     * the round - see {@link RespawnManager#recordDeath}.
      */
     private void handleTemporarySpectatorAndRespawn(Player player, GameSession session, Location spectatorLocation) {
         queueSpectatorTransition(player, spectatorLocation);
-        respawnManager.startRespawnTimer(player, respawnManager.deathDelaySeconds(player, session, spectatorLocation));
+        respawnManager.startRespawnTimer(player, respawnManager.recordDeath(player, session, spectatorLocation));
     }
 
     /**

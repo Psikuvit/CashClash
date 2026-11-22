@@ -43,23 +43,36 @@ public class RespawnManager implements Shutdownable {
     private final Map<UUID, Long> deadlines;
     private final Map<UUID, BukkitTask> respawnTasks;
     private final Map<UUID, BukkitTask> countdownTasks;
+    private final Map<UUID, RoundPenalty> roundPenalties;
 
     public RespawnManager(ConfigManager configManager, GameManager gameManager) {
         this.configManager = configManager;
         this.gameManager = gameManager;
+        this.roundPenalties = new ConcurrentHashMap<>();
         this.deadlines = new ConcurrentHashMap<>();
         this.respawnTasks = new ConcurrentHashMap<>();
         this.countdownTasks = new ConcurrentHashMap<>();
     }
 
     /**
-     * The respawn timer a death at {@code deathLocation} gives: {@code respawn-delay}, plus the
-     * seconds of the zone it happened in once the map has both teams' spawn lines - the same for
-     * every death, all game.
+     * Records a death at {@code deathLocation} and returns the respawn timer it gives: every death
+     * in a round adds the seconds of the zone it happened in (own zone, neutral, enemy zone) to
+     * the player's timer, which starts each round at {@code respawn-delay}. Each death adds only
+     * what its own spot is worth - an earlier death's zone never changes what a later one adds.
      */
-    public int deathDelaySeconds(Player player, GameSession session, Location deathLocation) {
-        return configManager.getRespawnDelay() + spawnZoneDelay(player, session, deathLocation);
+    public int recordDeath(Player player, GameSession session, Location deathLocation) {
+        UUID uuid = player.getUniqueId();
+        RoundPenalty earlier = roundPenalties.get(uuid);
+        boolean sameRound = earlier != null && earlier.sessionId().equals(session.getSessionId())
+                && earlier.round() == session.getCurrentRound();
+        int added = (sameRound ? earlier.seconds() : 0) + spawnZoneDelay(player, session, deathLocation);
+
+        roundPenalties.put(uuid, new RoundPenalty(session.getSessionId(), session.getCurrentRound(), added));
+        return configManager.getRespawnDelay() + added;
     }
+
+    /** The seconds a player's deaths in one round of one game have added to their timer. */
+    private record RoundPenalty(UUID sessionId, int round, int seconds) {}
 
     /**
      * The seconds a death adds by where it happened: in your own team's zone, in the neutral zone
@@ -148,7 +161,7 @@ public class RespawnManager implements Shutdownable {
             if (leftMs <= 0) return false;
             seconds = (int) Math.ceil(leftMs / 1000.0);
         } else {
-            seconds = deathDelaySeconds(player, session, spot);
+            seconds = recordDeath(player, session, spot);
         }
 
         spectate(player, spot, leftAlive);
@@ -276,5 +289,6 @@ public class RespawnManager implements Shutdownable {
         respawnTasks.clear();
         countdownTasks.clear();
         deadlines.clear();
+        roundPenalties.clear();
     }
 }
