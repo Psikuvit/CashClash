@@ -8,6 +8,7 @@ import me.psikuvit.cashClash.util.Keys;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.items.ItemFactory;
 import me.psikuvit.cashClash.util.items.ItemUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
 import me.psikuvit.cashClash.util.items.PDCSetter;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -19,10 +20,8 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionType;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -252,46 +251,73 @@ public class KitService {
     }
 
     /**
-     * Puts a player's buckets back the way they started, at every buy phase from round 2: the
-     * Pyromaniac's lava bucket is lava again and every other bucket is water, whatever each was
-     * emptied into or scooped up since - a lava bucket refilled with water comes back as lava,
-     * and the other way round. Someone left without a bucket gets their starting ones back.
+     * Puts every bucket a player has back to what it was first bought or given as, at every buy
+     * phase from round 2 ({@link #originalBucket}): a lava bucket emptied and refilled with water
+     * is lava again, and the other way round. Someone left without any bucket gets their starting
+     * water bucket back.
      */
-    public static void restoreBuckets(Player player, Kit kit) {
+    public static void restoreBuckets(Player player) {
         PlayerInventory inventory = player.getInventory();
-        int lavaBuckets = kit == Kit.PYROMANIAC ? 1 : 0;
+        boolean any = false;
 
-        List<Integer> lavaSlots = new ArrayList<>();
-        List<Integer> otherSlots = new ArrayList<>();
-        int total = 0;
         for (int slot = 0; slot < inventory.getSize(); slot++) {
             ItemStack item = inventory.getItem(slot);
-            if (item == null) continue;
-            Material type = item.getType();
-            if (type == Material.LAVA_BUCKET) {
-                lavaSlots.add(slot);
-            } else if (type == Material.WATER_BUCKET || type == Material.BUCKET) {
-                otherSlots.add(slot);
-            } else {
-                continue;
+            if (item == null || !isBucket(item.getType())) continue;
+            any = true;
+
+            Material original = originalBucket(item);
+            if (item.getType() == original) continue;
+
+            ItemStack restored = bucketAs(item, original);
+            inventory.setItem(slot, restored);
+            for (int extra = 1; extra < item.getAmount(); extra++) {
+                inventory.addItem(restored.clone());
             }
-            total += item.getAmount();
-            inventory.setItem(slot, null);
         }
 
-        List<Integer> slots = new ArrayList<>(lavaSlots);
-        slots.addAll(otherSlots);
-        total = Math.max(total, lavaBuckets + 1);
-        for (int i = 0; i < total; i++) {
-            ItemStack bucket = new ItemStack(i < lavaBuckets ? Material.LAVA_BUCKET : Material.WATER_BUCKET);
-            markKitItem(bucket);
-            if (i >= lavaBuckets) starter(bucket);
-            if (i < slots.size()) {
-                inventory.setItem(slots.get(i), bucket);
-            } else {
-                inventory.addItem(bucket);
-            }
+        if (!any) {
+            ItemStack waterBucket = new ItemStack(Material.WATER_BUCKET);
+            markKitItem(waterBucket);
+            inventory.addItem(starter(waterBucket));
         }
+    }
+
+    /**
+     * What a bucket was first bought or given as - {@code WATER_BUCKET} or {@code LAVA_BUCKET}.
+     * A bucket that has never been emptied or refilled is still what it started as; once it has,
+     * its {@link Keys#BUCKET_ORIGIN} tag says ({@link #bucketAs}). An empty bucket without one
+     * counts as water.
+     */
+    public static Material originalBucket(ItemStack bucket) {
+        String origin = bucket.getPersistentDataContainer().get(Keys.BUCKET_ORIGIN, PersistentDataType.STRING);
+        if (origin != null) {
+            Material material = Material.matchMaterial(origin);
+            if (material == Material.LAVA_BUCKET || material == Material.WATER_BUCKET) return material;
+        }
+        return bucket.getType() == Material.LAVA_BUCKET ? Material.LAVA_BUCKET : Material.WATER_BUCKET;
+    }
+
+    /**
+     * {@code from} turned into a bucket of {@code type}, keeping its tags and what it was first
+     * bought or given as. Vanilla hands back a fresh, untagged bucket every time one is emptied
+     * or filled, so every empty and fill goes through this. A shop bucket going back to its own
+     * fluid is the shop's item again, name and model included.
+     */
+    public static ItemStack bucketAs(ItemStack from, Material type) {
+        Material original = originalBucket(from);
+        UtilityItem bought = PDCDetection.getUtility(from);
+        ItemStack bucket = bought != null && bought.getMaterial() == type
+                ? CashClashPlugin.getInstance().getItemFactory().createGameplayItem(bought)
+                : new ItemStack(type);
+        bucket.editPersistentDataContainer(pdc -> {
+            from.getPersistentDataContainer().copyTo(pdc, true);
+            pdc.set(Keys.BUCKET_ORIGIN, PersistentDataType.STRING, original.name());
+        });
+        return bucket;
+    }
+
+    private static boolean isBucket(Material type) {
+        return type == Material.WATER_BUCKET || type == Material.LAVA_BUCKET || type == Material.BUCKET;
     }
 
     private static boolean isEmptySlot(ItemStack item) {

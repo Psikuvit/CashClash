@@ -5,6 +5,7 @@ import me.psikuvit.cashClash.config.ItemsConfig;
 import me.psikuvit.cashClash.game.GameSession;
 import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.kit.KitService;
 import me.psikuvit.cashClash.manager.game.GameManager;
 import me.psikuvit.cashClash.manager.lobby.PracticeRangeManager;
 import me.psikuvit.cashClash.util.Messages;
@@ -239,6 +240,33 @@ public class BlockListener implements Listener {
     }
 
     /**
+     * Every water and lava bucket keeps what it was first bought or given as through being
+     * emptied and refilled (vanilla hands back a fresh, untagged bucket each time), so the buy
+     * phase can put it back - see {@link KitService#restoreBuckets}.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBucketEmptyKeepOrigin(PlayerBucketEmptyEvent event) {
+        ItemStack used = event.getPlayer().getInventory().getItem(event.getHand());
+        if (event.getPlayer().getGameMode() == GameMode.CREATIVE || !isFluidBucket(used)) return;
+        event.setItemStack(KitService.bucketAs(used, Material.BUCKET));
+    }
+
+    /**
+     * @see #onBucketEmptyKeepOrigin
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBucketFillKeepOrigin(PlayerBucketFillEvent event) {
+        ItemStack used = event.getPlayer().getInventory().getItem(event.getHand());
+        ItemStack filled = event.getItemStack();
+        if (event.getPlayer().getGameMode() == GameMode.CREATIVE || used.getType() != Material.BUCKET || !isFluidBucket(filled)) return;
+        event.setItemStack(KitService.bucketAs(used, filled.getType()));
+    }
+
+    private static boolean isFluidBucket(ItemStack item) {
+        return item != null && (item.getType() == Material.WATER_BUCKET || item.getType() == Material.LAVA_BUCKET);
+    }
+
+    /**
      * Buckets only empty during combat: in the buy phase (or any other moment the game holds
      * actions back) the bucket stays full and the player is told why.
      */
@@ -288,7 +316,9 @@ public class BlockListener implements Listener {
             return;
         }
 
-        if (player.getGameMode() != GameMode.CREATIVE) player.getInventory().setItem(hand, new ItemStack(Material.BUCKET));
+        if (player.getGameMode() != GameMode.CREATIVE) {
+            player.getInventory().setItem(hand, KitService.bucketAs(player.getInventory().getItem(hand), Material.BUCKET));
+        }
         player.swingHand(hand);
         bucketRedirectedAt.put(player.getUniqueId(), System.currentTimeMillis());
         SoundUtils.playAt(inFront.getLocation(), Sound.ITEM_BUCKET_EMPTY, 1.0f, 1.0f);

@@ -261,8 +261,7 @@ public class RoundManager {
                 p.setFoodLevel(20);
                 p.setSaturation(0.0f);
                 KitService.restoreStarterArmor(p);
-                CashClashPlayer ccp = session.getCashClashPlayer(uuid);
-                if (roundNumber > 1 && ccp != null) KitService.restoreBuckets(p, ccp.getCurrentKit());
+                if (roundNumber > 1) KitService.restoreBuckets(p);
                 EconomyManager.sendRoundEarnings(session, p);
             }
             SchedulerUtils.runTaskLater(this::refreshEquipment, EQUIPMENT_REFRESH_DELAY_TICKS);

@@ -158,6 +158,12 @@ public class Keys {
     public static final NamespacedKey GOBLIN_SPEAR_HIT_PROCESSED;
 
     /**
+     * What a bucket item was first bought or given as ({@code WATER_BUCKET} / {@code LAVA_BUCKET}),
+     * carried over every time it's emptied or refilled - see {@code KitService#restoreBuckets}.
+     */
+    public static final NamespacedKey BUCKET_ORIGIN;
+
+    /**
      * Electric Eel Sword's zap-dash slow AttributeModifier key.
      */
     public static final NamespacedKey EEL_SLOW;
@@ -257,6 +263,7 @@ public class Keys {
         WARDEN_REACH_STACK_3 = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_3");
         WARDEN_GLOVES_COSMETIC = new NamespacedKey(CashClashPlugin.getInstance(), "warden_gloves_cosmetic");
         GOBLIN_SPEAR_HIT_PROCESSED = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_spear_hit_processed");
+        BUCKET_ORIGIN = new NamespacedKey(CashClashPlugin.getInstance(), "bucket_origin");
         EEL_SLOW = new NamespacedKey(CashClashPlugin.getInstance(), "electric_eel_dash_slow");
         LOTUS_SLOW = new NamespacedKey(CashClashPlugin.getInstance(), "radiating_lotus_slow");
         OVERDRIVE_SPEED = new NamespacedKey(CashClashPlugin.getInstance(), "overdrive_speed");
