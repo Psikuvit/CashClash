@@ -15,6 +15,8 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.List;
+
 /**
  * Trade-in discounts: an item that replaces the player's gear is cheaper by what that gear cost.
  * Only shop-bought gear counts (identified by its shop tag, so starter gear never does), and only
@@ -115,7 +117,7 @@ public final class DiscountService {
 
     private static long mythicDiscount(Player player, MythicItem mythic) {
         return switch (mythic) {
-            case CARLS_BATTLEAXE -> weaponTradeInValue(player, WeaponItem.IRON_AXE, WeaponItem.DIAMOND_AXE);
+            case CARLS_BATTLEAXE -> weaponTradeInValue(player, WeaponItem.STONE_AXE, WeaponItem.IRON_AXE, WeaponItem.DIAMOND_AXE);
             case ELECTRIC_EEL_SWORD, WARDEN_GLOVES -> weaponTradeInValue(player, WeaponItem.IRON_SWORD, WeaponItem.DIAMOND_SWORD);
             case WIND_BOW -> bowTradeInValue(player);
             case BLOODWRENCH_CROSSBOW, BLAZEBITE_CROSSBOWS -> crossbowSlot(player) >= 0 ? UtilityItem.CROSSBOW.getPrice() : 0;
@@ -150,11 +152,24 @@ public final class DiscountService {
         return 0;
     }
 
-    private static long weaponTradeInValue(Player player, WeaponItem iron, WeaponItem diamond) {
-        WeaponItem best = bestOwnedWeapon(player, iron, diamond);
-        if (best == diamond) return iron.getPrice() + diamond.getPrice();
-        if (best == iron) return iron.getPrice();
-        return 0;
+    /**
+     * What the shop-bought weapons of an upgrade line ({@code line}, lowest tier first) are worth
+     * as a trade-in: every tier up to the best one the player carries, since each tier is bought
+     * on top of the one before - a diamond axe is the stone, iron and diamond axes' prices.
+     */
+    private static long weaponTradeInValue(Player player, WeaponItem... line) {
+        List<WeaponItem> tiers = List.of(line);
+        int best = -1;
+        for (ItemStack is : player.getInventory().getContents()) {
+            WeaponItem weapon = PDCDetection.getWeapon(is);
+            if (weapon != null) best = Math.max(best, tiers.indexOf(weapon));
+        }
+
+        long value = 0;
+        for (int tier = 0; tier <= best; tier++) {
+            value += line[tier].getPrice();
+        }
+        return value;
     }
 
     /**
