@@ -1,11 +1,20 @@
 package me.psikuvit.cashClash.manager.player;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.manager.Shutdownable;
+import me.psikuvit.cashClash.manager.game.GameManager;
+import me.psikuvit.cashClash.util.Messages;
+import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.TeamColorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.scoreboard.Scoreboard;
+
+import java.util.List;
 
 /**
  * Simple manager to centralize tab-list behavior per context (lobby / game session).
@@ -13,9 +22,23 @@ import org.bukkit.scoreboard.Scoreboard;
  * It keeps tab appearance consistent by setting the player's playerListName component
  * and ensuring the current scoreboard contains team entries for coloring.
  */
-public final class TabListManager {
+public final class TabListManager implements Shutdownable {
 
-    public TabListManager() {
+    private static final List<String> SESSION_PREFIXES = List.of("[R] ", "[B] ", "[?] ");
+
+    private final GameManager gameManager;
+    private BukkitTask leftoverCheck;
+
+    public TabListManager(GameManager gameManager) {
+        this.gameManager = gameManager;
+    }
+
+    /**
+     * Starts the once-a-second check for game tab names left on players out of every game
+     * ({@link #resetLeftoverSessionNames}).
+     */
+    public void start() {
+        leftoverCheck = SchedulerUtils.runTaskTimer(this::resetLeftoverSessionNames, 20L, 20L);
     }
 
     /**
@@ -58,5 +81,26 @@ public final class TabListManager {
         if (player == null || !player.isOnline()) return;
         player.playerListName(null);
     }
-}
 
+    /**
+     * Anyone out of every game whose tab name still starts with a game's [R]/[B]/[?] gets the
+     * lobby look back. Every way out of a game resets it already; this catches whatever puts a
+     * game name back on a player after that, within a second.
+     */
+    private void resetLeftoverSessionNames() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (gameManager.getPlayerSession(player) != null) continue;
+
+            String shown = PlainTextComponentSerializer.plainText().serialize(player.playerListName());
+            if (SESSION_PREFIXES.stream().noneMatch(shown::startsWith)) continue;
+
+            Messages.debug(player, Messages.DebugCategory.GAME, "Game tab name left on a player out of every game: \"" + shown + "\" - reset");
+            setPlayerToLobby(player);
+        }
+    }
+
+    @Override
+    public void shutdown() {
+        if (leftoverCheck != null) leftoverCheck.cancel();
+    }
+}

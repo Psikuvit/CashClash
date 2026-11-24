@@ -134,7 +134,6 @@ public final class CashClashPlugin extends JavaPlugin {
 
             gameManager = new GameManager();
             gamemodeManager = new GamemodeManager();
-            tabListManager = new TabListManager();
             worldVisibilityManager = new WorldVisibilityManager(this); // Legitimate: needs the Plugin instance itself for hidePlayer/showPlayer
             partyManager = new PartyManager();
             itemFactory = new ItemFactory();
@@ -142,6 +141,7 @@ public final class CashClashPlugin extends JavaPlugin {
             advancementManager = new AdvancementManager();
 
             // Tier 1: depend only on tier 0 managers.
+            tabListManager = new TabListManager(gameManager);
             arenaManager = new ArenaManager(configManager, gameManager);
             chatManager = new ChatManager(partyManager, gameManager);
             rankManager = new RankManager(playerDataManager);
@@ -202,6 +202,9 @@ public final class CashClashPlugin extends JavaPlugin {
             // Step 4.87: Start drawing the maps' spawn lines
             spawnLineManager.start();
 
+            // Step 4.88: Start the check for game tab names left on players out of a game
+            tabListManager.start();
+
             // Step 4.9: Start spawn room healing and doors (paused)
             //spawnRoomManager.start();
 
@@ -259,6 +262,7 @@ public final class CashClashPlugin extends JavaPlugin {
         managers.add(chatManager);
         managers.add(teamOutlineManager);
         managers.add(spawnLineManager);
+        managers.add(tabListManager);
         managers.add(advancementManager);
         managers.add(mythicHudManager);
         //managers.add(spawnRoomManager);
