@@ -75,6 +75,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
@@ -193,6 +194,7 @@ public class GameListener implements Listener {
 
         // Cleanup mythic state (like Goblin Spear charge)
         mythicManager.cleanup(player);
+        mythicManager.getHandler(GoblinSpearHandler.class).restoreToOwner(player, session);
 
         playerDataManager.incDeaths(player.getUniqueId());
 
@@ -361,6 +363,17 @@ public class GameListener implements Listener {
             // A bucket loses its tags as vanilla empties or fills it, so buckets go by type
             event.setCancelled(true);
             Messages.send(player, "listener.starter-item-cannot-drop");
+        }
+    }
+
+    /**
+     * A game's Goblin Spear never lands on the ground - see
+     * {@link GoblinSpearHandler#returnDroppedSpear}.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onGoblinSpearDrop(ItemSpawnEvent event) {
+        if (mythicManager.getHandler(GoblinSpearHandler.class).returnDroppedSpear(event.getEntity())) {
+            event.setCancelled(true);
         }
     }
 

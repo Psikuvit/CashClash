@@ -24,6 +24,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Trident;
 import org.bukkit.inventory.ItemStack;
@@ -445,8 +446,9 @@ public class GoblinSpearHandler extends MythicItemHandler {
     /**
      * A player who owns the game's Goblin Spear but doesn't have it - they threw it and died
      * before it came back - is given it back, and the thrown one is taken out of the world.
-     * Nothing happens when they have it, or don't own it. Runs as they respawn, and at the buy
-     * phase through {@link #returnToOwner}.
+     * Nothing happens when they have it, or don't own it. Runs the moment they die (a spear
+     * flying back to a dead or spectating thrower would drop on the ground), as they respawn,
+     * and at the buy phase through {@link #returnToOwner}.
      */
     public void restoreToOwner(Player player, GameSession session) {
         if (!player.getUniqueId().equals(manager.getMythicOwner(session, MythicItem.GOBLIN_SPEAR)) || holdsSpear(player)) return;
@@ -456,12 +458,36 @@ public class GoblinSpearHandler extends MythicItemHandler {
         Messages.debug(player, "GOBLIN_SPEAR: Given back to its owner, who didn't have it");
     }
 
+    /**
+     * A game's Goblin Spear never lies on the ground: vanilla drops a spear flying back to a
+     * thrower who is dead or spectating as an item. It goes back to its owner instead
+     * ({@link #restoreToOwner}).
+     *
+     * @return whether the item is a game's spear, which mustn't spawn
+     */
+    public boolean returnDroppedSpear(Item item) {
+        if (!isSpear(item.getItemStack())) return false;
+
+        for (GameSession session : CashClashPlugin.getInstance().getGameManager().getActiveSessions()) {
+            if (!item.getWorld().equals(session.getGameWorld())) continue;
+
+            UUID ownerId = manager.getMythicOwner(session, MythicItem.GOBLIN_SPEAR);
+            Player owner = ownerId != null ? Bukkit.getPlayer(ownerId) : null;
+            if (owner != null) restoreToOwner(owner, session);
+            return true;
+        }
+        return false;
+    }
+
     private static void removeThrownSpears(GameSession session) {
         World world = session.getGameWorld();
         if (world == null) return;
         for (Trident trident : world.getEntitiesByClass(Trident.class)) {
             String itemId = trident.getPersistentDataContainer().get(Keys.ITEM_ID, PersistentDataType.STRING);
             if (MythicItem.GOBLIN_SPEAR.getConfigKey().equals(itemId)) trident.remove();
+        }
+        for (Item item : world.getEntitiesByClass(Item.class)) {
+            if (isSpear(item.getItemStack())) item.remove();
         }
     }
 
