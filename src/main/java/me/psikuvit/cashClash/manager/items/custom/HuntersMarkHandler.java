@@ -3,10 +3,14 @@ package me.psikuvit.cashClash.manager.items.custom;
 import me.psikuvit.cashClash.CashClashPlugin;
 
 import me.psikuvit.cashClash.game.GameSession;
+import me.psikuvit.cashClash.game.GameState;
 import me.psikuvit.cashClash.game.Team;
+import me.psikuvit.cashClash.shop.items.CustomItem;
 import me.psikuvit.cashClash.util.Messages;
 import me.psikuvit.cashClash.util.SchedulerUtils;
 import me.psikuvit.cashClash.util.effects.SoundUtils;
+import me.psikuvit.cashClash.util.items.PDCDetection;
+import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
@@ -33,6 +37,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
     // Hunter's Mark - active marks, keyed by target
     private final Map<UUID, HunterMarkInfo> hunterMarks;
     private final Map<UUID, Long> markedUntil;
+    private final Map<UUID, Integer> lastUseTicks;
 
     /**
      * Active mark on a target: the tracking task plus the floating vulnerability % above them.
@@ -44,6 +49,7 @@ public class HuntersMarkHandler extends CustomItemHandler {
         super(manager);
         this.hunterMarks = new HashMap<>();
         this.markedUntil = new HashMap<>();
+        this.lastUseTicks = new HashMap<>();
     }
 
     /**
@@ -54,15 +60,39 @@ public class HuntersMarkHandler extends CustomItemHandler {
     }
 
     /**
-     * Uses a Hunter's Mark held in {@code hand} - it works from the off-hand too.
+     * Uses a Hunter's Mark held in {@code hand} - it works from the off-hand too. A second use
+     * within a tick is the same right-click reaching the Mark again ({@link #useFromOffHand}), and
+     * does nothing.
      */
     public void useHuntersMark(Player player, ItemStack item, EquipmentSlot hand) {
+        Integer lastTick = lastUseTicks.put(player.getUniqueId(), Bukkit.getCurrentTick());
+        if (lastTick != null && Bukkit.getCurrentTick() - lastTick <= 1) return;
+
         LivingEntity target = findNearestMarkTarget(player, cfg.getHuntersMarkRange());
         if (target == null) {
             Messages.send(player, "customitem.hunters-mark-no-target");
             return;
         }
         applyHunterMark(player, target, item, hand);
+    }
+
+    /**
+     * Whether a right-click by this player goes to the Hunter's Mark in their off hand instead of
+     * their main-hand item: there's one there, and custom items can be used (not in the buy phase).
+     */
+    public boolean takesRightClick(Player player) {
+        if (PDCDetection.getCustomItem(player.getInventory().getItemInOffHand()) != CustomItem.HUNTERS_MARK) return false;
+        GameSession session = CashClashPlugin.getInstance().getGameManager().getPlayerSession(player);
+        return session == null || session.getState() != GameState.SHOPPING && !session.isActionsRestricted();
+    }
+
+    /**
+     * Uses the off hand's Mark from the main hand's right-click. Vanilla only tries the off hand
+     * once the main hand has nothing to do, so a main-hand item with a use of its own (a bow, a
+     * block) would otherwise keep the press; the off hand's own click that may follow is ignored.
+     */
+    public void useFromOffHand(Player player) {
+        useHuntersMark(player, player.getInventory().getItemInOffHand(), EquipmentSlot.OFF_HAND);
     }
 
     private void applyHunterMark(Player hunter, LivingEntity target, ItemStack item, EquipmentSlot hand) {
@@ -170,5 +200,6 @@ public class HuntersMarkHandler extends CustomItemHandler {
         new ArrayList<>(hunterMarks.keySet()).forEach(this::clearHunterMark);
         hunterMarks.clear();
         markedUntil.clear();
+        lastUseTicks.clear();
     }
 }

@@ -416,6 +416,13 @@ public class InteractListener implements Listener {
             }
         }
 
+        HuntersMarkHandler huntersMark = customItemManager.getHandler(HuntersMarkHandler.class);
+        if (event.getHand() == EquipmentSlot.HAND && action.isRightClick() && huntersMark.takesRightClick(player)) {
+            event.setUseItemInHand(Event.Result.DENY);
+            huntersMark.useFromOffHand(player);
+            return;
+        }
+
         if (item != null) {
 
             // Check various item types and delegate

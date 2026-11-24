@@ -24,6 +24,7 @@ import me.psikuvit.cashClash.manager.items.armor.FlamebringerSetHandler;
 import me.psikuvit.cashClash.manager.items.armor.InvestorSetHandler;
 import me.psikuvit.cashClash.manager.items.custom.BloomingRoseHandler;
 import me.psikuvit.cashClash.manager.items.custom.CustomItemManager;
+import me.psikuvit.cashClash.manager.items.custom.HuntersMarkHandler;
 import me.psikuvit.cashClash.manager.items.custom.InvisCloakHandler;
 import me.psikuvit.cashClash.manager.items.custom.MedicPouchHandler;
 import me.psikuvit.cashClash.manager.items.custom.OrbOfGravitationHandler;
@@ -88,6 +89,7 @@ import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
@@ -947,9 +949,10 @@ public class GameListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
-        if (event.isCancelled()) return;
+        if (event.isCancelled() || event.getHand() != EquipmentSlot.HAND) return;
 
         Player player = event.getPlayer();
+        if (customItemManager.getHandler(HuntersMarkHandler.class).takesRightClick(player)) return;
         ItemStack item = player.getInventory().getItemInMainHand();
         if (!item.hasItemMeta()) return;
 

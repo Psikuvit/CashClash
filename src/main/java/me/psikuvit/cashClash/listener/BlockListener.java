@@ -283,11 +283,14 @@ public class BlockListener implements Listener {
      * A water bucket used on a waterloggable block that has a use of its own - a trapdoor, a
      * fence gate, a sign - places water the way it does for a crouching player instead of using
      * the block: see {@link #placeWaterInFront}. Crouching players already get that from vanilla.
+     * Runs after the item use may have been refused - e.g. a Hunter's Mark in the off hand taking
+     * the click.
      */
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onWaterBucketOnUsableBlock(PlayerInteractEvent event) {
         Block clicked = event.getClickedBlock();
         ItemStack item = event.getItem();
+        if (event.useItemInHand() == Event.Result.DENY) return;
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || clicked == null || event.getHand() == null) return;
         if (item == null || item.getType() != Material.WATER_BUCKET || event.getPlayer().isSneaking()) return;
         if (!(clicked.getBlockData() instanceof Waterlogged) || !clicked.getType().isInteractable()) return;
