@@ -25,6 +25,8 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -135,14 +137,13 @@ public class DragonSetHandler extends ArmorSetHandler {
 
     /**
      * Charge a Dragon Scale on fully-charged hits: melee, and - while {@code bow-hits-count} is on
-     * - a bow arrow drawn to {@code combat.fully-charged-threshold}. A Bullseye storm's burst
-     * arrows never count.
+     * - ranged ones ({@link #countsAsRangedHit}).
      *
      * @param damager what dealt the hit: the player for melee, or their arrow
      */
     public void handleDragonHit(Player player, Entity damager) {
         if (!hasDragonSet(player)) return;
-        boolean counts = damager instanceof AbstractArrow arrow ? countsAsBowHit(arrow) : damager.equals(player) && isFullyChargedMelee(player);
+        boolean counts = damager instanceof AbstractArrow projectile ? countsAsRangedHit(projectile) : damager.equals(player) && isFullyChargedMelee(player);
         if (!counts) return;
         if (getDragonScales(player) >= cfg.getDragonMaxScales()) return;
 
@@ -159,11 +160,22 @@ public class DragonSetHandler extends ArmorSetHandler {
         startDragonRushIndicator(player);
     }
 
-    private boolean countsAsBowHit(AbstractArrow arrow) {
-        return cfg.isDragonBowHitsEnabled()
-                && arrow.getWeapon() != null && arrow.getWeapon().getType() == Material.BOW
-                && arrow.getPersistentDataContainer().has(Keys.FULLY_CHARGED_ARROW, PersistentDataType.BYTE)
-                && !arrow.getPersistentDataContainer().has(Keys.BULLSEYE_STORM_SOURCE, PersistentDataType.STRING);
+    /**
+     * Whether a projectile hit counts toward a scale while {@code bow-hits-count} is on: a bow
+     * arrow drawn to {@code combat.fully-charged-threshold}, and every bolt from a crossbow,
+     * plain or mythic - it never fires before it's fully charged. A Bullseye storm's burst
+     * arrows never count.
+     */
+    private boolean countsAsRangedHit(AbstractArrow projectile) {
+        if (!cfg.isDragonBowHitsEnabled()) return false;
+
+        PersistentDataContainer pdc = projectile.getPersistentDataContainer();
+        if (pdc.has(Keys.BULLSEYE_STORM_SOURCE, PersistentDataType.STRING)) return false;
+
+        ItemStack weapon = projectile.getWeapon();
+        if (weapon == null) return false;
+        return weapon.getType() == Material.CROSSBOW
+                || weapon.getType() == Material.BOW && pdc.has(Keys.FULLY_CHARGED_ARROW, PersistentDataType.BYTE);
     }
 
     /**

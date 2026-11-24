@@ -1136,7 +1136,8 @@ public class ItemsConfig {
     }
 
     /**
-     * Whether fully drawn bow hits count toward a Dragon Scale as well as melee hits.
+     * Whether ranged hits - fully drawn bow shots and crossbow bolts - count toward a Dragon
+     * Scale as well as melee hits.
      */
     public boolean isDragonBowHitsEnabled() {
         return config.getBoolean("custom-armor.dragon.bow-hits-count", true);
