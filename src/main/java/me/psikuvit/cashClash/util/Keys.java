@@ -158,6 +158,12 @@ public class Keys {
     public static final NamespacedKey GOBLIN_SPEAR_HIT_PROCESSED;
 
     /**
+     * Byte marker on a thrown trident once its hit has charged a Dragon Scale, so one throw is
+     * one hit however many damage events it makes.
+     */
+    public static final NamespacedKey DRAGON_SCALE_HIT;
+
+    /**
      * What a bucket item was first bought or given as ({@code WATER_BUCKET} / {@code LAVA_BUCKET}),
      * carried over every time it's emptied or refilled - see {@code KitService#restoreBuckets}.
      */
@@ -263,6 +269,7 @@ public class Keys {
         WARDEN_REACH_STACK_3 = new NamespacedKey(CashClashPlugin.getInstance(), "warden_reach_stack_3");
         WARDEN_GLOVES_COSMETIC = new NamespacedKey(CashClashPlugin.getInstance(), "warden_gloves_cosmetic");
         GOBLIN_SPEAR_HIT_PROCESSED = new NamespacedKey(CashClashPlugin.getInstance(), "goblin_spear_hit_processed");
+        DRAGON_SCALE_HIT = new NamespacedKey(CashClashPlugin.getInstance(), "dragon_scale_hit");
         BUCKET_ORIGIN = new NamespacedKey(CashClashPlugin.getInstance(), "bucket_origin");
         EEL_SLOW = new NamespacedKey(CashClashPlugin.getInstance(), "electric_eel_dash_slow");
         LOTUS_SLOW = new NamespacedKey(CashClashPlugin.getInstance(), "radiating_lotus_slow");

@@ -297,8 +297,8 @@ custom-armor:
   dragon:
     hits-for-scale: 5
     # Ranged hits count toward a scale too: bow shots drawn to combat.fully-charged-threshold,
-    # and every crossbow bolt (plain or mythic), which only fires fully charged. A Bullseye
-    # storm's burst arrows never do. false for melee hits only
+    # and every crossbow bolt (plain or mythic) and thrown trident, which only fire fully
+    # charged. A Bullseye storm's burst arrows never do. false for melee hits only
     bow-hits-count: true
     max-scales: 3
     rush-range: 5

@@ -23,6 +23,7 @@ import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Trident;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
@@ -139,7 +140,7 @@ public class DragonSetHandler extends ArmorSetHandler {
      * Charge a Dragon Scale on fully-charged hits: melee, and - while {@code bow-hits-count} is on
      * - ranged ones ({@link #countsAsRangedHit}).
      *
-     * @param damager what dealt the hit: the player for melee, or their arrow
+     * @param damager what dealt the hit: the player for melee, or their arrow or thrown trident
      */
     public void handleDragonHit(Player player, Entity damager) {
         if (!hasDragonSet(player)) return;
@@ -163,13 +164,18 @@ public class DragonSetHandler extends ArmorSetHandler {
     /**
      * Whether a projectile hit counts toward a scale while {@code bow-hits-count} is on: a bow
      * arrow drawn to {@code combat.fully-charged-threshold}, and every bolt from a crossbow,
-     * plain or mythic - it never fires before it's fully charged. A Bullseye storm's burst
-     * arrows never count.
+     * plain or mythic, and every thrown trident - neither fires before it's fully charged. A
+     * Bullseye storm's burst arrows never count, and a thrown trident counts once per throw.
      */
     private boolean countsAsRangedHit(AbstractArrow projectile) {
         if (!cfg.isDragonBowHitsEnabled()) return false;
 
         PersistentDataContainer pdc = projectile.getPersistentDataContainer();
+        if (projectile instanceof Trident) {
+            if (pdc.has(Keys.DRAGON_SCALE_HIT, PersistentDataType.BYTE)) return false;
+            pdc.set(Keys.DRAGON_SCALE_HIT, PersistentDataType.BYTE, (byte) 1);
+            return true;
+        }
         if (pdc.has(Keys.BULLSEYE_STORM_SOURCE, PersistentDataType.STRING)) return false;
 
         ItemStack weapon = projectile.getWeapon();

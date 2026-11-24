@@ -913,7 +913,7 @@ public class GameListener implements Listener {
             }
             trident.getPersistentDataContainer().set(Keys.GOBLIN_SPEAR_HIT_PROCESSED, PersistentDataType.BYTE, (byte) 1);
 
-            mythicManager.getHandler(GoblinSpearHandler.class).handleGoblinSpearHit(shooter, target, false);
+            mythicManager.getHandler(GoblinSpearHandler.class).handleThrownHit(shooter, target, trident);
             Messages.debug("GOBLIN_SPEAR hit handled for " + target.getName());
         }
     }

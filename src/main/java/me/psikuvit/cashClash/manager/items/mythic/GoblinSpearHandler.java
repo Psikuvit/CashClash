@@ -59,12 +59,14 @@ public class GoblinSpearHandler extends MythicItemHandler {
     private final Map<UUID, List<LivingEntity>> goblinSpearCharging;
     private final Map<UUID, BukkitTask> chargeTasks;
     private final ChanceBag venomJavelinChance;
+    private final Map<UUID, Trident> landingSpears; // Thrower -> their spear, while its thrown hit's damage is dealt
 
     public GoblinSpearHandler(MythicItemManager manager) {
         super(manager);
         this.goblinSpearCharging = new ConcurrentHashMap<>();
         this.chargeTasks = new ConcurrentHashMap<>();
         this.venomJavelinChance = new ChanceBag();
+        this.landingSpears = new ConcurrentHashMap<>();
     }
 
     /**
@@ -353,6 +355,7 @@ public class GoblinSpearHandler extends MythicItemHandler {
         goblinSpearCharging.clear();
         chargeTasks.clear();
         venomJavelinChance.clear();
+        landingSpears.clear();
     }
 
     @Override
@@ -477,6 +480,26 @@ public class GoblinSpearHandler extends MythicItemHandler {
             return true;
         }
         return false;
+    }
+
+    /**
+     * A thrown spear's hit. Its damage is dealt by the thrower ({@link #handleGoblinSpearHit}),
+     * so while it is, {@link #getLandingSpear} tells that hit apart from a melee one.
+     */
+    public void handleThrownHit(Player shooter, LivingEntity victim, Trident spear) {
+        landingSpears.put(shooter.getUniqueId(), spear);
+        try {
+            handleGoblinSpearHit(shooter, victim, false);
+        } finally {
+            landingSpears.remove(shooter.getUniqueId());
+        }
+    }
+
+    /**
+     * The thrown spear whose hit {@code shooterId} is dealing damage for right now, or null.
+     */
+    public Trident getLandingSpear(UUID shooterId) {
+        return landingSpears.get(shooterId);
     }
 
     private static void removeThrownSpears(GameSession session) {
