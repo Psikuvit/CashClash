@@ -267,28 +267,18 @@ public final class GuiItemFactory {
         for (int i = 0; i < pieces.size(); i++) {
             CustomArmorItem piece = pieces.get(i);
 
-            // Get lore from config
-            String category = getCategoryForLore(piece);
-            String configKey = piece.getConfigKey();
-            List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore(category, configKey);
-
             if (ownsSet) {
-                ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
+                items[i] = ShopItemBuilder.of(piece.getMaterial())
                         .styledName("owned", shopName(piece))
-                        .lore("<dark_purple>" + set.getDisplayName() + "</dark_purple>")
-                        .emptyLine();
-
-                if (!loreLinesFromConfig.isEmpty()) {
-                    builder.configLore(loreLinesFromConfig);
-                }
-
-                items[i] = builder
-                        .emptyLine()
-                        .lore("<green>✓ Set owned</green>")
+                        .owned()
                         .itemId("SET_" + set.name())
                         .build();
                 CustomModelDataMapper.applyArmorModel(items[i], piece);
             } else {
+                String category = getCategoryForLore(piece);
+                String configKey = piece.getConfigKey();
+                List<String> loreLinesFromConfig = CashClashPlugin.getInstance().getItemsConfig().getItemLore(category, configKey);
+
                 ShopItemBuilder builder = ShopItemBuilder.of(piece.getMaterial())
                         .styledName("item", shopName(piece))
                         .lore("<dark_purple>" + set.getDisplayName() + "</dark_purple>")
